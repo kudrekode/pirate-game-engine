@@ -3,6 +3,9 @@ import Phaser from "phaser";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
 
+const RUNTIME_SCREEN_WIDTH = 640;
+const RUNTIME_SCREEN_HEIGHT = 480;
+
 type RuntimePanelProps = {
   project: GameProject;
   onClose: () => void;
@@ -10,9 +13,6 @@ type RuntimePanelProps = {
 
 export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewportWidth = Math.max(1, Math.round(project.camera.viewportWidthTiles)) * project.map.tileSize;
-  const viewportHeight =
-    Math.max(1, Math.round(project.camera.viewportHeightTiles)) * project.map.tileSize;
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -22,8 +22,8 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: containerRef.current,
-      width: viewportWidth,
-      height: viewportHeight,
+      width: RUNTIME_SCREEN_WIDTH,
+      height: RUNTIME_SCREEN_HEIGHT,
       backgroundColor: "#111827",
       scene: [new AdventureScene(project)],
       scale: {
@@ -35,7 +35,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
     return () => {
       game.destroy(true);
     };
-  }, [project, viewportHeight, viewportWidth]);
+  }, [project]);
 
   return (
     <section className="runtime-panel">

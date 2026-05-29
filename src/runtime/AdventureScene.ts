@@ -26,6 +26,9 @@ function clamp(value: number, min: number, max: number): number {
 export class AdventureScene extends Phaser.Scene {
   private readonly project: GameProject;
   private readonly tileSize: number;
+  private worldLayer?: Phaser.GameObjects.Container;
+  private uiLayer?: Phaser.GameObjects.Container;
+  private uiCamera?: Phaser.Cameras.Scene2D.Camera;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: WasdKeys;
   private playerMarker?: Phaser.GameObjects.Container;
@@ -45,8 +48,10 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   create() {
+    this.worldLayer = this.add.container(0, 0);
+    this.uiLayer = this.add.container(0, 0).setDepth(1000).setScrollFactor(0);
     this.renderMap();
-    this.configureCameraBounds();
+    this.configureCameras();
     this.createInput();
     this.statusText = this.add
       .text(10, 10, "", {
@@ -58,6 +63,7 @@ export class AdventureScene extends Phaser.Scene {
       })
       .setDepth(100)
       .setScrollFactor(0);
+    this.uiLayer.add(this.statusText);
 
     this.processProgression();
   }
@@ -96,8 +102,28 @@ export class AdventureScene extends Phaser.Scene {
     };
   }
 
-  private configureCameraBounds() {
+  private configureCameras() {
+    const screenWidth = this.scale.width;
+    const screenHeight = this.scale.height;
+    const visibleWorldWidth = clamp(
+      Math.round(this.project.camera.viewportWidthTiles) * this.tileSize,
+      this.tileSize,
+      this.project.map.width * this.tileSize,
+    );
+    const visibleWorldHeight = clamp(
+      Math.round(this.project.camera.viewportHeightTiles) * this.tileSize,
+      this.tileSize,
+      this.project.map.height * this.tileSize,
+    );
+    const zoom = Math.min(screenWidth / visibleWorldWidth, screenHeight / visibleWorldHeight);
+    const worldViewportWidth = Math.round(visibleWorldWidth * zoom);
+    const worldViewportHeight = Math.round(visibleWorldHeight * zoom);
+    const worldViewportX = Math.floor((screenWidth - worldViewportWidth) / 2);
+    const worldViewportY = Math.floor((screenHeight - worldViewportHeight) / 2);
+
     this.cameras.main
+      .setViewport(worldViewportX, worldViewportY, worldViewportWidth, worldViewportHeight)
+      .setZoom(zoom)
       .setBounds(
         0,
         0,
@@ -105,13 +131,19 @@ export class AdventureScene extends Phaser.Scene {
         this.project.map.height * this.tileSize,
       )
       .setRoundPixels(true);
+
+    this.uiCamera = this.cameras.add(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    if (this.uiLayer && this.worldLayer) {
+      this.cameras.main.ignore(this.uiLayer);
+      this.uiCamera.ignore(this.worldLayer);
+    }
   }
 
   private configurePlayerCamera(centerX: number, centerY: number) {
     const camera = this.cameras.main;
     const config = this.project.camera;
-    const deadzoneWidth = (config.deadzoneWidthTiles ?? 0) * this.tileSize;
-    const deadzoneHeight = (config.deadzoneHeightTiles ?? 0) * this.tileSize;
+    const deadzoneWidth = (config.deadzoneWidthTiles ?? 0) * this.tileSize * camera.zoom;
+    const deadzoneHeight = (config.deadzoneHeightTiles ?? 0) * this.tileSize * camera.zoom;
 
     if (deadzoneWidth > 0 && deadzoneHeight > 0) {
       camera.setDeadzone(deadzoneWidth, deadzoneHeight);
@@ -135,12 +167,12 @@ export class AdventureScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const mapWidth = this.project.map.width * this.tileSize;
     const mapHeight = this.project.map.height * this.tileSize;
-    const maxScrollX = Math.max(0, mapWidth - camera.width);
-    const maxScrollY = Math.max(0, mapHeight - camera.height);
+    const maxScrollX = Math.max(0, mapWidth - camera.width / camera.zoom);
+    const maxScrollY = Math.max(0, mapHeight - camera.height / camera.zoom);
 
     camera.setScroll(
-      clamp(x - camera.width / 2, 0, maxScrollX),
-      clamp(y - camera.height / 2, 0, maxScrollY),
+      clamp(x - camera.width / camera.zoom / 2, 0, maxScrollX),
+      clamp(y - camera.height / camera.zoom / 2, 0, maxScrollY),
     );
   }
 
@@ -152,33 +184,36 @@ export class AdventureScene extends Phaser.Scene {
         const worldX = x * this.tileSize;
         const worldY = y * this.tileSize;
 
-        this.add
+        const tileRect = this.add
           .rectangle(worldX, worldY, this.tileSize, this.tileSize, hexToNumber(tile.color))
           .setOrigin(0)
           .setStrokeStyle(1, 0xffffff, 0.22);
+        this.worldLayer?.add(tileRect);
 
         if (tile.pattern === "waves") {
-          this.add
+          const wave = this.add
             .text(worldX + this.tileSize / 2, worldY + this.tileSize / 2, "~", {
               color: "#d0ebff",
               fontFamily: "Arial, sans-serif",
               fontSize: "18px",
             })
             .setOrigin(0.5);
+          this.worldLayer?.add(wave);
         }
 
         if (tile.pattern === "tree") {
-          this.add.circle(
+          const tree = this.add.circle(
             worldX + this.tileSize / 2,
             worldY + this.tileSize / 2,
             this.tileSize * 0.22,
             0x14532d,
             0.9,
           );
+          this.worldLayer?.add(tree);
         }
 
         if (tile.pattern === "blocks") {
-          this.add
+          const rock = this.add
             .rectangle(
               worldX + this.tileSize / 2,
               worldY + this.tileSize / 2,
@@ -188,6 +223,7 @@ export class AdventureScene extends Phaser.Scene {
               0.55,
             )
             .setStrokeStyle(1, 0x111827, 0.28);
+          this.worldLayer?.add(rock);
         }
       }
     }
@@ -265,6 +301,7 @@ export class AdventureScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.playerMarker = this.add.container(centerX, centerY, [body, initial]).setDepth(50);
+    this.worldLayer?.add(this.playerMarker);
     this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
     this.configurePlayerCamera(centerX, centerY);
     this.setStatus(`${this.project.player.name} spawned.`);
@@ -296,6 +333,7 @@ export class AdventureScene extends Phaser.Scene {
     const dialogueWidth = Math.max(140, width - 32);
     const dialogueY = Math.max(128, height - 74);
     const container = this.add.container(0, 0).setDepth(500).setScrollFactor(0);
+    this.uiLayer?.add(container);
 
     this.isCutsceneOpen = true;
     container.add(
@@ -396,6 +434,7 @@ export class AdventureScene extends Phaser.Scene {
     const height = this.scale.height;
     const boxWidth = Math.min(260, width - 24);
     const container = this.add.container(0, 0).setDepth(600).setScrollFactor(0);
+    this.uiLayer?.add(container);
     container.add(this.add.rectangle(0, 0, width, height, 0x111827, 0.72).setOrigin(0));
     container.add(
       this.add
