@@ -4,6 +4,7 @@ export type GameProject = {
     version: string;
   };
   map: GameMap;
+  camera: CameraConfig;
   player: PlayerConfig;
   cutscenes: Cutscene[];
   progression: ProgressionStep[];
@@ -32,10 +33,19 @@ export type EventBlock = {
   kind: "spawn" | "trigger";
 };
 
+export type CameraConfig = {
+  viewportWidthTiles: number;
+  viewportHeightTiles: number;
+  followPlayer: boolean;
+  followSmoothing: number;
+  deadzoneWidthTiles?: number;
+  deadzoneHeightTiles?: number;
+};
+
 export type PlayerConfig = {
   name: string;
-  spriteId: string;
-  portraitId: string;
+  mapAvatarId: string;
+  cutscenePortraitId: string;
   speed: number;
   health: number;
   canWalkOn: string[];
@@ -50,25 +60,17 @@ export type Cutscene = {
   text: string;
 };
 
-export type ProgressionStep =
-  | {
-      id: string;
-      type: "play_cutscene";
-      cutsceneId: string;
-    }
-  | {
-      id: string;
-      type: "spawn_player";
-      eventBlockId: string;
-    }
-  | {
-      id: string;
-      type: "wait_for_trigger";
-      eventBlockId: string;
-    }
-  | {
-      id: string;
-      type: "end_game";
-    };
+export type ProgressionStep = {
+  id: string;
+  label?: string;
+  action: ProgressionAction;
+};
 
-// TODO: Future editor sections: Sounds, Achievements, Controls, Asset Library, UI Editor, Enemy/NPC Editor.
+export type ProgressionAction =
+  | { type: "play_cutscene"; cutsceneId: string }
+  | { type: "spawn_player"; eventBlockId: string }
+  | { type: "wait_for_trigger"; eventBlockId: string }
+  | { type: "teleport_player"; eventBlockId: string }
+  | { type: "end_game" };
+
+// TODO: Future foundations: node graph progression, enemies, sounds, UI editor, and asset imports.

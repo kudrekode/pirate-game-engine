@@ -1,30 +1,39 @@
 import { useProjectStore } from "../../store/useProjectStore";
-import type { ProgressionStep } from "../../types/game";
+import type { ProgressionAction, ProgressionStep } from "../../types/game";
 
-type ProgressionType = ProgressionStep["type"];
+type ProgressionType = ProgressionAction["type"];
+type EventProgressionType = Extract<ProgressionAction, { eventBlockId: string }>["type"];
 
 const progressionTypes: { label: string; value: ProgressionType }[] = [
   { label: "Play cutscene", value: "play_cutscene" },
   { label: "Spawn player", value: "spawn_player" },
   { label: "Wait for trigger", value: "wait_for_trigger" },
+  { label: "Teleport player", value: "teleport_player" },
   { label: "End game", value: "end_game" },
 ];
 
-function makeStepForType(
-  step: ProgressionStep,
+function makeActionForType(
   type: ProgressionType,
   cutsceneId: string,
   eventBlockId: string,
-): ProgressionStep {
+): ProgressionAction {
   if (type === "play_cutscene") {
-    return { id: step.id, type, cutsceneId };
+    return { type, cutsceneId };
   }
 
-  if (type === "spawn_player" || type === "wait_for_trigger") {
-    return { id: step.id, type, eventBlockId };
+  if (type === "spawn_player" || type === "wait_for_trigger" || type === "teleport_player") {
+    return { type, eventBlockId };
   }
 
-  return { id: step.id, type: "end_game" };
+  return { type: "end_game" };
+}
+
+function getStepName(step: ProgressionStep): string {
+  if (step.label) {
+    return step.label;
+  }
+
+  return progressionTypes.find((type) => type.value === step.action.type)?.label ?? "Step";
 }
 
 export function ProgressionEditor() {
@@ -36,7 +45,7 @@ export function ProgressionEditor() {
   const firstCutsceneId = project.cutscenes[0]?.id ?? "";
   const firstEventBlockId = project.map.eventBlocks[0]?.id ?? "";
 
-  // TODO: Add drag handles or up/down controls for reordering progression steps.
+  // TODO: Replace the linear list with a node graph editor when branching progression is needed.
 
   return (
     <section className="editor-panel progression-editor">
@@ -48,20 +57,33 @@ export function ProgressionEditor() {
               <div className="step-index">{index + 1}</div>
               <div className="step-fields">
                 <label>
-                  Type
+                  Label
+                  <input
+                    onChange={(event) =>
+                      updateProgressionStep(step.id, {
+                        ...step,
+                        label: event.target.value || undefined,
+                      })
+                    }
+                    placeholder={getStepName(step)}
+                    value={step.label ?? ""}
+                  />
+                </label>
+
+                <label>
+                  Action
                   <select
                     onChange={(event) =>
-                      updateProgressionStep(
-                        step.id,
-                        makeStepForType(
-                          step,
+                      updateProgressionStep(step.id, {
+                        ...step,
+                        action: makeActionForType(
                           event.target.value as ProgressionType,
                           firstCutsceneId,
                           firstEventBlockId,
                         ),
-                      )
+                      })
                     }
-                    value={step.type}
+                    value={step.action.type}
                   >
                     {progressionTypes.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -71,17 +93,20 @@ export function ProgressionEditor() {
                   </select>
                 </label>
 
-                {step.type === "play_cutscene" ? (
+                {step.action.type === "play_cutscene" ? (
                   <label>
                     Cutscene
                     <select
                       onChange={(event) =>
                         updateProgressionStep(step.id, {
                           ...step,
-                          cutsceneId: event.target.value,
+                          action: {
+                            type: "play_cutscene",
+                            cutsceneId: event.target.value,
+                          },
                         })
                       }
-                      value={step.cutsceneId}
+                      value={step.action.cutsceneId}
                     >
                       {project.cutscenes.map((cutscene) => (
                         <option key={cutscene.id} value={cutscene.id}>
@@ -92,17 +117,22 @@ export function ProgressionEditor() {
                   </label>
                 ) : null}
 
-                {step.type === "spawn_player" || step.type === "wait_for_trigger" ? (
+                {step.action.type === "spawn_player" ||
+                step.action.type === "wait_for_trigger" ||
+                step.action.type === "teleport_player" ? (
                   <label>
                     Event block
                     <select
                       onChange={(event) =>
                         updateProgressionStep(step.id, {
                           ...step,
-                          eventBlockId: event.target.value,
+                          action: {
+                            type: step.action.type as EventProgressionType,
+                            eventBlockId: event.target.value,
+                          },
                         })
                       }
-                      value={step.eventBlockId}
+                      value={step.action.eventBlockId}
                     >
                       {project.map.eventBlocks.map((eventBlock) => (
                         <option key={eventBlock.id} value={eventBlock.id}>

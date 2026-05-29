@@ -17,15 +17,61 @@ export function CharacterEditor() {
     <section className="editor-panel character-editor">
       <div className="split-layout">
         <div className="tool-panel wide">
-          <div className="panel-title">Player</div>
-          <div className="form-grid">
+          <div className="panel-title">Character</div>
+          <div className="form-grid compact">
             <label>
-              Name
+              Character name
               <input
                 onChange={(event) => updatePlayer({ name: event.target.value })}
                 value={player.name}
               />
             </label>
+          </div>
+
+          <div className="panel-title">Map Avatar</div>
+          <div className="preset-grid">
+            {characterSprites.map((sprite) => (
+              <button
+                className={`preset-card ${player.mapAvatarId === sprite.id ? "selected" : ""}`}
+                key={sprite.id}
+                onClick={() => updatePlayer({ mapAvatarId: sprite.id })}
+                type="button"
+              >
+                <span
+                  className="avatar-preview small"
+                  style={{ background: sprite.color, color: sprite.accent }}
+                >
+                  {sprite.label.slice(0, 1)}
+                </span>
+                {sprite.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="panel-title">Cutscene Portrait</div>
+          <div className="preset-grid">
+            {portraitPresets.map((portrait) => (
+              <button
+                className={`preset-card ${
+                  player.cutscenePortraitId === portrait.id ? "selected" : ""
+                }`}
+                key={portrait.id}
+                onClick={() => updatePlayer({ cutscenePortraitId: portrait.id })}
+                type="button"
+              >
+                <span
+                  className="avatar-preview small"
+                  style={{ background: portrait.color, color: portrait.accent }}
+                >
+                  {portrait.label.slice(0, 1)}
+                </span>
+                {portrait.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="panel-title">Stats</div>
+          <div className="form-grid compact">
             <label>
               Speed
               <input
@@ -44,46 +90,6 @@ export function CharacterEditor() {
                 value={player.health}
               />
             </label>
-          </div>
-
-          <div className="panel-title">Sprite</div>
-          <div className="preset-grid">
-            {characterSprites.map((sprite) => (
-              <button
-                className={`preset-card ${player.spriteId === sprite.id ? "selected" : ""}`}
-                key={sprite.id}
-                onClick={() => updatePlayer({ spriteId: sprite.id })}
-                type="button"
-              >
-                <span
-                  className="avatar-preview small"
-                  style={{ background: sprite.color, color: sprite.accent }}
-                >
-                  {sprite.label.slice(0, 1)}
-                </span>
-                {sprite.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="panel-title">Portrait</div>
-          <div className="preset-grid">
-            {portraitPresets.map((portrait) => (
-              <button
-                className={`preset-card ${player.portraitId === portrait.id ? "selected" : ""}`}
-                key={portrait.id}
-                onClick={() => updatePlayer({ portraitId: portrait.id })}
-                type="button"
-              >
-                <span
-                  className="avatar-preview small"
-                  style={{ background: portrait.color, color: portrait.accent }}
-                >
-                  {portrait.label.slice(0, 1)}
-                </span>
-                {portrait.label}
-              </button>
-            ))}
           </div>
         </div>
 

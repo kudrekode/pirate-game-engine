@@ -10,6 +10,9 @@ type RuntimePanelProps = {
 
 export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewportWidth = Math.max(1, Math.round(project.camera.viewportWidthTiles)) * project.map.tileSize;
+  const viewportHeight =
+    Math.max(1, Math.round(project.camera.viewportHeightTiles)) * project.map.tileSize;
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -19,8 +22,8 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: containerRef.current,
-      width: project.map.width * project.map.tileSize,
-      height: project.map.height * project.map.tileSize,
+      width: viewportWidth,
+      height: viewportHeight,
       backgroundColor: "#111827",
       scene: [new AdventureScene(project)],
       scale: {
@@ -32,7 +35,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
     return () => {
       game.destroy(true);
     };
-  }, [project]);
+  }, [project, viewportHeight, viewportWidth]);
 
   return (
     <section className="runtime-panel">

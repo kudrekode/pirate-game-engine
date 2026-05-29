@@ -1,17 +1,20 @@
 import { create } from "zustand";
 import { defaultProject } from "../data/defaultProject";
+import { cloneProject, migrateProject } from "../data/migrateProject";
 import { backgroundPresets, portraitPresets } from "../data/presets";
 import type {
+  CameraConfig,
   Cutscene,
   EventBlock,
   GameProject,
   PlayerConfig,
+  ProgressionAction,
   ProgressionStep,
 } from "../types/game";
 
 const STORAGE_KEY = "adventure-builder-project-v1";
 
-type ProgressionType = ProgressionStep["type"];
+type ProgressionType = ProgressionAction["type"];
 
 type ProjectStore = {
   project: GameProject;
@@ -21,6 +24,7 @@ type ProjectStore = {
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => boolean;
   updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
+  updateCamera: (patch: Partial<CameraConfig>) => void;
   setTile: (x: number, y: number, tileId: string) => void;
   addEventBlock: (x: number, y: number) => string;
   updateEventBlock: (id: string, patch: Partial<EventBlock>) => void;
@@ -34,10 +38,6 @@ type ProjectStore = {
   deleteProgressionStep: (id: string) => void;
 };
 
-function cloneProject(project: GameProject): GameProject {
-  return JSON.parse(JSON.stringify(project)) as GameProject;
-}
-
 function makeId(prefix: string): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
@@ -48,39 +48,43 @@ function makeId(prefix: string): string {
 
 function cleanProgressionReferences(project: GameProject, deletedKind: "cutscene" | "event", deletedId: string) {
   project.progression = project.progression.filter((step) => {
-    if (deletedKind === "cutscene" && step.type === "play_cutscene") {
-      return step.cutsceneId !== deletedId;
+    if (deletedKind === "cutscene" && step.action.type === "play_cutscene") {
+      return step.action.cutsceneId !== deletedId;
     }
 
     if (
       deletedKind === "event" &&
-      (step.type === "spawn_player" || step.type === "wait_for_trigger")
+      (step.action.type === "spawn_player" ||
+        step.action.type === "wait_for_trigger" ||
+        step.action.type === "teleport_player")
     ) {
-      return step.eventBlockId !== deletedId;
+      return step.action.eventBlockId !== deletedId;
     }
 
     return true;
   });
 }
 
-function makeProgressionStep(type: ProgressionType, project: GameProject): ProgressionStep {
-  const id = makeId("step");
-
+function makeProgressionStep(type: ProgressionType, project: GameProject, id = makeId("step")): ProgressionStep {
   if (type === "play_cutscene") {
     return {
       id,
-      type,
-      cutsceneId: project.cutscenes[0]?.id ?? "",
+      action: {
+        type,
+        cutsceneId: project.cutscenes[0]?.id ?? "",
+      },
     };
   }
 
-  if (type === "spawn_player") {
+  if (type === "spawn_player" || type === "teleport_player") {
     const spawn = project.map.eventBlocks.find((block) => block.kind === "spawn");
 
     return {
       id,
-      type,
-      eventBlockId: spawn?.id ?? project.map.eventBlocks[0]?.id ?? "",
+      action: {
+        type,
+        eventBlockId: spawn?.id ?? project.map.eventBlocks[0]?.id ?? "",
+      },
     };
   }
 
@@ -89,33 +93,37 @@ function makeProgressionStep(type: ProgressionType, project: GameProject): Progr
 
     return {
       id,
-      type,
-      eventBlockId: trigger?.id ?? project.map.eventBlocks[0]?.id ?? "",
+      action: {
+        type,
+        eventBlockId: trigger?.id ?? project.map.eventBlocks[0]?.id ?? "",
+      },
     };
   }
 
   return {
     id,
-    type: "end_game",
+    action: {
+      type: "end_game",
+    },
   };
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
-  project: cloneProject(defaultProject),
+  project: migrateProject(defaultProject),
 
-  setProject: (project) => set({ project: cloneProject(project) }),
+  setProject: (project) => set({ project: migrateProject(project) }),
 
   updateProject: (updater) =>
     set((state) => {
       const project = cloneProject(state.project);
       updater(project);
-      return { project };
+      return { project: migrateProject(project) };
     }),
 
-  resetProject: () => set({ project: cloneProject(defaultProject) }),
+  resetProject: () => set({ project: migrateProject(defaultProject) }),
 
   saveToLocalStorage: () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(get().project, null, 2));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(migrateProject(get().project), null, 2));
   },
 
   loadFromLocalStorage: () => {
@@ -124,7 +132,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return false;
     }
 
-    const project = JSON.parse(raw) as GameProject;
+    const project = migrateProject(JSON.parse(raw));
     set({ project });
     return true;
   },
@@ -136,6 +144,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         metadata: {
           ...state.project.metadata,
           ...metadata,
+        },
+      },
+    })),
+
+  updateCamera: (patch) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        camera: {
+          ...state.project.camera,
+          ...patch,
         },
       },
     })),
@@ -232,7 +251,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
             id,
             name: `Cutscene ${index}`,
             backgroundImageId: backgroundPresets[0]?.id ?? "",
-            portraitImageId: portraitPresets[0]?.id,
+            portraitImageId: state.project.player.cutscenePortraitId ?? portraitPresets[0]?.id,
             speakerName: state.project.player.name,
             text: "New dialogue text.",
           },
@@ -265,11 +284,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const id = makeId("step");
 
     set((state) => {
-      const step = makeProgressionStep(type, state.project);
+      const step = makeProgressionStep(type, state.project, id);
       return {
         project: {
           ...state.project,
-          progression: [...state.project.progression, { ...step, id }],
+          progression: [...state.project.progression, step],
         },
       };
     });

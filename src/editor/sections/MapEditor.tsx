@@ -141,6 +141,9 @@ export function MapEditor() {
             +
           </button>
         </div>
+        <button className="full-width reset-zoom-button" onClick={() => setZoom(1)} type="button">
+          Reset Zoom
+        </button>
       </aside>
 
       <div className="map-stage">

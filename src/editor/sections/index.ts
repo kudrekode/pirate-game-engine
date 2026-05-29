@@ -1,10 +1,11 @@
 import type { ComponentType } from "react";
+import { CameraEditor } from "./CameraEditor";
 import { CharacterEditor } from "./CharacterEditor";
 import { CutsceneEditor } from "./CutsceneEditor";
 import { MapEditor } from "./MapEditor";
 import { ProgressionEditor } from "./ProgressionEditor";
 
-export type EditorSectionId = "map" | "character" | "cutscenes" | "progression";
+export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression";
 
 export type EditorSectionConfig = {
   id: EditorSectionId;
@@ -22,6 +23,11 @@ export const editorSections: EditorSectionConfig[] = [
     id: "character",
     label: "Character",
     component: CharacterEditor,
+  },
+  {
+    id: "camera",
+    label: "Camera",
+    component: CameraEditor,
   },
   {
     id: "cutscenes",

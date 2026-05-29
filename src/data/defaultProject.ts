@@ -1,4 +1,5 @@
 import type { GameProject, MapTile } from "../types/game";
+import { defaultCameraConfig } from "./projectDefaults";
 
 function makeTiles(width: number, height: number): MapTile[] {
   const tiles: MapTile[] = [];
@@ -59,10 +60,11 @@ export const defaultProject: GameProject = {
       },
     ],
   },
+  camera: defaultCameraConfig,
   player: {
     name: "Ari",
-    spriteId: "scout",
-    portraitId: "portrait_scout",
+    mapAvatarId: "scout",
+    cutscenePortraitId: "portrait_scout",
     speed: 6,
     health: 5,
     canWalkOn: ["grass", "dirt"],
@@ -88,27 +90,42 @@ export const defaultProject: GameProject = {
   progression: [
     {
       id: "step_intro",
-      type: "play_cutscene",
-      cutsceneId: "intro_cutscene",
+      label: "Intro cutscene",
+      action: {
+        type: "play_cutscene",
+        cutsceneId: "intro_cutscene",
+      },
     },
     {
       id: "step_spawn",
-      type: "spawn_player",
-      eventBlockId: "spawn_start",
+      label: "Spawn player",
+      action: {
+        type: "spawn_player",
+        eventBlockId: "spawn_start",
+      },
     },
     {
       id: "step_wait_gate",
-      type: "wait_for_trigger",
-      eventBlockId: "trigger_gate",
+      label: "Wait for gate trigger",
+      action: {
+        type: "wait_for_trigger",
+        eventBlockId: "trigger_gate",
+      },
     },
     {
       id: "step_gate_scene",
-      type: "play_cutscene",
-      cutsceneId: "gate_cutscene",
+      label: "Gate cutscene",
+      action: {
+        type: "play_cutscene",
+        cutsceneId: "gate_cutscene",
+      },
     },
     {
       id: "step_end",
-      type: "end_game",
+      label: "End",
+      action: {
+        type: "end_game",
+      },
     },
   ],
 };

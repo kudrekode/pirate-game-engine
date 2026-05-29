@@ -19,8 +19,8 @@ function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
 }
 
-function coordKey(x: number, y: number): string {
-  return `${x}:${y}`;
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 export class AdventureScene extends Phaser.Scene {
@@ -36,6 +36,7 @@ export class AdventureScene extends Phaser.Scene {
   private statusText?: Phaser.GameObjects.Text;
   private isCutsceneOpen = false;
   private isFinished = false;
+  private isMoving = false;
 
   constructor(project: GameProject) {
     super("AdventureScene");
@@ -45,6 +46,7 @@ export class AdventureScene extends Phaser.Scene {
 
   create() {
     this.renderMap();
+    this.configureCameraBounds();
     this.createInput();
     this.statusText = this.add
       .text(10, 10, "", {
@@ -54,13 +56,20 @@ export class AdventureScene extends Phaser.Scene {
         fontSize: "14px",
         padding: { x: 8, y: 5 },
       })
-      .setDepth(100);
+      .setDepth(100)
+      .setScrollFactor(0);
 
     this.processProgression();
   }
 
   update(time: number) {
-    if (!this.playerMarker || this.isCutsceneOpen || this.isFinished || time < this.nextMoveAt) {
+    if (
+      !this.playerMarker ||
+      this.isCutsceneOpen ||
+      this.isFinished ||
+      this.isMoving ||
+      time < this.nextMoveAt
+    ) {
       return;
     }
 
@@ -69,9 +78,7 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    const moveDelay = Math.max(80, 280 - this.project.player.speed * 18);
-    this.nextMoveAt = time + moveDelay;
-    this.tryMove(direction.x, direction.y);
+    this.tryMove(direction.x, direction.y, time);
   }
 
   private createInput() {
@@ -87,6 +94,54 @@ export class AdventureScene extends Phaser.Scene {
       S: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       D: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
+  }
+
+  private configureCameraBounds() {
+    this.cameras.main
+      .setBounds(
+        0,
+        0,
+        this.project.map.width * this.tileSize,
+        this.project.map.height * this.tileSize,
+      )
+      .setRoundPixels(true);
+  }
+
+  private configurePlayerCamera(centerX: number, centerY: number) {
+    const camera = this.cameras.main;
+    const config = this.project.camera;
+    const deadzoneWidth = (config.deadzoneWidthTiles ?? 0) * this.tileSize;
+    const deadzoneHeight = (config.deadzoneHeightTiles ?? 0) * this.tileSize;
+
+    if (deadzoneWidth > 0 && deadzoneHeight > 0) {
+      camera.setDeadzone(deadzoneWidth, deadzoneHeight);
+    }
+
+    if (config.followPlayer && this.playerMarker) {
+      camera.startFollow(
+        this.playerMarker,
+        true,
+        clamp(config.followSmoothing, 0, 1),
+        clamp(config.followSmoothing, 0, 1),
+      );
+      return;
+    }
+
+    camera.stopFollow();
+    this.centerCameraOn(centerX, centerY);
+  }
+
+  private centerCameraOn(x: number, y: number) {
+    const camera = this.cameras.main;
+    const mapWidth = this.project.map.width * this.tileSize;
+    const mapHeight = this.project.map.height * this.tileSize;
+    const maxScrollX = Math.max(0, mapWidth - camera.width);
+    const maxScrollY = Math.max(0, mapHeight - camera.height);
+
+    camera.setScroll(
+      clamp(x - camera.width / 2, 0, maxScrollX),
+      clamp(y - camera.height / 2, 0, maxScrollY),
+    );
   }
 
   private renderMap() {
@@ -141,9 +196,12 @@ export class AdventureScene extends Phaser.Scene {
   private processProgression() {
     while (this.progressionIndex < this.project.progression.length) {
       const step = this.project.progression[this.progressionIndex];
+      const action = step.action;
 
-      if (step.type === "play_cutscene") {
-        const cutscene = this.project.cutscenes.find((candidate) => candidate.id === step.cutsceneId);
+      if (action.type === "play_cutscene") {
+        const cutscene = this.project.cutscenes.find(
+          (candidate) => candidate.id === action.cutsceneId,
+        );
 
         if (!cutscene) {
           this.progressionIndex += 1;
@@ -157,8 +215,8 @@ export class AdventureScene extends Phaser.Scene {
         return;
       }
 
-      if (step.type === "spawn_player") {
-        const eventBlock = this.findEventBlock(step.eventBlockId);
+      if (action.type === "spawn_player") {
+        const eventBlock = this.findEventBlock(action.eventBlockId);
         if (eventBlock) {
           this.spawnPlayer(eventBlock);
         }
@@ -166,9 +224,18 @@ export class AdventureScene extends Phaser.Scene {
         continue;
       }
 
-      if (step.type === "wait_for_trigger") {
-        const eventBlock = this.findEventBlock(step.eventBlockId);
-        this.waitingForTriggerId = step.eventBlockId;
+      if (action.type === "teleport_player") {
+        const eventBlock = this.findEventBlock(action.eventBlockId);
+        if (eventBlock) {
+          this.teleportPlayer(eventBlock);
+        }
+        this.progressionIndex += 1;
+        continue;
+      }
+
+      if (action.type === "wait_for_trigger") {
+        const eventBlock = this.findEventBlock(action.eventBlockId);
+        this.waitingForTriggerId = action.eventBlockId;
         this.setStatus(eventBlock ? `Find trigger: ${eventBlock.name}` : "Find the trigger.");
         return;
       }
@@ -182,15 +249,15 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
-    const sprite = getVisualPreset(this.project.player.spriteId, characterSprites);
+    const avatar = getVisualPreset(this.project.player.mapAvatarId, characterSprites);
     const centerX = eventBlock.x * this.tileSize + this.tileSize / 2;
     const centerY = eventBlock.y * this.tileSize + this.tileSize / 2;
 
     this.playerMarker?.destroy();
-    const body = this.add.circle(0, 0, this.tileSize * 0.32, hexToNumber(sprite.color));
+    const body = this.add.circle(0, 0, this.tileSize * 0.32, hexToNumber(avatar.color));
     const initial = this.add
       .text(0, 0, this.project.player.name.slice(0, 1).toUpperCase(), {
-        color: sprite.accent,
+        color: avatar.accent,
         fontFamily: "Arial, sans-serif",
         fontSize: "16px",
         fontStyle: "700",
@@ -199,7 +266,22 @@ export class AdventureScene extends Phaser.Scene {
 
     this.playerMarker = this.add.container(centerX, centerY, [body, initial]).setDepth(50);
     this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
+    this.configurePlayerCamera(centerX, centerY);
     this.setStatus(`${this.project.player.name} spawned.`);
+  }
+
+  private teleportPlayer(eventBlock: EventBlock) {
+    if (!this.playerMarker) {
+      this.spawnPlayer(eventBlock);
+      return;
+    }
+
+    const centerX = eventBlock.x * this.tileSize + this.tileSize / 2;
+    const centerY = eventBlock.y * this.tileSize + this.tileSize / 2;
+
+    this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
+    this.playerMarker.setPosition(centerX, centerY);
+    this.setStatus(`${this.project.player.name} moved to ${eventBlock.name}.`);
   }
 
   private showCutscene(cutscene: Cutscene, onDone: () => void) {
@@ -209,7 +291,11 @@ export class AdventureScene extends Phaser.Scene {
     const portrait = cutscene.portraitImageId
       ? getVisualPreset(cutscene.portraitImageId, portraitPresets)
       : undefined;
-    const container = this.add.container(0, 0).setDepth(500);
+    const showPortrait = Boolean(portrait && width >= 300 && height >= 220);
+    const textX = showPortrait ? 144 : 28;
+    const dialogueWidth = Math.max(140, width - 32);
+    const dialogueY = Math.max(128, height - 74);
+    const container = this.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
     this.isCutsceneOpen = true;
     container.add(
@@ -217,7 +303,14 @@ export class AdventureScene extends Phaser.Scene {
     );
     container.add(
       this.add
-        .rectangle(width * 0.5, height * 0.35, width * 0.74, height * 0.38, hexToNumber(background.accent), 0.18)
+        .rectangle(
+          width * 0.5,
+          height * 0.35,
+          width * 0.74,
+          height * 0.38,
+          hexToNumber(background.accent),
+          0.18,
+        )
         .setStrokeStyle(2, 0xffffff, 0.32),
     );
     container.add(
@@ -231,7 +324,7 @@ export class AdventureScene extends Phaser.Scene {
         .setShadow(1, 1, "#000000", 3),
     );
 
-    if (portrait) {
+    if (portrait && showPortrait) {
       container.add(
         this.add
           .circle(84, height - 96, 42, hexToNumber(portrait.color))
@@ -251,11 +344,11 @@ export class AdventureScene extends Phaser.Scene {
 
     container.add(
       this.add
-        .rectangle(width / 2, height - 74, width - 48, 116, 0x18181b, 0.9)
+        .rectangle(width / 2, dialogueY, dialogueWidth, 116, 0x18181b, 0.9)
         .setStrokeStyle(1, 0xffffff, 0.22),
     );
     container.add(
-      this.add.text(portrait ? 144 : 48, height - 124, cutscene.speakerName || "Narrator", {
+      this.add.text(textX, dialogueY - 50, cutscene.speakerName || "Narrator", {
         color: "#ffd43b",
         fontFamily: "Arial, sans-serif",
         fontSize: "16px",
@@ -263,12 +356,12 @@ export class AdventureScene extends Phaser.Scene {
       }),
     );
     container.add(
-      this.add.text(portrait ? 144 : 48, height - 94, cutscene.text, {
+      this.add.text(textX, dialogueY - 20, cutscene.text, {
         color: "#ffffff",
         fontFamily: "Arial, sans-serif",
         fontSize: "17px",
         lineSpacing: 4,
-        wordWrap: { width: portrait ? width - 190 : width - 96 },
+        wordWrap: { width: Math.max(90, width - textX - 28) },
       }),
     );
     container.add(
@@ -301,11 +394,12 @@ export class AdventureScene extends Phaser.Scene {
     this.isFinished = true;
     const width = this.scale.width;
     const height = this.scale.height;
-    const container = this.add.container(0, 0).setDepth(600);
+    const boxWidth = Math.min(260, width - 24);
+    const container = this.add.container(0, 0).setDepth(600).setScrollFactor(0);
     container.add(this.add.rectangle(0, 0, width, height, 0x111827, 0.72).setOrigin(0));
     container.add(
       this.add
-        .rectangle(width / 2, height / 2, 260, 130, 0xf8fafc, 0.96)
+        .rectangle(width / 2, height / 2, boxWidth, 130, 0xf8fafc, 0.96)
         .setStrokeStyle(2, 0x2f9e44, 0.8),
     );
     container.add(
@@ -347,7 +441,7 @@ export class AdventureScene extends Phaser.Scene {
     return null;
   }
 
-  private tryMove(deltaX: number, deltaY: number) {
+  private tryMove(deltaX: number, deltaY: number, time: number) {
     const nextX = this.playerPosition.x + deltaX;
     const nextY = this.playerPosition.y + deltaY;
 
@@ -366,12 +460,28 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
+    const duration = this.getMoveDuration();
+    const destinationX = nextX * this.tileSize + this.tileSize / 2;
+    const destinationY = nextY * this.tileSize + this.tileSize / 2;
+
+    this.isMoving = true;
+    this.nextMoveAt = time + duration;
     this.playerPosition = { x: nextX, y: nextY };
-    this.playerMarker?.setPosition(
-      nextX * this.tileSize + this.tileSize / 2,
-      nextY * this.tileSize + this.tileSize / 2,
-    );
-    this.checkTrigger();
+    this.tweens.add({
+      targets: this.playerMarker,
+      x: destinationX,
+      y: destinationY,
+      duration,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.isMoving = false;
+        this.checkTrigger();
+      },
+    });
+  }
+
+  private getMoveDuration(): number {
+    return Math.max(70, 360 - clamp(this.project.player.speed, 1, 20) * 24);
   }
 
   private checkTrigger() {
