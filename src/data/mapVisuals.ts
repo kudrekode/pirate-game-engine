@@ -6,7 +6,7 @@ export type TerrainPreset = {
   color: string;
   textColor: string;
   walkable: boolean;
-  pattern?: "grass" | "dirt" | "sand" | "water" | "stone";
+  pattern?: "grass" | "dirt" | "sand" | "water" | "stone" | "wood" | "wall" | "fabric";
 };
 
 export type OverlayPreset = {
@@ -34,6 +34,13 @@ export const terrainPresets: TerrainPreset[] = [
   { id: "sand", label: "Sand", color: "#d9c27f", textColor: "#4d3b14", walkable: true, pattern: "sand" },
   { id: "water", label: "Water", color: "#4f9fca", textColor: "#0c2b3b", walkable: false, pattern: "water" },
   { id: "stone", label: "Stone", color: "#8f969f", textColor: "#20252b", walkable: false, pattern: "stone" },
+  { id: "wooden_floor", label: "Wood Floor", color: "#a46a3f", textColor: "#2d1609", walkable: true, pattern: "wood" },
+  { id: "stone_floor", label: "Stone Floor", color: "#8d9299", textColor: "#1f2933", walkable: true, pattern: "stone" },
+  { id: "carpet", label: "Carpet", color: "#b84a62", textColor: "#fff5f7", walkable: true, pattern: "fabric" },
+  { id: "indoor_wall", label: "Indoor Wall", color: "#7b5b45", textColor: "#f8f0df", walkable: false, pattern: "wall" },
+  { id: "cave_floor", label: "Cave Floor", color: "#686f78", textColor: "#eef2f7", walkable: true, pattern: "stone" },
+  { id: "cave_wall", label: "Cave Wall", color: "#3f4650", textColor: "#f1f5f9", walkable: false, pattern: "wall" },
+  { id: "ship_deck", label: "Ship Deck", color: "#9a6637", textColor: "#291707", walkable: true, pattern: "wood" },
 ];
 
 export const overlayPresets: OverlayPreset[] = [
@@ -115,6 +122,96 @@ export const structurePresets: StructurePreset[] = [
     wallColor: "#9aa1a8",
     shadowColor: "#525a62",
   },
+  {
+    id: "bed",
+    label: "Bed",
+    widthTiles: 2,
+    heightTiles: 2,
+    blocksMovement: true,
+    roofColor: "#6d82c8",
+    wallColor: "#d6c6a8",
+    shadowColor: "#4c3d33",
+  },
+  {
+    id: "table",
+    label: "Table",
+    widthTiles: 2,
+    heightTiles: 1,
+    blocksMovement: true,
+    roofColor: "#7a4b25",
+    wallColor: "#a66a38",
+    shadowColor: "#4b2d18",
+  },
+  {
+    id: "chair",
+    label: "Chair",
+    widthTiles: 1,
+    heightTiles: 1,
+    blocksMovement: true,
+    roofColor: "#7a4b25",
+    wallColor: "#b1743d",
+    shadowColor: "#4b2d18",
+  },
+  {
+    id: "barrel",
+    label: "Barrel",
+    widthTiles: 1,
+    heightTiles: 1,
+    blocksMovement: true,
+    roofColor: "#6f4a2d",
+    wallColor: "#9a6637",
+    shadowColor: "#49301d",
+  },
+  {
+    id: "crate",
+    label: "Crate",
+    widthTiles: 1,
+    heightTiles: 1,
+    blocksMovement: true,
+    roofColor: "#8a5b34",
+    wallColor: "#b87945",
+    shadowColor: "#57391f",
+  },
+  {
+    id: "bookshelf",
+    label: "Bookshelf",
+    widthTiles: 2,
+    heightTiles: 1,
+    blocksMovement: true,
+    roofColor: "#5c3921",
+    wallColor: "#8a5b34",
+    shadowColor: "#3d2415",
+  },
+  {
+    id: "fireplace",
+    label: "Fireplace",
+    widthTiles: 2,
+    heightTiles: 1,
+    blocksMovement: true,
+    roofColor: "#7a7f86",
+    wallColor: "#a2a8b0",
+    shadowColor: "#4f555d",
+  },
+  {
+    id: "door",
+    label: "Door",
+    widthTiles: 1,
+    heightTiles: 1,
+    blocksMovement: false,
+    roofColor: "#5a351c",
+    wallColor: "#8f5b2c",
+    shadowColor: "#3a2112",
+  },
+  {
+    id: "stairs",
+    label: "Stairs",
+    widthTiles: 2,
+    heightTiles: 2,
+    blocksMovement: false,
+    roofColor: "#5f6770",
+    wallColor: "#8b949e",
+    shadowColor: "#424a53",
+  },
 ];
 
 export const defaultTileStyles = Object.fromEntries(
@@ -181,6 +278,40 @@ function makeTerrainAsset(tile: TerrainPreset): PixelAsset {
     for (let x = 0; x < 16; x += 5) {
       for (let y = 0; y < 16; y += 1) {
         pixels[y][x] = shade(tile.color, -22);
+      }
+    }
+  }
+
+  if (tile.pattern === "wood") {
+    for (let y = 3; y < 16; y += 4) {
+      for (let x = 0; x < 16; x += 1) {
+        pixels[y][x] = shade(tile.color, -24);
+      }
+    }
+    for (let x = 4; x < 16; x += 6) {
+      for (let y = 0; y < 16; y += 1) {
+        pixels[y][x] = shade(tile.color, 16);
+      }
+    }
+  }
+
+  if (tile.pattern === "wall") {
+    for (let y = 0; y < 16; y += 5) {
+      for (let x = 0; x < 16; x += 1) {
+        pixels[y][x] = shade(tile.color, -24);
+      }
+    }
+    for (let x = 0; x < 16; x += 6) {
+      for (let y = 0; y < 16; y += 1) {
+        pixels[y][x] = shade(tile.color, 18);
+      }
+    }
+  }
+
+  if (tile.pattern === "fabric") {
+    for (let y = 1; y < 16; y += 3) {
+      for (let x = 1; x < 16; x += 3) {
+        pixels[y][x] = shade(tile.color, 26);
       }
     }
   }

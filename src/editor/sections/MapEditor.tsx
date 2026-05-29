@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { areaTemplates, type AreaTemplateId } from "../../data/areaTemplates";
 import {
   getStructurePreset,
   getTerrainPreset,
@@ -7,7 +8,7 @@ import {
   terrainPresets,
 } from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { EventBlock, PixelAsset } from "../../types/game";
+import type { EventBlock, GameAreaKind, PixelAsset } from "../../types/game";
 
 type MapTool = "paint" | "eraser" | "fill" | "event-block" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
@@ -18,6 +19,7 @@ const MAX_MAP_SIZE = 200;
 const PALETTE_WIDTH_STORAGE_KEY = "map-editor-palette-width-v3";
 const MIN_PALETTE_WIDTH = 180;
 const MAX_PALETTE_WIDTH = 420;
+const areaKindOptions: GameAreaKind[] = ["outdoor", "indoor", "cave", "ship", "dungeon", "custom"];
 
 function cellKey(x: number, y: number): string {
   return `${x}:${y}`;
@@ -73,6 +75,10 @@ export function MapEditor() {
   const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
   const resizeMap = useProjectStore((state) => state.resizeMap);
   const updateTileStyle = useProjectStore((state) => state.updateTileStyle);
+  const setActiveArea = useProjectStore((state) => state.setActiveArea);
+  const addArea = useProjectStore((state) => state.addArea);
+  const updateActiveArea = useProjectStore((state) => state.updateActiveArea);
+  const deleteArea = useProjectStore((state) => state.deleteArea);
   const addStructure = useProjectStore((state) => state.addStructure);
   const deleteStructure = useProjectStore((state) => state.deleteStructure);
   const updatePixelAsset = useProjectStore((state) => state.updatePixelAsset);
@@ -84,6 +90,7 @@ export function MapEditor() {
   const mapStageRef = useRef<HTMLDivElement>(null);
   const paintedCellsRef = useRef<Set<string>>(new Set());
   const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
+  const activeArea = (project.areas.find((area) => area.id === project.activeAreaId) ?? project.areas[0])!;
 
   const [activeTool, setActiveTool] = useState<MapTool>("paint");
   const [paintLayer, setPaintLayer] = useState<PaintLayer>("terrain");
@@ -91,7 +98,7 @@ export function MapEditor() {
   const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
   const [selectedStructureId, setSelectedStructureId] = useState("small_house");
   const [selectedMapStructureId, setSelectedMapStructureId] = useState("");
-  const [selectedEventBlockId, setSelectedEventBlockId] = useState(project.map.eventBlocks[0]?.id ?? "");
+  const [selectedEventBlockId, setSelectedEventBlockId] = useState(activeArea.eventBlocks[0]?.id ?? "");
   const [isPainting, setIsPainting] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -100,39 +107,47 @@ export function MapEditor() {
   const [paletteWidth, setPaletteWidth] = useState(readStoredPaletteWidth);
   const [isResizingPalette, setIsResizingPalette] = useState(false);
   const [draftMapSize, setDraftMapSize] = useState({
-    width: project.map.width,
-    height: project.map.height,
+    width: activeArea.width,
+    height: activeArea.height,
   });
   const [resizeMessage, setResizeMessage] = useState("");
+  const [newAreaTemplateId, setNewAreaTemplateId] = useState<AreaTemplateId>("outdoor");
   const [isPixelEditorOpen, setIsPixelEditorOpen] = useState(false);
   const [pixelAssetId, setPixelAssetId] = useState("grass");
   const [pixelColor, setPixelColor] = useState("#4f9a45");
   const [isPaintingPixel, setIsPaintingPixel] = useState(false);
 
   useEffect(() => {
-    setDraftMapSize({ width: project.map.width, height: project.map.height });
-  }, [project.map.height, project.map.width]);
+    setDraftMapSize({ width: activeArea.width, height: activeArea.height });
+    setSelectedEventBlockId((selectedId) =>
+      activeArea.eventBlocks.some((eventBlock) => eventBlock.id === selectedId)
+        ? selectedId
+        : activeArea.eventBlocks[0]?.id ?? "",
+    );
+    setSelectedMapStructureId((selectedId) =>
+      activeArea.structures.some((structure) => structure.id === selectedId) ? selectedId : "",
+    );
+  }, [activeArea]);
 
   const terrainLookup = useMemo(() => {
     const lookup = new Map<string, string>();
-    const terrainTiles = project.map.terrainTiles ?? project.map.tiles;
-    terrainTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.tileId));
+    activeArea.terrainTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.tileId));
     return lookup;
-  }, [project.map.terrainTiles, project.map.tiles]);
+  }, [activeArea.terrainTiles]);
 
   const overlayLookup = useMemo(() => {
     const lookup = new Map<string, string>();
-    project.map.overlayTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.overlayId));
+    activeArea.overlayTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.overlayId));
     return lookup;
-  }, [project.map.overlayTiles]);
+  }, [activeArea.overlayTiles]);
 
   const eventLookup = useMemo(() => {
     const lookup = new Map<string, EventBlock>();
-    project.map.eventBlocks.forEach((eventBlock) =>
+    activeArea.eventBlocks.forEach((eventBlock) =>
       lookup.set(cellKey(eventBlock.x, eventBlock.y), eventBlock),
     );
     return lookup;
-  }, [project.map.eventBlocks]);
+  }, [activeArea.eventBlocks]);
 
   const pixelAssetUrls = useMemo(() => {
     return Object.fromEntries(
@@ -140,18 +155,28 @@ export function MapEditor() {
     );
   }, [project.pixelAssets]);
 
-  const selectedEventBlock = project.map.eventBlocks.find(
+  const selectedEventBlock = activeArea.eventBlocks.find(
     (eventBlock) => eventBlock.id === selectedEventBlockId,
   );
-  const selectedMapStructure = project.map.structures.find(
+  const selectedMapStructure = activeArea.structures.find(
     (structure) => structure.id === selectedMapStructureId,
   );
   const selectedStructure = getStructurePreset(selectedStructureId);
-  const cellSize = Math.round(project.map.tileSize * zoom);
-  const renderWidth = Math.min(MAX_MAP_SIZE, project.map.width + AUTO_EXPAND_BUFFER_TILES);
-  const renderHeight = Math.min(MAX_MAP_SIZE, project.map.height + AUTO_EXPAND_BUFFER_TILES);
+  const cellSize = Math.round(activeArea.tileSize * zoom);
+  const renderWidth = Math.min(MAX_MAP_SIZE, activeArea.width + AUTO_EXPAND_BUFFER_TILES);
+  const renderHeight = Math.min(MAX_MAP_SIZE, activeArea.height + AUTO_EXPAND_BUFFER_TILES);
   const editablePixelAssetIds = [...terrainPresets, ...overlayPresets].map((item) => item.id);
   const editingPixelAsset = project.pixelAssets[pixelAssetId] ?? project.pixelAssets.grass;
+  const linkTargetArea =
+    selectedEventBlock?.link?.targetAreaId
+      ? project.areas.find((area) => area.id === selectedEventBlock.link?.targetAreaId)
+      : undefined;
+  const defaultLinkTargetArea =
+    linkTargetArea ?? project.areas.find((area) => area.id !== activeArea.id) ?? project.areas[0];
+  const linkTargetEventBlocks = defaultLinkTargetArea?.eventBlocks ?? [];
+  const selectedLinkTargetEventBlockId =
+    selectedEventBlock?.link?.targetEventBlockId ?? linkTargetEventBlocks[0]?.id ?? "";
+  const areaLinks = activeArea.eventBlocks.filter((eventBlock) => eventBlock.kind === "area_link");
 
   // TODO: Support negative-direction expansion by shifting terrain/overlay/structure/event coordinates safely.
 
@@ -203,7 +228,7 @@ export function MapEditor() {
     const updates = cells.flatMap((cell) => {
       const key = cellKey(cell.x, cell.y);
       const currentTileId = terrainLookup.get(key) ?? "grass";
-      const isOutsideCurrentMap = cell.x >= project.map.width || cell.y >= project.map.height;
+      const isOutsideCurrentMap = cell.x >= activeArea.width || cell.y >= activeArea.height;
       return currentTileId === targetTileId && !isOutsideCurrentMap
         ? []
         : [{ ...cell, tileId: targetTileId }];
@@ -221,7 +246,7 @@ export function MapEditor() {
     }
 
     const startKey = cellKey(startX, startY);
-    if (!isInBounds(startX, startY, project.map.width, project.map.height)) {
+    if (!isInBounds(startX, startY, activeArea.width, activeArea.height)) {
       setTiles([{ x: startX, y: startY, tileId: selectedTerrainId }]);
       return;
     }
@@ -238,7 +263,7 @@ export function MapEditor() {
 
     while (queue.length > 0) {
       const cell = queue.shift();
-      if (!cell || !isInBounds(cell.x, cell.y, project.map.width, project.map.height)) {
+      if (!cell || !isInBounds(cell.x, cell.y, activeArea.width, activeArea.height)) {
         continue;
       }
 
@@ -415,13 +440,47 @@ export function MapEditor() {
     }
   }
 
+  function makeDefaultAreaLink(targetAreaId = defaultLinkTargetArea?.id ?? "") {
+    const targetArea = project.areas.find((area) => area.id === targetAreaId) ?? defaultLinkTargetArea;
+    return {
+      targetAreaId: targetArea?.id ?? "",
+      targetEventBlockId: targetArea?.eventBlocks[0]?.id ?? "",
+    };
+  }
+
+  function updateSelectedEventKind(kind: EventBlock["kind"]) {
+    if (kind === "area_link") {
+      updateSelectedEventBlock({ kind, link: makeDefaultAreaLink() });
+      return;
+    }
+
+    updateSelectedEventBlock({ kind, link: undefined });
+  }
+
+  function updateSelectedAreaLinkTargetArea(targetAreaId: string) {
+    updateSelectedEventBlock({ link: makeDefaultAreaLink(targetAreaId) });
+  }
+
+  function updateSelectedAreaLinkTargetEvent(targetEventBlockId: string) {
+    if (!defaultLinkTargetArea) {
+      return;
+    }
+
+    updateSelectedEventBlock({
+      link: {
+        targetAreaId: defaultLinkTargetArea.id,
+        targetEventBlockId,
+      },
+    });
+  }
+
   function deleteSelectedEventBlock() {
     if (!selectedEventBlock) {
       return;
     }
 
     const nextSelectedId =
-      project.map.eventBlocks.find((eventBlock) => eventBlock.id !== selectedEventBlock.id)?.id ?? "";
+      activeArea.eventBlocks.find((eventBlock) => eventBlock.id !== selectedEventBlock.id)?.id ?? "";
     deleteEventBlock(selectedEventBlock.id);
     setSelectedEventBlockId(nextSelectedId);
   }
@@ -440,10 +499,16 @@ export function MapEditor() {
   }
 
   function growMap(deltaWidth: number, deltaHeight: number) {
-    const nextWidth = clampMapSize(project.map.width + deltaWidth);
-    const nextHeight = clampMapSize(project.map.height + deltaHeight);
+    const nextWidth = clampMapSize(activeArea.width + deltaWidth);
+    const nextHeight = clampMapSize(activeArea.height + deltaHeight);
     resizeMap(nextWidth, nextHeight);
     setResizeMessage(`Expanded to ${nextWidth}x${nextHeight}.`);
+  }
+
+  function createNewArea() {
+    const id = addArea(newAreaTemplateId);
+    setActiveArea(id);
+    setResizeMessage("");
   }
 
   function paintPixel(x: number, y: number) {
@@ -498,9 +563,77 @@ export function MapEditor() {
           onPointerMove={handlePaletteResizeMove}
           onPointerUp={handlePaletteResizeEnd}
         />
+        <div className="panel-title">Area</div>
+        <div className="form-stack area-panel">
+          <label>
+            Editing
+            <select onChange={(event) => setActiveArea(event.target.value)} value={activeArea.id}>
+              {project.areas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Name
+            <input
+              onChange={(event) => updateActiveArea({ name: event.target.value })}
+              value={activeArea.name}
+            />
+          </label>
+          <label>
+            Kind
+            <select
+              onChange={(event) => updateActiveArea({ kind: event.target.value as GameAreaKind })}
+              value={activeArea.kind}
+            >
+              {areaKindOptions.map((kind) => (
+                <option key={kind} value={kind}>
+                  {kind}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="area-create-row">
+            <select
+              onChange={(event) => setNewAreaTemplateId(event.target.value as AreaTemplateId)}
+              value={newAreaTemplateId}
+            >
+              {areaTemplates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.label}
+                </option>
+              ))}
+            </select>
+            <button onClick={createNewArea} type="button">
+              Add
+            </button>
+          </div>
+          <button
+            className="danger-button compact"
+            disabled={project.areas.length <= 1}
+            onClick={() => deleteArea(activeArea.id)}
+            type="button"
+          >
+            Delete area
+          </button>
+          {areaLinks.length > 0 ? (
+            <div className="area-link-list">
+              {areaLinks.map((eventBlock) => {
+                const targetArea = project.areas.find((area) => area.id === eventBlock.link?.targetAreaId);
+                return (
+                  <div key={eventBlock.id}>
+                    {eventBlock.name} {"->"} {targetArea?.name ?? "Unlinked"}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
         <div className="panel-title">Map size</div>
         <div className="map-size-readout">
-          {project.map.width} x {project.map.height} tiles
+          {activeArea.width} x {activeArea.height} tiles
         </div>
         <div className="form-grid map-size-grid">
           <label>
@@ -728,7 +861,7 @@ export function MapEditor() {
               const overlayId = overlayLookup.get(key);
               const eventBlock = eventLookup.get(key);
               const eventLabel = eventBlock?.tag || eventBlock?.name;
-              const isOutsideMap = x >= project.map.width || y >= project.map.height;
+              const isOutsideMap = x >= activeArea.width || y >= activeArea.height;
 
               return (
                 <button
@@ -761,7 +894,9 @@ export function MapEditor() {
                         selectedEventBlockId === eventBlock.id ? "selected-event" : ""
                       }`}
                     >
-                      <span className="event-marker-kind">{eventBlock.kind === "spawn" ? "S" : "T"}</span>
+                      <span className="event-marker-kind">
+                        {eventBlock.kind === "spawn" ? "S" : eventBlock.kind === "area_link" ? "->" : "T"}
+                      </span>
                       <span className="event-marker-label">{eventLabel}</span>
                     </span>
                   ) : null}
@@ -769,7 +904,7 @@ export function MapEditor() {
               );
             }),
           )}
-          {project.map.structures.map((structure) => {
+          {activeArea.structures.map((structure) => {
             const preset = getStructurePreset(structure.structureId);
             return (
               <button
@@ -811,6 +946,7 @@ export function MapEditor() {
               <div className="coordinate-readout">
                 Blocks movement: {selectedMapStructure.blocksMovement ? "yes" : "no"}
               </div>
+              {/* TODO: Add structure interaction editing for doors/houses that link to other areas. */}
               <button className="danger-button" onClick={() => deleteStructure(selectedMapStructure.id)} type="button">
                 Delete structure
               </button>
@@ -838,17 +974,51 @@ export function MapEditor() {
                 <label>
                   Kind
                   <select
-                    onChange={(event) =>
-                      updateSelectedEventBlock({ kind: event.target.value as EventBlock["kind"] })
-                    }
+                    onChange={(event) => updateSelectedEventKind(event.target.value as EventBlock["kind"])}
                     value={selectedEventBlock.kind}
                   >
                     <option value="spawn">Spawn</option>
                     <option value="trigger">Trigger</option>
+                    <option value="area_link">Area Link</option>
                   </select>
                 </label>
+                {selectedEventBlock.kind === "area_link" ? (
+                  <>
+                    <label>
+                      Target area
+                      <select
+                        onChange={(event) => updateSelectedAreaLinkTargetArea(event.target.value)}
+                        value={defaultLinkTargetArea?.id ?? ""}
+                      >
+                        {project.areas.map((area) => (
+                          <option key={area.id} value={area.id}>
+                            {area.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Target spawn/event
+                      <select
+                        onChange={(event) => updateSelectedAreaLinkTargetEvent(event.target.value)}
+                        value={selectedLinkTargetEventBlockId}
+                      >
+                        {linkTargetEventBlocks.map((eventBlock) => (
+                          <option key={eventBlock.id} value={eventBlock.id}>
+                            {eventBlock.name} ({eventBlock.kind})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                ) : null}
                 <div className="coordinate-readout">
-                  x {selectedEventBlock.x}, y {selectedEventBlock.y}
+                  {selectedEventBlock.kind === "spawn"
+                    ? "Spawn"
+                    : selectedEventBlock.kind === "area_link"
+                      ? "Link"
+                      : "Trigger"}{" "}
+                  at x {selectedEventBlock.x}, y {selectedEventBlock.y}
                 </div>
                 <button className="danger-button" onClick={deleteSelectedEventBlock} type="button">
                   Delete event block

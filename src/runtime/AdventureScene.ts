@@ -7,7 +7,7 @@ import {
   portraitPresets,
 } from "../data/presets";
 import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
-import type { Cutscene, EventBlock, GameProject, MapStructure, PixelAsset } from "../types/game";
+import type { Cutscene, EventBlock, GameArea, GameProject, MapStructure, PixelAsset } from "../types/game";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -28,9 +28,14 @@ function tileKey(x: number, y: number): string {
   return `${x}:${y}`;
 }
 
+function getInitialArea(project: GameProject): GameArea {
+  return project.areas.find((area) => area.id === project.activeAreaId) ?? project.areas[0]!;
+}
+
 export class AdventureScene extends Phaser.Scene {
   private readonly project: GameProject;
-  private readonly tileSize: number;
+  private currentArea: GameArea;
+  private tileSize: number;
   private readonly pixelTextureKeys = new Map<string, string>();
   private worldLayer?: Phaser.GameObjects.Container;
   private uiLayer?: Phaser.GameObjects.Container;
@@ -40,7 +45,7 @@ export class AdventureScene extends Phaser.Scene {
   private playerMarker?: Phaser.GameObjects.Container;
   private playerPosition = { x: 0, y: 0 };
   private progressionIndex = 0;
-  private waitingForTriggerId = "";
+  private waitingForTrigger: { areaId?: string; eventBlockId: string } | null = null;
   private nextMoveAt = 0;
   private statusText?: Phaser.GameObjects.Text;
   private isCutsceneOpen = false;
@@ -50,7 +55,8 @@ export class AdventureScene extends Phaser.Scene {
   constructor(project: GameProject) {
     super("AdventureScene");
     this.project = project;
-    this.tileSize = project.map.tileSize;
+    this.currentArea = getInitialArea(project);
+    this.tileSize = this.currentArea.tileSize;
   }
 
   create() {
@@ -115,12 +121,12 @@ export class AdventureScene extends Phaser.Scene {
     const visibleWorldWidth = clamp(
       Math.round(this.project.camera.viewportWidthTiles) * this.tileSize,
       this.tileSize,
-      this.project.map.width * this.tileSize,
+      this.currentArea.width * this.tileSize,
     );
     const visibleWorldHeight = clamp(
       Math.round(this.project.camera.viewportHeightTiles) * this.tileSize,
       this.tileSize,
-      this.project.map.height * this.tileSize,
+      this.currentArea.height * this.tileSize,
     );
     const zoom = Math.min(screenWidth / visibleWorldWidth, screenHeight / visibleWorldHeight);
     const worldViewportWidth = Math.round(visibleWorldWidth * zoom);
@@ -134,12 +140,16 @@ export class AdventureScene extends Phaser.Scene {
       .setBounds(
         0,
         0,
-        this.project.map.width * this.tileSize,
-        this.project.map.height * this.tileSize,
+        this.currentArea.width * this.tileSize,
+        this.currentArea.height * this.tileSize,
       )
       .setRoundPixels(true);
 
-    this.uiCamera = this.cameras.add(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    if (!this.uiCamera) {
+      this.uiCamera = this.cameras.add(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    } else {
+      this.uiCamera.setViewport(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    }
     if (this.uiLayer && this.worldLayer) {
       this.cameras.main.ignore(this.uiLayer);
       this.uiCamera.ignore(this.worldLayer);
@@ -172,8 +182,8 @@ export class AdventureScene extends Phaser.Scene {
 
   private centerCameraOn(x: number, y: number) {
     const camera = this.cameras.main;
-    const mapWidth = this.project.map.width * this.tileSize;
-    const mapHeight = this.project.map.height * this.tileSize;
+    const mapWidth = this.currentArea.width * this.tileSize;
+    const mapHeight = this.currentArea.height * this.tileSize;
     const maxScrollX = Math.max(0, mapWidth - camera.width / camera.zoom);
     const maxScrollY = Math.max(0, mapHeight - camera.height / camera.zoom);
 
@@ -184,12 +194,14 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private renderMap() {
+    this.worldLayer?.removeAll(true);
+    this.playerMarker = undefined;
     const overlayLookup = new Map(
-      this.project.map.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
+      this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
     );
 
-    for (let y = 0; y < this.project.map.height; y += 1) {
-      for (let x = 0; x < this.project.map.width; x += 1) {
+    for (let y = 0; y < this.currentArea.height; y += 1) {
+      for (let x = 0; x < this.currentArea.width; x += 1) {
         const tileId = this.tileIdAt(x, y);
         const tile = getTilePreset(tileId);
         const tileStyle = this.project.tileStyles[tileId];
@@ -274,7 +286,7 @@ export class AdventureScene extends Phaser.Scene {
       }
     }
 
-    this.project.map.structures.forEach((structure) => this.renderStructure(structure));
+    this.currentArea.structures.forEach((structure) => this.renderStructure(structure));
   }
 
   private createPixelTextures() {
@@ -411,26 +423,29 @@ export class AdventureScene extends Phaser.Scene {
       }
 
       if (action.type === "spawn_player") {
-        const eventBlock = this.findEventBlock(action.eventBlockId);
+        const eventBlock = this.findEventBlock(action.eventBlockId, action.areaId);
         if (eventBlock) {
-          this.spawnPlayer(eventBlock);
+          this.movePlayerToArea(action.areaId, eventBlock);
         }
         this.progressionIndex += 1;
         continue;
       }
 
       if (action.type === "teleport_player") {
-        const eventBlock = this.findEventBlock(action.eventBlockId);
+        const eventBlock = this.findEventBlock(action.eventBlockId, action.areaId);
         if (eventBlock) {
-          this.teleportPlayer(eventBlock);
+          this.movePlayerToArea(action.areaId, eventBlock);
         }
         this.progressionIndex += 1;
         continue;
       }
 
       if (action.type === "wait_for_trigger") {
-        const eventBlock = this.findEventBlock(action.eventBlockId);
-        this.waitingForTriggerId = action.eventBlockId;
+        const eventBlock = this.findEventBlock(action.eventBlockId, action.areaId);
+        this.waitingForTrigger = {
+          areaId: action.areaId,
+          eventBlockId: action.eventBlockId,
+        };
         this.setStatus(eventBlock ? `Find trigger: ${eventBlock.name}` : "Find the trigger.");
         return;
       }
@@ -441,6 +456,24 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.setStatus("Progression complete.");
+  }
+
+  private movePlayerToArea(areaId: string, eventBlock: EventBlock) {
+    const nextArea = this.findArea(areaId);
+    if (!nextArea) {
+      return;
+    }
+
+    if (nextArea.id !== this.currentArea.id) {
+      this.currentArea = nextArea;
+      this.tileSize = nextArea.tileSize;
+      this.isMoving = false;
+      this.renderMap();
+      this.configureCameras();
+    }
+
+    this.spawnPlayer(eventBlock);
+    this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -646,8 +679,8 @@ export class AdventureScene extends Phaser.Scene {
     if (
       nextX < 0 ||
       nextY < 0 ||
-      nextX >= this.project.map.width ||
-      nextY >= this.project.map.height
+      nextX >= this.currentArea.width ||
+      nextY >= this.currentArea.height
     ) {
       return;
     }
@@ -684,6 +717,9 @@ export class AdventureScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.isMoving = false;
+        if (this.checkAreaLink()) {
+          return;
+        }
         this.checkTrigger();
       },
     });
@@ -693,33 +729,63 @@ export class AdventureScene extends Phaser.Scene {
     return Math.max(70, 360 - clamp(this.project.player.speed, 1, 20) * 24);
   }
 
+  private checkAreaLink(): boolean {
+    const eventBlock = this.currentArea.eventBlocks.find(
+      (candidate) =>
+        candidate.kind === "area_link" &&
+        candidate.x === this.playerPosition.x &&
+        candidate.y === this.playerPosition.y,
+    );
+
+    if (!eventBlock?.link) {
+      return false;
+    }
+
+    const targetArea = this.findArea(eventBlock.link.targetAreaId);
+    const targetEventBlock = this.findEventBlock(
+      eventBlock.link.targetEventBlockId,
+      eventBlock.link.targetAreaId,
+    );
+
+    if (!targetArea || !targetEventBlock) {
+      this.setStatus(`Link target missing: ${eventBlock.name}.`);
+      return false;
+    }
+
+    this.movePlayerToArea(targetArea.id, targetEventBlock);
+    return true;
+  }
+
   private checkTrigger() {
-    if (!this.waitingForTriggerId) {
+    if (!this.waitingForTrigger) {
       return;
     }
 
-    const eventBlock = this.findEventBlock(this.waitingForTriggerId);
+    const eventBlock = this.findEventBlock(
+      this.waitingForTrigger.eventBlockId,
+      this.waitingForTrigger.areaId,
+    );
     if (!eventBlock) {
-      this.waitingForTriggerId = "";
+      this.waitingForTrigger = null;
       this.progressionIndex += 1;
       this.processProgression();
       return;
     }
 
-    if (eventBlock.x === this.playerPosition.x && eventBlock.y === this.playerPosition.y) {
-      this.waitingForTriggerId = "";
+    const isInTargetArea = !this.waitingForTrigger.areaId || this.waitingForTrigger.areaId === this.currentArea.id;
+    if (isInTargetArea && eventBlock.x === this.playerPosition.x && eventBlock.y === this.playerPosition.y) {
+      this.waitingForTrigger = null;
       this.progressionIndex += 1;
       this.processProgression();
     }
   }
 
   private tileIdAt(x: number, y: number): string {
-    const terrainTiles = this.project.map.terrainTiles ?? this.project.map.tiles;
-    return terrainTiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
+    return this.currentArea.terrainTiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
   }
 
   private structureAt(x: number, y: number): MapStructure | undefined {
-    return this.project.map.structures.find(
+    return this.currentArea.structures.find(
       (structure) =>
         structure.blocksMovement &&
         x >= structure.x &&
@@ -731,13 +797,17 @@ export class AdventureScene extends Phaser.Scene {
 
   private isBlockedByObject(x: number, y: number): boolean {
     // TODO: Replace legacy object blocking with explicit object-layer collision metadata.
-    return (this.project.map.objectTiles ?? []).some(
-      (objectTile) => objectTile.x === x && objectTile.y === y,
-    );
+    void x;
+    void y;
+    return false;
   }
 
-  private findEventBlock(id: string): EventBlock | undefined {
-    return this.project.map.eventBlocks.find((eventBlock) => eventBlock.id === id);
+  private findArea(areaId: string): GameArea | undefined {
+    return this.project.areas.find((area) => area.id === areaId);
+  }
+
+  private findEventBlock(id: string, areaId = this.currentArea.id): EventBlock | undefined {
+    return this.findArea(areaId)?.eventBlocks.find((eventBlock) => eventBlock.id === id);
   }
 
   private setStatus(message: string) {

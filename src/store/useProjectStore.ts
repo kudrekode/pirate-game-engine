@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createAreaFromTemplate, type AreaTemplateId } from "../data/areaTemplates";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject, migrateProject } from "../data/migrateProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
@@ -7,6 +8,7 @@ import type {
   CameraConfig,
   Cutscene,
   EventBlock,
+  GameArea,
   GameProject,
   MapStructure,
   MapTile,
@@ -32,6 +34,10 @@ type ProjectStore = {
   updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
   updateCamera: (patch: Partial<CameraConfig>) => void;
   updateTileStyle: (tileId: string, patch: Partial<TileStyleConfig[string]>) => void;
+  setActiveArea: (areaId: string) => void;
+  addArea: (templateId: AreaTemplateId) => string;
+  updateActiveArea: (patch: Partial<Pick<GameArea, "name" | "kind">>) => void;
+  deleteArea: (areaId: string) => void;
   resizeMap: (width: number, height: number) => number;
   setTile: (x: number, y: number, tileId: string) => void;
   setTiles: (tiles: { x: number; y: number; tileId: string }[]) => void;
@@ -67,6 +73,29 @@ function tileKey(x: number, y: number): string {
 
 function clampMapSize(value: number): number {
   return Math.min(200, Math.max(1, Math.round(value)));
+}
+
+function getActiveArea(project: GameProject): GameArea {
+  return (
+    project.areas.find((area) => area.id === project.activeAreaId) ??
+    project.areas[0] ??
+    defaultProject.areas[0]
+  );
+}
+
+function updateArea(project: GameProject, areaId: string, updater: (area: GameArea) => GameArea): GameProject {
+  return {
+    ...project,
+    areas: project.areas.map((area) => (area.id === areaId ? updater(area) : area)),
+  };
+}
+
+function updateActiveArea(project: GameProject, updater: (area: GameArea) => GameArea): GameProject {
+  const activeArea = getActiveArea(project);
+  return {
+    ...updateArea(project, activeArea.id, updater),
+    activeAreaId: activeArea.id,
+  };
 }
 
 function buildResizedTerrainTiles(
@@ -115,26 +144,71 @@ function buildOverlayTiles(
   });
 }
 
-function cleanProgressionReferences(project: GameProject, deletedKind: "cutscene" | "event", deletedId: string) {
+function actionReferencesEvent(action: ProgressionAction, areaId: string, eventBlockId: string): boolean {
+  if (action.type === "spawn_player" || action.type === "teleport_player") {
+    return action.areaId === areaId && action.eventBlockId === eventBlockId;
+  }
+
+  if (action.type === "wait_for_trigger") {
+    return (!action.areaId || action.areaId === areaId) && action.eventBlockId === eventBlockId;
+  }
+
+  return false;
+}
+
+function cleanProgressionEventReferences(project: GameProject, areaId: string, eventBlockId: string) {
+  project.progression = project.progression.filter(
+    (step) => !actionReferencesEvent(step.action, areaId, eventBlockId),
+  );
+}
+
+function cleanAreaReferences(project: GameProject, deletedAreaId: string) {
   project.progression = project.progression.filter((step) => {
-    if (deletedKind === "cutscene" && step.action.type === "play_cutscene") {
-      return step.action.cutsceneId !== deletedId;
+    const action = step.action;
+    if (action.type === "spawn_player" || action.type === "teleport_player") {
+      return action.areaId !== deletedAreaId;
     }
 
-    if (
-      deletedKind === "event" &&
-      (step.action.type === "spawn_player" ||
-        step.action.type === "wait_for_trigger" ||
-        step.action.type === "teleport_player")
-    ) {
-      return step.action.eventBlockId !== deletedId;
+    if (action.type === "wait_for_trigger") {
+      return action.areaId !== deletedAreaId;
     }
 
     return true;
   });
+
+  project.areas = project.areas.map((area) => ({
+    ...area,
+    eventBlocks: area.eventBlocks.map((eventBlock) =>
+      eventBlock.link?.targetAreaId === deletedAreaId ? { ...eventBlock, link: undefined } : eventBlock,
+    ),
+    structures: area.structures.map((structure) =>
+      structure.interaction?.targetAreaId === deletedAreaId
+        ? { ...structure, interaction: undefined }
+        : structure,
+    ),
+  }));
+}
+
+function clearEventLinkReferences(project: GameProject, areaId: string, eventBlockId: string) {
+  project.areas = project.areas.map((area) => ({
+    ...area,
+    eventBlocks: area.eventBlocks.map((eventBlock) =>
+      eventBlock.link?.targetAreaId === areaId && eventBlock.link.targetEventBlockId === eventBlockId
+        ? { ...eventBlock, link: undefined }
+        : eventBlock,
+    ),
+    structures: area.structures.map((structure) =>
+      structure.interaction?.targetAreaId === areaId &&
+      structure.interaction.targetEventBlockId === eventBlockId
+        ? { ...structure, interaction: undefined }
+        : structure,
+    ),
+  }));
 }
 
 function makeProgressionStep(type: ProgressionType, project: GameProject, id = makeId("step")): ProgressionStep {
+  const activeArea = getActiveArea(project);
+
   if (type === "play_cutscene") {
     return {
       id,
@@ -146,25 +220,27 @@ function makeProgressionStep(type: ProgressionType, project: GameProject, id = m
   }
 
   if (type === "spawn_player" || type === "teleport_player") {
-    const spawn = project.map.eventBlocks.find((block) => block.kind === "spawn");
+    const spawn = activeArea.eventBlocks.find((block) => block.kind === "spawn");
 
     return {
       id,
       action: {
         type,
-        eventBlockId: spawn?.id ?? project.map.eventBlocks[0]?.id ?? "",
+        areaId: activeArea.id,
+        eventBlockId: spawn?.id ?? activeArea.eventBlocks[0]?.id ?? "",
       },
     };
   }
 
   if (type === "wait_for_trigger") {
-    const trigger = project.map.eventBlocks.find((block) => block.kind === "trigger");
+    const trigger = activeArea.eventBlocks.find((block) => block.kind === "trigger");
 
     return {
       id,
       action: {
         type,
-        eventBlockId: trigger?.id ?? project.map.eventBlocks[0]?.id ?? "",
+        areaId: activeArea.id,
+        eventBlockId: trigger?.id ?? activeArea.eventBlocks[0]?.id ?? "",
       },
     };
   }
@@ -242,19 +318,67 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       },
     })),
 
+  setActiveArea: (areaId) =>
+    set((state) =>
+      state.project.areas.some((area) => area.id === areaId)
+        ? {
+            project: {
+              ...state.project,
+              activeAreaId: areaId,
+            },
+          }
+        : state,
+    ),
+
+  addArea: (templateId) => {
+    const id = makeId("area");
+    const index = get().project.areas.length + 1;
+    const area = createAreaFromTemplate(templateId, id, `Area ${index}`);
+
+    set((state) => ({
+      project: {
+        ...state.project,
+        areas: [...state.project.areas, area],
+        activeAreaId: id,
+      },
+    }));
+
+    return id;
+  },
+
+  updateActiveArea: (patch) =>
+    set((state) => ({
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        ...patch,
+      })),
+    })),
+
+  deleteArea: (areaId) =>
+    set((state) => {
+      if (state.project.areas.length <= 1) {
+        return state;
+      }
+
+      const project = cloneProject(state.project);
+      project.areas = project.areas.filter((area) => area.id !== areaId);
+      cleanAreaReferences(project, areaId);
+      if (project.activeAreaId === areaId) {
+        project.activeAreaId = project.areas[0]?.id ?? "";
+      }
+
+      return { project };
+    }),
+
   resizeMap: (width, height) => {
     const nextWidth = clampMapSize(width);
     const nextHeight = clampMapSize(height);
     let removedEventBlockCount = 0;
 
     set((state) => {
-      const terrainTiles = buildResizedTerrainTiles(
-        state.project.map.terrainTiles ?? state.project.map.tiles,
-        nextWidth,
-        nextHeight,
-      );
-
-      const eventBlocks = state.project.map.eventBlocks.filter((eventBlock) => {
+      const activeArea = getActiveArea(state.project);
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
+      const eventBlocks = activeArea.eventBlocks.filter((eventBlock) => {
         const isInBounds =
           eventBlock.x >= 0 &&
           eventBlock.y >= 0 &&
@@ -267,28 +391,26 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
         return isInBounds;
       });
+      const project = updateActiveArea(state.project, (area) => ({
+        ...area,
+        width: nextWidth,
+        height: nextHeight,
+        terrainTiles,
+        overlayTiles: area.overlayTiles.filter(
+          (tile) => tile.x >= 0 && tile.y >= 0 && tile.x < nextWidth && tile.y < nextHeight,
+        ),
+        structures: area.structures.filter(
+          (structure) => structure.x >= 0 && structure.y >= 0 && structure.x < nextWidth && structure.y < nextHeight,
+        ),
+        eventBlocks,
+      }));
 
-      const project = {
-        ...state.project,
-        map: {
-          ...state.project.map,
-          width: nextWidth,
-          height: nextHeight,
-          terrainTiles,
-          overlayTiles: state.project.map.overlayTiles.filter(
-            (tile) => tile.x >= 0 && tile.y >= 0 && tile.x < nextWidth && tile.y < nextHeight,
-          ),
-          structures: state.project.map.structures.filter(
-            (structure) => structure.x >= 0 && structure.y >= 0 && structure.x < nextWidth && structure.y < nextHeight,
-          ),
-          tiles: terrainTiles,
-          eventBlocks,
-        },
-      };
-
-      state.project.map.eventBlocks
+      activeArea.eventBlocks
         .filter((eventBlock) => !eventBlocks.some((kept) => kept.id === eventBlock.id))
-        .forEach((eventBlock) => cleanProgressionReferences(project, "event", eventBlock.id));
+        .forEach((eventBlock) => {
+          cleanProgressionEventReferences(project, activeArea.id, eventBlock.id);
+          clearEventLinkReferences(project, activeArea.id, eventBlock.id);
+        });
 
       return { project };
     });
@@ -302,66 +424,49 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         return state;
       }
 
-      const nextWidth = clampMapSize(Math.max(state.project.map.width, x + 1));
-      const nextHeight = clampMapSize(Math.max(state.project.map.height, y + 1));
-      const terrainTiles = buildResizedTerrainTiles(
-        state.project.map.terrainTiles ?? state.project.map.tiles,
-        nextWidth,
-        nextHeight,
-        [{ x, y, tileId }],
-      );
+      const activeArea = getActiveArea(state.project);
+      const nextWidth = clampMapSize(Math.max(activeArea.width, x + 1));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, y + 1));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight, [
+        { x, y, tileId },
+      ]);
 
       return {
-        project: {
-          ...state.project,
-          map: {
-            ...state.project.map,
-            width: nextWidth,
-            height: nextHeight,
-            terrainTiles,
-            overlayTiles: state.project.map.overlayTiles,
-            structures: state.project.map.structures,
-            tiles: terrainTiles,
-          },
-        },
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+        })),
       };
     }),
 
   setTiles: (tileUpdates) =>
     set((state) => {
-      if (tileUpdates.length === 0) {
-        return state;
-      }
-
       const validUpdates = tileUpdates.filter((tile) => tile.x >= 0 && tile.y >= 0);
       if (validUpdates.length === 0) {
         return state;
       }
 
+      const activeArea = getActiveArea(state.project);
       const maxX = Math.max(...validUpdates.map((tile) => tile.x));
       const maxY = Math.max(...validUpdates.map((tile) => tile.y));
-      const nextWidth = clampMapSize(Math.max(state.project.map.width, maxX + 1));
-      const nextHeight = clampMapSize(Math.max(state.project.map.height, maxY + 1));
+      const nextWidth = clampMapSize(Math.max(activeArea.width, maxX + 1));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, maxY + 1));
       const terrainTiles = buildResizedTerrainTiles(
-        state.project.map.terrainTiles ?? state.project.map.tiles,
+        activeArea.terrainTiles,
         nextWidth,
         nextHeight,
         validUpdates,
       );
 
       return {
-        project: {
-          ...state.project,
-          map: {
-            ...state.project.map,
-            width: nextWidth,
-            height: nextHeight,
-            terrainTiles,
-            overlayTiles: state.project.map.overlayTiles,
-            structures: state.project.map.structures,
-            tiles: terrainTiles,
-          },
-        },
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+        })),
       };
     }),
 
@@ -372,33 +477,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         return state;
       }
 
+      const activeArea = getActiveArea(state.project);
       const maxX = Math.max(...validUpdates.map((tile) => tile.x));
       const maxY = Math.max(...validUpdates.map((tile) => tile.y));
-      const nextWidth = clampMapSize(Math.max(state.project.map.width, maxX + 1));
-      const nextHeight = clampMapSize(Math.max(state.project.map.height, maxY + 1));
-      const terrainTiles = buildResizedTerrainTiles(
-        state.project.map.terrainTiles ?? state.project.map.tiles,
-        nextWidth,
-        nextHeight,
-      );
+      const nextWidth = clampMapSize(Math.max(activeArea.width, maxX + 1));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, maxY + 1));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
 
       return {
-        project: {
-          ...state.project,
-          map: {
-            ...state.project.map,
-            width: nextWidth,
-            height: nextHeight,
-            terrainTiles,
-            overlayTiles: buildOverlayTiles(
-              state.project.map.overlayTiles,
-              validUpdates,
-              nextWidth,
-              nextHeight,
-            ),
-            tiles: terrainTiles,
-          },
-        },
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+          overlayTiles: buildOverlayTiles(area.overlayTiles, validUpdates, nextWidth, nextHeight),
+        })),
       };
     }),
 
@@ -406,15 +499,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set((state) => {
       const eraseKeys = new Set(cells.map((cell) => tileKey(cell.x, cell.y)));
       return {
-        project: {
-          ...state.project,
-          map: {
-            ...state.project.map,
-            overlayTiles: state.project.map.overlayTiles.filter(
-              (tile) => !eraseKeys.has(tileKey(tile.x, tile.y)),
-            ),
-          },
-        },
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          overlayTiles: area.overlayTiles.filter((tile) => !eraseKeys.has(tileKey(tile.x, tile.y))),
+        })),
       };
     }),
 
@@ -422,26 +510,19 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const id = makeId("structure");
 
     set((state) => {
-      const nextWidth = clampMapSize(Math.max(state.project.map.width, structure.x + structure.widthTiles));
-      const nextHeight = clampMapSize(Math.max(state.project.map.height, structure.y + structure.heightTiles));
-      const terrainTiles = buildResizedTerrainTiles(
-        state.project.map.terrainTiles ?? state.project.map.tiles,
-        nextWidth,
-        nextHeight,
-      );
+      const activeArea = getActiveArea(state.project);
+      const nextWidth = clampMapSize(Math.max(activeArea.width, structure.x + structure.widthTiles));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, structure.y + structure.heightTiles));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
 
       return {
-        project: {
-          ...state.project,
-          map: {
-            ...state.project.map,
-            width: nextWidth,
-            height: nextHeight,
-            terrainTiles,
-            tiles: terrainTiles,
-            structures: [...state.project.map.structures, { ...structure, id }],
-          },
-        },
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+          structures: [...area.structures, { ...structure, id }],
+        })),
       };
     });
 
@@ -450,13 +531,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   deleteStructure: (id) =>
     set((state) => ({
-      project: {
-        ...state.project,
-        map: {
-          ...state.project.map,
-          structures: state.project.map.structures.filter((structure) => structure.id !== id),
-        },
-      },
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        structures: area.structures.filter((structure) => structure.id !== id),
+      })),
     })),
 
   updatePixelAsset: (asset) =>
@@ -491,66 +569,63 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   addEventBlock: (x, y) => {
     const nextX = Math.max(0, Math.round(x));
     const nextY = Math.max(0, Math.round(y));
-    const index = get().project.map.eventBlocks.length + 1;
     const id = makeId("event");
 
-    set((state) => ({
-      project: (() => {
-        const nextWidth = clampMapSize(Math.max(state.project.map.width, nextX + 1));
-        const nextHeight = clampMapSize(Math.max(state.project.map.height, nextY + 1));
-        const terrainTiles = buildResizedTerrainTiles(
-          state.project.map.terrainTiles ?? state.project.map.tiles,
-          nextWidth,
-          nextHeight,
-        );
+    set((state) => {
+      const activeArea = getActiveArea(state.project);
+      const index = activeArea.eventBlocks.length + 1;
+      const nextWidth = clampMapSize(Math.max(activeArea.width, nextX + 1));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, nextY + 1));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
 
-        return {
-          ...state.project,
-          map: {
-            ...state.project.map,
-            width: nextWidth,
-            height: nextHeight,
-            terrainTiles,
-            tiles: terrainTiles,
-            overlayTiles: state.project.map.overlayTiles,
-            structures: state.project.map.structures,
-            eventBlocks: [
-              ...state.project.map.eventBlocks,
-              {
-                id,
-                name: `Event ${index}`,
-                x: nextX,
-                y: nextY,
-                tag: `event_${index}`,
-                kind: "trigger",
-              },
-            ],
-          },
-        };
-      })(),
-    }));
+      return {
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+          eventBlocks: [
+            ...area.eventBlocks,
+            {
+              id,
+              name: `Event ${index}`,
+              x: nextX,
+              y: nextY,
+              tag: `event_${index}`,
+              kind: "trigger",
+            },
+          ],
+        })),
+      };
+    });
 
     return id;
   },
 
   updateEventBlock: (id, patch) =>
     set((state) => ({
-      project: {
-        ...state.project,
-        map: {
-          ...state.project.map,
-          eventBlocks: state.project.map.eventBlocks.map((eventBlock) =>
-            eventBlock.id === id ? { ...eventBlock, ...patch } : eventBlock,
-          ),
-        },
-      },
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        eventBlocks: area.eventBlocks.map((eventBlock) =>
+          eventBlock.id === id ? { ...eventBlock, ...patch } : eventBlock,
+        ),
+      })),
     })),
 
   deleteEventBlock: (id) =>
     set((state) => {
+      const activeArea = getActiveArea(state.project);
       const project = cloneProject(state.project);
-      project.map.eventBlocks = project.map.eventBlocks.filter((eventBlock) => eventBlock.id !== id);
-      cleanProgressionReferences(project, "event", id);
+      project.areas = project.areas.map((area) =>
+        area.id === activeArea.id
+          ? {
+              ...area,
+              eventBlocks: area.eventBlocks.filter((eventBlock) => eventBlock.id !== id),
+            }
+          : area,
+      );
+      cleanProgressionEventReferences(project, activeArea.id, id);
+      clearEventLinkReferences(project, activeArea.id, id);
       return { project };
     }),
 
@@ -603,7 +678,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set((state) => {
       const project = cloneProject(state.project);
       project.cutscenes = project.cutscenes.filter((cutscene) => cutscene.id !== id);
-      cleanProgressionReferences(project, "cutscene", id);
+      project.progression = project.progression.filter(
+        (step) => step.action.type !== "play_cutscene" || step.action.cutsceneId !== id,
+      );
       return { project };
     }),
 

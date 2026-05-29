@@ -34,7 +34,16 @@ export const tilePresets: TilePreset[] = [
 
 export { defaultTileStyles };
 
-export const walkableTileIds = ["grass", "dirt", "sand"];
+export const walkableTileIds = [
+  "grass",
+  "dirt",
+  "sand",
+  "wooden_floor",
+  "stone_floor",
+  "carpet",
+  "cave_floor",
+  "ship_deck",
+];
 
 export const characterSprites: VisualPreset[] = [
   { id: "scout", label: "Scout", color: "#e85d75", accent: "#ffffff" },

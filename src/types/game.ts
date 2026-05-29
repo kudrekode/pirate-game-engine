@@ -1,9 +1,7 @@
 export type GameProject = {
-  metadata: {
-    name: string;
-    version: string;
-  };
-  map: GameMap;
+  metadata: ProjectMetadata;
+  areas: GameArea[];
+  activeAreaId: string;
   camera: CameraConfig;
   tileStyles: TileStyleConfig;
   pixelAssets: Record<string, PixelAsset>;
@@ -12,17 +10,34 @@ export type GameProject = {
   progression: ProgressionStep[];
 };
 
-export type GameMap = {
+export type ProjectMetadata = {
+  name: string;
+  version: string;
+};
+
+export type GameAreaKind = "outdoor" | "indoor" | "cave" | "ship" | "dungeon" | "custom";
+
+export type AreaThemeConfig = {
+  primaryTerrainId?: string;
+  accentTerrainId?: string;
+  overlayId?: string;
+};
+
+export type GameArea = {
+  id: string;
+  name: string;
+  kind: GameAreaKind;
   width: number;
   height: number;
   tileSize: number;
   terrainTiles: MapTile[];
   overlayTiles: OverlayTile[];
   structures: MapStructure[];
-  tiles: MapTile[];
-  objectTiles?: MapObject[];
   eventBlocks: EventBlock[];
+  theme?: AreaThemeConfig;
 };
+
+export type GameMap = GameArea;
 
 export type MapTile = {
   x: number;
@@ -45,6 +60,11 @@ export type MapStructure = {
   widthTiles: number;
   heightTiles: number;
   blocksMovement: boolean;
+  interaction?: {
+    type: "area_link";
+    targetAreaId: string;
+    targetEventBlockId: string;
+  };
 };
 
 export type MapObject = {
@@ -60,7 +80,13 @@ export type EventBlock = {
   x: number;
   y: number;
   tag: string;
-  kind: "spawn" | "trigger";
+  kind: "spawn" | "trigger" | "area_link";
+  link?: AreaLink;
+};
+
+export type AreaLink = {
+  targetAreaId: string;
+  targetEventBlockId: string;
 };
 
 export type TileStyleConfig = {
@@ -114,9 +140,9 @@ export type ProgressionStep = {
 
 export type ProgressionAction =
   | { type: "play_cutscene"; cutsceneId: string }
-  | { type: "spawn_player"; eventBlockId: string }
-  | { type: "wait_for_trigger"; eventBlockId: string }
-  | { type: "teleport_player"; eventBlockId: string }
+  | { type: "spawn_player"; areaId: string; eventBlockId: string }
+  | { type: "wait_for_trigger"; areaId?: string; eventBlockId: string }
+  | { type: "teleport_player"; areaId: string; eventBlockId: string }
   | { type: "end_game" };
 
-// TODO: Future foundations: terrain/object/entity layers, node graph progression, enemies, sounds, UI editor, and asset imports.
+// TODO: Future foundations: freeform placement, per-area camera overrides, node graph progression, enemies, sounds, UI editor, and asset imports.

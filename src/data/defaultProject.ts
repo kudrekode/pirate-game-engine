@@ -1,8 +1,8 @@
-import type { GameProject, MapTile } from "../types/game";
+import type { GameArea, GameProject, MapTile } from "../types/game";
 import { createDefaultPixelAssets, defaultTileStyles } from "./mapVisuals";
 import { defaultCameraConfig } from "./projectDefaults";
 
-function makeTiles(width: number, height: number): MapTile[] {
+function makeOutdoorTiles(width: number, height: number): MapTile[] {
   const tiles: MapTile[] = [];
 
   for (let y = 0; y < height; y += 1) {
@@ -14,10 +14,6 @@ function makeTiles(width: number, height: number): MapTile[] {
       }
 
       if ((x === 4 && y > 1 && y < 6) || (x === 15 && y > 9 && y < 14)) {
-        tileId = "tree";
-      }
-
-      if ((x === 10 && y === 4) || (x === 11 && y === 4) || (x === 10 && y === 5)) {
         tileId = "stone";
       }
 
@@ -32,57 +28,154 @@ function makeTiles(width: number, height: number): MapTile[] {
   return tiles;
 }
 
+function makeIndoorTiles(width: number, height: number): MapTile[] {
+  const tiles: MapTile[] = [];
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const isWall = x === 0 || y === 0 || x === width - 1 || y === height - 1;
+      tiles.push({ x, y, tileId: isWall ? "indoor_wall" : "wooden_floor" });
+    }
+  }
+
+  return tiles;
+}
+
+const mainArea: GameArea = {
+  id: "area_main",
+  name: "Main Area",
+  kind: "outdoor",
+  width: 20,
+  height: 15,
+  tileSize: 32,
+  terrainTiles: makeOutdoorTiles(20, 15),
+  overlayTiles: [
+    { x: 2, y: 3, overlayId: "dirt_path" },
+    { x: 3, y: 3, overlayId: "dirt_path" },
+    { x: 4, y: 3, overlayId: "dirt_path" },
+    { x: 5, y: 3, overlayId: "dirt_path" },
+    { x: 18, y: 9, overlayId: "stone_road" },
+    { x: 18, y: 10, overlayId: "stone_road" },
+  ],
+  structures: [
+    {
+      id: "structure_demo_house",
+      structureId: "small_house",
+      name: "Demo House",
+      x: 7,
+      y: 9,
+      widthTiles: 3,
+      heightTiles: 3,
+      blocksMovement: true,
+    },
+  ],
+  eventBlocks: [
+    {
+      id: "spawn_start",
+      name: "Start",
+      x: 2,
+      y: 2,
+      tag: "start",
+      kind: "spawn",
+    },
+    {
+      id: "trigger_gate",
+      name: "Gate Trigger",
+      x: 18,
+      y: 10,
+      tag: "gate",
+      kind: "trigger",
+    },
+    {
+      id: "link_house_door",
+      name: "House Door",
+      x: 8,
+      y: 12,
+      tag: "house_door",
+      kind: "area_link",
+      link: {
+        targetAreaId: "area_house",
+        targetEventBlockId: "spawn_house_entry",
+      },
+    },
+  ],
+  theme: {
+    primaryTerrainId: "grass",
+    accentTerrainId: "dirt",
+    overlayId: "dirt_path",
+  },
+};
+
+const houseArea: GameArea = {
+  id: "area_house",
+  name: "House Interior",
+  kind: "indoor",
+  width: 12,
+  height: 9,
+  tileSize: 32,
+  terrainTiles: makeIndoorTiles(12, 9),
+  overlayTiles: [
+    { x: 5, y: 4, overlayId: "wooden_planks" },
+    { x: 6, y: 4, overlayId: "wooden_planks" },
+  ],
+  structures: [
+    {
+      id: "structure_house_bed",
+      structureId: "bed",
+      name: "Bed",
+      x: 2,
+      y: 2,
+      widthTiles: 2,
+      heightTiles: 2,
+      blocksMovement: true,
+    },
+    {
+      id: "structure_house_table",
+      structureId: "table",
+      name: "Table",
+      x: 7,
+      y: 4,
+      widthTiles: 2,
+      heightTiles: 1,
+      blocksMovement: true,
+    },
+  ],
+  eventBlocks: [
+    {
+      id: "spawn_house_entry",
+      name: "House Entry",
+      x: 5,
+      y: 6,
+      tag: "entry",
+      kind: "spawn",
+    },
+    {
+      id: "link_house_exit",
+      name: "Exit",
+      x: 5,
+      y: 7,
+      tag: "exit",
+      kind: "area_link",
+      link: {
+        targetAreaId: "area_main",
+        targetEventBlockId: "spawn_start",
+      },
+    },
+  ],
+  theme: {
+    primaryTerrainId: "wooden_floor",
+    accentTerrainId: "carpet",
+    overlayId: "wooden_planks",
+  },
+};
+
 export const defaultProject: GameProject = {
   metadata: {
     name: "Demo Adventure",
     version: "0.1.0",
   },
-  map: {
-    width: 20,
-    height: 15,
-    tileSize: 32,
-    terrainTiles: makeTiles(20, 15),
-    overlayTiles: [
-      { x: 2, y: 3, overlayId: "dirt_path" },
-      { x: 3, y: 3, overlayId: "dirt_path" },
-      { x: 4, y: 3, overlayId: "dirt_path" },
-      { x: 5, y: 3, overlayId: "dirt_path" },
-      { x: 18, y: 9, overlayId: "stone_road" },
-      { x: 18, y: 10, overlayId: "stone_road" },
-    ],
-    structures: [
-      {
-        id: "structure_demo_house",
-        structureId: "small_house",
-        name: "Demo House",
-        x: 7,
-        y: 9,
-        widthTiles: 3,
-        heightTiles: 3,
-        blocksMovement: true,
-      },
-    ],
-    tiles: makeTiles(20, 15),
-    objectTiles: [],
-    eventBlocks: [
-      {
-        id: "spawn_start",
-        name: "Start",
-        x: 2,
-        y: 2,
-        tag: "start",
-        kind: "spawn",
-      },
-      {
-        id: "trigger_gate",
-        name: "Gate Trigger",
-        x: 18,
-        y: 10,
-        tag: "gate",
-        kind: "trigger",
-      },
-    ],
-  },
+  areas: [mainArea, houseArea],
+  activeAreaId: "area_main",
   camera: defaultCameraConfig,
   tileStyles: defaultTileStyles,
   pixelAssets: createDefaultPixelAssets(),
@@ -92,7 +185,7 @@ export const defaultProject: GameProject = {
     cutscenePortraitId: "portrait_scout",
     speed: 6,
     health: 5,
-    canWalkOn: ["grass", "dirt"],
+    canWalkOn: ["grass", "dirt", "wooden_floor", "stone_floor", "carpet", "cave_floor", "ship_deck"],
   },
   cutscenes: [
     {
@@ -126,6 +219,7 @@ export const defaultProject: GameProject = {
       label: "Spawn player",
       action: {
         type: "spawn_player",
+        areaId: "area_main",
         eventBlockId: "spawn_start",
       },
     },
@@ -134,6 +228,7 @@ export const defaultProject: GameProject = {
       label: "Wait for gate trigger",
       action: {
         type: "wait_for_trigger",
+        areaId: "area_main",
         eventBlockId: "trigger_gate",
       },
     },

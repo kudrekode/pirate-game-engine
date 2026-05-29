@@ -274,6 +274,28 @@ label {
   margin-bottom: 8px;
 }
 
+.area-panel {
+  margin-bottom: 16px;
+}
+
+.area-create-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.area-link-list {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #d8e0e7;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #3d4f60;
+  font-size: 12px;
+  line-height: 1.25;
+  padding: 8px;
+}
+
 .map-size-readout {
   margin-bottom: 10px;
   border: 1px solid #d8e0e7;
@@ -503,6 +525,10 @@ label {
 
 .event-marker.trigger {
   background: rgba(245, 159, 0, 0.92);
+}
+
+.event-marker.area_link {
+  background: rgba(37, 99, 235, 0.9);
 }
 
 .event-marker.selected-event {
