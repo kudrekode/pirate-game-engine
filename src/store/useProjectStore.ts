@@ -1,14 +1,18 @@
 import { create } from "zustand";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject, migrateProject } from "../data/migrateProject";
+import { createDefaultPixelAssets } from "../data/mapVisuals";
 import { backgroundPresets, portraitPresets } from "../data/presets";
 import type {
   CameraConfig,
   Cutscene,
   EventBlock,
   GameProject,
+  MapStructure,
   MapTile,
+  OverlayTile,
   PlayerConfig,
+  PixelAsset,
   ProgressionAction,
   ProgressionStep,
   TileStyleConfig,
@@ -31,6 +35,12 @@ type ProjectStore = {
   resizeMap: (width: number, height: number) => number;
   setTile: (x: number, y: number, tileId: string) => void;
   setTiles: (tiles: { x: number; y: number; tileId: string }[]) => void;
+  setOverlayTiles: (tiles: { x: number; y: number; overlayId: string }[]) => void;
+  eraseOverlayTiles: (cells: { x: number; y: number }[]) => void;
+  addStructure: (structure: Omit<MapStructure, "id">) => string;
+  deleteStructure: (id: string) => void;
+  updatePixelAsset: (asset: PixelAsset) => void;
+  resetPixelAsset: (id: string) => void;
   addEventBlock: (x: number, y: number) => string;
   updateEventBlock: (id: string, patch: Partial<EventBlock>) => void;
   deleteEventBlock: (id: string) => void;
@@ -84,6 +94,25 @@ function buildResizedTerrainTiles(
   }
 
   return tiles;
+}
+
+function buildOverlayTiles(
+  currentTiles: OverlayTile[],
+  updates: { x: number; y: number; overlayId: string }[],
+  width: number,
+  height: number,
+): OverlayTile[] {
+  const overlayLookup = new Map(currentTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]));
+  updates.forEach((tile) => {
+    if (tile.x >= 0 && tile.y >= 0 && tile.x < width && tile.y < height) {
+      overlayLookup.set(tileKey(tile.x, tile.y), tile.overlayId);
+    }
+  });
+
+  return Array.from(overlayLookup.entries()).flatMap(([key, overlayId]) => {
+    const [x, y] = key.split(":").map(Number);
+    return x >= 0 && y >= 0 && x < width && y < height ? [{ x, y, overlayId }] : [];
+  });
 }
 
 function cleanProgressionReferences(project: GameProject, deletedKind: "cutscene" | "event", deletedId: string) {
@@ -246,6 +275,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           width: nextWidth,
           height: nextHeight,
           terrainTiles,
+          overlayTiles: state.project.map.overlayTiles.filter(
+            (tile) => tile.x >= 0 && tile.y >= 0 && tile.x < nextWidth && tile.y < nextHeight,
+          ),
+          structures: state.project.map.structures.filter(
+            (structure) => structure.x >= 0 && structure.y >= 0 && structure.x < nextWidth && structure.y < nextHeight,
+          ),
           tiles: terrainTiles,
           eventBlocks,
         },
@@ -284,6 +319,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
             width: nextWidth,
             height: nextHeight,
             terrainTiles,
+            overlayTiles: state.project.map.overlayTiles,
+            structures: state.project.map.structures,
             tiles: terrainTiles,
           },
         },
@@ -320,7 +357,132 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
             width: nextWidth,
             height: nextHeight,
             terrainTiles,
+            overlayTiles: state.project.map.overlayTiles,
+            structures: state.project.map.structures,
             tiles: terrainTiles,
+          },
+        },
+      };
+    }),
+
+  setOverlayTiles: (tileUpdates) =>
+    set((state) => {
+      const validUpdates = tileUpdates.filter((tile) => tile.x >= 0 && tile.y >= 0);
+      if (validUpdates.length === 0) {
+        return state;
+      }
+
+      const maxX = Math.max(...validUpdates.map((tile) => tile.x));
+      const maxY = Math.max(...validUpdates.map((tile) => tile.y));
+      const nextWidth = clampMapSize(Math.max(state.project.map.width, maxX + 1));
+      const nextHeight = clampMapSize(Math.max(state.project.map.height, maxY + 1));
+      const terrainTiles = buildResizedTerrainTiles(
+        state.project.map.terrainTiles ?? state.project.map.tiles,
+        nextWidth,
+        nextHeight,
+      );
+
+      return {
+        project: {
+          ...state.project,
+          map: {
+            ...state.project.map,
+            width: nextWidth,
+            height: nextHeight,
+            terrainTiles,
+            overlayTiles: buildOverlayTiles(
+              state.project.map.overlayTiles,
+              validUpdates,
+              nextWidth,
+              nextHeight,
+            ),
+            tiles: terrainTiles,
+          },
+        },
+      };
+    }),
+
+  eraseOverlayTiles: (cells) =>
+    set((state) => {
+      const eraseKeys = new Set(cells.map((cell) => tileKey(cell.x, cell.y)));
+      return {
+        project: {
+          ...state.project,
+          map: {
+            ...state.project.map,
+            overlayTiles: state.project.map.overlayTiles.filter(
+              (tile) => !eraseKeys.has(tileKey(tile.x, tile.y)),
+            ),
+          },
+        },
+      };
+    }),
+
+  addStructure: (structure) => {
+    const id = makeId("structure");
+
+    set((state) => {
+      const nextWidth = clampMapSize(Math.max(state.project.map.width, structure.x + structure.widthTiles));
+      const nextHeight = clampMapSize(Math.max(state.project.map.height, structure.y + structure.heightTiles));
+      const terrainTiles = buildResizedTerrainTiles(
+        state.project.map.terrainTiles ?? state.project.map.tiles,
+        nextWidth,
+        nextHeight,
+      );
+
+      return {
+        project: {
+          ...state.project,
+          map: {
+            ...state.project.map,
+            width: nextWidth,
+            height: nextHeight,
+            terrainTiles,
+            tiles: terrainTiles,
+            structures: [...state.project.map.structures, { ...structure, id }],
+          },
+        },
+      };
+    });
+
+    return id;
+  },
+
+  deleteStructure: (id) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        map: {
+          ...state.project.map,
+          structures: state.project.map.structures.filter((structure) => structure.id !== id),
+        },
+      },
+    })),
+
+  updatePixelAsset: (asset) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        pixelAssets: {
+          ...state.project.pixelAssets,
+          [asset.id]: asset,
+        },
+      },
+    })),
+
+  resetPixelAsset: (id) =>
+    set((state) => {
+      const defaultAsset = createDefaultPixelAssets()[id];
+      if (!defaultAsset) {
+        return state;
+      }
+
+      return {
+        project: {
+          ...state.project,
+          pixelAssets: {
+            ...state.project.pixelAssets,
+            [id]: defaultAsset,
           },
         },
       };
@@ -350,6 +512,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
             height: nextHeight,
             terrainTiles,
             tiles: terrainTiles,
+            overlayTiles: state.project.map.overlayTiles,
+            structures: state.project.map.structures,
             eventBlocks: [
               ...state.project.map.eventBlocks,
               {

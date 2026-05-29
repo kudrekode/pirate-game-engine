@@ -1,5 +1,5 @@
 import type { GameProject, MapTile } from "../types/game";
-import { defaultTileStyles } from "./presets";
+import { createDefaultPixelAssets, defaultTileStyles } from "./mapVisuals";
 import { defaultCameraConfig } from "./projectDefaults";
 
 function makeTiles(width: number, height: number): MapTile[] {
@@ -18,7 +18,7 @@ function makeTiles(width: number, height: number): MapTile[] {
       }
 
       if ((x === 10 && y === 4) || (x === 11 && y === 4) || (x === 10 && y === 5)) {
-        tileId = "rock";
+        tileId = "stone";
       }
 
       if ((y === 3 && x > 1 && x < 9) || (x === 18 && y > 4 && y < 12)) {
@@ -42,6 +42,26 @@ export const defaultProject: GameProject = {
     height: 15,
     tileSize: 32,
     terrainTiles: makeTiles(20, 15),
+    overlayTiles: [
+      { x: 2, y: 3, overlayId: "dirt_path" },
+      { x: 3, y: 3, overlayId: "dirt_path" },
+      { x: 4, y: 3, overlayId: "dirt_path" },
+      { x: 5, y: 3, overlayId: "dirt_path" },
+      { x: 18, y: 9, overlayId: "stone_road" },
+      { x: 18, y: 10, overlayId: "stone_road" },
+    ],
+    structures: [
+      {
+        id: "structure_demo_house",
+        structureId: "small_house",
+        name: "Demo House",
+        x: 7,
+        y: 9,
+        widthTiles: 3,
+        heightTiles: 3,
+        blocksMovement: true,
+      },
+    ],
     tiles: makeTiles(20, 15),
     objectTiles: [],
     eventBlocks: [
@@ -65,6 +85,7 @@ export const defaultProject: GameProject = {
   },
   camera: defaultCameraConfig,
   tileStyles: defaultTileStyles,
+  pixelAssets: createDefaultPixelAssets(),
   player: {
     name: "Ari",
     mapAvatarId: "scout",

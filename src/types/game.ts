@@ -6,6 +6,7 @@ export type GameProject = {
   map: GameMap;
   camera: CameraConfig;
   tileStyles: TileStyleConfig;
+  pixelAssets: Record<string, PixelAsset>;
   player: PlayerConfig;
   cutscenes: Cutscene[];
   progression: ProgressionStep[];
@@ -16,6 +17,8 @@ export type GameMap = {
   height: number;
   tileSize: number;
   terrainTiles: MapTile[];
+  overlayTiles: OverlayTile[];
+  structures: MapStructure[];
   tiles: MapTile[];
   objectTiles?: MapObject[];
   eventBlocks: EventBlock[];
@@ -25,6 +28,23 @@ export type MapTile = {
   x: number;
   y: number;
   tileId: string;
+};
+
+export type OverlayTile = {
+  x: number;
+  y: number;
+  overlayId: string;
+};
+
+export type MapStructure = {
+  id: string;
+  structureId: string;
+  name: string;
+  x: number;
+  y: number;
+  widthTiles: number;
+  heightTiles: number;
+  blocksMovement: boolean;
 };
 
 export type MapObject = {
@@ -48,6 +68,15 @@ export type TileStyleConfig = {
     color: string;
     label?: string;
   };
+};
+
+export type PixelAsset = {
+  id: string;
+  name: string;
+  kind: "terrain" | "overlay" | "structure" | "character" | "portrait";
+  width: number;
+  height: number;
+  pixels: string[][];
 };
 
 export type CameraConfig = {

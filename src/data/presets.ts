@@ -1,3 +1,5 @@
+import { defaultTileStyles, terrainPresets } from "./mapVisuals";
+
 export type TilePreset = {
   id: string;
   label: string;
@@ -14,18 +16,25 @@ export type VisualPreset = {
 };
 
 export const tilePresets: TilePreset[] = [
-  { id: "grass", label: "Grass", color: "#6fc56f", textColor: "#143c1d", pattern: "dots" },
-  { id: "dirt", label: "Dirt", color: "#b8814a", textColor: "#321f11", pattern: "dots" },
-  { id: "water", label: "Water", color: "#4f9fca", textColor: "#0c2b3b", pattern: "waves" },
+  ...terrainPresets.map((tile) => ({
+    id: tile.id,
+    label: tile.label,
+    color: tile.color,
+    textColor: tile.textColor,
+    pattern:
+      tile.pattern === "water"
+        ? ("waves" as const)
+        : tile.pattern === "stone"
+          ? ("blocks" as const)
+          : ("dots" as const),
+  })),
   { id: "rock", label: "Rock", color: "#8f969f", textColor: "#20252b", pattern: "blocks" },
   { id: "tree", label: "Tree", color: "#2f8c57", textColor: "#0f2e1d", pattern: "tree" },
 ];
 
-export const defaultTileStyles = Object.fromEntries(
-  tilePresets.map((tile) => [tile.id, { color: tile.color, label: tile.label }]),
-);
+export { defaultTileStyles };
 
-export const walkableTileIds = ["grass", "dirt"];
+export const walkableTileIds = ["grass", "dirt", "sand"];
 
 export const characterSprites: VisualPreset[] = [
   { id: "scout", label: "Scout", color: "#e85d75", accent: "#ffffff" },

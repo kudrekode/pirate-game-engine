@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import { getTilePreset, tilePresets } from "../../data/presets";
+import {
+  getStructurePreset,
+  getTerrainPreset,
+  overlayPresets,
+  structurePresets,
+  terrainPresets,
+} from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { EventBlock } from "../../types/game";
+import type { EventBlock, PixelAsset } from "../../types/game";
 
-type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pan";
+type MapTool = "paint" | "eraser" | "fill" | "event-block" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
+type PaintLayer = "terrain" | "overlay" | "structure" | "event";
 
 const AUTO_EXPAND_BUFFER_TILES = 12;
 const MAX_MAP_SIZE = 200;
@@ -26,22 +33,50 @@ function clampPaletteWidth(value: number): number {
 
 function readStoredPaletteWidth(): number {
   if (typeof localStorage === "undefined") {
-    return 240;
+    return 260;
   }
 
   const storedWidth = Number(localStorage.getItem(PALETTE_WIDTH_STORAGE_KEY));
-  return Number.isFinite(storedWidth) ? clampPaletteWidth(storedWidth) : 240;
+  return Number.isFinite(storedWidth) ? clampPaletteWidth(storedWidth) : 260;
 }
 
 function isInBounds(x: number, y: number, width: number, height: number): boolean {
   return x >= 0 && y >= 0 && x < width && y < height;
 }
 
+function pixelAssetToDataUrl(asset?: PixelAsset): string | undefined {
+  if (!asset) {
+    return undefined;
+  }
+
+  const rects = asset.pixels
+    .flatMap((row, y) =>
+      row.flatMap((color, x) =>
+        !color || color === "transparent"
+          ? []
+          : [`<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" />`],
+      ),
+    )
+    .join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${asset.width}" height="${asset.height}" viewBox="0 0 ${asset.width} ${asset.height}" shape-rendering="crispEdges">${rects}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+function emptyPixels(width: number, height: number, color = "transparent"): string[][] {
+  return Array.from({ length: height }, () => Array.from({ length: width }, () => color));
+}
+
 export function MapEditor() {
   const project = useProjectStore((state) => state.project);
   const setTiles = useProjectStore((state) => state.setTiles);
+  const setOverlayTiles = useProjectStore((state) => state.setOverlayTiles);
+  const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
   const resizeMap = useProjectStore((state) => state.resizeMap);
   const updateTileStyle = useProjectStore((state) => state.updateTileStyle);
+  const addStructure = useProjectStore((state) => state.addStructure);
+  const deleteStructure = useProjectStore((state) => state.deleteStructure);
+  const updatePixelAsset = useProjectStore((state) => state.updatePixelAsset);
+  const resetPixelAsset = useProjectStore((state) => state.resetPixelAsset);
   const addEventBlock = useProjectStore((state) => state.addEventBlock);
   const updateEventBlock = useProjectStore((state) => state.updateEventBlock);
   const deleteEventBlock = useProjectStore((state) => state.deleteEventBlock);
@@ -51,10 +86,12 @@ export function MapEditor() {
   const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
 
   const [activeTool, setActiveTool] = useState<MapTool>("paint");
-  const [selectedTileId, setSelectedTileId] = useState("grass");
-  const [selectedEventBlockId, setSelectedEventBlockId] = useState(
-    project.map.eventBlocks[0]?.id ?? "",
-  );
+  const [paintLayer, setPaintLayer] = useState<PaintLayer>("terrain");
+  const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
+  const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
+  const [selectedStructureId, setSelectedStructureId] = useState("small_house");
+  const [selectedMapStructureId, setSelectedMapStructureId] = useState("");
+  const [selectedEventBlockId, setSelectedEventBlockId] = useState(project.map.eventBlocks[0]?.id ?? "");
   const [isPainting, setIsPainting] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -67,17 +104,27 @@ export function MapEditor() {
     height: project.map.height,
   });
   const [resizeMessage, setResizeMessage] = useState("");
+  const [isPixelEditorOpen, setIsPixelEditorOpen] = useState(false);
+  const [pixelAssetId, setPixelAssetId] = useState("grass");
+  const [pixelColor, setPixelColor] = useState("#4f9a45");
+  const [isPaintingPixel, setIsPaintingPixel] = useState(false);
 
   useEffect(() => {
     setDraftMapSize({ width: project.map.width, height: project.map.height });
   }, [project.map.height, project.map.width]);
 
-  const tileLookup = useMemo(() => {
+  const terrainLookup = useMemo(() => {
     const lookup = new Map<string, string>();
     const terrainTiles = project.map.terrainTiles ?? project.map.tiles;
     terrainTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.tileId));
     return lookup;
   }, [project.map.terrainTiles, project.map.tiles]);
+
+  const overlayLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    project.map.overlayTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.overlayId));
+    return lookup;
+  }, [project.map.overlayTiles]);
 
   const eventLookup = useMemo(() => {
     const lookup = new Map<string, EventBlock>();
@@ -87,19 +134,26 @@ export function MapEditor() {
     return lookup;
   }, [project.map.eventBlocks]);
 
+  const pixelAssetUrls = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(project.pixelAssets).map(([id, asset]) => [id, pixelAssetToDataUrl(asset)]),
+    );
+  }, [project.pixelAssets]);
+
   const selectedEventBlock = project.map.eventBlocks.find(
     (eventBlock) => eventBlock.id === selectedEventBlockId,
   );
-  const selectedTile = getTilePreset(selectedTileId);
-  const selectedTileStyle = project.tileStyles[selectedTileId] ?? {
-    color: selectedTile.color,
-    label: selectedTile.label,
-  };
+  const selectedMapStructure = project.map.structures.find(
+    (structure) => structure.id === selectedMapStructureId,
+  );
+  const selectedStructure = getStructurePreset(selectedStructureId);
   const cellSize = Math.round(project.map.tileSize * zoom);
   const renderWidth = Math.min(MAX_MAP_SIZE, project.map.width + AUTO_EXPAND_BUFFER_TILES);
   const renderHeight = Math.min(MAX_MAP_SIZE, project.map.height + AUTO_EXPAND_BUFFER_TILES);
+  const editablePixelAssetIds = [...terrainPresets, ...overlayPresets].map((item) => item.id);
+  const editingPixelAsset = project.pixelAssets[pixelAssetId] ?? project.pixelAssets.grass;
 
-  // TODO: Support negative-direction expansion by shifting terrain/object/event coordinates safely.
+  // TODO: Support negative-direction expansion by shifting terrain/overlay/structure/event coordinates safely.
 
   function getBrushCells(centerX: number, centerY: number) {
     const radius = Math.floor(brushSize / 2);
@@ -121,16 +175,34 @@ export function MapEditor() {
       return;
     }
 
-    const targetTileId = activeTool === "eraser" ? "grass" : selectedTileId;
-    const updates = getBrushCells(centerX, centerY).flatMap((cell) => {
+    const cells = getBrushCells(centerX, centerY).filter((cell) => {
       const key = cellKey(cell.x, cell.y);
-
       if (paintedCellsRef.current.has(key) || eventLookup.has(key)) {
-        return [];
+        return false;
       }
 
       paintedCellsRef.current.add(key);
-      const currentTileId = tileLookup.get(key) ?? "grass";
+      return true;
+    });
+
+    if (paintLayer === "overlay") {
+      if (activeTool === "eraser") {
+        eraseOverlayTiles(cells);
+        return;
+      }
+
+      setOverlayTiles(cells.map((cell) => ({ ...cell, overlayId: selectedOverlayId })));
+      return;
+    }
+
+    if (paintLayer !== "terrain") {
+      return;
+    }
+
+    const targetTileId = activeTool === "eraser" ? "grass" : selectedTerrainId;
+    const updates = cells.flatMap((cell) => {
+      const key = cellKey(cell.x, cell.y);
+      const currentTileId = terrainLookup.get(key) ?? "grass";
       const isOutsideCurrentMap = cell.x >= project.map.width || cell.y >= project.map.height;
       return currentTileId === targetTileId && !isOutsideCurrentMap
         ? []
@@ -143,15 +215,19 @@ export function MapEditor() {
   }
 
   function floodFillFrom(startX: number, startY: number) {
-    const startKey = cellKey(startX, startY);
-    if (!isInBounds(startX, startY, project.map.width, project.map.height)) {
-      setTiles([{ x: startX, y: startY, tileId: selectedTileId }]);
+    if (paintLayer !== "terrain") {
+      setOverlayTiles([{ x: startX, y: startY, overlayId: selectedOverlayId }]);
       return;
     }
 
-    const sourceTileId = tileLookup.get(startKey) ?? "grass";
-    const targetTileId = selectedTileId;
+    const startKey = cellKey(startX, startY);
+    if (!isInBounds(startX, startY, project.map.width, project.map.height)) {
+      setTiles([{ x: startX, y: startY, tileId: selectedTerrainId }]);
+      return;
+    }
 
+    const sourceTileId = terrainLookup.get(startKey) ?? "grass";
+    const targetTileId = selectedTerrainId;
     if (sourceTileId === targetTileId || eventLookup.has(startKey)) {
       return;
     }
@@ -172,7 +248,7 @@ export function MapEditor() {
       }
 
       visited.add(key);
-      if ((tileLookup.get(key) ?? "grass") !== sourceTileId) {
+      if ((terrainLookup.get(key) ?? "grass") !== sourceTileId) {
         continue;
       }
 
@@ -188,16 +264,22 @@ export function MapEditor() {
     setTiles(updates);
   }
 
-  function handleCellPointerDown(
-    event: PointerEvent<HTMLButtonElement>,
-    x: number,
-    y: number,
-  ) {
-    if (activeTool === "pan") {
-      return;
-    }
+  function placeStructure(x: number, y: number) {
+    const id = addStructure({
+      structureId: selectedStructure.id,
+      name: selectedStructure.label,
+      x,
+      y,
+      widthTiles: selectedStructure.widthTiles,
+      heightTiles: selectedStructure.heightTiles,
+      blocksMovement: selectedStructure.blocksMovement,
+    });
+    setSelectedMapStructureId(id);
+    setSelectedEventBlockId("");
+  }
 
-    if (event.button !== 0) {
+  function handleCellPointerDown(event: PointerEvent<HTMLButtonElement>, x: number, y: number) {
+    if (activeTool === "pan" || event.button !== 0) {
       return;
     }
 
@@ -209,16 +291,24 @@ export function MapEditor() {
     if (activeTool === "event-block") {
       if (eventBlock) {
         setSelectedEventBlockId(eventBlock.id);
+        setSelectedMapStructureId("");
         return;
       }
 
       const id = addEventBlock(x, y);
       setSelectedEventBlockId(id);
+      setSelectedMapStructureId("");
+      return;
+    }
+
+    if (activeTool === "structure") {
+      placeStructure(x, y);
       return;
     }
 
     if (eventBlock) {
       setSelectedEventBlockId(eventBlock.id);
+      setSelectedMapStructureId("");
       return;
     }
 
@@ -320,11 +410,9 @@ export function MapEditor() {
   }
 
   function updateSelectedEventBlock(patch: Partial<EventBlock>) {
-    if (!selectedEventBlock) {
-      return;
+    if (selectedEventBlock) {
+      updateEventBlock(selectedEventBlock.id, patch);
     }
-
-    updateEventBlock(selectedEventBlock.id, patch);
   }
 
   function deleteSelectedEventBlock() {
@@ -333,9 +421,7 @@ export function MapEditor() {
     }
 
     const nextSelectedId =
-      project.map.eventBlocks.find((eventBlock) => eventBlock.id !== selectedEventBlock.id)?.id ??
-      "";
-
+      project.map.eventBlocks.find((eventBlock) => eventBlock.id !== selectedEventBlock.id)?.id ?? "";
     deleteEventBlock(selectedEventBlock.id);
     setSelectedEventBlockId(nextSelectedId);
   }
@@ -343,19 +429,7 @@ export function MapEditor() {
   function applyMapResize() {
     const nextWidth = clampMapSize(draftMapSize.width);
     const nextHeight = clampMapSize(draftMapSize.height);
-    const nextSelectedId =
-      project.map.eventBlocks.find(
-        (eventBlock) =>
-          eventBlock.id === selectedEventBlockId &&
-          isInBounds(eventBlock.x, eventBlock.y, nextWidth, nextHeight),
-      )?.id ??
-      project.map.eventBlocks.find((eventBlock) =>
-        isInBounds(eventBlock.x, eventBlock.y, nextWidth, nextHeight),
-      )?.id ??
-      "";
     const removedEventBlockCount = resizeMap(nextWidth, nextHeight);
-
-    setSelectedEventBlockId(nextSelectedId);
     setResizeMessage(
       removedEventBlockCount > 0
         ? `Resized to ${nextWidth}x${nextHeight}. Removed ${removedEventBlockCount} out-of-bounds event block${
@@ -370,6 +444,45 @@ export function MapEditor() {
     const nextHeight = clampMapSize(project.map.height + deltaHeight);
     resizeMap(nextWidth, nextHeight);
     setResizeMessage(`Expanded to ${nextWidth}x${nextHeight}.`);
+  }
+
+  function paintPixel(x: number, y: number) {
+    if (!editingPixelAsset) {
+      return;
+    }
+
+    const pixels = editingPixelAsset.pixels.map((row) => [...row]);
+    pixels[y][x] = pixelColor;
+    updatePixelAsset({ ...editingPixelAsset, pixels });
+  }
+
+  function clearPixelAsset() {
+    if (!editingPixelAsset) {
+      return;
+    }
+
+    updatePixelAsset({
+      ...editingPixelAsset,
+      pixels: emptyPixels(editingPixelAsset.width, editingPixelAsset.height),
+    });
+  }
+
+  function selectTerrain(id: string) {
+    setSelectedTerrainId(id);
+    setPaintLayer("terrain");
+    setActiveTool("paint");
+  }
+
+  function selectOverlay(id: string) {
+    setSelectedOverlayId(id);
+    setPaintLayer("overlay");
+    setActiveTool("paint");
+  }
+
+  function selectStructure(id: string) {
+    setSelectedStructureId(id);
+    setPaintLayer("structure");
+    setActiveTool("structure");
   }
 
   return (
@@ -426,82 +539,117 @@ export function MapEditor() {
         </div>
         {resizeMessage ? <p className="tool-note">{resizeMessage}</p> : null}
 
-        <div className="panel-title secondary">Tiles</div>
-        <div className="palette-list tile-palette">
-          {tilePresets.map((tile) => {
-            const style = project.tileStyles[tile.id] ?? { color: tile.color, label: tile.label };
+        <details open className="palette-section">
+          <summary>Terrain</summary>
+          <div className="palette-list tile-palette">
+            {terrainPresets.map((tile) => {
+              const style = project.tileStyles[tile.id] ?? { color: tile.color, label: tile.label };
+              return (
+                <button
+                  className={`palette-item ${
+                    selectedTerrainId === tile.id && paintLayer === "terrain" ? "selected" : ""
+                  }`}
+                  key={tile.id}
+                  onClick={() => selectTerrain(tile.id)}
+                  type="button"
+                >
+                  <span
+                    className="swatch pixel-swatch"
+                    style={{
+                      background: style.color,
+                      backgroundImage: pixelAssetUrls[tile.id],
+                    }}
+                  />
+                  {style.label ?? tile.label}
+                </button>
+              );
+            })}
+          </div>
+        </details>
 
-            return (
+        <details open className="palette-section">
+          <summary>Overlays</summary>
+          <div className="palette-list tile-palette">
+            {overlayPresets.map((overlay) => (
               <button
                 className={`palette-item ${
-                  selectedTileId === tile.id && activeTool === "paint" ? "selected" : ""
+                  selectedOverlayId === overlay.id && paintLayer === "overlay" ? "selected" : ""
                 }`}
-                key={tile.id}
-                onClick={() => {
-                  setSelectedTileId(tile.id);
-                  setActiveTool("paint");
-                }}
+                key={overlay.id}
+                onClick={() => selectOverlay(overlay.id)}
                 type="button"
               >
-                <span className="swatch" style={{ background: style.color }} />
-                {style.label ?? tile.label}
+                <span
+                  className="swatch pixel-swatch"
+                  style={{
+                    background: overlay.color,
+                    backgroundImage: pixelAssetUrls[overlay.id],
+                  }}
+                />
+                {overlay.label}
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </details>
+
+        <details open className="palette-section">
+          <summary>Structures</summary>
+          <div className="palette-list tile-palette">
+            {structurePresets.map((structure) => (
+              <button
+                className={`palette-item ${
+                  selectedStructureId === structure.id && activeTool === "structure" ? "selected" : ""
+                }`}
+                key={structure.id}
+                onClick={() => selectStructure(structure.id)}
+                type="button"
+              >
+                <span className="swatch structure-swatch" style={{ background: structure.roofColor }} />
+                {structure.label}
+              </button>
+            ))}
+          </div>
+        </details>
+
+        <details open className="palette-section">
+          <summary>Special</summary>
+          <button
+            className={`palette-item ${activeTool === "event-block" ? "selected" : ""}`}
+            onClick={() => {
+              setActiveTool("event-block");
+              setPaintLayer("event");
+            }}
+            type="button"
+          >
+            <span className="swatch event-swatch">E</span>
+            Event block
+          </button>
+        </details>
 
         <div className="panel-title">Tools</div>
         <div className="tool-button-grid">
-          <button
-            className={activeTool === "paint" ? "selected" : ""}
-            onClick={() => setActiveTool("paint")}
-            type="button"
-          >
+          <button className={activeTool === "paint" ? "selected" : ""} onClick={() => setActiveTool("paint")} type="button">
             Paint
           </button>
-          <button
-            className={activeTool === "eraser" ? "selected" : ""}
-            onClick={() => setActiveTool("eraser")}
-            type="button"
-          >
+          <button className={activeTool === "eraser" ? "selected" : ""} onClick={() => setActiveTool("eraser")} type="button">
             Eraser
           </button>
-          <button
-            className={activeTool === "fill" ? "selected" : ""}
-            onClick={() => setActiveTool("fill")}
-            type="button"
-          >
+          <button className={activeTool === "fill" ? "selected" : ""} onClick={() => setActiveTool("fill")} type="button">
             Fill
           </button>
-          <button
-            className={activeTool === "event-block" ? "selected" : ""}
-            onClick={() => setActiveTool("event-block")}
-            type="button"
-          >
-            Event
-          </button>
-          <button
-            className={activeTool === "pan" ? "selected" : ""}
-            onClick={() => setActiveTool("pan")}
-            type="button"
-          >
+          <button className={activeTool === "pan" ? "selected" : ""} onClick={() => setActiveTool("pan")} type="button">
             Pan
           </button>
         </div>
         <p className="tool-note">
-          Selected tile: <strong>{selectedTileStyle.label ?? selectedTile.label}</strong>. Eraser resets
-          tiles to grass.
+          Layer: <strong>{paintLayer}</strong>. Terrain eraser resets to grass; overlay eraser clears
+          paths.
         </p>
 
         <div className="panel-title">Brush</div>
         <div className="segmented-control">
           {([1, 3, 5] as BrushSize[]).map((size) => (
-            <button
-              className={brushSize === size ? "selected" : ""}
-              key={size}
-              onClick={() => setBrushSize(size)}
-              type="button"
-            >
+            <button className={brushSize === size ? "selected" : ""} key={size} onClick={() => setBrushSize(size)} type="button">
               {size}x{size}
             </button>
           ))}
@@ -509,17 +657,11 @@ export function MapEditor() {
 
         <div className="panel-title secondary">View</div>
         <div className="inline-actions">
-          <button
-            onClick={() => setZoom((value) => Math.max(0.4, Number((value - 0.2).toFixed(1))))}
-            type="button"
-          >
+          <button onClick={() => setZoom((value) => Math.max(0.4, Number((value - 0.2).toFixed(1))))} type="button">
             -
           </button>
           <span className="zoom-readout">{Math.round(zoom * 100)}%</span>
-          <button
-            onClick={() => setZoom((value) => Math.min(2.4, Number((value + 0.2).toFixed(1))))}
-            type="button"
-          >
+          <button onClick={() => setZoom((value) => Math.min(2.4, Number((value + 0.2).toFixed(1))))} type="button">
             +
           </button>
         </div>
@@ -527,19 +669,18 @@ export function MapEditor() {
           Reset Zoom
         </button>
         <label className="checkbox-row standalone">
-          <input
-            checked={showGrid}
-            onChange={(event) => setShowGrid(event.target.checked)}
-            type="checkbox"
-          />
+          <input checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} type="checkbox" />
           Show grid
         </label>
 
+        <button className="primary-button full-width" onClick={() => setIsPixelEditorOpen(true)} type="button">
+          Tile Editor
+        </button>
+
         <div className="panel-title secondary">Tile style</div>
         <div className="tile-style-list">
-          {tilePresets.map((tile) => {
+          {terrainPresets.map((tile) => {
             const style = project.tileStyles[tile.id] ?? { color: tile.color, label: tile.label };
-
             return (
               <label className="tile-style-row" key={tile.id}>
                 <span>{style.label ?? tile.label}</span>
@@ -581,9 +722,10 @@ export function MapEditor() {
           {Array.from({ length: renderHeight }).map((_, y) =>
             Array.from({ length: renderWidth }).map((__, x) => {
               const key = cellKey(x, y);
-              const tileId = tileLookup.get(key) ?? "grass";
-              const tile = getTilePreset(tileId);
-              const tileStyle = project.tileStyles[tileId] ?? { color: tile.color, label: tile.label };
+              const terrainId = terrainLookup.get(key) ?? "grass";
+              const terrain = getTerrainPreset(terrainId);
+              const tileStyle = project.tileStyles[terrainId] ?? { color: terrain.color, label: terrain.label };
+              const overlayId = overlayLookup.get(key);
               const eventBlock = eventLookup.get(key);
               const eventLabel = eventBlock?.tag || eventBlock?.name;
               const isOutsideMap = x >= project.map.width || y >= project.map.height;
@@ -599,20 +741,27 @@ export function MapEditor() {
                     width: cellSize,
                     height: cellSize,
                     background: tileStyle.color,
-                    color: tile.textColor,
+                    color: terrain.textColor,
                   }}
                   type="button"
                 >
-                  <span className={`tile-pattern tile-pattern-${tile.pattern ?? "plain"}`} />
+                  <span
+                    className="tile-pixel-layer"
+                    style={{ backgroundImage: pixelAssetUrls[terrainId] }}
+                  />
+                  {overlayId ? (
+                    <span
+                      className="overlay-pixel-layer"
+                      style={{ backgroundImage: pixelAssetUrls[overlayId] }}
+                    />
+                  ) : null}
                   {eventBlock ? (
                     <span
                       className={`event-marker ${eventBlock.kind} ${
                         selectedEventBlockId === eventBlock.id ? "selected-event" : ""
                       }`}
                     >
-                      <span className="event-marker-kind">
-                        {eventBlock.kind === "spawn" ? "S" : "T"}
-                      </span>
+                      <span className="event-marker-kind">{eventBlock.kind === "spawn" ? "S" : "T"}</span>
                       <span className="event-marker-label">{eventLabel}</span>
                     </span>
                   ) : null}
@@ -620,50 +769,161 @@ export function MapEditor() {
               );
             }),
           )}
+          {project.map.structures.map((structure) => {
+            const preset = getStructurePreset(structure.structureId);
+            return (
+              <button
+                className={`map-structure ${selectedMapStructureId === structure.id ? "selected" : ""}`}
+                key={structure.id}
+                onClick={() => {
+                  setSelectedMapStructureId(structure.id);
+                  setSelectedEventBlockId("");
+                }}
+                style={{
+                  left: structure.x * cellSize,
+                  top: structure.y * cellSize,
+                  width: structure.widthTiles * cellSize,
+                  height: structure.heightTiles * cellSize,
+                  "--structure-roof": preset.roofColor,
+                  "--structure-wall": preset.wallColor,
+                  "--structure-shadow": preset.shadowColor,
+                } as CSSProperties}
+                type="button"
+              >
+                <span className="structure-roof" />
+                <span className="structure-wall" />
+                <span className="structure-label">{structure.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <aside className="inspector-panel">
-        <div className="panel-title">Event block</div>
-        {selectedEventBlock ? (
-          <div className="form-stack">
-            <label>
-              Name
-              <input
-                onChange={(event) => updateSelectedEventBlock({ name: event.target.value })}
-                value={selectedEventBlock.name}
-              />
-            </label>
-            <label>
-              Tag
-              <input
-                onChange={(event) => updateSelectedEventBlock({ tag: event.target.value })}
-                value={selectedEventBlock.tag}
-              />
-            </label>
-            <label>
-              Kind
-              <select
-                onChange={(event) =>
-                  updateSelectedEventBlock({ kind: event.target.value as EventBlock["kind"] })
-                }
-                value={selectedEventBlock.kind}
-              >
-                <option value="spawn">Spawn</option>
-                <option value="trigger">Trigger</option>
-              </select>
-            </label>
-            <div className="coordinate-readout">
-              x {selectedEventBlock.x}, y {selectedEventBlock.y}
+        {selectedMapStructure ? (
+          <>
+            <div className="panel-title">Structure</div>
+            <div className="form-stack">
+              <div className="coordinate-readout">
+                {selectedMapStructure.name}: x {selectedMapStructure.x}, y {selectedMapStructure.y},{" "}
+                {selectedMapStructure.widthTiles}x{selectedMapStructure.heightTiles}
+              </div>
+              <div className="coordinate-readout">
+                Blocks movement: {selectedMapStructure.blocksMovement ? "yes" : "no"}
+              </div>
+              <button className="danger-button" onClick={() => deleteStructure(selectedMapStructure.id)} type="button">
+                Delete structure
+              </button>
             </div>
-            <button className="danger-button" onClick={deleteSelectedEventBlock} type="button">
-              Delete event block
-            </button>
-          </div>
+          </>
         ) : (
-          <p className="empty-state">Select or create an event block.</p>
+          <>
+            <div className="panel-title">Event block</div>
+            {selectedEventBlock ? (
+              <div className="form-stack">
+                <label>
+                  Name
+                  <input
+                    onChange={(event) => updateSelectedEventBlock({ name: event.target.value })}
+                    value={selectedEventBlock.name}
+                  />
+                </label>
+                <label>
+                  Tag
+                  <input
+                    onChange={(event) => updateSelectedEventBlock({ tag: event.target.value })}
+                    value={selectedEventBlock.tag}
+                  />
+                </label>
+                <label>
+                  Kind
+                  <select
+                    onChange={(event) =>
+                      updateSelectedEventBlock({ kind: event.target.value as EventBlock["kind"] })
+                    }
+                    value={selectedEventBlock.kind}
+                  >
+                    <option value="spawn">Spawn</option>
+                    <option value="trigger">Trigger</option>
+                  </select>
+                </label>
+                <div className="coordinate-readout">
+                  x {selectedEventBlock.x}, y {selectedEventBlock.y}
+                </div>
+                <button className="danger-button" onClick={deleteSelectedEventBlock} type="button">
+                  Delete event block
+                </button>
+              </div>
+            ) : (
+              <p className="empty-state">Select an event block or structure.</p>
+            )}
+          </>
         )}
       </aside>
+
+      {isPixelEditorOpen && editingPixelAsset ? (
+        <div className="pixel-editor-backdrop">
+          <section className="pixel-editor-panel">
+            <div className="pixel-editor-header">
+              <strong>Tile Editor</strong>
+              <button onClick={() => setIsPixelEditorOpen(false)} type="button">
+                Close
+              </button>
+            </div>
+            <div className="pixel-editor-controls">
+              <label>
+                Asset
+                <select onChange={(event) => setPixelAssetId(event.target.value)} value={pixelAssetId}>
+                  {editablePixelAssetIds.map((id) => (
+                    <option key={id} value={id}>
+                      {project.pixelAssets[id]?.name ?? id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Colour
+                <input onChange={(event) => setPixelColor(event.target.value)} type="color" value={pixelColor} />
+              </label>
+              <button onClick={clearPixelAsset} type="button">
+                Clear
+              </button>
+              <button onClick={() => resetPixelAsset(pixelAssetId)} type="button">
+                Reset
+              </button>
+            </div>
+            <div
+              className="pixel-grid"
+              onPointerLeave={() => setIsPaintingPixel(false)}
+              onPointerUp={() => setIsPaintingPixel(false)}
+              style={{
+                gridTemplateColumns: `repeat(${editingPixelAsset.width}, 18px)`,
+              }}
+            >
+              {editingPixelAsset.pixels.map((row, y) =>
+                row.map((color, x) => (
+                  <button
+                    aria-label={`Pixel ${x}, ${y}`}
+                    className="pixel-cell"
+                    key={`${x}:${y}`}
+                    onPointerDown={() => {
+                      setIsPaintingPixel(true);
+                      paintPixel(x, y);
+                    }}
+                    onPointerEnter={() => {
+                      if (isPaintingPixel) {
+                        paintPixel(x, y);
+                      }
+                    }}
+                    style={{ background: color === "transparent" ? "#f8fafc" : color }}
+                    type="button"
+                  />
+                )),
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

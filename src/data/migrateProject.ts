@@ -1,4 +1,5 @@
 import { defaultProject } from "./defaultProject";
+import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultCameraConfig } from "./projectDefaults";
 import { defaultTileStyles, tilePresets } from "./presets";
 import type {
@@ -6,8 +7,11 @@ import type {
   EventBlock,
   GameProject,
   MapObject,
+  MapStructure,
   MapTile,
+  OverlayTile,
   PlayerConfig,
+  PixelAsset,
   ProgressionAction,
   ProgressionStep,
   TileStyleConfig,
@@ -87,6 +91,51 @@ function migrateObjects(value: unknown): MapObject[] {
   });
 }
 
+function migrateOverlayTiles(value: unknown): OverlayTile[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    return [
+      {
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        overlayId: readString(item.overlayId, ""),
+      },
+    ];
+  });
+}
+
+function migrateStructures(value: unknown): MapStructure[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    return [
+      {
+        id: readString(item.id, `structure_${Date.now().toString(36)}`),
+        structureId: readString(item.structureId, "small_house"),
+        name: readString(item.name, "Structure"),
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
+        heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
+        blocksMovement: readBoolean(item.blocksMovement, true),
+      },
+    ];
+  });
+}
+
 function migrateTileStyles(value: unknown): TileStyleConfig {
   const source = isRecord(value) ? value : {};
   const styles: TileStyleConfig = {};
@@ -101,6 +150,51 @@ function migrateTileStyles(value: unknown): TileStyleConfig {
   });
 
   return styles;
+}
+
+function migratePixelAssets(value: unknown): Record<string, PixelAsset> {
+  const defaults = createDefaultPixelAssets();
+  const source = isRecord(value) ? value : {};
+  const assets: Record<string, PixelAsset> = { ...defaults };
+
+  Object.entries(source).forEach(([id, item]) => {
+    if (!isRecord(item) || !Array.isArray(item.pixels)) {
+      return;
+    }
+
+    const kind =
+      item.kind === "terrain" ||
+      item.kind === "overlay" ||
+      item.kind === "structure" ||
+      item.kind === "character" ||
+      item.kind === "portrait"
+        ? item.kind
+        : "terrain";
+    const width = Math.round(readNumber(item.width, 16, 1, 128));
+    const height = Math.round(readNumber(item.height, 16, 1, 128));
+    const pixels = item.pixels.slice(0, height).map((row) => {
+      if (!Array.isArray(row)) {
+        return Array.from({ length: width }, () => "transparent");
+      }
+
+      return Array.from({ length: width }, (_, index) => readString(row[index], "transparent"));
+    });
+
+    while (pixels.length < height) {
+      pixels.push(Array.from({ length: width }, () => "transparent"));
+    }
+
+    assets[id] = {
+      id,
+      name: readString(item.name, defaults[id]?.name ?? id),
+      kind,
+      width,
+      height,
+      pixels,
+    };
+  });
+
+  return assets;
 }
 
 function migrateEventBlocks(value: unknown): EventBlock[] {
@@ -247,12 +341,15 @@ export function migrateProject(value: unknown): GameProject {
       height: Math.round(readNumber(mapSource.height, defaultProject.map.height, 1, 200)),
       tileSize: Math.round(readNumber(mapSource.tileSize, defaultProject.map.tileSize, 8, 128)),
       terrainTiles,
+      overlayTiles: migrateOverlayTiles(mapSource.overlayTiles),
+      structures: migrateStructures(mapSource.structures),
       tiles: terrainTiles,
       objectTiles: migrateObjects(mapSource.objectTiles),
       eventBlocks: migrateEventBlocks(mapSource.eventBlocks),
     },
     camera: migrateCamera(source.camera),
     tileStyles: migrateTileStyles(source.tileStyles),
+    pixelAssets: migratePixelAssets(source.pixelAssets),
     player: migratePlayer(source.player),
     cutscenes: Array.isArray(source.cutscenes)
       ? (source.cutscenes as GameProject["cutscenes"])

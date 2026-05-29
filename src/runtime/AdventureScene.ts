@@ -6,7 +6,8 @@ import {
   getVisualPreset,
   portraitPresets,
 } from "../data/presets";
-import type { Cutscene, EventBlock, GameProject } from "../types/game";
+import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
+import type { Cutscene, EventBlock, GameProject, MapStructure, PixelAsset } from "../types/game";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -23,9 +24,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function tileKey(x: number, y: number): string {
+  return `${x}:${y}`;
+}
+
 export class AdventureScene extends Phaser.Scene {
   private readonly project: GameProject;
   private readonly tileSize: number;
+  private readonly pixelTextureKeys = new Map<string, string>();
   private worldLayer?: Phaser.GameObjects.Container;
   private uiLayer?: Phaser.GameObjects.Container;
   private uiCamera?: Phaser.Cameras.Scene2D.Camera;
@@ -50,6 +56,7 @@ export class AdventureScene extends Phaser.Scene {
   create() {
     this.worldLayer = this.add.container(0, 0);
     this.uiLayer = this.add.container(0, 0).setDepth(1000).setScrollFactor(0);
+    this.createPixelTextures();
     this.renderMap();
     this.configureCameras();
     this.createInput();
@@ -177,6 +184,10 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private renderMap() {
+    const overlayLookup = new Map(
+      this.project.map.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
+    );
+
     for (let y = 0; y < this.project.map.height; y += 1) {
       for (let x = 0; x < this.project.map.width; x += 1) {
         const tileId = this.tileIdAt(x, y);
@@ -197,7 +208,10 @@ export class AdventureScene extends Phaser.Scene {
           .setStrokeStyle(1, 0xffffff, 0.22);
         this.worldLayer?.add(tileRect);
 
-        if (tile.pattern === "waves") {
+        const tileTexture = this.addPixelImage(tileId, worldX, worldY, this.tileSize, this.tileSize);
+        if (tileTexture) {
+          this.worldLayer?.add(tileTexture);
+        } else if (tile.pattern === "waves") {
           const wave = this.add
             .text(worldX + this.tileSize / 2, worldY + this.tileSize / 2, "~", {
               color: "#d0ebff",
@@ -206,9 +220,7 @@ export class AdventureScene extends Phaser.Scene {
             })
             .setOrigin(0.5);
           this.worldLayer?.add(wave);
-        }
-
-        if (tile.pattern === "tree") {
+        } else if (tile.pattern === "tree") {
           const tree = this.add.circle(
             worldX + this.tileSize / 2,
             worldY + this.tileSize / 2,
@@ -217,9 +229,7 @@ export class AdventureScene extends Phaser.Scene {
             0.9,
           );
           this.worldLayer?.add(tree);
-        }
-
-        if (tile.pattern === "blocks") {
+        } else if (tile.pattern === "blocks") {
           const rock = this.add
             .rectangle(
               worldX + this.tileSize / 2,
@@ -232,8 +242,150 @@ export class AdventureScene extends Phaser.Scene {
             .setStrokeStyle(1, 0x111827, 0.28);
           this.worldLayer?.add(rock);
         }
+
+        const overlayId = overlayLookup.get(tileKey(x, y));
+        if (overlayId) {
+          const overlay = getOverlayPreset(overlayId);
+          const overlayTexture = this.addPixelImage(
+            overlayId,
+            worldX,
+            worldY,
+            this.tileSize,
+            this.tileSize,
+            overlay.pattern === "shadow" ? 0.72 : 0.92,
+          );
+
+          if (overlayTexture) {
+            this.worldLayer?.add(overlayTexture);
+          } else {
+            const path = this.add
+              .rectangle(
+                worldX + this.tileSize * 0.5,
+                worldY + this.tileSize * 0.5,
+                this.tileSize * 0.78,
+                this.tileSize * 0.48,
+                hexToNumber(overlay.color),
+                overlay.pattern === "shadow" ? 0.25 : 0.62,
+              )
+              .setAngle(-4);
+            this.worldLayer?.add(path);
+          }
+        }
       }
     }
+
+    this.project.map.structures.forEach((structure) => this.renderStructure(structure));
+  }
+
+  private createPixelTextures() {
+    Object.values(this.project.pixelAssets ?? {}).forEach((asset) => {
+      const textureKey = this.getPixelTextureKey(asset);
+
+      if (this.textures.exists(textureKey)) {
+        this.textures.remove(textureKey);
+      }
+
+      const texture = this.textures.createCanvas(textureKey, asset.width, asset.height);
+      if (!texture) {
+        return;
+      }
+
+      const context = texture.getContext();
+      context.clearRect(0, 0, asset.width, asset.height);
+
+      asset.pixels.forEach((row, y) => {
+        row.forEach((color, x) => {
+          if (!color || color === "transparent") {
+            return;
+          }
+
+          context.fillStyle = color;
+          context.fillRect(x, y, 1, 1);
+        });
+      });
+
+      texture.refresh();
+      this.pixelTextureKeys.set(asset.id, textureKey);
+    });
+  }
+
+  private getPixelTextureKey(asset: PixelAsset): string {
+    return `pixel_asset_${asset.id}`;
+  }
+
+  private addPixelImage(
+    assetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    alpha = 1,
+  ): Phaser.GameObjects.Image | null {
+    const textureKey = this.pixelTextureKeys.get(assetId);
+    if (!textureKey) {
+      return null;
+    }
+
+    return this.add
+      .image(x, y, textureKey)
+      .setOrigin(0)
+      .setDisplaySize(width, height)
+      .setAlpha(alpha);
+  }
+
+  private renderStructure(structure: MapStructure) {
+    const preset = getStructurePreset(structure.structureId);
+    const worldX = structure.x * this.tileSize;
+    const worldY = structure.y * this.tileSize;
+    const width = structure.widthTiles * this.tileSize;
+    const height = structure.heightTiles * this.tileSize;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(hexToNumber(preset.shadowColor), 0.32);
+    graphics.fillRect(width * 0.12, height * 0.78, width * 0.82, height * 0.18);
+
+    if (structure.structureId === "dock") {
+      graphics.fillStyle(hexToNumber(preset.wallColor), 1);
+      for (let y = height * 0.18; y < height * 0.86; y += this.tileSize * 0.34) {
+        graphics.fillRect(width * 0.08, y, width * 0.84, this.tileSize * 0.18);
+      }
+      graphics.lineStyle(2, hexToNumber(preset.shadowColor), 0.65);
+      for (let x = width * 0.14; x < width * 0.9; x += this.tileSize * 0.5) {
+        graphics.lineBetween(x, height * 0.14, x, height * 0.9);
+      }
+    } else if (structure.structureId === "ruin_wall") {
+      graphics.fillStyle(hexToNumber(preset.wallColor), 1);
+      graphics.fillRect(width * 0.08, height * 0.35, width * 0.84, height * 0.42);
+      graphics.fillStyle(hexToNumber(preset.roofColor), 1);
+      for (let x = width * 0.1; x < width * 0.82; x += this.tileSize * 0.48) {
+        graphics.fillRect(x, height * 0.23, this.tileSize * 0.28, this.tileSize * 0.28);
+      }
+      graphics.lineStyle(2, hexToNumber(preset.shadowColor), 0.5);
+      graphics.strokeRect(width * 0.08, height * 0.35, width * 0.84, height * 0.42);
+    } else {
+      graphics.fillStyle(hexToNumber(preset.wallColor), 1);
+      graphics.fillRect(width * 0.18, height * 0.36, width * 0.64, height * 0.5);
+      graphics.fillStyle(hexToNumber(preset.roofColor), 1);
+      graphics.fillTriangle(
+        width * 0.08,
+        height * 0.4,
+        width * 0.5,
+        height * 0.08,
+        width * 0.92,
+        height * 0.4,
+      );
+      graphics.fillRect(width * 0.14, height * 0.35, width * 0.72, height * 0.14);
+      graphics.fillStyle(0x382211, 0.62);
+      graphics.fillRect(width * 0.44, height * 0.62, width * 0.13, height * 0.24);
+      graphics.fillStyle(0xf6d365, 0.78);
+      graphics.fillRect(width * 0.26, height * 0.5, width * 0.12, height * 0.1);
+      graphics.fillRect(width * 0.62, height * 0.5, width * 0.12, height * 0.1);
+      graphics.lineStyle(2, hexToNumber(preset.shadowColor), 0.45);
+      graphics.strokeRect(width * 0.18, height * 0.36, width * 0.64, height * 0.5);
+    }
+
+    const container = this.add.container(worldX, worldY, [graphics]);
+    this.worldLayer?.add(container);
   }
 
   private processProgression() {
@@ -506,6 +658,17 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
+    const blockingStructure = this.structureAt(nextX, nextY);
+    if (blockingStructure) {
+      this.setStatus(`Blocked by ${blockingStructure.name}.`);
+      return;
+    }
+
+    if (this.isBlockedByObject(nextX, nextY)) {
+      this.setStatus("Blocked.");
+      return;
+    }
+
     const duration = this.getMoveDuration();
     const destinationX = nextX * this.tileSize + this.tileSize / 2;
     const destinationY = nextY * this.tileSize + this.tileSize / 2;
@@ -553,6 +716,24 @@ export class AdventureScene extends Phaser.Scene {
   private tileIdAt(x: number, y: number): string {
     const terrainTiles = this.project.map.terrainTiles ?? this.project.map.tiles;
     return terrainTiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
+  }
+
+  private structureAt(x: number, y: number): MapStructure | undefined {
+    return this.project.map.structures.find(
+      (structure) =>
+        structure.blocksMovement &&
+        x >= structure.x &&
+        y >= structure.y &&
+        x < structure.x + structure.widthTiles &&
+        y < structure.y + structure.heightTiles,
+    );
+  }
+
+  private isBlockedByObject(x: number, y: number): boolean {
+    // TODO: Replace legacy object blocking with explicit object-layer collision metadata.
+    return (this.project.map.objectTiles ?? []).some(
+      (objectTile) => objectTile.x === x && objectTile.y === y,
+    );
   }
 
   private findEventBlock(id: string): EventBlock | undefined {
