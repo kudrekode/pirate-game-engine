@@ -51,6 +51,14 @@ function getInitialArea(project: GameProject): GameArea {
   return project.areas.find((area) => area.id === project.activeAreaId) ?? project.areas[0]!;
 }
 
+function canTouchActivate(interaction: Interaction): boolean {
+  return interaction.activationMode === "on_touch" || interaction.activationMode === "both";
+}
+
+function canInteractActivate(interaction: Interaction): boolean {
+  return interaction.activationMode === "on_interact" || interaction.activationMode === "both";
+}
+
 export class AdventureScene extends Phaser.Scene {
   private readonly project: GameProject;
   private currentArea: GameArea;
@@ -730,13 +738,9 @@ export class AdventureScene extends Phaser.Scene {
     const candidates: Interactable[] = [];
 
     this.currentArea.eventBlocks.forEach((eventBlock) => {
-      const interaction =
-        eventBlock.interaction ??
-        (eventBlock.kind === "area_link" && eventBlock.link
-          ? { type: "area_link" as const, ...eventBlock.link }
-          : undefined);
+      const interaction = this.getEventInteraction(eventBlock);
 
-      if (!interaction) {
+      if (!interaction || !canInteractActivate(interaction)) {
         return;
       }
 
@@ -754,7 +758,7 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.structures.forEach((structure) => {
-      if (!structure.interaction) {
+      if (!structure.interaction || !canInteractActivate(structure.interaction)) {
         return;
       }
 
@@ -811,6 +815,10 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private promptForInteraction(interaction: Interaction): string {
+    if (interaction.prompt) {
+      return interaction.prompt;
+    }
+
     if (interaction.type === "area_link" || interaction.type === "teleport") {
       return "Press E to enter";
     }
@@ -823,7 +831,16 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private runInteraction(interaction: Interaction, label: string) {
+    if (interaction.activationMode === "disabled") {
+      return;
+    }
+
     if (interaction.type === "area_link" || interaction.type === "teleport") {
+      if (!interaction.targetAreaId || !interaction.targetEventBlockId) {
+        this.setStatus(`Interaction target missing: ${label}.`);
+        return;
+      }
+
       const targetArea = this.findArea(interaction.targetAreaId);
       const targetEventBlock = this.findEventBlock(
         interaction.targetEventBlockId,
@@ -840,6 +857,11 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     if (interaction.type === "play_cutscene") {
+      if (!interaction.cutsceneId) {
+        this.setStatus(`Cutscene missing: ${label}.`);
+        return;
+      }
+
       const cutscene = this.project.cutscenes.find((candidate) => candidate.id === interaction.cutsceneId);
       if (!cutscene) {
         this.setStatus(`Cutscene missing: ${label}.`);
@@ -854,8 +876,19 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     if (interaction.type === "set_flag") {
-      this.runtimeFlags[interaction.flag] = interaction.value;
-      this.setStatus(`${interaction.flag}: ${interaction.value ? "true" : "false"}.`);
+      if (!interaction.flag) {
+        this.setStatus(`Flag missing: ${label}.`);
+        return;
+      }
+
+      const value = interaction.value ?? true;
+      this.runtimeFlags[interaction.flag] = value;
+      this.setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
+      return;
+    }
+
+    if (!interaction.mode) {
+      this.setStatus(`Movement mode missing: ${label}.`);
       return;
     }
 
@@ -897,7 +930,7 @@ export class AdventureScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.isMoving = false;
-        if (this.checkAreaLink()) {
+        if (this.checkTouchInteractions()) {
           return;
         }
         this.checkTrigger();
@@ -910,30 +943,17 @@ export class AdventureScene extends Phaser.Scene {
     return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
   }
 
-  private checkAreaLink(): boolean {
+  private checkTouchInteractions(): boolean {
     const eventBlock = this.currentArea.eventBlocks.find(
-      (candidate) =>
-        candidate.kind === "area_link" &&
-        candidate.x === this.playerPosition.x &&
-        candidate.y === this.playerPosition.y,
+      (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
     );
+    const interaction = eventBlock ? this.getEventInteraction(eventBlock) : undefined;
 
-    if (!eventBlock?.link) {
+    if (!eventBlock || !interaction || !canTouchActivate(interaction)) {
       return false;
     }
 
-    const targetArea = this.findArea(eventBlock.link.targetAreaId);
-    const targetEventBlock = this.findEventBlock(
-      eventBlock.link.targetEventBlockId,
-      eventBlock.link.targetAreaId,
-    );
-
-    if (!targetArea || !targetEventBlock) {
-      this.setStatus(`Link target missing: ${eventBlock.name}.`);
-      return false;
-    }
-
-    this.movePlayerToArea(targetArea.id, targetEventBlock);
+    this.runInteraction(interaction, eventBlock.name);
     return true;
   }
 
@@ -971,6 +991,22 @@ export class AdventureScene extends Phaser.Scene {
 
   private findEventBlock(id: string, areaId = this.currentArea.id): EventBlock | undefined {
     return this.findArea(areaId)?.eventBlocks.find((eventBlock) => eventBlock.id === id);
+  }
+
+  private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
+    if (eventBlock.interaction) {
+      return eventBlock.interaction;
+    }
+
+    if (eventBlock.kind === "area_link" && eventBlock.link) {
+      return {
+        type: "area_link",
+        activationMode: "on_touch",
+        ...eventBlock.link,
+      };
+    }
+
+    return undefined;
   }
 
   private setStatus(message: string) {

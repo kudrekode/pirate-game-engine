@@ -38,12 +38,34 @@ export type MovementResult = {
   movementMode?: MovementMode;
 };
 
-export type Interaction =
-  | { type: "area_link"; targetAreaId: string; targetEventBlockId: string }
-  | { type: "teleport"; targetAreaId: string; targetEventBlockId: string }
-  | { type: "play_cutscene"; cutsceneId: string }
-  | { type: "set_flag"; flag: string; value: boolean }
-  | { type: "change_movement_mode"; mode: Exclude<MovementMode, "swim"> };
+export type InteractionActivationMode = "on_touch" | "on_interact" | "both" | "disabled";
+
+export type InteractionType =
+  | "area_link"
+  | "teleport"
+  | "play_cutscene"
+  | "set_flag"
+  | "change_movement_mode";
+
+export type Interaction = {
+  type: InteractionType;
+  activationMode: InteractionActivationMode;
+  prompt?: string;
+  targetAreaId?: string;
+  targetEventBlockId?: string;
+  cutsceneId?: string;
+  flag?: string;
+  value?: boolean;
+  mode?: Exclude<MovementMode, "swim">;
+};
+
+export type EditorSelection =
+  | { type: "eventBlock"; areaId: string; id: string }
+  | { type: "structure"; areaId: string; id: string }
+  | { type: "overlay"; areaId: string; x: number; y: number }
+  | { type: "terrain"; areaId: string; x: number; y: number }
+  | { type: "area"; areaId: string }
+  | null;
 
 export type GameArea = {
   id: string;

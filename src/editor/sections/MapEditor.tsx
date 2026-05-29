@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { areaTemplates, type AreaTemplateId } from "../../data/areaTemplates";
 import {
+  getOverlayPreset,
   getStructurePreset,
   getTerrainPreset,
   overlayPresets,
@@ -8,7 +9,15 @@ import {
   terrainPresets,
 } from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { EventBlock, GameAreaKind, Interaction, MovementMode, PixelAsset } from "../../types/game";
+import type {
+  EditorSelection,
+  EventBlock,
+  GameAreaKind,
+  Interaction,
+  InteractionActivationMode,
+  MovementRule,
+  PixelAsset,
+} from "../../types/game";
 
 type MapTool = "paint" | "eraser" | "fill" | "event-block" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
@@ -30,6 +39,7 @@ const interactionTypes = [
 ] as const;
 
 type InteractionTypeOption = (typeof interactionTypes)[number];
+const activationModes: InteractionActivationMode[] = ["on_touch", "on_interact", "both", "disabled"];
 
 function cellKey(x: number, y: number): string {
   return `${x}:${y}`;
@@ -108,8 +118,10 @@ export function MapEditor() {
   const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
   const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
   const [selectedStructureId, setSelectedStructureId] = useState("small_house");
-  const [selectedMapStructureId, setSelectedMapStructureId] = useState("");
-  const [selectedEventBlockId, setSelectedEventBlockId] = useState(activeArea.eventBlocks[0]?.id ?? "");
+  const [selection, setSelection] = useState<EditorSelection>({
+    type: "area",
+    areaId: activeArea.id,
+  });
   const [isPainting, setIsPainting] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -130,14 +142,43 @@ export function MapEditor() {
 
   useEffect(() => {
     setDraftMapSize({ width: activeArea.width, height: activeArea.height });
-    setSelectedEventBlockId((selectedId) =>
-      activeArea.eventBlocks.some((eventBlock) => eventBlock.id === selectedId)
-        ? selectedId
-        : activeArea.eventBlocks[0]?.id ?? "",
-    );
-    setSelectedMapStructureId((selectedId) =>
-      activeArea.structures.some((structure) => structure.id === selectedId) ? selectedId : "",
-    );
+    setSelection((currentSelection) => {
+      if (!currentSelection || currentSelection.areaId !== activeArea.id) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
+        currentSelection.type === "eventBlock" &&
+        !activeArea.eventBlocks.some((eventBlock) => eventBlock.id === currentSelection.id)
+      ) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
+        currentSelection.type === "structure" &&
+        !activeArea.structures.some((structure) => structure.id === currentSelection.id)
+      ) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
+        (currentSelection.type === "overlay" || currentSelection.type === "terrain") &&
+        !isInBounds(currentSelection.x, currentSelection.y, activeArea.width, activeArea.height)
+      ) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
+        currentSelection.type === "overlay" &&
+        !activeArea.overlayTiles.some(
+          (tile) => tile.x === currentSelection.x && tile.y === currentSelection.y,
+        )
+      ) {
+        return { type: "terrain", areaId: activeArea.id, x: currentSelection.x, y: currentSelection.y };
+      }
+
+      return currentSelection;
+    });
   }, [activeArea]);
 
   const terrainLookup = useMemo(() => {
@@ -166,12 +207,30 @@ export function MapEditor() {
     );
   }, [project.pixelAssets]);
 
-  const selectedEventBlock = activeArea.eventBlocks.find(
-    (eventBlock) => eventBlock.id === selectedEventBlockId,
-  );
-  const selectedMapStructure = activeArea.structures.find(
-    (structure) => structure.id === selectedMapStructureId,
-  );
+  const selectedEventBlock =
+    selection?.type === "eventBlock" && selection.areaId === activeArea.id
+      ? activeArea.eventBlocks.find((eventBlock) => eventBlock.id === selection.id)
+      : undefined;
+  const selectedMapStructure =
+    selection?.type === "structure" && selection.areaId === activeArea.id
+      ? activeArea.structures.find((structure) => structure.id === selection.id)
+      : undefined;
+  const selectedOverlayTile =
+    selection?.type === "overlay" && selection.areaId === activeArea.id
+      ? {
+          x: selection.x,
+          y: selection.y,
+          overlayId: overlayLookup.get(cellKey(selection.x, selection.y)) ?? "",
+        }
+      : undefined;
+  const selectedTerrainTile =
+    selection?.type === "terrain" && selection.areaId === activeArea.id
+      ? {
+          x: selection.x,
+          y: selection.y,
+          tileId: terrainLookup.get(cellKey(selection.x, selection.y)) ?? "grass",
+        }
+      : undefined;
   const selectedStructure = getStructurePreset(selectedStructureId);
   const cellSize = Math.round(activeArea.tileSize * zoom);
   const renderWidth = Math.min(MAX_MAP_SIZE, activeArea.width + AUTO_EXPAND_BUFFER_TILES);
@@ -310,8 +369,26 @@ export function MapEditor() {
       heightTiles: selectedStructure.heightTiles,
       blocksMovement: selectedStructure.blocksMovement,
     });
-    setSelectedMapStructureId(id);
-    setSelectedEventBlockId("");
+    setSelection({ type: "structure", areaId: activeArea.id, id });
+  }
+
+  function findStructureAt(x: number, y: number) {
+    return [...activeArea.structures].reverse().find(
+      (structure) =>
+        x >= structure.x &&
+        y >= structure.y &&
+        x < structure.x + structure.widthTiles &&
+        y < structure.y + structure.heightTiles,
+    );
+  }
+
+  function selectPaintedCell(x: number, y: number) {
+    if (paintLayer === "overlay" && activeTool === "paint") {
+      setSelection({ type: "overlay", areaId: activeArea.id, x, y });
+      return;
+    }
+
+    setSelection({ type: "terrain", areaId: activeArea.id, x, y });
   }
 
   function handleCellPointerDown(event: PointerEvent<HTMLButtonElement>, x: number, y: number) {
@@ -326,14 +403,12 @@ export function MapEditor() {
 
     if (activeTool === "event-block") {
       if (eventBlock) {
-        setSelectedEventBlockId(eventBlock.id);
-        setSelectedMapStructureId("");
+        setSelection({ type: "eventBlock", areaId: activeArea.id, id: eventBlock.id });
         return;
       }
 
       const id = addEventBlock(x, y);
-      setSelectedEventBlockId(id);
-      setSelectedMapStructureId("");
+      setSelection({ type: "eventBlock", areaId: activeArea.id, id });
       return;
     }
 
@@ -343,19 +418,31 @@ export function MapEditor() {
     }
 
     if (eventBlock) {
-      setSelectedEventBlockId(eventBlock.id);
-      setSelectedMapStructureId("");
+      setSelection({ type: "eventBlock", areaId: activeArea.id, id: eventBlock.id });
+      return;
+    }
+
+    const structure = findStructureAt(x, y);
+    if (structure) {
+      setSelection({ type: "structure", areaId: activeArea.id, id: structure.id });
+      return;
+    }
+
+    if (overlayLookup.has(cellKey(x, y)) && activeTool !== "eraser" && paintLayer !== "overlay") {
+      setSelection({ type: "overlay", areaId: activeArea.id, x, y });
       return;
     }
 
     if (activeTool === "fill") {
       floodFillFrom(x, y);
+      selectPaintedCell(x, y);
       return;
     }
 
     paintedCellsRef.current.clear();
     setIsPainting(true);
     applyBrush(x, y);
+    selectPaintedCell(x, y);
   }
 
   function handlePaletteResizeStart(event: PointerEvent<HTMLDivElement>) {
@@ -467,15 +554,47 @@ export function MapEditor() {
 
   function updateSelectedEventKind(kind: EventBlock["kind"]) {
     if (kind === "area_link") {
-      updateSelectedEventBlock({ kind, link: makeDefaultAreaLink() });
+      const link = makeDefaultAreaLink();
+      updateSelectedEventBlock({
+        kind,
+        link,
+        interaction: {
+          type: "area_link",
+          activationMode: "on_touch",
+          ...link,
+        },
+      });
       return;
     }
 
-    updateSelectedEventBlock({ kind, link: undefined });
+    updateSelectedEventBlock({
+      kind,
+      link: undefined,
+      ...(selectedEventBlock?.interaction?.type === "area_link" ? { interaction: undefined } : {}),
+    });
+  }
+
+  function updateSelectedAreaLink(link: ReturnType<typeof makeDefaultAreaLink>) {
+    updateSelectedEventBlock({
+      link,
+      interaction:
+        selectedEventBlock?.interaction?.type === "area_link"
+          ? {
+              ...selectedEventBlock.interaction,
+              targetAreaId: link.targetAreaId,
+              targetEventBlockId: link.targetEventBlockId,
+            }
+          : {
+              type: "area_link",
+              activationMode: "on_touch",
+              targetAreaId: link.targetAreaId,
+              targetEventBlockId: link.targetEventBlockId,
+            },
+    });
   }
 
   function updateSelectedAreaLinkTargetArea(targetAreaId: string) {
-    updateSelectedEventBlock({ link: makeDefaultAreaLink(targetAreaId) });
+    updateSelectedAreaLink(makeDefaultAreaLink(targetAreaId));
   }
 
   function updateSelectedAreaLinkTargetEvent(targetEventBlockId: string) {
@@ -483,11 +602,9 @@ export function MapEditor() {
       return;
     }
 
-    updateSelectedEventBlock({
-      link: {
-        targetAreaId: defaultLinkTargetArea.id,
-        targetEventBlockId,
-      },
+    updateSelectedAreaLink({
+      targetAreaId: defaultLinkTargetArea.id,
+      targetEventBlockId,
     });
   }
 
@@ -499,22 +616,70 @@ export function MapEditor() {
     return project.areas.find((area) => area.id === interaction.targetAreaId) ?? project.areas[0];
   }
 
-  function makeDefaultInteraction(type: Exclude<InteractionTypeOption, "none">): Interaction {
-    if (type === "play_cutscene") {
-      return { type, cutsceneId: project.cutscenes[0]?.id ?? "" };
+  function getDefaultActivationMode(type: Exclude<InteractionTypeOption, "none">): InteractionActivationMode {
+    if (selectedMapStructure) {
+      return "on_interact";
     }
 
-    if (type === "set_flag") {
-      return { type, flag: "flag_1", value: true };
+    if (!selectedEventBlock) {
+      return "on_interact";
+    }
+
+    if (selectedEventBlock.kind === "trigger" || selectedEventBlock.kind === "area_link") {
+      return "on_touch";
+    }
+
+    return type === "area_link" || type === "teleport" ? "on_touch" : "on_interact";
+  }
+
+  function getDefaultPrompt(type: Exclude<InteractionTypeOption, "none">, mode: Interaction["mode"] = "walk") {
+    if (type === "area_link" || type === "teleport") {
+      return "Press E to enter";
     }
 
     if (type === "change_movement_mode") {
-      return { type, mode: "walk" };
+      return mode === "sail" ? "Press E to board" : "Press E to ride";
+    }
+
+    return "Press E to inspect";
+  }
+
+  function makeDefaultInteraction(type: Exclude<InteractionTypeOption, "none">): Interaction {
+    const activationMode = getDefaultActivationMode(type);
+
+    if (type === "play_cutscene") {
+      return {
+        type,
+        activationMode,
+        prompt: getDefaultPrompt(type),
+        cutsceneId: project.cutscenes[0]?.id ?? "",
+      };
+    }
+
+    if (type === "set_flag") {
+      return {
+        type,
+        activationMode,
+        prompt: getDefaultPrompt(type),
+        flag: "flag_1",
+        value: true,
+      };
+    }
+
+    if (type === "change_movement_mode") {
+      return {
+        type,
+        activationMode,
+        prompt: getDefaultPrompt(type, "walk"),
+        mode: "walk",
+      };
     }
 
     const targetArea = project.areas.find((area) => area.id !== activeArea.id) ?? project.areas[0];
     return {
       type,
+      activationMode,
+      prompt: getDefaultPrompt(type),
       targetAreaId: targetArea?.id ?? "",
       targetEventBlockId: targetArea?.eventBlocks[0]?.id ?? "",
     };
@@ -527,7 +692,21 @@ export function MapEditor() {
     }
 
     if (selectedEventBlock) {
-      updateSelectedEventBlock({ interaction });
+      updateSelectedEventBlock({
+        interaction,
+        ...(selectedEventBlock.kind === "area_link"
+          ? interaction?.type === "area_link" &&
+            interaction.targetAreaId &&
+            interaction.targetEventBlockId
+            ? {
+                link: {
+                  targetAreaId: interaction.targetAreaId,
+                  targetEventBlockId: interaction.targetEventBlockId,
+                },
+              }
+            : { link: undefined }
+          : {}),
+      });
     }
   }
 
@@ -557,6 +736,45 @@ export function MapEditor() {
           </select>
         </label>
 
+        {interaction ? (
+          <>
+            <label>
+              Activation
+              <select
+                onChange={(event) =>
+                  updateSelectedInteraction({
+                    ...interaction,
+                    activationMode: event.target.value as InteractionActivationMode,
+                  })
+                }
+                value={interaction.activationMode}
+              >
+                {activationModes.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {mode === "on_touch"
+                      ? "On touch"
+                      : mode === "on_interact"
+                        ? "On interact"
+                        : mode === "both"
+                          ? "Both"
+                          : "Disabled"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Prompt
+              <input
+                onChange={(event) =>
+                  updateSelectedInteraction({ ...interaction, prompt: event.target.value })
+                }
+                placeholder={getDefaultPrompt(interaction.type, interaction.mode)}
+                value={interaction.prompt ?? ""}
+              />
+            </label>
+          </>
+        ) : null}
+
         {interaction?.type === "area_link" || interaction?.type === "teleport" ? (
           <>
             <label>
@@ -585,11 +803,11 @@ export function MapEditor() {
                 onChange={(event) =>
                   updateSelectedInteraction({
                     ...interaction,
-                    targetAreaId: targetArea?.id ?? interaction.targetAreaId,
+                    targetAreaId: targetArea?.id ?? interaction.targetAreaId ?? "",
                     targetEventBlockId: event.target.value,
                   })
                 }
-                value={interaction.targetEventBlockId}
+                value={interaction.targetEventBlockId ?? ""}
               >
                 {targetEventBlocks.map((eventBlock) => (
                   <option key={eventBlock.id} value={eventBlock.id}>
@@ -606,9 +824,9 @@ export function MapEditor() {
             Cutscene
             <select
               onChange={(event) =>
-                updateSelectedInteraction({ type: "play_cutscene", cutsceneId: event.target.value })
+                updateSelectedInteraction({ ...interaction, cutsceneId: event.target.value })
               }
-              value={interaction.cutsceneId}
+              value={interaction.cutsceneId ?? ""}
             >
               {project.cutscenes.map((cutscene) => (
                 <option key={cutscene.id} value={cutscene.id}>
@@ -627,12 +845,12 @@ export function MapEditor() {
                 onChange={(event) =>
                   updateSelectedInteraction({ ...interaction, flag: event.target.value })
                 }
-                value={interaction.flag}
+                value={interaction.flag ?? ""}
               />
             </label>
             <label className="checkbox-row standalone">
               <input
-                checked={interaction.value}
+                checked={interaction.value ?? true}
                 onChange={(event) =>
                   updateSelectedInteraction({ ...interaction, value: event.target.checked })
                 }
@@ -649,11 +867,11 @@ export function MapEditor() {
             <select
               onChange={(event) =>
                 updateSelectedInteraction({
-                  type: "change_movement_mode",
-                  mode: event.target.value as Exclude<MovementMode, "swim">,
+                  ...interaction,
+                  mode: event.target.value as NonNullable<Interaction["mode"]>,
                 })
               }
-              value={interaction.mode}
+              value={interaction.mode ?? "walk"}
             >
               <option value="walk">Walk</option>
               <option value="sail">Sail</option>
@@ -670,10 +888,8 @@ export function MapEditor() {
       return;
     }
 
-    const nextSelectedId =
-      activeArea.eventBlocks.find((eventBlock) => eventBlock.id !== selectedEventBlock.id)?.id ?? "";
     deleteEventBlock(selectedEventBlock.id);
-    setSelectedEventBlockId(nextSelectedId);
+    setSelection({ type: "area", areaId: activeArea.id });
   }
 
   function applyMapResize() {
@@ -739,6 +955,377 @@ export function MapEditor() {
     setSelectedStructureId(id);
     setPaintLayer("structure");
     setActiveTool("structure");
+  }
+
+  function movementRuleSummary(rule?: MovementRule, fallback = "No explicit rule") {
+    if (!rule || Object.keys(rule).length === 0) {
+      return fallback;
+    }
+
+    const walkable =
+      rule.walkable === undefined ? "inherits walkability" : rule.walkable ? "walkable" : "blocked";
+    const mode = rule.movementMode ? `mode ${rule.movementMode}` : "default mode";
+    const speed = rule.speedMultiplier ? `speed x${rule.speedMultiplier}` : "speed x1";
+    return `${walkable}, ${mode}, ${speed}`;
+  }
+
+  function deleteSelectedStructure() {
+    if (!selectedMapStructure) {
+      return;
+    }
+
+    deleteStructure(selectedMapStructure.id);
+    setSelection({ type: "area", areaId: activeArea.id });
+  }
+
+  function renderAreaInspector() {
+    return (
+      <>
+        <div className="panel-title">Area Summary</div>
+        <div className="form-stack">
+          <div className="coordinate-readout">
+            {activeArea.name} ({activeArea.kind})
+          </div>
+          <div className="coordinate-readout">
+            {activeArea.width} x {activeArea.height} tiles, {activeArea.tileSize}px tiles
+          </div>
+          <div className="coordinate-readout">
+            {activeArea.terrainTiles.length} terrain tiles, {activeArea.overlayTiles.length} overlays,{" "}
+            {activeArea.structures.length} structures, {activeArea.eventBlocks.length} events
+          </div>
+          <button
+            className="full-width"
+            onClick={() => setSelection({ type: "area", areaId: activeArea.id })}
+            type="button"
+          >
+            Select area
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  function renderTerrainInspector() {
+    if (!selectedTerrainTile) {
+      return renderAreaInspector();
+    }
+
+    const terrain = getTerrainPreset(selectedTerrainTile.tileId);
+
+    return (
+      <>
+        <div className="panel-title">Terrain</div>
+        <div className="form-stack">
+          <div className="coordinate-readout">
+            {terrain.label} ({selectedTerrainTile.tileId}) at x {selectedTerrainTile.x}, y{" "}
+            {selectedTerrainTile.y}
+          </div>
+          <div className="coordinate-readout">{movementRuleSummary(terrain.movementRule)}</div>
+          <button
+            onClick={() =>
+              setTiles([
+                {
+                  x: selectedTerrainTile.x,
+                  y: selectedTerrainTile.y,
+                  tileId: selectedTerrainId,
+                },
+              ])
+            }
+            type="button"
+          >
+            Replace with selected terrain
+          </button>
+          <button
+            onClick={() =>
+              setTiles([
+                {
+                  x: selectedTerrainTile.x,
+                  y: selectedTerrainTile.y,
+                  tileId: "grass",
+                },
+              ])
+            }
+            type="button"
+          >
+            Reset to grass
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  function renderOverlayInspector() {
+    if (!selectedOverlayTile?.overlayId) {
+      return renderTerrainInspector();
+    }
+
+    const overlay = getOverlayPreset(selectedOverlayTile.overlayId);
+
+    return (
+      <>
+        <div className="panel-title">Overlay</div>
+        <div className="form-stack">
+          <div className="coordinate-readout">
+            {overlay.label} ({selectedOverlayTile.overlayId}) at x {selectedOverlayTile.x}, y{" "}
+            {selectedOverlayTile.y}
+          </div>
+          <div className="coordinate-readout">
+            {movementRuleSummary(overlay.movementRule, "Uses terrain movement")}
+          </div>
+          <button
+            onClick={() =>
+              setOverlayTiles([
+                {
+                  x: selectedOverlayTile.x,
+                  y: selectedOverlayTile.y,
+                  overlayId: selectedOverlayId,
+                },
+              ])
+            }
+            type="button"
+          >
+            Replace with selected overlay
+          </button>
+          <button
+            className="danger-button"
+            onClick={() => {
+              eraseOverlayTiles([{ x: selectedOverlayTile.x, y: selectedOverlayTile.y }]);
+              setSelection({
+                type: "terrain",
+                areaId: activeArea.id,
+                x: selectedOverlayTile.x,
+                y: selectedOverlayTile.y,
+              });
+            }}
+            type="button"
+          >
+            Delete overlay
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  function renderStructureInspector() {
+    if (!selectedMapStructure) {
+      return renderAreaInspector();
+    }
+
+    const preset = getStructurePreset(selectedMapStructure.structureId);
+
+    return (
+      <>
+        <div className="panel-title">Structure</div>
+        <div className="form-stack">
+          <label>
+            Name
+            <input
+              onChange={(event) => updateSelectedStructure({ name: event.target.value })}
+              value={selectedMapStructure.name}
+            />
+          </label>
+          <label>
+            Type
+            <select
+              onChange={(event) => {
+                const nextPreset = getStructurePreset(event.target.value);
+                updateSelectedStructure({
+                  structureId: nextPreset.id,
+                  widthTiles: nextPreset.widthTiles,
+                  heightTiles: nextPreset.heightTiles,
+                  blocksMovement: nextPreset.blocksMovement,
+                });
+              }}
+              value={selectedMapStructure.structureId}
+            >
+              {structurePresets.map((structure) => (
+                <option key={structure.id} value={structure.id}>
+                  {structure.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="form-grid compact">
+            <label>
+              X
+              <input
+                min={0}
+                onChange={(event) => updateSelectedStructure({ x: Number(event.target.value) })}
+                type="number"
+                value={selectedMapStructure.x}
+              />
+            </label>
+            <label>
+              Y
+              <input
+                min={0}
+                onChange={(event) => updateSelectedStructure({ y: Number(event.target.value) })}
+                type="number"
+                value={selectedMapStructure.y}
+              />
+            </label>
+            <label>
+              Width
+              <input
+                min={1}
+                onChange={(event) =>
+                  updateSelectedStructure({ widthTiles: Math.max(1, Number(event.target.value)) })
+                }
+                type="number"
+                value={selectedMapStructure.widthTiles}
+              />
+            </label>
+            <label>
+              Height
+              <input
+                min={1}
+                onChange={(event) =>
+                  updateSelectedStructure({ heightTiles: Math.max(1, Number(event.target.value)) })
+                }
+                type="number"
+                value={selectedMapStructure.heightTiles}
+              />
+            </label>
+          </div>
+          <label className="checkbox-row standalone">
+            <input
+              checked={selectedMapStructure.blocksMovement}
+              onChange={(event) => updateSelectedStructure({ blocksMovement: event.target.checked })}
+              type="checkbox"
+            />
+            Blocks movement
+          </label>
+          <div className="coordinate-readout">
+            Preset movement: {movementRuleSummary(selectedMapStructure.movementRule ?? preset.movementRule)}
+          </div>
+          {renderInteractionEditor(selectedMapStructure.interaction)}
+          <button className="danger-button" onClick={deleteSelectedStructure} type="button">
+            Delete structure
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  function renderEventInspector() {
+    if (!selectedEventBlock) {
+      return renderAreaInspector();
+    }
+
+    return (
+      <>
+        <div className="panel-title">Event Block</div>
+        <div className="form-stack">
+          <label>
+            Name
+            <input
+              onChange={(event) => updateSelectedEventBlock({ name: event.target.value })}
+              value={selectedEventBlock.name}
+            />
+          </label>
+          <label>
+            Tag
+            <input
+              onChange={(event) => updateSelectedEventBlock({ tag: event.target.value })}
+              value={selectedEventBlock.tag}
+            />
+          </label>
+          <label>
+            Kind
+            <select
+              onChange={(event) => updateSelectedEventKind(event.target.value as EventBlock["kind"])}
+              value={selectedEventBlock.kind}
+            >
+              <option value="spawn">Spawn</option>
+              <option value="trigger">Trigger</option>
+              <option value="area_link">Area Link</option>
+            </select>
+          </label>
+          <div className="form-grid compact">
+            <label>
+              X
+              <input
+                min={0}
+                onChange={(event) => updateSelectedEventBlock({ x: Number(event.target.value) })}
+                type="number"
+                value={selectedEventBlock.x}
+              />
+            </label>
+            <label>
+              Y
+              <input
+                min={0}
+                onChange={(event) => updateSelectedEventBlock({ y: Number(event.target.value) })}
+                type="number"
+                value={selectedEventBlock.y}
+              />
+            </label>
+          </div>
+          {selectedEventBlock.kind === "area_link" ? (
+            <>
+              <label>
+                Target area
+                <select
+                  onChange={(event) => updateSelectedAreaLinkTargetArea(event.target.value)}
+                  value={defaultLinkTargetArea?.id ?? ""}
+                >
+                  {project.areas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Target spawn/event
+                <select
+                  onChange={(event) => updateSelectedAreaLinkTargetEvent(event.target.value)}
+                  value={selectedLinkTargetEventBlockId}
+                >
+                  {linkTargetEventBlocks.map((eventBlock) => (
+                    <option key={eventBlock.id} value={eventBlock.id}>
+                      {eventBlock.name} ({eventBlock.kind})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : null}
+          <div className="coordinate-readout">
+            {selectedEventBlock.kind === "spawn"
+              ? "Spawn"
+              : selectedEventBlock.kind === "area_link"
+                ? "Link"
+                : "Trigger"}{" "}
+            at x {selectedEventBlock.x}, y {selectedEventBlock.y}
+          </div>
+          {renderInteractionEditor(selectedEventBlock.interaction)}
+          <button className="danger-button" onClick={deleteSelectedEventBlock} type="button">
+            Delete event block
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  function renderInspector() {
+    if (selectedEventBlock) {
+      return renderEventInspector();
+    }
+
+    if (selectedMapStructure) {
+      return renderStructureInspector();
+    }
+
+    if (selectedOverlayTile?.overlayId) {
+      return renderOverlayInspector();
+    }
+
+    if (selectedTerrainTile) {
+      return renderTerrainInspector();
+    }
+
+    return renderAreaInspector();
   }
 
   return (
@@ -1053,11 +1640,23 @@ export function MapEditor() {
               const eventBlock = eventLookup.get(key);
               const eventLabel = eventBlock?.tag || eventBlock?.name;
               const isOutsideMap = x >= activeArea.width || y >= activeArea.height;
+              const isSelectedTerrain =
+                selection?.type === "terrain" &&
+                selection.areaId === activeArea.id &&
+                selection.x === x &&
+                selection.y === y;
+              const isSelectedOverlay =
+                selection?.type === "overlay" &&
+                selection.areaId === activeArea.id &&
+                selection.x === x &&
+                selection.y === y;
 
               return (
                 <button
                   aria-label={`Tile ${x}, ${y}`}
-                  className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""}`}
+                  className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""} ${
+                    isSelectedTerrain || isSelectedOverlay ? "selected-cell" : ""
+                  } ${isSelectedOverlay ? "selected-overlay-cell" : ""}`}
                   key={key}
                   onPointerDown={(event) => handleCellPointerDown(event, x, y)}
                   onPointerEnter={() => handleCellPointerEnter(x, y)}
@@ -1082,7 +1681,9 @@ export function MapEditor() {
                   {eventBlock ? (
                     <span
                       className={`event-marker ${eventBlock.kind} ${
-                        selectedEventBlockId === eventBlock.id ? "selected-event" : ""
+                        selection?.type === "eventBlock" && selection.id === eventBlock.id
+                          ? "selected-event"
+                          : ""
                       }`}
                     >
                       <span className="event-marker-kind">
@@ -1099,11 +1700,16 @@ export function MapEditor() {
             const preset = getStructurePreset(structure.structureId);
             return (
               <button
-                className={`map-structure ${selectedMapStructureId === structure.id ? "selected" : ""}`}
+                className={`map-structure ${
+                  selection?.type === "structure" && selection.id === structure.id ? "selected" : ""
+                }`}
                 key={structure.id}
-                onClick={() => {
-                  setSelectedMapStructureId(structure.id);
-                  setSelectedEventBlockId("");
+                onClick={(event) => {
+                  event.preventDefault();
+                  setSelection({ type: "structure", areaId: activeArea.id, id: structure.id });
+                }}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
                 }}
                 style={{
                   left: structure.x * cellSize,
@@ -1126,101 +1732,7 @@ export function MapEditor() {
       </div>
 
       <aside className="inspector-panel">
-        {selectedMapStructure ? (
-          <>
-            <div className="panel-title">Structure</div>
-            <div className="form-stack">
-              <div className="coordinate-readout">
-                {selectedMapStructure.name}: x {selectedMapStructure.x}, y {selectedMapStructure.y},{" "}
-                {selectedMapStructure.widthTiles}x{selectedMapStructure.heightTiles}
-              </div>
-              <div className="coordinate-readout">
-                Blocks movement: {selectedMapStructure.blocksMovement ? "yes" : "no"}
-              </div>
-              {renderInteractionEditor(selectedMapStructure.interaction)}
-              <button className="danger-button" onClick={() => deleteStructure(selectedMapStructure.id)} type="button">
-                Delete structure
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="panel-title">Event block</div>
-            {selectedEventBlock ? (
-              <div className="form-stack">
-                <label>
-                  Name
-                  <input
-                    onChange={(event) => updateSelectedEventBlock({ name: event.target.value })}
-                    value={selectedEventBlock.name}
-                  />
-                </label>
-                <label>
-                  Tag
-                  <input
-                    onChange={(event) => updateSelectedEventBlock({ tag: event.target.value })}
-                    value={selectedEventBlock.tag}
-                  />
-                </label>
-                <label>
-                  Kind
-                  <select
-                    onChange={(event) => updateSelectedEventKind(event.target.value as EventBlock["kind"])}
-                    value={selectedEventBlock.kind}
-                  >
-                    <option value="spawn">Spawn</option>
-                    <option value="trigger">Trigger</option>
-                    <option value="area_link">Area Link</option>
-                  </select>
-                </label>
-                {selectedEventBlock.kind === "area_link" ? (
-                  <>
-                    <label>
-                      Target area
-                      <select
-                        onChange={(event) => updateSelectedAreaLinkTargetArea(event.target.value)}
-                        value={defaultLinkTargetArea?.id ?? ""}
-                      >
-                        {project.areas.map((area) => (
-                          <option key={area.id} value={area.id}>
-                            {area.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Target spawn/event
-                      <select
-                        onChange={(event) => updateSelectedAreaLinkTargetEvent(event.target.value)}
-                        value={selectedLinkTargetEventBlockId}
-                      >
-                        {linkTargetEventBlocks.map((eventBlock) => (
-                          <option key={eventBlock.id} value={eventBlock.id}>
-                            {eventBlock.name} ({eventBlock.kind})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </>
-                ) : null}
-                <div className="coordinate-readout">
-                  {selectedEventBlock.kind === "spawn"
-                    ? "Spawn"
-                    : selectedEventBlock.kind === "area_link"
-                      ? "Link"
-                      : "Trigger"}{" "}
-                  at x {selectedEventBlock.x}, y {selectedEventBlock.y}
-                </div>
-                {renderInteractionEditor(selectedEventBlock.interaction)}
-                <button className="danger-button" onClick={deleteSelectedEventBlock} type="button">
-                  Delete event block
-                </button>
-              </div>
-            ) : (
-              <p className="empty-state">Select an event block or structure.</p>
-            )}
-          </>
-        )}
+        {renderInspector()}
       </aside>
 
       {isPixelEditorOpen && editingPixelAsset ? (

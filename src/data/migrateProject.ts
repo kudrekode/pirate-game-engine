@@ -11,6 +11,7 @@ import type {
   GameAreaKind,
   GameProject,
   Interaction,
+  InteractionActivationMode,
   MapStructure,
   MapTile,
   MovementRule,
@@ -140,7 +141,35 @@ function migrateMovementRule(value: unknown): MovementRule | undefined {
   return Object.keys(rule).length > 0 ? rule : undefined;
 }
 
-function migrateInteraction(value: unknown): Interaction | undefined {
+function readActivationMode(
+  value: unknown,
+  fallback: InteractionActivationMode,
+): InteractionActivationMode {
+  return value === "on_touch" ||
+    value === "on_interact" ||
+    value === "both" ||
+    value === "disabled"
+    ? value
+    : fallback;
+}
+
+function withInteractionBase(
+  source: UnknownRecord,
+  fallbackActivationMode: InteractionActivationMode,
+  interaction: Omit<Interaction, "activationMode">,
+): Interaction {
+  const prompt = readString(source.prompt, "");
+  return {
+    ...interaction,
+    activationMode: readActivationMode(source.activationMode, fallbackActivationMode),
+    ...(prompt ? { prompt } : {}),
+  };
+}
+
+function migrateInteraction(
+  value: unknown,
+  fallbackActivationMode: InteractionActivationMode,
+): Interaction | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -149,25 +178,43 @@ function migrateInteraction(value: unknown): Interaction | undefined {
     const targetAreaId = readString(value.targetAreaId, "");
     const targetEventBlockId = readString(value.targetEventBlockId, "");
     return targetAreaId && targetEventBlockId
-      ? { type: value.type, targetAreaId, targetEventBlockId }
+      ? withInteractionBase(value, fallbackActivationMode, {
+          type: value.type,
+          targetAreaId,
+          targetEventBlockId,
+        })
       : undefined;
   }
 
   if (value.type === "play_cutscene") {
     const cutsceneId = readString(value.cutsceneId, "");
-    return cutsceneId ? { type: "play_cutscene", cutsceneId } : undefined;
+    return cutsceneId
+      ? withInteractionBase(value, fallbackActivationMode, {
+          type: "play_cutscene",
+          cutsceneId,
+        })
+      : undefined;
   }
 
   if (value.type === "set_flag") {
     const flag = readString(value.flag, "");
-    return flag ? { type: "set_flag", flag, value: readBoolean(value.value, true) } : undefined;
+    return flag
+      ? withInteractionBase(value, fallbackActivationMode, {
+          type: "set_flag",
+          flag,
+          value: readBoolean(value.value, true),
+        })
+      : undefined;
   }
 
   if (
     value.type === "change_movement_mode" &&
     (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
   ) {
-    return { type: "change_movement_mode", mode: value.mode };
+    return withInteractionBase(value, fallbackActivationMode, {
+      type: "change_movement_mode",
+      mode: value.mode,
+    });
   }
 
   return undefined;
@@ -188,6 +235,19 @@ function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): 
         ? item.kind
         : "trigger";
 
+    const link = kind === "area_link" ? migrateAreaLink(item.link) : undefined;
+    const fallbackActivationMode =
+      kind === "area_link" || kind === "trigger" ? "on_touch" : "on_interact";
+    const interaction =
+      migrateInteraction(item.interaction, fallbackActivationMode) ??
+      (kind === "area_link" && link
+        ? {
+            type: "area_link" as const,
+            activationMode: "on_touch" as const,
+            ...link,
+          }
+        : undefined);
+
     return [
       {
         id: readString(item.id, `event_${Date.now().toString(36)}`),
@@ -196,8 +256,8 @@ function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): 
         y: readNumber(item.y, 0, 0),
         tag: readString(item.tag, "event"),
         kind,
-        link: kind === "area_link" ? migrateAreaLink(item.link) : undefined,
-        interaction: migrateInteraction(item.interaction),
+        link,
+        interaction,
       },
     ];
   });
@@ -213,7 +273,7 @@ function migrateStructures(value: unknown): MapStructure[] {
       return [];
     }
 
-    const interaction = migrateInteraction(item.interaction);
+    const interaction = migrateInteraction(item.interaction, "on_interact");
 
     return [
       {

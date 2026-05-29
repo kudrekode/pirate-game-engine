@@ -69,6 +69,8 @@ const mainArea: GameArea = {
       blocksMovement: true,
       interaction: {
         type: "area_link",
+        activationMode: "on_interact",
+        prompt: "Press E to enter",
         targetAreaId: "area_house",
         targetEventBlockId: "spawn_house_entry",
       },
@@ -104,6 +106,8 @@ const mainArea: GameArea = {
       },
       interaction: {
         type: "area_link",
+        activationMode: "on_interact",
+        prompt: "Press E to enter",
         targetAreaId: "area_house",
         targetEventBlockId: "spawn_house_entry",
       },
@@ -140,6 +144,8 @@ const houseArea: GameArea = {
       blocksMovement: true,
       interaction: {
         type: "play_cutscene",
+        activationMode: "on_interact",
+        prompt: "Press E to inspect",
         cutsceneId: "intro_cutscene",
       },
     },
@@ -176,6 +182,7 @@ const houseArea: GameArea = {
       },
       interaction: {
         type: "area_link",
+        activationMode: "on_touch",
         targetAreaId: "area_main",
         targetEventBlockId: "spawn_start",
       },

@@ -456,6 +456,15 @@ label {
   outline-offset: -2px;
 }
 
+.map-cell.selected-cell {
+  outline: 3px solid rgba(245, 159, 0, 0.9);
+  outline-offset: -3px;
+}
+
+.map-cell.selected-overlay-cell {
+  box-shadow: inset 0 0 0 3px rgba(37, 99, 235, 0.75);
+}
+
 .tile-pattern {
   position: absolute;
   inset: 0;
