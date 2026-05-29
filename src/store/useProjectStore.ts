@@ -25,7 +25,9 @@ type ProjectStore = {
   loadFromLocalStorage: () => boolean;
   updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
   updateCamera: (patch: Partial<CameraConfig>) => void;
+  resizeMap: (width: number, height: number) => number;
   setTile: (x: number, y: number, tileId: string) => void;
+  setTiles: (tiles: { x: number; y: number; tileId: string }[]) => void;
   addEventBlock: (x: number, y: number) => string;
   updateEventBlock: (id: string, patch: Partial<EventBlock>) => void;
   deleteEventBlock: (id: string) => void;
@@ -44,6 +46,10 @@ function makeId(prefix: string): string {
   }
 
   return `${prefix}_${Date.now().toString(36)}`;
+}
+
+function tileKey(x: number, y: number): string {
+  return `${x}:${y}`;
 }
 
 function cleanProgressionReferences(project: GameProject, deletedKind: "cutscene" | "event", deletedId: string) {
@@ -159,6 +165,62 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       },
     })),
 
+  resizeMap: (width, height) => {
+    const nextWidth = Math.min(200, Math.max(1, Math.round(width)));
+    const nextHeight = Math.min(200, Math.max(1, Math.round(height)));
+    let removedEventBlockCount = 0;
+
+    set((state) => {
+      const existingTiles = new Map(
+        state.project.map.tiles.map((tile) => [tileKey(tile.x, tile.y), tile.tileId]),
+      );
+      const tiles = [];
+
+      for (let y = 0; y < nextHeight; y += 1) {
+        for (let x = 0; x < nextWidth; x += 1) {
+          tiles.push({
+            x,
+            y,
+            tileId: existingTiles.get(tileKey(x, y)) ?? "grass",
+          });
+        }
+      }
+
+      const eventBlocks = state.project.map.eventBlocks.filter((eventBlock) => {
+        const isInBounds =
+          eventBlock.x >= 0 &&
+          eventBlock.y >= 0 &&
+          eventBlock.x < nextWidth &&
+          eventBlock.y < nextHeight;
+
+        if (!isInBounds) {
+          removedEventBlockCount += 1;
+        }
+
+        return isInBounds;
+      });
+
+      const project = {
+        ...state.project,
+        map: {
+          ...state.project.map,
+          width: nextWidth,
+          height: nextHeight,
+          tiles,
+          eventBlocks,
+        },
+      };
+
+      state.project.map.eventBlocks
+        .filter((eventBlock) => !eventBlocks.some((kept) => kept.id === eventBlock.id))
+        .forEach((eventBlock) => cleanProgressionReferences(project, "event", eventBlock.id));
+
+      return { project };
+    });
+
+    return removedEventBlockCount;
+  },
+
   setTile: (x, y, tileId) =>
     set((state) => {
       const hasTile = state.project.map.tiles.some((tile) => tile.x === x && tile.y === y);
@@ -167,6 +229,41 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
             tile.x === x && tile.y === y ? { ...tile, tileId } : tile,
           )
         : [...state.project.map.tiles, { x, y, tileId }];
+
+      return {
+        project: {
+          ...state.project,
+          map: {
+            ...state.project.map,
+            tiles,
+          },
+        },
+      };
+    }),
+
+  setTiles: (tileUpdates) =>
+    set((state) => {
+      if (tileUpdates.length === 0) {
+        return state;
+      }
+
+      const updates = new Map(tileUpdates.map((tile) => [tileKey(tile.x, tile.y), tile.tileId]));
+      const existingKeys = new Set(state.project.map.tiles.map((tile) => tileKey(tile.x, tile.y)));
+      const tiles = state.project.map.tiles.map((tile) => {
+        const nextTileId = updates.get(tileKey(tile.x, tile.y));
+        return nextTileId && nextTileId !== tile.tileId ? { ...tile, tileId: nextTileId } : tile;
+      });
+      tileUpdates.forEach((tile) => {
+        if (
+          !existingKeys.has(tileKey(tile.x, tile.y)) &&
+          tile.x >= 0 &&
+          tile.y >= 0 &&
+          tile.x < state.project.map.width &&
+          tile.y < state.project.map.height
+        ) {
+          tiles.push(tile);
+        }
+      });
 
       return {
         project: {
