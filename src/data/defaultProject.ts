@@ -1,4 +1,5 @@
 import type { GameProject, MapTile } from "../types/game";
+import { defaultTileStyles } from "./presets";
 import { defaultCameraConfig } from "./projectDefaults";
 
 function makeTiles(width: number, height: number): MapTile[] {
@@ -40,7 +41,9 @@ export const defaultProject: GameProject = {
     width: 20,
     height: 15,
     tileSize: 32,
+    terrainTiles: makeTiles(20, 15),
     tiles: makeTiles(20, 15),
+    objectTiles: [],
     eventBlocks: [
       {
         id: "spawn_start",
@@ -61,6 +64,7 @@ export const defaultProject: GameProject = {
     ],
   },
   camera: defaultCameraConfig,
+  tileStyles: defaultTileStyles,
   player: {
     name: "Ari",
     mapAvatarId: "scout",

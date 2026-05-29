@@ -7,9 +7,11 @@ import type {
   Cutscene,
   EventBlock,
   GameProject,
+  MapTile,
   PlayerConfig,
   ProgressionAction,
   ProgressionStep,
+  TileStyleConfig,
 } from "../types/game";
 
 const STORAGE_KEY = "adventure-builder-project-v1";
@@ -25,6 +27,7 @@ type ProjectStore = {
   loadFromLocalStorage: () => boolean;
   updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
   updateCamera: (patch: Partial<CameraConfig>) => void;
+  updateTileStyle: (tileId: string, patch: Partial<TileStyleConfig[string]>) => void;
   resizeMap: (width: number, height: number) => number;
   setTile: (x: number, y: number, tileId: string) => void;
   setTiles: (tiles: { x: number; y: number; tileId: string }[]) => void;
@@ -50,6 +53,37 @@ function makeId(prefix: string): string {
 
 function tileKey(x: number, y: number): string {
   return `${x}:${y}`;
+}
+
+function clampMapSize(value: number): number {
+  return Math.min(200, Math.max(1, Math.round(value)));
+}
+
+function buildResizedTerrainTiles(
+  currentTiles: MapTile[],
+  width: number,
+  height: number,
+  updates: { x: number; y: number; tileId: string }[] = [],
+): MapTile[] {
+  const tileLookup = new Map(currentTiles.map((tile) => [tileKey(tile.x, tile.y), tile.tileId]));
+  updates.forEach((tile) => {
+    if (tile.x >= 0 && tile.y >= 0 && tile.x < width && tile.y < height) {
+      tileLookup.set(tileKey(tile.x, tile.y), tile.tileId);
+    }
+  });
+
+  const tiles: MapTile[] = [];
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      tiles.push({
+        x,
+        y,
+        tileId: tileLookup.get(tileKey(x, y)) ?? "grass",
+      });
+    }
+  }
+
+  return tiles;
 }
 
 function cleanProgressionReferences(project: GameProject, deletedKind: "cutscene" | "event", deletedId: string) {
@@ -165,26 +199,31 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       },
     })),
 
+  updateTileStyle: (tileId, patch) =>
+    set((state) => ({
+      project: {
+        ...state.project,
+        tileStyles: {
+          ...state.project.tileStyles,
+          [tileId]: {
+            ...state.project.tileStyles[tileId],
+            ...patch,
+          },
+        },
+      },
+    })),
+
   resizeMap: (width, height) => {
-    const nextWidth = Math.min(200, Math.max(1, Math.round(width)));
-    const nextHeight = Math.min(200, Math.max(1, Math.round(height)));
+    const nextWidth = clampMapSize(width);
+    const nextHeight = clampMapSize(height);
     let removedEventBlockCount = 0;
 
     set((state) => {
-      const existingTiles = new Map(
-        state.project.map.tiles.map((tile) => [tileKey(tile.x, tile.y), tile.tileId]),
+      const terrainTiles = buildResizedTerrainTiles(
+        state.project.map.terrainTiles ?? state.project.map.tiles,
+        nextWidth,
+        nextHeight,
       );
-      const tiles = [];
-
-      for (let y = 0; y < nextHeight; y += 1) {
-        for (let x = 0; x < nextWidth; x += 1) {
-          tiles.push({
-            x,
-            y,
-            tileId: existingTiles.get(tileKey(x, y)) ?? "grass",
-          });
-        }
-      }
 
       const eventBlocks = state.project.map.eventBlocks.filter((eventBlock) => {
         const isInBounds =
@@ -206,7 +245,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           ...state.project.map,
           width: nextWidth,
           height: nextHeight,
-          tiles,
+          terrainTiles,
+          tiles: terrainTiles,
           eventBlocks,
         },
       };
@@ -223,19 +263,28 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   setTile: (x, y, tileId) =>
     set((state) => {
-      const hasTile = state.project.map.tiles.some((tile) => tile.x === x && tile.y === y);
-      const tiles = hasTile
-        ? state.project.map.tiles.map((tile) =>
-            tile.x === x && tile.y === y ? { ...tile, tileId } : tile,
-          )
-        : [...state.project.map.tiles, { x, y, tileId }];
+      if (x < 0 || y < 0) {
+        return state;
+      }
+
+      const nextWidth = clampMapSize(Math.max(state.project.map.width, x + 1));
+      const nextHeight = clampMapSize(Math.max(state.project.map.height, y + 1));
+      const terrainTiles = buildResizedTerrainTiles(
+        state.project.map.terrainTiles ?? state.project.map.tiles,
+        nextWidth,
+        nextHeight,
+        [{ x, y, tileId }],
+      );
 
       return {
         project: {
           ...state.project,
           map: {
             ...state.project.map,
-            tiles,
+            width: nextWidth,
+            height: nextHeight,
+            terrainTiles,
+            tiles: terrainTiles,
           },
         },
       };
@@ -247,57 +296,74 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         return state;
       }
 
-      const updates = new Map(tileUpdates.map((tile) => [tileKey(tile.x, tile.y), tile.tileId]));
-      const existingKeys = new Set(state.project.map.tiles.map((tile) => tileKey(tile.x, tile.y)));
-      const tiles = state.project.map.tiles.map((tile) => {
-        const nextTileId = updates.get(tileKey(tile.x, tile.y));
-        return nextTileId && nextTileId !== tile.tileId ? { ...tile, tileId: nextTileId } : tile;
-      });
-      tileUpdates.forEach((tile) => {
-        if (
-          !existingKeys.has(tileKey(tile.x, tile.y)) &&
-          tile.x >= 0 &&
-          tile.y >= 0 &&
-          tile.x < state.project.map.width &&
-          tile.y < state.project.map.height
-        ) {
-          tiles.push(tile);
-        }
-      });
+      const validUpdates = tileUpdates.filter((tile) => tile.x >= 0 && tile.y >= 0);
+      if (validUpdates.length === 0) {
+        return state;
+      }
+
+      const maxX = Math.max(...validUpdates.map((tile) => tile.x));
+      const maxY = Math.max(...validUpdates.map((tile) => tile.y));
+      const nextWidth = clampMapSize(Math.max(state.project.map.width, maxX + 1));
+      const nextHeight = clampMapSize(Math.max(state.project.map.height, maxY + 1));
+      const terrainTiles = buildResizedTerrainTiles(
+        state.project.map.terrainTiles ?? state.project.map.tiles,
+        nextWidth,
+        nextHeight,
+        validUpdates,
+      );
 
       return {
         project: {
           ...state.project,
           map: {
             ...state.project.map,
-            tiles,
+            width: nextWidth,
+            height: nextHeight,
+            terrainTiles,
+            tiles: terrainTiles,
           },
         },
       };
     }),
 
   addEventBlock: (x, y) => {
+    const nextX = Math.max(0, Math.round(x));
+    const nextY = Math.max(0, Math.round(y));
     const index = get().project.map.eventBlocks.length + 1;
     const id = makeId("event");
 
     set((state) => ({
-      project: {
-        ...state.project,
-        map: {
-          ...state.project.map,
-          eventBlocks: [
-            ...state.project.map.eventBlocks,
-            {
-              id,
-              name: `Event ${index}`,
-              x,
-              y,
-              tag: `event_${index}`,
-              kind: "trigger",
-            },
-          ],
-        },
-      },
+      project: (() => {
+        const nextWidth = clampMapSize(Math.max(state.project.map.width, nextX + 1));
+        const nextHeight = clampMapSize(Math.max(state.project.map.height, nextY + 1));
+        const terrainTiles = buildResizedTerrainTiles(
+          state.project.map.terrainTiles ?? state.project.map.tiles,
+          nextWidth,
+          nextHeight,
+        );
+
+        return {
+          ...state.project,
+          map: {
+            ...state.project.map,
+            width: nextWidth,
+            height: nextHeight,
+            terrainTiles,
+            tiles: terrainTiles,
+            eventBlocks: [
+              ...state.project.map.eventBlocks,
+              {
+                id,
+                name: `Event ${index}`,
+                x: nextX,
+                y: nextY,
+                tag: `event_${index}`,
+                kind: "trigger",
+              },
+            ],
+          },
+        };
+      })(),
     }));
 
     return id;

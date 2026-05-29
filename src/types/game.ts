@@ -5,6 +5,7 @@ export type GameProject = {
   };
   map: GameMap;
   camera: CameraConfig;
+  tileStyles: TileStyleConfig;
   player: PlayerConfig;
   cutscenes: Cutscene[];
   progression: ProgressionStep[];
@@ -14,7 +15,9 @@ export type GameMap = {
   width: number;
   height: number;
   tileSize: number;
+  terrainTiles: MapTile[];
   tiles: MapTile[];
+  objectTiles?: MapObject[];
   eventBlocks: EventBlock[];
 };
 
@@ -24,6 +27,13 @@ export type MapTile = {
   tileId: string;
 };
 
+export type MapObject = {
+  id: string;
+  x: number;
+  y: number;
+  objectId: string;
+};
+
 export type EventBlock = {
   id: string;
   name: string;
@@ -31,6 +41,13 @@ export type EventBlock = {
   y: number;
   tag: string;
   kind: "spawn" | "trigger";
+};
+
+export type TileStyleConfig = {
+  [tileId: string]: {
+    color: string;
+    label?: string;
+  };
 };
 
 export type CameraConfig = {
@@ -73,4 +90,4 @@ export type ProgressionAction =
   | { type: "teleport_player"; eventBlockId: string }
   | { type: "end_game" };
 
-// TODO: Future foundations: node graph progression, enemies, sounds, UI editor, and asset imports.
+// TODO: Future foundations: terrain/object/entity layers, node graph progression, enemies, sounds, UI editor, and asset imports.

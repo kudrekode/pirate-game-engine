@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { getTilePreset, tilePresets } from "../../data/presets";
 import { useProjectStore } from "../../store/useProjectStore";
 import type { EventBlock } from "../../types/game";
@@ -6,12 +6,31 @@ import type { EventBlock } from "../../types/game";
 type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pan";
 type BrushSize = 1 | 3 | 5;
 
+const AUTO_EXPAND_BUFFER_TILES = 12;
+const MAX_MAP_SIZE = 200;
+const PALETTE_WIDTH_STORAGE_KEY = "map-editor-palette-width-v3";
+const MIN_PALETTE_WIDTH = 180;
+const MAX_PALETTE_WIDTH = 420;
+
 function cellKey(x: number, y: number): string {
   return `${x}:${y}`;
 }
 
 function clampMapSize(value: number): number {
-  return Math.min(200, Math.max(1, Math.round(value)));
+  return Math.min(MAX_MAP_SIZE, Math.max(1, Math.round(value)));
+}
+
+function clampPaletteWidth(value: number): number {
+  return Math.min(MAX_PALETTE_WIDTH, Math.max(MIN_PALETTE_WIDTH, Math.round(value)));
+}
+
+function readStoredPaletteWidth(): number {
+  if (typeof localStorage === "undefined") {
+    return 240;
+  }
+
+  const storedWidth = Number(localStorage.getItem(PALETTE_WIDTH_STORAGE_KEY));
+  return Number.isFinite(storedWidth) ? clampPaletteWidth(storedWidth) : 240;
 }
 
 function isInBounds(x: number, y: number, width: number, height: number): boolean {
@@ -22,6 +41,7 @@ export function MapEditor() {
   const project = useProjectStore((state) => state.project);
   const setTiles = useProjectStore((state) => state.setTiles);
   const resizeMap = useProjectStore((state) => state.resizeMap);
+  const updateTileStyle = useProjectStore((state) => state.updateTileStyle);
   const addEventBlock = useProjectStore((state) => state.addEventBlock);
   const updateEventBlock = useProjectStore((state) => state.updateEventBlock);
   const deleteEventBlock = useProjectStore((state) => state.deleteEventBlock);
@@ -40,6 +60,8 @@ export function MapEditor() {
   const [zoom, setZoom] = useState(1);
   const [brushSize, setBrushSize] = useState<BrushSize>(1);
   const [showGrid, setShowGrid] = useState(true);
+  const [paletteWidth, setPaletteWidth] = useState(readStoredPaletteWidth);
+  const [isResizingPalette, setIsResizingPalette] = useState(false);
   const [draftMapSize, setDraftMapSize] = useState({
     width: project.map.width,
     height: project.map.height,
@@ -52,9 +74,10 @@ export function MapEditor() {
 
   const tileLookup = useMemo(() => {
     const lookup = new Map<string, string>();
-    project.map.tiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.tileId));
+    const terrainTiles = project.map.terrainTiles ?? project.map.tiles;
+    terrainTiles.forEach((tile) => lookup.set(cellKey(tile.x, tile.y), tile.tileId));
     return lookup;
-  }, [project.map.tiles]);
+  }, [project.map.terrainTiles, project.map.tiles]);
 
   const eventLookup = useMemo(() => {
     const lookup = new Map<string, EventBlock>();
@@ -68,7 +91,15 @@ export function MapEditor() {
     (eventBlock) => eventBlock.id === selectedEventBlockId,
   );
   const selectedTile = getTilePreset(selectedTileId);
+  const selectedTileStyle = project.tileStyles[selectedTileId] ?? {
+    color: selectedTile.color,
+    label: selectedTile.label,
+  };
   const cellSize = Math.round(project.map.tileSize * zoom);
+  const renderWidth = Math.min(MAX_MAP_SIZE, project.map.width + AUTO_EXPAND_BUFFER_TILES);
+  const renderHeight = Math.min(MAX_MAP_SIZE, project.map.height + AUTO_EXPAND_BUFFER_TILES);
+
+  // TODO: Support negative-direction expansion by shifting terrain/object/event coordinates safely.
 
   function getBrushCells(centerX: number, centerY: number) {
     const radius = Math.floor(brushSize / 2);
@@ -76,7 +107,7 @@ export function MapEditor() {
 
     for (let y = centerY - radius; y <= centerY + radius; y += 1) {
       for (let x = centerX - radius; x <= centerX + radius; x += 1) {
-        if (isInBounds(x, y, project.map.width, project.map.height)) {
+        if (isInBounds(x, y, renderWidth, renderHeight)) {
           cells.push({ x, y });
         }
       }
@@ -100,7 +131,10 @@ export function MapEditor() {
 
       paintedCellsRef.current.add(key);
       const currentTileId = tileLookup.get(key) ?? "grass";
-      return currentTileId === targetTileId ? [] : [{ ...cell, tileId: targetTileId }];
+      const isOutsideCurrentMap = cell.x >= project.map.width || cell.y >= project.map.height;
+      return currentTileId === targetTileId && !isOutsideCurrentMap
+        ? []
+        : [{ ...cell, tileId: targetTileId }];
     });
 
     if (updates.length > 0) {
@@ -110,6 +144,11 @@ export function MapEditor() {
 
   function floodFillFrom(startX: number, startY: number) {
     const startKey = cellKey(startX, startY);
+    if (!isInBounds(startX, startY, project.map.width, project.map.height)) {
+      setTiles([{ x: startX, y: startY, tileId: selectedTileId }]);
+      return;
+    }
+
     const sourceTileId = tileLookup.get(startKey) ?? "grass";
     const targetTileId = selectedTileId;
 
@@ -191,6 +230,34 @@ export function MapEditor() {
     paintedCellsRef.current.clear();
     setIsPainting(true);
     applyBrush(x, y);
+  }
+
+  function handlePaletteResizeStart(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsResizingPalette(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePaletteResizeMove(event: PointerEvent<HTMLDivElement>) {
+    if (!isResizingPalette) {
+      return;
+    }
+
+    const containerLeft = event.currentTarget.parentElement?.getBoundingClientRect().left ?? 0;
+    const nextWidth = clampPaletteWidth(event.clientX - containerLeft);
+    setPaletteWidth(nextWidth);
+    localStorage.setItem(PALETTE_WIDTH_STORAGE_KEY, String(nextWidth));
+  }
+
+  function handlePaletteResizeEnd(event: PointerEvent<HTMLDivElement>) {
+    if (!isResizingPalette) {
+      return;
+    }
+
+    setIsResizingPalette(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   function handleCellPointerEnter(x: number, y: number) {
@@ -298,10 +365,30 @@ export function MapEditor() {
     );
   }
 
+  function growMap(deltaWidth: number, deltaHeight: number) {
+    const nextWidth = clampMapSize(project.map.width + deltaWidth);
+    const nextHeight = clampMapSize(project.map.height + deltaHeight);
+    resizeMap(nextWidth, nextHeight);
+    setResizeMessage(`Expanded to ${nextWidth}x${nextHeight}.`);
+  }
+
   return (
-    <section className="editor-panel map-editor">
-      <aside className="tool-panel">
+    <section
+      className="editor-panel map-editor"
+      style={{ "--map-palette-width": `${paletteWidth}px` } as CSSProperties}
+    >
+      <aside className="tool-panel map-tool-panel">
+        <div
+          aria-hidden="true"
+          className={`palette-resize-handle ${isResizingPalette ? "active" : ""}`}
+          onPointerDown={handlePaletteResizeStart}
+          onPointerMove={handlePaletteResizeMove}
+          onPointerUp={handlePaletteResizeEnd}
+        />
         <div className="panel-title">Map size</div>
+        <div className="map-size-readout">
+          {project.map.width} x {project.map.height} tiles
+        </div>
         <div className="form-grid map-size-grid">
           <label>
             Width
@@ -329,26 +416,38 @@ export function MapEditor() {
         <button className="full-width" onClick={applyMapResize} type="button">
           Apply Resize
         </button>
+        <div className="quick-grow-actions">
+          <button onClick={() => growMap(10, 0)} type="button">
+            Add 10 Right
+          </button>
+          <button onClick={() => growMap(0, 10)} type="button">
+            Add 10 Down
+          </button>
+        </div>
         {resizeMessage ? <p className="tool-note">{resizeMessage}</p> : null}
 
         <div className="panel-title secondary">Tiles</div>
         <div className="palette-list tile-palette">
-          {tilePresets.map((tile) => (
-            <button
-              className={`palette-item ${
-                selectedTileId === tile.id && activeTool === "paint" ? "selected" : ""
-              }`}
-              key={tile.id}
-              onClick={() => {
-                setSelectedTileId(tile.id);
-                setActiveTool("paint");
-              }}
-              type="button"
-            >
-              <span className="swatch" style={{ background: tile.color }} />
-              {tile.label}
-            </button>
-          ))}
+          {tilePresets.map((tile) => {
+            const style = project.tileStyles[tile.id] ?? { color: tile.color, label: tile.label };
+
+            return (
+              <button
+                className={`palette-item ${
+                  selectedTileId === tile.id && activeTool === "paint" ? "selected" : ""
+                }`}
+                key={tile.id}
+                onClick={() => {
+                  setSelectedTileId(tile.id);
+                  setActiveTool("paint");
+                }}
+                type="button"
+              >
+                <span className="swatch" style={{ background: style.color }} />
+                {style.label ?? tile.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="panel-title">Tools</div>
@@ -390,7 +489,8 @@ export function MapEditor() {
           </button>
         </div>
         <p className="tool-note">
-          Selected tile: <strong>{selectedTile.label}</strong>. Eraser resets tiles to grass.
+          Selected tile: <strong>{selectedTileStyle.label ?? selectedTile.label}</strong>. Eraser resets
+          tiles to grass.
         </p>
 
         <div className="panel-title">Brush</div>
@@ -434,6 +534,25 @@ export function MapEditor() {
           />
           Show grid
         </label>
+
+        <div className="panel-title secondary">Tile style</div>
+        <div className="tile-style-list">
+          {tilePresets.map((tile) => {
+            const style = project.tileStyles[tile.id] ?? { color: tile.color, label: tile.label };
+
+            return (
+              <label className="tile-style-row" key={tile.id}>
+                <span>{style.label ?? tile.label}</span>
+                <input
+                  aria-label={`${tile.label} color`}
+                  onChange={(event) => updateTileStyle(tile.id, { color: event.target.value })}
+                  type="color"
+                  value={style.color}
+                />
+              </label>
+            );
+          })}
+        </div>
       </aside>
 
       <div
@@ -456,28 +575,30 @@ export function MapEditor() {
           onPointerLeave={stopPainting}
           onPointerUp={stopPainting}
           style={{
-            gridTemplateColumns: `repeat(${project.map.width}, ${cellSize}px)`,
+            gridTemplateColumns: `repeat(${renderWidth}, ${cellSize}px)`,
           }}
         >
-          {Array.from({ length: project.map.height }).map((_, y) =>
-            Array.from({ length: project.map.width }).map((__, x) => {
+          {Array.from({ length: renderHeight }).map((_, y) =>
+            Array.from({ length: renderWidth }).map((__, x) => {
               const key = cellKey(x, y);
               const tileId = tileLookup.get(key) ?? "grass";
               const tile = getTilePreset(tileId);
+              const tileStyle = project.tileStyles[tileId] ?? { color: tile.color, label: tile.label };
               const eventBlock = eventLookup.get(key);
               const eventLabel = eventBlock?.tag || eventBlock?.name;
+              const isOutsideMap = x >= project.map.width || y >= project.map.height;
 
               return (
                 <button
                   aria-label={`Tile ${x}, ${y}`}
-                  className="map-cell"
+                  className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""}`}
                   key={key}
                   onPointerDown={(event) => handleCellPointerDown(event, x, y)}
                   onPointerEnter={() => handleCellPointerEnter(x, y)}
                   style={{
                     width: cellSize,
                     height: cellSize,
-                    background: tile.color,
+                    background: tileStyle.color,
                     color: tile.textColor,
                   }}
                   type="button"

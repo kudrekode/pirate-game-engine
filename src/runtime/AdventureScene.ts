@@ -181,11 +181,18 @@ export class AdventureScene extends Phaser.Scene {
       for (let x = 0; x < this.project.map.width; x += 1) {
         const tileId = this.tileIdAt(x, y);
         const tile = getTilePreset(tileId);
+        const tileStyle = this.project.tileStyles[tileId];
         const worldX = x * this.tileSize;
         const worldY = y * this.tileSize;
 
         const tileRect = this.add
-          .rectangle(worldX, worldY, this.tileSize, this.tileSize, hexToNumber(tile.color))
+          .rectangle(
+            worldX,
+            worldY,
+            this.tileSize,
+            this.tileSize,
+            hexToNumber(tileStyle?.color ?? tile.color),
+          )
           .setOrigin(0)
           .setStrokeStyle(1, 0xffffff, 0.22);
         this.worldLayer?.add(tileRect);
@@ -544,7 +551,8 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private tileIdAt(x: number, y: number): string {
-    return this.project.map.tiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
+    const terrainTiles = this.project.map.terrainTiles ?? this.project.map.tiles;
+    return terrainTiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
   }
 
   private findEventBlock(id: string): EventBlock | undefined {

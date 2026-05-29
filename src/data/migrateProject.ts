@@ -1,13 +1,16 @@
 import { defaultProject } from "./defaultProject";
 import { defaultCameraConfig } from "./projectDefaults";
+import { defaultTileStyles, tilePresets } from "./presets";
 import type {
   CameraConfig,
   EventBlock,
   GameProject,
+  MapObject,
   MapTile,
   PlayerConfig,
   ProgressionAction,
   ProgressionStep,
+  TileStyleConfig,
 } from "../types/game";
 
 type UnknownRecord = Record<string, unknown>;
@@ -61,6 +64,43 @@ function migrateTiles(value: unknown): MapTile[] {
       },
     ];
   });
+}
+
+function migrateObjects(value: unknown): MapObject[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    return [
+      {
+        id: readString(item.id, `object_${Date.now().toString(36)}`),
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        objectId: readString(item.objectId, ""),
+      },
+    ];
+  });
+}
+
+function migrateTileStyles(value: unknown): TileStyleConfig {
+  const source = isRecord(value) ? value : {};
+  const styles: TileStyleConfig = {};
+
+  tilePresets.forEach((tile) => {
+    const customStyleSource = source[tile.id];
+    const customStyle = isRecord(customStyleSource) ? customStyleSource : {};
+    styles[tile.id] = {
+      color: readString(customStyle.color, defaultTileStyles[tile.id]?.color ?? tile.color),
+      label: readString(customStyle.label, defaultTileStyles[tile.id]?.label ?? tile.label),
+    };
+  });
+
+  return styles;
 }
 
 function migrateEventBlocks(value: unknown): EventBlock[] {
@@ -195,6 +235,7 @@ export function migrateProject(value: unknown): GameProject {
   const source = isRecord(value) ? value : {};
   const metadataSource = isRecord(source.metadata) ? source.metadata : {};
   const mapSource = isRecord(source.map) ? source.map : {};
+  const terrainTiles = migrateTiles(mapSource.terrainTiles ?? mapSource.tiles);
 
   return {
     metadata: {
@@ -205,10 +246,13 @@ export function migrateProject(value: unknown): GameProject {
       width: Math.round(readNumber(mapSource.width, defaultProject.map.width, 1, 200)),
       height: Math.round(readNumber(mapSource.height, defaultProject.map.height, 1, 200)),
       tileSize: Math.round(readNumber(mapSource.tileSize, defaultProject.map.tileSize, 8, 128)),
-      tiles: migrateTiles(mapSource.tiles),
+      terrainTiles,
+      tiles: terrainTiles,
+      objectTiles: migrateObjects(mapSource.objectTiles),
       eventBlocks: migrateEventBlocks(mapSource.eventBlocks),
     },
     camera: migrateCamera(source.camera),
+    tileStyles: migrateTileStyles(source.tileStyles),
     player: migratePlayer(source.player),
     cutscenes: Array.isArray(source.cutscenes)
       ? (source.cutscenes as GameProject["cutscenes"])

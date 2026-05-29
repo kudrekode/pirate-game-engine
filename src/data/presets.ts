@@ -21,6 +21,10 @@ export const tilePresets: TilePreset[] = [
   { id: "tree", label: "Tree", color: "#2f8c57", textColor: "#0f2e1d", pattern: "tree" },
 ];
 
+export const defaultTileStyles = Object.fromEntries(
+  tilePresets.map((tile) => [tile.id, { color: tile.color, label: tile.label }]),
+);
+
 export const walkableTileIds = ["grass", "dirt"];
 
 export const characterSprites: VisualPreset[] = [

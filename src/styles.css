@@ -171,7 +171,7 @@ label {
 }
 
 .map-editor {
-  grid-template-columns: 240px minmax(0, 1fr) 260px;
+  grid-template-columns: var(--map-palette-width, 240px) minmax(0, 1fr) 260px;
 }
 
 .character-editor,
@@ -194,6 +194,27 @@ label {
   border-radius: 8px;
   background: #ffffff;
   padding: 12px;
+}
+
+.map-tool-panel {
+  position: relative;
+  padding-right: 18px;
+}
+
+.palette-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  border-left: 1px solid transparent;
+  cursor: col-resize;
+}
+
+.palette-resize-handle:hover,
+.palette-resize-handle.active {
+  border-left-color: #93a4b3;
+  background: rgba(47, 158, 68, 0.08);
 }
 
 .tool-panel.wide,
@@ -238,6 +259,24 @@ label {
 .map-size-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 8px;
+}
+
+.map-size-readout {
+  margin-bottom: 10px;
+  border: 1px solid #d8e0e7;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #243b53;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.quick-grow-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .tool-button-grid,
@@ -343,6 +382,24 @@ label {
   padding: 0;
 }
 
+.map-cell-outside {
+  opacity: 0.58;
+}
+
+.map-cell-outside::after {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.22) 4px,
+    rgba(36, 59, 83, 0.1) 4px,
+    rgba(36, 59, 83, 0.1) 8px
+  );
+  content: "";
+  pointer-events: none;
+}
+
 .tile-grid.hide-grid .map-cell {
   border-color: transparent;
 }
@@ -425,6 +482,31 @@ label {
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tile-style-list {
+  display: grid;
+  gap: 8px;
+}
+
+.tile-style-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: center;
+}
+
+.tile-style-row span {
+  overflow: hidden;
+  color: #1f2933;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-style-row input[type="color"] {
+  width: 42px;
+  height: 34px;
+  padding: 3px;
 }
 
 .coordinate-readout,
