@@ -23,6 +23,21 @@ export type AreaThemeConfig = {
   overlayId?: string;
 };
 
+export type MovementMode = "walk" | "swim" | "sail" | "ride";
+
+export type MovementRule = {
+  walkable?: boolean;
+  movementMode?: MovementMode;
+  speedMultiplier?: number;
+};
+
+export type MovementResult = {
+  canMove: boolean;
+  reason?: string;
+  speedMultiplier: number;
+  movementMode?: MovementMode;
+};
+
 export type GameArea = {
   id: string;
   name: string;
@@ -60,6 +75,7 @@ export type MapStructure = {
   widthTiles: number;
   heightTiles: number;
   blocksMovement: boolean;
+  movementRule?: MovementRule;
   interaction?: {
     type: "area_link";
     targetAreaId: string;

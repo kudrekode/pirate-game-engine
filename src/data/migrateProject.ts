@@ -12,6 +12,7 @@ import type {
   GameProject,
   MapStructure,
   MapTile,
+  MovementRule,
   OverlayTile,
   PlayerConfig,
   PixelAsset,
@@ -114,6 +115,30 @@ function migrateAreaLink(value: unknown): AreaLink | undefined {
   return targetAreaId && targetEventBlockId ? { targetAreaId, targetEventBlockId } : undefined;
 }
 
+function migrateMovementRule(value: unknown): MovementRule | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const rule: MovementRule = {};
+  if (typeof value.walkable === "boolean") {
+    rule.walkable = value.walkable;
+  }
+  if (
+    value.movementMode === "walk" ||
+    value.movementMode === "swim" ||
+    value.movementMode === "sail" ||
+    value.movementMode === "ride"
+  ) {
+    rule.movementMode = value.movementMode;
+  }
+  if (typeof value.speedMultiplier === "number" && Number.isFinite(value.speedMultiplier)) {
+    rule.speedMultiplier = readNumber(value.speedMultiplier, 1, 0.1, 10);
+  }
+
+  return Object.keys(rule).length > 0 ? rule : undefined;
+}
+
 function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): EventBlock[] {
   if (!Array.isArray(value)) {
     return fallbackEventBlocks.map((eventBlock) => ({ ...eventBlock }));
@@ -171,6 +196,7 @@ function migrateStructures(value: unknown): MapStructure[] {
         widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
         heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
         blocksMovement: readBoolean(item.blocksMovement, true),
+        movementRule: migrateMovementRule(item.movementRule),
         interaction:
           interaction?.targetAreaId && interaction.targetEventBlockId ? interaction : undefined,
       },

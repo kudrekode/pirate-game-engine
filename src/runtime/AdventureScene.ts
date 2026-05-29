@@ -8,6 +8,7 @@ import {
 } from "../data/presets";
 import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
 import type { Cutscene, EventBlock, GameArea, GameProject, MapStructure, PixelAsset } from "../types/game";
+import { resolveMovementAt } from "./movement";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -685,24 +686,13 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    const tileId = this.tileIdAt(nextX, nextY);
-    if (!this.project.player.canWalkOn.includes(tileId)) {
-      this.setStatus(`Blocked by ${tileId}.`);
+    const movement = resolveMovementAt(this.currentArea, nextX, nextY, this.project.player);
+    if (!movement.canMove) {
+      this.setStatus(movement.reason ?? "Blocked.");
       return;
     }
 
-    const blockingStructure = this.structureAt(nextX, nextY);
-    if (blockingStructure) {
-      this.setStatus(`Blocked by ${blockingStructure.name}.`);
-      return;
-    }
-
-    if (this.isBlockedByObject(nextX, nextY)) {
-      this.setStatus("Blocked.");
-      return;
-    }
-
-    const duration = this.getMoveDuration();
+    const duration = this.getMoveDuration(movement.speedMultiplier);
     const destinationX = nextX * this.tileSize + this.tileSize / 2;
     const destinationY = nextY * this.tileSize + this.tileSize / 2;
 
@@ -725,8 +715,9 @@ export class AdventureScene extends Phaser.Scene {
     });
   }
 
-  private getMoveDuration(): number {
-    return Math.max(70, 360 - clamp(this.project.player.speed, 1, 20) * 24);
+  private getMoveDuration(speedMultiplier = 1): number {
+    const baseDuration = 360 - clamp(this.project.player.speed, 1, 20) * 24;
+    return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
   }
 
   private checkAreaLink(): boolean {
@@ -782,24 +773,6 @@ export class AdventureScene extends Phaser.Scene {
 
   private tileIdAt(x: number, y: number): string {
     return this.currentArea.terrainTiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
-  }
-
-  private structureAt(x: number, y: number): MapStructure | undefined {
-    return this.currentArea.structures.find(
-      (structure) =>
-        structure.blocksMovement &&
-        x >= structure.x &&
-        y >= structure.y &&
-        x < structure.x + structure.widthTiles &&
-        y < structure.y + structure.heightTiles,
-    );
-  }
-
-  private isBlockedByObject(x: number, y: number): boolean {
-    // TODO: Replace legacy object blocking with explicit object-layer collision metadata.
-    void x;
-    void y;
-    return false;
   }
 
   private findArea(areaId: string): GameArea | undefined {

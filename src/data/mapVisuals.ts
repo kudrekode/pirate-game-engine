@@ -1,4 +1,4 @@
-import type { PixelAsset } from "../types/game";
+import type { MovementMode, MovementRule, PixelAsset } from "../types/game";
 
 export type TerrainPreset = {
   id: string;
@@ -6,6 +6,7 @@ export type TerrainPreset = {
   color: string;
   textColor: string;
   walkable: boolean;
+  movementRule: MovementRule;
   pattern?: "grass" | "dirt" | "sand" | "water" | "stone" | "wood" | "wall" | "fabric";
 };
 
@@ -14,6 +15,7 @@ export type OverlayPreset = {
   label: string;
   color: string;
   walkable: boolean;
+  movementRule: MovementRule;
   pattern?: "path" | "planks" | "shadow";
 };
 
@@ -26,29 +28,38 @@ export type StructurePreset = {
   roofColor: string;
   wallColor: string;
   shadowColor: string;
+  movementRule: MovementRule;
 };
 
+function movementRule(
+  walkable: boolean,
+  movementMode: MovementMode = "walk",
+  speedMultiplier = 1,
+): MovementRule {
+  return { walkable, movementMode, speedMultiplier };
+}
+
 export const terrainPresets: TerrainPreset[] = [
-  { id: "grass", label: "Grass", color: "#6fc56f", textColor: "#143c1d", walkable: true, pattern: "grass" },
-  { id: "dirt", label: "Dirt", color: "#b8814a", textColor: "#321f11", walkable: true, pattern: "dirt" },
-  { id: "sand", label: "Sand", color: "#d9c27f", textColor: "#4d3b14", walkable: true, pattern: "sand" },
-  { id: "water", label: "Water", color: "#4f9fca", textColor: "#0c2b3b", walkable: false, pattern: "water" },
-  { id: "stone", label: "Stone", color: "#8f969f", textColor: "#20252b", walkable: false, pattern: "stone" },
-  { id: "wooden_floor", label: "Wood Floor", color: "#a46a3f", textColor: "#2d1609", walkable: true, pattern: "wood" },
-  { id: "stone_floor", label: "Stone Floor", color: "#8d9299", textColor: "#1f2933", walkable: true, pattern: "stone" },
-  { id: "carpet", label: "Carpet", color: "#b84a62", textColor: "#fff5f7", walkable: true, pattern: "fabric" },
-  { id: "indoor_wall", label: "Indoor Wall", color: "#7b5b45", textColor: "#f8f0df", walkable: false, pattern: "wall" },
-  { id: "cave_floor", label: "Cave Floor", color: "#686f78", textColor: "#eef2f7", walkable: true, pattern: "stone" },
-  { id: "cave_wall", label: "Cave Wall", color: "#3f4650", textColor: "#f1f5f9", walkable: false, pattern: "wall" },
-  { id: "ship_deck", label: "Ship Deck", color: "#9a6637", textColor: "#291707", walkable: true, pattern: "wood" },
+  { id: "grass", label: "Grass", color: "#6fc56f", textColor: "#143c1d", walkable: true, movementRule: movementRule(true), pattern: "grass" },
+  { id: "dirt", label: "Dirt", color: "#b8814a", textColor: "#321f11", walkable: true, movementRule: movementRule(true), pattern: "dirt" },
+  { id: "sand", label: "Sand", color: "#d9c27f", textColor: "#4d3b14", walkable: true, movementRule: movementRule(true, "walk", 0.88), pattern: "sand" },
+  { id: "water", label: "Water", color: "#4f9fca", textColor: "#0c2b3b", walkable: false, movementRule: movementRule(false, "swim"), pattern: "water" },
+  { id: "stone", label: "Stone", color: "#8f969f", textColor: "#20252b", walkable: false, movementRule: movementRule(false), pattern: "stone" },
+  { id: "wooden_floor", label: "Wood Floor", color: "#a46a3f", textColor: "#2d1609", walkable: true, movementRule: movementRule(true, "walk", 1.04), pattern: "wood" },
+  { id: "stone_floor", label: "Stone Floor", color: "#8d9299", textColor: "#1f2933", walkable: true, movementRule: movementRule(true), pattern: "stone" },
+  { id: "carpet", label: "Carpet", color: "#b84a62", textColor: "#fff5f7", walkable: true, movementRule: movementRule(true, "walk", 0.94), pattern: "fabric" },
+  { id: "indoor_wall", label: "Indoor Wall", color: "#7b5b45", textColor: "#f8f0df", walkable: false, movementRule: movementRule(false), pattern: "wall" },
+  { id: "cave_floor", label: "Cave Floor", color: "#686f78", textColor: "#eef2f7", walkable: true, movementRule: movementRule(true, "walk", 0.9), pattern: "stone" },
+  { id: "cave_wall", label: "Cave Wall", color: "#3f4650", textColor: "#f1f5f9", walkable: false, movementRule: movementRule(false), pattern: "wall" },
+  { id: "ship_deck", label: "Ship Deck", color: "#9a6637", textColor: "#291707", walkable: true, movementRule: movementRule(true, "walk", 1.04), pattern: "wood" },
 ];
 
 export const overlayPresets: OverlayPreset[] = [
-  { id: "dirt_path", label: "Dirt Path", color: "#9b6538", walkable: true, pattern: "path" },
-  { id: "hay_path", label: "Hay Path", color: "#d6b85c", walkable: true, pattern: "path" },
-  { id: "stone_road", label: "Stone Road", color: "#8a8f96", walkable: true, pattern: "path" },
-  { id: "wooden_planks", label: "Wooden Planks", color: "#9a6637", walkable: true, pattern: "planks" },
-  { id: "shadow", label: "Shadow", color: "#262626", walkable: true, pattern: "shadow" },
+  { id: "dirt_path", label: "Dirt Path", color: "#9b6538", walkable: true, movementRule: movementRule(true, "walk", 1.05), pattern: "path" },
+  { id: "hay_path", label: "Hay Path", color: "#d6b85c", walkable: true, movementRule: movementRule(true, "walk", 0.96), pattern: "path" },
+  { id: "stone_road", label: "Stone Road", color: "#8a8f96", walkable: true, movementRule: movementRule(true, "walk", 1.2), pattern: "path" },
+  { id: "wooden_planks", label: "Wooden Planks", color: "#9a6637", walkable: true, movementRule: movementRule(true), pattern: "planks" },
+  { id: "shadow", label: "Shadow", color: "#262626", walkable: true, movementRule: {}, pattern: "shadow" },
 ];
 
 export const structurePresets: StructurePreset[] = [
@@ -61,6 +72,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#a64b3c",
     wallColor: "#d8b06d",
     shadowColor: "#5f4534",
+    movementRule: movementRule(false),
   },
   {
     id: "cottage",
@@ -71,6 +83,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#7f5a34",
     wallColor: "#d6c08c",
     shadowColor: "#5b4733",
+    movementRule: movementRule(false),
   },
   {
     id: "stone_tower",
@@ -81,6 +94,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#5c6370",
     wallColor: "#a4abb4",
     shadowColor: "#59616b",
+    movementRule: movementRule(false),
   },
   {
     id: "castle_gate",
@@ -91,6 +105,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#6b7280",
     wallColor: "#a8adb5",
     shadowColor: "#4b5563",
+    movementRule: movementRule(false),
   },
   {
     id: "dock",
@@ -101,6 +116,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#8b5a2b",
     wallColor: "#b87945",
     shadowColor: "#56381f",
+    movementRule: movementRule(true),
   },
   {
     id: "market_stall",
@@ -111,6 +127,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#d14b4b",
     wallColor: "#d7b071",
     shadowColor: "#6b3e28",
+    movementRule: movementRule(false),
   },
   {
     id: "ruin_wall",
@@ -121,6 +138,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#777f87",
     wallColor: "#9aa1a8",
     shadowColor: "#525a62",
+    movementRule: movementRule(false),
   },
   {
     id: "bed",
@@ -131,6 +149,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#6d82c8",
     wallColor: "#d6c6a8",
     shadowColor: "#4c3d33",
+    movementRule: movementRule(false),
   },
   {
     id: "table",
@@ -141,6 +160,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#7a4b25",
     wallColor: "#a66a38",
     shadowColor: "#4b2d18",
+    movementRule: movementRule(false),
   },
   {
     id: "chair",
@@ -151,6 +171,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#7a4b25",
     wallColor: "#b1743d",
     shadowColor: "#4b2d18",
+    movementRule: movementRule(false),
   },
   {
     id: "barrel",
@@ -161,6 +182,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#6f4a2d",
     wallColor: "#9a6637",
     shadowColor: "#49301d",
+    movementRule: movementRule(false),
   },
   {
     id: "crate",
@@ -171,6 +193,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#8a5b34",
     wallColor: "#b87945",
     shadowColor: "#57391f",
+    movementRule: movementRule(false),
   },
   {
     id: "bookshelf",
@@ -181,6 +204,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#5c3921",
     wallColor: "#8a5b34",
     shadowColor: "#3d2415",
+    movementRule: movementRule(false),
   },
   {
     id: "fireplace",
@@ -191,6 +215,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#7a7f86",
     wallColor: "#a2a8b0",
     shadowColor: "#4f555d",
+    movementRule: movementRule(false),
   },
   {
     id: "door",
@@ -201,6 +226,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#5a351c",
     wallColor: "#8f5b2c",
     shadowColor: "#3a2112",
+    movementRule: movementRule(true),
   },
   {
     id: "stairs",
@@ -211,6 +237,7 @@ export const structurePresets: StructurePreset[] = [
     roofColor: "#5f6770",
     wallColor: "#8b949e",
     shadowColor: "#424a53",
+    movementRule: movementRule(true),
   },
 ];
 
@@ -225,6 +252,7 @@ const legacyTerrainFallbacks: TerrainPreset[] = [
     color: "#8f969f",
     textColor: "#20252b",
     walkable: false,
+    movementRule: movementRule(false),
     pattern: "stone",
   },
   {
@@ -233,6 +261,7 @@ const legacyTerrainFallbacks: TerrainPreset[] = [
     color: "#2f8c57",
     textColor: "#0f2e1d",
     walkable: false,
+    movementRule: movementRule(false),
     pattern: "grass",
   },
 ];
