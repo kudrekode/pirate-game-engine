@@ -8,7 +8,7 @@ import {
   terrainPresets,
 } from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { EventBlock, GameAreaKind, PixelAsset } from "../../types/game";
+import type { EventBlock, GameAreaKind, Interaction, MovementMode, PixelAsset } from "../../types/game";
 
 type MapTool = "paint" | "eraser" | "fill" | "event-block" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
@@ -20,6 +20,16 @@ const PALETTE_WIDTH_STORAGE_KEY = "map-editor-palette-width-v3";
 const MIN_PALETTE_WIDTH = 180;
 const MAX_PALETTE_WIDTH = 420;
 const areaKindOptions: GameAreaKind[] = ["outdoor", "indoor", "cave", "ship", "dungeon", "custom"];
+const interactionTypes = [
+  "none",
+  "area_link",
+  "teleport",
+  "play_cutscene",
+  "set_flag",
+  "change_movement_mode",
+] as const;
+
+type InteractionTypeOption = (typeof interactionTypes)[number];
 
 function cellKey(x: number, y: number): string {
   return `${x}:${y}`;
@@ -80,6 +90,7 @@ export function MapEditor() {
   const updateActiveArea = useProjectStore((state) => state.updateActiveArea);
   const deleteArea = useProjectStore((state) => state.deleteArea);
   const addStructure = useProjectStore((state) => state.addStructure);
+  const updateStructure = useProjectStore((state) => state.updateStructure);
   const deleteStructure = useProjectStore((state) => state.deleteStructure);
   const updatePixelAsset = useProjectStore((state) => state.updatePixelAsset);
   const resetPixelAsset = useProjectStore((state) => state.resetPixelAsset);
@@ -440,6 +451,12 @@ export function MapEditor() {
     }
   }
 
+  function updateSelectedStructure(patch: Parameters<typeof updateStructure>[1]) {
+    if (selectedMapStructure) {
+      updateStructure(selectedMapStructure.id, patch);
+    }
+  }
+
   function makeDefaultAreaLink(targetAreaId = defaultLinkTargetArea?.id ?? "") {
     const targetArea = project.areas.find((area) => area.id === targetAreaId) ?? defaultLinkTargetArea;
     return {
@@ -472,6 +489,180 @@ export function MapEditor() {
         targetEventBlockId,
       },
     });
+  }
+
+  function getInteractionTargetArea(interaction?: Interaction) {
+    if (interaction?.type !== "area_link" && interaction?.type !== "teleport") {
+      return project.areas.find((area) => area.id !== activeArea.id) ?? project.areas[0];
+    }
+
+    return project.areas.find((area) => area.id === interaction.targetAreaId) ?? project.areas[0];
+  }
+
+  function makeDefaultInteraction(type: Exclude<InteractionTypeOption, "none">): Interaction {
+    if (type === "play_cutscene") {
+      return { type, cutsceneId: project.cutscenes[0]?.id ?? "" };
+    }
+
+    if (type === "set_flag") {
+      return { type, flag: "flag_1", value: true };
+    }
+
+    if (type === "change_movement_mode") {
+      return { type, mode: "walk" };
+    }
+
+    const targetArea = project.areas.find((area) => area.id !== activeArea.id) ?? project.areas[0];
+    return {
+      type,
+      targetAreaId: targetArea?.id ?? "",
+      targetEventBlockId: targetArea?.eventBlocks[0]?.id ?? "",
+    };
+  }
+
+  function updateSelectedInteraction(interaction?: Interaction) {
+    if (selectedMapStructure) {
+      updateSelectedStructure({ interaction });
+      return;
+    }
+
+    if (selectedEventBlock) {
+      updateSelectedEventBlock({ interaction });
+    }
+  }
+
+  function renderInteractionEditor(interaction?: Interaction) {
+    const interactionType = interaction?.type ?? "none";
+    const targetArea = getInteractionTargetArea(interaction);
+    const targetEventBlocks = targetArea?.eventBlocks ?? [];
+
+    return (
+      <div className="interaction-editor">
+        <div className="panel-title secondary">Interaction</div>
+        <label>
+          Type
+          <select
+            onChange={(event) => {
+              const nextType = event.target.value as InteractionTypeOption;
+              updateSelectedInteraction(nextType === "none" ? undefined : makeDefaultInteraction(nextType));
+            }}
+            value={interactionType}
+          >
+            <option value="none">None</option>
+            <option value="area_link">Area link</option>
+            <option value="teleport">Teleport</option>
+            <option value="play_cutscene">Play cutscene</option>
+            <option value="set_flag">Set flag</option>
+            <option value="change_movement_mode">Change movement mode</option>
+          </select>
+        </label>
+
+        {interaction?.type === "area_link" || interaction?.type === "teleport" ? (
+          <>
+            <label>
+              Target area
+              <select
+                onChange={(event) => {
+                  const nextArea = project.areas.find((area) => area.id === event.target.value);
+                  updateSelectedInteraction({
+                    ...interaction,
+                    targetAreaId: event.target.value,
+                    targetEventBlockId: nextArea?.eventBlocks[0]?.id ?? "",
+                  });
+                }}
+                value={targetArea?.id ?? ""}
+              >
+                {project.areas.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Target spawn/event
+              <select
+                onChange={(event) =>
+                  updateSelectedInteraction({
+                    ...interaction,
+                    targetAreaId: targetArea?.id ?? interaction.targetAreaId,
+                    targetEventBlockId: event.target.value,
+                  })
+                }
+                value={interaction.targetEventBlockId}
+              >
+                {targetEventBlocks.map((eventBlock) => (
+                  <option key={eventBlock.id} value={eventBlock.id}>
+                    {eventBlock.name} ({eventBlock.kind})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        ) : null}
+
+        {interaction?.type === "play_cutscene" ? (
+          <label>
+            Cutscene
+            <select
+              onChange={(event) =>
+                updateSelectedInteraction({ type: "play_cutscene", cutsceneId: event.target.value })
+              }
+              value={interaction.cutsceneId}
+            >
+              {project.cutscenes.map((cutscene) => (
+                <option key={cutscene.id} value={cutscene.id}>
+                  {cutscene.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        {interaction?.type === "set_flag" ? (
+          <>
+            <label>
+              Flag
+              <input
+                onChange={(event) =>
+                  updateSelectedInteraction({ ...interaction, flag: event.target.value })
+                }
+                value={interaction.flag}
+              />
+            </label>
+            <label className="checkbox-row standalone">
+              <input
+                checked={interaction.value}
+                onChange={(event) =>
+                  updateSelectedInteraction({ ...interaction, value: event.target.checked })
+                }
+                type="checkbox"
+              />
+              Value true
+            </label>
+          </>
+        ) : null}
+
+        {interaction?.type === "change_movement_mode" ? (
+          <label>
+            Mode
+            <select
+              onChange={(event) =>
+                updateSelectedInteraction({
+                  type: "change_movement_mode",
+                  mode: event.target.value as Exclude<MovementMode, "swim">,
+                })
+              }
+              value={interaction.mode}
+            >
+              <option value="walk">Walk</option>
+              <option value="sail">Sail</option>
+              <option value="ride">Ride</option>
+            </select>
+          </label>
+        ) : null}
+      </div>
+    );
   }
 
   function deleteSelectedEventBlock() {
@@ -946,7 +1137,7 @@ export function MapEditor() {
               <div className="coordinate-readout">
                 Blocks movement: {selectedMapStructure.blocksMovement ? "yes" : "no"}
               </div>
-              {/* TODO: Add structure interaction editing for doors/houses that link to other areas. */}
+              {renderInteractionEditor(selectedMapStructure.interaction)}
               <button className="danger-button" onClick={() => deleteStructure(selectedMapStructure.id)} type="button">
                 Delete structure
               </button>
@@ -1020,6 +1211,7 @@ export function MapEditor() {
                       : "Trigger"}{" "}
                   at x {selectedEventBlock.x}, y {selectedEventBlock.y}
                 </div>
+                {renderInteractionEditor(selectedEventBlock.interaction)}
                 <button className="danger-button" onClick={deleteSelectedEventBlock} type="button">
                   Delete event block
                 </button>

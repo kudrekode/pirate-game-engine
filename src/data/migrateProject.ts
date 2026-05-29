@@ -10,6 +10,7 @@ import type {
   GameArea,
   GameAreaKind,
   GameProject,
+  Interaction,
   MapStructure,
   MapTile,
   MovementRule,
@@ -139,6 +140,39 @@ function migrateMovementRule(value: unknown): MovementRule | undefined {
   return Object.keys(rule).length > 0 ? rule : undefined;
 }
 
+function migrateInteraction(value: unknown): Interaction | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (value.type === "area_link" || value.type === "teleport") {
+    const targetAreaId = readString(value.targetAreaId, "");
+    const targetEventBlockId = readString(value.targetEventBlockId, "");
+    return targetAreaId && targetEventBlockId
+      ? { type: value.type, targetAreaId, targetEventBlockId }
+      : undefined;
+  }
+
+  if (value.type === "play_cutscene") {
+    const cutsceneId = readString(value.cutsceneId, "");
+    return cutsceneId ? { type: "play_cutscene", cutsceneId } : undefined;
+  }
+
+  if (value.type === "set_flag") {
+    const flag = readString(value.flag, "");
+    return flag ? { type: "set_flag", flag, value: readBoolean(value.value, true) } : undefined;
+  }
+
+  if (
+    value.type === "change_movement_mode" &&
+    (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
+  ) {
+    return { type: "change_movement_mode", mode: value.mode };
+  }
+
+  return undefined;
+}
+
 function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): EventBlock[] {
   if (!Array.isArray(value)) {
     return fallbackEventBlocks.map((eventBlock) => ({ ...eventBlock }));
@@ -163,6 +197,7 @@ function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): 
         tag: readString(item.tag, "event"),
         kind,
         link: kind === "area_link" ? migrateAreaLink(item.link) : undefined,
+        interaction: migrateInteraction(item.interaction),
       },
     ];
   });
@@ -178,13 +213,7 @@ function migrateStructures(value: unknown): MapStructure[] {
       return [];
     }
 
-    const interaction = isRecord(item.interaction) && item.interaction.type === "area_link"
-      ? {
-          type: "area_link" as const,
-          targetAreaId: readString(item.interaction.targetAreaId, ""),
-          targetEventBlockId: readString(item.interaction.targetEventBlockId, ""),
-        }
-      : undefined;
+    const interaction = migrateInteraction(item.interaction);
 
     return [
       {
@@ -197,8 +226,7 @@ function migrateStructures(value: unknown): MapStructure[] {
         heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
         blocksMovement: readBoolean(item.blocksMovement, true),
         movementRule: migrateMovementRule(item.movementRule),
-        interaction:
-          interaction?.targetAreaId && interaction.targetEventBlockId ? interaction : undefined,
+        interaction,
       },
     ];
   });

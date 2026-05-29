@@ -38,6 +38,13 @@ export type MovementResult = {
   movementMode?: MovementMode;
 };
 
+export type Interaction =
+  | { type: "area_link"; targetAreaId: string; targetEventBlockId: string }
+  | { type: "teleport"; targetAreaId: string; targetEventBlockId: string }
+  | { type: "play_cutscene"; cutsceneId: string }
+  | { type: "set_flag"; flag: string; value: boolean }
+  | { type: "change_movement_mode"; mode: Exclude<MovementMode, "swim"> };
+
 export type GameArea = {
   id: string;
   name: string;
@@ -76,11 +83,7 @@ export type MapStructure = {
   heightTiles: number;
   blocksMovement: boolean;
   movementRule?: MovementRule;
-  interaction?: {
-    type: "area_link";
-    targetAreaId: string;
-    targetEventBlockId: string;
-  };
+  interaction?: Interaction;
 };
 
 export type MapObject = {
@@ -98,6 +101,7 @@ export type EventBlock = {
   tag: string;
   kind: "spawn" | "trigger" | "area_link";
   link?: AreaLink;
+  interaction?: Interaction;
 };
 
 export type AreaLink = {

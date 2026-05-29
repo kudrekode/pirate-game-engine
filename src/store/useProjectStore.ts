@@ -10,6 +10,7 @@ import type {
   EventBlock,
   GameArea,
   GameProject,
+  Interaction,
   MapStructure,
   MapTile,
   OverlayTile,
@@ -44,6 +45,7 @@ type ProjectStore = {
   setOverlayTiles: (tiles: { x: number; y: number; overlayId: string }[]) => void;
   eraseOverlayTiles: (cells: { x: number; y: number }[]) => void;
   addStructure: (structure: Omit<MapStructure, "id">) => string;
+  updateStructure: (id: string, patch: Partial<MapStructure>) => void;
   deleteStructure: (id: string) => void;
   updatePixelAsset: (asset: PixelAsset) => void;
   resetPixelAsset: (id: string) => void;
@@ -179,27 +181,48 @@ function cleanAreaReferences(project: GameProject, deletedAreaId: string) {
   project.areas = project.areas.map((area) => ({
     ...area,
     eventBlocks: area.eventBlocks.map((eventBlock) =>
-      eventBlock.link?.targetAreaId === deletedAreaId ? { ...eventBlock, link: undefined } : eventBlock,
+      eventBlock.link?.targetAreaId === deletedAreaId || interactionTargetsArea(eventBlock.interaction, deletedAreaId)
+        ? { ...eventBlock, link: undefined, interaction: undefined }
+        : eventBlock,
     ),
     structures: area.structures.map((structure) =>
-      structure.interaction?.targetAreaId === deletedAreaId
+      interactionTargetsArea(structure.interaction, deletedAreaId)
         ? { ...structure, interaction: undefined }
         : structure,
     ),
   }));
 }
 
+function interactionTargetsArea(interaction: Interaction | undefined, areaId: string): boolean {
+  return (
+    (interaction?.type === "area_link" || interaction?.type === "teleport") &&
+    interaction.targetAreaId === areaId
+  );
+}
+
+function interactionTargetsEvent(
+  interaction: Interaction | undefined,
+  areaId: string,
+  eventBlockId: string,
+): boolean {
+  return (
+    (interaction?.type === "area_link" || interaction?.type === "teleport") &&
+    interaction.targetAreaId === areaId &&
+    interaction.targetEventBlockId === eventBlockId
+  );
+}
+
 function clearEventLinkReferences(project: GameProject, areaId: string, eventBlockId: string) {
   project.areas = project.areas.map((area) => ({
     ...area,
     eventBlocks: area.eventBlocks.map((eventBlock) =>
-      eventBlock.link?.targetAreaId === areaId && eventBlock.link.targetEventBlockId === eventBlockId
-        ? { ...eventBlock, link: undefined }
+      (eventBlock.link?.targetAreaId === areaId && eventBlock.link.targetEventBlockId === eventBlockId) ||
+      interactionTargetsEvent(eventBlock.interaction, areaId, eventBlockId)
+        ? { ...eventBlock, link: undefined, interaction: undefined }
         : eventBlock,
     ),
     structures: area.structures.map((structure) =>
-      structure.interaction?.targetAreaId === areaId &&
-      structure.interaction.targetEventBlockId === eventBlockId
+      interactionTargetsEvent(structure.interaction, areaId, eventBlockId)
         ? { ...structure, interaction: undefined }
         : structure,
     ),
@@ -534,6 +557,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: updateActiveArea(state.project, (area) => ({
         ...area,
         structures: area.structures.filter((structure) => structure.id !== id),
+      })),
+    })),
+
+  updateStructure: (id, patch) =>
+    set((state) => ({
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        structures: area.structures.map((structure) =>
+          structure.id === id ? { ...structure, ...patch } : structure,
+        ),
       })),
     })),
 

@@ -7,7 +7,16 @@ import {
   portraitPresets,
 } from "../data/presets";
 import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
-import type { Cutscene, EventBlock, GameArea, GameProject, MapStructure, PixelAsset } from "../types/game";
+import type {
+  Cutscene,
+  EventBlock,
+  GameArea,
+  GameProject,
+  Interaction,
+  MovementMode,
+  MapStructure,
+  PixelAsset,
+} from "../types/game";
 import { resolveMovementAt } from "./movement";
 
 type WasdKeys = {
@@ -16,6 +25,15 @@ type WasdKeys = {
   S: Phaser.Input.Keyboard.Key;
   D: Phaser.Input.Keyboard.Key;
 };
+
+type InteractKeys = {
+  E: Phaser.Input.Keyboard.Key;
+  ENTER: Phaser.Input.Keyboard.Key;
+};
+
+type Interactable =
+  | { kind: "event"; label: string; interaction: Interaction; eventBlock: EventBlock; distance: number }
+  | { kind: "structure"; label: string; interaction: Interaction; structure: MapStructure; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -43,12 +61,16 @@ export class AdventureScene extends Phaser.Scene {
   private uiCamera?: Phaser.Cameras.Scene2D.Camera;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: WasdKeys;
+  private interactKeys?: InteractKeys;
   private playerMarker?: Phaser.GameObjects.Container;
   private playerPosition = { x: 0, y: 0 };
   private progressionIndex = 0;
   private waitingForTrigger: { areaId?: string; eventBlockId: string } | null = null;
   private nextMoveAt = 0;
   private statusText?: Phaser.GameObjects.Text;
+  private promptText?: Phaser.GameObjects.Text;
+  private runtimeFlags: Record<string, boolean> = {};
+  private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
@@ -78,6 +100,18 @@ export class AdventureScene extends Phaser.Scene {
       .setDepth(100)
       .setScrollFactor(0);
     this.uiLayer.add(this.statusText);
+    this.promptText = this.add
+      .text(this.scale.width / 2, this.scale.height - 22, "", {
+        backgroundColor: "rgba(17, 24, 39, 0.86)",
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "14px",
+        padding: { x: 10, y: 6 },
+      })
+      .setDepth(110)
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+    this.uiLayer.add(this.promptText);
 
     this.processProgression();
   }
@@ -90,6 +124,13 @@ export class AdventureScene extends Phaser.Scene {
       this.isMoving ||
       time < this.nextMoveAt
     ) {
+      return;
+    }
+
+    const interactable = this.findNearestInteractable();
+    this.updatePrompt(interactable);
+    if (this.wasInteractPressed() && interactable) {
+      this.runInteraction(interactable.interaction, interactable.label);
       return;
     }
 
@@ -113,6 +154,10 @@ export class AdventureScene extends Phaser.Scene {
       A: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
       S: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       D: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+    };
+    this.interactKeys = {
+      E: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+      ENTER: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
     };
   }
 
@@ -515,6 +560,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private showCutscene(cutscene: Cutscene, onDone: () => void) {
+    this.promptText?.setText("");
     const width = this.scale.width;
     const height = this.scale.height;
     const background = getVisualPreset(cutscene.backgroundImageId, backgroundPresets);
@@ -671,6 +717,150 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     return null;
+  }
+
+  private wasInteractPressed(): boolean {
+    return Boolean(
+      (this.interactKeys?.E && Phaser.Input.Keyboard.JustDown(this.interactKeys.E)) ||
+        (this.interactKeys?.ENTER && Phaser.Input.Keyboard.JustDown(this.interactKeys.ENTER)),
+    );
+  }
+
+  private findNearestInteractable(): Interactable | null {
+    const candidates: Interactable[] = [];
+
+    this.currentArea.eventBlocks.forEach((eventBlock) => {
+      const interaction =
+        eventBlock.interaction ??
+        (eventBlock.kind === "area_link" && eventBlock.link
+          ? { type: "area_link" as const, ...eventBlock.link }
+          : undefined);
+
+      if (!interaction) {
+        return;
+      }
+
+      const distance =
+        Math.abs(eventBlock.x - this.playerPosition.x) + Math.abs(eventBlock.y - this.playerPosition.y);
+      if (distance <= 1) {
+        candidates.push({
+          kind: "event",
+          label: eventBlock.name,
+          interaction,
+          eventBlock,
+          distance,
+        });
+      }
+    });
+
+    this.currentArea.structures.forEach((structure) => {
+      if (!structure.interaction) {
+        return;
+      }
+
+      const distance = this.distanceToStructure(structure);
+      if (distance <= 1) {
+        candidates.push({
+          kind: "structure",
+          label: structure.name,
+          interaction: structure.interaction,
+          structure,
+          distance,
+        });
+      }
+    });
+
+    return (
+      candidates.sort((a, b) => {
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance;
+        }
+
+        return a.kind === "event" ? -1 : 1;
+      })[0] ?? null
+    );
+  }
+
+  private distanceToStructure(structure: MapStructure): number {
+    const minX = structure.x;
+    const maxX = structure.x + structure.widthTiles - 1;
+    const minY = structure.y;
+    const maxY = structure.y + structure.heightTiles - 1;
+    const deltaX =
+      this.playerPosition.x < minX
+        ? minX - this.playerPosition.x
+        : this.playerPosition.x > maxX
+          ? this.playerPosition.x - maxX
+          : 0;
+    const deltaY =
+      this.playerPosition.y < minY
+        ? minY - this.playerPosition.y
+        : this.playerPosition.y > maxY
+          ? this.playerPosition.y - maxY
+          : 0;
+
+    return deltaX + deltaY;
+  }
+
+  private updatePrompt(interactable: Interactable | null) {
+    if (!this.promptText) {
+      return;
+    }
+
+    this.promptText.setText(interactable ? this.promptForInteraction(interactable.interaction) : "");
+  }
+
+  private promptForInteraction(interaction: Interaction): string {
+    if (interaction.type === "area_link" || interaction.type === "teleport") {
+      return "Press E to enter";
+    }
+
+    if (interaction.type === "change_movement_mode") {
+      return interaction.mode === "sail" ? "Press E to board" : "Press E to ride";
+    }
+
+    return "Press E to inspect";
+  }
+
+  private runInteraction(interaction: Interaction, label: string) {
+    if (interaction.type === "area_link" || interaction.type === "teleport") {
+      const targetArea = this.findArea(interaction.targetAreaId);
+      const targetEventBlock = this.findEventBlock(
+        interaction.targetEventBlockId,
+        interaction.targetAreaId,
+      );
+
+      if (!targetArea || !targetEventBlock) {
+        this.setStatus(`Interaction target missing: ${label}.`);
+        return;
+      }
+
+      this.movePlayerToArea(targetArea.id, targetEventBlock);
+      return;
+    }
+
+    if (interaction.type === "play_cutscene") {
+      const cutscene = this.project.cutscenes.find((candidate) => candidate.id === interaction.cutsceneId);
+      if (!cutscene) {
+        this.setStatus(`Cutscene missing: ${label}.`);
+        return;
+      }
+
+      this.promptText?.setText("");
+      this.showCutscene(cutscene, () => {
+        this.updatePrompt(this.findNearestInteractable());
+      });
+      return;
+    }
+
+    if (interaction.type === "set_flag") {
+      this.runtimeFlags[interaction.flag] = interaction.value;
+      this.setStatus(`${interaction.flag}: ${interaction.value ? "true" : "false"}.`);
+      return;
+    }
+
+    this.currentMovementMode = interaction.mode;
+    this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
   }
 
   private tryMove(deltaX: number, deltaY: number, time: number) {

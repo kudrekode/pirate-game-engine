@@ -67,6 +67,11 @@ const mainArea: GameArea = {
       widthTiles: 3,
       heightTiles: 3,
       blocksMovement: true,
+      interaction: {
+        type: "area_link",
+        targetAreaId: "area_house",
+        targetEventBlockId: "spawn_house_entry",
+      },
     },
   ],
   eventBlocks: [
@@ -94,6 +99,11 @@ const mainArea: GameArea = {
       tag: "house_door",
       kind: "area_link",
       link: {
+        targetAreaId: "area_house",
+        targetEventBlockId: "spawn_house_entry",
+      },
+      interaction: {
+        type: "area_link",
         targetAreaId: "area_house",
         targetEventBlockId: "spawn_house_entry",
       },
@@ -128,6 +138,10 @@ const houseArea: GameArea = {
       widthTiles: 2,
       heightTiles: 2,
       blocksMovement: true,
+      interaction: {
+        type: "play_cutscene",
+        cutsceneId: "intro_cutscene",
+      },
     },
     {
       id: "structure_house_table",
@@ -157,6 +171,11 @@ const houseArea: GameArea = {
       tag: "exit",
       kind: "area_link",
       link: {
+        targetAreaId: "area_main",
+        targetEventBlockId: "spawn_start",
+      },
+      interaction: {
+        type: "area_link",
         targetAreaId: "area_main",
         targetEventBlockId: "spawn_start",
       },
