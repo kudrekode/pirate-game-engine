@@ -6,7 +6,18 @@ import {
   getVisualPreset,
   portraitPresets,
 } from "../data/presets";
-import type { Cutscene, EventBlock, GameProject } from "../types/game";
+import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
+import type {
+  Cutscene,
+  EventBlock,
+  GameArea,
+  GameProject,
+  Interaction,
+  MovementMode,
+  MapStructure,
+  PixelAsset,
+} from "../types/game";
+import { resolveMovementAt } from "./movement";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -14,6 +25,15 @@ type WasdKeys = {
   S: Phaser.Input.Keyboard.Key;
   D: Phaser.Input.Keyboard.Key;
 };
+
+type InteractKeys = {
+  E: Phaser.Input.Keyboard.Key;
+  ENTER: Phaser.Input.Keyboard.Key;
+};
+
+type Interactable =
+  | { kind: "event"; label: string; interaction: Interaction; eventBlock: EventBlock; distance: number }
+  | { kind: "structure"; label: string; interaction: Interaction; structure: MapStructure; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -23,20 +43,42 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function tileKey(x: number, y: number): string {
+  return `${x}:${y}`;
+}
+
+function getInitialArea(project: GameProject): GameArea {
+  return project.areas.find((area) => area.id === project.activeAreaId) ?? project.areas[0]!;
+}
+
+function canTouchActivate(interaction: Interaction): boolean {
+  return interaction.activationMode === "on_touch" || interaction.activationMode === "both";
+}
+
+function canInteractActivate(interaction: Interaction): boolean {
+  return interaction.activationMode === "on_interact" || interaction.activationMode === "both";
+}
+
 export class AdventureScene extends Phaser.Scene {
   private readonly project: GameProject;
-  private readonly tileSize: number;
+  private currentArea: GameArea;
+  private tileSize: number;
+  private readonly pixelTextureKeys = new Map<string, string>();
   private worldLayer?: Phaser.GameObjects.Container;
   private uiLayer?: Phaser.GameObjects.Container;
   private uiCamera?: Phaser.Cameras.Scene2D.Camera;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: WasdKeys;
+  private interactKeys?: InteractKeys;
   private playerMarker?: Phaser.GameObjects.Container;
   private playerPosition = { x: 0, y: 0 };
   private progressionIndex = 0;
-  private waitingForTriggerId = "";
+  private waitingForTrigger: { areaId?: string; eventBlockId: string } | null = null;
   private nextMoveAt = 0;
   private statusText?: Phaser.GameObjects.Text;
+  private promptText?: Phaser.GameObjects.Text;
+  private runtimeFlags: Record<string, boolean> = {};
+  private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
@@ -44,12 +86,14 @@ export class AdventureScene extends Phaser.Scene {
   constructor(project: GameProject) {
     super("AdventureScene");
     this.project = project;
-    this.tileSize = project.map.tileSize;
+    this.currentArea = getInitialArea(project);
+    this.tileSize = this.currentArea.tileSize;
   }
 
   create() {
     this.worldLayer = this.add.container(0, 0);
     this.uiLayer = this.add.container(0, 0).setDepth(1000).setScrollFactor(0);
+    this.createPixelTextures();
     this.renderMap();
     this.configureCameras();
     this.createInput();
@@ -64,6 +108,18 @@ export class AdventureScene extends Phaser.Scene {
       .setDepth(100)
       .setScrollFactor(0);
     this.uiLayer.add(this.statusText);
+    this.promptText = this.add
+      .text(this.scale.width / 2, this.scale.height - 22, "", {
+        backgroundColor: "rgba(17, 24, 39, 0.86)",
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "14px",
+        padding: { x: 10, y: 6 },
+      })
+      .setDepth(110)
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+    this.uiLayer.add(this.promptText);
 
     this.processProgression();
   }
@@ -76,6 +132,13 @@ export class AdventureScene extends Phaser.Scene {
       this.isMoving ||
       time < this.nextMoveAt
     ) {
+      return;
+    }
+
+    const interactable = this.findNearestInteractable();
+    this.updatePrompt(interactable);
+    if (this.wasInteractPressed() && interactable) {
+      this.runInteraction(interactable.interaction, interactable.label);
       return;
     }
 
@@ -100,6 +163,10 @@ export class AdventureScene extends Phaser.Scene {
       S: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       D: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
+    this.interactKeys = {
+      E: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+      ENTER: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
+    };
   }
 
   private configureCameras() {
@@ -108,12 +175,12 @@ export class AdventureScene extends Phaser.Scene {
     const visibleWorldWidth = clamp(
       Math.round(this.project.camera.viewportWidthTiles) * this.tileSize,
       this.tileSize,
-      this.project.map.width * this.tileSize,
+      this.currentArea.width * this.tileSize,
     );
     const visibleWorldHeight = clamp(
       Math.round(this.project.camera.viewportHeightTiles) * this.tileSize,
       this.tileSize,
-      this.project.map.height * this.tileSize,
+      this.currentArea.height * this.tileSize,
     );
     const zoom = Math.min(screenWidth / visibleWorldWidth, screenHeight / visibleWorldHeight);
     const worldViewportWidth = Math.round(visibleWorldWidth * zoom);
@@ -127,12 +194,16 @@ export class AdventureScene extends Phaser.Scene {
       .setBounds(
         0,
         0,
-        this.project.map.width * this.tileSize,
-        this.project.map.height * this.tileSize,
+        this.currentArea.width * this.tileSize,
+        this.currentArea.height * this.tileSize,
       )
       .setRoundPixels(true);
 
-    this.uiCamera = this.cameras.add(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    if (!this.uiCamera) {
+      this.uiCamera = this.cameras.add(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    } else {
+      this.uiCamera.setViewport(0, 0, screenWidth, screenHeight).setScroll(0, 0);
+    }
     if (this.uiLayer && this.worldLayer) {
       this.cameras.main.ignore(this.uiLayer);
       this.uiCamera.ignore(this.worldLayer);
@@ -165,8 +236,8 @@ export class AdventureScene extends Phaser.Scene {
 
   private centerCameraOn(x: number, y: number) {
     const camera = this.cameras.main;
-    const mapWidth = this.project.map.width * this.tileSize;
-    const mapHeight = this.project.map.height * this.tileSize;
+    const mapWidth = this.currentArea.width * this.tileSize;
+    const mapHeight = this.currentArea.height * this.tileSize;
     const maxScrollX = Math.max(0, mapWidth - camera.width / camera.zoom);
     const maxScrollY = Math.max(0, mapHeight - camera.height / camera.zoom);
 
@@ -177,20 +248,36 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private renderMap() {
-    for (let y = 0; y < this.project.map.height; y += 1) {
-      for (let x = 0; x < this.project.map.width; x += 1) {
+    this.worldLayer?.removeAll(true);
+    this.playerMarker = undefined;
+    const overlayLookup = new Map(
+      this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
+    );
+
+    for (let y = 0; y < this.currentArea.height; y += 1) {
+      for (let x = 0; x < this.currentArea.width; x += 1) {
         const tileId = this.tileIdAt(x, y);
         const tile = getTilePreset(tileId);
+        const tileStyle = this.project.tileStyles[tileId];
         const worldX = x * this.tileSize;
         const worldY = y * this.tileSize;
 
         const tileRect = this.add
-          .rectangle(worldX, worldY, this.tileSize, this.tileSize, hexToNumber(tile.color))
+          .rectangle(
+            worldX,
+            worldY,
+            this.tileSize,
+            this.tileSize,
+            hexToNumber(tileStyle?.color ?? tile.color),
+          )
           .setOrigin(0)
           .setStrokeStyle(1, 0xffffff, 0.22);
         this.worldLayer?.add(tileRect);
 
-        if (tile.pattern === "waves") {
+        const tileTexture = this.addPixelImage(tileId, worldX, worldY, this.tileSize, this.tileSize);
+        if (tileTexture) {
+          this.worldLayer?.add(tileTexture);
+        } else if (tile.pattern === "waves") {
           const wave = this.add
             .text(worldX + this.tileSize / 2, worldY + this.tileSize / 2, "~", {
               color: "#d0ebff",
@@ -199,9 +286,7 @@ export class AdventureScene extends Phaser.Scene {
             })
             .setOrigin(0.5);
           this.worldLayer?.add(wave);
-        }
-
-        if (tile.pattern === "tree") {
+        } else if (tile.pattern === "tree") {
           const tree = this.add.circle(
             worldX + this.tileSize / 2,
             worldY + this.tileSize / 2,
@@ -210,9 +295,7 @@ export class AdventureScene extends Phaser.Scene {
             0.9,
           );
           this.worldLayer?.add(tree);
-        }
-
-        if (tile.pattern === "blocks") {
+        } else if (tile.pattern === "blocks") {
           const rock = this.add
             .rectangle(
               worldX + this.tileSize / 2,
@@ -225,8 +308,150 @@ export class AdventureScene extends Phaser.Scene {
             .setStrokeStyle(1, 0x111827, 0.28);
           this.worldLayer?.add(rock);
         }
+
+        const overlayId = overlayLookup.get(tileKey(x, y));
+        if (overlayId) {
+          const overlay = getOverlayPreset(overlayId);
+          const overlayTexture = this.addPixelImage(
+            overlayId,
+            worldX,
+            worldY,
+            this.tileSize,
+            this.tileSize,
+            overlay.pattern === "shadow" ? 0.72 : 0.92,
+          );
+
+          if (overlayTexture) {
+            this.worldLayer?.add(overlayTexture);
+          } else {
+            const path = this.add
+              .rectangle(
+                worldX + this.tileSize * 0.5,
+                worldY + this.tileSize * 0.5,
+                this.tileSize * 0.78,
+                this.tileSize * 0.48,
+                hexToNumber(overlay.color),
+                overlay.pattern === "shadow" ? 0.25 : 0.62,
+              )
+              .setAngle(-4);
+            this.worldLayer?.add(path);
+          }
+        }
       }
     }
+
+    this.currentArea.structures.forEach((structure) => this.renderStructure(structure));
+  }
+
+  private createPixelTextures() {
+    Object.values(this.project.pixelAssets ?? {}).forEach((asset) => {
+      const textureKey = this.getPixelTextureKey(asset);
+
+      if (this.textures.exists(textureKey)) {
+        this.textures.remove(textureKey);
+      }
+
+      const texture = this.textures.createCanvas(textureKey, asset.width, asset.height);
+      if (!texture) {
+        return;
+      }
+
+      const context = texture.getContext();
+      context.clearRect(0, 0, asset.width, asset.height);
+
+      asset.pixels.forEach((row, y) => {
+        row.forEach((color, x) => {
+          if (!color || color === "transparent") {
+            return;
+          }
+
+          context.fillStyle = color;
+          context.fillRect(x, y, 1, 1);
+        });
+      });
+
+      texture.refresh();
+      this.pixelTextureKeys.set(asset.id, textureKey);
+    });
+  }
+
+  private getPixelTextureKey(asset: PixelAsset): string {
+    return `pixel_asset_${asset.id}`;
+  }
+
+  private addPixelImage(
+    assetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    alpha = 1,
+  ): Phaser.GameObjects.Image | null {
+    const textureKey = this.pixelTextureKeys.get(assetId);
+    if (!textureKey) {
+      return null;
+    }
+
+    return this.add
+      .image(x, y, textureKey)
+      .setOrigin(0)
+      .setDisplaySize(width, height)
+      .setAlpha(alpha);
+  }
+
+  private renderStructure(structure: MapStructure) {
+    const preset = getStructurePreset(structure.structureId);
+    const worldX = structure.x * this.tileSize;
+    const worldY = structure.y * this.tileSize;
+    const width = structure.widthTiles * this.tileSize;
+    const height = structure.heightTiles * this.tileSize;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(hexToNumber(preset.shadowColor), 0.32);
+    graphics.fillRect(width * 0.12, height * 0.78, width * 0.82, height * 0.18);
+
+    if (structure.structureId === "dock") {
+      graphics.fillStyle(hexToNumber(preset.wallColor), 1);
+      for (let y = height * 0.18; y < height * 0.86; y += this.tileSize * 0.34) {
+        graphics.fillRect(width * 0.08, y, width * 0.84, this.tileSize * 0.18);
+      }
+      graphics.lineStyle(2, hexToNumber(preset.shadowColor), 0.65);
+      for (let x = width * 0.14; x < width * 0.9; x += this.tileSize * 0.5) {
+        graphics.lineBetween(x, height * 0.14, x, height * 0.9);
+      }
+    } else if (structure.structureId === "ruin_wall") {
+      graphics.fillStyle(hexToNumber(preset.wallColor), 1);
+      graphics.fillRect(width * 0.08, height * 0.35, width * 0.84, height * 0.42);
+      graphics.fillStyle(hexToNumber(preset.roofColor), 1);
+      for (let x = width * 0.1; x < width * 0.82; x += this.tileSize * 0.48) {
+        graphics.fillRect(x, height * 0.23, this.tileSize * 0.28, this.tileSize * 0.28);
+      }
+      graphics.lineStyle(2, hexToNumber(preset.shadowColor), 0.5);
+      graphics.strokeRect(width * 0.08, height * 0.35, width * 0.84, height * 0.42);
+    } else {
+      graphics.fillStyle(hexToNumber(preset.wallColor), 1);
+      graphics.fillRect(width * 0.18, height * 0.36, width * 0.64, height * 0.5);
+      graphics.fillStyle(hexToNumber(preset.roofColor), 1);
+      graphics.fillTriangle(
+        width * 0.08,
+        height * 0.4,
+        width * 0.5,
+        height * 0.08,
+        width * 0.92,
+        height * 0.4,
+      );
+      graphics.fillRect(width * 0.14, height * 0.35, width * 0.72, height * 0.14);
+      graphics.fillStyle(0x382211, 0.62);
+      graphics.fillRect(width * 0.44, height * 0.62, width * 0.13, height * 0.24);
+      graphics.fillStyle(0xf6d365, 0.78);
+      graphics.fillRect(width * 0.26, height * 0.5, width * 0.12, height * 0.1);
+      graphics.fillRect(width * 0.62, height * 0.5, width * 0.12, height * 0.1);
+      graphics.lineStyle(2, hexToNumber(preset.shadowColor), 0.45);
+      graphics.strokeRect(width * 0.18, height * 0.36, width * 0.64, height * 0.5);
+    }
+
+    const container = this.add.container(worldX, worldY, [graphics]);
+    this.worldLayer?.add(container);
   }
 
   private processProgression() {
@@ -252,26 +477,29 @@ export class AdventureScene extends Phaser.Scene {
       }
 
       if (action.type === "spawn_player") {
-        const eventBlock = this.findEventBlock(action.eventBlockId);
+        const eventBlock = this.findEventBlock(action.eventBlockId, action.areaId);
         if (eventBlock) {
-          this.spawnPlayer(eventBlock);
+          this.movePlayerToArea(action.areaId, eventBlock);
         }
         this.progressionIndex += 1;
         continue;
       }
 
       if (action.type === "teleport_player") {
-        const eventBlock = this.findEventBlock(action.eventBlockId);
+        const eventBlock = this.findEventBlock(action.eventBlockId, action.areaId);
         if (eventBlock) {
-          this.teleportPlayer(eventBlock);
+          this.movePlayerToArea(action.areaId, eventBlock);
         }
         this.progressionIndex += 1;
         continue;
       }
 
       if (action.type === "wait_for_trigger") {
-        const eventBlock = this.findEventBlock(action.eventBlockId);
-        this.waitingForTriggerId = action.eventBlockId;
+        const eventBlock = this.findEventBlock(action.eventBlockId, action.areaId);
+        this.waitingForTrigger = {
+          areaId: action.areaId,
+          eventBlockId: action.eventBlockId,
+        };
         this.setStatus(eventBlock ? `Find trigger: ${eventBlock.name}` : "Find the trigger.");
         return;
       }
@@ -282,6 +510,24 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.setStatus("Progression complete.");
+  }
+
+  private movePlayerToArea(areaId: string, eventBlock: EventBlock) {
+    const nextArea = this.findArea(areaId);
+    if (!nextArea) {
+      return;
+    }
+
+    if (nextArea.id !== this.currentArea.id) {
+      this.currentArea = nextArea;
+      this.tileSize = nextArea.tileSize;
+      this.isMoving = false;
+      this.renderMap();
+      this.configureCameras();
+    }
+
+    this.spawnPlayer(eventBlock);
+    this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -322,6 +568,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private showCutscene(cutscene: Cutscene, onDone: () => void) {
+    this.promptText?.setText("");
     const width = this.scale.width;
     const height = this.scale.height;
     const background = getVisualPreset(cutscene.backgroundImageId, backgroundPresets);
@@ -480,6 +727,175 @@ export class AdventureScene extends Phaser.Scene {
     return null;
   }
 
+  private wasInteractPressed(): boolean {
+    return Boolean(
+      (this.interactKeys?.E && Phaser.Input.Keyboard.JustDown(this.interactKeys.E)) ||
+        (this.interactKeys?.ENTER && Phaser.Input.Keyboard.JustDown(this.interactKeys.ENTER)),
+    );
+  }
+
+  private findNearestInteractable(): Interactable | null {
+    const candidates: Interactable[] = [];
+
+    this.currentArea.eventBlocks.forEach((eventBlock) => {
+      const interaction = this.getEventInteraction(eventBlock);
+
+      if (!interaction || !canInteractActivate(interaction)) {
+        return;
+      }
+
+      const distance =
+        Math.abs(eventBlock.x - this.playerPosition.x) + Math.abs(eventBlock.y - this.playerPosition.y);
+      if (distance <= 1) {
+        candidates.push({
+          kind: "event",
+          label: eventBlock.name,
+          interaction,
+          eventBlock,
+          distance,
+        });
+      }
+    });
+
+    this.currentArea.structures.forEach((structure) => {
+      if (!structure.interaction || !canInteractActivate(structure.interaction)) {
+        return;
+      }
+
+      const distance = this.distanceToStructure(structure);
+      if (distance <= 1) {
+        candidates.push({
+          kind: "structure",
+          label: structure.name,
+          interaction: structure.interaction,
+          structure,
+          distance,
+        });
+      }
+    });
+
+    return (
+      candidates.sort((a, b) => {
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance;
+        }
+
+        return a.kind === "event" ? -1 : 1;
+      })[0] ?? null
+    );
+  }
+
+  private distanceToStructure(structure: MapStructure): number {
+    const minX = structure.x;
+    const maxX = structure.x + structure.widthTiles - 1;
+    const minY = structure.y;
+    const maxY = structure.y + structure.heightTiles - 1;
+    const deltaX =
+      this.playerPosition.x < minX
+        ? minX - this.playerPosition.x
+        : this.playerPosition.x > maxX
+          ? this.playerPosition.x - maxX
+          : 0;
+    const deltaY =
+      this.playerPosition.y < minY
+        ? minY - this.playerPosition.y
+        : this.playerPosition.y > maxY
+          ? this.playerPosition.y - maxY
+          : 0;
+
+    return deltaX + deltaY;
+  }
+
+  private updatePrompt(interactable: Interactable | null) {
+    if (!this.promptText) {
+      return;
+    }
+
+    this.promptText.setText(interactable ? this.promptForInteraction(interactable.interaction) : "");
+  }
+
+  private promptForInteraction(interaction: Interaction): string {
+    if (interaction.prompt) {
+      return interaction.prompt;
+    }
+
+    if (interaction.type === "area_link" || interaction.type === "teleport") {
+      return "Press E to enter";
+    }
+
+    if (interaction.type === "change_movement_mode") {
+      return interaction.mode === "sail" ? "Press E to board" : "Press E to ride";
+    }
+
+    return "Press E to inspect";
+  }
+
+  private runInteraction(interaction: Interaction, label: string) {
+    if (interaction.activationMode === "disabled") {
+      return;
+    }
+
+    if (interaction.type === "area_link" || interaction.type === "teleport") {
+      if (!interaction.targetAreaId || !interaction.targetEventBlockId) {
+        this.setStatus(`Interaction target missing: ${label}.`);
+        return;
+      }
+
+      const targetArea = this.findArea(interaction.targetAreaId);
+      const targetEventBlock = this.findEventBlock(
+        interaction.targetEventBlockId,
+        interaction.targetAreaId,
+      );
+
+      if (!targetArea || !targetEventBlock) {
+        this.setStatus(`Interaction target missing: ${label}.`);
+        return;
+      }
+
+      this.movePlayerToArea(targetArea.id, targetEventBlock);
+      return;
+    }
+
+    if (interaction.type === "play_cutscene") {
+      if (!interaction.cutsceneId) {
+        this.setStatus(`Cutscene missing: ${label}.`);
+        return;
+      }
+
+      const cutscene = this.project.cutscenes.find((candidate) => candidate.id === interaction.cutsceneId);
+      if (!cutscene) {
+        this.setStatus(`Cutscene missing: ${label}.`);
+        return;
+      }
+
+      this.promptText?.setText("");
+      this.showCutscene(cutscene, () => {
+        this.updatePrompt(this.findNearestInteractable());
+      });
+      return;
+    }
+
+    if (interaction.type === "set_flag") {
+      if (!interaction.flag) {
+        this.setStatus(`Flag missing: ${label}.`);
+        return;
+      }
+
+      const value = interaction.value ?? true;
+      this.runtimeFlags[interaction.flag] = value;
+      this.setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
+      return;
+    }
+
+    if (!interaction.mode) {
+      this.setStatus(`Movement mode missing: ${label}.`);
+      return;
+    }
+
+    this.currentMovementMode = interaction.mode;
+    this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
+  }
+
   private tryMove(deltaX: number, deltaY: number, time: number) {
     const nextX = this.playerPosition.x + deltaX;
     const nextY = this.playerPosition.y + deltaY;
@@ -487,19 +903,19 @@ export class AdventureScene extends Phaser.Scene {
     if (
       nextX < 0 ||
       nextY < 0 ||
-      nextX >= this.project.map.width ||
-      nextY >= this.project.map.height
+      nextX >= this.currentArea.width ||
+      nextY >= this.currentArea.height
     ) {
       return;
     }
 
-    const tileId = this.tileIdAt(nextX, nextY);
-    if (!this.project.player.canWalkOn.includes(tileId)) {
-      this.setStatus(`Blocked by ${tileId}.`);
+    const movement = resolveMovementAt(this.currentArea, nextX, nextY, this.project.player);
+    if (!movement.canMove) {
+      this.setStatus(movement.reason ?? "Blocked.");
       return;
     }
 
-    const duration = this.getMoveDuration();
+    const duration = this.getMoveDuration(movement.speedMultiplier);
     const destinationX = nextX * this.tileSize + this.tileSize / 2;
     const destinationY = nextY * this.tileSize + this.tileSize / 2;
 
@@ -514,41 +930,83 @@ export class AdventureScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.isMoving = false;
+        if (this.checkTouchInteractions()) {
+          return;
+        }
         this.checkTrigger();
       },
     });
   }
 
-  private getMoveDuration(): number {
-    return Math.max(70, 360 - clamp(this.project.player.speed, 1, 20) * 24);
+  private getMoveDuration(speedMultiplier = 1): number {
+    const baseDuration = 360 - clamp(this.project.player.speed, 1, 20) * 24;
+    return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
+  }
+
+  private checkTouchInteractions(): boolean {
+    const eventBlock = this.currentArea.eventBlocks.find(
+      (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
+    );
+    const interaction = eventBlock ? this.getEventInteraction(eventBlock) : undefined;
+
+    if (!eventBlock || !interaction || !canTouchActivate(interaction)) {
+      return false;
+    }
+
+    this.runInteraction(interaction, eventBlock.name);
+    return true;
   }
 
   private checkTrigger() {
-    if (!this.waitingForTriggerId) {
+    if (!this.waitingForTrigger) {
       return;
     }
 
-    const eventBlock = this.findEventBlock(this.waitingForTriggerId);
+    const eventBlock = this.findEventBlock(
+      this.waitingForTrigger.eventBlockId,
+      this.waitingForTrigger.areaId,
+    );
     if (!eventBlock) {
-      this.waitingForTriggerId = "";
+      this.waitingForTrigger = null;
       this.progressionIndex += 1;
       this.processProgression();
       return;
     }
 
-    if (eventBlock.x === this.playerPosition.x && eventBlock.y === this.playerPosition.y) {
-      this.waitingForTriggerId = "";
+    const isInTargetArea = !this.waitingForTrigger.areaId || this.waitingForTrigger.areaId === this.currentArea.id;
+    if (isInTargetArea && eventBlock.x === this.playerPosition.x && eventBlock.y === this.playerPosition.y) {
+      this.waitingForTrigger = null;
       this.progressionIndex += 1;
       this.processProgression();
     }
   }
 
   private tileIdAt(x: number, y: number): string {
-    return this.project.map.tiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
+    return this.currentArea.terrainTiles.find((tile) => tile.x === x && tile.y === y)?.tileId ?? "grass";
   }
 
-  private findEventBlock(id: string): EventBlock | undefined {
-    return this.project.map.eventBlocks.find((eventBlock) => eventBlock.id === id);
+  private findArea(areaId: string): GameArea | undefined {
+    return this.project.areas.find((area) => area.id === areaId);
+  }
+
+  private findEventBlock(id: string, areaId = this.currentArea.id): EventBlock | undefined {
+    return this.findArea(areaId)?.eventBlocks.find((eventBlock) => eventBlock.id === id);
+  }
+
+  private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
+    if (eventBlock.interaction) {
+      return eventBlock.interaction;
+    }
+
+    if (eventBlock.kind === "area_link" && eventBlock.link) {
+      return {
+        type: "area_link",
+        activationMode: "on_touch",
+        ...eventBlock.link,
+      };
+    }
+
+    return undefined;
   }
 
   private setStatus(message: string) {
