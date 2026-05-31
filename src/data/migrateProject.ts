@@ -351,6 +351,19 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
       item.facing === "up" || item.facing === "left" || item.facing === "right"
         ? item.facing
         : "down";
+    const movementMode =
+      item.movementMode === "patrol" || item.movementMode === "wander"
+        ? item.movementMode
+        : "stationary";
+    const patrolSource = isRecord(item.patrolPath) ? item.patrolPath : {};
+    const points = Array.isArray(patrolSource.points)
+      ? patrolSource.points.flatMap((point) =>
+          isRecord(point)
+            ? [{ x: readNumber(point.x, 0, 0), y: readNumber(point.y, 0, 0) }]
+            : [],
+        )
+      : [];
+    const wanderSource = isRecord(item.wanderZone) ? item.wanderZone : {};
 
     return [{
       id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
@@ -360,6 +373,21 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
       y: readNumber(item.y, 0, 0),
       facing,
       blocksMovement: readBoolean(item.blocksMovement, true),
+      movementMode,
+      movementSpeed: readNumber(item.movementSpeed, 1, 0.1, 10),
+      ...(points.length > 0
+        ? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } }
+        : {}),
+      ...(movementMode === "wander"
+        ? {
+            wanderZone: {
+              x: readNumber(wanderSource.x, readNumber(item.x, 0, 0), 0),
+              y: readNumber(wanderSource.y, readNumber(item.y, 0, 0), 0),
+              width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
+              height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
+            },
+          }
+        : {}),
       interaction: migrateInteraction(item.interaction, "on_interact"),
     }];
   });

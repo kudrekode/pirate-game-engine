@@ -146,6 +146,25 @@ export type NPCDefinition = {
   portraitId?: string;
 };
 
+export type NPCMovementMode = "stationary" | "patrol" | "wander";
+
+export type PatrolPoint = {
+  x: number;
+  y: number;
+};
+
+export type PatrolPath = {
+  points: PatrolPoint[];
+  loop: boolean;
+};
+
+export type WanderZone = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type NPCInstance = {
   id: string;
   npcDefinitionId: string;
@@ -154,8 +173,14 @@ export type NPCInstance = {
   y: number;
   facing?: "up" | "down" | "left" | "right";
   blocksMovement: boolean;
+  movementMode: NPCMovementMode;
+  movementSpeed?: number;
+  patrolPath?: PatrolPath;
+  wanderZone?: WanderZone;
   interaction?: Interaction;
 };
+
+export type MapOverlayFilter = "npc_paths" | "event_blocks" | "collision" | "none";
 
 export type EventBlock = {
   id: string;

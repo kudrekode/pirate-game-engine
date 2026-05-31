@@ -93,6 +93,7 @@ describe("resolveMovementAt", () => {
           x: 0,
           y: 1,
           blocksMovement: true,
+          movementMode: "stationary",
         },
       ],
     });

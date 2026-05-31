@@ -23,6 +23,13 @@ import type {
 import { collectPickup } from "./inventory";
 import { resolveMovementAt } from "./movement";
 import {
+  isNpcTileWalkable,
+  updatePatrolNPC,
+  updateStationaryNPC,
+  updateWanderNPC,
+  type NPCMovementState,
+} from "./npcMovement";
+import {
   createRuntimeState,
   fireTrigger,
   type RuleActionContext,
@@ -104,6 +111,8 @@ export class AdventureScene extends Phaser.Scene {
   private readonly runtimeState: RuntimeGameState;
   private readonly runtimeQuestState: RuntimeQuestState;
   private readonly collectedPickupIds = new Set<string>();
+  private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
+  private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private readonly onQuestsChanged?: (quests: QuestView[]) => void;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
@@ -178,6 +187,10 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   update(time: number) {
+    if (!this.isCutsceneOpen && !this.isFinished) {
+      this.updateNpcMovement(time);
+    }
+
     if (
       !this.playerMarker ||
       this.isCutsceneOpen ||
@@ -319,6 +332,8 @@ export class AdventureScene extends Phaser.Scene {
   private renderMap() {
     this.worldLayer?.removeAll(true);
     this.playerMarker = undefined;
+    this.npcMarkers.clear();
+    this.npcMovementStates.clear();
     const overlayLookup = new Map(
       this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
     );
@@ -647,7 +662,53 @@ export class AdventureScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.worldLayer?.add(this.add.container(centerX, centerY, [body, initial]).setDepth(45));
+    const marker = this.add.container(centerX, centerY, [body, initial]).setDepth(45);
+    this.npcMarkers.set(npc.id, marker);
+    this.worldLayer?.add(marker);
+  }
+
+  private updateNpcMovement(time: number) {
+    this.currentArea.npcs.forEach((npc) => {
+      const runtime = this.npcMovementStates.get(npc.id) ?? {
+        movement: { patrolIndex: 0 },
+        nextMoveAt: time + 450,
+      };
+      if (time < runtime.nextMoveAt) {
+        this.npcMovementStates.set(npc.id, runtime);
+        return;
+      }
+
+      const canMove = (x: number, y: number) =>
+        !(this.playerPosition.x === x && this.playerPosition.y === y) &&
+        isNpcTileWalkable(this.currentArea, npc.id, x, y);
+      const update =
+        npc.movementMode === "patrol"
+          ? updatePatrolNPC(npc, runtime.movement, canMove)
+          : npc.movementMode === "wander"
+            ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
+            : updateStationaryNPC(npc, runtime.movement);
+      const speed = clamp(npc.movementSpeed ?? 1, 0.1, 10);
+      const duration = Math.max(80, 360 / speed);
+      const wait = update.moved ? 320 : 560;
+
+      npc.x = update.x;
+      npc.y = update.y;
+      npc.facing = update.facing;
+      this.npcMovementStates.set(npc.id, {
+        movement: update.state,
+        nextMoveAt: time + duration + wait,
+      });
+
+      if (update.moved) {
+        this.tweens.add({
+          targets: this.npcMarkers.get(npc.id),
+          x: npc.x * this.tileSize + this.tileSize / 2,
+          y: npc.y * this.tileSize + this.tileSize / 2,
+          duration,
+          ease: "Sine.easeInOut",
+        });
+      }
+    });
   }
 
   private spawnPlayer(eventBlock: EventBlock) {

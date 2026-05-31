@@ -948,6 +948,7 @@ label {
   display: grid;
   place-items: center;
   pointer-events: none;
+  z-index: 3;
 }
 
 .npc-marker-icon {
@@ -982,6 +983,55 @@ label {
 .npc-marker.selected-npc {
   outline: 3px solid rgba(245, 159, 0, 0.9);
   outline-offset: -2px;
+}
+
+.map-npc-path-overlay,
+.map-npc-wander-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.map-npc-path-overlay polyline {
+  fill: none;
+  stroke: rgba(15, 118, 110, 0.9);
+  stroke-dasharray: 6 4;
+  stroke-width: 3;
+}
+
+.map-npc-path-overlay circle {
+  fill: #0f766e;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.map-npc-path-overlay text {
+  fill: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  dominant-baseline: central;
+  text-anchor: middle;
+}
+
+.map-npc-wander-zone {
+  display: grid;
+  place-items: start;
+  border: 2px dashed rgba(15, 118, 110, 0.92);
+  background: rgba(15, 118, 110, 0.18);
+  color: #115e59;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px;
+  text-transform: uppercase;
+}
+
+.patrol-point-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
 }
 
 .logic-rule-list {

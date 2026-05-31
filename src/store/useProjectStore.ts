@@ -765,6 +765,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
               y: nextY,
               facing: "down",
               blocksMovement: true,
+              movementMode: "stationary",
+              movementSpeed: 1,
             },
           ],
         })),

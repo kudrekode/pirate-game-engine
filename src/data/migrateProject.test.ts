@@ -172,6 +172,8 @@ describe("migrateProject", () => {
       areaId: "area_main",
       facing: "down",
       blocksMovement: true,
+      movementMode: "stationary",
+      movementSpeed: 1,
     });
   });
 });
