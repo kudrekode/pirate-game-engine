@@ -88,10 +88,20 @@ export function ItemsEditor() {
           actionReferencesItem(action, selectedItem.id),
         ),
     );
+    const questReference = project.quests.some(
+      (quest) =>
+        quest.objectives.some(
+          (objective) =>
+            objective.condition.type === "has_item" && objective.condition.itemId === selectedItem.id,
+        ) ||
+        quest.rewards?.some(
+          (reward) => reward.type === "item" && reward.itemId === selectedItem.id,
+        ),
+    );
 
-    if (pickupReference || ruleReference) {
+    if (pickupReference || ruleReference || questReference) {
       setMessage(
-        `${selectedItem.name} is still referenced by ${pickupReference ? "a pickup" : "a rule"}. Remove those references first.`,
+        `${selectedItem.name} is still referenced by ${pickupReference ? "a pickup" : questReference ? "a quest" : "a rule"}. Remove those references first.`,
       );
       return;
     }
@@ -208,4 +218,3 @@ export function ItemsEditor() {
     </section>
   );
 }
-

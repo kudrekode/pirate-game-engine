@@ -351,6 +351,33 @@ export const defaultProject: GameProject = {
       maxStack: 12,
     },
   ],
+  quests: [
+    {
+      id: "quest_tavern_access",
+      name: "Get Tavern Access",
+      description: "Collect enough coins, find the side-door key, and make your way into the tavern.",
+      status: "active",
+      objectives: [
+        {
+          id: "objective_tavern_gold",
+          description: "Have 5 Gold Coins",
+          condition: { type: "has_item", itemId: "gold_coin", quantity: 5 },
+        },
+        {
+          id: "objective_tavern_key",
+          description: "Obtain the Tavern Key",
+          condition: { type: "has_item", itemId: "tavern_key", quantity: 1 },
+        },
+        {
+          id: "objective_enter_tavern",
+          description: "Enter the Tavern",
+          condition: { type: "enter_area", areaId: "area_house" },
+        },
+      ],
+      rewards: [{ type: "item", itemId: "boat_pass", quantity: 1 }],
+    },
+  ],
+  trackedQuestId: "quest_tavern_access",
   ruleGroups: [
     {
       id: "rule_group_opening",

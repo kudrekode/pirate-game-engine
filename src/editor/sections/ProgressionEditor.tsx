@@ -29,6 +29,9 @@ const actionTypes: { label: string; value: GameAction["type"] }[] = [
   { label: "Change movement mode", value: "change_movement_mode" },
   { label: "Give item", value: "give_item" },
   { label: "Remove item", value: "remove_item" },
+  { label: "Activate quest", value: "activate_quest" },
+  { label: "Complete quest", value: "complete_quest" },
+  { label: "Fail quest", value: "fail_quest" },
   { label: "End game", value: "end_game" },
 ];
 
@@ -126,6 +129,14 @@ function actionSummary(action: GameAction, labels: Record<string, string>): stri
 
   if (action.type === "give_item" || action.type === "remove_item") {
     return `${action.type === "give_item" ? "give" : "remove"} ${labels[action.itemId] ?? (action.itemId || "item")} x${action.quantity}`;
+  }
+
+  if (
+    action.type === "activate_quest" ||
+    action.type === "complete_quest" ||
+    action.type === "fail_quest"
+  ) {
+    return `${action.type.replace("_", " ")} ${labels[action.questId] ?? (action.questId || "quest")}`;
   }
 
   return "end game";
@@ -249,8 +260,9 @@ export function ProgressionEditor() {
         ...project.areas.map((area) => [area.id, area.name]),
         ...project.cutscenes.map((cutscene) => [cutscene.id, cutscene.name]),
         ...project.items.map((item) => [item.id, item.name]),
+        ...project.quests.map((quest) => [quest.id, quest.name]),
       ]),
-    [interactTargets, project.areas, project.cutscenes, project.items, touchTargets],
+    [interactTargets, project.areas, project.cutscenes, project.items, project.quests, touchTargets],
   );
 
   useEffect(() => {
@@ -467,6 +479,10 @@ export function ProgressionEditor() {
 
     if (type === "give_item" || type === "remove_item") {
       return { type, itemId: itemIds[0] ?? "", quantity: 1 };
+    }
+
+    if (type === "activate_quest" || type === "complete_quest" || type === "fail_quest") {
+      return { type, questId: project.quests[0]?.id ?? "" };
     }
 
     return { type: "end_game" };
@@ -801,6 +817,11 @@ export function ProgressionEditor() {
               value={action.quantity}
             />
           </>
+        ) : null}
+        {action.type === "activate_quest" || action.type === "complete_quest" || action.type === "fail_quest" ? (
+          <select onChange={(event) => setAction({ ...action, questId: event.target.value })} value={action.questId}>
+            {project.quests.map((quest) => <option key={quest.id} value={quest.id}>{quest.name}</option>)}
+          </select>
         ) : null}
         <button
           className="danger-button compact"

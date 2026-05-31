@@ -23,6 +23,9 @@ export type RuleActionContext = {
   teleport: (areaId: string, eventBlockId: string) => void;
   changeMovementMode: (mode: "walk" | "sail" | "ride") => void;
   endGame: () => void;
+  activateQuest?: (questId: string) => void;
+  completeQuest?: (questId: string) => void;
+  failQuest?: (questId: string) => void;
   itemDefinitions?: ItemDefinition[];
   stateChanged?: () => void;
 };
@@ -154,6 +157,24 @@ export function runAction(
   if (action.type === "remove_item") {
     removeItem(context.state.inventory, action.itemId, action.quantity);
     context.stateChanged?.();
+    onDone();
+    return;
+  }
+
+  if (action.type === "activate_quest") {
+    context.activateQuest?.(action.questId);
+    onDone();
+    return;
+  }
+
+  if (action.type === "complete_quest") {
+    context.completeQuest?.(action.questId);
+    onDone();
+    return;
+  }
+
+  if (action.type === "fail_quest") {
+    context.failQuest?.(action.questId);
     onDone();
     return;
   }

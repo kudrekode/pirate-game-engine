@@ -10,6 +10,8 @@ export type GameProject = {
   progression: ProgressionStep[];
   gameState: GameStateConfig;
   items: ItemDefinition[];
+  quests: Quest[];
+  trackedQuestId?: string;
   ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
@@ -227,6 +229,39 @@ export type ItemDefinition = {
   maxStack?: number;
 };
 
+export type QuestStatus = "inactive" | "active" | "completed" | "failed";
+
+export type Quest = {
+  id: string;
+  name: string;
+  description?: string;
+  status: QuestStatus;
+  objectives: Objective[];
+  rewards?: QuestReward[];
+};
+
+export type Objective = {
+  id: string;
+  description: string;
+  condition: ObjectiveCondition;
+};
+
+export type ObjectiveCondition =
+  | { type: "flag"; flag: string; value: boolean }
+  | { type: "has_item"; itemId: string; quantity?: number }
+  | {
+      type: "variable_compare";
+      variable: string;
+      operator: VariableComparisonOperator;
+      value: GameStateValue;
+    }
+  | { type: "enter_area"; areaId: string };
+
+export type QuestReward =
+  | { type: "item"; itemId: string; quantity: number }
+  | { type: "flag"; flag: string; value: boolean }
+  | { type: "variable"; variable: string; amount: number };
+
 export type GameRule = {
   id: string;
   name: string;
@@ -285,6 +320,9 @@ export type GameAction =
   | { type: "change_movement_mode"; mode: Exclude<MovementMode, "swim"> }
   | { type: "give_item"; itemId: string; quantity: number }
   | { type: "remove_item"; itemId: string; quantity: number }
+  | { type: "activate_quest"; questId: string }
+  | { type: "complete_quest"; questId: string }
+  | { type: "fail_quest"; questId: string }
   | { type: "end_game" };
 
 // TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, and asset imports.

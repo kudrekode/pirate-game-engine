@@ -178,12 +178,17 @@ label {
 .camera-editor,
 .cutscene-editor,
 .game-state-editor,
-.items-editor {
+.items-editor,
+.quests-editor {
   grid-template-columns: minmax(0, 1fr) 260px;
 }
 
 .items-editor {
   grid-template-columns: 240px minmax(0, 1fr);
+}
+
+.quests-editor {
+  grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .progression-editor {
@@ -1123,6 +1128,62 @@ label {
   font-weight: 900;
 }
 
+.quest-list {
+  margin-top: 10px;
+}
+
+.quest-list .list-item span {
+  display: grid;
+  gap: 2px;
+}
+
+.quest-list small {
+  color: #687581;
+  text-transform: capitalize;
+}
+
+.quest-editor,
+.quest-section {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.quest-section {
+  border-top: 1px solid #d8e0e7;
+  padding-top: 12px;
+}
+
+.quest-section-heading,
+.quest-condition-row,
+.quest-reward-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.quest-section-heading {
+  justify-content: space-between;
+}
+
+.quest-objective {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d8e0e7;
+  border-radius: 6px;
+  background: #fbfcfd;
+  padding: 9px;
+}
+
+.quest-condition-row select,
+.quest-condition-row input,
+.quest-reward-row select,
+.quest-reward-row input {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
 .state-row.variable input {
   flex: 1 1 160px;
 }
@@ -1138,7 +1199,7 @@ label {
 
 .bottom-tabs {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 8px;
   border-top: 1px solid #cbd5df;
   background: #f8fafc;
@@ -1191,7 +1252,9 @@ label {
 }
 
 .inventory-hud,
-.inventory-panel {
+.inventory-panel,
+.quest-panel,
+.quest-tracker {
   position: absolute;
   z-index: 5;
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -1215,6 +1278,29 @@ label {
   padding: 10px;
 }
 
+.quest-panel {
+  top: 12px;
+  right: 12px;
+  width: min(340px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 10px;
+}
+
+.quest-tracker {
+  right: 12px;
+  bottom: 12px;
+  width: min(280px, calc(100% - 24px));
+  padding: 9px 10px;
+}
+
+.quest-tracker > span {
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .inventory-heading,
 .inventory-row {
   display: flex;
@@ -1231,6 +1317,41 @@ label {
 .inventory-heading span,
 .inventory-empty {
   color: #cbd5e1;
+  font-size: 12px;
+}
+
+.quest-runtime-section,
+.quest-runtime-entry,
+.quest-runtime-objectives {
+  display: grid;
+  gap: 5px;
+}
+
+.quest-runtime-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.quest-runtime-section > strong {
+  color: #fbbf24;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.quest-runtime-entry {
+  font-size: 13px;
+}
+
+.quest-runtime-entry p,
+.quest-runtime-section p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.quest-runtime-objectives {
+  color: #e5e7eb;
   font-size: 12px;
 }
 
@@ -1268,6 +1389,7 @@ label {
   .progression-editor,
   .game-state-editor,
   .items-editor,
+  .quests-editor,
   .split-layout,
   .cutscene-edit-layout {
     grid-template-columns: 1fr;

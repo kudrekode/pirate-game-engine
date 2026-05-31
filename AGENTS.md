@@ -41,6 +41,21 @@ Each Play session copies these defaults into separate runtime memory. Variables 
 
 Each area owns grid-based pickup objects. Pickups can collect on touch or on interact. Runtime inventory helpers live in `src/runtime/inventory.ts`; the React runtime overlay shows collected quantities without being affected by the Phaser world camera.
 
+## Quests And Objectives
+
+`GameProject.quests` contains player-facing quest definitions. `trackedQuestId` optionally selects the compact play-mode tracker.
+
+Quests organise guidance and progress; they do not replace flags, variables, inventory, areas, or friendly rules. Objectives read those existing systems:
+
+- Flag value
+- Item quantity
+- Variable comparison
+- Entered area
+
+Runtime quest state is copied per Play session. Completed objectives stay complete once achieved, and quest rewards are granted once. Pure quest evaluation and reward helpers live in `src/runtime/questEngine.ts`. The React runtime overlay owns the `J` quest panel and tracked quest display, so neither is affected by the Phaser camera.
+
+Friendly rules can activate, complete, or fail quests explicitly. Active quests also complete automatically when all objectives have been achieved.
+
 ## Rule Engine
 
 Friendly logic rules live in `GameProject.rules`. Organisational folders live in `GameProject.ruleGroups`.
@@ -107,6 +122,7 @@ Current focused tests cover:
 
 - Rule evaluation and actions
 - Inventory stacking and pickup collection
+- Quest objective evaluation and once-only rewards
 - Movement resolution
 - Project migration
 - Basic React editor smoke rendering

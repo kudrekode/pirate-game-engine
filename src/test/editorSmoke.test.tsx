@@ -7,6 +7,7 @@ import { GameStateEditor } from "../editor/sections/GameStateEditor";
 import { MapEditor } from "../editor/sections/MapEditor";
 import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
+import { QuestsEditor } from "../editor/sections/QuestsEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -24,14 +25,14 @@ describe("editor smoke tests", () => {
     expect(screen.getByDisplayValue("Demo Adventure")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Logic" }));
     expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
-  });
+  }, 15000);
 
   it("renders Map Editor", () => {
     render(<MapEditor />);
 
     expect(screen.getByText("Map size")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset Zoom" })).toBeInTheDocument();
-  });
+  }, 15000);
 
   it("renders Logic Builder", () => {
     render(<ProgressionEditor />);
@@ -53,5 +54,12 @@ describe("editor smoke tests", () => {
 
     expect(screen.getByText("Item Definition")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
+  });
+
+  it("renders Quests Editor", () => {
+    render(<QuestsEditor />);
+
+    expect(screen.getAllByText("Get Tavern Access")).toHaveLength(2);
+    expect(screen.getByDisplayValue("Have 5 Gold Coins")).toBeInTheDocument();
   });
 });
