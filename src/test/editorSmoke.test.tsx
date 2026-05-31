@@ -1,0 +1,49 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import App from "../App";
+import { defaultProject } from "../data/defaultProject";
+import { cloneProject } from "../data/migrateProject";
+import { GameStateEditor } from "../editor/sections/GameStateEditor";
+import { MapEditor } from "../editor/sections/MapEditor";
+import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
+import { useProjectStore } from "../store/useProjectStore";
+
+vi.mock("../runtime/RuntimePanel", () => ({
+  RuntimePanel: () => <div>Runtime mock</div>,
+}));
+
+beforeEach(() => {
+  useProjectStore.getState().setProject(cloneProject(defaultProject));
+});
+
+describe("editor smoke tests", () => {
+  it("renders App and switches to the Logic tab", () => {
+    render(<App />);
+
+    expect(screen.getByDisplayValue("Demo Adventure")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Logic" }));
+    expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
+  });
+
+  it("renders Map Editor", () => {
+    render(<MapEditor />);
+
+    expect(screen.getByText("Map size")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset Zoom" })).toBeInTheDocument();
+  });
+
+  it("renders Logic Builder", () => {
+    render(<ProgressionEditor />);
+
+    expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue("Opening / Tutorial")).toHaveLength(2);
+  });
+
+  it("renders Game State Editor", () => {
+    render(<GameStateEditor />);
+
+    expect(screen.getByText("Game State")).toBeInTheDocument();
+    expect(screen.getByText("intro_seen")).toBeInTheDocument();
+    expect(screen.getByText("gold")).toBeInTheDocument();
+  });
+});
