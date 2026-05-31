@@ -15,6 +15,7 @@ import type {
   Interaction,
   MovementMode,
   MapStructure,
+  NPCInstance,
   PixelAsset,
   PickupObject,
   RuleTrigger,
@@ -54,7 +55,8 @@ type InteractKeys = {
 type Interactable =
   | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
   | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number }
-  | { kind: "pickup"; label: string; pickup: PickupObject; distance: number };
+  | { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
+  | { kind: "npc"; label: string; interaction?: Interaction; npc: NPCInstance; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -194,7 +196,9 @@ export class AdventureScene extends Phaser.Scene {
           ? interactable.eventBlock.id
           : interactable.kind === "structure"
             ? interactable.structure.id
-            : "";
+            : interactable.kind === "npc"
+              ? interactable.npc.id
+              : "";
       if (interactable.kind === "pickup") {
         this.collectPickupObject(interactable.pickup);
         return;
@@ -409,6 +413,7 @@ export class AdventureScene extends Phaser.Scene {
     this.currentArea.pickups
       .filter((pickup) => !this.isPickupCollected(pickup))
       .forEach((pickup) => this.renderPickup(pickup));
+    this.currentArea.npcs.forEach((npc) => this.renderNpc(npc));
   }
 
   private createPixelTextures() {
@@ -625,6 +630,24 @@ export class AdventureScene extends Phaser.Scene {
     const container = this.add.container(centerX, centerY, [body, label]).setDepth(40);
     container.setName(`pickup:${pickup.id}`);
     this.worldLayer?.add(container);
+  }
+
+  private renderNpc(npc: NPCInstance) {
+    const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+    const avatar = getVisualPreset(definition?.mapAvatarId ?? "ranger", characterSprites);
+    const centerX = npc.x * this.tileSize + this.tileSize / 2;
+    const centerY = npc.y * this.tileSize + this.tileSize / 2;
+    const body = this.add.circle(0, 0, this.tileSize * 0.3, hexToNumber(avatar.color));
+    const initial = this.add
+      .text(0, 0, definition?.name.slice(0, 1).toUpperCase() ?? "?", {
+        color: avatar.accent,
+        fontFamily: "Arial, sans-serif",
+        fontSize: "15px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+
+    this.worldLayer?.add(this.add.container(centerX, centerY, [body, initial]).setDepth(45));
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -892,6 +915,25 @@ export class AdventureScene extends Phaser.Scene {
       }
     });
 
+    this.currentArea.npcs.forEach((npc) => {
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: npc.id });
+      if ((!npc.interaction || !canInteractActivate(npc.interaction)) && !hasRule) {
+        return;
+      }
+
+      const distance = Math.abs(npc.x - this.playerPosition.x) + Math.abs(npc.y - this.playerPosition.y);
+      if (distance <= 1) {
+        const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+        candidates.push({
+          kind: "npc",
+          label: definition?.name ?? "NPC",
+          interaction: npc.interaction,
+          npc,
+          distance,
+        });
+      }
+    });
+
     return (
       candidates.sort((a, b) => {
         if (a.distance !== b.distance) {
@@ -933,6 +975,8 @@ export class AdventureScene extends Phaser.Scene {
       interactable
         ? interactable.kind === "pickup"
           ? `Press E to pick up ${interactable.label}`
+          : interactable.kind === "npc"
+            ? `Press E to talk to ${interactable.label}`
           : this.promptForInteraction(interactable.interaction)
         : "",
     );

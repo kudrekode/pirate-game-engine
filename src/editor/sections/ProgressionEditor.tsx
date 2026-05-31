@@ -237,10 +237,14 @@ export function ProgressionEditor() {
         })),
         ...area.eventBlocks.map((eventBlock) => ({
           id: eventBlock.id,
-          label: `${area.name}: ${eventBlock.name} (event)`,
+          label: `${area.name}: Event: ${eventBlock.name}`,
+        })),
+        ...area.npcs.map((npc) => ({
+          id: npc.id,
+          label: `${area.name}: NPC: ${project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "NPC"}`,
         })),
       ]),
-    [project.areas],
+    [project.areas, project.npcs],
   );
   const touchTargets = useMemo(
     () =>

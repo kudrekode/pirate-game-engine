@@ -63,6 +63,11 @@ export function resolveMovementAt(
     return block(`Blocked by ${blockingStructure.name}.`, blockingStructure.movementRule ?? preset.movementRule);
   }
 
+  const blockingNpc = area.npcs.find((npc) => npc.blocksMovement && npc.x === x && npc.y === y);
+  if (blockingNpc) {
+    return block("Blocked by NPC.");
+  }
+
   // TODO: Add object layer movement rules when object placement becomes first-class.
 
   const terrainTile = area.terrainTiles.find((tile) => tile.x === x && tile.y === y);

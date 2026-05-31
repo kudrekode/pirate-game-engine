@@ -181,4 +181,19 @@ describe("rule engine triggers and actions", () => {
     expect(completeQuest).toHaveBeenCalledWith("quest-b");
     expect(failQuest).toHaveBeenCalledWith("quest-c");
   });
+
+  it("fires an NPC on_interact rule that activates a quest", () => {
+    const { activateQuest, context } = makeContext();
+    const rule: GameRule = {
+      id: "captain-intro",
+      name: "Captain intro",
+      enabled: true,
+      trigger: { type: "on_interact", targetId: "npc-captain" },
+      actions: [{ type: "activate_quest", questId: "tavern-access" }],
+    };
+
+    fireTrigger({ type: "on_interact", targetId: "npc-captain" }, [rule], context);
+
+    expect(activateQuest).toHaveBeenCalledWith("tavern-access");
+  });
 });

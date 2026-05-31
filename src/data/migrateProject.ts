@@ -19,6 +19,8 @@ import type {
   Interaction,
   InteractionActivationMode,
   ItemDefinition,
+  NPCDefinition,
+  NPCInstance,
   MapStructure,
   MapTile,
   MovementRule,
@@ -335,6 +337,34 @@ function migratePickups(value: unknown, areaId: string): PickupObject[] {
   });
 }
 
+function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const facing =
+      item.facing === "up" || item.facing === "left" || item.facing === "right"
+        ? item.facing
+        : "down";
+
+    return [{
+      id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
+      npcDefinitionId: readString(item.npcDefinitionId, ""),
+      areaId,
+      x: readNumber(item.x, 0, 0),
+      y: readNumber(item.y, 0, 0),
+      facing,
+      blocksMovement: readBoolean(item.blocksMovement, true),
+      interaction: migrateInteraction(item.interaction, "on_interact"),
+    }];
+  });
+}
+
 function migrateArea(value: unknown, index: number, fallback: GameArea): GameArea {
   const source = isRecord(value) ? value : {};
   const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
@@ -353,6 +383,7 @@ function migrateArea(value: unknown, index: number, fallback: GameArea): GameAre
     overlayTiles: migrateOverlayTiles(source.overlayTiles),
     structures: migrateStructures(source.structures),
     pickups: migratePickups(source.pickups, id),
+    npcs: migrateNpcInstances(source.npcs, id),
     eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
     theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
   };
@@ -608,6 +639,28 @@ function migrateItems(value: unknown): ItemDefinition[] {
         ...(maxStack ? { maxStack } : {}),
       },
     ];
+  });
+}
+
+function migrateNpcDefinitions(value: unknown): NPCDefinition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const description = readString(item.description, "");
+    const portraitId = readString(item.portraitId, "");
+    return [{
+      id: readString(item.id, `npc_${index + 1}`),
+      name: readString(item.name, `NPC ${index + 1}`),
+      ...(description ? { description } : {}),
+      mapAvatarId: readString(item.mapAvatarId, "ranger"),
+      ...(portraitId ? { portraitId } : {}),
+    }];
   });
 }
 
@@ -1011,6 +1064,7 @@ export function migrateProject(value: unknown): GameProject {
     items: migrateItems(source.items),
     quests: migrateQuests(source.quests),
     ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
+    npcs: migrateNpcDefinitions(source.npcs),
     ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
   };

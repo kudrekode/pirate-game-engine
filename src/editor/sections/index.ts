@@ -7,8 +7,9 @@ import { MapEditor } from "./MapEditor";
 import { ProgressionEditor } from "./ProgressionEditor";
 import { ItemsEditor } from "./ItemsEditor";
 import { QuestsEditor } from "./QuestsEditor";
+import { NpcsEditor } from "./NpcsEditor";
 
-export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression" | "game-state" | "items" | "quests";
+export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression" | "game-state" | "items" | "quests" | "npcs";
 
 export type EditorSectionConfig = {
   id: EditorSectionId;
@@ -56,5 +57,10 @@ export const editorSections: EditorSectionConfig[] = [
     id: "quests",
     label: "Quests",
     component: QuestsEditor,
+  },
+  {
+    id: "npcs",
+    label: "NPCs",
+    component: NpcsEditor,
   },
 ];

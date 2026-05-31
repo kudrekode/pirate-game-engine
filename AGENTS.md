@@ -20,6 +20,7 @@ Each area owns:
 - Overlay tiles
 - Structures
 - Pickup objects
+- NPC instances
 - Event blocks
 - Optional theme metadata
 
@@ -55,6 +56,14 @@ Quests organise guidance and progress; they do not replace flags, variables, inv
 Runtime quest state is copied per Play session. Completed objectives stay complete once achieved, and quest rewards are granted once. Pure quest evaluation and reward helpers live in `src/runtime/questEngine.ts`. The React runtime overlay owns the `J` quest panel and tracked quest display, so neither is affected by the Phaser camera.
 
 Friendly rules can activate, complete, or fail quests explicitly. Active quests also complete automatically when all objectives have been achieved.
+
+## NPCs
+
+`GameProject.npcs` contains reusable friendly NPC definitions. Each area owns placed `NPCInstance` records.
+
+NPC instances are grid-based world entities. They can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
+
+NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, enemies, combat, and branching dialogue.
 
 ## Rule Engine
 
@@ -123,6 +132,7 @@ Current focused tests cover:
 - Rule evaluation and actions
 - Inventory stacking and pickup collection
 - Quest objective evaluation and once-only rewards
+- NPC migration, collision, rule targeting, and deletion guards
 - Movement resolution
 - Project migration
 - Basic React editor smoke rendering

@@ -101,6 +101,17 @@ const mainArea: GameArea = {
       once: true,
     },
   ],
+  npcs: [
+    {
+      id: "npc_instance_captain_mira",
+      npcDefinitionId: "npc_captain_mira",
+      areaId: "area_main",
+      x: 3,
+      y: 4,
+      facing: "down",
+      blocksMovement: true,
+    },
+  ],
   eventBlocks: [
     {
       id: "spawn_start",
@@ -175,6 +186,7 @@ const houseArea: GameArea = {
     },
   ],
   pickups: [],
+  npcs: [],
   eventBlocks: [
     {
       id: "spawn_house_entry",
@@ -268,6 +280,14 @@ export const defaultProject: GameProject = {
       portraitImageId: "portrait_ranger",
       speakerName: "Ari",
       text: "The side door is locked. Find the tavern key first.",
+    },
+    {
+      id: "captain_intro",
+      name: "Captain Mira",
+      backgroundImageId: "river_crossing",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Captain Mira",
+      text: "The tavern keeper knows the river routes. Find a way inside and bring me proof you spoke with them.",
     },
   ],
   progression: [
@@ -378,6 +398,15 @@ export const defaultProject: GameProject = {
     },
   ],
   trackedQuestId: "quest_tavern_access",
+  npcs: [
+    {
+      id: "npc_captain_mira",
+      name: "Captain Mira",
+      description: "A retired sailor watching the road near the tavern.",
+      mapAvatarId: "ranger",
+      portraitId: "portrait_ranger",
+    },
+  ],
   ruleGroups: [
     {
       id: "rule_group_opening",
@@ -408,6 +437,17 @@ export const defaultProject: GameProject = {
       actions: [
         { type: "play_cutscene", cutsceneId: "intro_cutscene" },
         { type: "set_flag", flag: "intro_seen", value: true },
+      ],
+    },
+    {
+      id: "rule_captain_intro",
+      name: "Captain Mira Intro",
+      enabled: true,
+      groupId: "rule_group_opening",
+      trigger: { type: "on_interact", targetId: "npc_instance_captain_mira" },
+      actions: [
+        { type: "play_cutscene", cutsceneId: "captain_intro" },
+        { type: "activate_quest", questId: "quest_tavern_access" },
       ],
     },
     {

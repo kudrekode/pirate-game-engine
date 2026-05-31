@@ -12,6 +12,7 @@ export type GameProject = {
   items: ItemDefinition[];
   quests: Quest[];
   trackedQuestId?: string;
+  npcs: NPCDefinition[];
   ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
@@ -69,6 +70,7 @@ export type EditorSelection =
   | { type: "eventBlock"; areaId: string; id: string }
   | { type: "structure"; areaId: string; id: string }
   | { type: "pickup"; areaId: string; id: string }
+  | { type: "npc"; areaId: string; id: string }
   | { type: "overlay"; areaId: string; x: number; y: number }
   | { type: "terrain"; areaId: string; x: number; y: number }
   | { type: "area"; areaId: string }
@@ -85,6 +87,7 @@ export type GameArea = {
   overlayTiles: OverlayTile[];
   structures: MapStructure[];
   pickups: PickupObject[];
+  npcs: NPCInstance[];
   eventBlocks: EventBlock[];
   theme?: AreaThemeConfig;
 };
@@ -133,6 +136,25 @@ export type PickupObject = {
   pickupMode: "on_touch" | "on_interact";
   once: boolean;
   collectedFlag?: string;
+};
+
+export type NPCDefinition = {
+  id: string;
+  name: string;
+  description?: string;
+  mapAvatarId: string;
+  portraitId?: string;
+};
+
+export type NPCInstance = {
+  id: string;
+  npcDefinitionId: string;
+  areaId: string;
+  x: number;
+  y: number;
+  facing?: "up" | "down" | "left" | "right";
+  blocksMovement: boolean;
+  interaction?: Interaction;
 };
 
 export type EventBlock = {

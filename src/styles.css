@@ -179,7 +179,8 @@ label {
 .cutscene-editor,
 .game-state-editor,
 .items-editor,
-.quests-editor {
+.quests-editor,
+.npcs-editor {
   grid-template-columns: minmax(0, 1fr) 260px;
 }
 
@@ -189,6 +190,10 @@ label {
 
 .quests-editor {
   grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.npcs-editor {
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .progression-editor {
@@ -391,6 +396,10 @@ label {
 
 .pickup-swatch {
   background: #7c3aed;
+}
+
+.npc-swatch {
+  background: #0f766e;
 }
 
 .inline-actions {
@@ -933,6 +942,48 @@ label {
   white-space: nowrap;
 }
 
+.npc-marker {
+  position: absolute;
+  inset: 3px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.npc-marker-icon {
+  display: grid;
+  place-items: center;
+  width: 72%;
+  height: 72%;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.npc-marker-label {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  left: 1px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(17, 24, 39, 0.76);
+  color: #ffffff;
+  font-size: 9px;
+  line-height: 1.15;
+  padding: 1px 2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.npc-marker.selected-npc {
+  outline: 3px solid rgba(245, 159, 0, 0.9);
+  outline-offset: -2px;
+}
+
 .logic-rule-list {
   display: grid;
   align-content: start;
@@ -1199,7 +1250,7 @@ label {
 
 .bottom-tabs {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   gap: 8px;
   border-top: 1px solid #cbd5df;
   background: #f8fafc;
@@ -1390,6 +1441,7 @@ label {
   .game-state-editor,
   .items-editor,
   .quests-editor,
+  .npcs-editor,
   .split-layout,
   .cutscene-edit-layout {
     grid-template-columns: 1fr;
