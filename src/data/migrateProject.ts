@@ -5,22 +5,34 @@ import { defaultTileStyles, tilePresets } from "./presets";
 import type {
   AreaLink,
   CameraConfig,
+  ConditionExpression,
+  ConditionGroup,
   Cutscene,
   EventBlock,
+  GameAction,
   GameArea,
   GameAreaKind,
   GameProject,
+  GameRule,
+  GameStateConfig,
+  GameStateValue,
   Interaction,
   InteractionActivationMode,
+  ItemDefinition,
   MapStructure,
   MapTile,
   MovementRule,
   OverlayTile,
+  PickupObject,
   PlayerConfig,
   PixelAsset,
   ProgressionAction,
   ProgressionStep,
+  RuleGroup,
+  RuleTrigger,
+  SingleCondition,
   TileStyleConfig,
+  VariableComparisonOperator,
 } from "../types/game";
 
 type UnknownRecord = Record<string, unknown>;
@@ -292,6 +304,33 @@ function migrateStructures(value: unknown): MapStructure[] {
   });
 }
 
+function migratePickups(value: unknown, areaId: string): PickupObject[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const collectedFlag = readString(item.collectedFlag, "");
+    return [
+      {
+        id: readString(item.id, `pickup_${Date.now().toString(36)}`),
+        itemId: readString(item.itemId, ""),
+        quantity: Math.round(readNumber(item.quantity, 1, 1, 9999)),
+        areaId,
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        pickupMode: item.pickupMode === "on_interact" ? "on_interact" : "on_touch",
+        once: readBoolean(item.once, true),
+        ...(collectedFlag ? { collectedFlag } : {}),
+      },
+    ];
+  });
+}
+
 function migrateArea(value: unknown, index: number, fallback: GameArea): GameArea {
   const source = isRecord(value) ? value : {};
   const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
@@ -309,6 +348,7 @@ function migrateArea(value: unknown, index: number, fallback: GameArea): GameAre
     terrainTiles,
     overlayTiles: migrateOverlayTiles(source.overlayTiles),
     structures: migrateStructures(source.structures),
+    pickups: migratePickups(source.pickups, id),
     eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
     theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
   };
@@ -495,6 +535,315 @@ function migrateProgression(value: unknown, defaultAreaId: string): ProgressionS
   return steps.length > 0 ? steps : cloneProject(defaultProject).progression;
 }
 
+function migrateGameState(value: unknown): GameStateConfig {
+  const source = isRecord(value) ? value : {};
+  const fallback = defaultProject.gameState;
+  const flagSource = isRecord(source.flags) ? source.flags : fallback.flags;
+  const variableSource = isRecord(source.variables) ? source.variables : fallback.variables;
+  const flags: Record<string, boolean> = {};
+  const variables: Record<string, GameStateValue> = {};
+  const inventory: Record<string, number> = {};
+
+  Object.entries(flagSource).forEach(([name, flagValue]) => {
+    if (name) {
+      flags[name] = readBoolean(flagValue, false);
+    }
+  });
+
+  Object.entries(variableSource).forEach(([name, variableValue]) => {
+    if (name && (typeof variableValue === "number" || typeof variableValue === "string")) {
+      variables[name] = variableValue;
+    }
+  });
+
+  if (isRecord(source.inventory)) {
+    Object.entries(source.inventory).forEach(([itemId, quantity]) => {
+      if (itemId && typeof quantity === "number" && Number.isFinite(quantity)) {
+        inventory[itemId] = Math.max(0, Math.round(quantity));
+      }
+    });
+  }
+
+  return { flags, variables, inventory };
+}
+
+function migrateItems(value: unknown): ItemDefinition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const category =
+      item.category === "key" ||
+      item.category === "currency" ||
+      item.category === "consumable" ||
+      item.category === "quest" ||
+      item.category === "misc"
+        ? item.category
+        : "misc";
+    const description = readString(item.description, "");
+    const iconId = readString(item.iconId, "");
+    const stackable = readBoolean(item.stackable, false);
+    const maxStack =
+      stackable && typeof item.maxStack === "number" && Number.isFinite(item.maxStack)
+        ? Math.round(readNumber(item.maxStack, 1, 1, 9999))
+        : undefined;
+
+    return [
+      {
+        id: readString(item.id, `item_${index + 1}`),
+        name: readString(item.name, `Item ${index + 1}`),
+        ...(description ? { description } : {}),
+        category,
+        ...(iconId ? { iconId } : {}),
+        stackable,
+        ...(maxStack ? { maxStack } : {}),
+      },
+    ];
+  });
+}
+
+function readComparisonOperator(value: unknown): VariableComparisonOperator {
+  return value === "==" ||
+    value === "!=" ||
+    value === ">" ||
+    value === "<" ||
+    value === ">=" ||
+    value === "<="
+    ? value
+    : "==";
+}
+
+function readStateValue(value: unknown, fallback: GameStateValue): GameStateValue {
+  return typeof value === "number" || typeof value === "string" ? value : fallback;
+}
+
+function migrateRuleTrigger(value: unknown): RuleTrigger {
+  if (!isRecord(value)) {
+    return { type: "on_game_start" };
+  }
+
+  if (value.type === "on_interact" || value.type === "on_touch") {
+    return { type: value.type, targetId: readString(value.targetId, "") };
+  }
+
+  if (value.type === "on_area_enter") {
+    return { type: "on_area_enter", areaId: readString(value.areaId, "") };
+  }
+
+  if (value.type === "on_cutscene_end") {
+    return { type: "on_cutscene_end", cutsceneId: readString(value.cutsceneId, "") };
+  }
+
+  return { type: "on_game_start" };
+}
+
+function migrateSingleCondition(value: unknown, fallbackId: string): SingleCondition | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "flag_is") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: "flag_is",
+      flag: readString(value.flag, ""),
+      value: readBoolean(value.value, true),
+    };
+  }
+
+  if (value.type === "variable_compare") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: "variable_compare",
+      variable: readString(value.variable, ""),
+      operator: readComparisonOperator(value.operator),
+      value: readStateValue(value.value, 0),
+    };
+  }
+
+  if (value.type === "has_item" || value.type === "not_has_item") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: value.type,
+      itemId: readString(value.itemId, ""),
+      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+    };
+  }
+
+  return null;
+}
+
+function migrateConditionExpression(value: unknown, fallbackId: string): ConditionExpression | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "group") {
+    const groupId = readString(value.id, fallbackId);
+    const conditions = Array.isArray(value.conditions)
+      ? value.conditions.flatMap((condition, index) => {
+          const migrated = migrateConditionExpression(condition, `${groupId}_${index + 1}`);
+          return migrated ? [migrated] : [];
+        })
+      : [];
+
+    return {
+      id: groupId,
+      type: "group",
+      operator: value.operator === "OR" ? "OR" : "AND",
+      conditions,
+    };
+  }
+
+  return migrateSingleCondition(value, fallbackId);
+}
+
+function migrateGameAction(value: unknown): GameAction | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "set_flag") {
+    return {
+      type: "set_flag",
+      flag: readString(value.flag, ""),
+      value: readBoolean(value.value, true),
+    };
+  }
+
+  if (value.type === "change_variable") {
+    return {
+      type: "change_variable",
+      variable: readString(value.variable, ""),
+      amount: readNumber(value.amount, 0),
+    };
+  }
+
+  if (value.type === "set_variable") {
+    return {
+      type: "set_variable",
+      variable: readString(value.variable, ""),
+      value: readStateValue(value.value, 0),
+    };
+  }
+
+  if (value.type === "play_cutscene") {
+    return { type: "play_cutscene", cutsceneId: readString(value.cutsceneId, "") };
+  }
+
+  if (value.type === "teleport") {
+    return {
+      type: "teleport",
+      areaId: readString(value.areaId, ""),
+      eventBlockId: readString(value.eventBlockId, ""),
+    };
+  }
+
+  if (
+    value.type === "change_movement_mode" &&
+    (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
+  ) {
+    return { type: "change_movement_mode", mode: value.mode };
+  }
+
+  if (value.type === "give_item" || value.type === "remove_item") {
+    return {
+      type: value.type,
+      itemId: readString(value.itemId, ""),
+      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+    };
+  }
+
+  return value.type === "end_game" ? { type: "end_game" } : null;
+}
+
+function migrateActions(value: unknown): GameAction[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((action) => {
+    const migrated = migrateGameAction(action);
+    return migrated ? [migrated] : [];
+  });
+}
+
+function migrateRules(value: unknown): GameRule[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((rule, index) => {
+    if (!isRecord(rule)) {
+      return [];
+    }
+
+    const ruleId = readString(rule.id, `rule_${index + 1}`);
+    const legacyConditions = Array.isArray(rule.conditions)
+      ? rule.conditions.flatMap((condition, conditionIndex) => {
+          const migrated = migrateSingleCondition(
+            condition,
+            `${ruleId}_condition_${conditionIndex + 1}`,
+          );
+          return migrated ? [migrated] : [];
+        })
+      : [];
+    const conditionTree =
+      migrateConditionExpression(rule.conditionTree, `${ruleId}_conditions`) ??
+      (legacyConditions.length > 0
+        ? ({
+            id: `${ruleId}_conditions`,
+            type: "group",
+            operator: "AND",
+            conditions: legacyConditions,
+          } satisfies ConditionGroup)
+        : undefined);
+    const groupId = readString(rule.groupId, "");
+
+    return [
+      {
+        id: ruleId,
+        name: readString(rule.name, `Rule ${index + 1}`),
+        enabled: readBoolean(rule.enabled, true),
+        ...(groupId ? { groupId } : {}),
+        trigger: migrateRuleTrigger(rule.trigger),
+        ...(conditionTree ? { conditionTree } : {}),
+        actions: migrateActions(rule.actions),
+        elseActions: migrateActions(rule.elseActions),
+      },
+    ];
+  });
+}
+
+function migrateRuleGroups(value: unknown): RuleGroup[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((group, index) => {
+    if (!isRecord(group)) {
+      return [];
+    }
+
+    const description = readString(group.description, "");
+    const parentGroupId = readString(group.parentGroupId, "");
+    return [
+      {
+        id: readString(group.id, `rule_group_${index + 1}`),
+        name: readString(group.name, `Folder ${index + 1}`),
+        ...(description ? { description } : {}),
+        collapsed: readBoolean(group.collapsed, false),
+        ...(parentGroupId ? { parentGroupId } : {}),
+      },
+    ];
+  });
+}
+
 export function migrateProject(value: unknown): GameProject {
   const source = isRecord(value) ? value : {};
   const metadataSource = isRecord(source.metadata) ? source.metadata : {};
@@ -520,5 +869,9 @@ export function migrateProject(value: unknown): GameProject {
       ? (source.cutscenes as Cutscene[])
       : cloneProject(defaultProject).cutscenes,
     progression: migrateProgression(source.progression, activeAreaId),
+    gameState: migrateGameState(source.gameState),
+    items: migrateItems(source.items),
+    ruleGroups: migrateRuleGroups(source.ruleGroups),
+    rules: migrateRules(source.rules),
   };
 }

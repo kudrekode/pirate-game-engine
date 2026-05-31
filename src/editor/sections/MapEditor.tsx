@@ -17,9 +17,10 @@ import type {
   InteractionActivationMode,
   MovementRule,
   PixelAsset,
+  PickupObject,
 } from "../../types/game";
 
-type MapTool = "paint" | "eraser" | "fill" | "event-block" | "structure" | "pan";
+type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pickup" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
 type PaintLayer = "terrain" | "overlay" | "structure" | "event";
 
@@ -102,6 +103,9 @@ export function MapEditor() {
   const addStructure = useProjectStore((state) => state.addStructure);
   const updateStructure = useProjectStore((state) => state.updateStructure);
   const deleteStructure = useProjectStore((state) => state.deleteStructure);
+  const addPickup = useProjectStore((state) => state.addPickup);
+  const updatePickup = useProjectStore((state) => state.updatePickup);
+  const deletePickup = useProjectStore((state) => state.deletePickup);
   const updatePixelAsset = useProjectStore((state) => state.updatePixelAsset);
   const resetPixelAsset = useProjectStore((state) => state.resetPixelAsset);
   const addEventBlock = useProjectStore((state) => state.addEventBlock);
@@ -162,6 +166,13 @@ export function MapEditor() {
       }
 
       if (
+        currentSelection.type === "pickup" &&
+        !activeArea.pickups.some((pickup) => pickup.id === currentSelection.id)
+      ) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
         (currentSelection.type === "overlay" || currentSelection.type === "terrain") &&
         !isInBounds(currentSelection.x, currentSelection.y, activeArea.width, activeArea.height)
       ) {
@@ -201,6 +212,12 @@ export function MapEditor() {
     return lookup;
   }, [activeArea.eventBlocks]);
 
+  const pickupLookup = useMemo(() => {
+    const lookup = new Map<string, PickupObject>();
+    activeArea.pickups.forEach((pickup) => lookup.set(cellKey(pickup.x, pickup.y), pickup));
+    return lookup;
+  }, [activeArea.pickups]);
+
   const pixelAssetUrls = useMemo(() => {
     return Object.fromEntries(
       Object.entries(project.pixelAssets).map(([id, asset]) => [id, pixelAssetToDataUrl(asset)]),
@@ -214,6 +231,10 @@ export function MapEditor() {
   const selectedMapStructure =
     selection?.type === "structure" && selection.areaId === activeArea.id
       ? activeArea.structures.find((structure) => structure.id === selection.id)
+      : undefined;
+  const selectedPickup =
+    selection?.type === "pickup" && selection.areaId === activeArea.id
+      ? activeArea.pickups.find((pickup) => pickup.id === selection.id)
       : undefined;
   const selectedOverlayTile =
     selection?.type === "overlay" && selection.areaId === activeArea.id
@@ -372,6 +393,11 @@ export function MapEditor() {
     setSelection({ type: "structure", areaId: activeArea.id, id });
   }
 
+  function placePickup(x: number, y: number) {
+    const id = addPickup(x, y);
+    setSelection({ type: "pickup", areaId: activeArea.id, id });
+  }
+
   function findStructureAt(x: number, y: number) {
     return [...activeArea.structures].reverse().find(
       (structure) =>
@@ -400,6 +426,7 @@ export function MapEditor() {
     event.stopPropagation();
 
     const eventBlock = eventLookup.get(cellKey(x, y));
+    const pickup = pickupLookup.get(cellKey(x, y));
 
     if (activeTool === "event-block") {
       if (eventBlock) {
@@ -417,8 +444,23 @@ export function MapEditor() {
       return;
     }
 
+    if (activeTool === "pickup") {
+      if (pickup) {
+        setSelection({ type: "pickup", areaId: activeArea.id, id: pickup.id });
+        return;
+      }
+
+      placePickup(x, y);
+      return;
+    }
+
     if (eventBlock) {
       setSelection({ type: "eventBlock", areaId: activeArea.id, id: eventBlock.id });
+      return;
+    }
+
+    if (pickup) {
+      setSelection({ type: "pickup", areaId: activeArea.id, id: pickup.id });
       return;
     }
 
@@ -541,6 +583,12 @@ export function MapEditor() {
   function updateSelectedStructure(patch: Parameters<typeof updateStructure>[1]) {
     if (selectedMapStructure) {
       updateStructure(selectedMapStructure.id, patch);
+    }
+  }
+
+  function updateSelectedPickup(patch: Partial<PickupObject>) {
+    if (selectedPickup) {
+      updatePickup(selectedPickup.id, patch);
     }
   }
 
@@ -978,6 +1026,15 @@ export function MapEditor() {
     setSelection({ type: "area", areaId: activeArea.id });
   }
 
+  function deleteSelectedPickup() {
+    if (!selectedPickup) {
+      return;
+    }
+
+    deletePickup(selectedPickup.id);
+    setSelection({ type: "area", areaId: activeArea.id });
+  }
+
   function renderAreaInspector() {
     return (
       <>
@@ -991,7 +1048,8 @@ export function MapEditor() {
           </div>
           <div className="coordinate-readout">
             {activeArea.terrainTiles.length} terrain tiles, {activeArea.overlayTiles.length} overlays,{" "}
-            {activeArea.structures.length} structures, {activeArea.eventBlocks.length} events
+            {activeArea.structures.length} structures, {activeArea.pickups.length} pickups,{" "}
+            {activeArea.eventBlocks.length} events
           </div>
           <button
             className="full-width"
@@ -1207,6 +1265,68 @@ export function MapEditor() {
     );
   }
 
+  function renderPickupInspector() {
+    if (!selectedPickup) {
+      return renderAreaInspector();
+    }
+
+    return (
+      <>
+        <div className="panel-title">Pickup</div>
+        <div className="form-stack">
+          <label>
+            Item
+            <select
+              onChange={(event) => updateSelectedPickup({ itemId: event.target.value })}
+              value={selectedPickup.itemId}
+            >
+              {project.items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <label>
+            Quantity
+            <input
+              min={1}
+              onChange={(event) =>
+                updateSelectedPickup({ quantity: Math.max(1, Number(event.target.value)) })
+              }
+              type="number"
+              value={selectedPickup.quantity}
+            />
+          </label>
+          <label>
+            Pickup mode
+            <select
+              onChange={(event) =>
+                updateSelectedPickup({
+                  pickupMode: event.target.value as PickupObject["pickupMode"],
+                })
+              }
+              value={selectedPickup.pickupMode}
+            >
+              <option value="on_touch">On touch</option>
+              <option value="on_interact">On interact</option>
+            </select>
+          </label>
+          <label className="checkbox-row standalone">
+            <input
+              checked={selectedPickup.once}
+              onChange={(event) => updateSelectedPickup({ once: event.target.checked })}
+              type="checkbox"
+            />
+            Collect once per play session
+          </label>
+          <div className="coordinate-readout">
+            x {selectedPickup.x}, y {selectedPickup.y}
+          </div>
+          <button className="danger-button" onClick={deleteSelectedPickup} type="button">
+            Delete pickup
+          </button>
+        </div>
+      </>
+    );
+  }
+
   function renderEventInspector() {
     if (!selectedEventBlock) {
       return renderAreaInspector();
@@ -1315,6 +1435,10 @@ export function MapEditor() {
 
     if (selectedMapStructure) {
       return renderStructureInspector();
+    }
+
+    if (selectedPickup) {
+      return renderPickupInspector();
     }
 
     if (selectedOverlayTile?.overlayId) {
@@ -1535,6 +1659,17 @@ export function MapEditor() {
             <span className="swatch event-swatch">E</span>
             Event block
           </button>
+          <button
+            className={`palette-item ${activeTool === "pickup" ? "selected" : ""}`}
+            onClick={() => {
+              setActiveTool("pickup");
+              setPaintLayer("event");
+            }}
+            type="button"
+          >
+            <span className="swatch pickup-swatch">P</span>
+            Pickup
+          </button>
         </details>
 
         <div className="panel-title">Tools</div>
@@ -1638,6 +1773,8 @@ export function MapEditor() {
               const tileStyle = project.tileStyles[terrainId] ?? { color: terrain.color, label: terrain.label };
               const overlayId = overlayLookup.get(key);
               const eventBlock = eventLookup.get(key);
+              const pickup = pickupLookup.get(key);
+              const pickupItem = project.items.find((item) => item.id === pickup?.itemId);
               const eventLabel = eventBlock?.tag || eventBlock?.name;
               const isOutsideMap = x >= activeArea.width || y >= activeArea.height;
               const isSelectedTerrain =
@@ -1690,6 +1827,16 @@ export function MapEditor() {
                         {eventBlock.kind === "spawn" ? "S" : eventBlock.kind === "area_link" ? "->" : "T"}
                       </span>
                       <span className="event-marker-label">{eventLabel}</span>
+                    </span>
+                  ) : null}
+                  {pickup ? (
+                    <span
+                      className={`pickup-marker ${
+                        selection?.type === "pickup" && selection.id === pickup.id ? "selected-pickup" : ""
+                      }`}
+                    >
+                      <span className="pickup-marker-icon">{pickupItem?.name.slice(0, 1).toUpperCase() ?? "?"}</span>
+                      <span className="pickup-marker-label">{pickupItem?.name ?? "Pickup"} x{pickup.quantity}</span>
                     </span>
                   ) : null}
                 </button>

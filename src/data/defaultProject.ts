@@ -61,19 +61,44 @@ const mainArea: GameArea = {
     {
       id: "structure_demo_house",
       structureId: "small_house",
-      name: "Demo House",
+      name: "Tavern Door",
       x: 7,
       y: 9,
       widthTiles: 3,
       heightTiles: 3,
       blocksMovement: true,
-      interaction: {
-        type: "area_link",
-        activationMode: "on_interact",
-        prompt: "Press E to enter",
-        targetAreaId: "area_house",
-        targetEventBlockId: "spawn_house_entry",
-      },
+    },
+    {
+      id: "structure_locked_door",
+      structureId: "door",
+      name: "Locked Side Door",
+      x: 16,
+      y: 5,
+      widthTiles: 1,
+      heightTiles: 1,
+      blocksMovement: true,
+    },
+  ],
+  pickups: [
+    {
+      id: "pickup_gold_coins",
+      itemId: "gold_coin",
+      quantity: 5,
+      areaId: "area_main",
+      x: 3,
+      y: 2,
+      pickupMode: "on_touch",
+      once: true,
+    },
+    {
+      id: "pickup_tavern_key",
+      itemId: "tavern_key",
+      quantity: 1,
+      areaId: "area_main",
+      x: 5,
+      y: 3,
+      pickupMode: "on_interact",
+      once: true,
     },
   ],
   eventBlocks: [
@@ -95,22 +120,11 @@ const mainArea: GameArea = {
     },
     {
       id: "link_house_door",
-      name: "House Door",
+      name: "Tavern Threshold",
       x: 8,
       y: 12,
-      tag: "house_door",
-      kind: "area_link",
-      link: {
-        targetAreaId: "area_house",
-        targetEventBlockId: "spawn_house_entry",
-      },
-      interaction: {
-        type: "area_link",
-        activationMode: "on_interact",
-        prompt: "Press E to enter",
-        targetAreaId: "area_house",
-        targetEventBlockId: "spawn_house_entry",
-      },
+      tag: "tavern_threshold",
+      kind: "trigger",
     },
   ],
   theme: {
@@ -122,7 +136,7 @@ const mainArea: GameArea = {
 
 const houseArea: GameArea = {
   id: "area_house",
-  name: "House Interior",
+  name: "Tavern Interior",
   kind: "indoor",
   width: 12,
   height: 9,
@@ -160,6 +174,7 @@ const houseArea: GameArea = {
       blocksMovement: true,
     },
   ],
+  pickups: [],
   eventBlocks: [
     {
       id: "spawn_house_entry",
@@ -230,16 +245,32 @@ export const defaultProject: GameProject = {
       speakerName: "Gatekeeper",
       text: "You reached the marker. The first chapter ends here.",
     },
+    {
+      id: "not_enough_gold",
+      name: "Not Enough Gold",
+      backgroundImageId: "stone_gate",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Innkeeper",
+      text: "A room costs 5 gold. Come back when you have enough.",
+    },
+    {
+      id: "tavern_welcome",
+      name: "Welcome To The Tavern",
+      backgroundImageId: "forest_path",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Innkeeper",
+      text: "Welcome in. The first drink is on the house.",
+    },
+    {
+      id: "locked_door",
+      name: "Locked Door",
+      backgroundImageId: "stone_gate",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Ari",
+      text: "The side door is locked. Find the tavern key first.",
+    },
   ],
   progression: [
-    {
-      id: "step_intro",
-      label: "Intro cutscene",
-      action: {
-        type: "play_cutscene",
-        cutsceneId: "intro_cutscene",
-      },
-    },
     {
       id: "step_spawn",
       label: "Spawn player",
@@ -272,6 +303,147 @@ export const defaultProject: GameProject = {
       action: {
         type: "end_game",
       },
+    },
+  ],
+  gameState: {
+    flags: {
+      intro_seen: false,
+      has_boat: false,
+      cave_open: false,
+      has_key: false,
+      tavern_intro_seen: false,
+    },
+    variables: {
+      gold: 3,
+      reputation: 0,
+    },
+    inventory: {},
+  },
+  items: [
+    {
+      id: "gold_coin",
+      name: "Gold Coin",
+      description: "A simple coin accepted at the tavern.",
+      category: "currency",
+      stackable: true,
+      maxStack: 999,
+    },
+    {
+      id: "tavern_key",
+      name: "Tavern Key",
+      description: "Unlocks the tavern side door.",
+      category: "key",
+      stackable: false,
+    },
+    {
+      id: "boat_pass",
+      name: "Boat Pass",
+      description: "Proof of passage for a future voyage.",
+      category: "quest",
+      stackable: false,
+    },
+    {
+      id: "rum_bottle",
+      name: "Rum Bottle",
+      description: "A sealed bottle for a future quest.",
+      category: "consumable",
+      stackable: true,
+      maxStack: 12,
+    },
+  ],
+  ruleGroups: [
+    {
+      id: "rule_group_opening",
+      name: "Opening / Tutorial",
+    },
+    {
+      id: "rule_group_tavern",
+      name: "Tavern",
+    },
+    {
+      id: "rule_group_cave",
+      name: "Cave",
+    },
+  ],
+  rules: [
+    {
+      id: "rule_intro",
+      name: "Intro",
+      enabled: true,
+      groupId: "rule_group_opening",
+      trigger: { type: "on_game_start" },
+      conditionTree: {
+        id: "condition_group_intro",
+        type: "group",
+        operator: "AND",
+        conditions: [{ id: "condition_intro_seen", type: "flag_is", flag: "intro_seen", value: false }],
+      },
+      actions: [
+        { type: "play_cutscene", cutsceneId: "intro_cutscene" },
+        { type: "set_flag", flag: "intro_seen", value: true },
+      ],
+    },
+    {
+      id: "rule_enter_tavern",
+      name: "Enter Tavern",
+      enabled: true,
+      groupId: "rule_group_tavern",
+      trigger: { type: "on_interact", targetId: "structure_demo_house" },
+      conditionTree: {
+        id: "condition_group_enter_tavern",
+        type: "group",
+        operator: "AND",
+        conditions: [
+          { id: "condition_tavern_gold", type: "has_item", itemId: "gold_coin", quantity: 5 },
+        ],
+      },
+      actions: [
+        { type: "remove_item", itemId: "gold_coin", quantity: 5 },
+        { type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" },
+      ],
+      elseActions: [{ type: "play_cutscene", cutsceneId: "not_enough_gold" }],
+    },
+    {
+      id: "rule_tavern_intro",
+      name: "Tavern Intro",
+      enabled: true,
+      groupId: "rule_group_tavern",
+      trigger: { type: "on_area_enter", areaId: "area_house" },
+      conditionTree: {
+        id: "condition_group_tavern_intro",
+        type: "group",
+        operator: "AND",
+        conditions: [
+          { id: "condition_tavern_intro_seen", type: "flag_is", flag: "tavern_intro_seen", value: false },
+        ],
+      },
+      actions: [
+        { type: "play_cutscene", cutsceneId: "tavern_welcome" },
+        { type: "set_flag", flag: "tavern_intro_seen", value: true },
+      ],
+    },
+    {
+      id: "rule_gate_touch",
+      name: "Open Cave At Gate",
+      enabled: true,
+      groupId: "rule_group_cave",
+      trigger: { type: "on_touch", targetId: "trigger_gate" },
+      actions: [{ type: "set_flag", flag: "cave_open", value: true }],
+    },
+    {
+      id: "rule_locked_door",
+      name: "Unlock Side Door",
+      enabled: true,
+      groupId: "rule_group_tavern",
+      trigger: { type: "on_interact", targetId: "structure_locked_door" },
+      conditionTree: {
+        id: "condition_group_locked_door",
+        type: "group",
+        operator: "AND",
+        conditions: [{ id: "condition_tavern_key", type: "has_item", itemId: "tavern_key", quantity: 1 }],
+      },
+      actions: [{ type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" }],
+      elseActions: [{ type: "play_cutscene", cutsceneId: "locked_door" }],
     },
   ],
 };
