@@ -94,6 +94,14 @@ describe("resolveMovementAt", () => {
           y: 1,
           blocksMovement: true,
           movementMode: "stationary",
+          attributes: {
+            maxHealth: 100,
+            health: 100,
+            faction: "villagers",
+            alignment: "friendly",
+            canInteract: true,
+            movementSpeed: 1,
+          },
         },
       ],
     });

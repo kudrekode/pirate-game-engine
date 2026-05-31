@@ -193,7 +193,7 @@ label {
 }
 
 .npcs-editor {
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr) 250px;
 }
 
 .progression-editor {
@@ -962,6 +962,34 @@ label {
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
+}
+
+.npc-marker.alignment-friendly .npc-marker-icon {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.62);
+}
+
+.npc-marker.alignment-neutral .npc-marker-icon {
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.68);
+}
+
+.npc-marker.alignment-hostile .npc-marker-icon {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.68);
+}
+
+.npc-overview-item {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 0;
+}
+
+.npc-overview-item:last-child {
+  border-bottom: 0;
+}
+
+.npc-overview-meta {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  text-transform: capitalize;
 }
 
 .npc-marker-label {

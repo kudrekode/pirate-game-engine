@@ -35,6 +35,17 @@ describe("editor smoke tests", () => {
     expect(screen.getByRole("button", { name: "Reset Zoom" })).toBeInTheDocument();
   }, 15000);
 
+  it("edits selected NPC attributes in the Map inspector", () => {
+    render(<MapEditor />);
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Tile 3, 4" }));
+    fireEvent.change(screen.getByLabelText("Faction"), { target: { value: "sailors" } });
+    fireEvent.change(screen.getByLabelText("Alignment"), { target: { value: "neutral" } });
+
+    const captain = useProjectStore.getState().project.areas[0].npcs.find((npc) => npc.id === "npc_instance_captain_mira");
+    expect(captain?.attributes).toMatchObject({ faction: "sailors", alignment: "neutral" });
+  }, 15000);
+
   it("renders Logic Builder", () => {
     render(<ProgressionEditor />);
 
@@ -69,5 +80,7 @@ describe("editor smoke tests", () => {
 
     expect(screen.getByText("NPC Definition")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Captain Mira")).toBeInTheDocument();
+    expect(screen.getByText("Placed NPC Overview")).toBeInTheDocument();
+    expect(screen.getByText("pirates")).toBeInTheDocument();
   });
 });

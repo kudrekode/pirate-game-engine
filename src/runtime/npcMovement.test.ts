@@ -40,7 +40,14 @@ function makeNpc(patch: Partial<NPCInstance> = {}): NPCInstance {
     facing: "down",
     blocksMovement: true,
     movementMode: "stationary",
-    movementSpeed: 1,
+    attributes: {
+      maxHealth: 100,
+      health: 100,
+      faction: "villagers",
+      alignment: "friendly",
+      canInteract: true,
+      movementSpeed: 1,
+    },
     ...patch,
   };
 }
@@ -119,4 +126,3 @@ describe("NPC movement helpers", () => {
     expect(isNpcTileWalkable(area, "npc", 0, 0)).toBe(true);
   });
 });
-

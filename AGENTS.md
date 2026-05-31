@@ -65,6 +65,12 @@ NPC instances are grid-based world entities. They can block movement, render in 
 
 NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, enemies, combat, and branching dialogue.
 
+### NPC Attributes
+
+Every placed NPC instance has shared attributes for health, faction, alignment, interaction availability, and movement speed. These fields are data foundations for friendly and future hostile NPCs; there is no separate enemy architecture.
+
+Each Play session copies NPC attributes into `RuntimeGameState.npcs`. Rule conditions can read NPC alignment and health, and rule actions can change those runtime values without mutating editor defaults. Factions remain descriptive data only.
+
 ### NPC Movement
 
 Placed NPC instances declare a data-driven movement mode:

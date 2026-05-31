@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ConditionExpression, GameRule } from "../types/game";
+import type { ConditionExpression, GameRule, NPCInstance } from "../types/game";
 import {
   createRuntimeState,
   evaluateCondition,
@@ -8,12 +8,30 @@ import {
   type RuleActionContext,
 } from "./ruleEngine";
 
+const captain: NPCInstance = {
+  id: "npc-captain",
+  npcDefinitionId: "captain",
+  areaId: "village",
+  x: 1,
+  y: 1,
+  blocksMovement: true,
+  movementMode: "stationary",
+  attributes: {
+    maxHealth: 100,
+    health: 75,
+    faction: "villagers",
+    alignment: "friendly",
+    canInteract: true,
+    movementSpeed: 1,
+  },
+};
+
 function makeContext() {
   const state = createRuntimeState({
     flags: { has_key: true, admin_override: false },
     variables: { gold: 5, lockpick_count: 0, title: "guest" },
     inventory: { gold_coin: 5 },
-  });
+  }, [captain]);
   const teleport = vi.fn();
   const activateQuest = vi.fn();
   const completeQuest = vi.fn();
@@ -93,6 +111,22 @@ describe("rule engine conditions", () => {
     expect(evaluateCondition({ id: "coins", type: "has_item", itemId: "gold_coin", quantity: 5 }, state)).toBe(true);
     expect(evaluateCondition({ id: "more-coins", type: "has_item", itemId: "gold_coin", quantity: 6 }, state)).toBe(false);
     expect(evaluateCondition({ id: "key", type: "not_has_item", itemId: "tavern_key" }, state)).toBe(true);
+  });
+
+  it("evaluates NPC alignment and health conditions", () => {
+    const { state } = makeContext();
+
+    expect(evaluateCondition({ id: "friendly", type: "npc_alignment", npcId: "npc-captain", alignment: "friendly" }, state)).toBe(true);
+    expect(evaluateCondition({ id: "health", type: "npc_health_compare", npcId: "npc-captain", operator: ">=", value: 75 }, state)).toBe(true);
+    expect(evaluateCondition({ id: "missing", type: "npc_health_compare", npcId: "missing", operator: ">", value: 0 }, state)).toBe(false);
+  });
+
+  it("creates an isolated runtime NPC attribute copy", () => {
+    const { state } = makeContext();
+
+    state.npcs["npc-captain"].health = 10;
+
+    expect(captain.attributes.health).toBe(75);
   });
 });
 
@@ -195,5 +229,24 @@ describe("rule engine triggers and actions", () => {
     fireTrigger({ type: "on_interact", targetId: "npc-captain" }, [rule], context);
 
     expect(activateQuest).toHaveBeenCalledWith("tavern-access");
+  });
+
+  it("applies NPC alignment and health actions to runtime state", () => {
+    const { context, state } = makeContext();
+    const rule: GameRule = {
+      id: "change-captain",
+      name: "Change captain",
+      enabled: true,
+      trigger: { type: "on_game_start" },
+      actions: [
+        { type: "set_npc_alignment", npcId: "npc-captain", alignment: "hostile" },
+        { type: "set_npc_health", npcId: "npc-captain", value: 120 },
+      ],
+    };
+
+    fireTrigger({ type: "on_game_start" }, [rule], context);
+
+    expect(state.npcs["npc-captain"]).toMatchObject({ alignment: "hostile", health: 100 });
+    expect(captain.attributes).toMatchObject({ alignment: "friendly", health: 75 });
   });
 });

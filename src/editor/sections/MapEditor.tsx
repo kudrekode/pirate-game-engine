@@ -1493,6 +1493,40 @@ export function MapEditor() {
             <input checked={selectedNpc.blocksMovement} onChange={(event) => updateSelectedNpc({ blocksMovement: event.target.checked })} type="checkbox" />
             Blocks movement
           </label>
+          <div className="panel-title secondary">Attributes</div>
+          <div className="form-grid compact">
+            <label>
+              Current health
+              <input min={0} max={selectedNpc.attributes.maxHealth} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, health: Math.min(selectedNpc.attributes.maxHealth, Math.max(0, Number(event.target.value))) } })} type="number" value={selectedNpc.attributes.health} />
+            </label>
+            <label>
+              Max health
+              <input min={1} onChange={(event) => {
+                const maxHealth = Math.max(1, Number(event.target.value));
+                updateSelectedNpc({ attributes: { ...selectedNpc.attributes, maxHealth, health: Math.min(selectedNpc.attributes.health, maxHealth) } });
+              }} type="number" value={selectedNpc.attributes.maxHealth} />
+            </label>
+          </div>
+          <label>
+            Faction
+            <input onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, faction: event.target.value } })} value={selectedNpc.attributes.faction} />
+          </label>
+          <label>
+            Alignment
+            <select onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, alignment: event.target.value as NPCInstance["attributes"]["alignment"] } })} value={selectedNpc.attributes.alignment}>
+              <option value="friendly">Friendly</option>
+              <option value="neutral">Neutral</option>
+              <option value="hostile">Hostile</option>
+            </select>
+          </label>
+          <label className="checkbox-row standalone">
+            <input checked={selectedNpc.attributes.canInteract} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, canInteract: event.target.checked } })} type="checkbox" />
+            Can interact
+          </label>
+          <label>
+            Movement speed
+            <input min={0.1} max={10} step={0.1} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, movementSpeed: Math.max(0.1, Number(event.target.value)) } })} type="number" value={selectedNpc.attributes.movementSpeed ?? 1} />
+          </label>
           <div className="panel-title secondary">Movement</div>
           <label>
             Mode
@@ -1501,10 +1535,6 @@ export function MapEditor() {
               <option value="patrol">Patrol</option>
               <option value="wander">Wander</option>
             </select>
-          </label>
-          <label>
-            Movement speed
-            <input min={0.1} max={10} step={0.1} onChange={(event) => updateSelectedNpc({ movementSpeed: Math.max(0.1, Number(event.target.value)) })} type="number" value={selectedNpc.movementSpeed ?? 1} />
           </label>
           {selectedNpc.movementMode === "patrol" ? (
             <div className="form-stack">
@@ -2104,7 +2134,7 @@ export function MapEditor() {
                   ) : null}
                   {npc ? (
                     <span
-                      className={`npc-marker ${
+                      className={`npc-marker alignment-${npc.attributes.alignment} ${
                         selection?.type === "npc" && selection.id === npc.id ? "selected-npc" : ""
                       }`}
                     >

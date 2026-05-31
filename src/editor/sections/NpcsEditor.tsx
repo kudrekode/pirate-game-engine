@@ -125,6 +125,24 @@ export function NpcsEditor() {
           <p className="empty-state">Add an NPC definition to place friendly characters in maps.</p>
         )}
       </div>
+
+      <aside className="inspector-panel">
+        <div className="panel-title">Placed NPC Overview</div>
+        {project.areas.flatMap((area) =>
+          area.npcs.map((npc) => {
+            const definition = project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+            return (
+              <div className="npc-overview-item" key={npc.id}>
+                <strong>{definition?.name ?? "NPC"}</strong>
+                <div className="npc-overview-meta">{npc.attributes.alignment}</div>
+                <div className="npc-overview-meta">{npc.attributes.faction}</div>
+                <div className="npc-overview-meta">Health {npc.attributes.health}/{npc.attributes.maxHealth}</div>
+                <div className="npc-overview-meta">{area.name}</div>
+              </div>
+            );
+          }),
+        )}
+      </aside>
     </section>
   );
 }

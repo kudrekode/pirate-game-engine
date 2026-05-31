@@ -165,6 +165,17 @@ export type WanderZone = {
   height: number;
 };
 
+export type NPCAlignment = "friendly" | "neutral" | "hostile";
+
+export type NPCAttributes = {
+  maxHealth: number;
+  health: number;
+  faction: string;
+  alignment: NPCAlignment;
+  canInteract: boolean;
+  movementSpeed?: number;
+};
+
 export type NPCInstance = {
   id: string;
   npcDefinitionId: string;
@@ -174,6 +185,8 @@ export type NPCInstance = {
   facing?: "up" | "down" | "left" | "right";
   blocksMovement: boolean;
   movementMode: NPCMovementMode;
+  attributes: NPCAttributes;
+  // Legacy migration fallback. New edits use attributes.movementSpeed.
   movementSpeed?: number;
   patrolPath?: PatrolPath;
   wanderZone?: WanderZone;
@@ -356,7 +369,15 @@ export type SingleCondition =
       value: GameStateValue;
     }
   | { id: string; type: "has_item"; itemId: string; quantity?: number }
-  | { id: string; type: "not_has_item"; itemId: string; quantity?: number };
+  | { id: string; type: "not_has_item"; itemId: string; quantity?: number }
+  | { id: string; type: "npc_alignment"; npcId: string; alignment: NPCAlignment }
+  | {
+      id: string;
+      type: "npc_health_compare";
+      npcId: string;
+      operator: VariableComparisonOperator;
+      value: number;
+    };
 
 export type GameAction =
   | { type: "set_flag"; flag: string; value: boolean }
@@ -370,6 +391,8 @@ export type GameAction =
   | { type: "activate_quest"; questId: string }
   | { type: "complete_quest"; questId: string }
   | { type: "fail_quest"; questId: string }
+  | { type: "set_npc_alignment"; npcId: string; alignment: NPCAlignment }
+  | { type: "set_npc_health"; npcId: string; value: number }
   | { type: "end_game" };
 
 // TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, and asset imports.

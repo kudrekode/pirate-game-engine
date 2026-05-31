@@ -364,6 +364,13 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
         )
       : [];
     const wanderSource = isRecord(item.wanderZone) ? item.wanderZone : {};
+    const attributesSource = isRecord(item.attributes) ? item.attributes : {};
+    const maxHealth = readNumber(attributesSource.maxHealth, 100, 1);
+    const movementSpeed = readNumber(attributesSource.movementSpeed ?? item.movementSpeed, 1, 0.1, 10);
+    const alignment =
+      attributesSource.alignment === "neutral" || attributesSource.alignment === "hostile"
+        ? attributesSource.alignment
+        : "friendly";
 
     return [{
       id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
@@ -374,7 +381,14 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
       facing,
       blocksMovement: readBoolean(item.blocksMovement, true),
       movementMode,
-      movementSpeed: readNumber(item.movementSpeed, 1, 0.1, 10),
+      attributes: {
+        maxHealth,
+        health: readNumber(attributesSource.health, maxHealth, 0, maxHealth),
+        faction: readString(attributesSource.faction, "villagers"),
+        alignment,
+        canInteract: readBoolean(attributesSource.canInteract, true),
+        movementSpeed,
+      },
       ...(points.length > 0
         ? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } }
         : {}),
@@ -883,6 +897,28 @@ function migrateSingleCondition(value: unknown, fallbackId: string): SingleCondi
     };
   }
 
+  if (value.type === "npc_alignment") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: "npc_alignment",
+      npcId: readString(value.npcId, ""),
+      alignment:
+        value.alignment === "neutral" || value.alignment === "hostile"
+          ? value.alignment
+          : "friendly",
+    };
+  }
+
+  if (value.type === "npc_health_compare") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: "npc_health_compare",
+      npcId: readString(value.npcId, ""),
+      operator: readComparisonOperator(value.operator),
+      value: readNumber(value.value, 0, 0),
+    };
+  }
+
   return null;
 }
 
@@ -957,6 +993,25 @@ function migrateGameAction(value: unknown): GameAction | null {
     (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
   ) {
     return { type: "change_movement_mode", mode: value.mode };
+  }
+
+  if (value.type === "set_npc_alignment") {
+    return {
+      type: "set_npc_alignment",
+      npcId: readString(value.npcId, ""),
+      alignment:
+        value.alignment === "neutral" || value.alignment === "hostile"
+          ? value.alignment
+          : "friendly",
+    };
+  }
+
+  if (value.type === "set_npc_health") {
+    return {
+      type: "set_npc_health",
+      npcId: readString(value.npcId, ""),
+      value: readNumber(value.value, 0, 0),
+    };
   }
 
   if (value.type === "give_item" || value.type === "remove_item") {

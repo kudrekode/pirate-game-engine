@@ -129,7 +129,7 @@ export class AdventureScene extends Phaser.Scene {
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
-    this.runtimeState = createRuntimeState(project.gameState);
+    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
     this.runtimeQuestState = createRuntimeQuestState(project.quests);
     this.onInventoryChanged = onInventoryChanged;
     this.onQuestsChanged = onQuestsChanged;
@@ -687,7 +687,7 @@ export class AdventureScene extends Phaser.Scene {
           : npc.movementMode === "wander"
             ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
             : updateStationaryNPC(npc, runtime.movement);
-      const speed = clamp(npc.movementSpeed ?? 1, 0.1, 10);
+      const speed = clamp(this.runtimeState.npcs[npc.id]?.movementSpeed ?? npc.attributes.movementSpeed ?? npc.movementSpeed ?? 1, 0.1, 10);
       const duration = Math.max(80, 360 / speed);
       const wait = update.moved ? 320 : 560;
 
@@ -977,6 +977,11 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.npcs.forEach((npc) => {
+      const attributes = this.runtimeState.npcs[npc.id] ?? npc.attributes;
+      if (!attributes.canInteract) {
+        return;
+      }
+
       const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: npc.id });
       if ((!npc.interaction || !canInteractActivate(npc.interaction)) && !hasRule) {
         return;
