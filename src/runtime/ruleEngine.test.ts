@@ -15,19 +15,25 @@ function makeContext() {
     inventory: { gold_coin: 5 },
   });
   const teleport = vi.fn();
+  const activateQuest = vi.fn();
+  const completeQuest = vi.fn();
+  const failQuest = vi.fn();
   const context: RuleActionContext = {
     state,
     playCutscene: vi.fn(),
     teleport,
     changeMovementMode: vi.fn(),
     endGame: vi.fn(),
+    activateQuest,
+    completeQuest,
+    failQuest,
     itemDefinitions: [
       { id: "gold_coin", name: "Gold Coin", category: "currency", stackable: true, maxStack: 99 },
       { id: "tavern_key", name: "Tavern Key", category: "key", stackable: false },
     ],
   };
 
-  return { context, state, teleport };
+  return { activateQuest, completeQuest, context, failQuest, state, teleport };
 }
 
 describe("rule engine conditions", () => {
@@ -153,5 +159,26 @@ describe("rule engine triggers and actions", () => {
 
     expect(state.inventory.items.gold_coin).toBeUndefined();
     expect(state.inventory.items.tavern_key).toBe(1);
+  });
+
+  it("runs quest lifecycle actions", () => {
+    const { activateQuest, completeQuest, context, failQuest } = makeContext();
+    const rule: GameRule = {
+      id: "quest-actions",
+      name: "Quest actions",
+      enabled: true,
+      trigger: { type: "on_game_start" },
+      actions: [
+        { type: "activate_quest", questId: "quest-a" },
+        { type: "complete_quest", questId: "quest-b" },
+        { type: "fail_quest", questId: "quest-c" },
+      ],
+    };
+
+    fireTrigger({ type: "on_game_start" }, [rule], context);
+
+    expect(activateQuest).toHaveBeenCalledWith("quest-a");
+    expect(completeQuest).toHaveBeenCalledWith("quest-b");
+    expect(failQuest).toHaveBeenCalledWith("quest-c");
   });
 });

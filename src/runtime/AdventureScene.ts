@@ -27,6 +27,17 @@ import {
   type RuleActionContext,
   type RuntimeGameState,
 } from "./ruleEngine";
+import {
+  activateQuest,
+  completeQuest as completeRuntimeQuest,
+  createRuntimeQuestState,
+  failQuest,
+  getQuestViews,
+  markAreaEntered,
+  updateQuestProgress,
+  type QuestView,
+  type RuntimeQuestState,
+} from "./questEngine";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -89,20 +100,28 @@ export class AdventureScene extends Phaser.Scene {
   private promptText?: Phaser.GameObjects.Text;
   private debugText?: Phaser.GameObjects.Text;
   private readonly runtimeState: RuntimeGameState;
+  private readonly runtimeQuestState: RuntimeQuestState;
   private readonly collectedPickupIds = new Set<string>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
+  private readonly onQuestsChanged?: (quests: QuestView[]) => void;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
 
-  constructor(project: GameProject, onInventoryChanged?: (inventory: Record<string, number>) => void) {
+  constructor(
+    project: GameProject,
+    onInventoryChanged?: (inventory: Record<string, number>) => void,
+    onQuestsChanged?: (quests: QuestView[]) => void,
+  ) {
     super("AdventureScene");
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
     this.runtimeState = createRuntimeState(project.gameState);
+    this.runtimeQuestState = createRuntimeQuestState(project.quests);
     this.onInventoryChanged = onInventoryChanged;
+    this.onQuestsChanged = onQuestsChanged;
   }
 
   create() {
@@ -150,6 +169,8 @@ export class AdventureScene extends Phaser.Scene {
     this.uiLayer.add(this.debugText);
     this.updateDebugPanel();
     this.notifyInventoryChanged();
+    markAreaEntered(this.runtimeQuestState, this.currentArea.id);
+    this.syncQuestProgress();
 
     this.fireRuleTrigger({ type: "on_game_start" }, () => this.processProgression());
   }
@@ -577,6 +598,8 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.spawnPlayer(eventBlock);
+    markAreaEntered(this.runtimeQuestState, nextArea.id);
+    this.syncQuestProgress();
     this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
     this.updateDebugPanel();
     if (enteredNewArea) {
@@ -990,6 +1013,7 @@ export class AdventureScene extends Phaser.Scene {
 
       const value = interaction.value ?? true;
       this.runtimeState.flags[interaction.flag] = value;
+      this.syncQuestProgress();
       this.updateDebugPanel();
       this.setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
       return;
@@ -1029,6 +1053,7 @@ export class AdventureScene extends Phaser.Scene {
       this.worldLayer?.getByName(`pickup:${pickup.id}`)?.destroy();
     }
     this.notifyInventoryChanged();
+    this.syncQuestProgress();
     this.updateDebugPanel();
     this.setStatus(`Picked up ${item?.name ?? pickup.itemId} x${pickup.quantity}.`);
     return true;
@@ -1232,10 +1257,26 @@ export class AdventureScene extends Phaser.Scene {
         this.updateDebugPanel();
       },
       endGame: () => this.showEndMessage(),
+      activateQuest: (questId) => {
+        activateQuest(this.runtimeQuestState, questId);
+        this.syncQuestProgress();
+      },
+      completeQuest: (questId) => {
+        if (completeRuntimeQuest(this.runtimeQuestState, questId, this.runtimeState, this.project.items)) {
+          this.notifyInventoryChanged();
+          this.updateDebugPanel();
+        }
+        this.syncQuestProgress();
+      },
+      failQuest: (questId) => {
+        failQuest(this.runtimeQuestState, questId);
+        this.syncQuestProgress();
+      },
       itemDefinitions: this.project.items,
       stateChanged: () => {
         this.updateDebugPanel();
         this.notifyInventoryChanged();
+        this.syncQuestProgress();
       },
     };
   }
@@ -1269,6 +1310,19 @@ export class AdventureScene extends Phaser.Scene {
 
   private notifyInventoryChanged() {
     this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
+  }
+
+  private syncQuestProgress() {
+    const stateChanged = updateQuestProgress(
+      this.runtimeQuestState,
+      this.runtimeState,
+      this.project.items,
+    );
+    if (stateChanged) {
+      this.notifyInventoryChanged();
+      this.updateDebugPanel();
+    }
+    this.onQuestsChanged?.(getQuestViews(this.runtimeQuestState, this.runtimeState));
   }
 
   private setStatus(message: string) {

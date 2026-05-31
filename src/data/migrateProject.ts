@@ -24,6 +24,10 @@ import type {
   MovementRule,
   OverlayTile,
   PickupObject,
+  Quest,
+  QuestReward,
+  Objective,
+  ObjectiveCondition,
   PlayerConfig,
   PixelAsset,
   ProgressionAction,
@@ -607,6 +611,129 @@ function migrateItems(value: unknown): ItemDefinition[] {
   });
 }
 
+function migrateObjectiveCondition(value: unknown): ObjectiveCondition | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "flag") {
+    return {
+      type: "flag",
+      flag: readString(value.flag, ""),
+      value: readBoolean(value.value, true),
+    };
+  }
+
+  if (value.type === "has_item") {
+    return {
+      type: "has_item",
+      itemId: readString(value.itemId, ""),
+      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+    };
+  }
+
+  if (value.type === "variable_compare") {
+    return {
+      type: "variable_compare",
+      variable: readString(value.variable, ""),
+      operator: readComparisonOperator(value.operator),
+      value: readStateValue(value.value, 0),
+    };
+  }
+
+  return value.type === "enter_area"
+    ? { type: "enter_area", areaId: readString(value.areaId, "") }
+    : null;
+}
+
+function migrateObjectives(value: unknown): Objective[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((objective, index) => {
+    if (!isRecord(objective)) {
+      return [];
+    }
+
+    const condition = migrateObjectiveCondition(objective.condition);
+    return condition
+      ? [
+          {
+            id: readString(objective.id, `objective_${index + 1}`),
+            description: readString(objective.description, `Objective ${index + 1}`),
+            condition,
+          },
+        ]
+      : [];
+  });
+}
+
+function migrateQuestRewards(value: unknown): QuestReward[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((reward): QuestReward[] => {
+    if (!isRecord(reward)) {
+      return [];
+    }
+
+    if (reward.type === "item") {
+      return [{
+        type: "item" as const,
+        itemId: readString(reward.itemId, ""),
+        quantity: Math.round(readNumber(reward.quantity, 1, 1, 9999)),
+      }];
+    }
+
+    if (reward.type === "flag") {
+      return [{
+        type: "flag" as const,
+        flag: readString(reward.flag, ""),
+        value: readBoolean(reward.value, true),
+      }];
+    }
+
+    return reward.type === "variable"
+      ? [{
+          type: "variable" as const,
+          variable: readString(reward.variable, ""),
+          amount: readNumber(reward.amount, 0),
+        }]
+      : [];
+  });
+}
+
+function migrateQuests(value: unknown): Quest[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((quest, index) => {
+    if (!isRecord(quest)) {
+      return [];
+    }
+
+    const status =
+      quest.status === "active" ||
+      quest.status === "completed" ||
+      quest.status === "failed"
+        ? quest.status
+        : "inactive";
+    const description = readString(quest.description, "");
+
+    return [{
+      id: readString(quest.id, `quest_${index + 1}`),
+      name: readString(quest.name, `Quest ${index + 1}`),
+      ...(description ? { description } : {}),
+      status,
+      objectives: migrateObjectives(quest.objectives),
+      rewards: migrateQuestRewards(quest.rewards),
+    }];
+  });
+}
+
 function readComparisonOperator(value: unknown): VariableComparisonOperator {
   return value === "==" ||
     value === "!=" ||
@@ -759,6 +886,17 @@ function migrateGameAction(value: unknown): GameAction | null {
     };
   }
 
+  if (
+    value.type === "activate_quest" ||
+    value.type === "complete_quest" ||
+    value.type === "fail_quest"
+  ) {
+    return {
+      type: value.type,
+      questId: readString(value.questId, ""),
+    };
+  }
+
   return value.type === "end_game" ? { type: "end_game" } : null;
 }
 
@@ -871,6 +1009,8 @@ export function migrateProject(value: unknown): GameProject {
     progression: migrateProgression(source.progression, activeAreaId),
     gameState: migrateGameState(source.gameState),
     items: migrateItems(source.items),
+    quests: migrateQuests(source.quests),
+    ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
     ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
   };

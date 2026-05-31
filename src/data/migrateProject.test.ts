@@ -30,6 +30,7 @@ describe("migrateProject", () => {
     ]);
     expect(project.areas[0].pickups).toEqual([]);
     expect(project.items).toEqual([]);
+    expect(project.quests).toEqual([]);
   });
 
   it("adds default game state when older projects omit it", () => {
@@ -86,6 +87,7 @@ describe("migrateProject", () => {
     expect(project.ruleGroups).toEqual([]);
     expect(project.rules).toEqual([]);
     expect(project.items).toEqual([]);
+    expect(project.quests).toEqual([]);
   });
 
   it("migrates inventory rules and pickups", () => {
@@ -120,5 +122,30 @@ describe("migrateProject", () => {
     expect(project.gameState.inventory).toEqual({ tavern_key: 1 });
     expect(project.rules[0].conditionTree).toMatchObject({ type: "has_item", quantity: 1 });
     expect(project.rules[0].actions[0]).toEqual({ type: "remove_item", itemId: "tavern_key", quantity: 1 });
+  });
+
+  it("migrates quests and defaults missing quest fields", () => {
+    const project = migrateProject({
+      trackedQuestId: "quest_test",
+      quests: [
+        {
+          id: "quest_test",
+          name: "Test Quest",
+          status: "active",
+          objectives: [
+            { description: "Enter", condition: { type: "enter_area", areaId: "area_house" } },
+          ],
+          rewards: [{ type: "item", itemId: "boat_pass", quantity: 1 }],
+        },
+      ],
+    });
+
+    expect(project.trackedQuestId).toBe("quest_test");
+    expect(project.quests[0]).toMatchObject({
+      id: "quest_test",
+      status: "active",
+      objectives: [{ description: "Enter", condition: { type: "enter_area", areaId: "area_house" } }],
+      rewards: [{ type: "item", itemId: "boat_pass", quantity: 1 }],
+    });
   });
 });
