@@ -6,6 +6,8 @@ import type {
   GameStateValue,
   InventoryState,
   ItemDefinition,
+  NPCAttributes,
+  NPCInstance,
   RuleTrigger,
   SingleCondition,
 } from "../types/game";
@@ -15,6 +17,7 @@ export type RuntimeGameState = {
   flags: Record<string, boolean>;
   variables: Record<string, GameStateValue>;
   inventory: InventoryState;
+  npcs: Record<string, NPCAttributes>;
 };
 
 export type RuleActionContext = {
@@ -30,11 +33,18 @@ export type RuleActionContext = {
   stateChanged?: () => void;
 };
 
-export function createRuntimeState(config: GameStateConfig): RuntimeGameState {
+export function createRuntimeNpcState(npcs: NPCInstance[]): Record<string, NPCAttributes> {
+  return Object.fromEntries(
+    npcs.map((npc) => [npc.id, { ...npc.attributes }]),
+  );
+}
+
+export function createRuntimeState(config: GameStateConfig, npcs: NPCInstance[] = []): RuntimeGameState {
   return {
     flags: { ...config.flags },
     variables: { ...config.variables },
     inventory: createInventory(config.inventory),
+    npcs: createRuntimeNpcState(npcs),
   };
 }
 
@@ -77,6 +87,15 @@ export function evaluateCondition(condition: SingleCondition, runtimeState: Runt
 
   if (condition.type === "not_has_item") {
     return !hasItem(runtimeState.inventory, condition.itemId, condition.quantity);
+  }
+
+  if (condition.type === "npc_alignment") {
+    return runtimeState.npcs[condition.npcId]?.alignment === condition.alignment;
+  }
+
+  if (condition.type === "npc_health_compare") {
+    const health = runtimeState.npcs[condition.npcId]?.health;
+    return health !== undefined && compareValues(health, condition.value, condition.operator);
   }
 
   const currentValue = runtimeState.variables[condition.variable];
@@ -175,6 +194,26 @@ export function runAction(
 
   if (action.type === "fail_quest") {
     context.failQuest?.(action.questId);
+    onDone();
+    return;
+  }
+
+  if (action.type === "set_npc_alignment") {
+    const npc = context.state.npcs[action.npcId];
+    if (npc) {
+      npc.alignment = action.alignment;
+      context.stateChanged?.();
+    }
+    onDone();
+    return;
+  }
+
+  if (action.type === "set_npc_health") {
+    const npc = context.state.npcs[action.npcId];
+    if (npc) {
+      npc.health = Math.min(npc.maxHealth, Math.max(0, action.value));
+      context.stateChanged?.();
+    }
     onDone();
     return;
   }

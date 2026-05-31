@@ -120,6 +120,7 @@ export function createAreaFromTemplate(
       : [],
     structures: [],
     pickups: [],
+    npcs: [],
     eventBlocks: [
       {
         id: `${id}_spawn`,

@@ -29,8 +29,10 @@ describe("migrateProject", () => {
       { x: 1, y: 0, tileId: "dirt" },
     ]);
     expect(project.areas[0].pickups).toEqual([]);
+    expect(project.areas[0].npcs).toEqual([]);
     expect(project.items).toEqual([]);
     expect(project.quests).toEqual([]);
+    expect(project.npcs).toEqual([]);
   });
 
   it("adds default game state when older projects omit it", () => {
@@ -88,6 +90,7 @@ describe("migrateProject", () => {
     expect(project.rules).toEqual([]);
     expect(project.items).toEqual([]);
     expect(project.quests).toEqual([]);
+    expect(project.npcs).toEqual([]);
   });
 
   it("migrates inventory rules and pickups", () => {
@@ -146,6 +149,38 @@ describe("migrateProject", () => {
       status: "active",
       objectives: [{ description: "Enter", condition: { type: "enter_area", areaId: "area_house" } }],
       rewards: [{ type: "item", itemId: "boat_pass", quantity: 1 }],
+    });
+  });
+
+  it("migrates NPC definitions and placed NPC instances", () => {
+    const project = migrateProject({
+      npcs: [{ id: "captain", name: "Captain Mira", mapAvatarId: "ranger" }],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [{ id: "captain-instance", npcDefinitionId: "captain", x: 1, y: 1 }],
+        },
+      ],
+    });
+
+    expect(project.npcs[0]).toMatchObject({ id: "captain", name: "Captain Mira", mapAvatarId: "ranger" });
+    expect(project.areas[0].npcs[0]).toMatchObject({
+      id: "captain-instance",
+      npcDefinitionId: "captain",
+      areaId: "area_main",
+      facing: "down",
+      blocksMovement: true,
+      movementMode: "stationary",
+      attributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "villagers",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 1,
+      },
     });
   });
 });

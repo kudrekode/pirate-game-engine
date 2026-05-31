@@ -68,6 +68,10 @@ export function QuestsEditor() {
       return;
     }
 
+    if (!window.confirm(`Delete quest "${selectedQuest.name}"?`)) {
+      return;
+    }
+
     updateProject((draft) => {
       draft.quests = draft.quests.filter((quest) => quest.id !== selectedQuest.id);
       if (draft.trackedQuestId === selectedQuest.id) {
@@ -276,6 +280,7 @@ export function QuestsEditor() {
     <section className="editor-panel quests-editor">
       <aside className="tool-panel">
         <div className="panel-title">Quests</div>
+        <p className="helper-text">Player-facing objectives that reuse game state and inventory.</p>
         <button className="primary-button full-width" onClick={addQuest} type="button">Add quest</button>
         <div className="list-stack quest-list">
           {project.quests.map((quest) => (
@@ -286,6 +291,7 @@ export function QuestsEditor() {
               </span>
             </button>
           ))}
+          {project.quests.length === 0 ? <p className="empty-state compact">No quests defined.</p> : null}
         </div>
         <label>
           Tracked quest
@@ -331,6 +337,7 @@ export function QuestsEditor() {
                   <button className="danger-button compact" onClick={() => deleteObjective(objective.id)} type="button">Delete objective</button>
                 </div>
               ))}
+              {selectedQuest.objectives.length === 0 ? <p className="empty-state compact">No objectives yet.</p> : null}
             </section>
             <section className="quest-section">
               <div className="quest-section-heading">
@@ -338,6 +345,7 @@ export function QuestsEditor() {
                 <button onClick={addReward} type="button">Add reward</button>
               </div>
               {(selectedQuest.rewards ?? []).map(renderReward)}
+              {(selectedQuest.rewards ?? []).length === 0 ? <p className="empty-state compact">No rewards configured.</p> : null}
             </section>
             <button className="danger-button" onClick={deleteQuest} type="button">Delete quest</button>
           </>
@@ -348,4 +356,3 @@ export function QuestsEditor() {
     </section>
   );
 }
-

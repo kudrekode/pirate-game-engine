@@ -14,6 +14,7 @@ import type {
   Interaction,
   MapStructure,
   MapTile,
+  NPCInstance,
   OverlayTile,
   PlayerConfig,
   PickupObject,
@@ -52,6 +53,9 @@ type ProjectStore = {
   addPickup: (x: number, y: number) => string;
   updatePickup: (id: string, patch: Partial<PickupObject>) => void;
   deletePickup: (id: string) => void;
+  addNpc: (x: number, y: number, npcDefinitionId: string) => string;
+  updateNpc: (id: string, patch: Partial<NPCInstance>) => void;
+  deleteNpc: (id: string) => void;
   updatePixelAsset: (asset: PixelAsset) => void;
   resetPixelAsset: (id: string) => void;
   addEventBlock: (x: number, y: number) => string;
@@ -195,6 +199,11 @@ function cleanAreaReferences(project: GameProject, deletedAreaId: string) {
         ? { ...structure, interaction: undefined }
         : structure,
     ),
+    npcs: area.npcs.map((npc) =>
+      interactionTargetsArea(npc.interaction, deletedAreaId)
+        ? { ...npc, interaction: undefined }
+        : npc,
+    ),
   }));
 }
 
@@ -231,6 +240,11 @@ function clearEventLinkReferences(project: GameProject, areaId: string, eventBlo
         ? { ...structure, interaction: undefined }
         : structure,
     ),
+    npcs: area.npcs.map((npc) =>
+      interactionTargetsEvent(npc.interaction, areaId, eventBlockId)
+        ? { ...npc, interaction: undefined }
+        : npc,
+    ),
   }));
 }
 
@@ -257,6 +271,7 @@ function cleanRuleAreaReferences(project: GameProject, area: GameArea) {
     new Set([
       ...area.eventBlocks.map((eventBlock) => eventBlock.id),
       ...area.structures.map((structure) => structure.id),
+      ...area.npcs.map((npc) => npc.id),
     ]),
   );
   project.rules = project.rules
@@ -515,6 +530,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         pickups: area.pickups.filter(
           (pickup) => pickup.x >= 0 && pickup.y >= 0 && pickup.x < nextWidth && pickup.y < nextHeight,
         ),
+        npcs: area.npcs.filter(
+          (npc) => npc.x >= 0 && npc.y >= 0 && npc.x < nextWidth && npc.y < nextHeight,
+        ),
         eventBlocks,
       }));
 
@@ -719,6 +737,71 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         pickups: area.pickups.filter((pickup) => pickup.id !== id),
       })),
     })),
+
+  addNpc: (x, y, npcDefinitionId) => {
+    const nextX = Math.max(0, Math.round(x));
+    const nextY = Math.max(0, Math.round(y));
+    const id = makeId("npc_instance");
+
+    set((state) => {
+      const activeArea = getActiveArea(state.project);
+      const nextWidth = clampMapSize(Math.max(activeArea.width, nextX + 1));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, nextY + 1));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
+
+      return {
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+          npcs: [
+            ...area.npcs,
+            {
+              id,
+              npcDefinitionId,
+              areaId: area.id,
+              x: nextX,
+              y: nextY,
+              facing: "down",
+              blocksMovement: true,
+              movementMode: "stationary",
+              attributes: {
+                maxHealth: 100,
+                health: 100,
+                faction: "villagers",
+                alignment: "friendly",
+                canInteract: true,
+                movementSpeed: 1,
+              },
+            },
+          ],
+        })),
+      };
+    });
+
+    return id;
+  },
+
+  updateNpc: (id, patch) =>
+    set((state) => ({
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        npcs: area.npcs.map((npc) => npc.id === id ? { ...npc, ...patch, areaId: area.id } : npc),
+      })),
+    })),
+
+  deleteNpc: (id) =>
+    set((state) => {
+      const project = cloneProject(state.project);
+      cleanRuleTargetReferences(project, new Set([id]));
+      return {
+        project: updateActiveArea(project, (area) => ({
+          ...area,
+          npcs: area.npcs.filter((npc) => npc.id !== id),
+        })),
+      };
+    }),
 
   updatePixelAsset: (asset) =>
     set((state) => ({

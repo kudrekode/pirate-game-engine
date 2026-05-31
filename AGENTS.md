@@ -9,6 +9,7 @@ The editor and runtime share one schema-driven `GameProject` object from `src/ty
 - Imported and saved projects pass through `src/data/migrateProject.ts`.
 - Phaser runtime code reads a cloned project snapshot when the user presses Play.
 - Keep editor-only state, such as map zoom, pan, palette width, and selection, out of `GameProject`.
+- Keep future work scoped against `ROADMAP.md`; avoid adding major gameplay systems during maintenance passes.
 
 ## Areas And Maps
 
@@ -20,6 +21,7 @@ Each area owns:
 - Overlay tiles
 - Structures
 - Pickup objects
+- NPC instances
 - Event blocks
 - Optional theme metadata
 
@@ -34,6 +36,19 @@ Terrain remains grid-based. Runtime camera settings live at the project level in
 - `inventory`: optional initial item quantities
 
 Each Play session copies these defaults into separate runtime memory. Variables remain general number or text state. Inventory item definitions live in `GameProject.items`; runtime quantities are separate from those definitions.
+
+## Editor Defaults Versus Runtime State
+
+`GameProject` stores authoring defaults. A Play session must not mutate those editor defaults.
+
+Runtime-owned copies currently include:
+
+- Flags and variables in `RuntimeGameState`
+- Inventory quantities in `RuntimeGameState.inventory`
+- NPC attributes in `RuntimeGameState.npcs`
+- Quest status, objective progress, entered areas, and granted rewards in `RuntimeQuestState`
+
+Map entity positions used by Phaser are read from the cloned play snapshot, not the live editor project.
 
 ## Items And Pickups
 
@@ -56,6 +71,32 @@ Runtime quest state is copied per Play session. Completed objectives stay comple
 
 Friendly rules can activate, complete, or fail quests explicitly. Active quests also complete automatically when all objectives have been achieved.
 
+## NPCs
+
+`GameProject.npcs` contains reusable friendly NPC definitions. Each area owns placed `NPCInstance` records.
+
+NPC instances are grid-based world entities. They can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
+
+NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, enemies, combat, and branching dialogue.
+
+### NPC Attributes
+
+Every placed NPC instance has shared attributes for health, faction, alignment, interaction availability, and movement speed. These fields are data foundations for friendly and future hostile NPCs; there is no separate enemy architecture.
+
+Each Play session copies NPC attributes into `RuntimeGameState.npcs`. Rule conditions can read NPC alignment and health, and rule actions can change those runtime values without mutating editor defaults. Factions remain descriptive data only.
+
+### NPC Movement
+
+Placed NPC instances declare a data-driven movement mode:
+
+- `stationary`
+- `patrol` with an optional looping list of grid points
+- `wander` inside a rectangular grid zone
+
+Pure grid-step decisions live in `src/runtime/npcMovement.ts`. Phaser applies the resulting steps with small tweens and waits. Movement checks bounds, terrain, structures, the player tile, and other blocking NPCs. There is deliberately no pathfinding; blocked destinations wait or recalculate.
+
+The Map editor has a lightweight overlay-filter foundation. `npc_paths` renders only the selected NPC's patrol path or wander zone. Event-block, collision, quest-marker, and enemy-territory filters remain TODOs.
+
 ## Rule Engine
 
 Friendly logic rules live in `GameProject.rules`. Organisational folders live in `GameProject.ruleGroups`.
@@ -72,6 +113,8 @@ Each rule has:
 Condition groups support `AND` and `OR`, including nested groups. Missing or empty conditions mean the rule always passes.
 
 Rules can check item quantities and give or remove items. Removing items never drops below zero; stack limits are enforced by the inventory helper.
+
+Rules can also activate, complete, or fail quests and read or change runtime NPC health and alignment.
 
 Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
 
@@ -123,6 +166,8 @@ Current focused tests cover:
 - Rule evaluation and actions
 - Inventory stacking and pickup collection
 - Quest objective evaluation and once-only rewards
+- NPC migration, collision, rule targeting, and deletion guards
+- NPC stationary, patrol, wander, bounds, and terrain movement helpers
 - Movement resolution
 - Project migration
 - Basic React editor smoke rendering

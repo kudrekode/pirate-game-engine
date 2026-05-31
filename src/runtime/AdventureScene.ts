@@ -15,12 +15,20 @@ import type {
   Interaction,
   MovementMode,
   MapStructure,
+  NPCInstance,
   PixelAsset,
   PickupObject,
   RuleTrigger,
 } from "../types/game";
 import { collectPickup } from "./inventory";
 import { resolveMovementAt } from "./movement";
+import {
+  isNpcTileWalkable,
+  updatePatrolNPC,
+  updateStationaryNPC,
+  updateWanderNPC,
+  type NPCMovementState,
+} from "./npcMovement";
 import {
   createRuntimeState,
   fireTrigger,
@@ -54,7 +62,8 @@ type InteractKeys = {
 type Interactable =
   | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
   | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number }
-  | { kind: "pickup"; label: string; pickup: PickupObject; distance: number };
+  | { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
+  | { kind: "npc"; label: string; interaction?: Interaction; npc: NPCInstance; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -102,6 +111,8 @@ export class AdventureScene extends Phaser.Scene {
   private readonly runtimeState: RuntimeGameState;
   private readonly runtimeQuestState: RuntimeQuestState;
   private readonly collectedPickupIds = new Set<string>();
+  private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
+  private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private readonly onQuestsChanged?: (quests: QuestView[]) => void;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
@@ -118,7 +129,7 @@ export class AdventureScene extends Phaser.Scene {
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
-    this.runtimeState = createRuntimeState(project.gameState);
+    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
     this.runtimeQuestState = createRuntimeQuestState(project.quests);
     this.onInventoryChanged = onInventoryChanged;
     this.onQuestsChanged = onQuestsChanged;
@@ -176,6 +187,10 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   update(time: number) {
+    if (!this.isCutsceneOpen && !this.isFinished) {
+      this.updateNpcMovement(time);
+    }
+
     if (
       !this.playerMarker ||
       this.isCutsceneOpen ||
@@ -194,7 +209,9 @@ export class AdventureScene extends Phaser.Scene {
           ? interactable.eventBlock.id
           : interactable.kind === "structure"
             ? interactable.structure.id
-            : "";
+            : interactable.kind === "npc"
+              ? interactable.npc.id
+              : "";
       if (interactable.kind === "pickup") {
         this.collectPickupObject(interactable.pickup);
         return;
@@ -315,6 +332,8 @@ export class AdventureScene extends Phaser.Scene {
   private renderMap() {
     this.worldLayer?.removeAll(true);
     this.playerMarker = undefined;
+    this.npcMarkers.clear();
+    this.npcMovementStates.clear();
     const overlayLookup = new Map(
       this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
     );
@@ -409,6 +428,7 @@ export class AdventureScene extends Phaser.Scene {
     this.currentArea.pickups
       .filter((pickup) => !this.isPickupCollected(pickup))
       .forEach((pickup) => this.renderPickup(pickup));
+    this.currentArea.npcs.forEach((npc) => this.renderNpc(npc));
   }
 
   private createPixelTextures() {
@@ -625,6 +645,70 @@ export class AdventureScene extends Phaser.Scene {
     const container = this.add.container(centerX, centerY, [body, label]).setDepth(40);
     container.setName(`pickup:${pickup.id}`);
     this.worldLayer?.add(container);
+  }
+
+  private renderNpc(npc: NPCInstance) {
+    const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+    const avatar = getVisualPreset(definition?.mapAvatarId ?? "ranger", characterSprites);
+    const centerX = npc.x * this.tileSize + this.tileSize / 2;
+    const centerY = npc.y * this.tileSize + this.tileSize / 2;
+    const body = this.add.circle(0, 0, this.tileSize * 0.3, hexToNumber(avatar.color));
+    const initial = this.add
+      .text(0, 0, definition?.name.slice(0, 1).toUpperCase() ?? "?", {
+        color: avatar.accent,
+        fontFamily: "Arial, sans-serif",
+        fontSize: "15px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+
+    const marker = this.add.container(centerX, centerY, [body, initial]).setDepth(45);
+    this.npcMarkers.set(npc.id, marker);
+    this.worldLayer?.add(marker);
+  }
+
+  private updateNpcMovement(time: number) {
+    this.currentArea.npcs.forEach((npc) => {
+      const runtime = this.npcMovementStates.get(npc.id) ?? {
+        movement: { patrolIndex: 0 },
+        nextMoveAt: time + 450,
+      };
+      if (time < runtime.nextMoveAt) {
+        this.npcMovementStates.set(npc.id, runtime);
+        return;
+      }
+
+      const canMove = (x: number, y: number) =>
+        !(this.playerPosition.x === x && this.playerPosition.y === y) &&
+        isNpcTileWalkable(this.currentArea, npc.id, x, y);
+      const update =
+        npc.movementMode === "patrol"
+          ? updatePatrolNPC(npc, runtime.movement, canMove)
+          : npc.movementMode === "wander"
+            ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
+            : updateStationaryNPC(npc, runtime.movement);
+      const speed = clamp(this.runtimeState.npcs[npc.id]?.movementSpeed ?? npc.attributes.movementSpeed ?? npc.movementSpeed ?? 1, 0.1, 10);
+      const duration = Math.max(80, 360 / speed);
+      const wait = update.moved ? 320 : 560;
+
+      npc.x = update.x;
+      npc.y = update.y;
+      npc.facing = update.facing;
+      this.npcMovementStates.set(npc.id, {
+        movement: update.state,
+        nextMoveAt: time + duration + wait,
+      });
+
+      if (update.moved) {
+        this.tweens.add({
+          targets: this.npcMarkers.get(npc.id),
+          x: npc.x * this.tileSize + this.tileSize / 2,
+          y: npc.y * this.tileSize + this.tileSize / 2,
+          duration,
+          ease: "Sine.easeInOut",
+        });
+      }
+    });
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -892,6 +976,30 @@ export class AdventureScene extends Phaser.Scene {
       }
     });
 
+    this.currentArea.npcs.forEach((npc) => {
+      const attributes = this.runtimeState.npcs[npc.id] ?? npc.attributes;
+      if (!attributes.canInteract) {
+        return;
+      }
+
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: npc.id });
+      if ((!npc.interaction || !canInteractActivate(npc.interaction)) && !hasRule) {
+        return;
+      }
+
+      const distance = Math.abs(npc.x - this.playerPosition.x) + Math.abs(npc.y - this.playerPosition.y);
+      if (distance <= 1) {
+        const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+        candidates.push({
+          kind: "npc",
+          label: definition?.name ?? "NPC",
+          interaction: npc.interaction,
+          npc,
+          distance,
+        });
+      }
+    });
+
     return (
       candidates.sort((a, b) => {
         if (a.distance !== b.distance) {
@@ -933,6 +1041,8 @@ export class AdventureScene extends Phaser.Scene {
       interactable
         ? interactable.kind === "pickup"
           ? `Press E to pick up ${interactable.label}`
+          : interactable.kind === "npc"
+            ? `Press E to talk to ${interactable.label}`
           : this.promptForInteraction(interactable.interaction)
         : "",
     );

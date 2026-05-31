@@ -101,6 +101,95 @@ const mainArea: GameArea = {
       once: true,
     },
   ],
+  npcs: [
+    {
+      id: "npc_instance_captain_mira",
+      npcDefinitionId: "npc_captain_mira",
+      areaId: "area_main",
+      x: 3,
+      y: 4,
+      facing: "down",
+      blocksMovement: true,
+      movementMode: "stationary",
+      attributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "villagers",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+    },
+    {
+      id: "npc_instance_guard",
+      npcDefinitionId: "npc_village_guard",
+      areaId: "area_main",
+      x: 11,
+      y: 3,
+      facing: "right",
+      blocksMovement: true,
+      movementMode: "patrol",
+      attributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "guards",
+        alignment: "neutral",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+      patrolPath: {
+        loop: true,
+        points: [
+          { x: 11, y: 3 },
+          { x: 14, y: 3 },
+          { x: 14, y: 5 },
+          { x: 11, y: 5 },
+        ],
+      },
+    },
+    {
+      id: "npc_instance_villager",
+      npcDefinitionId: "npc_villager",
+      areaId: "area_main",
+      x: 5,
+      y: 5,
+      facing: "down",
+      blocksMovement: true,
+      movementMode: "wander",
+      attributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "villagers",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 0.8,
+      },
+      wanderZone: {
+        x: 4,
+        y: 4,
+        width: 3,
+        height: 3,
+      },
+    },
+    {
+      id: "npc_instance_bandit",
+      npcDefinitionId: "npc_bandit",
+      areaId: "area_main",
+      x: 16,
+      y: 8,
+      facing: "left",
+      blocksMovement: true,
+      movementMode: "stationary",
+      attributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "pirates",
+        alignment: "hostile",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+    },
+  ],
   eventBlocks: [
     {
       id: "spawn_start",
@@ -175,6 +264,7 @@ const houseArea: GameArea = {
     },
   ],
   pickups: [],
+  npcs: [],
   eventBlocks: [
     {
       id: "spawn_house_entry",
@@ -268,6 +358,14 @@ export const defaultProject: GameProject = {
       portraitImageId: "portrait_ranger",
       speakerName: "Ari",
       text: "The side door is locked. Find the tavern key first.",
+    },
+    {
+      id: "captain_intro",
+      name: "Captain Mira",
+      backgroundImageId: "river_crossing",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Captain Mira",
+      text: "The tavern keeper knows the river routes. Find a way inside and bring me proof you spoke with them.",
     },
   ],
   progression: [
@@ -378,6 +476,36 @@ export const defaultProject: GameProject = {
     },
   ],
   trackedQuestId: "quest_tavern_access",
+  npcs: [
+    {
+      id: "npc_captain_mira",
+      name: "Captain Mira",
+      description: "A retired sailor watching the road near the tavern.",
+      mapAvatarId: "ranger",
+      portraitId: "portrait_ranger",
+    },
+    {
+      id: "npc_village_guard",
+      name: "Village Guard",
+      description: "A guard walking a short route near the village road.",
+      mapAvatarId: "knight",
+      portraitId: "portrait_knight",
+    },
+    {
+      id: "npc_villager",
+      name: "Villager",
+      description: "A villager wandering through the square.",
+      mapAvatarId: "tinker",
+      portraitId: "portrait_tinker",
+    },
+    {
+      id: "npc_bandit",
+      name: "Bandit",
+      description: "A hostile pirate keeping watch near the edge of the village.",
+      mapAvatarId: "scout",
+      portraitId: "portrait_scout",
+    },
+  ],
   ruleGroups: [
     {
       id: "rule_group_opening",
@@ -408,6 +536,17 @@ export const defaultProject: GameProject = {
       actions: [
         { type: "play_cutscene", cutsceneId: "intro_cutscene" },
         { type: "set_flag", flag: "intro_seen", value: true },
+      ],
+    },
+    {
+      id: "rule_captain_intro",
+      name: "Captain Mira Intro",
+      enabled: true,
+      groupId: "rule_group_opening",
+      trigger: { type: "on_interact", targetId: "npc_instance_captain_mira" },
+      actions: [
+        { type: "play_cutscene", cutsceneId: "captain_intro" },
+        { type: "activate_quest", questId: "quest_tavern_access" },
       ],
     },
     {

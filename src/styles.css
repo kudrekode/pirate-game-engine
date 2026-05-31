@@ -120,6 +120,9 @@ label {
 }
 
 .status-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   overflow: hidden;
   color: #5c6670;
   font-size: 13px;
@@ -179,8 +182,27 @@ label {
 .cutscene-editor,
 .game-state-editor,
 .items-editor,
-.quests-editor {
+.quests-editor,
+.npcs-editor {
   grid-template-columns: minmax(0, 1fr) 260px;
+}
+
+.save-state {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.save-state.saved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.save-state.unsaved {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .items-editor {
@@ -189,6 +211,10 @@ label {
 
 .quests-editor {
   grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.npcs-editor {
+  grid-template-columns: 240px minmax(0, 1fr) 250px;
 }
 
 .progression-editor {
@@ -393,6 +419,10 @@ label {
   background: #7c3aed;
 }
 
+.npc-swatch {
+  background: #0f766e;
+}
+
 .inline-actions {
   display: grid;
   grid-template-columns: 34px 1fr 34px;
@@ -420,6 +450,27 @@ label {
   cursor: crosshair;
   padding: 14px;
   touch-action: none;
+}
+
+.active-area-banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  display: flex;
+  width: max-content;
+  gap: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: rgba(239, 246, 255, 0.96);
+  color: #1e3a5f;
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.active-area-banner span {
+  color: #64748b;
 }
 
 .map-stage.pan-ready {
@@ -728,6 +779,10 @@ label {
   font-size: 13px;
 }
 
+.empty-state.compact {
+  margin: 6px 0;
+}
+
 .split-layout {
   display: grid;
   grid-template-columns: minmax(0, 760px) 260px;
@@ -931,6 +986,126 @@ label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.npc-marker {
+  position: absolute;
+  inset: 3px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.npc-marker-icon {
+  display: grid;
+  place-items: center;
+  width: 72%;
+  height: 72%;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.npc-marker.alignment-friendly .npc-marker-icon {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.62);
+}
+
+.npc-marker.alignment-neutral .npc-marker-icon {
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.68);
+}
+
+.npc-marker.alignment-hostile .npc-marker-icon {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.68);
+}
+
+.npc-overview-item {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 0;
+}
+
+.npc-overview-item:last-child {
+  border-bottom: 0;
+}
+
+.npc-overview-meta {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  text-transform: capitalize;
+}
+
+.npc-marker-label {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  left: 1px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(17, 24, 39, 0.76);
+  color: #ffffff;
+  font-size: 9px;
+  line-height: 1.15;
+  padding: 1px 2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.npc-marker.selected-npc {
+  outline: 3px solid rgba(245, 159, 0, 0.9);
+  outline-offset: -2px;
+}
+
+.map-npc-path-overlay,
+.map-npc-wander-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.map-npc-path-overlay polyline {
+  fill: none;
+  stroke: rgba(15, 118, 110, 0.9);
+  stroke-dasharray: 6 4;
+  stroke-width: 3;
+}
+
+.map-npc-path-overlay circle {
+  fill: #0f766e;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.map-npc-path-overlay text {
+  fill: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  dominant-baseline: central;
+  text-anchor: middle;
+}
+
+.map-npc-wander-zone {
+  display: grid;
+  place-items: start;
+  border: 2px dashed rgba(15, 118, 110, 0.92);
+  background: rgba(15, 118, 110, 0.18);
+  color: #115e59;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px;
+  text-transform: uppercase;
+}
+
+.patrol-point-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
 }
 
 .logic-rule-list {
@@ -1199,7 +1374,7 @@ label {
 
 .bottom-tabs {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   gap: 8px;
   border-top: 1px solid #cbd5df;
   background: #f8fafc;
@@ -1390,6 +1565,7 @@ label {
   .game-state-editor,
   .items-editor,
   .quests-editor,
+  .npcs-editor,
   .split-layout,
   .cutscene-edit-layout {
     grid-template-columns: 1fr;

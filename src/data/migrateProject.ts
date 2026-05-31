@@ -19,6 +19,8 @@ import type {
   Interaction,
   InteractionActivationMode,
   ItemDefinition,
+  NPCDefinition,
+  NPCInstance,
   MapStructure,
   MapTile,
   MovementRule,
@@ -335,6 +337,76 @@ function migratePickups(value: unknown, areaId: string): PickupObject[] {
   });
 }
 
+function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const facing =
+      item.facing === "up" || item.facing === "left" || item.facing === "right"
+        ? item.facing
+        : "down";
+    const movementMode =
+      item.movementMode === "patrol" || item.movementMode === "wander"
+        ? item.movementMode
+        : "stationary";
+    const patrolSource = isRecord(item.patrolPath) ? item.patrolPath : {};
+    const points = Array.isArray(patrolSource.points)
+      ? patrolSource.points.flatMap((point) =>
+          isRecord(point)
+            ? [{ x: readNumber(point.x, 0, 0), y: readNumber(point.y, 0, 0) }]
+            : [],
+        )
+      : [];
+    const wanderSource = isRecord(item.wanderZone) ? item.wanderZone : {};
+    const attributesSource = isRecord(item.attributes) ? item.attributes : {};
+    const maxHealth = readNumber(attributesSource.maxHealth, 100, 1);
+    const movementSpeed = readNumber(attributesSource.movementSpeed ?? item.movementSpeed, 1, 0.1, 10);
+    const alignment =
+      attributesSource.alignment === "neutral" || attributesSource.alignment === "hostile"
+        ? attributesSource.alignment
+        : "friendly";
+
+    return [{
+      id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
+      npcDefinitionId: readString(item.npcDefinitionId, ""),
+      areaId,
+      x: readNumber(item.x, 0, 0),
+      y: readNumber(item.y, 0, 0),
+      facing,
+      blocksMovement: readBoolean(item.blocksMovement, true),
+      movementMode,
+      attributes: {
+        maxHealth,
+        health: readNumber(attributesSource.health, maxHealth, 0, maxHealth),
+        faction: readString(attributesSource.faction, "villagers"),
+        alignment,
+        canInteract: readBoolean(attributesSource.canInteract, true),
+        movementSpeed,
+      },
+      ...(points.length > 0
+        ? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } }
+        : {}),
+      ...(movementMode === "wander"
+        ? {
+            wanderZone: {
+              x: readNumber(wanderSource.x, readNumber(item.x, 0, 0), 0),
+              y: readNumber(wanderSource.y, readNumber(item.y, 0, 0), 0),
+              width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
+              height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
+            },
+          }
+        : {}),
+      interaction: migrateInteraction(item.interaction, "on_interact"),
+    }];
+  });
+}
+
 function migrateArea(value: unknown, index: number, fallback: GameArea): GameArea {
   const source = isRecord(value) ? value : {};
   const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
@@ -353,6 +425,7 @@ function migrateArea(value: unknown, index: number, fallback: GameArea): GameAre
     overlayTiles: migrateOverlayTiles(source.overlayTiles),
     structures: migrateStructures(source.structures),
     pickups: migratePickups(source.pickups, id),
+    npcs: migrateNpcInstances(source.npcs, id),
     eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
     theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
   };
@@ -611,6 +684,28 @@ function migrateItems(value: unknown): ItemDefinition[] {
   });
 }
 
+function migrateNpcDefinitions(value: unknown): NPCDefinition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const description = readString(item.description, "");
+    const portraitId = readString(item.portraitId, "");
+    return [{
+      id: readString(item.id, `npc_${index + 1}`),
+      name: readString(item.name, `NPC ${index + 1}`),
+      ...(description ? { description } : {}),
+      mapAvatarId: readString(item.mapAvatarId, "ranger"),
+      ...(portraitId ? { portraitId } : {}),
+    }];
+  });
+}
+
 function migrateObjectiveCondition(value: unknown): ObjectiveCondition | null {
   if (!isRecord(value)) {
     return null;
@@ -802,6 +897,28 @@ function migrateSingleCondition(value: unknown, fallbackId: string): SingleCondi
     };
   }
 
+  if (value.type === "npc_alignment") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: "npc_alignment",
+      npcId: readString(value.npcId, ""),
+      alignment:
+        value.alignment === "neutral" || value.alignment === "hostile"
+          ? value.alignment
+          : "friendly",
+    };
+  }
+
+  if (value.type === "npc_health_compare") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: "npc_health_compare",
+      npcId: readString(value.npcId, ""),
+      operator: readComparisonOperator(value.operator),
+      value: readNumber(value.value, 0, 0),
+    };
+  }
+
   return null;
 }
 
@@ -876,6 +993,25 @@ function migrateGameAction(value: unknown): GameAction | null {
     (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
   ) {
     return { type: "change_movement_mode", mode: value.mode };
+  }
+
+  if (value.type === "set_npc_alignment") {
+    return {
+      type: "set_npc_alignment",
+      npcId: readString(value.npcId, ""),
+      alignment:
+        value.alignment === "neutral" || value.alignment === "hostile"
+          ? value.alignment
+          : "friendly",
+    };
+  }
+
+  if (value.type === "set_npc_health") {
+    return {
+      type: "set_npc_health",
+      npcId: readString(value.npcId, ""),
+      value: readNumber(value.value, 0, 0),
+    };
   }
 
   if (value.type === "give_item" || value.type === "remove_item") {
@@ -1011,6 +1147,7 @@ export function migrateProject(value: unknown): GameProject {
     items: migrateItems(source.items),
     quests: migrateQuests(source.quests),
     ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
+    npcs: migrateNpcDefinitions(source.npcs),
     ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
   };

@@ -8,6 +8,7 @@ import { MapEditor } from "../editor/sections/MapEditor";
 import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
 import { QuestsEditor } from "../editor/sections/QuestsEditor";
+import { NpcsEditor } from "../editor/sections/NpcsEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -23,7 +24,12 @@ describe("editor smoke tests", () => {
     render(<App />);
 
     expect(screen.getByDisplayValue("Demo Adventure")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Logic" }));
+    expect(screen.getByText("Saved")).toBeInTheDocument();
+    const logicTab = screen.getByRole("button", { name: "Logic" });
+    expect(logicTab).toHaveAttribute("title", "Build plain-English rules using triggers, conditions, and actions.");
+    fireEvent.change(screen.getByDisplayValue("Demo Adventure"), { target: { value: "Edited Adventure" } });
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    fireEvent.click(logicTab);
     expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
   }, 15000);
 
@@ -32,6 +38,17 @@ describe("editor smoke tests", () => {
 
     expect(screen.getByText("Map size")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset Zoom" })).toBeInTheDocument();
+  }, 15000);
+
+  it("edits selected NPC attributes in the Map inspector", () => {
+    render(<MapEditor />);
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Tile 3, 4" }));
+    fireEvent.change(screen.getByLabelText("Faction"), { target: { value: "sailors" } });
+    fireEvent.change(screen.getByLabelText("Alignment"), { target: { value: "neutral" } });
+
+    const captain = useProjectStore.getState().project.areas[0].npcs.find((npc) => npc.id === "npc_instance_captain_mira");
+    expect(captain?.attributes).toMatchObject({ faction: "sailors", alignment: "neutral" });
   }, 15000);
 
   it("renders Logic Builder", () => {
@@ -61,5 +78,14 @@ describe("editor smoke tests", () => {
 
     expect(screen.getAllByText("Get Tavern Access")).toHaveLength(2);
     expect(screen.getByDisplayValue("Have 5 Gold Coins")).toBeInTheDocument();
+  });
+
+  it("renders NPCs Editor", () => {
+    render(<NpcsEditor />);
+
+    expect(screen.getByText("NPC Definition")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Captain Mira")).toBeInTheDocument();
+    expect(screen.getByText("Placed NPC Overview")).toBeInTheDocument();
+    expect(screen.getByText("pirates")).toBeInTheDocument();
   });
 });

@@ -30,6 +30,7 @@ function makeArea(patch: Partial<GameArea> = {}): GameArea {
     eventBlocks: [],
     ...patch,
     pickups: patch.pickups ?? [],
+    npcs: patch.npcs ?? [],
   };
 }
 
@@ -79,6 +80,35 @@ describe("resolveMovementAt", () => {
     expect(resolveMovementAt(makeArea(), -1, 0, player)).toMatchObject({
       canMove: false,
       reason: "Out of bounds.",
+    });
+  });
+
+  it("blocks movement through NPC instances", () => {
+    const area = makeArea({
+      npcs: [
+        {
+          id: "captain",
+          npcDefinitionId: "captain-definition",
+          areaId: "test-area",
+          x: 0,
+          y: 1,
+          blocksMovement: true,
+          movementMode: "stationary",
+          attributes: {
+            maxHealth: 100,
+            health: 100,
+            faction: "villagers",
+            alignment: "friendly",
+            canInteract: true,
+            movementSpeed: 1,
+          },
+        },
+      ],
+    });
+
+    expect(resolveMovementAt(area, 0, 1, player)).toMatchObject({
+      canMove: false,
+      reason: "Blocked by NPC.",
     });
   });
 });

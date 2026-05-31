@@ -32,6 +32,8 @@ const actionTypes: { label: string; value: GameAction["type"] }[] = [
   { label: "Activate quest", value: "activate_quest" },
   { label: "Complete quest", value: "complete_quest" },
   { label: "Fail quest", value: "fail_quest" },
+  { label: "Set NPC alignment", value: "set_npc_alignment" },
+  { label: "Set NPC health", value: "set_npc_health" },
   { label: "End game", value: "end_game" },
 ];
 
@@ -90,6 +92,14 @@ function conditionSummary(expression: ConditionExpression | undefined, labels: R
       : `player does not have${quantity > 1 ? ` at least ${quantity}` : ""} ${itemName}`;
   }
 
+  if (expression.type === "npc_alignment") {
+    return `${labels[expression.npcId] ?? expression.npcId ?? "NPC"} alignment is ${expression.alignment}`;
+  }
+
+  if (expression.type === "npc_health_compare") {
+    return `${labels[expression.npcId] ?? expression.npcId ?? "NPC"} health ${expression.operator} ${expression.value}`;
+  }
+
   if (expression.conditions.length === 0) {
     return "always";
   }
@@ -137,6 +147,14 @@ function actionSummary(action: GameAction, labels: Record<string, string>): stri
     action.type === "fail_quest"
   ) {
     return `${action.type.replace("_", " ")} ${labels[action.questId] ?? (action.questId || "quest")}`;
+  }
+
+  if (action.type === "set_npc_alignment") {
+    return `set ${labels[action.npcId] ?? action.npcId ?? "NPC"} alignment to ${action.alignment}`;
+  }
+
+  if (action.type === "set_npc_health") {
+    return `set ${labels[action.npcId] ?? action.npcId ?? "NPC"} health to ${action.value}`;
   }
 
   return "end game";
@@ -237,10 +255,14 @@ export function ProgressionEditor() {
         })),
         ...area.eventBlocks.map((eventBlock) => ({
           id: eventBlock.id,
-          label: `${area.name}: ${eventBlock.name} (event)`,
+          label: `${area.name}: Event: ${eventBlock.name}`,
+        })),
+        ...area.npcs.map((npc) => ({
+          id: npc.id,
+          label: `${area.name}: NPC: ${project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "NPC"}`,
         })),
       ]),
-    [project.areas],
+    [project.areas, project.npcs],
   );
   const touchTargets = useMemo(
     () =>
@@ -251,6 +273,16 @@ export function ProgressionEditor() {
         })),
       ),
     [project.areas],
+  );
+  const npcTargets = useMemo(
+    () =>
+      project.areas.flatMap((area) =>
+        area.npcs.map((npc) => ({
+          id: npc.id,
+          label: `${area.name}: NPC: ${project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "NPC"}`,
+        })),
+      ),
+    [project.areas, project.npcs],
   );
   const labels = useMemo(
     () =>
@@ -293,6 +325,11 @@ export function ProgressionEditor() {
   }
 
   function deleteRule(id: string) {
+    const rule = project.rules.find((candidate) => candidate.id === id);
+    if (rule && !window.confirm(`Delete rule "${rule.name}"?`)) {
+      return;
+    }
+
     updateProject((draft) => {
       draft.rules = draft.rules.filter((rule) => rule.id !== id);
     });
@@ -376,6 +413,14 @@ export function ProgressionEditor() {
 
     if (type === "has_item" || type === "not_has_item") {
       return { id, type, itemId: itemIds[0] ?? "", quantity: 1 };
+    }
+
+    if (type === "npc_alignment") {
+      return { id, type, npcId: npcTargets[0]?.id ?? "", alignment: "friendly" };
+    }
+
+    if (type === "npc_health_compare") {
+      return { id, type, npcId: npcTargets[0]?.id ?? "", operator: ">=", value: 1 };
     }
 
     const variable = variableNames[0] ?? "";
@@ -485,6 +530,14 @@ export function ProgressionEditor() {
       return { type, questId: project.quests[0]?.id ?? "" };
     }
 
+    if (type === "set_npc_alignment") {
+      return { type, npcId: npcTargets[0]?.id ?? "", alignment: "friendly" };
+    }
+
+    if (type === "set_npc_health") {
+      return { type, npcId: npcTargets[0]?.id ?? "", value: 100 };
+    }
+
     return { type: "end_game" };
   }
 
@@ -574,6 +627,8 @@ export function ProgressionEditor() {
           <option value="variable_compare">Variable comparison</option>
           <option value="has_item">Player has item</option>
           <option value="not_has_item">Player does not have item</option>
+          <option value="npc_alignment">NPC alignment is</option>
+          <option value="npc_health_compare">NPC health comparison</option>
         </select>
         {condition.type === "flag_is" ? (
           <>
@@ -638,7 +693,7 @@ export function ProgressionEditor() {
               value={condition.value}
             />
           </>
-        ) : (
+        ) : condition.type === "has_item" || condition.type === "not_has_item" ? (
           <>
             <select
               onChange={(event) =>
@@ -659,6 +714,28 @@ export function ProgressionEditor() {
               type="number"
               value={condition.quantity ?? 1}
             />
+          </>
+        ) : condition.type === "npc_alignment" ? (
+          <>
+            <select onChange={(event) => replaceCondition(rule, condition.id, { ...condition, npcId: event.target.value })} value={condition.npcId}>
+              {npcTargets.map((npc) => <option key={npc.id} value={npc.id}>{npc.label}</option>)}
+            </select>
+            <span>is</span>
+            <select onChange={(event) => replaceCondition(rule, condition.id, { ...condition, alignment: event.target.value as "friendly" | "neutral" | "hostile" })} value={condition.alignment}>
+              <option value="friendly">friendly</option>
+              <option value="neutral">neutral</option>
+              <option value="hostile">hostile</option>
+            </select>
+          </>
+        ) : (
+          <>
+            <select onChange={(event) => replaceCondition(rule, condition.id, { ...condition, npcId: event.target.value })} value={condition.npcId}>
+              {npcTargets.map((npc) => <option key={npc.id} value={npc.id}>{npc.label}</option>)}
+            </select>
+            <select onChange={(event) => replaceCondition(rule, condition.id, { ...condition, operator: event.target.value as VariableComparisonOperator })} value={condition.operator}>
+              {comparisonOperators.map((operator) => <option key={operator} value={operator}>{operator}</option>)}
+            </select>
+            <input onChange={(event) => replaceCondition(rule, condition.id, { ...condition, value: Number(event.target.value) })} type="number" value={condition.value} />
           </>
         )}
         <button
@@ -823,6 +900,26 @@ export function ProgressionEditor() {
             {project.quests.map((quest) => <option key={quest.id} value={quest.id}>{quest.name}</option>)}
           </select>
         ) : null}
+        {action.type === "set_npc_alignment" ? (
+          <>
+            <select onChange={(event) => setAction({ ...action, npcId: event.target.value })} value={action.npcId}>
+              {npcTargets.map((npc) => <option key={npc.id} value={npc.id}>{npc.label}</option>)}
+            </select>
+            <select onChange={(event) => setAction({ ...action, alignment: event.target.value as "friendly" | "neutral" | "hostile" })} value={action.alignment}>
+              <option value="friendly">friendly</option>
+              <option value="neutral">neutral</option>
+              <option value="hostile">hostile</option>
+            </select>
+          </>
+        ) : null}
+        {action.type === "set_npc_health" ? (
+          <>
+            <select onChange={(event) => setAction({ ...action, npcId: event.target.value })} value={action.npcId}>
+              {npcTargets.map((npc) => <option key={npc.id} value={npc.id}>{npc.label}</option>)}
+            </select>
+            <input min={0} onChange={(event) => setAction({ ...action, value: Math.max(0, Number(event.target.value)) })} type="number" value={action.value} />
+          </>
+        ) : null}
         <button
           className="danger-button compact"
           onClick={() => updateActions(rule, branch, actions.filter((_, actionIndex) => actionIndex !== index))}
@@ -911,6 +1008,7 @@ export function ProgressionEditor() {
     <section className="editor-panel progression-editor">
       <aside className="tool-panel logic-rule-list">
         <div className="panel-title">Rules</div>
+        <p className="helper-text">WHEN / IF / THEN rules. Folders only organise the editor.</p>
         <button className="primary-button full-width" onClick={() => createRule()} type="button">Add rule</button>
 
         <div className="panel-title secondary">Folders</div>
@@ -932,6 +1030,7 @@ export function ProgressionEditor() {
           </div>
           <div className="logic-folder-rules">
             {rulesForFolder().map(renderRuleItem)}
+            {rulesForFolder().length === 0 ? <p className="empty-state compact">No ungrouped rules.</p> : null}
           </div>
         </section>
       </aside>
