@@ -15,9 +15,37 @@ import type {
   Interaction,
   MovementMode,
   MapStructure,
+  NPCInstance,
   PixelAsset,
+  PickupObject,
+  RuleTrigger,
 } from "../types/game";
+import { collectPickup } from "./inventory";
 import { resolveMovementAt } from "./movement";
+import {
+  isNpcTileWalkable,
+  updatePatrolNPC,
+  updateStationaryNPC,
+  updateWanderNPC,
+  type NPCMovementState,
+} from "./npcMovement";
+import {
+  createRuntimeState,
+  fireTrigger,
+  type RuleActionContext,
+  type RuntimeGameState,
+} from "./ruleEngine";
+import {
+  activateQuest,
+  completeQuest as completeRuntimeQuest,
+  createRuntimeQuestState,
+  failQuest,
+  getQuestViews,
+  markAreaEntered,
+  updateQuestProgress,
+  type QuestView,
+  type RuntimeQuestState,
+} from "./questEngine";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -32,8 +60,10 @@ type InteractKeys = {
 };
 
 type Interactable =
-  | { kind: "event"; label: string; interaction: Interaction; eventBlock: EventBlock; distance: number }
-  | { kind: "structure"; label: string; interaction: Interaction; structure: MapStructure; distance: number };
+  | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
+  | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number }
+  | { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
+  | { kind: "npc"; label: string; interaction?: Interaction; npc: NPCInstance; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -77,17 +107,32 @@ export class AdventureScene extends Phaser.Scene {
   private nextMoveAt = 0;
   private statusText?: Phaser.GameObjects.Text;
   private promptText?: Phaser.GameObjects.Text;
-  private runtimeFlags: Record<string, boolean> = {};
+  private debugText?: Phaser.GameObjects.Text;
+  private readonly runtimeState: RuntimeGameState;
+  private readonly runtimeQuestState: RuntimeQuestState;
+  private readonly collectedPickupIds = new Set<string>();
+  private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
+  private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
+  private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
+  private readonly onQuestsChanged?: (quests: QuestView[]) => void;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
 
-  constructor(project: GameProject) {
+  constructor(
+    project: GameProject,
+    onInventoryChanged?: (inventory: Record<string, number>) => void,
+    onQuestsChanged?: (quests: QuestView[]) => void,
+  ) {
     super("AdventureScene");
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
+    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
+    this.runtimeQuestState = createRuntimeQuestState(project.quests);
+    this.onInventoryChanged = onInventoryChanged;
+    this.onQuestsChanged = onQuestsChanged;
   }
 
   create() {
@@ -120,11 +165,32 @@ export class AdventureScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0);
     this.uiLayer.add(this.promptText);
+    this.debugText = this.add
+      .text(this.scale.width - 10, 10, "", {
+        align: "right",
+        backgroundColor: "rgba(17, 24, 39, 0.76)",
+        color: "#d1fae5",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "11px",
+        padding: { x: 7, y: 5 },
+      })
+      .setDepth(105)
+      .setOrigin(1, 0)
+      .setScrollFactor(0);
+    this.uiLayer.add(this.debugText);
+    this.updateDebugPanel();
+    this.notifyInventoryChanged();
+    markAreaEntered(this.runtimeQuestState, this.currentArea.id);
+    this.syncQuestProgress();
 
-    this.processProgression();
+    this.fireRuleTrigger({ type: "on_game_start" }, () => this.processProgression());
   }
 
   update(time: number) {
+    if (!this.isCutsceneOpen && !this.isFinished) {
+      this.updateNpcMovement(time);
+    }
+
     if (
       !this.playerMarker ||
       this.isCutsceneOpen ||
@@ -138,7 +204,23 @@ export class AdventureScene extends Phaser.Scene {
     const interactable = this.findNearestInteractable();
     this.updatePrompt(interactable);
     if (this.wasInteractPressed() && interactable) {
-      this.runInteraction(interactable.interaction, interactable.label);
+      const targetId =
+        interactable.kind === "event"
+          ? interactable.eventBlock.id
+          : interactable.kind === "structure"
+            ? interactable.structure.id
+            : interactable.kind === "npc"
+              ? interactable.npc.id
+              : "";
+      if (interactable.kind === "pickup") {
+        this.collectPickupObject(interactable.pickup);
+        return;
+      }
+      this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
+        if (interactable.interaction && canInteractActivate(interactable.interaction)) {
+          this.runInteraction(interactable.interaction, interactable.label);
+        }
+      });
       return;
     }
 
@@ -250,6 +332,8 @@ export class AdventureScene extends Phaser.Scene {
   private renderMap() {
     this.worldLayer?.removeAll(true);
     this.playerMarker = undefined;
+    this.npcMarkers.clear();
+    this.npcMovementStates.clear();
     const overlayLookup = new Map(
       this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
     );
@@ -341,6 +425,10 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.currentArea.structures.forEach((structure) => this.renderStructure(structure));
+    this.currentArea.pickups
+      .filter((pickup) => !this.isPickupCollected(pickup))
+      .forEach((pickup) => this.renderPickup(pickup));
+    this.currentArea.npcs.forEach((npc) => this.renderNpc(npc));
   }
 
   private createPixelTextures() {
@@ -470,8 +558,10 @@ export class AdventureScene extends Phaser.Scene {
         }
 
         this.showCutscene(cutscene, () => {
-          this.progressionIndex += 1;
-          this.processProgression();
+          this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId: cutscene.id }, () => {
+            this.progressionIndex += 1;
+            this.processProgression();
+          });
         });
         return;
       }
@@ -518,7 +608,8 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    if (nextArea.id !== this.currentArea.id) {
+    const enteredNewArea = nextArea.id !== this.currentArea.id;
+    if (enteredNewArea) {
       this.currentArea = nextArea;
       this.tileSize = nextArea.tileSize;
       this.isMoving = false;
@@ -527,7 +618,97 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.spawnPlayer(eventBlock);
+    markAreaEntered(this.runtimeQuestState, nextArea.id);
+    this.syncQuestProgress();
     this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
+    this.updateDebugPanel();
+    if (enteredNewArea) {
+      this.fireRuleTrigger({ type: "on_area_enter", areaId: nextArea.id });
+    }
+  }
+
+  private renderPickup(pickup: PickupObject) {
+    const item = this.project.items.find((candidate) => candidate.id === pickup.itemId);
+    const centerX = pickup.x * this.tileSize + this.tileSize / 2;
+    const centerY = pickup.y * this.tileSize + this.tileSize / 2;
+    const body = this.add
+      .circle(0, 0, this.tileSize * 0.24, item?.category === "currency" ? 0xfbbf24 : 0x8b5cf6, 0.96)
+      .setStrokeStyle(2, 0xffffff, 0.82);
+    const label = this.add
+      .text(0, 0, item?.name.slice(0, 1).toUpperCase() ?? "?", {
+        color: "#312e81",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "12px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+    const container = this.add.container(centerX, centerY, [body, label]).setDepth(40);
+    container.setName(`pickup:${pickup.id}`);
+    this.worldLayer?.add(container);
+  }
+
+  private renderNpc(npc: NPCInstance) {
+    const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+    const avatar = getVisualPreset(definition?.mapAvatarId ?? "ranger", characterSprites);
+    const centerX = npc.x * this.tileSize + this.tileSize / 2;
+    const centerY = npc.y * this.tileSize + this.tileSize / 2;
+    const body = this.add.circle(0, 0, this.tileSize * 0.3, hexToNumber(avatar.color));
+    const initial = this.add
+      .text(0, 0, definition?.name.slice(0, 1).toUpperCase() ?? "?", {
+        color: avatar.accent,
+        fontFamily: "Arial, sans-serif",
+        fontSize: "15px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+
+    const marker = this.add.container(centerX, centerY, [body, initial]).setDepth(45);
+    this.npcMarkers.set(npc.id, marker);
+    this.worldLayer?.add(marker);
+  }
+
+  private updateNpcMovement(time: number) {
+    this.currentArea.npcs.forEach((npc) => {
+      const runtime = this.npcMovementStates.get(npc.id) ?? {
+        movement: { patrolIndex: 0 },
+        nextMoveAt: time + 450,
+      };
+      if (time < runtime.nextMoveAt) {
+        this.npcMovementStates.set(npc.id, runtime);
+        return;
+      }
+
+      const canMove = (x: number, y: number) =>
+        !(this.playerPosition.x === x && this.playerPosition.y === y) &&
+        isNpcTileWalkable(this.currentArea, npc.id, x, y);
+      const update =
+        npc.movementMode === "patrol"
+          ? updatePatrolNPC(npc, runtime.movement, canMove)
+          : npc.movementMode === "wander"
+            ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
+            : updateStationaryNPC(npc, runtime.movement);
+      const speed = clamp(this.runtimeState.npcs[npc.id]?.movementSpeed ?? npc.attributes.movementSpeed ?? npc.movementSpeed ?? 1, 0.1, 10);
+      const duration = Math.max(80, 360 / speed);
+      const wait = update.moved ? 320 : 560;
+
+      npc.x = update.x;
+      npc.y = update.y;
+      npc.facing = update.facing;
+      this.npcMovementStates.set(npc.id, {
+        movement: update.state,
+        nextMoveAt: time + duration + wait,
+      });
+
+      if (update.moved) {
+        this.tweens.add({
+          targets: this.npcMarkers.get(npc.id),
+          x: npc.x * this.tileSize + this.tileSize / 2,
+          y: npc.y * this.tileSize + this.tileSize / 2,
+          duration,
+          ease: "Sine.easeInOut",
+        });
+      }
+    });
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -565,6 +746,7 @@ export class AdventureScene extends Phaser.Scene {
     this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
     this.playerMarker.setPosition(centerX, centerY);
     this.setStatus(`${this.project.player.name} moved to ${eventBlock.name}.`);
+    this.updateDebugPanel();
   }
 
   private showCutscene(cutscene: Cutscene, onDone: () => void) {
@@ -739,8 +921,9 @@ export class AdventureScene extends Phaser.Scene {
 
     this.currentArea.eventBlocks.forEach((eventBlock) => {
       const interaction = this.getEventInteraction(eventBlock);
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: eventBlock.id });
 
-      if (!interaction || !canInteractActivate(interaction)) {
+      if ((!interaction || !canInteractActivate(interaction)) && !hasRule) {
         return;
       }
 
@@ -758,7 +941,8 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.structures.forEach((structure) => {
-      if (!structure.interaction || !canInteractActivate(structure.interaction)) {
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: structure.id });
+      if ((!structure.interaction || !canInteractActivate(structure.interaction)) && !hasRule) {
         return;
       }
 
@@ -769,6 +953,48 @@ export class AdventureScene extends Phaser.Scene {
           label: structure.name,
           interaction: structure.interaction,
           structure,
+          distance,
+        });
+      }
+    });
+
+    this.currentArea.pickups.forEach((pickup) => {
+      if (pickup.pickupMode !== "on_interact" || this.isPickupCollected(pickup)) {
+        return;
+      }
+
+      const distance =
+        Math.abs(pickup.x - this.playerPosition.x) + Math.abs(pickup.y - this.playerPosition.y);
+      if (distance <= 1) {
+        const item = this.project.items.find((candidate) => candidate.id === pickup.itemId);
+        candidates.push({
+          kind: "pickup",
+          label: item?.name ?? "item",
+          pickup,
+          distance,
+        });
+      }
+    });
+
+    this.currentArea.npcs.forEach((npc) => {
+      const attributes = this.runtimeState.npcs[npc.id] ?? npc.attributes;
+      if (!attributes.canInteract) {
+        return;
+      }
+
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: npc.id });
+      if ((!npc.interaction || !canInteractActivate(npc.interaction)) && !hasRule) {
+        return;
+      }
+
+      const distance = Math.abs(npc.x - this.playerPosition.x) + Math.abs(npc.y - this.playerPosition.y);
+      if (distance <= 1) {
+        const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+        candidates.push({
+          kind: "npc",
+          label: definition?.name ?? "NPC",
+          interaction: npc.interaction,
+          npc,
           distance,
         });
       }
@@ -811,10 +1037,22 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    this.promptText.setText(interactable ? this.promptForInteraction(interactable.interaction) : "");
+    this.promptText.setText(
+      interactable
+        ? interactable.kind === "pickup"
+          ? `Press E to pick up ${interactable.label}`
+          : interactable.kind === "npc"
+            ? `Press E to talk to ${interactable.label}`
+          : this.promptForInteraction(interactable.interaction)
+        : "",
+    );
   }
 
-  private promptForInteraction(interaction: Interaction): string {
+  private promptForInteraction(interaction?: Interaction): string {
+    if (!interaction) {
+      return "Press E to interact";
+    }
+
     if (interaction.prompt) {
       return interaction.prompt;
     }
@@ -870,7 +1108,9 @@ export class AdventureScene extends Phaser.Scene {
 
       this.promptText?.setText("");
       this.showCutscene(cutscene, () => {
-        this.updatePrompt(this.findNearestInteractable());
+        this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId: cutscene.id }, () => {
+          this.updatePrompt(this.findNearestInteractable());
+        });
       });
       return;
     }
@@ -882,7 +1122,9 @@ export class AdventureScene extends Phaser.Scene {
       }
 
       const value = interaction.value ?? true;
-      this.runtimeFlags[interaction.flag] = value;
+      this.runtimeState.flags[interaction.flag] = value;
+      this.syncQuestProgress();
+      this.updateDebugPanel();
       this.setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
       return;
     }
@@ -893,7 +1135,46 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.currentMovementMode = interaction.mode;
+    this.updateDebugPanel();
     this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
+  }
+
+  private collectPickupObject(pickup: PickupObject): boolean {
+    if (this.isPickupCollected(pickup)) {
+      return false;
+    }
+
+    const collected = collectPickup(
+      pickup,
+      this.runtimeState.inventory,
+      this.project.items,
+      this.collectedPickupIds,
+    );
+    if (!collected) {
+      return false;
+    }
+
+    if (pickup.collectedFlag) {
+      this.runtimeState.flags[pickup.collectedFlag] = true;
+    }
+
+    const item = this.project.items.find((candidate) => candidate.id === pickup.itemId);
+    if (pickup.once) {
+      this.worldLayer?.getByName(`pickup:${pickup.id}`)?.destroy();
+    }
+    this.notifyInventoryChanged();
+    this.syncQuestProgress();
+    this.updateDebugPanel();
+    this.setStatus(`Picked up ${item?.name ?? pickup.itemId} x${pickup.quantity}.`);
+    return true;
+  }
+
+  private isPickupCollected(pickup: PickupObject): boolean {
+    return Boolean(
+      pickup.once &&
+        (this.collectedPickupIds.has(pickup.id) ||
+          (pickup.collectedFlag && this.runtimeState.flags[pickup.collectedFlag])),
+    );
   }
 
   private tryMove(deltaX: number, deltaY: number, time: number) {
@@ -930,7 +1211,7 @@ export class AdventureScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.isMoving = false;
-        if (this.checkTouchInteractions()) {
+        if (this.checkTouchInteractions(() => this.checkTrigger())) {
           return;
         }
         this.checkTrigger();
@@ -943,17 +1224,36 @@ export class AdventureScene extends Phaser.Scene {
     return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
   }
 
-  private checkTouchInteractions(): boolean {
+  private checkTouchInteractions(onDone: () => void): boolean {
+    const pickup = this.currentArea.pickups.find(
+      (candidate) =>
+        candidate.pickupMode === "on_touch" &&
+        candidate.x === this.playerPosition.x &&
+        candidate.y === this.playerPosition.y,
+    );
+    if (pickup && this.collectPickupObject(pickup)) {
+      onDone();
+      return true;
+    }
+
     const eventBlock = this.currentArea.eventBlocks.find(
       (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
     );
     const interaction = eventBlock ? this.getEventInteraction(eventBlock) : undefined;
+    const hasRule = eventBlock
+      ? this.hasRuleTrigger({ type: "on_touch", targetId: eventBlock.id })
+      : false;
 
-    if (!eventBlock || !interaction || !canTouchActivate(interaction)) {
+    if (!eventBlock || ((!interaction || !canTouchActivate(interaction)) && !hasRule)) {
       return false;
     }
 
-    this.runInteraction(interaction, eventBlock.name);
+    this.fireRuleTrigger({ type: "on_touch", targetId: eventBlock.id }, () => {
+      if (interaction && canTouchActivate(interaction)) {
+        this.runInteraction(interaction, eventBlock.name);
+      }
+      onDone();
+    });
     return true;
   }
 
@@ -994,6 +1294,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
+    // TODO: Migrate legacy direct interactions into friendly rules once the rule editor covers every use case.
     if (eventBlock.interaction) {
       return eventBlock.interaction;
     }
@@ -1007,6 +1308,131 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     return undefined;
+  }
+
+  private hasRuleTrigger(trigger: RuleTrigger): boolean {
+    return this.project.rules.some((rule) => {
+      if (!rule.enabled || rule.trigger.type !== trigger.type) {
+        return false;
+      }
+
+      if (rule.trigger.type === "on_interact" && trigger.type === "on_interact") {
+        return rule.trigger.targetId === trigger.targetId;
+      }
+
+      if (rule.trigger.type === "on_touch" && trigger.type === "on_touch") {
+        return rule.trigger.targetId === trigger.targetId;
+      }
+
+      if (rule.trigger.type === "on_area_enter" && trigger.type === "on_area_enter") {
+        return rule.trigger.areaId === trigger.areaId;
+      }
+
+      if (rule.trigger.type === "on_cutscene_end" && trigger.type === "on_cutscene_end") {
+        return rule.trigger.cutsceneId === trigger.cutsceneId;
+      }
+
+      return rule.trigger.type === "on_game_start" && trigger.type === "on_game_start";
+    });
+  }
+
+  private getRuleContext(): RuleActionContext {
+    return {
+      state: this.runtimeState,
+      playCutscene: (cutsceneId, onDone) => {
+        const cutscene = this.project.cutscenes.find((candidate) => candidate.id === cutsceneId);
+        if (!cutscene) {
+          this.setStatus(`Rule cutscene missing: ${cutsceneId}.`);
+          onDone();
+          return;
+        }
+
+        this.promptText?.setText("");
+        this.showCutscene(cutscene, () => {
+          this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId }, onDone);
+        });
+      },
+      teleport: (areaId, eventBlockId) => {
+        const eventBlock = this.findEventBlock(eventBlockId, areaId);
+        if (!eventBlock) {
+          this.setStatus(`Rule teleport target missing: ${eventBlockId}.`);
+          return;
+        }
+
+        this.movePlayerToArea(areaId, eventBlock);
+      },
+      changeMovementMode: (mode) => {
+        this.currentMovementMode = mode;
+        this.setStatus(`Movement mode: ${mode}.`);
+        this.updateDebugPanel();
+      },
+      endGame: () => this.showEndMessage(),
+      activateQuest: (questId) => {
+        activateQuest(this.runtimeQuestState, questId);
+        this.syncQuestProgress();
+      },
+      completeQuest: (questId) => {
+        if (completeRuntimeQuest(this.runtimeQuestState, questId, this.runtimeState, this.project.items)) {
+          this.notifyInventoryChanged();
+          this.updateDebugPanel();
+        }
+        this.syncQuestProgress();
+      },
+      failQuest: (questId) => {
+        failQuest(this.runtimeQuestState, questId);
+        this.syncQuestProgress();
+      },
+      itemDefinitions: this.project.items,
+      stateChanged: () => {
+        this.updateDebugPanel();
+        this.notifyInventoryChanged();
+        this.syncQuestProgress();
+      },
+    };
+  }
+
+  private fireRuleTrigger(trigger: RuleTrigger, onDone: () => void = () => undefined) {
+    fireTrigger(trigger, this.project.rules, this.getRuleContext(), onDone);
+  }
+
+  private updateDebugPanel() {
+    if (!this.debugText) {
+      return;
+    }
+
+    const flags = Object.entries(this.runtimeState.flags)
+      .map(([name, value]) => `${name}=${value ? "true" : "false"}`)
+      .join(", ");
+    const variables = Object.entries(this.runtimeState.variables)
+      .map(([name, value]) => `${name}=${value}`)
+      .join(", ");
+    const inventory = Object.entries(this.runtimeState.inventory.items)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([itemId, quantity]) => `${itemId}=${quantity}`)
+      .join(", ");
+
+    this.debugText.setText(
+      [`Area: ${this.currentArea.name}`, `Mode: ${this.currentMovementMode}`, `Flags: ${flags || "-"}`, `Vars: ${variables || "-"}`, `Items: ${inventory || "-"}`].join(
+        "\n",
+      ),
+    );
+  }
+
+  private notifyInventoryChanged() {
+    this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
+  }
+
+  private syncQuestProgress() {
+    const stateChanged = updateQuestProgress(
+      this.runtimeQuestState,
+      this.runtimeState,
+      this.project.items,
+    );
+    if (stateChanged) {
+      this.notifyInventoryChanged();
+      this.updateDebugPanel();
+    }
+    this.onQuestsChanged?.(getQuestViews(this.runtimeQuestState, this.runtimeState));
   }
 
   private setStatus(message: string) {

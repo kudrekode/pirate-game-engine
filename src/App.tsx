@@ -33,6 +33,8 @@ export default function App() {
   const [runtimeProject, setRuntimeProject] = useState<GameProject | null>(null);
   const [statusMessage, setStatusMessage] = useState("Unsaved changes stay in this browser tab.");
   const importInputRef = useRef<HTMLInputElement>(null);
+  const savedProjectSnapshotRef = useRef(JSON.stringify(project));
+  const hasUnsavedChanges = JSON.stringify(project) !== savedProjectSnapshotRef.current;
 
   const activeSection = useMemo(
     () => editorSections.find((section) => section.id === activeSectionId) ?? editorSections[0],
@@ -42,12 +44,14 @@ export default function App() {
 
   function handleSave() {
     saveToLocalStorage();
+    savedProjectSnapshotRef.current = JSON.stringify(project);
     setStatusMessage("Saved to localStorage.");
   }
 
   function handleLoad() {
     try {
       const loaded = loadFromLocalStorage();
+      savedProjectSnapshotRef.current = JSON.stringify(useProjectStore.getState().project);
       setRuntimeProject(null);
       setStatusMessage(loaded ? "Loaded from localStorage." : "No saved project found.");
     } catch (error) {
@@ -66,6 +70,7 @@ export default function App() {
       .then((raw) => {
         const importedProject = JSON.parse(raw) as GameProject;
         setProject(importedProject);
+        savedProjectSnapshotRef.current = JSON.stringify(useProjectStore.getState().project);
         setRuntimeProject(null);
         setStatusMessage(`Imported ${file.name}.`);
       })
@@ -92,7 +97,12 @@ export default function App() {
           </label>
         </div>
 
-        <div className="status-line">{statusMessage}</div>
+        <div className="status-line">
+          <span className={`save-state ${hasUnsavedChanges ? "unsaved" : "saved"}`}>
+            {hasUnsavedChanges ? "Unsaved changes" : "Saved"}
+          </span>
+          <span>{statusMessage}</span>
+        </div>
 
         <div className="top-actions">
           <button onClick={handleSave} type="button">
@@ -110,6 +120,7 @@ export default function App() {
           <button
             onClick={() => {
               resetProject();
+              savedProjectSnapshotRef.current = JSON.stringify(useProjectStore.getState().project);
               setRuntimeProject(null);
               setStatusMessage("Reset to demo project.");
             }}
@@ -147,6 +158,7 @@ export default function App() {
                 className={activeSectionId === section.id ? "active" : ""}
                 key={section.id}
                 onClick={() => setActiveSectionId(section.id)}
+                title={section.description}
                 type="button"
               >
                 {section.label}
