@@ -9,6 +9,7 @@ export type GameProject = {
   cutscenes: Cutscene[];
   progression: ProgressionStep[];
   gameState: GameStateConfig;
+  ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
 
@@ -200,10 +201,19 @@ export type GameRule = {
   id: string;
   name: string;
   enabled: boolean;
+  groupId?: string;
   trigger: RuleTrigger;
-  conditions: Condition[];
+  conditionTree?: ConditionExpression;
   actions: GameAction[];
   elseActions?: GameAction[];
+};
+
+export type RuleGroup = {
+  id: string;
+  name: string;
+  description?: string;
+  collapsed?: boolean;
+  parentGroupId?: string;
 };
 
 export type RuleTrigger =
@@ -215,9 +225,19 @@ export type RuleTrigger =
 
 export type VariableComparisonOperator = "==" | "!=" | ">" | "<" | ">=" | "<=";
 
-export type Condition =
-  | { type: "flag_is"; flag: string; value: boolean }
+export type ConditionExpression = SingleCondition | ConditionGroup;
+
+export type ConditionGroup = {
+  id: string;
+  type: "group";
+  operator: "AND" | "OR";
+  conditions: ConditionExpression[];
+};
+
+export type SingleCondition =
+  | { id: string; type: "flag_is"; flag: string; value: boolean }
   | {
+      id: string;
       type: "variable_compare";
       variable: string;
       operator: VariableComparisonOperator;

@@ -885,6 +885,37 @@ label {
   gap: 8px;
 }
 
+.folder-create-row,
+.logic-folder-heading {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.folder-create-row input,
+.logic-folder-heading input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.logic-folder {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid #d8e0e7;
+  padding-top: 8px;
+}
+
+.logic-folder-heading.static {
+  color: #243b53;
+  font-size: 13px;
+}
+
+.logic-folder-rules {
+  display: grid;
+  gap: 6px;
+  padding-left: 8px;
+}
+
 .logic-rule-item {
   display: grid;
   gap: 3px;
@@ -931,6 +962,17 @@ label {
   padding-top: 12px;
 }
 
+.rule-summary {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #cbd5df;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #425466;
+  font-size: 12px;
+  padding: 9px 10px;
+}
+
 .logic-block-heading,
 .logic-sentence strong {
   color: #2f9e44;
@@ -943,6 +985,40 @@ label {
 .logic-sentence select {
   flex: 1 1 140px;
   min-width: 120px;
+}
+
+.condition-group {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #cbd5df;
+  border-radius: 6px;
+  background: #fbfcfd;
+  padding: 9px;
+}
+
+.condition-group.nested {
+  border-left: 4px solid #93a4b3;
+  background: #f8fafc;
+}
+
+.condition-group-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  color: #425466;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.condition-group-children {
+  display: grid;
+  gap: 7px;
+}
+
+.condition-row {
+  border-left: 3px solid #d8e0e7;
+  padding-left: 8px;
 }
 
 .legacy-progression {

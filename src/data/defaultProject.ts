@@ -277,13 +277,33 @@ export const defaultProject: GameProject = {
       reputation: 0,
     },
   },
+  ruleGroups: [
+    {
+      id: "rule_group_opening",
+      name: "Opening / Tutorial",
+    },
+    {
+      id: "rule_group_tavern",
+      name: "Tavern",
+    },
+    {
+      id: "rule_group_cave",
+      name: "Cave",
+    },
+  ],
   rules: [
     {
       id: "rule_intro",
       name: "Intro",
       enabled: true,
+      groupId: "rule_group_opening",
       trigger: { type: "on_game_start" },
-      conditions: [{ type: "flag_is", flag: "intro_seen", value: false }],
+      conditionTree: {
+        id: "condition_group_intro",
+        type: "group",
+        operator: "AND",
+        conditions: [{ id: "condition_intro_seen", type: "flag_is", flag: "intro_seen", value: false }],
+      },
       actions: [
         { type: "play_cutscene", cutsceneId: "intro_cutscene" },
         { type: "set_flag", flag: "intro_seen", value: true },
@@ -293,8 +313,16 @@ export const defaultProject: GameProject = {
       id: "rule_enter_tavern",
       name: "Enter Tavern",
       enabled: true,
+      groupId: "rule_group_tavern",
       trigger: { type: "on_interact", targetId: "structure_demo_house" },
-      conditions: [{ type: "variable_compare", variable: "gold", operator: ">=", value: 5 }],
+      conditionTree: {
+        id: "condition_group_enter_tavern",
+        type: "group",
+        operator: "AND",
+        conditions: [
+          { id: "condition_tavern_gold", type: "variable_compare", variable: "gold", operator: ">=", value: 5 },
+        ],
+      },
       actions: [
         { type: "change_variable", variable: "gold", amount: -5 },
         { type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" },
@@ -305,8 +333,16 @@ export const defaultProject: GameProject = {
       id: "rule_tavern_intro",
       name: "Tavern Intro",
       enabled: true,
+      groupId: "rule_group_tavern",
       trigger: { type: "on_area_enter", areaId: "area_house" },
-      conditions: [{ type: "flag_is", flag: "tavern_intro_seen", value: false }],
+      conditionTree: {
+        id: "condition_group_tavern_intro",
+        type: "group",
+        operator: "AND",
+        conditions: [
+          { id: "condition_tavern_intro_seen", type: "flag_is", flag: "tavern_intro_seen", value: false },
+        ],
+      },
       actions: [
         { type: "play_cutscene", cutsceneId: "tavern_welcome" },
         { type: "set_flag", flag: "tavern_intro_seen", value: true },
@@ -316,8 +352,8 @@ export const defaultProject: GameProject = {
       id: "rule_gate_touch",
       name: "Open Cave At Gate",
       enabled: true,
+      groupId: "rule_group_cave",
       trigger: { type: "on_touch", targetId: "trigger_gate" },
-      conditions: [],
       actions: [{ type: "set_flag", flag: "cave_open", value: true }],
     },
   ],

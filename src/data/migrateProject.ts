@@ -5,7 +5,8 @@ import { defaultTileStyles, tilePresets } from "./presets";
 import type {
   AreaLink,
   CameraConfig,
-  Condition,
+  ConditionExpression,
+  ConditionGroup,
   Cutscene,
   EventBlock,
   GameAction,
@@ -25,7 +26,9 @@ import type {
   PixelAsset,
   ProgressionAction,
   ProgressionStep,
+  RuleGroup,
   RuleTrigger,
+  SingleCondition,
   TileStyleConfig,
   VariableComparisonOperator,
 } from "../types/game";
@@ -560,13 +563,14 @@ function migrateRuleTrigger(value: unknown): RuleTrigger {
   return { type: "on_game_start" };
 }
 
-function migrateCondition(value: unknown): Condition | null {
+function migrateSingleCondition(value: unknown, fallbackId: string): SingleCondition | null {
   if (!isRecord(value)) {
     return null;
   }
 
   if (value.type === "flag_is") {
     return {
+      id: readString(value.id, fallbackId),
       type: "flag_is",
       flag: readString(value.flag, ""),
       value: readBoolean(value.value, true),
@@ -575,6 +579,7 @@ function migrateCondition(value: unknown): Condition | null {
 
   if (value.type === "variable_compare") {
     return {
+      id: readString(value.id, fallbackId),
       type: "variable_compare",
       variable: readString(value.variable, ""),
       operator: readComparisonOperator(value.operator),
@@ -583,6 +588,31 @@ function migrateCondition(value: unknown): Condition | null {
   }
 
   return null;
+}
+
+function migrateConditionExpression(value: unknown, fallbackId: string): ConditionExpression | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "group") {
+    const groupId = readString(value.id, fallbackId);
+    const conditions = Array.isArray(value.conditions)
+      ? value.conditions.flatMap((condition, index) => {
+          const migrated = migrateConditionExpression(condition, `${groupId}_${index + 1}`);
+          return migrated ? [migrated] : [];
+        })
+      : [];
+
+    return {
+      id: groupId,
+      type: "group",
+      operator: value.operator === "OR" ? "OR" : "AND",
+      conditions,
+    };
+  }
+
+  return migrateSingleCondition(value, fallbackId);
 }
 
 function migrateGameAction(value: unknown): GameAction | null {
@@ -657,22 +687,62 @@ function migrateRules(value: unknown): GameRule[] {
       return [];
     }
 
-    const conditions = Array.isArray(rule.conditions)
-      ? rule.conditions.flatMap((condition) => {
-          const migrated = migrateCondition(condition);
+    const ruleId = readString(rule.id, `rule_${index + 1}`);
+    const legacyConditions = Array.isArray(rule.conditions)
+      ? rule.conditions.flatMap((condition, conditionIndex) => {
+          const migrated = migrateSingleCondition(
+            condition,
+            `${ruleId}_condition_${conditionIndex + 1}`,
+          );
           return migrated ? [migrated] : [];
         })
       : [];
+    const conditionTree =
+      migrateConditionExpression(rule.conditionTree, `${ruleId}_conditions`) ??
+      (legacyConditions.length > 0
+        ? ({
+            id: `${ruleId}_conditions`,
+            type: "group",
+            operator: "AND",
+            conditions: legacyConditions,
+          } satisfies ConditionGroup)
+        : undefined);
+    const groupId = readString(rule.groupId, "");
 
     return [
       {
-        id: readString(rule.id, `rule_${index + 1}`),
+        id: ruleId,
         name: readString(rule.name, `Rule ${index + 1}`),
         enabled: readBoolean(rule.enabled, true),
+        ...(groupId ? { groupId } : {}),
         trigger: migrateRuleTrigger(rule.trigger),
-        conditions,
+        ...(conditionTree ? { conditionTree } : {}),
         actions: migrateActions(rule.actions),
         elseActions: migrateActions(rule.elseActions),
+      },
+    ];
+  });
+}
+
+function migrateRuleGroups(value: unknown): RuleGroup[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((group, index) => {
+    if (!isRecord(group)) {
+      return [];
+    }
+
+    const description = readString(group.description, "");
+    const parentGroupId = readString(group.parentGroupId, "");
+    return [
+      {
+        id: readString(group.id, `rule_group_${index + 1}`),
+        name: readString(group.name, `Folder ${index + 1}`),
+        ...(description ? { description } : {}),
+        collapsed: readBoolean(group.collapsed, false),
+        ...(parentGroupId ? { parentGroupId } : {}),
       },
     ];
   });
@@ -704,6 +774,7 @@ export function migrateProject(value: unknown): GameProject {
       : cloneProject(defaultProject).cutscenes,
     progression: migrateProgression(source.progression, activeAreaId),
     gameState: migrateGameState(source.gameState),
+    ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
   };
 }

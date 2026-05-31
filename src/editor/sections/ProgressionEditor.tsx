@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
-  Condition,
+  ConditionExpression,
+  ConditionGroup,
   GameAction,
   GameRule,
   GameStateValue,
+  RuleGroup,
   RuleTrigger,
+  SingleCondition,
   VariableComparisonOperator,
 } from "../../types/game";
 
@@ -61,10 +64,135 @@ function triggerSummary(trigger: RuleTrigger, labels: Record<string, string>): s
   return `WHEN cutscene ends: ${labels[trigger.cutsceneId] ?? (trigger.cutsceneId || "a cutscene")}`;
 }
 
+function conditionSummary(expression: ConditionExpression | undefined): string {
+  if (!expression) {
+    return "always";
+  }
+
+  if (expression.type === "flag_is") {
+    return `${expression.flag || "flag"} is ${expression.value ? "true" : "false"}`;
+  }
+
+  if (expression.type === "variable_compare") {
+    return `${expression.variable || "variable"} ${expression.operator} ${expression.value}`;
+  }
+
+  if (expression.conditions.length === 0) {
+    return "always";
+  }
+
+  return expression.conditions
+    .map((condition) => {
+      const summary = conditionSummary(condition);
+      return condition.type === "group" ? `(${summary})` : summary;
+    })
+    .join(` ${expression.operator} `);
+}
+
+function actionSummary(action: GameAction, labels: Record<string, string>): string {
+  if (action.type === "set_flag") {
+    return `set ${action.flag || "flag"} to ${action.value ? "true" : "false"}`;
+  }
+
+  if (action.type === "change_variable") {
+    return `change ${action.variable || "variable"} by ${action.amount}`;
+  }
+
+  if (action.type === "set_variable") {
+    return `set ${action.variable || "variable"} to ${action.value}`;
+  }
+
+  if (action.type === "play_cutscene") {
+    return `play cutscene ${labels[action.cutsceneId] ?? (action.cutsceneId || "cutscene")}`;
+  }
+
+  if (action.type === "teleport") {
+    return `teleport to ${labels[action.areaId] ?? (action.areaId || "area")}`;
+  }
+
+  if (action.type === "change_movement_mode") {
+    return `change movement mode to ${action.mode}`;
+  }
+
+  return "end game";
+}
+
+function ruleSummary(rule: GameRule, labels: Record<string, string>): string[] {
+  return [
+    triggerSummary(rule.trigger, labels),
+    `IF ${conditionSummary(rule.conditionTree)}`,
+    `THEN ${rule.actions.map((action) => actionSummary(action, labels)).join(", ") || "do nothing"}`,
+    ...(rule.elseActions && rule.elseActions.length > 0
+      ? [`ELSE ${rule.elseActions.map((action) => actionSummary(action, labels)).join(", ")}`]
+      : []),
+  ];
+}
+
+function updateExpression(
+  expression: ConditionExpression,
+  id: string,
+  updater: (current: ConditionExpression) => ConditionExpression,
+): ConditionExpression {
+  if (expression.id === id) {
+    return updater(expression);
+  }
+
+  if (expression.type !== "group") {
+    return expression;
+  }
+
+  return {
+    ...expression,
+    conditions: expression.conditions.map((condition) => updateExpression(condition, id, updater)),
+  };
+}
+
+function removeExpression(
+  expression: ConditionExpression | undefined,
+  id: string,
+): ConditionExpression | undefined {
+  if (!expression || expression.id === id) {
+    return undefined;
+  }
+
+  if (expression.type !== "group") {
+    return expression;
+  }
+
+  return {
+    ...expression,
+    conditions: expression.conditions.flatMap((condition) => {
+      const nextCondition = removeExpression(condition, id);
+      return nextCondition ? [nextCondition] : [];
+    }),
+  };
+}
+
+function cloneExpression(expression: ConditionExpression | undefined): ConditionExpression | undefined {
+  if (!expression) {
+    return undefined;
+  }
+
+  if (expression.type !== "group") {
+    return { ...expression, id: makeId("condition") };
+  }
+
+  return {
+    ...expression,
+    id: makeId("condition_group"),
+    conditions: expression.conditions.flatMap((condition) => {
+      const nextCondition = cloneExpression(condition);
+      return nextCondition ? [nextCondition] : [];
+    }),
+  };
+}
+
 export function ProgressionEditor() {
   const project = useProjectStore((state) => state.project);
   const updateProject = useProjectStore((state) => state.updateProject);
   const [selectedRuleId, setSelectedRuleId] = useState(project.rules[0]?.id ?? "");
+  const [newFolderName, setNewFolderName] = useState("");
+  const [folderError, setFolderError] = useState("");
 
   const selectedRule = project.rules.find((rule) => rule.id === selectedRuleId);
   const flagNames = Object.keys(project.gameState.flags);
@@ -72,6 +200,7 @@ export function ProgressionEditor() {
   const firstArea = project.areas[0];
   const firstEventBlock = firstArea?.eventBlocks[0];
   const firstCutscene = project.cutscenes[0];
+  const folderIds = new Set(project.ruleGroups.map((group) => group.id));
 
   const interactTargets = useMemo(
     () =>
@@ -120,13 +249,13 @@ export function ProgressionEditor() {
     });
   }
 
-  function createRule() {
+  function createRule(groupId?: string) {
     const rule: GameRule = {
       id: makeId("rule"),
       name: `Rule ${project.rules.length + 1}`,
       enabled: true,
+      ...(groupId ? { groupId } : {}),
       trigger: { type: "on_game_start" },
-      conditions: [],
       actions: [],
     };
     updateProject((draft) => {
@@ -142,15 +271,54 @@ export function ProgressionEditor() {
   }
 
   function duplicateRule(rule: GameRule) {
-    const duplicate = {
-      ...JSON.parse(JSON.stringify(rule)),
+    const duplicate: GameRule = {
+      ...rule,
       id: makeId("rule"),
       name: `${rule.name} Copy`,
-    } as GameRule;
+      conditionTree: cloneExpression(rule.conditionTree),
+      actions: rule.actions.map((action) => ({ ...action })),
+      elseActions: rule.elseActions?.map((action) => ({ ...action })),
+    };
     updateProject((draft) => {
       draft.rules.push(duplicate);
     });
     setSelectedRuleId(duplicate.id);
+  }
+
+  function createFolder() {
+    const name = newFolderName.trim();
+    if (!name) {
+      setFolderError("Enter a folder name.");
+      return;
+    }
+
+    if (project.ruleGroups.some((group) => group.name.toLowerCase() === name.toLowerCase())) {
+      setFolderError(`"${name}" already exists.`);
+      return;
+    }
+
+    updateProject((draft) => {
+      draft.ruleGroups.push({ id: makeId("rule_group"), name });
+    });
+    setNewFolderName("");
+    setFolderError("");
+  }
+
+  function updateFolder(id: string, patch: Partial<RuleGroup>) {
+    updateProject((draft) => {
+      draft.ruleGroups = draft.ruleGroups.map((group) =>
+        group.id === id ? { ...group, ...patch } : group,
+      );
+    });
+  }
+
+  function deleteFolder(id: string) {
+    updateProject((draft) => {
+      draft.ruleGroups = draft.ruleGroups.filter((group) => group.id !== id);
+      draft.rules = draft.rules.map((rule) =>
+        rule.groupId === id ? { ...rule, groupId: undefined } : rule,
+      );
+    });
   }
 
   function makeTrigger(type: RuleTrigger["type"]): RuleTrigger {
@@ -173,18 +341,78 @@ export function ProgressionEditor() {
     return { type: "on_game_start" };
   }
 
-  function makeCondition(type: Condition["type"]): Condition {
+  function makeCondition(type: SingleCondition["type"], id = makeId("condition")): SingleCondition {
     if (type === "flag_is") {
-      return { type, flag: flagNames[0] ?? "", value: true };
+      return { id, type, flag: flagNames[0] ?? "", value: true };
     }
 
     const variable = variableNames[0] ?? "";
     return {
+      id,
       type,
       variable,
       operator: "==",
       value: project.gameState.variables[variable] ?? 0,
     };
+  }
+
+  function makeConditionGroup(operator: ConditionGroup["operator"] = "AND"): ConditionGroup {
+    return {
+      id: makeId("condition_group"),
+      type: "group",
+      operator,
+      conditions: [],
+    };
+  }
+
+  function addRootCondition(rule: GameRule, condition: ConditionExpression) {
+    if (!rule.conditionTree) {
+      updateRule({ ...rule, conditionTree: { ...makeConditionGroup(), conditions: [condition] } });
+      return;
+    }
+
+    if (rule.conditionTree.type === "group") {
+      updateRule({
+        ...rule,
+        conditionTree: {
+          ...rule.conditionTree,
+          conditions: [...rule.conditionTree.conditions, condition],
+        },
+      });
+      return;
+    }
+
+    updateRule({
+      ...rule,
+      conditionTree: { ...makeConditionGroup(), conditions: [rule.conditionTree, condition] },
+    });
+  }
+
+  function addGroupCondition(rule: GameRule, groupId: string, condition: ConditionExpression) {
+    if (!rule.conditionTree) {
+      addRootCondition(rule, condition);
+      return;
+    }
+
+    updateRule({
+      ...rule,
+      conditionTree: updateExpression(rule.conditionTree, groupId, (expression) =>
+        expression.type === "group"
+          ? { ...expression, conditions: [...expression.conditions, condition] }
+          : expression,
+      ),
+    });
+  }
+
+  function replaceCondition(rule: GameRule, id: string, condition: ConditionExpression) {
+    if (!rule.conditionTree) {
+      return;
+    }
+
+    updateRule({
+      ...rule,
+      conditionTree: updateExpression(rule.conditionTree, id, () => condition),
+    });
   }
 
   function makeAction(type: GameAction["type"]): GameAction {
@@ -225,7 +453,9 @@ export function ProgressionEditor() {
       <div className="logic-sentence">
         <strong>WHEN</strong>
         <select
-          onChange={(event) => updateRule({ ...rule, trigger: makeTrigger(event.target.value as RuleTrigger["type"]) })}
+          onChange={(event) =>
+            updateRule({ ...rule, trigger: makeTrigger(event.target.value as RuleTrigger["type"]) })
+          }
           value={rule.trigger.type}
         >
           {triggerTypes.map((trigger) => (
@@ -236,23 +466,33 @@ export function ProgressionEditor() {
         </select>
         {rule.trigger.type === "on_interact" ? (
           <select
-            onChange={(event) => updateRule({ ...rule, trigger: { type: "on_interact", targetId: event.target.value } })}
+            onChange={(event) =>
+              updateRule({ ...rule, trigger: { type: "on_interact", targetId: event.target.value } })
+            }
             value={rule.trigger.targetId}
           >
-            {interactTargets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
+            {interactTargets.map((target) => (
+              <option key={target.id} value={target.id}>{target.label}</option>
+            ))}
           </select>
         ) : null}
         {rule.trigger.type === "on_touch" ? (
           <select
-            onChange={(event) => updateRule({ ...rule, trigger: { type: "on_touch", targetId: event.target.value } })}
+            onChange={(event) =>
+              updateRule({ ...rule, trigger: { type: "on_touch", targetId: event.target.value } })
+            }
             value={rule.trigger.targetId}
           >
-            {touchTargets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
+            {touchTargets.map((target) => (
+              <option key={target.id} value={target.id}>{target.label}</option>
+            ))}
           </select>
         ) : null}
         {rule.trigger.type === "on_area_enter" ? (
           <select
-            onChange={(event) => updateRule({ ...rule, trigger: { type: "on_area_enter", areaId: event.target.value } })}
+            onChange={(event) =>
+              updateRule({ ...rule, trigger: { type: "on_area_enter", areaId: event.target.value } })
+            }
             value={rule.trigger.areaId}
           >
             {project.areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
@@ -260,25 +500,34 @@ export function ProgressionEditor() {
         ) : null}
         {rule.trigger.type === "on_cutscene_end" ? (
           <select
-            onChange={(event) => updateRule({ ...rule, trigger: { type: "on_cutscene_end", cutsceneId: event.target.value } })}
+            onChange={(event) =>
+              updateRule({
+                ...rule,
+                trigger: { type: "on_cutscene_end", cutsceneId: event.target.value },
+              })
+            }
             value={rule.trigger.cutsceneId}
           >
-            {project.cutscenes.map((cutscene) => <option key={cutscene.id} value={cutscene.id}>{cutscene.name}</option>)}
+            {project.cutscenes.map((cutscene) => (
+              <option key={cutscene.id} value={cutscene.id}>{cutscene.name}</option>
+            ))}
           </select>
         ) : null}
       </div>
     );
   }
 
-  function renderCondition(rule: GameRule, condition: Condition, index: number) {
+  function renderCondition(rule: GameRule, condition: SingleCondition, depth: number) {
     return (
-      <div className="logic-row" key={`${rule.id}_condition_${index}`}>
+      <div className="logic-row condition-row" key={condition.id} style={{ "--condition-depth": depth } as CSSProperties}>
         <select
-          onChange={(event) => {
-            const conditions = [...rule.conditions];
-            conditions[index] = makeCondition(event.target.value as Condition["type"]);
-            updateRule({ ...rule, conditions });
-          }}
+          onChange={(event) =>
+            replaceCondition(
+              rule,
+              condition.id,
+              makeCondition(event.target.value as SingleCondition["type"], condition.id),
+            )
+          }
           value={condition.type}
         >
           <option value="flag_is">Flag is</option>
@@ -287,22 +536,21 @@ export function ProgressionEditor() {
         {condition.type === "flag_is" ? (
           <>
             <select
-              onChange={(event) => {
-                const conditions = [...rule.conditions];
-                conditions[index] = { ...condition, flag: event.target.value };
-                updateRule({ ...rule, conditions });
-              }}
+              onChange={(event) =>
+                replaceCondition(rule, condition.id, { ...condition, flag: event.target.value })
+              }
               value={condition.flag}
             >
               {flagNames.map((flag) => <option key={flag} value={flag}>{flag}</option>)}
             </select>
             <span>is</span>
             <select
-              onChange={(event) => {
-                const conditions = [...rule.conditions];
-                conditions[index] = { ...condition, value: event.target.value === "true" };
-                updateRule({ ...rule, conditions });
-              }}
+              onChange={(event) =>
+                replaceCondition(rule, condition.id, {
+                  ...condition,
+                  value: event.target.value === "true",
+                })
+              }
               value={String(condition.value)}
             >
               <option value="true">true</option>
@@ -314,34 +562,36 @@ export function ProgressionEditor() {
             <select
               onChange={(event) => {
                 const variable = event.target.value;
-                const conditions = [...rule.conditions];
-                conditions[index] = {
+                replaceCondition(rule, condition.id, {
                   ...condition,
                   variable,
                   value: project.gameState.variables[variable] ?? 0,
-                };
-                updateRule({ ...rule, conditions });
+                });
               }}
               value={condition.variable}
             >
               {variableNames.map((variable) => <option key={variable} value={variable}>{variable}</option>)}
             </select>
             <select
-              onChange={(event) => {
-                const conditions = [...rule.conditions];
-                conditions[index] = { ...condition, operator: event.target.value as VariableComparisonOperator };
-                updateRule({ ...rule, conditions });
-              }}
+              onChange={(event) =>
+                replaceCondition(rule, condition.id, {
+                  ...condition,
+                  operator: event.target.value as VariableComparisonOperator,
+                })
+              }
               value={condition.operator}
             >
-              {comparisonOperators.map((operator) => <option key={operator} value={operator}>{operator}</option>)}
+              {comparisonOperators.map((operator) => (
+                <option key={operator} value={operator}>{operator}</option>
+              ))}
             </select>
             <input
-              onChange={(event) => {
-                const conditions = [...rule.conditions];
-                conditions[index] = { ...condition, value: readValue(event.target.value, condition.value) };
-                updateRule({ ...rule, conditions });
-              }}
+              onChange={(event) =>
+                replaceCondition(rule, condition.id, {
+                  ...condition,
+                  value: readValue(event.target.value, condition.value),
+                })
+              }
               type={typeof condition.value === "number" ? "number" : "text"}
               value={condition.value}
             />
@@ -349,11 +599,60 @@ export function ProgressionEditor() {
         )}
         <button
           className="danger-button compact"
-          onClick={() => updateRule({ ...rule, conditions: rule.conditions.filter((_, conditionIndex) => conditionIndex !== index) })}
+          onClick={() => updateRule({ ...rule, conditionTree: removeExpression(rule.conditionTree, condition.id) })}
           type="button"
         >
           Delete
         </button>
+      </div>
+    );
+  }
+
+  function renderConditionExpression(rule: GameRule, expression: ConditionExpression, depth = 0): ReactNode {
+    if (expression.type !== "group") {
+      return renderCondition(rule, expression, depth);
+    }
+
+    return (
+      <div className={`condition-group ${depth > 0 ? "nested" : ""}`} key={expression.id}>
+        <div className="condition-group-heading">
+          <span>{depth === 0 ? "Match" : "Nested group"}</span>
+          <select
+            aria-label="Condition group operator"
+            onChange={(event) =>
+              replaceCondition(rule, expression.id, {
+                ...expression,
+                operator: event.target.value as ConditionGroup["operator"],
+              })
+            }
+            value={expression.operator}
+          >
+            <option value="AND">ALL / AND</option>
+            <option value="OR">ANY / OR</option>
+          </select>
+          <span>of these</span>
+          <button onClick={() => addGroupCondition(rule, expression.id, makeCondition("flag_is"))} type="button">
+            Add condition
+          </button>
+          <button onClick={() => addGroupCondition(rule, expression.id, makeConditionGroup())} type="button">
+            Add nested group
+          </button>
+          {depth > 0 ? (
+            <button
+              className="danger-button compact"
+              onClick={() => updateRule({ ...rule, conditionTree: removeExpression(rule.conditionTree, expression.id) })}
+              type="button"
+            >
+              Delete group
+            </button>
+          ) : null}
+        </div>
+        {expression.conditions.length === 0 ? <div className="logic-helper">Always run</div> : null}
+        <div className="condition-group-children">
+          {expression.conditions.map((condition) =>
+            renderConditionExpression(rule, condition, depth + 1),
+          )}
+        </div>
       </div>
     );
   }
@@ -466,23 +765,93 @@ export function ProgressionEditor() {
     );
   }
 
+  function renderRuleItem(rule: GameRule) {
+    const summary = ruleSummary(rule, labels);
+    return (
+      <button
+        className={`logic-rule-item ${selectedRuleId === rule.id ? "selected" : ""}`}
+        key={rule.id}
+        onClick={() => setSelectedRuleId(rule.id)}
+        type="button"
+      >
+        <strong>{rule.name}</strong>
+        <span>{rule.enabled ? "Enabled" : "Disabled"}</span>
+        {summary.map((line, index) => <small key={`${index}_${line}`}>{line}</small>)}
+      </button>
+    );
+  }
+
+  function rulesForFolder(groupId?: string) {
+    return project.rules.filter((rule) =>
+      groupId ? rule.groupId === groupId : !rule.groupId || !folderIds.has(rule.groupId),
+    );
+  }
+
+  function renderFolder(group: RuleGroup) {
+    // TODO: Add parent folder UI and folder-level conditions/defaults if rule organisation needs hierarchy.
+    return (
+      <section className="logic-folder" key={group.id}>
+        <div className="logic-folder-heading">
+          <button
+            aria-label={group.collapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
+            onClick={() => updateFolder(group.id, { collapsed: !group.collapsed })}
+            title={group.collapsed ? "Expand folder" : "Collapse folder"}
+            type="button"
+          >
+            {group.collapsed ? "+" : "-"}
+          </button>
+          <input
+            aria-label="Folder name"
+            onChange={(event) => updateFolder(group.id, { name: event.target.value })}
+            value={group.name}
+          />
+          <button
+            aria-label={`Delete ${group.name}`}
+            className="danger-button compact"
+            onClick={() => deleteFolder(group.id)}
+            title="Delete folder"
+            type="button"
+          >
+            x
+          </button>
+        </div>
+        {!group.collapsed ? (
+          <div className="logic-folder-rules">
+            {rulesForFolder(group.id).map(renderRuleItem)}
+            <button onClick={() => createRule(group.id)} type="button">Add rule</button>
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
   return (
     <section className="editor-panel progression-editor">
       <aside className="tool-panel logic-rule-list">
         <div className="panel-title">Rules</div>
-        <button className="primary-button full-width" onClick={createRule} type="button">Add rule</button>
-        {project.rules.map((rule) => (
-          <button
-            className={`logic-rule-item ${selectedRuleId === rule.id ? "selected" : ""}`}
-            key={rule.id}
-            onClick={() => setSelectedRuleId(rule.id)}
-            type="button"
-          >
-            <strong>{rule.name}</strong>
-            <span>{rule.enabled ? "Enabled" : "Disabled"}</span>
-            <small>{triggerSummary(rule.trigger, labels)}</small>
-          </button>
-        ))}
+        <button className="primary-button full-width" onClick={() => createRule()} type="button">Add rule</button>
+
+        <div className="panel-title secondary">Folders</div>
+        <div className="folder-create-row">
+          <input
+            aria-label="New folder name"
+            onChange={(event) => setNewFolderName(event.target.value)}
+            placeholder="Village"
+            value={newFolderName}
+          />
+          <button onClick={createFolder} type="button">Add</button>
+        </div>
+        {folderError ? <div className="validation-message">{folderError}</div> : null}
+        {project.ruleGroups.map(renderFolder)}
+
+        <section className="logic-folder">
+          <div className="logic-folder-heading static">
+            <strong>Ungrouped</strong>
+          </div>
+          <div className="logic-folder-rules">
+            {rulesForFolder().map(renderRuleItem)}
+          </div>
+        </section>
       </aside>
 
       <div className="content-panel logic-editor">
@@ -499,18 +868,51 @@ export function ProgressionEditor() {
                 Enabled
               </label>
             </div>
-            <label>
-              Rule name
-              <input onChange={(event) => updateRule({ ...selectedRule, name: event.target.value })} value={selectedRule.name} />
-            </label>
+            <div className="form-grid compact">
+              <label>
+                Rule name
+                <input onChange={(event) => updateRule({ ...selectedRule, name: event.target.value })} value={selectedRule.name} />
+              </label>
+              <label>
+                Folder
+                <select
+                  onChange={(event) =>
+                    updateRule({ ...selectedRule, groupId: event.target.value || undefined })
+                  }
+                  value={selectedRule.groupId ?? ""}
+                >
+                  <option value="">Ungrouped</option>
+                  {project.ruleGroups.map((group) => (
+                    <option key={group.id} value={group.id}>{group.name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <section className="rule-summary">
+              {ruleSummary(selectedRule, labels).map((line, index) => <div key={`${index}_${line}`}>{line}</div>)}
+            </section>
             <section className="logic-block">{renderTrigger(selectedRule)}</section>
             <section className="logic-block">
               <div className="logic-block-heading">IF</div>
-              {selectedRule.conditions.length === 0 ? <div className="logic-helper">Always run</div> : null}
-              {selectedRule.conditions.map((condition, index) => renderCondition(selectedRule, condition, index))}
-              <button onClick={() => updateRule({ ...selectedRule, conditions: [...selectedRule.conditions, makeCondition("flag_is")] })} type="button">
-                Add condition
-              </button>
+              {selectedRule.conditionTree ? (
+                renderConditionExpression(selectedRule, selectedRule.conditionTree)
+              ) : (
+                <div className="logic-helper">Always run. Add a condition when this rule should be selective.</div>
+              )}
+              {!selectedRule.conditionTree || selectedRule.conditionTree.type !== "group" ? (
+                <button onClick={() => addRootCondition(selectedRule, makeCondition("flag_is"))} type="button">
+                  Add condition
+                </button>
+              ) : null}
+              {selectedRule.conditionTree ? (
+                <button
+                  className="danger-button"
+                  onClick={() => updateRule({ ...selectedRule, conditionTree: undefined })}
+                  type="button"
+                >
+                  Clear conditions
+                </button>
+              ) : null}
             </section>
             {renderActions(selectedRule, "actions", "THEN")}
             {renderActions(selectedRule, "elseActions", "ELSE")}

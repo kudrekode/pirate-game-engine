@@ -1,10 +1,11 @@
 import type {
-  Condition,
+  ConditionExpression,
   GameAction,
   GameRule,
   GameStateConfig,
   GameStateValue,
   RuleTrigger,
+  SingleCondition,
 } from "../types/game";
 
 export type RuntimeGameState = {
@@ -56,7 +57,7 @@ function compareValues(left: GameStateValue, right: GameStateValue, operator: st
   return left <= right;
 }
 
-export function evaluateCondition(condition: Condition, runtimeState: RuntimeGameState): boolean {
+export function evaluateCondition(condition: SingleCondition, runtimeState: RuntimeGameState): boolean {
   if (condition.type === "flag_is") {
     return (runtimeState.flags[condition.flag] ?? false) === condition.value;
   }
@@ -69,11 +70,31 @@ export function evaluateCondition(condition: Condition, runtimeState: RuntimeGam
   return compareValues(currentValue, condition.value, condition.operator);
 }
 
-export function evaluateConditions(
-  conditions: Condition[],
+export function evaluateConditionExpression(
+  expression: ConditionExpression | undefined,
   runtimeState: RuntimeGameState,
 ): boolean {
-  return conditions.every((condition) => evaluateCondition(condition, runtimeState));
+  if (!expression) {
+    return true;
+  }
+
+  if (expression.type !== "group") {
+    return evaluateCondition(expression, runtimeState);
+  }
+
+  if (expression.conditions.length === 0) {
+    return true;
+  }
+
+  if (expression.operator === "OR") {
+    return expression.conditions.some((condition) =>
+      evaluateConditionExpression(condition, runtimeState),
+    );
+  }
+
+  return expression.conditions.every((condition) =>
+    evaluateConditionExpression(condition, runtimeState),
+  );
 }
 
 export function runAction(
@@ -136,7 +157,7 @@ function runActions(actions: GameAction[], context: RuleActionContext, onDone: (
 }
 
 export function runRule(rule: GameRule, context: RuleActionContext, onDone: () => void): void {
-  const actions = evaluateConditions(rule.conditions, context.state)
+  const actions = evaluateConditionExpression(rule.conditionTree, context.state)
     ? rule.actions
     : rule.elseActions ?? [];
   runActions(actions, context, onDone);
@@ -187,4 +208,3 @@ export function fireTrigger(
 
   runNext(matchingRules);
 }
-

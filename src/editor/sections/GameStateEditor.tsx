@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { GameAction, GameProject } from "../../types/game";
+import type {
+  ConditionExpression,
+  GameAction,
+  GameProject,
+  SingleCondition,
+} from "../../types/game";
 
 type VariableType = "number" | "string";
 
@@ -30,10 +35,34 @@ function removeActions(actions: GameAction[] | undefined, shouldRemove: (action:
   return actions?.filter((action) => !shouldRemove(action));
 }
 
+function removeConditionReferences(
+  expression: ConditionExpression | undefined,
+  shouldRemove: (condition: SingleCondition) => boolean,
+): ConditionExpression | undefined {
+  if (!expression) {
+    return undefined;
+  }
+
+  if (expression.type !== "group") {
+    return shouldRemove(expression) ? undefined : expression;
+  }
+
+  return {
+    ...expression,
+    conditions: expression.conditions.flatMap((condition) => {
+      const nextCondition = removeConditionReferences(condition, shouldRemove);
+      return nextCondition ? [nextCondition] : [];
+    }),
+  };
+}
+
 function removeFlagReferences(project: GameProject, flag: string) {
   project.rules = project.rules.map((rule) => ({
     ...rule,
-    conditions: rule.conditions.filter((condition) => condition.type !== "flag_is" || condition.flag !== flag),
+    conditionTree: removeConditionReferences(
+      rule.conditionTree,
+      (condition) => condition.type === "flag_is" && condition.flag === flag,
+    ),
     actions: removeActions(rule.actions, (action) => action.type === "set_flag" && action.flag === flag) ?? [],
     elseActions: removeActions(rule.elseActions, (action) => action.type === "set_flag" && action.flag === flag),
   }));
@@ -54,8 +83,9 @@ function removeFlagReferences(project: GameProject, flag: string) {
 function removeVariableReferences(project: GameProject, variable: string) {
   project.rules = project.rules.map((rule) => ({
     ...rule,
-    conditions: rule.conditions.filter(
-      (condition) => condition.type !== "variable_compare" || condition.variable !== variable,
+    conditionTree: removeConditionReferences(
+      rule.conditionTree,
+      (condition) => condition.type === "variable_compare" && condition.variable === variable,
     ),
     actions:
       removeActions(
