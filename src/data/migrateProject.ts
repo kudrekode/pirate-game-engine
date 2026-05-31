@@ -1,13 +1,26 @@
 import { defaultProject } from "./defaultProject";
+import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultCameraConfig } from "./projectDefaults";
+import { defaultTileStyles, tilePresets } from "./presets";
 import type {
+  AreaLink,
   CameraConfig,
+  Cutscene,
   EventBlock,
+  GameArea,
+  GameAreaKind,
   GameProject,
+  Interaction,
+  InteractionActivationMode,
+  MapStructure,
   MapTile,
+  MovementRule,
+  OverlayTile,
   PlayerConfig,
+  PixelAsset,
   ProgressionAction,
   ProgressionStep,
+  TileStyleConfig,
 } from "../types/game";
 
 type UnknownRecord = Record<string, unknown>;
@@ -43,9 +56,20 @@ function readStringArray(value: unknown, fallback: string[]): string[] {
   return strings.length > 0 ? strings : [...fallback];
 }
 
-function migrateTiles(value: unknown): MapTile[] {
+function readAreaKind(value: unknown, fallback: GameAreaKind): GameAreaKind {
+  return value === "outdoor" ||
+    value === "indoor" ||
+    value === "cave" ||
+    value === "ship" ||
+    value === "dungeon" ||
+    value === "custom"
+    ? value
+    : fallback;
+}
+
+function migrateTiles(value: unknown, fallbackTiles: MapTile[]): MapTile[] {
   if (!Array.isArray(value)) {
-    return cloneProject(defaultProject).map.tiles;
+    return fallbackTiles.map((tile) => ({ ...tile }));
   }
 
   return value.flatMap((item) => {
@@ -63,9 +87,9 @@ function migrateTiles(value: unknown): MapTile[] {
   });
 }
 
-function migrateEventBlocks(value: unknown): EventBlock[] {
+function migrateOverlayTiles(value: unknown): OverlayTile[] {
   if (!Array.isArray(value)) {
-    return cloneProject(defaultProject).map.eventBlocks;
+    return [];
   }
 
   return value.flatMap((item) => {
@@ -73,7 +97,156 @@ function migrateEventBlocks(value: unknown): EventBlock[] {
       return [];
     }
 
-    const kind = item.kind === "spawn" || item.kind === "trigger" ? item.kind : "trigger";
+    return [
+      {
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        overlayId: readString(item.overlayId, ""),
+      },
+    ];
+  });
+}
+
+function migrateAreaLink(value: unknown): AreaLink | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const targetAreaId = readString(value.targetAreaId, "");
+  const targetEventBlockId = readString(value.targetEventBlockId, "");
+  return targetAreaId && targetEventBlockId ? { targetAreaId, targetEventBlockId } : undefined;
+}
+
+function migrateMovementRule(value: unknown): MovementRule | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const rule: MovementRule = {};
+  if (typeof value.walkable === "boolean") {
+    rule.walkable = value.walkable;
+  }
+  if (
+    value.movementMode === "walk" ||
+    value.movementMode === "swim" ||
+    value.movementMode === "sail" ||
+    value.movementMode === "ride"
+  ) {
+    rule.movementMode = value.movementMode;
+  }
+  if (typeof value.speedMultiplier === "number" && Number.isFinite(value.speedMultiplier)) {
+    rule.speedMultiplier = readNumber(value.speedMultiplier, 1, 0.1, 10);
+  }
+
+  return Object.keys(rule).length > 0 ? rule : undefined;
+}
+
+function readActivationMode(
+  value: unknown,
+  fallback: InteractionActivationMode,
+): InteractionActivationMode {
+  return value === "on_touch" ||
+    value === "on_interact" ||
+    value === "both" ||
+    value === "disabled"
+    ? value
+    : fallback;
+}
+
+function withInteractionBase(
+  source: UnknownRecord,
+  fallbackActivationMode: InteractionActivationMode,
+  interaction: Omit<Interaction, "activationMode">,
+): Interaction {
+  const prompt = readString(source.prompt, "");
+  return {
+    ...interaction,
+    activationMode: readActivationMode(source.activationMode, fallbackActivationMode),
+    ...(prompt ? { prompt } : {}),
+  };
+}
+
+function migrateInteraction(
+  value: unknown,
+  fallbackActivationMode: InteractionActivationMode,
+): Interaction | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (value.type === "area_link" || value.type === "teleport") {
+    const targetAreaId = readString(value.targetAreaId, "");
+    const targetEventBlockId = readString(value.targetEventBlockId, "");
+    return targetAreaId && targetEventBlockId
+      ? withInteractionBase(value, fallbackActivationMode, {
+          type: value.type,
+          targetAreaId,
+          targetEventBlockId,
+        })
+      : undefined;
+  }
+
+  if (value.type === "play_cutscene") {
+    const cutsceneId = readString(value.cutsceneId, "");
+    return cutsceneId
+      ? withInteractionBase(value, fallbackActivationMode, {
+          type: "play_cutscene",
+          cutsceneId,
+        })
+      : undefined;
+  }
+
+  if (value.type === "set_flag") {
+    const flag = readString(value.flag, "");
+    return flag
+      ? withInteractionBase(value, fallbackActivationMode, {
+          type: "set_flag",
+          flag,
+          value: readBoolean(value.value, true),
+        })
+      : undefined;
+  }
+
+  if (
+    value.type === "change_movement_mode" &&
+    (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
+  ) {
+    return withInteractionBase(value, fallbackActivationMode, {
+      type: "change_movement_mode",
+      mode: value.mode,
+    });
+  }
+
+  return undefined;
+}
+
+function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): EventBlock[] {
+  if (!Array.isArray(value)) {
+    return fallbackEventBlocks.map((eventBlock) => ({ ...eventBlock }));
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const kind =
+      item.kind === "spawn" || item.kind === "trigger" || item.kind === "area_link"
+        ? item.kind
+        : "trigger";
+
+    const link = kind === "area_link" ? migrateAreaLink(item.link) : undefined;
+    const fallbackActivationMode =
+      kind === "area_link" || kind === "trigger" ? "on_touch" : "on_interact";
+    const interaction =
+      migrateInteraction(item.interaction, fallbackActivationMode) ??
+      (kind === "area_link" && link
+        ? {
+            type: "area_link" as const,
+            activationMode: "on_touch" as const,
+            ...link,
+          }
+        : undefined);
 
     return [
       {
@@ -83,9 +256,137 @@ function migrateEventBlocks(value: unknown): EventBlock[] {
         y: readNumber(item.y, 0, 0),
         tag: readString(item.tag, "event"),
         kind,
+        link,
+        interaction,
       },
     ];
   });
+}
+
+function migrateStructures(value: unknown): MapStructure[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const interaction = migrateInteraction(item.interaction, "on_interact");
+
+    return [
+      {
+        id: readString(item.id, `structure_${Date.now().toString(36)}`),
+        structureId: readString(item.structureId, "small_house"),
+        name: readString(item.name, "Structure"),
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
+        heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
+        blocksMovement: readBoolean(item.blocksMovement, true),
+        movementRule: migrateMovementRule(item.movementRule),
+        interaction,
+      },
+    ];
+  });
+}
+
+function migrateArea(value: unknown, index: number, fallback: GameArea): GameArea {
+  const source = isRecord(value) ? value : {};
+  const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
+  const width = Math.round(readNumber(source.width, fallback.width, 1, 200));
+  const height = Math.round(readNumber(source.height, fallback.height, 1, 200));
+  const terrainTiles = migrateTiles(source.terrainTiles ?? source.tiles, fallback.terrainTiles);
+
+  return {
+    id,
+    name: readString(source.name, index === 0 ? "Main Area" : `Area ${index + 1}`),
+    kind: readAreaKind(source.kind, fallback.kind),
+    width,
+    height,
+    tileSize: Math.round(readNumber(source.tileSize, fallback.tileSize, 8, 128)),
+    terrainTiles,
+    overlayTiles: migrateOverlayTiles(source.overlayTiles),
+    structures: migrateStructures(source.structures),
+    eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
+    theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
+  };
+}
+
+function migrateAreas(source: UnknownRecord): GameArea[] {
+  if (Array.isArray(source.areas) && source.areas.length > 0) {
+    const areas = source.areas.flatMap((area, index) => {
+      const fallback = defaultProject.areas[index] ?? defaultProject.areas[0];
+      return fallback ? [migrateArea(area, index, fallback)] : [];
+    });
+
+    return areas.length > 0 ? areas : cloneProject(defaultProject).areas;
+  }
+
+  const legacyMap = isRecord(source.map) ? source.map : {};
+  return [migrateArea(legacyMap, 0, defaultProject.areas[0])];
+}
+
+function migrateTileStyles(value: unknown): TileStyleConfig {
+  const source = isRecord(value) ? value : {};
+  const styles: TileStyleConfig = {};
+
+  tilePresets.forEach((tile) => {
+    const customStyleSource = source[tile.id];
+    const customStyle = isRecord(customStyleSource) ? customStyleSource : {};
+    styles[tile.id] = {
+      color: readString(customStyle.color, defaultTileStyles[tile.id]?.color ?? tile.color),
+      label: readString(customStyle.label, defaultTileStyles[tile.id]?.label ?? tile.label),
+    };
+  });
+
+  return styles;
+}
+
+function migratePixelAssets(value: unknown): Record<string, PixelAsset> {
+  const defaults = createDefaultPixelAssets();
+  const source = isRecord(value) ? value : {};
+  const assets: Record<string, PixelAsset> = { ...defaults };
+
+  Object.entries(source).forEach(([id, item]) => {
+    if (!isRecord(item) || !Array.isArray(item.pixels)) {
+      return;
+    }
+
+    const kind =
+      item.kind === "terrain" ||
+      item.kind === "overlay" ||
+      item.kind === "structure" ||
+      item.kind === "character" ||
+      item.kind === "portrait"
+        ? item.kind
+        : "terrain";
+    const width = Math.round(readNumber(item.width, 16, 1, 128));
+    const height = Math.round(readNumber(item.height, 16, 1, 128));
+    const pixels = item.pixels.slice(0, height).map((row) => {
+      if (!Array.isArray(row)) {
+        return Array.from({ length: width }, () => "transparent");
+      }
+
+      return Array.from({ length: width }, (_, index) => readString(row[index], "transparent"));
+    });
+
+    while (pixels.length < height) {
+      pixels.push(Array.from({ length: width }, () => "transparent"));
+    }
+
+    assets[id] = {
+      id,
+      name: readString(item.name, defaults[id]?.name ?? id),
+      kind,
+      width,
+      height,
+      pixels,
+    };
+  });
+
+  return assets;
 }
 
 function migrateCamera(value: unknown): CameraConfig {
@@ -99,12 +400,7 @@ function migrateCamera(value: unknown): CameraConfig {
       readNumber(source.viewportHeightTiles, defaultCameraConfig.viewportHeightTiles, 1, 100),
     ),
     followPlayer: readBoolean(source.followPlayer, defaultCameraConfig.followPlayer),
-    followSmoothing: readNumber(
-      source.followSmoothing,
-      defaultCameraConfig.followSmoothing,
-      0,
-      1,
-    ),
+    followSmoothing: readNumber(source.followSmoothing, defaultCameraConfig.followSmoothing, 0, 1),
     deadzoneWidthTiles: Math.round(
       readNumber(source.deadzoneWidthTiles, defaultCameraConfig.deadzoneWidthTiles ?? 0, 0, 100),
     ),
@@ -131,7 +427,7 @@ function migratePlayer(value: unknown): PlayerConfig {
   };
 }
 
-function migrateAction(value: unknown, fallback: ProgressionAction): ProgressionAction {
+function migrateAction(value: unknown, fallback: ProgressionAction, defaultAreaId: string): ProgressionAction {
   if (!isRecord(value)) {
     return fallback;
   }
@@ -143,13 +439,18 @@ function migrateAction(value: unknown, fallback: ProgressionAction): Progression
     };
   }
 
-  if (
-    value.type === "spawn_player" ||
-    value.type === "wait_for_trigger" ||
-    value.type === "teleport_player"
-  ) {
+  if (value.type === "spawn_player" || value.type === "teleport_player") {
     return {
       type: value.type,
+      areaId: readString(value.areaId, defaultAreaId),
+      eventBlockId: readString(value.eventBlockId, ""),
+    };
+  }
+
+  if (value.type === "wait_for_trigger") {
+    return {
+      type: "wait_for_trigger",
+      areaId: readString(value.areaId, defaultAreaId),
       eventBlockId: readString(value.eventBlockId, ""),
     };
   }
@@ -157,7 +458,11 @@ function migrateAction(value: unknown, fallback: ProgressionAction): Progression
   return { type: "end_game" };
 }
 
-function migrateProgressionStep(value: unknown, index: number): ProgressionStep | null {
+function migrateProgressionStep(
+  value: unknown,
+  index: number,
+  defaultAreaId: string,
+): ProgressionStep | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -169,22 +474,21 @@ function migrateProgressionStep(value: unknown, index: number): ProgressionStep 
     return {
       id,
       label,
-      action: migrateAction(value.action, { type: "end_game" }),
+      action: migrateAction(value.action, { type: "end_game" }, defaultAreaId),
     };
   }
 
-  const legacyAction = migrateAction(value, { type: "end_game" });
   return {
     id,
     label,
-    action: legacyAction,
+    action: migrateAction(value, { type: "end_game" }, defaultAreaId),
   };
 }
 
-function migrateProgression(value: unknown): ProgressionStep[] {
+function migrateProgression(value: unknown, defaultAreaId: string): ProgressionStep[] {
   const source = Array.isArray(value) ? value : defaultProject.progression;
   const steps = source.flatMap((step, index) => {
-    const migrated = migrateProgressionStep(step, index);
+    const migrated = migrateProgressionStep(step, index, defaultAreaId);
     return migrated ? [migrated] : [];
   });
 
@@ -194,25 +498,27 @@ function migrateProgression(value: unknown): ProgressionStep[] {
 export function migrateProject(value: unknown): GameProject {
   const source = isRecord(value) ? value : {};
   const metadataSource = isRecord(source.metadata) ? source.metadata : {};
-  const mapSource = isRecord(source.map) ? source.map : {};
+  const areas = migrateAreas(source);
+  const fallbackActiveAreaId = areas[0]?.id ?? "area_main";
+  const requestedActiveAreaId = readString(source.activeAreaId, fallbackActiveAreaId);
+  const activeAreaId = areas.some((area) => area.id === requestedActiveAreaId)
+    ? requestedActiveAreaId
+    : fallbackActiveAreaId;
 
   return {
     metadata: {
       name: readString(metadataSource.name, defaultProject.metadata.name),
       version: readString(metadataSource.version, defaultProject.metadata.version),
     },
-    map: {
-      width: Math.round(readNumber(mapSource.width, defaultProject.map.width, 1, 200)),
-      height: Math.round(readNumber(mapSource.height, defaultProject.map.height, 1, 200)),
-      tileSize: Math.round(readNumber(mapSource.tileSize, defaultProject.map.tileSize, 8, 128)),
-      tiles: migrateTiles(mapSource.tiles),
-      eventBlocks: migrateEventBlocks(mapSource.eventBlocks),
-    },
+    areas,
+    activeAreaId,
     camera: migrateCamera(source.camera),
+    tileStyles: migrateTileStyles(source.tileStyles),
+    pixelAssets: migratePixelAssets(source.pixelAssets),
     player: migratePlayer(source.player),
     cutscenes: Array.isArray(source.cutscenes)
-      ? (source.cutscenes as GameProject["cutscenes"])
+      ? (source.cutscenes as Cutscene[])
       : cloneProject(defaultProject).cutscenes,
-    progression: migrateProgression(source.progression),
+    progression: migrateProgression(source.progression, activeAreaId),
   };
 }
