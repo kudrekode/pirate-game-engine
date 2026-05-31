@@ -8,6 +8,7 @@ import type {
   CameraConfig,
   Cutscene,
   EventBlock,
+  GameAction,
   GameArea,
   GameProject,
   Interaction,
@@ -229,6 +230,84 @@ function clearEventLinkReferences(project: GameProject, areaId: string, eventBlo
   }));
 }
 
+function filterRuleActions(
+  actions: GameAction[] | undefined,
+  shouldRemove: (action: GameAction) => boolean,
+): GameAction[] | undefined {
+  return actions?.filter((action) => !shouldRemove(action));
+}
+
+function cleanRuleTargetReferences(project: GameProject, targetIds: Set<string>) {
+  project.rules = project.rules.filter((rule) => {
+    const trigger = rule.trigger;
+    return (
+      (trigger.type !== "on_interact" && trigger.type !== "on_touch") ||
+      !targetIds.has(trigger.targetId)
+    );
+  });
+}
+
+function cleanRuleAreaReferences(project: GameProject, area: GameArea) {
+  cleanRuleTargetReferences(
+    project,
+    new Set([
+      ...area.eventBlocks.map((eventBlock) => eventBlock.id),
+      ...area.structures.map((structure) => structure.id),
+    ]),
+  );
+  project.rules = project.rules
+    .filter((rule) => rule.trigger.type !== "on_area_enter" || rule.trigger.areaId !== area.id)
+    .map((rule) => ({
+      ...rule,
+      actions:
+        filterRuleActions(rule.actions, (action) => action.type === "teleport" && action.areaId === area.id) ??
+        [],
+      elseActions: filterRuleActions(
+        rule.elseActions,
+        (action) => action.type === "teleport" && action.areaId === area.id,
+      ),
+    }));
+}
+
+function cleanRuleEventReferences(project: GameProject, areaId: string, eventBlockId: string) {
+  cleanRuleTargetReferences(project, new Set([eventBlockId]));
+  project.rules = project.rules.map((rule) => ({
+    ...rule,
+    actions:
+      filterRuleActions(
+        rule.actions,
+        (action) =>
+          action.type === "teleport" &&
+          action.areaId === areaId &&
+          action.eventBlockId === eventBlockId,
+      ) ?? [],
+    elseActions: filterRuleActions(
+      rule.elseActions,
+      (action) =>
+        action.type === "teleport" &&
+        action.areaId === areaId &&
+        action.eventBlockId === eventBlockId,
+    ),
+  }));
+}
+
+function cleanRuleCutsceneReferences(project: GameProject, cutsceneId: string) {
+  project.rules = project.rules
+    .filter((rule) => rule.trigger.type !== "on_cutscene_end" || rule.trigger.cutsceneId !== cutsceneId)
+    .map((rule) => ({
+      ...rule,
+      actions:
+        filterRuleActions(
+          rule.actions,
+          (action) => action.type === "play_cutscene" && action.cutsceneId === cutsceneId,
+        ) ?? [],
+      elseActions: filterRuleActions(
+        rule.elseActions,
+        (action) => action.type === "play_cutscene" && action.cutsceneId === cutsceneId,
+      ),
+    }));
+}
+
 function makeProgressionStep(type: ProgressionType, project: GameProject, id = makeId("step")): ProgressionStep {
   const activeArea = getActiveArea(project);
 
@@ -384,6 +463,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }
 
       const project = cloneProject(state.project);
+      const deletedArea = project.areas.find((area) => area.id === areaId);
+      if (deletedArea) {
+        cleanRuleAreaReferences(project, deletedArea);
+      }
       project.areas = project.areas.filter((area) => area.id !== areaId);
       cleanAreaReferences(project, areaId);
       if (project.activeAreaId === areaId) {
@@ -433,6 +516,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         .forEach((eventBlock) => {
           cleanProgressionEventReferences(project, activeArea.id, eventBlock.id);
           clearEventLinkReferences(project, activeArea.id, eventBlock.id);
+          cleanRuleEventReferences(project, activeArea.id, eventBlock.id);
         });
 
       return { project };
@@ -553,12 +637,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   deleteStructure: (id) =>
-    set((state) => ({
-      project: updateActiveArea(state.project, (area) => ({
-        ...area,
-        structures: area.structures.filter((structure) => structure.id !== id),
-      })),
-    })),
+    set((state) => {
+      const project = cloneProject(state.project);
+      cleanRuleTargetReferences(project, new Set([id]));
+      return {
+        project: updateActiveArea(project, (area) => ({
+          ...area,
+          structures: area.structures.filter((structure) => structure.id !== id),
+        })),
+      };
+    }),
 
   updateStructure: (id, patch) =>
     set((state) => ({
@@ -659,6 +747,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       );
       cleanProgressionEventReferences(project, activeArea.id, id);
       clearEventLinkReferences(project, activeArea.id, id);
+      cleanRuleEventReferences(project, activeArea.id, id);
       return { project };
     }),
 
@@ -714,6 +803,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project.progression = project.progression.filter(
         (step) => step.action.type !== "play_cutscene" || step.action.cutsceneId !== id,
       );
+      cleanRuleCutsceneReferences(project, id);
       return { project };
     }),
 

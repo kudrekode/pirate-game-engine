@@ -61,19 +61,12 @@ const mainArea: GameArea = {
     {
       id: "structure_demo_house",
       structureId: "small_house",
-      name: "Demo House",
+      name: "Tavern Door",
       x: 7,
       y: 9,
       widthTiles: 3,
       heightTiles: 3,
       blocksMovement: true,
-      interaction: {
-        type: "area_link",
-        activationMode: "on_interact",
-        prompt: "Press E to enter",
-        targetAreaId: "area_house",
-        targetEventBlockId: "spawn_house_entry",
-      },
     },
   ],
   eventBlocks: [
@@ -95,22 +88,11 @@ const mainArea: GameArea = {
     },
     {
       id: "link_house_door",
-      name: "House Door",
+      name: "Tavern Threshold",
       x: 8,
       y: 12,
-      tag: "house_door",
-      kind: "area_link",
-      link: {
-        targetAreaId: "area_house",
-        targetEventBlockId: "spawn_house_entry",
-      },
-      interaction: {
-        type: "area_link",
-        activationMode: "on_interact",
-        prompt: "Press E to enter",
-        targetAreaId: "area_house",
-        targetEventBlockId: "spawn_house_entry",
-      },
+      tag: "tavern_threshold",
+      kind: "trigger",
     },
   ],
   theme: {
@@ -122,7 +104,7 @@ const mainArea: GameArea = {
 
 const houseArea: GameArea = {
   id: "area_house",
-  name: "House Interior",
+  name: "Tavern Interior",
   kind: "indoor",
   width: 12,
   height: 9,
@@ -230,16 +212,24 @@ export const defaultProject: GameProject = {
       speakerName: "Gatekeeper",
       text: "You reached the marker. The first chapter ends here.",
     },
+    {
+      id: "not_enough_gold",
+      name: "Not Enough Gold",
+      backgroundImageId: "stone_gate",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Innkeeper",
+      text: "A room costs 5 gold. Come back when you have enough.",
+    },
+    {
+      id: "tavern_welcome",
+      name: "Welcome To The Tavern",
+      backgroundImageId: "forest_path",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Innkeeper",
+      text: "Welcome in. The first drink is on the house.",
+    },
   ],
   progression: [
-    {
-      id: "step_intro",
-      label: "Intro cutscene",
-      action: {
-        type: "play_cutscene",
-        cutsceneId: "intro_cutscene",
-      },
-    },
     {
       id: "step_spawn",
       label: "Spawn player",
@@ -272,6 +262,63 @@ export const defaultProject: GameProject = {
       action: {
         type: "end_game",
       },
+    },
+  ],
+  gameState: {
+    flags: {
+      intro_seen: false,
+      has_boat: false,
+      cave_open: false,
+      has_key: false,
+      tavern_intro_seen: false,
+    },
+    variables: {
+      gold: 3,
+      reputation: 0,
+    },
+  },
+  rules: [
+    {
+      id: "rule_intro",
+      name: "Intro",
+      enabled: true,
+      trigger: { type: "on_game_start" },
+      conditions: [{ type: "flag_is", flag: "intro_seen", value: false }],
+      actions: [
+        { type: "play_cutscene", cutsceneId: "intro_cutscene" },
+        { type: "set_flag", flag: "intro_seen", value: true },
+      ],
+    },
+    {
+      id: "rule_enter_tavern",
+      name: "Enter Tavern",
+      enabled: true,
+      trigger: { type: "on_interact", targetId: "structure_demo_house" },
+      conditions: [{ type: "variable_compare", variable: "gold", operator: ">=", value: 5 }],
+      actions: [
+        { type: "change_variable", variable: "gold", amount: -5 },
+        { type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" },
+      ],
+      elseActions: [{ type: "play_cutscene", cutsceneId: "not_enough_gold" }],
+    },
+    {
+      id: "rule_tavern_intro",
+      name: "Tavern Intro",
+      enabled: true,
+      trigger: { type: "on_area_enter", areaId: "area_house" },
+      conditions: [{ type: "flag_is", flag: "tavern_intro_seen", value: false }],
+      actions: [
+        { type: "play_cutscene", cutsceneId: "tavern_welcome" },
+        { type: "set_flag", flag: "tavern_intro_seen", value: true },
+      ],
+    },
+    {
+      id: "rule_gate_touch",
+      name: "Open Cave At Gate",
+      enabled: true,
+      trigger: { type: "on_touch", targetId: "trigger_gate" },
+      conditions: [],
+      actions: [{ type: "set_flag", flag: "cave_open", value: true }],
     },
   ],
 };

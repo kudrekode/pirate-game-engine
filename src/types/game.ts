@@ -8,6 +8,8 @@ export type GameProject = {
   player: PlayerConfig;
   cutscenes: Cutscene[];
   progression: ProgressionStep[];
+  gameState: GameStateConfig;
+  rules: GameRule[];
 };
 
 export type ProjectMetadata = {
@@ -187,4 +189,48 @@ export type ProgressionAction =
   | { type: "teleport_player"; areaId: string; eventBlockId: string }
   | { type: "end_game" };
 
-// TODO: Future foundations: freeform placement, per-area camera overrides, node graph progression, enemies, sounds, UI editor, and asset imports.
+export type GameStateValue = number | string;
+
+export type GameStateConfig = {
+  flags: Record<string, boolean>;
+  variables: Record<string, GameStateValue>;
+};
+
+export type GameRule = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: RuleTrigger;
+  conditions: Condition[];
+  actions: GameAction[];
+  elseActions?: GameAction[];
+};
+
+export type RuleTrigger =
+  | { type: "on_game_start" }
+  | { type: "on_interact"; targetId: string }
+  | { type: "on_touch"; targetId: string }
+  | { type: "on_area_enter"; areaId: string }
+  | { type: "on_cutscene_end"; cutsceneId: string };
+
+export type VariableComparisonOperator = "==" | "!=" | ">" | "<" | ">=" | "<=";
+
+export type Condition =
+  | { type: "flag_is"; flag: string; value: boolean }
+  | {
+      type: "variable_compare";
+      variable: string;
+      operator: VariableComparisonOperator;
+      value: GameStateValue;
+    };
+
+export type GameAction =
+  | { type: "set_flag"; flag: string; value: boolean }
+  | { type: "change_variable"; variable: string; amount: number }
+  | { type: "set_variable"; variable: string; value: GameStateValue }
+  | { type: "play_cutscene"; cutsceneId: string }
+  | { type: "teleport"; areaId: string; eventBlockId: string }
+  | { type: "change_movement_mode"; mode: Exclude<MovementMode, "swim"> }
+  | { type: "end_game" };
+
+// TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, and asset imports.

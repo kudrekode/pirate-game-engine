@@ -16,8 +16,15 @@ import type {
   MovementMode,
   MapStructure,
   PixelAsset,
+  RuleTrigger,
 } from "../types/game";
 import { resolveMovementAt } from "./movement";
+import {
+  createRuntimeState,
+  fireTrigger,
+  type RuleActionContext,
+  type RuntimeGameState,
+} from "./ruleEngine";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -32,8 +39,8 @@ type InteractKeys = {
 };
 
 type Interactable =
-  | { kind: "event"; label: string; interaction: Interaction; eventBlock: EventBlock; distance: number }
-  | { kind: "structure"; label: string; interaction: Interaction; structure: MapStructure; distance: number };
+  | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
+  | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -77,7 +84,8 @@ export class AdventureScene extends Phaser.Scene {
   private nextMoveAt = 0;
   private statusText?: Phaser.GameObjects.Text;
   private promptText?: Phaser.GameObjects.Text;
-  private runtimeFlags: Record<string, boolean> = {};
+  private debugText?: Phaser.GameObjects.Text;
+  private readonly runtimeState: RuntimeGameState;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private isCutsceneOpen = false;
   private isFinished = false;
@@ -88,6 +96,7 @@ export class AdventureScene extends Phaser.Scene {
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
+    this.runtimeState = createRuntimeState(project.gameState);
   }
 
   create() {
@@ -120,8 +129,22 @@ export class AdventureScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0);
     this.uiLayer.add(this.promptText);
+    this.debugText = this.add
+      .text(this.scale.width - 10, 10, "", {
+        align: "right",
+        backgroundColor: "rgba(17, 24, 39, 0.76)",
+        color: "#d1fae5",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "11px",
+        padding: { x: 7, y: 5 },
+      })
+      .setDepth(105)
+      .setOrigin(1, 0)
+      .setScrollFactor(0);
+    this.uiLayer.add(this.debugText);
+    this.updateDebugPanel();
 
-    this.processProgression();
+    this.fireRuleTrigger({ type: "on_game_start" }, () => this.processProgression());
   }
 
   update(time: number) {
@@ -138,7 +161,13 @@ export class AdventureScene extends Phaser.Scene {
     const interactable = this.findNearestInteractable();
     this.updatePrompt(interactable);
     if (this.wasInteractPressed() && interactable) {
-      this.runInteraction(interactable.interaction, interactable.label);
+      const targetId =
+        interactable.kind === "event" ? interactable.eventBlock.id : interactable.structure.id;
+      this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
+        if (interactable.interaction && canInteractActivate(interactable.interaction)) {
+          this.runInteraction(interactable.interaction, interactable.label);
+        }
+      });
       return;
     }
 
@@ -470,8 +499,10 @@ export class AdventureScene extends Phaser.Scene {
         }
 
         this.showCutscene(cutscene, () => {
-          this.progressionIndex += 1;
-          this.processProgression();
+          this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId: cutscene.id }, () => {
+            this.progressionIndex += 1;
+            this.processProgression();
+          });
         });
         return;
       }
@@ -518,7 +549,8 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    if (nextArea.id !== this.currentArea.id) {
+    const enteredNewArea = nextArea.id !== this.currentArea.id;
+    if (enteredNewArea) {
       this.currentArea = nextArea;
       this.tileSize = nextArea.tileSize;
       this.isMoving = false;
@@ -528,6 +560,10 @@ export class AdventureScene extends Phaser.Scene {
 
     this.spawnPlayer(eventBlock);
     this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
+    this.updateDebugPanel();
+    if (enteredNewArea) {
+      this.fireRuleTrigger({ type: "on_area_enter", areaId: nextArea.id });
+    }
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -565,6 +601,7 @@ export class AdventureScene extends Phaser.Scene {
     this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
     this.playerMarker.setPosition(centerX, centerY);
     this.setStatus(`${this.project.player.name} moved to ${eventBlock.name}.`);
+    this.updateDebugPanel();
   }
 
   private showCutscene(cutscene: Cutscene, onDone: () => void) {
@@ -739,8 +776,9 @@ export class AdventureScene extends Phaser.Scene {
 
     this.currentArea.eventBlocks.forEach((eventBlock) => {
       const interaction = this.getEventInteraction(eventBlock);
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: eventBlock.id });
 
-      if (!interaction || !canInteractActivate(interaction)) {
+      if ((!interaction || !canInteractActivate(interaction)) && !hasRule) {
         return;
       }
 
@@ -758,7 +796,8 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.structures.forEach((structure) => {
-      if (!structure.interaction || !canInteractActivate(structure.interaction)) {
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: structure.id });
+      if ((!structure.interaction || !canInteractActivate(structure.interaction)) && !hasRule) {
         return;
       }
 
@@ -814,7 +853,11 @@ export class AdventureScene extends Phaser.Scene {
     this.promptText.setText(interactable ? this.promptForInteraction(interactable.interaction) : "");
   }
 
-  private promptForInteraction(interaction: Interaction): string {
+  private promptForInteraction(interaction?: Interaction): string {
+    if (!interaction) {
+      return "Press E to interact";
+    }
+
     if (interaction.prompt) {
       return interaction.prompt;
     }
@@ -870,7 +913,9 @@ export class AdventureScene extends Phaser.Scene {
 
       this.promptText?.setText("");
       this.showCutscene(cutscene, () => {
-        this.updatePrompt(this.findNearestInteractable());
+        this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId: cutscene.id }, () => {
+          this.updatePrompt(this.findNearestInteractable());
+        });
       });
       return;
     }
@@ -882,7 +927,8 @@ export class AdventureScene extends Phaser.Scene {
       }
 
       const value = interaction.value ?? true;
-      this.runtimeFlags[interaction.flag] = value;
+      this.runtimeState.flags[interaction.flag] = value;
+      this.updateDebugPanel();
       this.setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
       return;
     }
@@ -893,6 +939,7 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.currentMovementMode = interaction.mode;
+    this.updateDebugPanel();
     this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
   }
 
@@ -930,7 +977,7 @@ export class AdventureScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
       onComplete: () => {
         this.isMoving = false;
-        if (this.checkTouchInteractions()) {
+        if (this.checkTouchInteractions(() => this.checkTrigger())) {
           return;
         }
         this.checkTrigger();
@@ -943,17 +990,25 @@ export class AdventureScene extends Phaser.Scene {
     return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
   }
 
-  private checkTouchInteractions(): boolean {
+  private checkTouchInteractions(onDone: () => void): boolean {
     const eventBlock = this.currentArea.eventBlocks.find(
       (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
     );
     const interaction = eventBlock ? this.getEventInteraction(eventBlock) : undefined;
+    const hasRule = eventBlock
+      ? this.hasRuleTrigger({ type: "on_touch", targetId: eventBlock.id })
+      : false;
 
-    if (!eventBlock || !interaction || !canTouchActivate(interaction)) {
+    if (!eventBlock || ((!interaction || !canTouchActivate(interaction)) && !hasRule)) {
       return false;
     }
 
-    this.runInteraction(interaction, eventBlock.name);
+    this.fireRuleTrigger({ type: "on_touch", targetId: eventBlock.id }, () => {
+      if (interaction && canTouchActivate(interaction)) {
+        this.runInteraction(interaction, eventBlock.name);
+      }
+      onDone();
+    });
     return true;
   }
 
@@ -994,6 +1049,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
+    // TODO: Migrate legacy direct interactions into friendly rules once the rule editor covers every use case.
     if (eventBlock.interaction) {
       return eventBlock.interaction;
     }
@@ -1007,6 +1063,90 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     return undefined;
+  }
+
+  private hasRuleTrigger(trigger: RuleTrigger): boolean {
+    return this.project.rules.some((rule) => {
+      if (!rule.enabled || rule.trigger.type !== trigger.type) {
+        return false;
+      }
+
+      if (rule.trigger.type === "on_interact" && trigger.type === "on_interact") {
+        return rule.trigger.targetId === trigger.targetId;
+      }
+
+      if (rule.trigger.type === "on_touch" && trigger.type === "on_touch") {
+        return rule.trigger.targetId === trigger.targetId;
+      }
+
+      if (rule.trigger.type === "on_area_enter" && trigger.type === "on_area_enter") {
+        return rule.trigger.areaId === trigger.areaId;
+      }
+
+      if (rule.trigger.type === "on_cutscene_end" && trigger.type === "on_cutscene_end") {
+        return rule.trigger.cutsceneId === trigger.cutsceneId;
+      }
+
+      return rule.trigger.type === "on_game_start" && trigger.type === "on_game_start";
+    });
+  }
+
+  private getRuleContext(): RuleActionContext {
+    return {
+      state: this.runtimeState,
+      playCutscene: (cutsceneId, onDone) => {
+        const cutscene = this.project.cutscenes.find((candidate) => candidate.id === cutsceneId);
+        if (!cutscene) {
+          this.setStatus(`Rule cutscene missing: ${cutsceneId}.`);
+          onDone();
+          return;
+        }
+
+        this.promptText?.setText("");
+        this.showCutscene(cutscene, () => {
+          this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId }, onDone);
+        });
+      },
+      teleport: (areaId, eventBlockId) => {
+        const eventBlock = this.findEventBlock(eventBlockId, areaId);
+        if (!eventBlock) {
+          this.setStatus(`Rule teleport target missing: ${eventBlockId}.`);
+          return;
+        }
+
+        this.movePlayerToArea(areaId, eventBlock);
+      },
+      changeMovementMode: (mode) => {
+        this.currentMovementMode = mode;
+        this.setStatus(`Movement mode: ${mode}.`);
+        this.updateDebugPanel();
+      },
+      endGame: () => this.showEndMessage(),
+      stateChanged: () => this.updateDebugPanel(),
+    };
+  }
+
+  private fireRuleTrigger(trigger: RuleTrigger, onDone: () => void = () => undefined) {
+    fireTrigger(trigger, this.project.rules, this.getRuleContext(), onDone);
+  }
+
+  private updateDebugPanel() {
+    if (!this.debugText) {
+      return;
+    }
+
+    const flags = Object.entries(this.runtimeState.flags)
+      .map(([name, value]) => `${name}=${value ? "true" : "false"}`)
+      .join(", ");
+    const variables = Object.entries(this.runtimeState.variables)
+      .map(([name, value]) => `${name}=${value}`)
+      .join(", ");
+
+    this.debugText.setText(
+      [`Area: ${this.currentArea.name}`, `Mode: ${this.currentMovementMode}`, `Flags: ${flags || "-"}`, `Vars: ${variables || "-"}`].join(
+        "\n",
+      ),
+    );
   }
 
   private setStatus(message: string) {

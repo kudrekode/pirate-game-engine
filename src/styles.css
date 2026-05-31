@@ -177,8 +177,12 @@ label {
 .character-editor,
 .camera-editor,
 .cutscene-editor,
-.progression-editor {
+.game-state-editor {
   grid-template-columns: minmax(0, 1fr) 260px;
+}
+
+.progression-editor {
+  grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .cutscene-editor {
@@ -875,9 +879,115 @@ label {
   gap: 10px;
 }
 
+.logic-rule-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.logic-rule-item {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.logic-rule-item.selected {
+  border-color: #2f9e44;
+  background: #e9f7ee;
+}
+
+.logic-rule-item span,
+.logic-rule-item small,
+.logic-helper {
+  color: #687581;
+  font-size: 12px;
+}
+
+.logic-editor {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.rule-editor-heading,
+.logic-sentence,
+.logic-row,
+.state-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.rule-editor-heading {
+  justify-content: space-between;
+}
+
+.logic-block {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #d8e0e7;
+  padding-top: 12px;
+}
+
+.logic-block-heading,
+.logic-sentence strong {
+  color: #2f9e44;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.logic-row select,
+.logic-row input,
+.logic-sentence select {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.legacy-progression {
+  color: #687581;
+  font-size: 13px;
+}
+
+.state-section {
+  margin-top: 18px;
+}
+
+.state-list {
+  display: grid;
+  gap: 8px;
+}
+
+.state-row {
+  border: 1px solid #d8e0e7;
+  border-radius: 6px;
+  background: #fbfcfd;
+  padding: 9px;
+}
+
+.state-row code {
+  min-width: 150px;
+  color: #243b53;
+  font-weight: 750;
+}
+
+.state-row.variable input {
+  flex: 1 1 160px;
+}
+
+.validation-message {
+  border: 1px solid #f5c2c7;
+  border-radius: 6px;
+  background: #fff5f5;
+  color: #b42318;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
 .bottom-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   border-top: 1px solid #cbd5df;
   background: #f8fafc;
@@ -940,6 +1050,7 @@ label {
   .camera-editor,
   .cutscene-editor,
   .progression-editor,
+  .game-state-editor,
   .split-layout,
   .cutscene-edit-layout {
     grid-template-columns: 1fr;

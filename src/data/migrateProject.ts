@@ -5,11 +5,16 @@ import { defaultTileStyles, tilePresets } from "./presets";
 import type {
   AreaLink,
   CameraConfig,
+  Condition,
   Cutscene,
   EventBlock,
+  GameAction,
   GameArea,
   GameAreaKind,
   GameProject,
+  GameRule,
+  GameStateConfig,
+  GameStateValue,
   Interaction,
   InteractionActivationMode,
   MapStructure,
@@ -20,7 +25,9 @@ import type {
   PixelAsset,
   ProgressionAction,
   ProgressionStep,
+  RuleTrigger,
   TileStyleConfig,
+  VariableComparisonOperator,
 } from "../types/game";
 
 type UnknownRecord = Record<string, unknown>;
@@ -495,6 +502,182 @@ function migrateProgression(value: unknown, defaultAreaId: string): ProgressionS
   return steps.length > 0 ? steps : cloneProject(defaultProject).progression;
 }
 
+function migrateGameState(value: unknown): GameStateConfig {
+  const source = isRecord(value) ? value : {};
+  const fallback = defaultProject.gameState;
+  const flagSource = isRecord(source.flags) ? source.flags : fallback.flags;
+  const variableSource = isRecord(source.variables) ? source.variables : fallback.variables;
+  const flags: Record<string, boolean> = {};
+  const variables: Record<string, GameStateValue> = {};
+
+  Object.entries(flagSource).forEach(([name, flagValue]) => {
+    if (name) {
+      flags[name] = readBoolean(flagValue, false);
+    }
+  });
+
+  Object.entries(variableSource).forEach(([name, variableValue]) => {
+    if (name && (typeof variableValue === "number" || typeof variableValue === "string")) {
+      variables[name] = variableValue;
+    }
+  });
+
+  return { flags, variables };
+}
+
+function readComparisonOperator(value: unknown): VariableComparisonOperator {
+  return value === "==" ||
+    value === "!=" ||
+    value === ">" ||
+    value === "<" ||
+    value === ">=" ||
+    value === "<="
+    ? value
+    : "==";
+}
+
+function readStateValue(value: unknown, fallback: GameStateValue): GameStateValue {
+  return typeof value === "number" || typeof value === "string" ? value : fallback;
+}
+
+function migrateRuleTrigger(value: unknown): RuleTrigger {
+  if (!isRecord(value)) {
+    return { type: "on_game_start" };
+  }
+
+  if (value.type === "on_interact" || value.type === "on_touch") {
+    return { type: value.type, targetId: readString(value.targetId, "") };
+  }
+
+  if (value.type === "on_area_enter") {
+    return { type: "on_area_enter", areaId: readString(value.areaId, "") };
+  }
+
+  if (value.type === "on_cutscene_end") {
+    return { type: "on_cutscene_end", cutsceneId: readString(value.cutsceneId, "") };
+  }
+
+  return { type: "on_game_start" };
+}
+
+function migrateCondition(value: unknown): Condition | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "flag_is") {
+    return {
+      type: "flag_is",
+      flag: readString(value.flag, ""),
+      value: readBoolean(value.value, true),
+    };
+  }
+
+  if (value.type === "variable_compare") {
+    return {
+      type: "variable_compare",
+      variable: readString(value.variable, ""),
+      operator: readComparisonOperator(value.operator),
+      value: readStateValue(value.value, 0),
+    };
+  }
+
+  return null;
+}
+
+function migrateGameAction(value: unknown): GameAction | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.type === "set_flag") {
+    return {
+      type: "set_flag",
+      flag: readString(value.flag, ""),
+      value: readBoolean(value.value, true),
+    };
+  }
+
+  if (value.type === "change_variable") {
+    return {
+      type: "change_variable",
+      variable: readString(value.variable, ""),
+      amount: readNumber(value.amount, 0),
+    };
+  }
+
+  if (value.type === "set_variable") {
+    return {
+      type: "set_variable",
+      variable: readString(value.variable, ""),
+      value: readStateValue(value.value, 0),
+    };
+  }
+
+  if (value.type === "play_cutscene") {
+    return { type: "play_cutscene", cutsceneId: readString(value.cutsceneId, "") };
+  }
+
+  if (value.type === "teleport") {
+    return {
+      type: "teleport",
+      areaId: readString(value.areaId, ""),
+      eventBlockId: readString(value.eventBlockId, ""),
+    };
+  }
+
+  if (
+    value.type === "change_movement_mode" &&
+    (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
+  ) {
+    return { type: "change_movement_mode", mode: value.mode };
+  }
+
+  return value.type === "end_game" ? { type: "end_game" } : null;
+}
+
+function migrateActions(value: unknown): GameAction[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((action) => {
+    const migrated = migrateGameAction(action);
+    return migrated ? [migrated] : [];
+  });
+}
+
+function migrateRules(value: unknown): GameRule[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((rule, index) => {
+    if (!isRecord(rule)) {
+      return [];
+    }
+
+    const conditions = Array.isArray(rule.conditions)
+      ? rule.conditions.flatMap((condition) => {
+          const migrated = migrateCondition(condition);
+          return migrated ? [migrated] : [];
+        })
+      : [];
+
+    return [
+      {
+        id: readString(rule.id, `rule_${index + 1}`),
+        name: readString(rule.name, `Rule ${index + 1}`),
+        enabled: readBoolean(rule.enabled, true),
+        trigger: migrateRuleTrigger(rule.trigger),
+        conditions,
+        actions: migrateActions(rule.actions),
+        elseActions: migrateActions(rule.elseActions),
+      },
+    ];
+  });
+}
+
 export function migrateProject(value: unknown): GameProject {
   const source = isRecord(value) ? value : {};
   const metadataSource = isRecord(source.metadata) ? source.metadata : {};
@@ -520,5 +703,7 @@ export function migrateProject(value: unknown): GameProject {
       ? (source.cutscenes as Cutscene[])
       : cloneProject(defaultProject).cutscenes,
     progression: migrateProgression(source.progression, activeAreaId),
+    gameState: migrateGameState(source.gameState),
+    rules: migrateRules(source.rules),
   };
 }
