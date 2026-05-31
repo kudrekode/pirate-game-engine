@@ -5,6 +5,7 @@ import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import { GameStateEditor } from "../editor/sections/GameStateEditor";
 import { MapEditor } from "../editor/sections/MapEditor";
+import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
@@ -45,5 +46,12 @@ describe("editor smoke tests", () => {
     expect(screen.getByText("Game State")).toBeInTheDocument();
     expect(screen.getByText("intro_seen")).toBeInTheDocument();
     expect(screen.getByText("gold")).toBeInTheDocument();
+  });
+
+  it("renders Items Editor", () => {
+    render(<ItemsEditor />);
+
+    expect(screen.getByText("Item Definition")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
   });
 });

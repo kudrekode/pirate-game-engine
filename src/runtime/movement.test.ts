@@ -29,6 +29,7 @@ function makeArea(patch: Partial<GameArea> = {}): GameArea {
     structures: [],
     eventBlocks: [],
     ...patch,
+    pickups: patch.pickups ?? [],
   };
 }
 
@@ -81,4 +82,3 @@ describe("resolveMovementAt", () => {
     });
   });
 });
-

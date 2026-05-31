@@ -12,6 +12,7 @@ function makeContext() {
   const state = createRuntimeState({
     flags: { has_key: true, admin_override: false },
     variables: { gold: 5, lockpick_count: 0, title: "guest" },
+    inventory: { gold_coin: 5 },
   });
   const teleport = vi.fn();
   const context: RuleActionContext = {
@@ -20,6 +21,10 @@ function makeContext() {
     teleport,
     changeMovementMode: vi.fn(),
     endGame: vi.fn(),
+    itemDefinitions: [
+      { id: "gold_coin", name: "Gold Coin", category: "currency", stackable: true, maxStack: 99 },
+      { id: "tavern_key", name: "Tavern Key", category: "key", stackable: false },
+    ],
   };
 
   return { context, state, teleport };
@@ -75,6 +80,14 @@ describe("rule engine conditions", () => {
     expect(evaluateConditionExpression(undefined, state)).toBe(true);
     expect(evaluateConditionExpression({ id: "empty", type: "group", operator: "OR", conditions: [] }, state)).toBe(true);
   });
+
+  it("evaluates has_item and not_has_item conditions", () => {
+    const { state } = makeContext();
+
+    expect(evaluateCondition({ id: "coins", type: "has_item", itemId: "gold_coin", quantity: 5 }, state)).toBe(true);
+    expect(evaluateCondition({ id: "more-coins", type: "has_item", itemId: "gold_coin", quantity: 6 }, state)).toBe(false);
+    expect(evaluateCondition({ id: "key", type: "not_has_item", itemId: "tavern_key" }, state)).toBe(true);
+  });
 });
 
 describe("rule engine triggers and actions", () => {
@@ -121,5 +134,24 @@ describe("rule engine triggers and actions", () => {
 
     expect(teleport).not.toHaveBeenCalled();
   });
-});
 
+  it("checks inventory and applies give and remove item actions", () => {
+    const { context, state } = makeContext();
+    const rule: GameRule = {
+      id: "trade-coins",
+      name: "Trade Coins",
+      enabled: true,
+      trigger: { type: "on_interact", targetId: "door" },
+      conditionTree: { id: "coins", type: "has_item", itemId: "gold_coin", quantity: 5 },
+      actions: [
+        { type: "remove_item", itemId: "gold_coin", quantity: 5 },
+        { type: "give_item", itemId: "tavern_key", quantity: 3 },
+      ],
+    };
+
+    fireTrigger({ type: "on_interact", targetId: "door" }, [rule], context);
+
+    expect(state.inventory.items.gold_coin).toBeUndefined();
+    expect(state.inventory.items.tavern_key).toBe(1);
+  });
+});

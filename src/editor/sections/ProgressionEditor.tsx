@@ -27,6 +27,8 @@ const actionTypes: { label: string; value: GameAction["type"] }[] = [
   { label: "Play cutscene", value: "play_cutscene" },
   { label: "Teleport player", value: "teleport" },
   { label: "Change movement mode", value: "change_movement_mode" },
+  { label: "Give item", value: "give_item" },
+  { label: "Remove item", value: "remove_item" },
   { label: "End game", value: "end_game" },
 ];
 
@@ -64,7 +66,7 @@ function triggerSummary(trigger: RuleTrigger, labels: Record<string, string>): s
   return `WHEN cutscene ends: ${labels[trigger.cutsceneId] ?? (trigger.cutsceneId || "a cutscene")}`;
 }
 
-function conditionSummary(expression: ConditionExpression | undefined): string {
+function conditionSummary(expression: ConditionExpression | undefined, labels: Record<string, string>): string {
   if (!expression) {
     return "always";
   }
@@ -77,13 +79,21 @@ function conditionSummary(expression: ConditionExpression | undefined): string {
     return `${expression.variable || "variable"} ${expression.operator} ${expression.value}`;
   }
 
+  if (expression.type === "has_item" || expression.type === "not_has_item") {
+    const itemName = labels[expression.itemId] ?? expression.itemId ?? "item";
+    const quantity = expression.quantity ?? 1;
+    return expression.type === "has_item"
+      ? `player has${quantity > 1 ? ` at least ${quantity}` : ""} ${itemName}`
+      : `player does not have${quantity > 1 ? ` at least ${quantity}` : ""} ${itemName}`;
+  }
+
   if (expression.conditions.length === 0) {
     return "always";
   }
 
   return expression.conditions
     .map((condition) => {
-      const summary = conditionSummary(condition);
+      const summary = conditionSummary(condition, labels);
       return condition.type === "group" ? `(${summary})` : summary;
     })
     .join(` ${expression.operator} `);
@@ -114,13 +124,17 @@ function actionSummary(action: GameAction, labels: Record<string, string>): stri
     return `change movement mode to ${action.mode}`;
   }
 
+  if (action.type === "give_item" || action.type === "remove_item") {
+    return `${action.type === "give_item" ? "give" : "remove"} ${labels[action.itemId] ?? (action.itemId || "item")} x${action.quantity}`;
+  }
+
   return "end game";
 }
 
 function ruleSummary(rule: GameRule, labels: Record<string, string>): string[] {
   return [
     triggerSummary(rule.trigger, labels),
-    `IF ${conditionSummary(rule.conditionTree)}`,
+    `IF ${conditionSummary(rule.conditionTree, labels)}`,
     `THEN ${rule.actions.map((action) => actionSummary(action, labels)).join(", ") || "do nothing"}`,
     ...(rule.elseActions && rule.elseActions.length > 0
       ? [`ELSE ${rule.elseActions.map((action) => actionSummary(action, labels)).join(", ")}`]
@@ -197,6 +211,7 @@ export function ProgressionEditor() {
   const selectedRule = project.rules.find((rule) => rule.id === selectedRuleId);
   const flagNames = Object.keys(project.gameState.flags);
   const variableNames = Object.keys(project.gameState.variables);
+  const itemIds = project.items.map((item) => item.id);
   const firstArea = project.areas[0];
   const firstEventBlock = firstArea?.eventBlocks[0];
   const firstCutscene = project.cutscenes[0];
@@ -233,8 +248,9 @@ export function ProgressionEditor() {
         ...touchTargets.map((target) => [target.id, target.label]),
         ...project.areas.map((area) => [area.id, area.name]),
         ...project.cutscenes.map((cutscene) => [cutscene.id, cutscene.name]),
+        ...project.items.map((item) => [item.id, item.name]),
       ]),
-    [interactTargets, project.areas, project.cutscenes, touchTargets],
+    [interactTargets, project.areas, project.cutscenes, project.items, touchTargets],
   );
 
   useEffect(() => {
@@ -346,6 +362,10 @@ export function ProgressionEditor() {
       return { id, type, flag: flagNames[0] ?? "", value: true };
     }
 
+    if (type === "has_item" || type === "not_has_item") {
+      return { id, type, itemId: itemIds[0] ?? "", quantity: 1 };
+    }
+
     const variable = variableNames[0] ?? "";
     return {
       id,
@@ -445,6 +465,10 @@ export function ProgressionEditor() {
       return { type, mode: "walk" };
     }
 
+    if (type === "give_item" || type === "remove_item") {
+      return { type, itemId: itemIds[0] ?? "", quantity: 1 };
+    }
+
     return { type: "end_game" };
   }
 
@@ -532,6 +556,8 @@ export function ProgressionEditor() {
         >
           <option value="flag_is">Flag is</option>
           <option value="variable_compare">Variable comparison</option>
+          <option value="has_item">Player has item</option>
+          <option value="not_has_item">Player does not have item</option>
         </select>
         {condition.type === "flag_is" ? (
           <>
@@ -557,7 +583,7 @@ export function ProgressionEditor() {
               <option value="false">false</option>
             </select>
           </>
-        ) : (
+        ) : condition.type === "variable_compare" ? (
           <>
             <select
               onChange={(event) => {
@@ -594,6 +620,28 @@ export function ProgressionEditor() {
               }
               type={typeof condition.value === "number" ? "number" : "text"}
               value={condition.value}
+            />
+          </>
+        ) : (
+          <>
+            <select
+              onChange={(event) =>
+                replaceCondition(rule, condition.id, { ...condition, itemId: event.target.value })
+              }
+              value={condition.itemId}
+            >
+              {project.items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            <input
+              min={1}
+              onChange={(event) =>
+                replaceCondition(rule, condition.id, {
+                  ...condition,
+                  quantity: Math.max(1, Number(event.target.value)),
+                })
+              }
+              type="number"
+              value={condition.quantity ?? 1}
             />
           </>
         )}
@@ -740,6 +788,19 @@ export function ProgressionEditor() {
             <option value="sail">sail</option>
             <option value="ride">ride</option>
           </select>
+        ) : null}
+        {action.type === "give_item" || action.type === "remove_item" ? (
+          <>
+            <select onChange={(event) => setAction({ ...action, itemId: event.target.value })} value={action.itemId}>
+              {project.items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            <input
+              min={1}
+              onChange={(event) => setAction({ ...action, quantity: Math.max(1, Number(event.target.value)) })}
+              type="number"
+              value={action.quantity}
+            />
+          </>
         ) : null}
         <button
           className="danger-button compact"

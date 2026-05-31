@@ -4,13 +4,17 @@ import type {
   GameRule,
   GameStateConfig,
   GameStateValue,
+  InventoryState,
+  ItemDefinition,
   RuleTrigger,
   SingleCondition,
 } from "../types/game";
+import { createInventory, giveItem, hasItem, removeItem } from "./inventory";
 
 export type RuntimeGameState = {
   flags: Record<string, boolean>;
   variables: Record<string, GameStateValue>;
+  inventory: InventoryState;
 };
 
 export type RuleActionContext = {
@@ -19,6 +23,7 @@ export type RuleActionContext = {
   teleport: (areaId: string, eventBlockId: string) => void;
   changeMovementMode: (mode: "walk" | "sail" | "ride") => void;
   endGame: () => void;
+  itemDefinitions?: ItemDefinition[];
   stateChanged?: () => void;
 };
 
@@ -26,6 +31,7 @@ export function createRuntimeState(config: GameStateConfig): RuntimeGameState {
   return {
     flags: { ...config.flags },
     variables: { ...config.variables },
+    inventory: createInventory(config.inventory),
   };
 }
 
@@ -60,6 +66,14 @@ function compareValues(left: GameStateValue, right: GameStateValue, operator: st
 export function evaluateCondition(condition: SingleCondition, runtimeState: RuntimeGameState): boolean {
   if (condition.type === "flag_is") {
     return (runtimeState.flags[condition.flag] ?? false) === condition.value;
+  }
+
+  if (condition.type === "has_item") {
+    return hasItem(runtimeState.inventory, condition.itemId, condition.quantity);
+  }
+
+  if (condition.type === "not_has_item") {
+    return !hasItem(runtimeState.inventory, condition.itemId, condition.quantity);
   }
 
   const currentValue = runtimeState.variables[condition.variable];
@@ -127,6 +141,20 @@ export function runAction(
 
   if (action.type === "play_cutscene") {
     context.playCutscene(action.cutsceneId, onDone);
+    return;
+  }
+
+  if (action.type === "give_item") {
+    giveItem(context.state.inventory, context.itemDefinitions ?? [], action.itemId, action.quantity);
+    context.stateChanged?.();
+    onDone();
+    return;
+  }
+
+  if (action.type === "remove_item") {
+    removeItem(context.state.inventory, action.itemId, action.quantity);
+    context.stateChanged?.();
+    onDone();
     return;
   }
 

@@ -19,6 +19,7 @@ Each area owns:
 - Terrain tiles
 - Overlay tiles
 - Structures
+- Pickup objects
 - Event blocks
 - Optional theme metadata
 
@@ -30,8 +31,15 @@ Terrain remains grid-based. Runtime camera settings live at the project level in
 
 - `flags`: boolean values such as `intro_seen`
 - `variables`: number or string values such as `gold` or `reputation`
+- `inventory`: optional initial item quantities
 
-Each Play session copies these defaults into separate runtime memory. Variables are not inventory items, currencies, pickups, shops, or HUD elements.
+Each Play session copies these defaults into separate runtime memory. Variables remain general number or text state. Inventory item definitions live in `GameProject.items`; runtime quantities are separate from those definitions.
+
+## Items And Pickups
+
+`GameProject.items` contains item definitions. V1 supports keys, currency, consumables, quest items, and miscellaneous items without equipment, crafting, or shop behavior.
+
+Each area owns grid-based pickup objects. Pickups can collect on touch or on interact. Runtime inventory helpers live in `src/runtime/inventory.ts`; the React runtime overlay shows collected quantities without being affected by the Phaser world camera.
 
 ## Rule Engine
 
@@ -47,6 +55,8 @@ Each rule has:
 - Optional ELSE actions
 
 Condition groups support `AND` and `OR`, including nested groups. Missing or empty conditions mean the rule always passes.
+
+Rules can check item quantities and give or remove items. Removing items never drops below zero; stack limits are enforced by the inventory helper.
 
 Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
 
@@ -96,9 +106,9 @@ npm run ci
 Current focused tests cover:
 
 - Rule evaluation and actions
+- Inventory stacking and pickup collection
 - Movement resolution
 - Project migration
 - Basic React editor smoke rendering
 
 Do not add Playwright, browser end-to-end tests, snapshot-heavy suites, or coverage thresholds unless project requirements change.
-

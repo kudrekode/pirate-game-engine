@@ -68,6 +68,38 @@ const mainArea: GameArea = {
       heightTiles: 3,
       blocksMovement: true,
     },
+    {
+      id: "structure_locked_door",
+      structureId: "door",
+      name: "Locked Side Door",
+      x: 16,
+      y: 5,
+      widthTiles: 1,
+      heightTiles: 1,
+      blocksMovement: true,
+    },
+  ],
+  pickups: [
+    {
+      id: "pickup_gold_coins",
+      itemId: "gold_coin",
+      quantity: 5,
+      areaId: "area_main",
+      x: 3,
+      y: 2,
+      pickupMode: "on_touch",
+      once: true,
+    },
+    {
+      id: "pickup_tavern_key",
+      itemId: "tavern_key",
+      quantity: 1,
+      areaId: "area_main",
+      x: 5,
+      y: 3,
+      pickupMode: "on_interact",
+      once: true,
+    },
   ],
   eventBlocks: [
     {
@@ -142,6 +174,7 @@ const houseArea: GameArea = {
       blocksMovement: true,
     },
   ],
+  pickups: [],
   eventBlocks: [
     {
       id: "spawn_house_entry",
@@ -228,6 +261,14 @@ export const defaultProject: GameProject = {
       speakerName: "Innkeeper",
       text: "Welcome in. The first drink is on the house.",
     },
+    {
+      id: "locked_door",
+      name: "Locked Door",
+      backgroundImageId: "stone_gate",
+      portraitImageId: "portrait_ranger",
+      speakerName: "Ari",
+      text: "The side door is locked. Find the tavern key first.",
+    },
   ],
   progression: [
     {
@@ -276,7 +317,40 @@ export const defaultProject: GameProject = {
       gold: 3,
       reputation: 0,
     },
+    inventory: {},
   },
+  items: [
+    {
+      id: "gold_coin",
+      name: "Gold Coin",
+      description: "A simple coin accepted at the tavern.",
+      category: "currency",
+      stackable: true,
+      maxStack: 999,
+    },
+    {
+      id: "tavern_key",
+      name: "Tavern Key",
+      description: "Unlocks the tavern side door.",
+      category: "key",
+      stackable: false,
+    },
+    {
+      id: "boat_pass",
+      name: "Boat Pass",
+      description: "Proof of passage for a future voyage.",
+      category: "quest",
+      stackable: false,
+    },
+    {
+      id: "rum_bottle",
+      name: "Rum Bottle",
+      description: "A sealed bottle for a future quest.",
+      category: "consumable",
+      stackable: true,
+      maxStack: 12,
+    },
+  ],
   ruleGroups: [
     {
       id: "rule_group_opening",
@@ -320,11 +394,11 @@ export const defaultProject: GameProject = {
         type: "group",
         operator: "AND",
         conditions: [
-          { id: "condition_tavern_gold", type: "variable_compare", variable: "gold", operator: ">=", value: 5 },
+          { id: "condition_tavern_gold", type: "has_item", itemId: "gold_coin", quantity: 5 },
         ],
       },
       actions: [
-        { type: "change_variable", variable: "gold", amount: -5 },
+        { type: "remove_item", itemId: "gold_coin", quantity: 5 },
         { type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" },
       ],
       elseActions: [{ type: "play_cutscene", cutsceneId: "not_enough_gold" }],
@@ -355,6 +429,21 @@ export const defaultProject: GameProject = {
       groupId: "rule_group_cave",
       trigger: { type: "on_touch", targetId: "trigger_gate" },
       actions: [{ type: "set_flag", flag: "cave_open", value: true }],
+    },
+    {
+      id: "rule_locked_door",
+      name: "Unlock Side Door",
+      enabled: true,
+      groupId: "rule_group_tavern",
+      trigger: { type: "on_interact", targetId: "structure_locked_door" },
+      conditionTree: {
+        id: "condition_group_locked_door",
+        type: "group",
+        operator: "AND",
+        conditions: [{ id: "condition_tavern_key", type: "has_item", itemId: "tavern_key", quantity: 1 }],
+      },
+      actions: [{ type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" }],
+      elseActions: [{ type: "play_cutscene", cutsceneId: "locked_door" }],
     },
   ],
 };

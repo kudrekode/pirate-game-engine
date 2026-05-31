@@ -28,6 +28,8 @@ describe("migrateProject", () => {
       { x: 0, y: 0, tileId: "grass" },
       { x: 1, y: 0, tileId: "dirt" },
     ]);
+    expect(project.areas[0].pickups).toEqual([]);
+    expect(project.items).toEqual([]);
   });
 
   it("adds default game state when older projects omit it", () => {
@@ -42,6 +44,7 @@ describe("migrateProject", () => {
       gold: 3,
       reputation: 0,
     });
+    expect(project.gameState.inventory).toEqual({});
   });
 
   it("migrates flat rule conditions into an AND condition group", () => {
@@ -82,6 +85,40 @@ describe("migrateProject", () => {
     expect(project.player.mapAvatarId).toBeTruthy();
     expect(project.ruleGroups).toEqual([]);
     expect(project.rules).toEqual([]);
+    expect(project.items).toEqual([]);
+  });
+
+  it("migrates inventory rules and pickups", () => {
+    const project = migrateProject({
+      areas: [
+        {
+          id: "area_test",
+          width: 2,
+          height: 2,
+          pickups: [{ id: "pickup_key", itemId: "tavern_key", quantity: 1, x: 1, y: 1 }],
+        },
+      ],
+      items: [{ id: "tavern_key", name: "Tavern Key", category: "key", stackable: false }],
+      gameState: { flags: {}, variables: {}, inventory: { tavern_key: 1 } },
+      rules: [
+        {
+          id: "key-rule",
+          name: "Use key",
+          trigger: { type: "on_game_start" },
+          conditionTree: { type: "has_item", itemId: "tavern_key" },
+          actions: [{ type: "remove_item", itemId: "tavern_key", quantity: 1 }],
+        },
+      ],
+    });
+
+    expect(project.areas[0].pickups[0]).toMatchObject({
+      id: "pickup_key",
+      areaId: "area_test",
+      pickupMode: "on_touch",
+      once: true,
+    });
+    expect(project.gameState.inventory).toEqual({ tavern_key: 1 });
+    expect(project.rules[0].conditionTree).toMatchObject({ type: "has_item", quantity: 1 });
+    expect(project.rules[0].actions[0]).toEqual({ type: "remove_item", itemId: "tavern_key", quantity: 1 });
   });
 });
-

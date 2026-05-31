@@ -16,8 +16,10 @@ import type {
   MovementMode,
   MapStructure,
   PixelAsset,
+  PickupObject,
   RuleTrigger,
 } from "../types/game";
+import { collectPickup } from "./inventory";
 import { resolveMovementAt } from "./movement";
 import {
   createRuntimeState,
@@ -40,7 +42,8 @@ type InteractKeys = {
 
 type Interactable =
   | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
-  | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number };
+  | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number }
+  | { kind: "pickup"; label: string; pickup: PickupObject; distance: number };
 
 function hexToNumber(hex: string): number {
   return Phaser.Display.Color.HexStringToColor(hex).color;
@@ -86,17 +89,20 @@ export class AdventureScene extends Phaser.Scene {
   private promptText?: Phaser.GameObjects.Text;
   private debugText?: Phaser.GameObjects.Text;
   private readonly runtimeState: RuntimeGameState;
+  private readonly collectedPickupIds = new Set<string>();
+  private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
 
-  constructor(project: GameProject) {
+  constructor(project: GameProject, onInventoryChanged?: (inventory: Record<string, number>) => void) {
     super("AdventureScene");
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
     this.runtimeState = createRuntimeState(project.gameState);
+    this.onInventoryChanged = onInventoryChanged;
   }
 
   create() {
@@ -143,6 +149,7 @@ export class AdventureScene extends Phaser.Scene {
       .setScrollFactor(0);
     this.uiLayer.add(this.debugText);
     this.updateDebugPanel();
+    this.notifyInventoryChanged();
 
     this.fireRuleTrigger({ type: "on_game_start" }, () => this.processProgression());
   }
@@ -162,7 +169,15 @@ export class AdventureScene extends Phaser.Scene {
     this.updatePrompt(interactable);
     if (this.wasInteractPressed() && interactable) {
       const targetId =
-        interactable.kind === "event" ? interactable.eventBlock.id : interactable.structure.id;
+        interactable.kind === "event"
+          ? interactable.eventBlock.id
+          : interactable.kind === "structure"
+            ? interactable.structure.id
+            : "";
+      if (interactable.kind === "pickup") {
+        this.collectPickupObject(interactable.pickup);
+        return;
+      }
       this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
         if (interactable.interaction && canInteractActivate(interactable.interaction)) {
           this.runInteraction(interactable.interaction, interactable.label);
@@ -370,6 +385,9 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.currentArea.structures.forEach((structure) => this.renderStructure(structure));
+    this.currentArea.pickups
+      .filter((pickup) => !this.isPickupCollected(pickup))
+      .forEach((pickup) => this.renderPickup(pickup));
   }
 
   private createPixelTextures() {
@@ -564,6 +582,26 @@ export class AdventureScene extends Phaser.Scene {
     if (enteredNewArea) {
       this.fireRuleTrigger({ type: "on_area_enter", areaId: nextArea.id });
     }
+  }
+
+  private renderPickup(pickup: PickupObject) {
+    const item = this.project.items.find((candidate) => candidate.id === pickup.itemId);
+    const centerX = pickup.x * this.tileSize + this.tileSize / 2;
+    const centerY = pickup.y * this.tileSize + this.tileSize / 2;
+    const body = this.add
+      .circle(0, 0, this.tileSize * 0.24, item?.category === "currency" ? 0xfbbf24 : 0x8b5cf6, 0.96)
+      .setStrokeStyle(2, 0xffffff, 0.82);
+    const label = this.add
+      .text(0, 0, item?.name.slice(0, 1).toUpperCase() ?? "?", {
+        color: "#312e81",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "12px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+    const container = this.add.container(centerX, centerY, [body, label]).setDepth(40);
+    container.setName(`pickup:${pickup.id}`);
+    this.worldLayer?.add(container);
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -813,6 +851,24 @@ export class AdventureScene extends Phaser.Scene {
       }
     });
 
+    this.currentArea.pickups.forEach((pickup) => {
+      if (pickup.pickupMode !== "on_interact" || this.isPickupCollected(pickup)) {
+        return;
+      }
+
+      const distance =
+        Math.abs(pickup.x - this.playerPosition.x) + Math.abs(pickup.y - this.playerPosition.y);
+      if (distance <= 1) {
+        const item = this.project.items.find((candidate) => candidate.id === pickup.itemId);
+        candidates.push({
+          kind: "pickup",
+          label: item?.name ?? "item",
+          pickup,
+          distance,
+        });
+      }
+    });
+
     return (
       candidates.sort((a, b) => {
         if (a.distance !== b.distance) {
@@ -850,7 +906,13 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    this.promptText.setText(interactable ? this.promptForInteraction(interactable.interaction) : "");
+    this.promptText.setText(
+      interactable
+        ? interactable.kind === "pickup"
+          ? `Press E to pick up ${interactable.label}`
+          : this.promptForInteraction(interactable.interaction)
+        : "",
+    );
   }
 
   private promptForInteraction(interaction?: Interaction): string {
@@ -943,6 +1005,43 @@ export class AdventureScene extends Phaser.Scene {
     this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
   }
 
+  private collectPickupObject(pickup: PickupObject): boolean {
+    if (this.isPickupCollected(pickup)) {
+      return false;
+    }
+
+    const collected = collectPickup(
+      pickup,
+      this.runtimeState.inventory,
+      this.project.items,
+      this.collectedPickupIds,
+    );
+    if (!collected) {
+      return false;
+    }
+
+    if (pickup.collectedFlag) {
+      this.runtimeState.flags[pickup.collectedFlag] = true;
+    }
+
+    const item = this.project.items.find((candidate) => candidate.id === pickup.itemId);
+    if (pickup.once) {
+      this.worldLayer?.getByName(`pickup:${pickup.id}`)?.destroy();
+    }
+    this.notifyInventoryChanged();
+    this.updateDebugPanel();
+    this.setStatus(`Picked up ${item?.name ?? pickup.itemId} x${pickup.quantity}.`);
+    return true;
+  }
+
+  private isPickupCollected(pickup: PickupObject): boolean {
+    return Boolean(
+      pickup.once &&
+        (this.collectedPickupIds.has(pickup.id) ||
+          (pickup.collectedFlag && this.runtimeState.flags[pickup.collectedFlag])),
+    );
+  }
+
   private tryMove(deltaX: number, deltaY: number, time: number) {
     const nextX = this.playerPosition.x + deltaX;
     const nextY = this.playerPosition.y + deltaY;
@@ -991,6 +1090,17 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private checkTouchInteractions(onDone: () => void): boolean {
+    const pickup = this.currentArea.pickups.find(
+      (candidate) =>
+        candidate.pickupMode === "on_touch" &&
+        candidate.x === this.playerPosition.x &&
+        candidate.y === this.playerPosition.y,
+    );
+    if (pickup && this.collectPickupObject(pickup)) {
+      onDone();
+      return true;
+    }
+
     const eventBlock = this.currentArea.eventBlocks.find(
       (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
     );
@@ -1122,7 +1232,11 @@ export class AdventureScene extends Phaser.Scene {
         this.updateDebugPanel();
       },
       endGame: () => this.showEndMessage(),
-      stateChanged: () => this.updateDebugPanel(),
+      itemDefinitions: this.project.items,
+      stateChanged: () => {
+        this.updateDebugPanel();
+        this.notifyInventoryChanged();
+      },
     };
   }
 
@@ -1141,12 +1255,20 @@ export class AdventureScene extends Phaser.Scene {
     const variables = Object.entries(this.runtimeState.variables)
       .map(([name, value]) => `${name}=${value}`)
       .join(", ");
+    const inventory = Object.entries(this.runtimeState.inventory.items)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([itemId, quantity]) => `${itemId}=${quantity}`)
+      .join(", ");
 
     this.debugText.setText(
-      [`Area: ${this.currentArea.name}`, `Mode: ${this.currentMovementMode}`, `Flags: ${flags || "-"}`, `Vars: ${variables || "-"}`].join(
+      [`Area: ${this.currentArea.name}`, `Mode: ${this.currentMovementMode}`, `Flags: ${flags || "-"}`, `Vars: ${variables || "-"}`, `Items: ${inventory || "-"}`].join(
         "\n",
       ),
     );
+  }
+
+  private notifyInventoryChanged() {
+    this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
   }
 
   private setStatus(message: string) {

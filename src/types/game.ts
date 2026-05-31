@@ -9,6 +9,7 @@ export type GameProject = {
   cutscenes: Cutscene[];
   progression: ProgressionStep[];
   gameState: GameStateConfig;
+  items: ItemDefinition[];
   ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
@@ -65,6 +66,7 @@ export type Interaction = {
 export type EditorSelection =
   | { type: "eventBlock"; areaId: string; id: string }
   | { type: "structure"; areaId: string; id: string }
+  | { type: "pickup"; areaId: string; id: string }
   | { type: "overlay"; areaId: string; x: number; y: number }
   | { type: "terrain"; areaId: string; x: number; y: number }
   | { type: "area"; areaId: string }
@@ -80,6 +82,7 @@ export type GameArea = {
   terrainTiles: MapTile[];
   overlayTiles: OverlayTile[];
   structures: MapStructure[];
+  pickups: PickupObject[];
   eventBlocks: EventBlock[];
   theme?: AreaThemeConfig;
 };
@@ -116,6 +119,18 @@ export type MapObject = {
   x: number;
   y: number;
   objectId: string;
+};
+
+export type PickupObject = {
+  id: string;
+  itemId: string;
+  quantity: number;
+  areaId: string;
+  x: number;
+  y: number;
+  pickupMode: "on_touch" | "on_interact";
+  once: boolean;
+  collectedFlag?: string;
 };
 
 export type EventBlock = {
@@ -195,6 +210,21 @@ export type GameStateValue = number | string;
 export type GameStateConfig = {
   flags: Record<string, boolean>;
   variables: Record<string, GameStateValue>;
+  inventory?: Record<string, number>;
+};
+
+export type InventoryState = {
+  items: Record<string, number>;
+};
+
+export type ItemDefinition = {
+  id: string;
+  name: string;
+  description?: string;
+  category: "key" | "currency" | "consumable" | "quest" | "misc";
+  iconId?: string;
+  stackable: boolean;
+  maxStack?: number;
 };
 
 export type GameRule = {
@@ -242,7 +272,9 @@ export type SingleCondition =
       variable: string;
       operator: VariableComparisonOperator;
       value: GameStateValue;
-    };
+    }
+  | { id: string; type: "has_item"; itemId: string; quantity?: number }
+  | { id: string; type: "not_has_item"; itemId: string; quantity?: number };
 
 export type GameAction =
   | { type: "set_flag"; flag: string; value: boolean }
@@ -251,6 +283,8 @@ export type GameAction =
   | { type: "play_cutscene"; cutsceneId: string }
   | { type: "teleport"; areaId: string; eventBlockId: string }
   | { type: "change_movement_mode"; mode: Exclude<MovementMode, "swim"> }
+  | { type: "give_item"; itemId: string; quantity: number }
+  | { type: "remove_item"; itemId: string; quantity: number }
   | { type: "end_game" };
 
 // TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, and asset imports.

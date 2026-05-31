@@ -18,10 +18,12 @@ import type {
   GameStateValue,
   Interaction,
   InteractionActivationMode,
+  ItemDefinition,
   MapStructure,
   MapTile,
   MovementRule,
   OverlayTile,
+  PickupObject,
   PlayerConfig,
   PixelAsset,
   ProgressionAction,
@@ -302,6 +304,33 @@ function migrateStructures(value: unknown): MapStructure[] {
   });
 }
 
+function migratePickups(value: unknown, areaId: string): PickupObject[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const collectedFlag = readString(item.collectedFlag, "");
+    return [
+      {
+        id: readString(item.id, `pickup_${Date.now().toString(36)}`),
+        itemId: readString(item.itemId, ""),
+        quantity: Math.round(readNumber(item.quantity, 1, 1, 9999)),
+        areaId,
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        pickupMode: item.pickupMode === "on_interact" ? "on_interact" : "on_touch",
+        once: readBoolean(item.once, true),
+        ...(collectedFlag ? { collectedFlag } : {}),
+      },
+    ];
+  });
+}
+
 function migrateArea(value: unknown, index: number, fallback: GameArea): GameArea {
   const source = isRecord(value) ? value : {};
   const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
@@ -319,6 +348,7 @@ function migrateArea(value: unknown, index: number, fallback: GameArea): GameAre
     terrainTiles,
     overlayTiles: migrateOverlayTiles(source.overlayTiles),
     structures: migrateStructures(source.structures),
+    pickups: migratePickups(source.pickups, id),
     eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
     theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
   };
@@ -512,6 +542,7 @@ function migrateGameState(value: unknown): GameStateConfig {
   const variableSource = isRecord(source.variables) ? source.variables : fallback.variables;
   const flags: Record<string, boolean> = {};
   const variables: Record<string, GameStateValue> = {};
+  const inventory: Record<string, number> = {};
 
   Object.entries(flagSource).forEach(([name, flagValue]) => {
     if (name) {
@@ -525,7 +556,55 @@ function migrateGameState(value: unknown): GameStateConfig {
     }
   });
 
-  return { flags, variables };
+  if (isRecord(source.inventory)) {
+    Object.entries(source.inventory).forEach(([itemId, quantity]) => {
+      if (itemId && typeof quantity === "number" && Number.isFinite(quantity)) {
+        inventory[itemId] = Math.max(0, Math.round(quantity));
+      }
+    });
+  }
+
+  return { flags, variables, inventory };
+}
+
+function migrateItems(value: unknown): ItemDefinition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const category =
+      item.category === "key" ||
+      item.category === "currency" ||
+      item.category === "consumable" ||
+      item.category === "quest" ||
+      item.category === "misc"
+        ? item.category
+        : "misc";
+    const description = readString(item.description, "");
+    const iconId = readString(item.iconId, "");
+    const stackable = readBoolean(item.stackable, false);
+    const maxStack =
+      stackable && typeof item.maxStack === "number" && Number.isFinite(item.maxStack)
+        ? Math.round(readNumber(item.maxStack, 1, 1, 9999))
+        : undefined;
+
+    return [
+      {
+        id: readString(item.id, `item_${index + 1}`),
+        name: readString(item.name, `Item ${index + 1}`),
+        ...(description ? { description } : {}),
+        category,
+        ...(iconId ? { iconId } : {}),
+        stackable,
+        ...(maxStack ? { maxStack } : {}),
+      },
+    ];
+  });
 }
 
 function readComparisonOperator(value: unknown): VariableComparisonOperator {
@@ -584,6 +663,15 @@ function migrateSingleCondition(value: unknown, fallbackId: string): SingleCondi
       variable: readString(value.variable, ""),
       operator: readComparisonOperator(value.operator),
       value: readStateValue(value.value, 0),
+    };
+  }
+
+  if (value.type === "has_item" || value.type === "not_has_item") {
+    return {
+      id: readString(value.id, fallbackId),
+      type: value.type,
+      itemId: readString(value.itemId, ""),
+      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
     };
   }
 
@@ -661,6 +749,14 @@ function migrateGameAction(value: unknown): GameAction | null {
     (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
   ) {
     return { type: "change_movement_mode", mode: value.mode };
+  }
+
+  if (value.type === "give_item" || value.type === "remove_item") {
+    return {
+      type: value.type,
+      itemId: readString(value.itemId, ""),
+      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+    };
   }
 
   return value.type === "end_game" ? { type: "end_game" } : null;
@@ -774,6 +870,7 @@ export function migrateProject(value: unknown): GameProject {
       : cloneProject(defaultProject).cutscenes,
     progression: migrateProgression(source.progression, activeAreaId),
     gameState: migrateGameState(source.gameState),
+    items: migrateItems(source.items),
     ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
   };

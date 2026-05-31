@@ -16,6 +16,7 @@ import type {
   MapTile,
   OverlayTile,
   PlayerConfig,
+  PickupObject,
   PixelAsset,
   ProgressionAction,
   ProgressionStep,
@@ -48,6 +49,9 @@ type ProjectStore = {
   addStructure: (structure: Omit<MapStructure, "id">) => string;
   updateStructure: (id: string, patch: Partial<MapStructure>) => void;
   deleteStructure: (id: string) => void;
+  addPickup: (x: number, y: number) => string;
+  updatePickup: (id: string, patch: Partial<PickupObject>) => void;
+  deletePickup: (id: string) => void;
   updatePixelAsset: (asset: PixelAsset) => void;
   resetPixelAsset: (id: string) => void;
   addEventBlock: (x: number, y: number) => string;
@@ -508,6 +512,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         structures: area.structures.filter(
           (structure) => structure.x >= 0 && structure.y >= 0 && structure.x < nextWidth && structure.y < nextHeight,
         ),
+        pickups: area.pickups.filter(
+          (pickup) => pickup.x >= 0 && pickup.y >= 0 && pickup.x < nextWidth && pickup.y < nextHeight,
+        ),
         eventBlocks,
       }));
 
@@ -655,6 +662,61 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         structures: area.structures.map((structure) =>
           structure.id === id ? { ...structure, ...patch } : structure,
         ),
+      })),
+    })),
+
+  addPickup: (x, y) => {
+    const nextX = Math.max(0, Math.round(x));
+    const nextY = Math.max(0, Math.round(y));
+    const id = makeId("pickup");
+
+    set((state) => {
+      const activeArea = getActiveArea(state.project);
+      const nextWidth = clampMapSize(Math.max(activeArea.width, nextX + 1));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, nextY + 1));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
+
+      return {
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+          pickups: [
+            ...area.pickups,
+            {
+              id,
+              itemId: state.project.items[0]?.id ?? "",
+              quantity: 1,
+              areaId: area.id,
+              x: nextX,
+              y: nextY,
+              pickupMode: "on_touch",
+              once: true,
+            },
+          ],
+        })),
+      };
+    });
+
+    return id;
+  },
+
+  updatePickup: (id, patch) =>
+    set((state) => ({
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        pickups: area.pickups.map((pickup) =>
+          pickup.id === id ? { ...pickup, ...patch, areaId: area.id } : pickup,
+        ),
+      })),
+    })),
+
+  deletePickup: (id) =>
+    set((state) => ({
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        pickups: area.pickups.filter((pickup) => pickup.id !== id),
       })),
     })),
 
