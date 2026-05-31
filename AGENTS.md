@@ -9,6 +9,7 @@ The editor and runtime share one schema-driven `GameProject` object from `src/ty
 - Imported and saved projects pass through `src/data/migrateProject.ts`.
 - Phaser runtime code reads a cloned project snapshot when the user presses Play.
 - Keep editor-only state, such as map zoom, pan, palette width, and selection, out of `GameProject`.
+- Keep future work scoped against `ROADMAP.md`; avoid adding major gameplay systems during maintenance passes.
 
 ## Areas And Maps
 
@@ -35,6 +36,19 @@ Terrain remains grid-based. Runtime camera settings live at the project level in
 - `inventory`: optional initial item quantities
 
 Each Play session copies these defaults into separate runtime memory. Variables remain general number or text state. Inventory item definitions live in `GameProject.items`; runtime quantities are separate from those definitions.
+
+## Editor Defaults Versus Runtime State
+
+`GameProject` stores authoring defaults. A Play session must not mutate those editor defaults.
+
+Runtime-owned copies currently include:
+
+- Flags and variables in `RuntimeGameState`
+- Inventory quantities in `RuntimeGameState.inventory`
+- NPC attributes in `RuntimeGameState.npcs`
+- Quest status, objective progress, entered areas, and granted rewards in `RuntimeQuestState`
+
+Map entity positions used by Phaser are read from the cloned play snapshot, not the live editor project.
 
 ## Items And Pickups
 
@@ -99,6 +113,8 @@ Each rule has:
 Condition groups support `AND` and `OR`, including nested groups. Missing or empty conditions mean the rule always passes.
 
 Rules can check item quantities and give or remove items. Removing items never drops below zero; stack limits are enforced by the inventory helper.
+
+Rules can also activate, complete, or fail quests and read or change runtime NPC health and alignment.
 
 Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
 

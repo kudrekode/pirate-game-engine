@@ -120,6 +120,9 @@ label {
 }
 
 .status-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   overflow: hidden;
   color: #5c6670;
   font-size: 13px;
@@ -182,6 +185,24 @@ label {
 .quests-editor,
 .npcs-editor {
   grid-template-columns: minmax(0, 1fr) 260px;
+}
+
+.save-state {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.save-state.saved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.save-state.unsaved {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .items-editor {
@@ -429,6 +450,27 @@ label {
   cursor: crosshair;
   padding: 14px;
   touch-action: none;
+}
+
+.active-area-banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  display: flex;
+  width: max-content;
+  gap: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: rgba(239, 246, 255, 0.96);
+  color: #1e3a5f;
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.active-area-banner span {
+  color: #64748b;
 }
 
 .map-stage.pan-ready {
@@ -735,6 +777,10 @@ label {
 .empty-state {
   color: #687581;
   font-size: 13px;
+}
+
+.empty-state.compact {
+  margin: 6px 0;
 }
 
 .split-layout {

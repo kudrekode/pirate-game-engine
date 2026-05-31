@@ -66,6 +66,10 @@ export function NpcsEditor() {
       return;
     }
 
+    if (!window.confirm(`Delete NPC definition "${selectedNpc.name}"?`)) {
+      return;
+    }
+
     updateProject((draft) => {
       draft.npcs = draft.npcs.filter((npc) => npc.id !== selectedNpc.id);
     });
@@ -76,6 +80,7 @@ export function NpcsEditor() {
     <section className="editor-panel npcs-editor">
       <aside className="tool-panel">
         <div className="panel-title">NPCs</div>
+        <p className="helper-text">Reusable character definitions. Place instances from the Map tab.</p>
         <button className="primary-button full-width" onClick={addNpc} type="button">Add NPC</button>
         <div className="list-stack npc-list">
           {project.npcs.map((npc) => (
@@ -83,6 +88,7 @@ export function NpcsEditor() {
               {npc.name}
             </button>
           ))}
+          {project.npcs.length === 0 ? <p className="empty-state compact">No NPC definitions.</p> : null}
         </div>
       </aside>
 
@@ -142,6 +148,7 @@ export function NpcsEditor() {
             );
           }),
         )}
+        {project.areas.every((area) => area.npcs.length === 0) ? <p className="empty-state compact">No NPCs placed in any area.</p> : null}
       </aside>
     </section>
   );

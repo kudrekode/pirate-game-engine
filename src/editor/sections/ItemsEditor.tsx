@@ -106,6 +106,10 @@ export function ItemsEditor() {
       return;
     }
 
+    if (!window.confirm(`Delete item "${selectedItem.name}"?`)) {
+      return;
+    }
+
     updateProject((draft) => {
       draft.items = draft.items.filter((item) => item.id !== selectedItem.id);
       if (draft.gameState.inventory) {
@@ -119,6 +123,7 @@ export function ItemsEditor() {
     <section className="editor-panel items-editor">
       <aside className="tool-panel">
         <div className="panel-title">Items</div>
+        <p className="helper-text">Definitions used by pickups, quests, and rules.</p>
         <button className="primary-button full-width" onClick={addItem} type="button">
           Add item
         </button>
@@ -140,6 +145,7 @@ export function ItemsEditor() {
               </span>
             </button>
           ))}
+          {project.items.length === 0 ? <p className="empty-state compact">No items defined.</p> : null}
         </div>
       </aside>
 

@@ -2048,6 +2048,10 @@ export function MapEditor() {
         }}
         ref={mapStageRef}
       >
+        <div className="active-area-banner">
+          Editing: <strong>{activeArea.name}</strong>
+          <span>{activeArea.width} x {activeArea.height} tiles</span>
+        </div>
         <div
           className={`tile-grid ${showGrid ? "show-grid" : "hide-grid"}`}
           onPointerLeave={stopPainting}

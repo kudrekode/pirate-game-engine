@@ -148,7 +148,7 @@ export function GameStateEditor() {
       <div className="content-panel">
         <div className="panel-title">Game State</div>
         <div className="logic-helper">
-          Defaults are copied into a separate runtime state each time Play starts.
+          Flags and variables are editor defaults. They are copied into separate runtime memory each time Play starts.
         </div>
 
         {errorMessage ? <div className="validation-message">{errorMessage}</div> : null}
@@ -185,6 +185,7 @@ export function GameStateEditor() {
                 </button>
               </div>
             ))}
+            {Object.keys(project.gameState.flags).length === 0 ? <p className="empty-state compact">No flags defined.</p> : null}
           </div>
         </section>
 
@@ -232,6 +233,7 @@ export function GameStateEditor() {
                 </button>
               </div>
             ))}
+            {Object.keys(project.gameState.variables).length === 0 ? <p className="empty-state compact">No variables defined.</p> : null}
           </div>
         </section>
       </div>

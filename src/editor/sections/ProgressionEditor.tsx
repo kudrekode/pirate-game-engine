@@ -325,6 +325,11 @@ export function ProgressionEditor() {
   }
 
   function deleteRule(id: string) {
+    const rule = project.rules.find((candidate) => candidate.id === id);
+    if (rule && !window.confirm(`Delete rule "${rule.name}"?`)) {
+      return;
+    }
+
     updateProject((draft) => {
       draft.rules = draft.rules.filter((rule) => rule.id !== id);
     });
@@ -1003,6 +1008,7 @@ export function ProgressionEditor() {
     <section className="editor-panel progression-editor">
       <aside className="tool-panel logic-rule-list">
         <div className="panel-title">Rules</div>
+        <p className="helper-text">WHEN / IF / THEN rules. Folders only organise the editor.</p>
         <button className="primary-button full-width" onClick={() => createRule()} type="button">Add rule</button>
 
         <div className="panel-title secondary">Folders</div>
@@ -1024,6 +1030,7 @@ export function ProgressionEditor() {
           </div>
           <div className="logic-folder-rules">
             {rulesForFolder().map(renderRuleItem)}
+            {rulesForFolder().length === 0 ? <p className="empty-state compact">No ungrouped rules.</p> : null}
           </div>
         </section>
       </aside>

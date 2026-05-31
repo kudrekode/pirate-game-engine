@@ -24,7 +24,12 @@ describe("editor smoke tests", () => {
     render(<App />);
 
     expect(screen.getByDisplayValue("Demo Adventure")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Logic" }));
+    expect(screen.getByText("Saved")).toBeInTheDocument();
+    const logicTab = screen.getByRole("button", { name: "Logic" });
+    expect(logicTab).toHaveAttribute("title", "Build plain-English rules using triggers, conditions, and actions.");
+    fireEvent.change(screen.getByDisplayValue("Demo Adventure"), { target: { value: "Edited Adventure" } });
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    fireEvent.click(logicTab);
     expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
   }, 15000);
 
