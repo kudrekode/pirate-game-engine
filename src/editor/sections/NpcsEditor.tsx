@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { characterSprites, portraitPresets } from "../../data/presets";
+import {
+  defaultEnemyBehaviour,
+  defaultNPCAttributes,
+  defaultNPCMovement,
+  resolveNPCInstance,
+} from "../../runtime/npcResolver";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { NPCDefinition } from "../../types/game";
+import type { EnemyBehaviour, NPCAttributes, NPCDefinition, NPCMovementConfig } from "../../types/game";
 
 export function isNpcDefinitionPlaced(
   areas: { npcs: { npcDefinitionId: string }[] }[],
@@ -41,6 +47,41 @@ export function NpcsEditor() {
     });
   }
 
+  function updateDefaultAttributes(patch: Partial<NPCAttributes>) {
+    if (!selectedNpc) {
+      return;
+    }
+
+    const next = { ...defaultNPCAttributes, ...selectedNpc.defaultAttributes, ...patch };
+    next.maxHealth = Math.max(1, Number(next.maxHealth));
+    next.health = Math.min(next.maxHealth, Math.max(0, Number(next.health)));
+    next.movementSpeed = Math.max(0.1, Number(next.movementSpeed ?? 1));
+    updateNpc({ defaultAttributes: next });
+  }
+
+  function updateDefaultMovement(patch: Partial<NPCMovementConfig>) {
+    if (!selectedNpc) {
+      return;
+    }
+
+    const next = { ...defaultNPCMovement, ...selectedNpc.defaultMovement, ...patch };
+    updateNpc({ defaultMovement: next });
+  }
+
+  function updateDefaultEnemyBehaviour(patch: Partial<EnemyBehaviour>) {
+    if (!selectedNpc) {
+      return;
+    }
+
+    updateNpc({
+      defaultEnemyBehaviour: {
+        ...defaultEnemyBehaviour,
+        ...selectedNpc.defaultEnemyBehaviour,
+        ...patch,
+      },
+    });
+  }
+
   function addNpc() {
     const id = makeId("npc");
     updateProject((draft) => {
@@ -49,6 +90,8 @@ export function NpcsEditor() {
         name: `NPC ${draft.npcs.length + 1}`,
         mapAvatarId: characterSprites[0]?.id ?? "scout",
         portraitId: portraitPresets[0]?.id,
+        defaultAttributes: defaultNPCAttributes,
+        defaultMovement: defaultNPCMovement,
       });
     });
     setSelectedNpcId(id);
@@ -97,6 +140,13 @@ export function NpcsEditor() {
           <>
             <div className="panel-title">NPC Definition</div>
             {message ? <div className="validation-message">{message}</div> : null}
+            {(() => {
+              const attributes = { ...defaultNPCAttributes, ...selectedNpc.defaultAttributes };
+              const movement = { ...defaultNPCMovement, ...selectedNpc.defaultMovement };
+              const enemy = { ...defaultEnemyBehaviour, ...selectedNpc.defaultEnemyBehaviour };
+
+              return (
+                <>
             <div className="form-grid compact">
               <label>
                 Name
@@ -125,7 +175,144 @@ export function NpcsEditor() {
                 </button>
               ))}
             </div>
+            <div className="panel-title secondary">Default Attributes</div>
+            <div className="form-grid compact">
+              <label>
+                Current health
+                <input
+                  min={0}
+                  max={attributes.maxHealth}
+                  onChange={(event) => updateDefaultAttributes({ health: Number(event.target.value) })}
+                  type="number"
+                  value={attributes.health}
+                />
+              </label>
+              <label>
+                Max health
+                <input
+                  min={1}
+                  onChange={(event) => {
+                    const maxHealth = Math.max(1, Number(event.target.value));
+                    updateDefaultAttributes({ maxHealth, health: Math.min(attributes.health, maxHealth) });
+                  }}
+                  type="number"
+                  value={attributes.maxHealth}
+                />
+              </label>
+            </div>
+            <label>
+              Faction
+              <input onChange={(event) => updateDefaultAttributes({ faction: event.target.value })} value={attributes.faction} />
+            </label>
+            <label>
+              Alignment
+              <select
+                onChange={(event) => updateDefaultAttributes({ alignment: event.target.value as NPCAttributes["alignment"] })}
+                value={attributes.alignment}
+              >
+                <option value="friendly">Friendly</option>
+                <option value="neutral">Neutral</option>
+                <option value="hostile">Hostile</option>
+              </select>
+            </label>
+            <label className="checkbox-row standalone">
+              <input
+                checked={attributes.canInteract}
+                onChange={(event) => updateDefaultAttributes({ canInteract: event.target.checked })}
+                type="checkbox"
+              />
+              Can interact
+            </label>
+            <label>
+              Movement speed
+              <input
+                min={0.1}
+                max={10}
+                step={0.1}
+                onChange={(event) => updateDefaultAttributes({ movementSpeed: Number(event.target.value) })}
+                type="number"
+                value={attributes.movementSpeed ?? 1}
+              />
+            </label>
+            <div className="panel-title secondary">Default Movement</div>
+            <label>
+              Mode
+              <select
+                onChange={(event) =>
+                  updateDefaultMovement({
+                    movementMode: event.target.value as NPCMovementConfig["movementMode"],
+                  })
+                }
+                value={movement.movementMode}
+              >
+                <option value="stationary">Stationary</option>
+                <option value="patrol">Patrol</option>
+                <option value="wander">Wander</option>
+              </select>
+            </label>
+            <label>
+              Movement speed
+              <input
+                min={0.1}
+                max={10}
+                step={0.1}
+                onChange={(event) => updateDefaultMovement({ movementSpeed: Number(event.target.value) })}
+                type="number"
+                value={movement.movementSpeed ?? attributes.movementSpeed ?? 1}
+              />
+            </label>
+            <p className="helper-text compact">Patrol points and wander zones can be fine-tuned on placed instances in the Map inspector.</p>
+            <div className="panel-title secondary">Default Enemy Behaviour</div>
+            <label className="checkbox-row standalone">
+              <input
+                checked={enemy.enabled}
+                onChange={(event) => updateDefaultEnemyBehaviour({ enabled: event.target.checked })}
+                type="checkbox"
+              />
+              Enabled
+            </label>
+            <div className="form-grid compact">
+              <label>
+                Detection radius
+                <input
+                  min={0}
+                  onChange={(event) => updateDefaultEnemyBehaviour({ detectionRadiusTiles: Math.max(0, Number(event.target.value)) })}
+                  type="number"
+                  value={enemy.detectionRadiusTiles}
+                />
+              </label>
+              <label>
+                Chase radius
+                <input
+                  min={0}
+                  onChange={(event) => updateDefaultEnemyBehaviour({ chaseRadiusTiles: Math.max(0, Number(event.target.value)) })}
+                  type="number"
+                  value={enemy.chaseRadiusTiles}
+                />
+              </label>
+              <label>
+                Contact damage
+                <input
+                  min={0}
+                  onChange={(event) => updateDefaultEnemyBehaviour({ contactDamage: Math.max(0, Number(event.target.value)) })}
+                  type="number"
+                  value={enemy.contactDamage ?? 0}
+                />
+              </label>
+            </div>
+            <label className="checkbox-row standalone">
+              <input
+                checked={enemy.returnToOrigin}
+                onChange={(event) => updateDefaultEnemyBehaviour({ returnToOrigin: event.target.checked })}
+                type="checkbox"
+              />
+              Return to origin
+            </label>
+            <p className="helper-text compact">TODO: Reuse the Map inspector interaction editor for default NPC interactions.</p>
             <button className="danger-button" onClick={deleteNpc} type="button">Delete NPC</button>
+                </>
+              );
+            })()}
           </>
         ) : (
           <p className="empty-state">Add an NPC definition to place friendly characters in maps.</p>
@@ -137,12 +324,13 @@ export function NpcsEditor() {
         {project.areas.flatMap((area) =>
           area.npcs.map((npc) => {
             const definition = project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
+            const resolved = resolveNPCInstance(definition, npc);
             return (
               <div className="npc-overview-item" key={npc.id}>
-                <strong>{definition?.name ?? "NPC"}</strong>
-                <div className="npc-overview-meta">{npc.attributes.alignment}</div>
-                <div className="npc-overview-meta">{npc.attributes.faction}</div>
-                <div className="npc-overview-meta">Health {npc.attributes.health}/{npc.attributes.maxHealth}</div>
+                <strong>{resolved.name}</strong>
+                <div className="npc-overview-meta">{resolved.attributes.alignment}</div>
+                <div className="npc-overview-meta">{resolved.attributes.faction}</div>
+                <div className="npc-overview-meta">Health {resolved.attributes.health}/{resolved.attributes.maxHealth}</div>
                 <div className="npc-overview-meta">{area.name}</div>
               </div>
             );

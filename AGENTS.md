@@ -29,7 +29,7 @@ Read this file first, then identify the likely files before opening broader repo
 
 - Areas: Multiple `GameArea` records in `GameProject.areas`; each owns terrain, overlays, structures, objects, pickups, NPCs, and event blocks.
 - Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
-- NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, simple melee combat, and rule targets.
+- NPCs: Reusable definitions with defaults plus placed instances with explicit overrides for attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, simple melee combat, and rule targets.
 - Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
 - Shops: Buy-only `ShopDefinition` records use an inventory item as currency; runtime stock is copied per play session.
 - Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
@@ -142,9 +142,11 @@ Friendly rules can activate, complete, or fail quests explicitly. Active quests 
 
 ## NPCs
 
-`GameProject.npcs` contains reusable friendly NPC definitions. Each area owns placed `NPCInstance` records.
+`GameProject.npcs` contains reusable NPC definitions. Each area owns placed `NPCInstance` records.
 
-NPC instances are grid-based world entities. They can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
+NPC definitions can provide default attributes, movement, enemy behaviour, and interaction. NPC instances are grid-based world entities that can override those defaults with `attributesOverride`, `movementOverride`, `enemyBehaviourOverride`, and `interactionOverride`. Use `src/runtime/npcResolver.ts` when editor or runtime code needs the effective NPC config.
+
+NPC instances can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
 
 NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, full combat, and branching dialogue.
 

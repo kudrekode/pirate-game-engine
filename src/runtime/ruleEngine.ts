@@ -8,11 +8,13 @@ import type {
   ItemDefinition,
   MovementMode,
   NPCAttributes,
+  NPCDefinition,
   NPCInstance,
   RuleTrigger,
   SingleCondition,
 } from "../types/game";
 import { createInventory, giveItem, hasItem, removeItem } from "./inventory";
+import { resolveNPCInstance } from "./npcResolver";
 
 export type RuntimeGameState = {
   flags: Record<string, boolean>;
@@ -35,18 +37,33 @@ export type RuleActionContext = {
   stateChanged?: () => void;
 };
 
-export function createRuntimeNpcState(npcs: NPCInstance[]): Record<string, NPCAttributes> {
+export function createRuntimeNpcState(
+  npcs: NPCInstance[],
+  definitions: NPCDefinition[] = [],
+): Record<string, NPCAttributes> {
   return Object.fromEntries(
-    npcs.map((npc) => [npc.id, { ...npc.attributes }]),
+    npcs.map((npc) => [
+      npc.id,
+      {
+        ...resolveNPCInstance(
+          definitions.find((definition) => definition.id === npc.npcDefinitionId),
+          npc,
+        ).attributes,
+      },
+    ]),
   );
 }
 
-export function createRuntimeState(config: GameStateConfig, npcs: NPCInstance[] = []): RuntimeGameState {
+export function createRuntimeState(
+  config: GameStateConfig,
+  npcs: NPCInstance[] = [],
+  definitions: NPCDefinition[] = [],
+): RuntimeGameState {
   return {
     flags: { ...config.flags },
     variables: { ...config.variables },
     inventory: createInventory(config.inventory),
-    npcs: createRuntimeNpcState(npcs),
+    npcs: createRuntimeNpcState(npcs, definitions),
   };
 }
 

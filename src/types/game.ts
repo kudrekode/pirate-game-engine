@@ -203,6 +203,10 @@ export type NPCDefinition = {
   description?: string;
   mapAvatarId: string;
   portraitId?: string;
+  defaultAttributes?: NPCAttributes;
+  defaultMovement?: NPCMovementConfig;
+  defaultEnemyBehaviour?: EnemyBehaviour;
+  defaultInteraction?: Interaction;
 };
 
 export type NPCMovementMode = "stationary" | "patrol" | "wander";
@@ -235,6 +239,13 @@ export type NPCAttributes = {
   movementSpeed?: number;
 };
 
+export type NPCMovementConfig = {
+  movementMode: NPCMovementMode;
+  movementSpeed?: number;
+  patrolPath?: PatrolPath;
+  wanderZone?: WanderZone;
+};
+
 export type EnemyBehaviour = {
   enabled: boolean;
   detectionRadiusTiles: number;
@@ -255,6 +266,22 @@ export type NPCInstance = {
   attributes: NPCAttributes;
   // Legacy migration fallback. New edits use attributes.movementSpeed.
   movementSpeed?: number;
+  patrolPath?: PatrolPath;
+  wanderZone?: WanderZone;
+  enemyBehaviour?: EnemyBehaviour;
+  interaction?: Interaction;
+  attributesOverride?: Partial<NPCAttributes>;
+  movementOverride?: Partial<NPCMovementConfig>;
+  enemyBehaviourOverride?: Partial<EnemyBehaviour>;
+  interactionOverride?: Interaction;
+};
+
+export type ResolvedNPC = NPCInstance & {
+  definition?: NPCDefinition;
+  name: string;
+  attributes: NPCAttributes;
+  movementMode: NPCMovementMode;
+  movementSpeed: number;
   patrolPath?: PatrolPath;
   wanderZone?: WanderZone;
   enemyBehaviour?: EnemyBehaviour;

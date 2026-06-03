@@ -32,6 +32,7 @@ import {
   removeDefeatedNpc,
   type RuntimeCombatHudState,
 } from "./combat";
+import { resolveNPCInstance } from "./npcResolver";
 import { findDismountTile, resolveMovementAt, type VehicleMovementConfig } from "./movement";
 import { runObjectBehaviour, type ObjectBehaviourResult } from "./objectBehaviour";
 import {
@@ -176,7 +177,7 @@ export class AdventureScene extends Phaser.Scene {
     this.tileSize = this.currentArea.tileSize;
     this.playerCombat = getPlayerCombatStats(project.player);
     this.runtimePlayerHealth = this.playerCombat.health;
-    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
+    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs), project.npcs);
     this.runtimeQuestState = createRuntimeQuestState(project.quests);
     this.runtimeShopStocks = createRuntimeShopStocks(project.shops);
     this.onInventoryChanged = onInventoryChanged;
@@ -801,13 +802,13 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private renderNpc(npc: NPCInstance) {
-    const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
-    const avatar = getVisualPreset(definition?.mapAvatarId ?? "ranger", characterSprites);
+    const resolved = this.getResolvedNpc(npc);
+    const avatar = getVisualPreset(resolved.definition?.mapAvatarId ?? "ranger", characterSprites);
     const centerX = npc.x * this.tileSize + this.tileSize / 2;
     const centerY = npc.y * this.tileSize + this.tileSize / 2;
     const body = this.add.circle(0, 0, this.tileSize * 0.3, hexToNumber(avatar.color));
     const initial = this.add
-      .text(0, 0, definition?.name.slice(0, 1).toUpperCase() ?? "?", {
+      .text(0, 0, resolved.name.slice(0, 1).toUpperCase() ?? "?", {
         color: avatar.accent,
         fontFamily: "Arial, sans-serif",
         fontSize: "15px",
@@ -840,16 +841,22 @@ export class AdventureScene extends Phaser.Scene {
         isNpcTileWalkable(this.currentArea, npc.id, x, y);
       const origin = this.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
       this.enemyOrigins.set(npc.id, origin);
-      const canUseEnemyMovement = npc.attributes.alignment === "hostile" && npc.enemyBehaviour?.enabled === true;
+      const resolved = this.getResolvedNpc(npc);
+      const canUseEnemyMovement =
+        resolved.attributes.alignment === "hostile" && resolved.enemyBehaviour?.enabled === true;
       const update =
         canUseEnemyMovement
-          ? updateEnemyNPC(npc, this.playerPosition, origin, runtime.movement, canMove)
-          : npc.movementMode === "patrol"
-          ? updatePatrolNPC(npc, runtime.movement, canMove)
-          : npc.movementMode === "wander"
-            ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
-            : updateStationaryNPC(npc, runtime.movement);
-      const speed = clamp(this.runtimeState.npcs[npc.id]?.movementSpeed ?? npc.attributes.movementSpeed ?? npc.movementSpeed ?? 1, 0.1, 10);
+          ? updateEnemyNPC(resolved, this.playerPosition, origin, runtime.movement, canMove)
+          : resolved.movementMode === "patrol"
+          ? updatePatrolNPC(resolved, runtime.movement, canMove)
+          : resolved.movementMode === "wander"
+            ? updateWanderNPC(resolved, this.currentArea, runtime.movement, canMove)
+            : updateStationaryNPC(resolved, runtime.movement);
+      const speed = clamp(
+        this.runtimeState.npcs[npc.id]?.movementSpeed ?? resolved.movementSpeed,
+        0.1,
+        10,
+      );
       const duration = Math.max(80, 360 / speed);
       const wait = update.moved ? 320 : 560;
 
@@ -871,8 +878,8 @@ export class AdventureScene extends Phaser.Scene {
         });
       }
 
-      if (isEnemyTouchingPlayer(npc, this.playerPosition)) {
-        this.handleEnemyContact(npc, time);
+      if (isEnemyTouchingPlayer(resolved, this.playerPosition)) {
+        this.handleEnemyContact(resolved, time);
       }
     });
   }
@@ -1233,23 +1240,23 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.npcs.forEach((npc) => {
-      const attributes = this.runtimeState.npcs[npc.id] ?? npc.attributes;
+      const resolved = this.getResolvedNpc(npc);
+      const attributes = this.runtimeState.npcs[npc.id] ?? resolved.attributes;
       if (!attributes.canInteract) {
         return;
       }
 
       const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: npc.id });
-      if ((!npc.interaction || !canInteractActivate(npc.interaction)) && !hasRule) {
+      if ((!resolved.interaction || !canInteractActivate(resolved.interaction)) && !hasRule) {
         return;
       }
 
       const distance = Math.abs(npc.x - this.playerPosition.x) + Math.abs(npc.y - this.playerPosition.y);
       if (distance <= 1) {
-        const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
         candidates.push({
           kind: "npc",
-          label: definition?.name ?? "NPC",
-          interaction: npc.interaction,
+          label: resolved.name,
+          interaction: resolved.interaction,
           npc,
           distance,
         });
@@ -1864,7 +1871,22 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private getNpcName(npc: NPCInstance): string {
-    return this.project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "Enemy";
+    return this.getResolvedNpc(npc).name;
+  }
+
+  private getResolvedNpc(npc: NPCInstance) {
+    const resolved = resolveNPCInstance(
+      this.project.npcs.find((definition) => definition.id === npc.npcDefinitionId),
+      npc,
+    );
+    const runtimeAttributes = this.runtimeState.npcs[npc.id];
+    return runtimeAttributes
+      ? {
+          ...resolved,
+          attributes: runtimeAttributes,
+          movementSpeed: runtimeAttributes.movementSpeed ?? resolved.movementSpeed,
+        }
+      : resolved;
   }
 
   private getObjectBehaviour(object: ObjectInstance) {

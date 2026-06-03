@@ -4,6 +4,7 @@ import { defaultProject } from "../data/defaultProject";
 import { cloneProject, migrateProject } from "../data/migrateProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
 import { backgroundPresets, portraitPresets } from "../data/presets";
+import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
   CameraConfig,
   Cutscene,
@@ -829,6 +830,25 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const nextWidth = clampMapSize(Math.max(activeArea.width, nextX + 1));
       const nextHeight = clampMapSize(Math.max(activeArea.height, nextY + 1));
       const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
+      const definition = state.project.npcs.find((npc) => npc.id === npcDefinitionId);
+      const resolved = resolveNPCInstance(definition, {
+        id,
+        npcDefinitionId,
+        areaId: activeArea.id,
+        x: nextX,
+        y: nextY,
+        facing: "down",
+        blocksMovement: true,
+        movementMode: "stationary",
+        attributes: {
+          maxHealth: 100,
+          health: 100,
+          faction: "villagers",
+          alignment: "friendly",
+          canInteract: true,
+          movementSpeed: 1,
+        },
+      });
 
       return {
         project: updateActiveArea(state.project, (area) => ({
@@ -846,15 +866,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
               y: nextY,
               facing: "down",
               blocksMovement: true,
-              movementMode: "stationary",
-              attributes: {
-                maxHealth: 100,
-                health: 100,
-                faction: "villagers",
-                alignment: "friendly",
-                canInteract: true,
-                movementSpeed: 1,
-              },
+              movementMode: resolved.movementMode,
+              attributes: resolved.attributes,
+              movementSpeed: resolved.movementSpeed,
+              ...(resolved.patrolPath ? { patrolPath: resolved.patrolPath } : {}),
+              ...(resolved.wanderZone ? { wanderZone: resolved.wanderZone } : {}),
+              ...(resolved.enemyBehaviour ? { enemyBehaviour: resolved.enemyBehaviour } : {}),
+              ...(resolved.interaction ? { interaction: resolved.interaction } : {}),
             },
           ],
         })),
