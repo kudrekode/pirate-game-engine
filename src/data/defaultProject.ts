@@ -239,6 +239,13 @@ const mainArea: GameArea = {
         canInteract: true,
         movementSpeed: 1,
       },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
+      },
     },
   ],
   eventBlocks: [

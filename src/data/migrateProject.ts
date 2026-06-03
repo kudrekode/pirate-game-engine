@@ -152,7 +152,8 @@ function migrateMovementRule(value: unknown): MovementRule | undefined {
     value.movementMode === "walk" ||
     value.movementMode === "swim" ||
     value.movementMode === "sail" ||
-    value.movementMode === "ride"
+    value.movementMode === "ride" ||
+    value.movementMode === "drive"
   ) {
     rule.movementMode = value.movementMode;
   }
@@ -481,6 +482,7 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
       : [];
     const wanderSource = isRecord(item.wanderZone) ? item.wanderZone : {};
     const attributesSource = isRecord(item.attributes) ? item.attributes : {};
+    const enemySource = isRecord(item.enemyBehaviour) ? item.enemyBehaviour : undefined;
     const maxHealth = readNumber(attributesSource.maxHealth, 100, 1);
     const movementSpeed = readNumber(attributesSource.movementSpeed ?? item.movementSpeed, 1, 0.1, 10);
     const alignment =
@@ -515,6 +517,19 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
               y: readNumber(wanderSource.y, readNumber(item.y, 0, 0), 0),
               width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
               height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
+            },
+          }
+        : {}),
+      ...(enemySource
+        ? {
+            enemyBehaviour: {
+              enabled: readBoolean(enemySource.enabled, false),
+              detectionRadiusTiles: Math.round(readNumber(enemySource.detectionRadiusTiles, 4, 0, 100)),
+              chaseRadiusTiles: Math.round(readNumber(enemySource.chaseRadiusTiles, 7, 0, 100)),
+              returnToOrigin: readBoolean(enemySource.returnToOrigin, true),
+              ...(typeof enemySource.contactDamage === "number"
+                ? { contactDamage: Math.round(readNumber(enemySource.contactDamage, 0, 0, 999)) }
+                : {}),
             },
           }
         : {}),

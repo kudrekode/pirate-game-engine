@@ -235,6 +235,14 @@ export type NPCAttributes = {
   movementSpeed?: number;
 };
 
+export type EnemyBehaviour = {
+  enabled: boolean;
+  detectionRadiusTiles: number;
+  chaseRadiusTiles: number;
+  returnToOrigin: boolean;
+  contactDamage?: number;
+};
+
 export type NPCInstance = {
   id: string;
   npcDefinitionId: string;
@@ -249,10 +257,11 @@ export type NPCInstance = {
   movementSpeed?: number;
   patrolPath?: PatrolPath;
   wanderZone?: WanderZone;
+  enemyBehaviour?: EnemyBehaviour;
   interaction?: Interaction;
 };
 
-export type MapOverlayFilter = "npc_paths" | "event_blocks" | "collision" | "none";
+export type MapOverlayFilter = "npc_paths" | "enemy_ranges" | "event_blocks" | "collision" | "none";
 
 export type EventBlock = {
   id: string;
@@ -420,6 +429,8 @@ export type RuleTrigger =
   | { type: "on_touch"; targetId: string }
   | { type: "on_area_enter"; areaId: string }
   | { type: "on_cutscene_end"; cutsceneId: string };
+
+// TODO: Add enemy-specific rule triggers such as on_enemy_detect_player and on_enemy_touch_player.
 
 export type VariableComparisonOperator = "==" | "!=" | ">" | "<" | ">=" | "<=";
 

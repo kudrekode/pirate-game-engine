@@ -1673,6 +1673,13 @@ export function MapEditor() {
     }
 
     const definition = project.npcs.find((npc) => npc.id === selectedNpc.npcDefinitionId);
+    const enemyBehaviour = selectedNpc.enemyBehaviour ?? {
+      enabled: false,
+      detectionRadiusTiles: 4,
+      chaseRadiusTiles: 7,
+      returnToOrigin: true,
+      contactDamage: 10,
+    };
 
     return (
       <>
@@ -1741,6 +1748,66 @@ export function MapEditor() {
             Movement speed
             <input min={0.1} max={10} step={0.1} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, movementSpeed: Math.max(0.1, Number(event.target.value)) } })} type="number" value={selectedNpc.attributes.movementSpeed ?? 1} />
           </label>
+          {selectedNpc.attributes.alignment === "hostile" ? (
+            <>
+              <div className="panel-title secondary">Enemy Behaviour</div>
+              <label className="checkbox-row standalone">
+                <input
+                  checked={enemyBehaviour.enabled}
+                  onChange={(event) =>
+                    updateSelectedNpc({ enemyBehaviour: { ...enemyBehaviour, enabled: event.target.checked } })
+                  }
+                  type="checkbox"
+                />
+                Enabled
+              </label>
+              <div className="form-grid compact">
+                <label>
+                  Detection radius
+                  <input
+                    min={0}
+                    onChange={(event) =>
+                      updateSelectedNpc({ enemyBehaviour: { ...enemyBehaviour, detectionRadiusTiles: Math.max(0, Number(event.target.value)) } })
+                    }
+                    type="number"
+                    value={enemyBehaviour.detectionRadiusTiles}
+                  />
+                </label>
+                <label>
+                  Chase radius
+                  <input
+                    min={0}
+                    onChange={(event) =>
+                      updateSelectedNpc({ enemyBehaviour: { ...enemyBehaviour, chaseRadiusTiles: Math.max(0, Number(event.target.value)) } })
+                    }
+                    type="number"
+                    value={enemyBehaviour.chaseRadiusTiles}
+                  />
+                </label>
+                <label>
+                  Contact damage
+                  <input
+                    min={0}
+                    onChange={(event) =>
+                      updateSelectedNpc({ enemyBehaviour: { ...enemyBehaviour, contactDamage: Math.max(0, Number(event.target.value)) } })
+                    }
+                    type="number"
+                    value={enemyBehaviour.contactDamage ?? 0}
+                  />
+                </label>
+              </div>
+              <label className="checkbox-row standalone">
+                <input
+                  checked={enemyBehaviour.returnToOrigin}
+                  onChange={(event) =>
+                    updateSelectedNpc({ enemyBehaviour: { ...enemyBehaviour, returnToOrigin: event.target.checked } })
+                  }
+                  type="checkbox"
+                />
+                Return to origin when player leaves chase radius
+              </label>
+            </>
+          ) : null}
           <div className="panel-title secondary">Movement</div>
           <label>
             Mode
@@ -2243,6 +2310,7 @@ export function MapEditor() {
           Overlay
           <select onChange={(event) => setOverlayFilter(event.target.value as MapOverlayFilter)} value={overlayFilter}>
             <option value="npc_paths">NPC paths</option>
+            <option value="enemy_ranges">Enemy ranges</option>
             <option value="none">None</option>
           </select>
         </label>
@@ -2425,6 +2493,32 @@ export function MapEditor() {
             >
               Wander
             </div>
+          ) : null}
+          {overlayFilter === "enemy_ranges" && selectedNpc?.attributes.alignment === "hostile" && selectedNpc.enemyBehaviour?.enabled ? (
+            <>
+              <div
+                className="map-enemy-range detection"
+                style={{
+                  left: (selectedNpc.x + 0.5 - selectedNpc.enemyBehaviour.detectionRadiusTiles) * cellSize,
+                  top: (selectedNpc.y + 0.5 - selectedNpc.enemyBehaviour.detectionRadiusTiles) * cellSize,
+                  width: selectedNpc.enemyBehaviour.detectionRadiusTiles * 2 * cellSize,
+                  height: selectedNpc.enemyBehaviour.detectionRadiusTiles * 2 * cellSize,
+                }}
+              >
+                Detect
+              </div>
+              <div
+                className="map-enemy-range chase"
+                style={{
+                  left: (selectedNpc.x + 0.5 - selectedNpc.enemyBehaviour.chaseRadiusTiles) * cellSize,
+                  top: (selectedNpc.y + 0.5 - selectedNpc.enemyBehaviour.chaseRadiusTiles) * cellSize,
+                  width: selectedNpc.enemyBehaviour.chaseRadiusTiles * 2 * cellSize,
+                  height: selectedNpc.enemyBehaviour.chaseRadiusTiles * 2 * cellSize,
+                }}
+              >
+                Chase
+              </div>
+            </>
           ) : null}
           {activeArea.structures.map((structure) => {
             const preset = getStructurePreset(structure.structureId);

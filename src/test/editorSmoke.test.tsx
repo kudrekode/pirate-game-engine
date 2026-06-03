@@ -53,6 +53,15 @@ describe("editor smoke tests", () => {
     expect(captain?.attributes).toMatchObject({ faction: "sailors", alignment: "neutral" });
   }, 15000);
 
+  it("shows enemy behaviour controls for hostile NPCs", () => {
+    render(<MapEditor />);
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Tile 16, 8" }));
+
+    expect(screen.getByText("Enemy Behaviour")).toBeInTheDocument();
+    expect(screen.getByLabelText("Detection radius")).toBeInTheDocument();
+  }, 15000);
+
   it("renders Logic Builder", () => {
     render(<ProgressionEditor />);
 

@@ -18,7 +18,7 @@ Read this file first, then identify the likely files before opening broader repo
 - Inventory and items: `src/runtime/inventory.ts`, `src/editor/sections/ItemsEditor.tsx`, `src/types/game.ts`, `src/runtime/inventory.test.ts`.
 - Shops and economy: `src/runtime/shopRuntime.ts`, `src/editor/sections/ShopsEditor.tsx`, `src/runtime/RuntimePanel.tsx`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/shopRuntime.test.ts`.
 - Quests and objectives: `src/runtime/questEngine.ts`, `src/editor/sections/QuestsEditor.tsx`, `src/types/game.ts`, `src/runtime/questEngine.test.ts`.
-- NPCs: `src/editor/sections/NpcsEditor.tsx`, `src/runtime/npcMovement.ts`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
+- NPCs and enemy NPCs: `src/editor/sections/NpcsEditor.tsx`, `src/editor/sections/MapEditor.tsx`, `src/runtime/npcMovement.ts`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
 - Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
 - Runtime and Phaser: `src/runtime/AdventureScene.ts`, `src/runtime/PhaserGame.tsx`, `src/runtime/movement.ts`, `src/runtime/movement.test.ts`.
 - Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
@@ -29,7 +29,7 @@ Read this file first, then identify the likely files before opening broader repo
 
 - Areas: Multiple `GameArea` records in `GameProject.areas`; each owns terrain, overlays, structures, objects, pickups, NPCs, and event blocks.
 - Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
-- NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, and rule targets.
+- NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, and rule targets.
 - Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
 - Shops: Buy-only `ShopDefinition` records use an inventory item as currency; runtime stock is copied per play session.
 - Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
@@ -146,7 +146,7 @@ Friendly rules can activate, complete, or fail quests explicitly. Active quests 
 
 NPC instances are grid-based world entities. They can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
 
-NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, enemies, combat, and branching dialogue.
+NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, full combat, and branching dialogue.
 
 ### NPC Attributes
 
@@ -165,6 +165,12 @@ Placed NPC instances declare a data-driven movement mode:
 Pure grid-step decisions live in `src/runtime/npcMovement.ts`. Phaser applies the resulting steps with small tweens and waits. Movement checks bounds, terrain, structures, the player tile, and other blocking NPCs. There is deliberately no pathfinding; blocked destinations wait or recalculate.
 
 The Map editor has a lightweight overlay-filter foundation. `npc_paths` renders only the selected NPC's patrol path or wander zone. Event-block, collision, quest-marker, and enemy-territory filters remain TODOs.
+
+### Enemy NPCs
+
+Enemies are hostile `NPCInstance` records with optional `enemyBehaviour.enabled`. They reuse the shared NPC model and do not have a separate enemy entity architecture.
+
+Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults. There are no player attacks, weapons, projectiles, XP, loot drops, or full combat yet.
 
 ## Rule Engine
 
@@ -239,6 +245,7 @@ Current focused tests cover:
 - Shop purchases and runtime stock
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
+- Enemy NPC chase, return, contact, and migration helpers
 - Object migration, behaviours, collision, rule targeting, and deletion guards
 - NPC stationary, patrol, wander, bounds, and terrain movement helpers
 - Movement resolution

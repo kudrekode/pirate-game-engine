@@ -251,5 +251,46 @@ describe("migrateProject", () => {
         movementSpeed: 1,
       },
     });
+    expect(project.areas[0].npcs[0].enemyBehaviour).toBeUndefined();
+  });
+
+  it("migrates optional enemy behaviour on NPC instances", () => {
+    const project = migrateProject({
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "bandit",
+              npcDefinitionId: "bandit",
+              x: 1,
+              y: 1,
+              attributes: { alignment: "hostile" },
+              enemyBehaviour: {
+                enabled: true,
+                detectionRadiusTiles: 4,
+                chaseRadiusTiles: 7,
+                returnToOrigin: true,
+                contactDamage: 10,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0]).toMatchObject({
+      id: "bandit",
+      attributes: { alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
+      },
+    });
   });
 });

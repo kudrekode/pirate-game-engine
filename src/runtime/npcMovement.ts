@@ -5,6 +5,7 @@ export type NPCMovementState = {
   patrolIndex: number;
   wanderTarget?: PatrolPoint;
   stopped?: boolean;
+  enemyChasing?: boolean;
 };
 
 export type NPCMovementUpdate = {
@@ -21,12 +22,36 @@ function samePoint(a: PatrolPoint, b: PatrolPoint): boolean {
   return a.x === b.x && a.y === b.y;
 }
 
+function tileDistance(a: PatrolPoint, b: PatrolPoint): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
 function stepToward(from: PatrolPoint, target: PatrolPoint): PatrolPoint {
   if (from.x !== target.x) {
     return { x: from.x + Math.sign(target.x - from.x), y: from.y };
   }
 
   return { x: from.x, y: from.y + Math.sign(target.y - from.y) };
+}
+
+function stepOptionsToward(from: PatrolPoint, target: PatrolPoint): PatrolPoint[] {
+  const options: PatrolPoint[] = [];
+  const deltaX = Math.sign(target.x - from.x);
+  const deltaY = Math.sign(target.y - from.y);
+  const xDistance = Math.abs(target.x - from.x);
+  const yDistance = Math.abs(target.y - from.y);
+
+  if (xDistance >= yDistance && deltaX !== 0) {
+    options.push({ x: from.x + deltaX, y: from.y });
+  }
+  if (deltaY !== 0) {
+    options.push({ x: from.x, y: from.y + deltaY });
+  }
+  if (xDistance < yDistance && deltaX !== 0) {
+    options.push({ x: from.x + deltaX, y: from.y });
+  }
+
+  return options;
 }
 
 function facingForStep(from: PatrolPoint, to: PatrolPoint, fallback: NPCMovementUpdate["facing"]) {
@@ -73,6 +98,27 @@ function moveToward(
     facing: facingForStep(npc, next, npc.facing ?? "down"),
     state,
   };
+}
+
+function moveTowardWithAlternate(
+  npc: NPCInstance,
+  state: NPCMovementState,
+  target: PatrolPoint,
+  canMove: CanMove,
+): NPCMovementUpdate {
+  for (const next of stepOptionsToward(npc, target)) {
+    if (canMove(next.x, next.y)) {
+      return {
+        moved: true,
+        x: next.x,
+        y: next.y,
+        facing: facingForStep(npc, next, npc.facing ?? "down"),
+        state,
+      };
+    }
+  }
+
+  return unchanged(npc, state);
 }
 
 export function updateStationaryNPC(
@@ -151,6 +197,52 @@ export function updateWanderNPC(
   const nextState = { ...state, wanderTarget: target };
   const update = moveToward(npc, nextState, target, canMove);
   return update.moved ? update : unchanged(npc, { ...state, wanderTarget: undefined });
+}
+
+export function updateEnemyNPC(
+  npc: NPCInstance,
+  player: PatrolPoint,
+  origin: PatrolPoint,
+  state: NPCMovementState = { patrolIndex: 0 },
+  canMove: CanMove = () => true,
+): NPCMovementUpdate {
+  const behaviour = npc.enemyBehaviour;
+  const isEnabled = npc.attributes.alignment === "hostile" && behaviour?.enabled === true;
+  if (!isEnabled) {
+    return unchanged(npc, { ...state, enemyChasing: false });
+  }
+
+  const distance = tileDistance(npc, player);
+  const detectionRadius = Math.max(0, Math.round(behaviour.detectionRadiusTiles));
+  const chaseRadius = Math.max(detectionRadius, Math.round(behaviour.chaseRadiusTiles));
+
+  if (state.enemyChasing && distance > chaseRadius) {
+    if (behaviour.returnToOrigin && !samePoint(npc, origin)) {
+      return moveTowardWithAlternate(npc, { ...state, enemyChasing: false }, origin, canMove);
+    }
+
+    return unchanged(npc, { ...state, enemyChasing: false });
+  }
+
+  if (state.enemyChasing || distance <= detectionRadius) {
+    if (distance <= 1) {
+      return unchanged(npc, { ...state, enemyChasing: true });
+    }
+
+    return moveTowardWithAlternate(npc, { ...state, enemyChasing: true }, player, canMove);
+  }
+
+  return unchanged(npc, { ...state, enemyChasing: false });
+}
+
+export function isEnemyTouchingPlayer(npc: NPCInstance, player: PatrolPoint): boolean {
+  return npc.attributes.alignment === "hostile" &&
+    npc.enemyBehaviour?.enabled === true &&
+    tileDistance(npc, player) <= 1;
+}
+
+export function applyEnemyContactDamage(currentHealth: number, contactDamage = 0): number {
+  return Math.max(0, currentHealth - Math.max(0, Math.round(contactDamage)));
 }
 
 export function isNpcTileWalkable(

@@ -1087,7 +1087,8 @@ label {
 }
 
 .map-npc-path-overlay,
-.map-npc-wander-zone {
+.map-npc-wander-zone,
+.map-enemy-range {
   position: absolute;
   top: 0;
   left: 0;
@@ -1126,6 +1127,30 @@ label {
   font-weight: 900;
   padding: 4px;
   text-transform: uppercase;
+}
+
+.map-enemy-range {
+  display: grid;
+  place-items: start;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 6px;
+  text-transform: uppercase;
+}
+
+.map-enemy-range.detection {
+  border: 2px dashed rgba(220, 38, 38, 0.86);
+  background: rgba(220, 38, 38, 0.09);
+  color: #991b1b;
+  z-index: 1;
+}
+
+.map-enemy-range.chase {
+  border: 2px dotted rgba(127, 29, 29, 0.78);
+  background: rgba(127, 29, 29, 0.06);
+  color: #7f1d1d;
+  z-index: 0;
 }
 
 .patrol-point-row {

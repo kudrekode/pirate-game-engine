@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { GameArea, NPCInstance } from "../types/game";
 import {
   generateWanderDestination,
+  applyEnemyContactDamage,
   isNpcTileWalkable,
+  isEnemyTouchingPlayer,
+  updateEnemyNPC,
   updatePatrolNPC,
   updateStationaryNPC,
   updateWanderNPC,
@@ -125,5 +128,101 @@ describe("NPC movement helpers", () => {
     expect(isNpcTileWalkable(area, "npc", -1, 0)).toBe(false);
     expect(isNpcTileWalkable(area, "npc", 1, 0)).toBe(false);
     expect(isNpcTileWalkable(area, "npc", 0, 0)).toBe(true);
+  });
+
+  it("moves hostile enemy NPCs toward the player inside detection radius", () => {
+    const npc = makeNpc({
+      x: 1,
+      y: 1,
+      attributes: { ...makeNpc().attributes, alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
+      },
+    });
+
+    expect(updateEnemyNPC(npc, { x: 3, y: 1 }, { x: 1, y: 1 })).toMatchObject({
+      moved: true,
+      x: 2,
+      y: 1,
+      facing: "right",
+      state: { enemyChasing: true },
+    });
+  });
+
+  it("returns toward origin when player leaves chase radius", () => {
+    const npc = makeNpc({
+      x: 3,
+      y: 1,
+      attributes: { ...makeNpc().attributes, alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 2,
+        chaseRadiusTiles: 3,
+        returnToOrigin: true,
+      },
+    });
+
+    expect(updateEnemyNPC(npc, { x: 8, y: 1 }, { x: 1, y: 1 }, { patrolIndex: 0, enemyChasing: true })).toMatchObject({
+      moved: true,
+      x: 2,
+      y: 1,
+      state: { enemyChasing: false },
+    });
+  });
+
+  it("waits safely when enemy movement is blocked", () => {
+    const npc = makeNpc({
+      attributes: { ...makeNpc().attributes, alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+      },
+    });
+
+    expect(updateEnemyNPC(npc, { x: 3, y: 1 }, { x: 1, y: 1 }, { patrolIndex: 0 }, () => false)).toMatchObject({
+      moved: false,
+      x: 1,
+      y: 1,
+    });
+  });
+
+  it("detects enemy contact and applies contact damage", () => {
+    const npc = makeNpc({
+      attributes: { ...makeNpc().attributes, alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
+      },
+    });
+
+    expect(isEnemyTouchingPlayer(npc, { x: 1, y: 2 })).toBe(true);
+    expect(applyEnemyContactDamage(100, npc.enemyBehaviour?.contactDamage)).toBe(90);
+  });
+
+  it("does not chase with non-hostile NPCs", () => {
+    const npc = makeNpc({
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+      },
+    });
+
+    expect(updateEnemyNPC(npc, { x: 3, y: 1 }, { x: 1, y: 1 })).toMatchObject({
+      moved: false,
+      x: 1,
+      y: 1,
+      state: { enemyChasing: false },
+    });
   });
 });

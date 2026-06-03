@@ -27,6 +27,9 @@ import { findDismountTile, resolveMovementAt, type VehicleMovementConfig } from 
 import { runObjectBehaviour, type ObjectBehaviourResult } from "./objectBehaviour";
 import {
   isNpcTileWalkable,
+  applyEnemyContactDamage,
+  isEnemyTouchingPlayer,
+  updateEnemyNPC,
   updatePatrolNPC,
   updateStationaryNPC,
   updateWanderNPC,
@@ -126,6 +129,8 @@ export class AdventureScene extends Phaser.Scene {
   private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
   private readonly objectMarkers = new Map<string, Phaser.GameObjects.Container>();
   private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
+  private readonly enemyOrigins = new Map<string, { x: number; y: number }>();
+  private readonly enemyContactCooldowns = new Map<string, number>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private readonly onQuestsChanged?: (quests: QuestView[]) => void;
   private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
@@ -134,6 +139,7 @@ export class AdventureScene extends Phaser.Scene {
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private playerFacing = { x: 0, y: 1 };
   private playerVehicleState: PlayerVehicleState = { active: false };
+  private runtimePlayerHealth: number;
   private vehicleVisual?: Phaser.GameObjects.GameObject;
   private isCutsceneOpen = false;
   private isFinished = false;
@@ -149,6 +155,7 @@ export class AdventureScene extends Phaser.Scene {
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
+    this.runtimePlayerHealth = project.player.health;
     this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
     this.runtimeQuestState = createRuntimeQuestState(project.quests);
     this.runtimeShopStocks = createRuntimeShopStocks(project.shops);
@@ -795,8 +802,13 @@ export class AdventureScene extends Phaser.Scene {
       const canMove = (x: number, y: number) =>
         !(this.playerPosition.x === x && this.playerPosition.y === y) &&
         isNpcTileWalkable(this.currentArea, npc.id, x, y);
+      const origin = this.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
+      this.enemyOrigins.set(npc.id, origin);
+      const canUseEnemyMovement = npc.attributes.alignment === "hostile" && npc.enemyBehaviour?.enabled === true;
       const update =
-        npc.movementMode === "patrol"
+        canUseEnemyMovement
+          ? updateEnemyNPC(npc, this.playerPosition, origin, runtime.movement, canMove)
+          : npc.movementMode === "patrol"
           ? updatePatrolNPC(npc, runtime.movement, canMove)
           : npc.movementMode === "wander"
             ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
@@ -822,7 +834,29 @@ export class AdventureScene extends Phaser.Scene {
           ease: "Sine.easeInOut",
         });
       }
+
+      if (isEnemyTouchingPlayer(npc, this.playerPosition)) {
+        this.handleEnemyContact(npc, time);
+      }
     });
+  }
+
+  private handleEnemyContact(npc: NPCInstance, time: number) {
+    const nextAllowedAt = this.enemyContactCooldowns.get(npc.id) ?? 0;
+    if (time < nextAllowedAt) {
+      return;
+    }
+
+    const damage = npc.enemyBehaviour?.contactDamage ?? 0;
+    if (damage > 0) {
+      this.runtimePlayerHealth = applyEnemyContactDamage(this.runtimePlayerHealth, damage);
+      this.setStatus(`Enemy touched player. Health ${this.runtimePlayerHealth}/${this.project.player.health}.`);
+    } else {
+      this.setStatus("Enemy touched player.");
+    }
+    // TODO: Combat V1 should replace contact messages with a real damage/combat loop.
+    this.enemyContactCooldowns.set(npc.id, time + 1200);
+    this.updateDebugPanel();
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -1803,6 +1837,7 @@ export class AdventureScene extends Phaser.Scene {
       [
         `Area: ${this.currentArea.name}`,
         `Mode: ${this.currentMovementMode}`,
+        `Health: ${this.runtimePlayerHealth}/${this.project.player.health}`,
         `Vehicle: ${vehicle}`,
         `Flags: ${flags || "-"}`,
         `Vars: ${variables || "-"}`,
