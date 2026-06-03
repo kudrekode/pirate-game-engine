@@ -6,12 +6,15 @@ import type {
   GameStateValue,
   InventoryState,
   ItemDefinition,
+  MovementMode,
   NPCAttributes,
+  NPCDefinition,
   NPCInstance,
   RuleTrigger,
   SingleCondition,
 } from "../types/game";
 import { createInventory, giveItem, hasItem, removeItem } from "./inventory";
+import { resolveNPCInstance } from "./npcResolver";
 
 export type RuntimeGameState = {
   flags: Record<string, boolean>;
@@ -24,27 +27,43 @@ export type RuleActionContext = {
   state: RuntimeGameState;
   playCutscene: (cutsceneId: string, onDone: () => void) => void;
   teleport: (areaId: string, eventBlockId: string) => void;
-  changeMovementMode: (mode: "walk" | "sail" | "ride") => void;
+  changeMovementMode: (mode: Exclude<MovementMode, "swim">) => void;
   endGame: () => void;
   activateQuest?: (questId: string) => void;
   completeQuest?: (questId: string) => void;
   failQuest?: (questId: string) => void;
+  openShop?: (shopId: string) => void;
   itemDefinitions?: ItemDefinition[];
   stateChanged?: () => void;
 };
 
-export function createRuntimeNpcState(npcs: NPCInstance[]): Record<string, NPCAttributes> {
+export function createRuntimeNpcState(
+  npcs: NPCInstance[],
+  definitions: NPCDefinition[] = [],
+): Record<string, NPCAttributes> {
   return Object.fromEntries(
-    npcs.map((npc) => [npc.id, { ...npc.attributes }]),
+    npcs.map((npc) => [
+      npc.id,
+      {
+        ...resolveNPCInstance(
+          definitions.find((definition) => definition.id === npc.npcDefinitionId),
+          npc,
+        ).attributes,
+      },
+    ]),
   );
 }
 
-export function createRuntimeState(config: GameStateConfig, npcs: NPCInstance[] = []): RuntimeGameState {
+export function createRuntimeState(
+  config: GameStateConfig,
+  npcs: NPCInstance[] = [],
+  definitions: NPCDefinition[] = [],
+): RuntimeGameState {
   return {
     flags: { ...config.flags },
     variables: { ...config.variables },
     inventory: createInventory(config.inventory),
-    npcs: createRuntimeNpcState(npcs),
+    npcs: createRuntimeNpcState(npcs, definitions),
   };
 }
 
@@ -214,6 +233,12 @@ export function runAction(
       npc.health = Math.min(npc.maxHealth, Math.max(0, action.value));
       context.stateChanged?.();
     }
+    onDone();
+    return;
+  }
+
+  if (action.type === "open_shop") {
+    context.openShop?.(action.shopId);
     onDone();
     return;
   }

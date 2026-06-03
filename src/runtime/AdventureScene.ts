@@ -16,14 +16,29 @@ import type {
   MovementMode,
   MapStructure,
   NPCInstance,
+  PlayerVehicleState,
+  ObjectInstance,
   PixelAsset,
   PickupObject,
   RuleTrigger,
 } from "../types/game";
 import { collectPickup } from "./inventory";
-import { resolveMovementAt } from "./movement";
+import {
+  canAttack,
+  damageNpc,
+  damagePlayer,
+  findAttackTarget,
+  getPlayerCombatStats,
+  removeDefeatedNpc,
+  type RuntimeCombatHudState,
+} from "./combat";
+import { resolveNPCInstance } from "./npcResolver";
+import { findDismountTile, resolveMovementAt, type VehicleMovementConfig } from "./movement";
+import { runObjectBehaviour, type ObjectBehaviourResult } from "./objectBehaviour";
 import {
   isNpcTileWalkable,
+  isEnemyTouchingPlayer,
+  updateEnemyNPC,
   updatePatrolNPC,
   updateStationaryNPC,
   updateWanderNPC,
@@ -36,6 +51,12 @@ import {
   type RuntimeGameState,
 } from "./ruleEngine";
 import {
+  buyShopEntry,
+  createRuntimeShopStocks,
+  type RuntimeShopPanelState,
+  type RuntimeShopStocks,
+} from "./shopRuntime";
+import {
   activateQuest,
   completeQuest as completeRuntimeQuest,
   createRuntimeQuestState,
@@ -46,6 +67,7 @@ import {
   type QuestView,
   type RuntimeQuestState,
 } from "./questEngine";
+import { createBoardedVehicleState } from "./vehicleRuntime";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -59,9 +81,14 @@ type InteractKeys = {
   ENTER: Phaser.Input.Keyboard.Key;
 };
 
+type CombatKeys = {
+  SPACE: Phaser.Input.Keyboard.Key;
+};
+
 type Interactable =
   | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
   | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number }
+  | { kind: "object"; label: string; interaction?: Interaction; object: ObjectInstance; distance: number }
   | { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
   | { kind: "npc"; label: string; interaction?: Interaction; npc: NPCInstance; distance: number };
 
@@ -100,6 +127,7 @@ export class AdventureScene extends Phaser.Scene {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: WasdKeys;
   private interactKeys?: InteractKeys;
+  private combatKeys?: CombatKeys;
   private playerMarker?: Phaser.GameObjects.Container;
   private playerPosition = { x: 0, y: 0 };
   private progressionIndex = 0;
@@ -111,11 +139,27 @@ export class AdventureScene extends Phaser.Scene {
   private readonly runtimeState: RuntimeGameState;
   private readonly runtimeQuestState: RuntimeQuestState;
   private readonly collectedPickupIds = new Set<string>();
+  private readonly openedObjectIds = new Set<string>();
   private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
+  private readonly objectMarkers = new Map<string, Phaser.GameObjects.Container>();
   private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
+  private readonly enemyOrigins = new Map<string, { x: number; y: number }>();
+  private readonly enemyContactCooldowns = new Map<string, number>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private readonly onQuestsChanged?: (quests: QuestView[]) => void;
+  private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
+  private readonly onCombatChanged?: (combat: RuntimeCombatHudState) => void;
+  private readonly runtimeShopStocks: RuntimeShopStocks;
+  private readonly defeatedNpcIds = new Set<string>();
+  private activeShopId?: string;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
+  private playerFacing = { x: 0, y: 1 };
+  private playerVehicleState: PlayerVehicleState = { active: false };
+  private readonly playerCombat: ReturnType<typeof getPlayerCombatStats>;
+  private runtimePlayerHealth: number;
+  private nextAttackAt = 0;
+  private recentEnemyHud?: RuntimeCombatHudState["recentEnemy"];
+  private vehicleVisual?: Phaser.GameObjects.GameObject;
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
@@ -124,15 +168,60 @@ export class AdventureScene extends Phaser.Scene {
     project: GameProject,
     onInventoryChanged?: (inventory: Record<string, number>) => void,
     onQuestsChanged?: (quests: QuestView[]) => void,
+    onShopChanged?: (shop: RuntimeShopPanelState | null) => void,
+    onCombatChanged?: (combat: RuntimeCombatHudState) => void,
   ) {
     super("AdventureScene");
     this.project = project;
     this.currentArea = getInitialArea(project);
     this.tileSize = this.currentArea.tileSize;
-    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
+    this.playerCombat = getPlayerCombatStats(project.player);
+    this.runtimePlayerHealth = this.playerCombat.health;
+    this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs), project.npcs);
     this.runtimeQuestState = createRuntimeQuestState(project.quests);
+    this.runtimeShopStocks = createRuntimeShopStocks(project.shops);
     this.onInventoryChanged = onInventoryChanged;
     this.onQuestsChanged = onQuestsChanged;
+    this.onShopChanged = onShopChanged;
+    this.onCombatChanged = onCombatChanged;
+  }
+
+  openShop(shopId: string) {
+    const shop = this.project.shops.find((candidate) => candidate.id === shopId);
+    if (!shop) {
+      this.setStatus(`Shop missing: ${shopId}.`);
+      return;
+    }
+
+    this.activeShopId = shopId;
+    this.notifyShopChanged();
+    this.setStatus(`Opened ${shop.name}.`);
+  }
+
+  closeShop() {
+    this.activeShopId = undefined;
+    this.onShopChanged?.(null);
+  }
+
+  buyShopEntry(entryId: string) {
+    if (!this.activeShopId) {
+      return;
+    }
+
+    const shop = this.project.shops.find((candidate) => candidate.id === this.activeShopId);
+    if (!shop) {
+      this.closeShop();
+      return;
+    }
+
+    const stock = this.runtimeShopStocks[shop.id] ?? {};
+    this.runtimeShopStocks[shop.id] = stock;
+    const result = buyShopEntry(shop, entryId, this.runtimeState.inventory, this.project.items, stock);
+    this.setStatus(result.message);
+    this.notifyInventoryChanged();
+    this.syncQuestProgress();
+    this.updateDebugPanel();
+    this.notifyShopChanged(result.message);
   }
 
   create() {
@@ -180,6 +269,7 @@ export class AdventureScene extends Phaser.Scene {
     this.uiLayer.add(this.debugText);
     this.updateDebugPanel();
     this.notifyInventoryChanged();
+    this.notifyCombatChanged();
     markAreaEntered(this.runtimeQuestState, this.currentArea.id);
     this.syncQuestProgress();
 
@@ -201,14 +291,27 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    const interactable = this.findNearestInteractable();
-    this.updatePrompt(interactable);
-    if (this.wasInteractPressed() && interactable) {
+    const interactPressed = this.wasInteractPressed();
+    if (this.playerVehicleState.active) {
+      this.promptText?.setText("Press E to dismount");
+      if (interactPressed) {
+        this.tryDismountVehicle();
+        return;
+      }
+    }
+
+    const interactable = this.playerVehicleState.active ? null : this.findNearestInteractable();
+    if (!this.playerVehicleState.active) {
+      this.updatePrompt(interactable);
+    }
+    if (interactPressed && interactable) {
       const targetId =
         interactable.kind === "event"
           ? interactable.eventBlock.id
           : interactable.kind === "structure"
             ? interactable.structure.id
+            : interactable.kind === "object"
+              ? interactable.object.id
             : interactable.kind === "npc"
               ? interactable.npc.id
               : "";
@@ -217,10 +320,22 @@ export class AdventureScene extends Phaser.Scene {
         return;
       }
       this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
+        if (interactable.kind === "object" && this.runObjectBehaviour(interactable.object)) {
+          if (interactable.interaction && canInteractActivate(interactable.interaction)) {
+            this.runInteraction(interactable.interaction, interactable.label);
+          }
+          return;
+        }
+
         if (interactable.interaction && canInteractActivate(interactable.interaction)) {
           this.runInteraction(interactable.interaction, interactable.label);
         }
       });
+      return;
+    }
+
+    if (this.wasAttackPressed()) {
+      this.tryAttack(time);
       return;
     }
 
@@ -248,6 +363,9 @@ export class AdventureScene extends Phaser.Scene {
     this.interactKeys = {
       E: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
       ENTER: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
+    };
+    this.combatKeys = {
+      SPACE: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
     };
   }
 
@@ -333,6 +451,7 @@ export class AdventureScene extends Phaser.Scene {
     this.worldLayer?.removeAll(true);
     this.playerMarker = undefined;
     this.npcMarkers.clear();
+    this.objectMarkers.clear();
     this.npcMovementStates.clear();
     const overlayLookup = new Map(
       this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
@@ -425,10 +544,13 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.currentArea.structures.forEach((structure) => this.renderStructure(structure));
+    this.currentArea.objects.forEach((object) => this.renderObject(object));
     this.currentArea.pickups
       .filter((pickup) => !this.isPickupCollected(pickup))
       .forEach((pickup) => this.renderPickup(pickup));
-    this.currentArea.npcs.forEach((npc) => this.renderNpc(npc));
+    this.currentArea.npcs
+      .filter((npc) => !this.defeatedNpcIds.has(npc.id))
+      .forEach((npc) => this.renderNpc(npc));
   }
 
   private createPixelTextures() {
@@ -608,6 +730,7 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
+    this.leaveVehicle(false);
     const enteredNewArea = nextArea.id !== this.currentArea.id;
     if (enteredNewArea) {
       this.currentArea = nextArea;
@@ -647,14 +770,45 @@ export class AdventureScene extends Phaser.Scene {
     this.worldLayer?.add(container);
   }
 
+  private renderObject(object: ObjectInstance) {
+    const definition = this.project.objects.find((candidate) => candidate.id === object.objectDefinitionId);
+    const width = (object.widthTiles ?? definition?.widthTiles ?? 1) * this.tileSize;
+    const height = (object.heightTiles ?? definition?.heightTiles ?? 1) * this.tileSize;
+    const worldX = object.x * this.tileSize;
+    const worldY = object.y * this.tileSize;
+    const categoryColor =
+      definition?.category === "container"
+        ? 0xb45309
+        : definition?.category === "vehicle"
+          ? 0x0369a1
+          : definition?.category === "sign"
+            ? 0x854d0e
+            : 0x64748b;
+    const body = this.add
+      .rectangle(width / 2, height / 2, Math.max(16, width * 0.72), Math.max(16, height * 0.72), categoryColor, 0.94)
+      .setStrokeStyle(2, 0xffffff, 0.8);
+    const label = this.add
+      .text(width / 2, height / 2, (object.nameOverride || definition?.name || "Object").slice(0, 1).toUpperCase(), {
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "13px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+    const marker = this.add.container(worldX, worldY, [body, label]).setDepth(42);
+    marker.setName(`object:${object.id}`);
+    this.objectMarkers.set(object.id, marker);
+    this.worldLayer?.add(marker);
+  }
+
   private renderNpc(npc: NPCInstance) {
-    const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
-    const avatar = getVisualPreset(definition?.mapAvatarId ?? "ranger", characterSprites);
+    const resolved = this.getResolvedNpc(npc);
+    const avatar = getVisualPreset(resolved.definition?.mapAvatarId ?? "ranger", characterSprites);
     const centerX = npc.x * this.tileSize + this.tileSize / 2;
     const centerY = npc.y * this.tileSize + this.tileSize / 2;
     const body = this.add.circle(0, 0, this.tileSize * 0.3, hexToNumber(avatar.color));
     const initial = this.add
-      .text(0, 0, definition?.name.slice(0, 1).toUpperCase() ?? "?", {
+      .text(0, 0, resolved.name.slice(0, 1).toUpperCase() ?? "?", {
         color: avatar.accent,
         fontFamily: "Arial, sans-serif",
         fontSize: "15px",
@@ -669,6 +823,10 @@ export class AdventureScene extends Phaser.Scene {
 
   private updateNpcMovement(time: number) {
     this.currentArea.npcs.forEach((npc) => {
+      if (this.defeatedNpcIds.has(npc.id)) {
+        return;
+      }
+
       const runtime = this.npcMovementStates.get(npc.id) ?? {
         movement: { patrolIndex: 0 },
         nextMoveAt: time + 450,
@@ -681,13 +839,24 @@ export class AdventureScene extends Phaser.Scene {
       const canMove = (x: number, y: number) =>
         !(this.playerPosition.x === x && this.playerPosition.y === y) &&
         isNpcTileWalkable(this.currentArea, npc.id, x, y);
+      const origin = this.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
+      this.enemyOrigins.set(npc.id, origin);
+      const resolved = this.getResolvedNpc(npc);
+      const canUseEnemyMovement =
+        resolved.attributes.alignment === "hostile" && resolved.enemyBehaviour?.enabled === true;
       const update =
-        npc.movementMode === "patrol"
-          ? updatePatrolNPC(npc, runtime.movement, canMove)
-          : npc.movementMode === "wander"
-            ? updateWanderNPC(npc, this.currentArea, runtime.movement, canMove)
-            : updateStationaryNPC(npc, runtime.movement);
-      const speed = clamp(this.runtimeState.npcs[npc.id]?.movementSpeed ?? npc.attributes.movementSpeed ?? npc.movementSpeed ?? 1, 0.1, 10);
+        canUseEnemyMovement
+          ? updateEnemyNPC(resolved, this.playerPosition, origin, runtime.movement, canMove)
+          : resolved.movementMode === "patrol"
+          ? updatePatrolNPC(resolved, runtime.movement, canMove)
+          : resolved.movementMode === "wander"
+            ? updateWanderNPC(resolved, this.currentArea, runtime.movement, canMove)
+            : updateStationaryNPC(resolved, runtime.movement);
+      const speed = clamp(
+        this.runtimeState.npcs[npc.id]?.movementSpeed ?? resolved.movementSpeed,
+        0.1,
+        10,
+      );
       const duration = Math.max(80, 360 / speed);
       const wait = update.moved ? 320 : 560;
 
@@ -708,7 +877,33 @@ export class AdventureScene extends Phaser.Scene {
           ease: "Sine.easeInOut",
         });
       }
+
+      if (isEnemyTouchingPlayer(resolved, this.playerPosition)) {
+        this.handleEnemyContact(resolved, time);
+      }
     });
+  }
+
+  private handleEnemyContact(npc: NPCInstance, time: number) {
+    const nextAllowedAt = this.enemyContactCooldowns.get(npc.id) ?? 0;
+    if (time < nextAllowedAt) {
+      return;
+    }
+
+    const damage = npc.enemyBehaviour?.contactDamage ?? 0;
+    if (damage > 0) {
+      const result = damagePlayer(this.runtimePlayerHealth, damage);
+      this.runtimePlayerHealth = result.health;
+      this.setStatus(`Enemy touched player. Health ${this.runtimePlayerHealth}/${this.playerCombat.maxHealth}.`);
+      if (result.defeated) {
+        this.showGameOverMessage();
+      }
+    } else {
+      this.setStatus("Enemy touched player.");
+    }
+    this.enemyContactCooldowns.set(npc.id, time + 1200);
+    this.updateDebugPanel();
+    this.notifyCombatChanged();
   }
 
   private spawnPlayer(eventBlock: EventBlock) {
@@ -735,6 +930,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private teleportPlayer(eventBlock: EventBlock) {
+    this.leaveVehicle(false);
     if (!this.playerMarker) {
       this.spawnPlayer(eventBlock);
       return;
@@ -892,6 +1088,47 @@ export class AdventureScene extends Phaser.Scene {
     this.setStatus("End game.");
   }
 
+  private showGameOverMessage() {
+    if (this.isFinished) {
+      return;
+    }
+
+    this.isFinished = true;
+    this.closeShop();
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const boxWidth = Math.min(300, width - 24);
+    const container = this.add.container(0, 0).setDepth(620).setScrollFactor(0);
+    this.uiLayer?.add(container);
+    container.add(this.add.rectangle(0, 0, width, height, 0x111827, 0.78).setOrigin(0));
+    container.add(
+      this.add
+        .rectangle(width / 2, height / 2, boxWidth, 130, 0x18181b, 0.96)
+        .setStrokeStyle(2, 0xdc2626, 0.9),
+    );
+    container.add(
+      this.add
+        .text(width / 2, height / 2 - 16, "Game Over", {
+          color: "#fecaca",
+          fontFamily: "Arial, sans-serif",
+          fontSize: "34px",
+          fontStyle: "700",
+        })
+        .setOrigin(0.5),
+    );
+    container.add(
+      this.add
+        .text(width / 2, height / 2 + 30, "Back to editor or restart play test", {
+          color: "#e5e7eb",
+          fontFamily: "Arial, sans-serif",
+          fontSize: "14px",
+        })
+        .setOrigin(0.5),
+    );
+    this.setStatus("Game Over.");
+    this.notifyCombatChanged();
+  }
+
   private readDirection(): { x: number; y: number } | null {
     if (this.cursors?.left.isDown || this.wasd?.A.isDown) {
       return { x: -1, y: 0 };
@@ -914,6 +1151,10 @@ export class AdventureScene extends Phaser.Scene {
       (this.interactKeys?.E && Phaser.Input.Keyboard.JustDown(this.interactKeys.E)) ||
         (this.interactKeys?.ENTER && Phaser.Input.Keyboard.JustDown(this.interactKeys.ENTER)),
     );
+  }
+
+  private wasAttackPressed(): boolean {
+    return Boolean(this.combatKeys?.SPACE && Phaser.Input.Keyboard.JustDown(this.combatKeys.SPACE));
   }
 
   private findNearestInteractable(): Interactable | null {
@@ -958,6 +1199,28 @@ export class AdventureScene extends Phaser.Scene {
       }
     });
 
+    this.currentArea.objects.forEach((object) => {
+      const definition = this.getObjectDefinition(object);
+      const interaction = object.interaction ?? definition?.defaultInteraction;
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: object.id });
+      const behaviour = this.getObjectBehaviour(object);
+      const hasBehaviour = behaviour.type !== "none";
+      if ((!interaction || !canInteractActivate(interaction)) && !hasRule && !hasBehaviour) {
+        return;
+      }
+
+      const distance = this.distanceToObject(object);
+      if (distance <= 1) {
+        candidates.push({
+          kind: "object",
+          label: object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Object",
+          interaction,
+          object,
+          distance,
+        });
+      }
+    });
+
     this.currentArea.pickups.forEach((pickup) => {
       if (pickup.pickupMode !== "on_interact" || this.isPickupCollected(pickup)) {
         return;
@@ -977,23 +1240,23 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.npcs.forEach((npc) => {
-      const attributes = this.runtimeState.npcs[npc.id] ?? npc.attributes;
+      const resolved = this.getResolvedNpc(npc);
+      const attributes = this.runtimeState.npcs[npc.id] ?? resolved.attributes;
       if (!attributes.canInteract) {
         return;
       }
 
       const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: npc.id });
-      if ((!npc.interaction || !canInteractActivate(npc.interaction)) && !hasRule) {
+      if ((!resolved.interaction || !canInteractActivate(resolved.interaction)) && !hasRule) {
         return;
       }
 
       const distance = Math.abs(npc.x - this.playerPosition.x) + Math.abs(npc.y - this.playerPosition.y);
       if (distance <= 1) {
-        const definition = this.project.npcs.find((candidate) => candidate.id === npc.npcDefinitionId);
         candidates.push({
           kind: "npc",
-          label: definition?.name ?? "NPC",
-          interaction: npc.interaction,
+          label: resolved.name,
+          interaction: resolved.interaction,
           npc,
           distance,
         });
@@ -1032,6 +1295,28 @@ export class AdventureScene extends Phaser.Scene {
     return deltaX + deltaY;
   }
 
+  private distanceToObject(object: ObjectInstance): number {
+    const definition = this.getObjectDefinition(object);
+    const minX = object.x;
+    const maxX = object.x + (object.widthTiles ?? definition?.widthTiles ?? 1) - 1;
+    const minY = object.y;
+    const maxY = object.y + (object.heightTiles ?? definition?.heightTiles ?? 1) - 1;
+    const deltaX =
+      this.playerPosition.x < minX
+        ? minX - this.playerPosition.x
+        : this.playerPosition.x > maxX
+          ? this.playerPosition.x - maxX
+          : 0;
+    const deltaY =
+      this.playerPosition.y < minY
+        ? minY - this.playerPosition.y
+        : this.playerPosition.y > maxY
+          ? this.playerPosition.y - maxY
+          : 0;
+
+    return deltaX + deltaY;
+  }
+
   private updatePrompt(interactable: Interactable | null) {
     if (!this.promptText) {
       return;
@@ -1043,9 +1328,28 @@ export class AdventureScene extends Phaser.Scene {
           ? `Press E to pick up ${interactable.label}`
           : interactable.kind === "npc"
             ? `Press E to talk to ${interactable.label}`
+          : interactable.kind === "object"
+            ? this.promptForObject(interactable)
           : this.promptForInteraction(interactable.interaction)
         : "",
     );
+  }
+
+  private promptForObject(interactable: Extract<Interactable, { kind: "object" }>): string {
+    const behaviour = this.getObjectBehaviour(interactable.object);
+    if (behaviour.type === "vehicle" && behaviour.vehicleType === "boat") {
+      return "Press E to board";
+    }
+
+    if (behaviour.type === "sign") {
+      return "Press E to read";
+    }
+
+    if (behaviour.type === "container") {
+      return "Press E to open";
+    }
+
+    return this.promptForInteraction(interactable.interaction);
   }
 
   private promptForInteraction(interaction?: Interaction): string {
@@ -1139,6 +1443,224 @@ export class AdventureScene extends Phaser.Scene {
     this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
   }
 
+  private runObjectBehaviour(object: ObjectInstance): boolean {
+    const result = runObjectBehaviour(this.getObjectBehaviour(object), {
+      itemDefinitions: this.project.items,
+      objectId: object.id,
+      openedObjectIds: this.openedObjectIds,
+      state: this.runtimeState,
+    });
+
+    return this.applyObjectBehaviourResult(object, result);
+  }
+
+  private tryAttack(time: number): boolean {
+    if (!canAttack(time, this.nextAttackAt)) {
+      this.setStatus("Attack cooling down.");
+      return false;
+    }
+
+    this.nextAttackAt = time + this.playerCombat.attackCooldownMs;
+    const target = findAttackTarget(
+      this.currentArea.npcs,
+      this.runtimeState.npcs,
+      this.defeatedNpcIds,
+      this.playerPosition,
+      this.playerFacing,
+      this.playerCombat.attackRangeTiles,
+    );
+
+    if (!target) {
+      this.setStatus("Attack missed.");
+      return false;
+    }
+
+    const attributes = this.runtimeState.npcs[target.id] ?? target.attributes;
+    const result = damageNpc(attributes, this.playerCombat.attackDamage);
+    const enemyName = this.getNpcName(target);
+    this.recentEnemyHud = {
+      id: target.id,
+      name: enemyName,
+      health: result.health,
+      maxHealth: attributes.maxHealth,
+    };
+
+    if (result.defeated) {
+      this.defeatNpc(target, enemyName);
+    } else {
+      this.setStatus(`Hit ${enemyName} for ${this.playerCombat.attackDamage}.`);
+    }
+
+    this.updateDebugPanel();
+    this.notifyCombatChanged();
+    return true;
+  }
+
+  private defeatNpc(npc: NPCInstance, enemyName = this.getNpcName(npc)) {
+    this.defeatedNpcIds.add(npc.id);
+    this.runtimeState.flags[`npc_defeated_${npc.id}`] = true;
+    this.currentArea.npcs = removeDefeatedNpc(this.currentArea.npcs, npc.id);
+    this.npcMarkers.get(npc.id)?.destroy();
+    this.npcMarkers.delete(npc.id);
+    this.npcMovementStates.delete(npc.id);
+    this.enemyContactCooldowns.delete(npc.id);
+    this.setStatus(`${enemyName} defeated.`);
+    this.syncQuestProgress();
+    // TODO: Add on_npc_defeated rule trigger and combat rule actions when Logic Builder scope expands.
+  }
+
+  private applyObjectBehaviourResult(object: ObjectInstance, result: ObjectBehaviourResult): boolean {
+    if (!result.handled) {
+      return false;
+    }
+
+    if (result.type === "container") {
+      this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
+      this.syncQuestProgress();
+      this.updateDebugPanel();
+      this.setStatus(result.message);
+      return true;
+    }
+
+    if (result.type === "door") {
+      if (!result.allowed) {
+        if (result.lockedCutsceneId) {
+          const cutscene = this.project.cutscenes.find((candidate) => candidate.id === result.lockedCutsceneId);
+          if (cutscene) {
+            this.showCutscene(cutscene, () => undefined);
+            return true;
+          }
+        }
+        this.setStatus(result.message);
+        return true;
+      }
+
+      if (result.targetAreaId && result.targetEventBlockId) {
+        const eventBlock = this.findEventBlock(result.targetEventBlockId, result.targetAreaId);
+        if (eventBlock) {
+          this.movePlayerToArea(result.targetAreaId, eventBlock);
+        } else {
+          this.setStatus(`Door target missing: ${object.id}.`);
+        }
+        return true;
+      }
+
+      this.setStatus(result.message);
+      return true;
+    }
+
+    if (result.type === "sign") {
+      this.showCutscene({
+        id: `object_sign_${object.id}`,
+        name: object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Sign",
+        backgroundImageId: "forest_path",
+        speakerName: object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Sign",
+        text: result.text,
+      }, () => undefined);
+      return true;
+    }
+
+    if (result.type === "vehicle") {
+      return this.boardVehicle(object, result.behaviour, result.message);
+    }
+
+    return false;
+  }
+
+  private boardVehicle(object: ObjectInstance, behaviour: VehicleMovementConfig, message: string): boolean {
+    if (behaviour.vehicleType !== "boat") {
+      this.setStatus(message);
+      return true;
+    }
+
+    this.playerVehicleState = createBoardedVehicleState(object.id, behaviour);
+    this.currentMovementMode = behaviour.movementMode;
+    this.addVehicleVisual(behaviour);
+    this.updateDebugPanel();
+    this.setStatus("Boarded boat.");
+    return true;
+  }
+
+  private addVehicleVisual(behaviour: VehicleMovementConfig) {
+    this.vehicleVisual?.destroy();
+    if (!this.playerMarker || behaviour.vehicleType !== "boat") {
+      return;
+    }
+
+    const hull = this.add
+      .ellipse(0, this.tileSize * 0.08, this.tileSize * 0.86, this.tileSize * 0.52, 0x075985, 0.88)
+      .setStrokeStyle(2, 0xe0f2fe, 0.86);
+    hull.setDepth(-1);
+    this.vehicleVisual = hull;
+    this.playerMarker.addAt(hull, 0);
+  }
+
+  private leaveVehicle(showMessage: boolean) {
+    if (!this.playerVehicleState.active) {
+      return;
+    }
+
+    this.playerVehicleState = { active: false };
+    this.currentMovementMode = "walk";
+    this.vehicleVisual?.destroy();
+    this.vehicleVisual = undefined;
+    this.updateDebugPanel();
+    if (showMessage) {
+      this.setStatus("Dismounted.");
+    }
+  }
+
+  private getActiveVehicleBehaviour(): VehicleMovementConfig | undefined {
+    if (!this.playerVehicleState.active || !this.playerVehicleState.vehicleObjectInstanceId) {
+      return undefined;
+    }
+
+    const object = this.currentArea.objects.find(
+      (candidate) => candidate.id === this.playerVehicleState.vehicleObjectInstanceId,
+    );
+    const behaviour = object ? this.getObjectBehaviour(object) : undefined;
+    return behaviour?.type === "vehicle" ? behaviour : undefined;
+  }
+
+  private tryDismountVehicle(): boolean {
+    const behaviour = this.getActiveVehicleBehaviour();
+    const vehicleObjectId = this.playerVehicleState.vehicleObjectInstanceId;
+    const vehicleObject = vehicleObjectId
+      ? this.currentArea.objects.find((candidate) => candidate.id === vehicleObjectId)
+      : undefined;
+
+    if (!behaviour || !vehicleObject) {
+      this.leaveVehicle(false);
+      this.setStatus("Vehicle missing.");
+      return false;
+    }
+
+    const waterTile = { ...this.playerPosition };
+    const target = findDismountTile(this.currentArea, this.playerPosition, this.playerFacing, behaviour);
+    if (!target.canDismount) {
+      this.setStatus(target.reason);
+      return false;
+    }
+
+    vehicleObject.x = waterTile.x;
+    vehicleObject.y = waterTile.y;
+    this.objectMarkers
+      .get(vehicleObject.id)
+      ?.setPosition(vehicleObject.x * this.tileSize, vehicleObject.y * this.tileSize);
+
+    this.playerPosition = { x: target.x, y: target.y };
+    this.playerMarker?.setPosition(
+      target.x * this.tileSize + this.tileSize / 2,
+      target.y * this.tileSize + this.tileSize / 2,
+    );
+    this.leaveVehicle(true);
+    if (this.checkTouchInteractions(() => this.checkTrigger())) {
+      return true;
+    }
+    this.checkTrigger();
+    return true;
+  }
+
   private collectPickupObject(pickup: PickupObject): boolean {
     if (this.isPickupCollected(pickup)) {
       return false;
@@ -1178,6 +1700,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private tryMove(deltaX: number, deltaY: number, time: number) {
+    this.playerFacing = { x: deltaX, y: deltaY };
     const nextX = this.playerPosition.x + deltaX;
     const nextY = this.playerPosition.y + deltaY;
 
@@ -1190,7 +1713,15 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    const movement = resolveMovementAt(this.currentArea, nextX, nextY, this.project.player);
+    const activeVehicle = this.getActiveVehicleBehaviour();
+    const movement = resolveMovementAt(this.currentArea, nextX, nextY, this.project.player, {
+      activeVehicle: activeVehicle
+        ? {
+            ...activeVehicle,
+            vehicleObjectInstanceId: this.playerVehicleState.vehicleObjectInstanceId,
+          }
+        : undefined,
+    });
     if (!movement.canMove) {
       this.setStatus(movement.reason ?? "Blocked.");
       return;
@@ -1233,6 +1764,31 @@ export class AdventureScene extends Phaser.Scene {
     );
     if (pickup && this.collectPickupObject(pickup)) {
       onDone();
+      return true;
+    }
+
+    const object = this.currentArea.objects.find(
+      (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
+    );
+    const objectInteraction = object
+      ? object.interaction ?? this.getObjectDefinition(object)?.defaultInteraction
+      : undefined;
+    const objectBehaviour = object ? this.getObjectBehaviour(object) : { type: "none" as const };
+    const objectHasRule = object
+      ? this.hasRuleTrigger({ type: "on_touch", targetId: object.id })
+      : false;
+
+    const objectBehaviourCanTouch = objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
+    if (object && ((objectInteraction && canTouchActivate(objectInteraction)) || objectHasRule || objectBehaviourCanTouch)) {
+      this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
+        if (objectBehaviourCanTouch) {
+          this.runObjectBehaviour(object);
+        }
+        if (objectInteraction && canTouchActivate(objectInteraction)) {
+          this.runInteraction(objectInteraction, object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Object");
+        }
+        onDone();
+      });
       return true;
     }
 
@@ -1310,6 +1866,33 @@ export class AdventureScene extends Phaser.Scene {
     return undefined;
   }
 
+  private getObjectDefinition(object: ObjectInstance) {
+    return this.project.objects.find((definition) => definition.id === object.objectDefinitionId);
+  }
+
+  private getNpcName(npc: NPCInstance): string {
+    return this.getResolvedNpc(npc).name;
+  }
+
+  private getResolvedNpc(npc: NPCInstance) {
+    const resolved = resolveNPCInstance(
+      this.project.npcs.find((definition) => definition.id === npc.npcDefinitionId),
+      npc,
+    );
+    const runtimeAttributes = this.runtimeState.npcs[npc.id];
+    return runtimeAttributes
+      ? {
+          ...resolved,
+          attributes: runtimeAttributes,
+          movementSpeed: runtimeAttributes.movementSpeed ?? resolved.movementSpeed,
+        }
+      : resolved;
+  }
+
+  private getObjectBehaviour(object: ObjectInstance) {
+    return object.behaviourOverride ?? this.getObjectDefinition(object)?.defaultBehaviour ?? { type: "none" as const };
+  }
+
   private hasRuleTrigger(trigger: RuleTrigger): boolean {
     return this.project.rules.some((rule) => {
       if (!rule.enabled || rule.trigger.type !== trigger.type) {
@@ -1382,6 +1965,7 @@ export class AdventureScene extends Phaser.Scene {
         failQuest(this.runtimeQuestState, questId);
         this.syncQuestProgress();
       },
+      openShop: (shopId) => this.openShop(shopId),
       itemDefinitions: this.project.items,
       stateChanged: () => {
         this.updateDebugPanel();
@@ -1411,15 +1995,47 @@ export class AdventureScene extends Phaser.Scene {
       .map(([itemId, quantity]) => `${itemId}=${quantity}`)
       .join(", ");
 
+    const vehicle = this.playerVehicleState.active
+      ? `${this.playerVehicleState.vehicleType ?? "vehicle"}:${this.playerVehicleState.vehicleObjectInstanceId ?? "-"}`
+      : "-";
+
     this.debugText.setText(
-      [`Area: ${this.currentArea.name}`, `Mode: ${this.currentMovementMode}`, `Flags: ${flags || "-"}`, `Vars: ${variables || "-"}`, `Items: ${inventory || "-"}`].join(
-        "\n",
-      ),
+      [
+        `Area: ${this.currentArea.name}`,
+        `Mode: ${this.currentMovementMode}`,
+        `Health: ${this.runtimePlayerHealth}/${this.playerCombat.maxHealth}`,
+        `Vehicle: ${vehicle}`,
+        `Flags: ${flags || "-"}`,
+        `Vars: ${variables || "-"}`,
+        `Items: ${inventory || "-"}`,
+      ].join("\n"),
     );
   }
 
   private notifyInventoryChanged() {
     this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
+  }
+
+  private notifyCombatChanged() {
+    this.onCombatChanged?.({
+      playerHealth: this.runtimePlayerHealth,
+      playerMaxHealth: this.playerCombat.maxHealth,
+      ...(this.recentEnemyHud ? { recentEnemy: this.recentEnemyHud } : {}),
+      gameOver: this.runtimePlayerHealth <= 0,
+    });
+  }
+
+  private notifyShopChanged(message?: string) {
+    if (!this.activeShopId) {
+      this.onShopChanged?.(null);
+      return;
+    }
+
+    this.onShopChanged?.({
+      shopId: this.activeShopId,
+      stockByEntryId: { ...(this.runtimeShopStocks[this.activeShopId] ?? {}) },
+      ...(message ? { message } : {}),
+    });
   }
 
   private syncQuestProgress() {

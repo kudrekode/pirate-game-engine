@@ -9,6 +9,8 @@ import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
 import { QuestsEditor } from "../editor/sections/QuestsEditor";
 import { NpcsEditor } from "../editor/sections/NpcsEditor";
+import { ObjectsEditor } from "../editor/sections/ObjectsEditor";
+import { ShopsEditor } from "../editor/sections/ShopsEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -51,6 +53,15 @@ describe("editor smoke tests", () => {
     expect(captain?.attributes).toMatchObject({ faction: "sailors", alignment: "neutral" });
   }, 15000);
 
+  it("shows enemy behaviour controls for hostile NPCs", () => {
+    render(<MapEditor />);
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Tile 16, 8" }));
+
+    expect(screen.getByText("Enemy Behaviour")).toBeInTheDocument();
+    expect(screen.getByLabelText("Detection radius")).toBeInTheDocument();
+  }, 15000);
+
   it("renders Logic Builder", () => {
     render(<ProgressionEditor />);
 
@@ -73,6 +84,13 @@ describe("editor smoke tests", () => {
     expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
   });
 
+  it("renders Shops Editor", () => {
+    render(<ShopsEditor />);
+
+    expect(screen.getByText("Shop Definition")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("General Store")).toBeInTheDocument();
+  });
+
   it("renders Quests Editor", () => {
     render(<QuestsEditor />);
 
@@ -87,5 +105,13 @@ describe("editor smoke tests", () => {
     expect(screen.getByDisplayValue("Captain Mira")).toBeInTheDocument();
     expect(screen.getByText("Placed NPC Overview")).toBeInTheDocument();
     expect(screen.getByText("pirates")).toBeInTheDocument();
+  });
+
+  it("renders Objects Editor", () => {
+    render(<ObjectsEditor />);
+
+    expect(screen.getByText("Object Definition")).toBeInTheDocument();
+    expect(screen.getByText("Default Behaviour")).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue("Sign").length).toBeGreaterThan(0);
   });
 });

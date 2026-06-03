@@ -77,6 +77,11 @@ function removeFlagReferences(project: GameProject, flag: string) {
         structure.interaction = undefined;
       }
     });
+    area.objects.forEach((object) => {
+      if (object.interaction?.type === "set_flag" && object.interaction.flag === flag) {
+        object.interaction = undefined;
+      }
+    });
   });
 }
 

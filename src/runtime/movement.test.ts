@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GameArea, PlayerConfig } from "../types/game";
-import { resolveMovementAt } from "./movement";
+import { findDismountTile, resolveMovementAt, type VehicleMovementConfig } from "./movement";
 
 const player: PlayerConfig = {
   name: "Ari",
@@ -9,6 +9,15 @@ const player: PlayerConfig = {
   speed: 6,
   health: 5,
   canWalkOn: ["grass", "dirt"],
+};
+
+const boat: VehicleMovementConfig = {
+  type: "vehicle",
+  vehicleType: "boat",
+  movementMode: "sail",
+  allowedTerrainIds: ["water"],
+  dismountAllowedTerrainIds: ["grass", "dirt", "sand", "stone"],
+  speedMultiplier: 1.5,
 };
 
 function makeArea(patch: Partial<GameArea> = {}): GameArea {
@@ -29,6 +38,7 @@ function makeArea(patch: Partial<GameArea> = {}): GameArea {
     structures: [],
     eventBlocks: [],
     ...patch,
+    objects: patch.objects ?? [],
     pickups: patch.pickups ?? [],
     npcs: patch.npcs ?? [],
   };
@@ -109,6 +119,88 @@ describe("resolveMovementAt", () => {
     expect(resolveMovementAt(area, 0, 1, player)).toMatchObject({
       canMove: false,
       reason: "Blocked by NPC.",
+    });
+  });
+
+  it("blocks movement through object instances", () => {
+    const area = makeArea({
+      objects: [
+        {
+          id: "chest",
+          objectDefinitionId: "object_chest",
+          areaId: "test-area",
+          x: 0,
+          y: 1,
+          widthTiles: 2,
+          heightTiles: 1,
+          blocksMovement: true,
+        },
+      ],
+    });
+
+    expect(resolveMovementAt(area, 1, 1, player)).toMatchObject({
+      canMove: false,
+      reason: "Blocked by object.",
+    });
+  });
+
+  it("allows boat movement over configured water terrain", () => {
+    expect(resolveMovementAt(makeArea(), 1, 0, player, { activeVehicle: boat })).toMatchObject({
+      canMove: true,
+      movementMode: "sail",
+      speedMultiplier: 1.5,
+    });
+  });
+
+  it("blocks boat movement onto normal land until dismount", () => {
+    expect(resolveMovementAt(makeArea(), 0, 1, player, { activeVehicle: boat })).toMatchObject({
+      canMove: false,
+      reason: "Dismount before moving onto land.",
+    });
+  });
+
+  it("ignores the currently boarded boat object for movement checks", () => {
+    const area = makeArea({
+      objects: [
+        {
+          id: "boat-instance",
+          objectDefinitionId: "object_boat",
+          areaId: "test-area",
+          x: 1,
+          y: 0,
+          blocksMovement: true,
+        },
+      ],
+    });
+
+    expect(
+      resolveMovementAt(area, 1, 0, player, {
+        activeVehicle: { ...boat, vehicleObjectInstanceId: "boat-instance" },
+      }),
+    ).toMatchObject({ canMove: true });
+  });
+
+  it("finds a valid adjacent dismount tile", () => {
+    expect(findDismountTile(makeArea(), { x: 1, y: 0 }, { x: 0, y: 1 }, boat)).toEqual({
+      canDismount: true,
+      x: 1,
+      y: 1,
+    });
+  });
+
+  it("fails dismount when no valid land is adjacent", () => {
+    const waterArea = makeArea({
+      terrainTiles: [
+        { x: 0, y: 0, tileId: "water" },
+        { x: 1, y: 0, tileId: "water" },
+        { x: 0, y: 1, tileId: "water" },
+        { x: 1, y: 1, tileId: "water" },
+      ],
+    });
+
+    expect(findDismountTile(waterArea, { x: 1, y: 0 }, { x: 0, y: 1 }, boat)).toEqual({
+      canDismount: false,
+      reason: "No place to dismount.",
     });
   });
 });

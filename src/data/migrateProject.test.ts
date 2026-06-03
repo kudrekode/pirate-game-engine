@@ -30,9 +30,12 @@ describe("migrateProject", () => {
     ]);
     expect(project.areas[0].pickups).toEqual([]);
     expect(project.areas[0].npcs).toEqual([]);
+    expect(project.areas[0].objects).toEqual([]);
     expect(project.items).toEqual([]);
+    expect(project.shops).toEqual([]);
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
+    expect(project.objects).toEqual([]);
   });
 
   it("adds default game state when older projects omit it", () => {
@@ -86,11 +89,148 @@ describe("migrateProject", () => {
     expect(project.metadata).toMatchObject({ name: "Partial", version: "0.1.0" });
     expect(project.camera.viewportWidthTiles).toBeGreaterThan(0);
     expect(project.player.mapAvatarId).toBeTruthy();
+    expect(project.player.combat).toMatchObject({
+      maxHealth: 100,
+      health: 100,
+      attackDamage: 25,
+      attackRangeTiles: 1,
+      attackCooldownMs: 500,
+    });
     expect(project.ruleGroups).toEqual([]);
     expect(project.rules).toEqual([]);
     expect(project.items).toEqual([]);
+    expect(project.shops).toEqual([]);
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
+    expect(project.objects).toEqual([]);
+  });
+
+  it("migrates legacy NPC instance data as explicit overrides", () => {
+    const project = migrateProject({
+      npcs: [{ id: "guard", name: "Guard", mapAvatarId: "knight" }],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "guard-instance",
+              npcDefinitionId: "guard",
+              x: 1,
+              y: 1,
+              movementMode: "patrol",
+              attributes: {
+                maxHealth: 50,
+                health: 45,
+                faction: "guards",
+                alignment: "neutral",
+                canInteract: true,
+                movementSpeed: 2,
+              },
+              enemyBehaviour: {
+                enabled: true,
+                detectionRadiusTiles: 3,
+                chaseRadiusTiles: 5,
+                returnToOrigin: false,
+                contactDamage: 4,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0].attributesOverride).toMatchObject({ health: 45, faction: "guards" });
+    expect(project.areas[0].npcs[0].movementOverride).toMatchObject({ movementMode: "patrol", movementSpeed: 2 });
+    expect(project.areas[0].npcs[0].enemyBehaviourOverride).toMatchObject({ enabled: true, contactDamage: 4 });
+  });
+
+  it("keeps definition-backed NPC instances free of accidental overrides", () => {
+    const project = migrateProject({
+      npcs: [
+        {
+          id: "bandit",
+          name: "Bandit",
+          mapAvatarId: "scout",
+          defaultAttributes: {
+            maxHealth: 80,
+            health: 80,
+            faction: "pirates",
+            alignment: "hostile",
+            canInteract: true,
+            movementSpeed: 1,
+          },
+          defaultEnemyBehaviour: {
+            enabled: true,
+            detectionRadiusTiles: 4,
+            chaseRadiusTiles: 7,
+            returnToOrigin: true,
+            contactDamage: 10,
+          },
+        },
+      ],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "bandit-instance",
+              npcDefinitionId: "bandit",
+              x: 1,
+              y: 1,
+              attributes: {
+                maxHealth: 100,
+                health: 100,
+                faction: "villagers",
+                alignment: "friendly",
+                canInteract: true,
+                movementSpeed: 1,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0].attributesOverride).toBeUndefined();
+    expect(project.areas[0].npcs[0].enemyBehaviourOverride).toBeUndefined();
+  });
+
+  it("migrates object definitions and placed object instances", () => {
+    const project = migrateProject({
+      objects: [{ id: "sign", name: "Sign", category: "sign", widthTiles: 1, heightTiles: 1, defaultBehaviour: { type: "sign", text: "Hello" } }],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          objects: [{ id: "sign-instance", objectDefinitionId: "sign", x: 1, y: 1, widthTiles: 1, heightTiles: 1, state: { read: false } }],
+        },
+      ],
+    });
+
+    expect(project.objects[0]).toMatchObject({
+      id: "sign",
+      name: "Sign",
+      category: "sign",
+      widthTiles: 1,
+      heightTiles: 1,
+      blocksMovement: false,
+      defaultBehaviour: { type: "sign", text: "Hello" },
+    });
+    expect(project.areas[0].objects[0]).toMatchObject({
+      id: "sign-instance",
+      objectDefinitionId: "sign",
+      areaId: "area_main",
+      x: 1,
+      y: 1,
+      widthTiles: 1,
+      heightTiles: 1,
+      state: { read: false },
+    });
   });
 
   it("migrates inventory rules and pickups", () => {
@@ -125,6 +265,36 @@ describe("migrateProject", () => {
     expect(project.gameState.inventory).toEqual({ tavern_key: 1 });
     expect(project.rules[0].conditionTree).toMatchObject({ type: "has_item", quantity: 1 });
     expect(project.rules[0].actions[0]).toEqual({ type: "remove_item", itemId: "tavern_key", quantity: 1 });
+  });
+
+  it("migrates shops and open shop rule actions", () => {
+    const project = migrateProject({
+      items: [{ id: "gold_coin", name: "Gold Coin", category: "currency", stackable: true }],
+      shops: [
+        {
+          id: "general",
+          name: "General Store",
+          currencyItemId: "gold_coin",
+          entries: [{ id: "key", itemId: "tavern_key", buyPrice: 5, stock: 1 }],
+        },
+      ],
+      rules: [
+        {
+          id: "merchant",
+          name: "Merchant",
+          trigger: { type: "on_interact", targetId: "npc-merchant" },
+          actions: [{ type: "open_shop", shopId: "general" }],
+        },
+      ],
+    });
+
+    expect(project.shops[0]).toEqual({
+      id: "general",
+      name: "General Store",
+      currencyItemId: "gold_coin",
+      entries: [{ id: "key", itemId: "tavern_key", buyPrice: 5, stock: 1 }],
+    });
+    expect(project.rules[0].actions[0]).toEqual({ type: "open_shop", shopId: "general" });
   });
 
   it("migrates quests and defaults missing quest fields", () => {
@@ -180,6 +350,47 @@ describe("migrateProject", () => {
         alignment: "friendly",
         canInteract: true,
         movementSpeed: 1,
+      },
+    });
+    expect(project.areas[0].npcs[0].enemyBehaviour).toBeUndefined();
+  });
+
+  it("migrates optional enemy behaviour on NPC instances", () => {
+    const project = migrateProject({
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "bandit",
+              npcDefinitionId: "bandit",
+              x: 1,
+              y: 1,
+              attributes: { alignment: "hostile" },
+              enemyBehaviour: {
+                enabled: true,
+                detectionRadiusTiles: 4,
+                chaseRadiusTiles: 7,
+                returnToOrigin: true,
+                contactDamage: 10,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0]).toMatchObject({
+      id: "bandit",
+      attributes: { alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
       },
     });
   });

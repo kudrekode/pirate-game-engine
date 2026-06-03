@@ -119,6 +119,7 @@ export function createAreaFromTemplate(
         ]
       : [],
     structures: [],
+    objects: [],
     pickups: [],
     npcs: [],
     eventBlocks: [

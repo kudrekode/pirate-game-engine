@@ -1,9 +1,11 @@
 import { characterSprites, portraitPresets, tilePresets } from "../../data/presets";
 import { useProjectStore } from "../../store/useProjectStore";
+import { getPlayerCombatStats } from "../../runtime/combat";
 
 export function CharacterEditor() {
   const player = useProjectStore((state) => state.project.player);
   const updatePlayer = useProjectStore((state) => state.updatePlayer);
+  const combat = getPlayerCombatStats(player);
 
   function toggleWalkable(tileId: string) {
     const canWalkOn = player.canWalkOn.includes(tileId)
@@ -85,9 +87,65 @@ export function CharacterEditor() {
               Health
               <input
                 min={1}
-                onChange={(event) => updatePlayer({ health: Number(event.target.value) })}
+                onChange={(event) => {
+                  const health = Math.max(1, Number(event.target.value));
+                  updatePlayer({
+                    health,
+                    combat: {
+                      ...combat,
+                      maxHealth: Math.max(health, combat.maxHealth),
+                      health,
+                    },
+                  });
+                }}
                 type="number"
-                value={player.health}
+                value={combat.health}
+              />
+            </label>
+            <label>
+              Max health
+              <input
+                min={1}
+                onChange={(event) => {
+                  const maxHealth = Math.max(1, Number(event.target.value));
+                  updatePlayer({
+                    health: Math.min(combat.health, maxHealth),
+                    combat: {
+                      ...combat,
+                      maxHealth,
+                      health: Math.min(combat.health, maxHealth),
+                    },
+                  });
+                }}
+                type="number"
+                value={combat.maxHealth}
+              />
+            </label>
+            <label>
+              Attack damage
+              <input
+                min={0}
+                onChange={(event) => updatePlayer({ combat: { ...combat, attackDamage: Math.max(0, Number(event.target.value)) } })}
+                type="number"
+                value={combat.attackDamage}
+              />
+            </label>
+            <label>
+              Attack range
+              <input
+                min={1}
+                onChange={(event) => updatePlayer({ combat: { ...combat, attackRangeTiles: Math.max(1, Number(event.target.value)) } })}
+                type="number"
+                value={combat.attackRangeTiles}
+              />
+            </label>
+            <label>
+              Attack cooldown ms
+              <input
+                min={0}
+                onChange={(event) => updatePlayer({ combat: { ...combat, attackCooldownMs: Math.max(0, Number(event.target.value)) } })}
+                type="number"
+                value={combat.attackCooldownMs}
               />
             </label>
           </div>

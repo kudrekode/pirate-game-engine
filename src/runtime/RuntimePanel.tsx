@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
+import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { QuestView } from "./questEngine";
+import type { RuntimeShopPanelState } from "./shopRuntime";
 
 const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
@@ -14,10 +16,19 @@ type RuntimePanelProps = {
 
 export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<AdventureScene | null>(null);
   const [inventory, setInventory] = useState<Record<string, number>>({});
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
   const [quests, setQuests] = useState<QuestView[]>([]);
   const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
+  const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(null);
+  const [runtimeKey, setRuntimeKey] = useState(0);
+  const initialCombat = getPlayerCombatStats(project.player);
+  const [combat, setCombat] = useState<RuntimeCombatHudState>({
+    playerHealth: initialCombat.health,
+    playerMaxHealth: initialCombat.maxHealth,
+    gameOver: false,
+  });
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -38,13 +49,24 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
       return undefined;
     }
 
+    setInventory({});
+    setQuests([]);
+    setShopState(null);
+    setCombat({
+      playerHealth: initialCombat.health,
+      playerMaxHealth: initialCombat.maxHealth,
+      gameOver: false,
+    });
+
+    const scene = new AdventureScene(project, setInventory, setQuests, setShopState, setCombat);
+    sceneRef.current = scene;
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: containerRef.current,
       width: RUNTIME_SCREEN_WIDTH,
       height: RUNTIME_SCREEN_HEIGHT,
       backgroundColor: "#111827",
-      scene: [new AdventureScene(project, setInventory, setQuests)],
+      scene: [scene],
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -53,8 +75,9 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 
     return () => {
       game.destroy(true);
+      sceneRef.current = null;
     };
-  }, [project]);
+  }, [initialCombat.health, initialCombat.maxHealth, project, runtimeKey]);
 
   const inventoryItems = Object.entries(inventory)
     .filter(([, quantity]) => quantity > 0)
@@ -67,6 +90,10 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const activeQuests = quests.filter((quest) => quest.status === "active");
   const completedQuests = quests.filter((quest) => quest.status === "completed");
   const trackedQuest = quests.find((quest) => quest.id === project.trackedQuestId && quest.status === "active");
+  const activeShop = shopState ? project.shops.find((shop) => shop.id === shopState.shopId) : undefined;
+  const shopCurrency = activeShop
+    ? project.items.find((item) => item.id === activeShop.currencyItemId)
+    : undefined;
 
   function renderQuest(quest: QuestView) {
     return (
@@ -96,6 +123,19 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
       <div className="runtime-stage">
         <div className="phaser-host" ref={containerRef} />
         <div className="inventory-hud">Gold: {goldCount}</div>
+        <div className="combat-hud">
+          <strong>Health {combat.playerHealth}/{combat.playerMaxHealth}</strong>
+          {combat.recentEnemy ? (
+            <span>{combat.recentEnemy.name} {combat.recentEnemy.health}/{combat.recentEnemy.maxHealth}</span>
+          ) : (
+            <span>Space: attack</span>
+          )}
+        </div>
+        {combat.gameOver ? (
+          <button className="runtime-restart-button" onClick={() => setRuntimeKey((key) => key + 1)} type="button">
+            Restart
+          </button>
+        ) : null}
         {trackedQuest ? (
           <aside className="quest-tracker">
             <span>Current Quest</span>
@@ -135,6 +175,44 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
             <div className="quest-runtime-section">
               <strong>Completed Quests</strong>
               {completedQuests.length > 0 ? completedQuests.map(renderQuest) : <p>No completed quests.</p>}
+            </div>
+          </aside>
+        ) : null}
+        {activeShop && shopState ? (
+          <aside className="shop-panel">
+            <div className="inventory-heading">
+              <strong>{activeShop.name}</strong>
+              <button onClick={() => sceneRef.current?.closeShop()} type="button">Close</button>
+            </div>
+            <p className="shop-currency">
+              {shopCurrency?.name ?? activeShop.currencyItemId}: {inventory[activeShop.currencyItemId] ?? 0}
+            </p>
+            {shopState.message ? <p className="validation-message">{shopState.message}</p> : null}
+            <div className="inventory-list">
+              {activeShop.entries.map((entry) => {
+                const item = project.items.find((candidate) => candidate.id === entry.itemId);
+                const stock = entry.stock === undefined ? undefined : shopState.stockByEntryId[entry.id] ?? 0;
+                const disabled = stock !== undefined && stock <= 0;
+                return (
+                  <div className="shop-row" key={entry.id}>
+                    <span>
+                      <strong>{item?.name ?? entry.itemId}</strong>
+                      <small>
+                        Price: {entry.buyPrice}
+                        {stock !== undefined ? ` | Stock: ${stock}` : ""}
+                      </small>
+                    </span>
+                    <button
+                      disabled={disabled}
+                      onClick={() => sceneRef.current?.buyShopEntry(entry.id)}
+                      type="button"
+                    >
+                      Buy
+                    </button>
+                  </div>
+                );
+              })}
+              {activeShop.entries.length === 0 ? <p className="inventory-empty">No shop entries.</p> : null}
             </div>
           </aside>
         ) : null}

@@ -988,6 +988,33 @@ label {
   white-space: nowrap;
 }
 
+.object-swatch {
+  background: #64748b;
+  color: #ffffff;
+}
+
+.object-marker {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ffffff;
+  border-radius: 5px;
+  background: rgba(71, 85, 105, 0.92);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.object-marker.selected-object {
+  box-shadow: 0 0 0 2px rgba(36, 59, 83, 0.55);
+}
+
 .npc-marker {
   position: absolute;
   inset: 3px;
@@ -1060,7 +1087,8 @@ label {
 }
 
 .map-npc-path-overlay,
-.map-npc-wander-zone {
+.map-npc-wander-zone,
+.map-enemy-range {
   position: absolute;
   top: 0;
   left: 0;
@@ -1099,6 +1127,30 @@ label {
   font-weight: 900;
   padding: 4px;
   text-transform: uppercase;
+}
+
+.map-enemy-range {
+  display: grid;
+  place-items: start;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 6px;
+  text-transform: uppercase;
+}
+
+.map-enemy-range.detection {
+  border: 2px dashed rgba(220, 38, 38, 0.86);
+  background: rgba(220, 38, 38, 0.09);
+  color: #991b1b;
+  z-index: 1;
+}
+
+.map-enemy-range.chase {
+  border: 2px dotted rgba(127, 29, 29, 0.78);
+  background: rgba(127, 29, 29, 0.06);
+  color: #7f1d1d;
+  z-index: 0;
 }
 
 .patrol-point-row {
@@ -1427,9 +1479,12 @@ label {
 }
 
 .inventory-hud,
+.combat-hud,
 .inventory-panel,
 .quest-panel,
-.quest-tracker {
+.shop-panel,
+.quest-tracker,
+.runtime-restart-button {
   position: absolute;
   z-index: 5;
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -1446,6 +1501,27 @@ label {
   font-weight: 800;
 }
 
+.combat-hud {
+  top: 12px;
+  left: 12px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.combat-hud span {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.runtime-restart-button {
+  left: 50%;
+  bottom: 18px;
+  padding: 8px 14px;
+  transform: translateX(-50%);
+}
+
 .inventory-panel {
   top: 12px;
   left: 12px;
@@ -1460,6 +1536,16 @@ label {
   max-height: calc(100% - 24px);
   overflow: auto;
   padding: 10px;
+}
+
+.shop-panel {
+  top: 12px;
+  left: 50%;
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 10px;
+  transform: translateX(-50%);
 }
 
 .quest-tracker {
@@ -1542,6 +1628,32 @@ label {
 
 .inventory-empty {
   margin: 9px 0 0;
+}
+
+.shop-currency {
+  margin: 8px 0;
+  color: #dbeafe;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.shop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 7px;
+  font-size: 13px;
+}
+
+.shop-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.shop-row small {
+  color: #cbd5e1;
 }
 
 .phaser-host canvas {

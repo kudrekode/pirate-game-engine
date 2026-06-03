@@ -1,5 +1,55 @@
 # Adventure Game Builder Guide
 
+## Fast Start For Agents
+
+Read this file first, then identify the likely files before opening broader repo context. Prefer minimal diffs and avoid scanning unrelated files.
+
+- Run `npm run ci` before the final response.
+- Preserve migration compatibility for old saved/imported projects.
+- Keep runtime state separate from editor defaults in `GameProject`.
+- Add or update tests for engine logic changes.
+- Prefer focused helper tests over browser-heavy tests.
+- Do not redesign architecture unless the prompt explicitly asks for it.
+- Check `ROADMAP.md` before adding future-facing TODOs or major systems.
+
+## Common Files By Task
+
+- Rules and logic engine: `src/runtime/ruleEngine.ts`, `src/editor/sections/ProgressionEditor.tsx`, `src/types/game.ts`, `src/runtime/ruleEngine.test.ts`.
+- Inventory and items: `src/runtime/inventory.ts`, `src/editor/sections/ItemsEditor.tsx`, `src/types/game.ts`, `src/runtime/inventory.test.ts`.
+- Shops and economy: `src/runtime/shopRuntime.ts`, `src/editor/sections/ShopsEditor.tsx`, `src/runtime/RuntimePanel.tsx`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/shopRuntime.test.ts`.
+- Quests and objectives: `src/runtime/questEngine.ts`, `src/editor/sections/QuestsEditor.tsx`, `src/types/game.ts`, `src/runtime/questEngine.test.ts`.
+- NPCs, enemy NPCs, and combat: `src/editor/sections/NpcsEditor.tsx`, `src/editor/sections/MapEditor.tsx`, `src/runtime/npcMovement.ts`, `src/runtime/combat.ts`, `src/runtime/AdventureScene.ts`, `src/runtime/RuntimePanel.tsx`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/runtime/combat.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
+- Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
+- Runtime and Phaser: `src/runtime/AdventureScene.ts`, `src/runtime/PhaserGame.tsx`, `src/runtime/movement.ts`, `src/runtime/movement.test.ts`.
+- Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
+- Editor tabs: `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`.
+- Smoke tests and helpers: `src/test/editorSmoke.test.tsx`, `src/test/testUtils.tsx` if present.
+
+## Current Systems Map
+
+- Areas: Multiple `GameArea` records in `GameProject.areas`; each owns terrain, overlays, structures, objects, pickups, NPCs, and event blocks.
+- Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
+- NPCs: Reusable definitions with defaults plus placed instances with explicit overrides for attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, simple melee combat, and rule targets.
+- Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
+- Shops: Buy-only `ShopDefinition` records use an inventory item as currency; runtime stock is copied per play session.
+- Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
+- Rules: Friendly WHEN/IF/THEN logic with folders, recursive AND/OR conditions, and runtime actions.
+- Game State: Flags, variables, and optional default inventory are editor defaults copied into runtime memory.
+- Movement: Grid movement resolves terrain, overlays, structures, objects, NPCs, and vehicle context through `src/runtime/movement.ts`.
+- Vehicles placeholder: Boats have V1 runtime boarding, sailing, and dismounting. Horses/carts and advanced steering remain future work.
+- Runtime UI: React overlays and Phaser UI layers stay camera-independent for inventory, quests, combat health, debug text, prompts, and cutscenes.
+
+## Prompting Guidance
+
+Future implementation prompts should specify:
+
+- The exact subsystem to change.
+- Systems that must not be touched.
+- Expected files when known.
+- Required tests or acceptance checks.
+- Whether migration/default demo updates are expected.
+- That architecture redesign is out of scope unless explicitly requested.
+
 ## Architecture
 
 The editor and runtime share one schema-driven `GameProject` object from `src/types/game.ts`.
@@ -21,6 +71,7 @@ Each area owns:
 - Overlay tiles
 - Structures
 - Pickup objects
+- Generic object instances
 - NPC instances
 - Event blocks
 - Optional theme metadata
@@ -56,6 +107,24 @@ Map entity positions used by Phaser are read from the cloned play snapshot, not 
 
 Each area owns grid-based pickup objects. Pickups can collect on touch or on interact. Runtime inventory helpers live in `src/runtime/inventory.ts`; the React runtime overlay shows collected quantities without being affected by the Phaser world camera.
 
+## Objects
+
+`GameProject.objects` contains reusable generic object definitions. Each area owns placed `ObjectInstance` records.
+
+Objects sit between static structures and NPCs. They are intended for signs, chests, doors, switches, decorative props, and future vehicle markers. They can block movement, expose direct interactions, and target friendly rules by placed instance ID.
+
+Object behaviours are authored as reusable defaults on `ObjectDefinition.defaultBehaviour` and can be overridden per placed `ObjectInstance.behaviourOverride`. Runtime behaviour helpers live in `src/runtime/objectBehaviour.ts`.
+
+Supported behaviour types:
+
+- `none`
+- `container`, which gives configured item contents and can be once-only
+- `door`, which can require an item and teleport to an area spawn
+- `sign`, which displays cutscene-style text
+- `vehicle`, which currently supports simple boat boarding, grid sailing, and dismounting
+
+Direct interactions and rule triggers still run alongside behaviours for compatibility. Horse/cart runtime, advanced vehicle steering, equipment, and advanced enemy behavior remain future work.
+
 ## Quests And Objectives
 
 `GameProject.quests` contains player-facing quest definitions. `trackedQuestId` optionally selects the compact play-mode tracker.
@@ -73,11 +142,13 @@ Friendly rules can activate, complete, or fail quests explicitly. Active quests 
 
 ## NPCs
 
-`GameProject.npcs` contains reusable friendly NPC definitions. Each area owns placed `NPCInstance` records.
+`GameProject.npcs` contains reusable NPC definitions. Each area owns placed `NPCInstance` records.
 
-NPC instances are grid-based world entities. They can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
+NPC definitions can provide default attributes, movement, enemy behaviour, and interaction. NPC instances are grid-based world entities that can override those defaults with `attributesOverride`, `movementOverride`, `enemyBehaviourOverride`, and `interactionOverride`. Use `src/runtime/npcResolver.ts` when editor or runtime code needs the effective NPC config.
 
-NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, enemies, combat, and branching dialogue.
+NPC instances can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
+
+NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, full combat, and branching dialogue.
 
 ### NPC Attributes
 
@@ -97,6 +168,14 @@ Pure grid-step decisions live in `src/runtime/npcMovement.ts`. Phaser applies th
 
 The Map editor has a lightweight overlay-filter foundation. `npc_paths` renders only the selected NPC's patrol path or wander zone. Event-block, collision, quest-marker, and enemy-territory filters remain TODOs.
 
+### Enemy NPCs
+
+Enemies are hostile `NPCInstance` records with optional `enemyBehaviour.enabled`. They reuse the shared NPC model and do not have a separate enemy entity architecture.
+
+Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults.
+
+Combat V1 adds basic melee player attacks in `src/runtime/combat.ts` and `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
+
 ## Rule Engine
 
 Friendly logic rules live in `GameProject.rules`. Organisational folders live in `GameProject.ruleGroups`.
@@ -114,7 +193,7 @@ Condition groups support `AND` and `OR`, including nested groups. Missing or emp
 
 Rules can check item quantities and give or remove items. Removing items never drops below zero; stack limits are enforced by the inventory helper.
 
-Rules can also activate, complete, or fail quests and read or change runtime NPC health and alignment.
+Rules can also open shops, activate, complete, or fail quests, and read or change runtime NPC health and alignment.
 
 Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
 
@@ -133,6 +212,8 @@ Resolution order:
 5. Missing terrain blocks movement.
 
 This allows overlays such as wooden planks to make water traversable.
+
+Vehicle movement also resolves through `src/runtime/movement.ts`. A boarded boat uses the object behaviour's allowed terrain and dismount terrain lists, skips collision against the currently boarded boat object, and still respects map bounds, structures, blocking objects, and NPCs.
 
 ## Migration
 
@@ -165,8 +246,12 @@ Current focused tests cover:
 
 - Rule evaluation and actions
 - Inventory stacking and pickup collection
+- Shop purchases and runtime stock
+- Combat stat defaults, melee targeting, cooldown, damage, defeat, and collision removal
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
+- Enemy NPC chase, return, contact, and migration helpers
+- Object migration, behaviours, collision, rule targeting, and deletion guards
 - NPC stationary, patrol, wander, bounds, and terrain movement helpers
 - Movement resolution
 - Project migration

@@ -9,7 +9,13 @@ import {
   terrainPresets,
 } from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
+import { makeDefaultObjectBehaviour, ObjectBehaviourEditor } from "../ObjectBehaviourEditor";
+import {
+  defaultEnemyBehaviour,
+  resolveNPCInstance,
+} from "../../runtime/npcResolver";
 import type {
+  EnemyBehaviour,
   EditorSelection,
   EventBlock,
   GameAreaKind,
@@ -17,12 +23,16 @@ import type {
   InteractionActivationMode,
   MapOverlayFilter,
   MovementRule,
+  NPCAttributes,
   NPCInstance,
+  NPCMovementConfig,
+  ObjectInstance,
+  ObjectBehaviour,
   PixelAsset,
   PickupObject,
 } from "../../types/game";
 
-type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pickup" | "npc" | "structure" | "pan";
+type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pickup" | "npc" | "object" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
 type PaintLayer = "terrain" | "overlay" | "structure" | "event";
 
@@ -105,6 +115,9 @@ export function MapEditor() {
   const addStructure = useProjectStore((state) => state.addStructure);
   const updateStructure = useProjectStore((state) => state.updateStructure);
   const deleteStructure = useProjectStore((state) => state.deleteStructure);
+  const addObject = useProjectStore((state) => state.addObject);
+  const updateObject = useProjectStore((state) => state.updateObject);
+  const deleteObject = useProjectStore((state) => state.deleteObject);
   const addPickup = useProjectStore((state) => state.addPickup);
   const updatePickup = useProjectStore((state) => state.updatePickup);
   const deletePickup = useProjectStore((state) => state.deletePickup);
@@ -127,6 +140,7 @@ export function MapEditor() {
   const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
   const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
   const [selectedStructureId, setSelectedStructureId] = useState("small_house");
+  const [selectedObjectDefinitionId, setSelectedObjectDefinitionId] = useState(project.objects[0]?.id ?? "");
   const [selectedNpcDefinitionId, setSelectedNpcDefinitionId] = useState(project.npcs[0]?.id ?? "");
   const [selection, setSelection] = useState<EditorSelection>({
     type: "area",
@@ -168,6 +182,13 @@ export function MapEditor() {
       if (
         currentSelection.type === "structure" &&
         !activeArea.structures.some((structure) => structure.id === currentSelection.id)
+      ) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
+        currentSelection.type === "object" &&
+        !activeArea.objects.some((object) => object.id === currentSelection.id)
       ) {
         return { type: "area", areaId: activeArea.id };
       }
@@ -238,6 +259,12 @@ export function MapEditor() {
     return lookup;
   }, [activeArea.npcs]);
 
+  const objectLookup = useMemo(() => {
+    const lookup = new Map<string, ObjectInstance>();
+    activeArea.objects.forEach((object) => lookup.set(cellKey(object.x, object.y), object));
+    return lookup;
+  }, [activeArea.objects]);
+
   const pixelAssetUrls = useMemo(() => {
     return Object.fromEntries(
       Object.entries(project.pixelAssets).map(([id, asset]) => [id, pixelAssetToDataUrl(asset)]),
@@ -252,6 +279,10 @@ export function MapEditor() {
     selection?.type === "structure" && selection.areaId === activeArea.id
       ? activeArea.structures.find((structure) => structure.id === selection.id)
       : undefined;
+  const selectedObject =
+    selection?.type === "object" && selection.areaId === activeArea.id
+      ? activeArea.objects.find((object) => object.id === selection.id)
+      : undefined;
   const selectedPickup =
     selection?.type === "pickup" && selection.areaId === activeArea.id
       ? activeArea.pickups.find((pickup) => pickup.id === selection.id)
@@ -260,6 +291,12 @@ export function MapEditor() {
     selection?.type === "npc" && selection.areaId === activeArea.id
       ? activeArea.npcs.find((npc) => npc.id === selection.id)
       : undefined;
+  const selectedNpcDefinition = selectedNpc
+    ? project.npcs.find((npc) => npc.id === selectedNpc.npcDefinitionId)
+    : undefined;
+  const selectedResolvedNpc = selectedNpc
+    ? resolveNPCInstance(selectedNpcDefinition, selectedNpc)
+    : undefined;
   const selectedOverlayTile =
     selection?.type === "overlay" && selection.areaId === activeArea.id
       ? {
@@ -277,6 +314,7 @@ export function MapEditor() {
         }
       : undefined;
   const selectedStructure = getStructurePreset(selectedStructureId);
+  const selectedObjectDefinition = project.objects.find((object) => object.id === selectedObjectDefinitionId);
   const cellSize = Math.round(activeArea.tileSize * zoom);
   const renderWidth = Math.min(MAX_MAP_SIZE, activeArea.width + AUTO_EXPAND_BUFFER_TILES);
   const renderHeight = Math.min(MAX_MAP_SIZE, activeArea.height + AUTO_EXPAND_BUFFER_TILES);
@@ -422,6 +460,15 @@ export function MapEditor() {
     setSelection({ type: "pickup", areaId: activeArea.id, id });
   }
 
+  function placeObject(x: number, y: number) {
+    if (!selectedObjectDefinitionId) {
+      return;
+    }
+
+    const id = addObject(x, y, selectedObjectDefinitionId);
+    setSelection({ type: "object", areaId: activeArea.id, id });
+  }
+
   function placeNpc(x: number, y: number) {
     if (!selectedNpcDefinitionId) {
       return;
@@ -439,6 +486,15 @@ export function MapEditor() {
         x < structure.x + structure.widthTiles &&
         y < structure.y + structure.heightTiles,
     );
+  }
+
+  function findObjectAt(x: number, y: number) {
+    return [...activeArea.objects].reverse().find((object) => {
+      const definition = project.objects.find((candidate) => candidate.id === object.objectDefinitionId);
+      const widthTiles = object.widthTiles ?? definition?.widthTiles ?? 1;
+      const heightTiles = object.heightTiles ?? definition?.heightTiles ?? 1;
+      return x >= object.x && y >= object.y && x < object.x + widthTiles && y < object.y + heightTiles;
+    });
   }
 
   function selectPaintedCell(x: number, y: number) {
@@ -459,6 +515,7 @@ export function MapEditor() {
     event.stopPropagation();
 
     const eventBlock = eventLookup.get(cellKey(x, y));
+    const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
     const pickup = pickupLookup.get(cellKey(x, y));
     const npc = npcLookup.get(cellKey(x, y));
 
@@ -488,6 +545,16 @@ export function MapEditor() {
       return;
     }
 
+    if (activeTool === "object") {
+      if (object) {
+        setSelection({ type: "object", areaId: activeArea.id, id: object.id });
+        return;
+      }
+
+      placeObject(x, y);
+      return;
+    }
+
     if (activeTool === "npc") {
       if (npc) {
         setSelection({ type: "npc", areaId: activeArea.id, id: npc.id });
@@ -500,6 +567,11 @@ export function MapEditor() {
 
     if (eventBlock) {
       setSelection({ type: "eventBlock", areaId: activeArea.id, id: eventBlock.id });
+      return;
+    }
+
+    if (object) {
+      setSelection({ type: "object", areaId: activeArea.id, id: object.id });
       return;
     }
 
@@ -641,34 +713,121 @@ export function MapEditor() {
     }
   }
 
+  function updateSelectedObject(patch: Partial<ObjectInstance>) {
+    if (selectedObject) {
+      updateObject(selectedObject.id, patch);
+    }
+  }
+
   function updateSelectedNpc(patch: Partial<NPCInstance>) {
     if (selectedNpc) {
       updateNpc(selectedNpc.id, patch);
     }
   }
 
-  function addPatrolPoint() {
+  function updateSelectedNpcAttributes(patch: Partial<NPCAttributes>) {
+    if (!selectedNpc || !selectedResolvedNpc) {
+      return;
+    }
+
+    const next = { ...selectedResolvedNpc.attributes, ...selectedNpc.attributesOverride, ...patch };
+    next.maxHealth = Math.max(1, Number(next.maxHealth));
+    next.health = Math.min(next.maxHealth, Math.max(0, Number(next.health)));
+    next.movementSpeed = Math.max(0.1, Number(next.movementSpeed ?? 1));
+    updateSelectedNpc({ attributes: next, attributesOverride: next });
+  }
+
+  function updateSelectedNpcMovement(patch: Partial<NPCMovementConfig>) {
+    if (!selectedNpc || !selectedResolvedNpc) {
+      return;
+    }
+
+    const next = {
+      movementMode: selectedResolvedNpc.movementMode,
+      movementSpeed: selectedResolvedNpc.movementSpeed,
+      patrolPath: selectedResolvedNpc.patrolPath,
+      wanderZone: selectedResolvedNpc.wanderZone,
+      ...selectedNpc.movementOverride,
+      ...patch,
+    };
+    updateSelectedNpc({
+      movementMode: next.movementMode,
+      movementSpeed: next.movementSpeed,
+      patrolPath: next.patrolPath,
+      wanderZone: next.wanderZone,
+      movementOverride: next,
+    });
+  }
+
+  function updateSelectedNpcEnemyBehaviour(patch: Partial<EnemyBehaviour>) {
+    if (!selectedNpc || !selectedResolvedNpc) {
+      return;
+    }
+
+    const next = {
+      ...defaultEnemyBehaviour,
+      ...selectedResolvedNpc.enemyBehaviour,
+      ...selectedNpc.enemyBehaviourOverride,
+      ...patch,
+    };
+    updateSelectedNpc({ enemyBehaviour: next, enemyBehaviourOverride: next });
+  }
+
+  function resetSelectedNpcSection(section: "attributes" | "movement" | "enemy" | "interaction") {
     if (!selectedNpc) {
       return;
     }
 
-    updateSelectedNpc({
+    if (section === "attributes") {
+      const next = resolveNPCInstance(selectedNpcDefinition, { ...selectedNpc, attributesOverride: undefined });
+      updateSelectedNpc({ attributes: next.attributes, attributesOverride: undefined });
+      return;
+    }
+
+    if (section === "movement") {
+      const next = resolveNPCInstance(selectedNpcDefinition, { ...selectedNpc, movementOverride: undefined });
+      updateSelectedNpc({
+        movementMode: next.movementMode,
+        movementSpeed: next.movementSpeed,
+        patrolPath: next.patrolPath,
+        wanderZone: next.wanderZone,
+        movementOverride: undefined,
+      });
+      return;
+    }
+
+    if (section === "enemy") {
+      const next = resolveNPCInstance(selectedNpcDefinition, { ...selectedNpc, enemyBehaviourOverride: undefined });
+      updateSelectedNpc({ enemyBehaviour: next.enemyBehaviour, enemyBehaviourOverride: undefined });
+      return;
+    }
+
+    const next = resolveNPCInstance(selectedNpcDefinition, { ...selectedNpc, interactionOverride: undefined });
+    updateSelectedNpc({ interaction: next.interaction, interactionOverride: undefined });
+  }
+
+  function addPatrolPoint() {
+    if (!selectedNpc || !selectedResolvedNpc) {
+      return;
+    }
+
+    updateSelectedNpcMovement({
       patrolPath: {
-        loop: selectedNpc.patrolPath?.loop ?? true,
-        points: [...(selectedNpc.patrolPath?.points ?? []), { x: selectedNpc.x, y: selectedNpc.y }],
+        loop: selectedResolvedNpc.patrolPath?.loop ?? true,
+        points: [...(selectedResolvedNpc.patrolPath?.points ?? []), { x: selectedNpc.x, y: selectedNpc.y }],
       },
     });
   }
 
   function updatePatrolPoint(index: number, patch: Partial<{ x: number; y: number }>) {
-    if (!selectedNpc?.patrolPath) {
+    if (!selectedResolvedNpc?.patrolPath) {
       return;
     }
 
-    updateSelectedNpc({
+    updateSelectedNpcMovement({
       patrolPath: {
-        ...selectedNpc.patrolPath,
-        points: selectedNpc.patrolPath.points.map((point, pointIndex) =>
+        ...selectedResolvedNpc.patrolPath,
+        points: selectedResolvedNpc.patrolPath.points.map((point, pointIndex) =>
           pointIndex === index ? { ...point, ...patch } : point,
         ),
       },
@@ -676,14 +835,14 @@ export function MapEditor() {
   }
 
   function deletePatrolPoint(index: number) {
-    if (!selectedNpc?.patrolPath) {
+    if (!selectedResolvedNpc?.patrolPath) {
       return;
     }
 
-    updateSelectedNpc({
+    updateSelectedNpcMovement({
       patrolPath: {
-        ...selectedNpc.patrolPath,
-        points: selectedNpc.patrolPath.points.filter((_, pointIndex) => pointIndex !== index),
+        ...selectedResolvedNpc.patrolPath,
+        points: selectedResolvedNpc.patrolPath.points.filter((_, pointIndex) => pointIndex !== index),
       },
     });
   }
@@ -693,12 +852,12 @@ export function MapEditor() {
       return;
     }
 
-    updateSelectedNpc({
+    updateSelectedNpcMovement({
       movementMode,
-      ...(movementMode === "patrol" && !selectedNpc.patrolPath
+      ...(movementMode === "patrol" && !selectedResolvedNpc?.patrolPath
         ? { patrolPath: { points: [{ x: selectedNpc.x, y: selectedNpc.y }], loop: true } }
         : {}),
-      ...(movementMode === "wander" && !selectedNpc.wanderZone
+      ...(movementMode === "wander" && !selectedResolvedNpc?.wanderZone
         ? { wanderZone: { x: selectedNpc.x, y: selectedNpc.y, width: 3, height: 3 } }
         : {}),
     });
@@ -777,7 +936,7 @@ export function MapEditor() {
   }
 
   function getDefaultActivationMode(type: Exclude<InteractionTypeOption, "none">): InteractionActivationMode {
-    if (selectedMapStructure) {
+    if (selectedMapStructure || selectedObject) {
       return "on_interact";
     }
 
@@ -851,8 +1010,13 @@ export function MapEditor() {
       return;
     }
 
+    if (selectedObject) {
+      updateSelectedObject({ interaction });
+      return;
+    }
+
     if (selectedNpc) {
-      updateSelectedNpc({ interaction });
+      updateSelectedNpc({ interaction, interactionOverride: interaction });
       return;
     }
 
@@ -1143,6 +1307,15 @@ export function MapEditor() {
     setSelection({ type: "area", areaId: activeArea.id });
   }
 
+  function deleteSelectedObject() {
+    if (!selectedObject) {
+      return;
+    }
+
+    deleteObject(selectedObject.id);
+    setSelection({ type: "area", areaId: activeArea.id });
+  }
+
   function deleteSelectedPickup() {
     if (!selectedPickup) {
       return;
@@ -1174,7 +1347,7 @@ export function MapEditor() {
           </div>
           <div className="coordinate-readout">
             {activeArea.terrainTiles.length} terrain tiles, {activeArea.overlayTiles.length} overlays,{" "}
-            {activeArea.structures.length} structures, {activeArea.pickups.length} pickups,{" "}
+            {activeArea.structures.length} structures, {activeArea.objects.length} objects, {activeArea.pickups.length} pickups,{" "}
             {activeArea.npcs.length} NPCs, {activeArea.eventBlocks.length} events
           </div>
           <button
@@ -1453,12 +1626,153 @@ export function MapEditor() {
     );
   }
 
-  function renderNpcInspector() {
-    if (!selectedNpc) {
+  function parseObjectStateValue(rawValue: string): boolean | number | string {
+    if (rawValue === "true") {
+      return true;
+    }
+
+    if (rawValue === "false") {
+      return false;
+    }
+
+    const numberValue = Number(rawValue);
+    return rawValue.trim() !== "" && Number.isFinite(numberValue) ? numberValue : rawValue;
+  }
+
+  function renderObjectInspector() {
+    if (!selectedObject) {
       return renderAreaInspector();
     }
 
-    const definition = project.npcs.find((npc) => npc.id === selectedNpc.npcDefinitionId);
+    const definition = project.objects.find((object) => object.id === selectedObject.objectDefinitionId);
+    const blocksMovement = selectedObject.blocksMovement ?? definition?.blocksMovement ?? false;
+    const objectState = selectedObject.state ?? {};
+    const resolvedBehaviour = selectedObject.behaviourOverride ?? definition?.defaultBehaviour ?? makeDefaultObjectBehaviour("none");
+    const useDefaultBehaviour = !selectedObject.behaviourOverride;
+
+    return (
+      <>
+        <div className="panel-title">Object Instance</div>
+        <div className="form-stack">
+          <label>
+            Definition
+            <select
+              onChange={(event) => {
+                const nextDefinition = project.objects.find((object) => object.id === event.target.value);
+                updateSelectedObject({
+                  objectDefinitionId: event.target.value,
+                  widthTiles: nextDefinition?.widthTiles ?? 1,
+                  heightTiles: nextDefinition?.heightTiles ?? 1,
+                  blocksMovement: nextDefinition?.blocksMovement ?? false,
+                  interaction: nextDefinition?.defaultInteraction,
+                });
+              }}
+              value={selectedObject.objectDefinitionId}
+            >
+              {project.objects.map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+            </select>
+          </label>
+          <label>
+            Name override
+            <input onChange={(event) => updateSelectedObject({ nameOverride: event.target.value || undefined })} value={selectedObject.nameOverride ?? ""} />
+          </label>
+          <div className="form-grid compact">
+            <label>
+              X
+              <input min={0} onChange={(event) => updateSelectedObject({ x: Number(event.target.value) })} type="number" value={selectedObject.x} />
+            </label>
+            <label>
+              Y
+              <input min={0} onChange={(event) => updateSelectedObject({ y: Number(event.target.value) })} type="number" value={selectedObject.y} />
+            </label>
+          </div>
+          <label className="checkbox-row standalone">
+            <input checked={blocksMovement} onChange={(event) => updateSelectedObject({ blocksMovement: event.target.checked })} type="checkbox" />
+            Blocks movement
+          </label>
+          <div className="coordinate-readout">
+            Footprint: {selectedObject.widthTiles ?? definition?.widthTiles ?? 1} x {selectedObject.heightTiles ?? definition?.heightTiles ?? 1} tiles
+          </div>
+          <div className="panel-title secondary">Behaviour</div>
+          <div className="coordinate-readout">Resolved behaviour: {resolvedBehaviour.type}</div>
+          <label className="checkbox-row standalone">
+            <input
+              checked={useDefaultBehaviour}
+              onChange={(event) =>
+                updateSelectedObject({
+                  behaviourOverride: event.target.checked ? undefined : resolvedBehaviour,
+                })
+              }
+              type="checkbox"
+            />
+            Use definition default behaviour
+          </label>
+          {!useDefaultBehaviour ? (
+            <ObjectBehaviourEditor
+              behaviour={selectedObject.behaviourOverride ?? makeDefaultObjectBehaviour("none")}
+              onChange={(behaviour: ObjectBehaviour) => updateSelectedObject({ behaviourOverride: behaviour })}
+              project={project}
+            />
+          ) : null}
+          {renderInteractionEditor(selectedObject.interaction)}
+          <div className="panel-title secondary">State</div>
+          {Object.entries(objectState).map(([key, value]) => (
+            <div className="state-row variable" key={key}>
+              <input
+                aria-label={`Object state ${key} key`}
+                onChange={(event) => {
+                  const nextKey = event.target.value.trim();
+                  const nextState = { ...objectState };
+                  delete nextState[key];
+                  if (nextKey) {
+                    nextState[nextKey] = value;
+                  }
+                  updateSelectedObject({ state: nextState });
+                }}
+                value={key}
+              />
+              <input
+                aria-label={`Object state ${key} value`}
+                onChange={(event) => updateSelectedObject({ state: { ...objectState, [key]: parseObjectStateValue(event.target.value) } })}
+                value={String(value)}
+              />
+              <button
+                className="danger-button compact"
+                onClick={() => {
+                  const nextState = { ...objectState };
+                  delete nextState[key];
+                  updateSelectedObject({ state: nextState });
+                }}
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => updateSelectedObject({ state: { ...objectState, [`state_${Object.keys(objectState).length + 1}`]: false } })}
+            type="button"
+          >
+            Add state
+          </button>
+          <button className="danger-button" onClick={deleteSelectedObject} type="button">Delete object instance</button>
+        </div>
+      </>
+    );
+  }
+
+  function renderNpcInspector() {
+    if (!selectedNpc || !selectedResolvedNpc) {
+      return renderAreaInspector();
+    }
+
+    const definition = selectedResolvedNpc.definition;
+    const attributes = selectedResolvedNpc.attributes;
+    const enemyBehaviour = selectedResolvedNpc.enemyBehaviour ?? defaultEnemyBehaviour;
+    const hasAttributeOverride = Boolean(selectedNpc.attributesOverride);
+    const hasMovementOverride = Boolean(selectedNpc.movementOverride);
+    const hasEnemyOverride = Boolean(selectedNpc.enemyBehaviourOverride);
+    const hasInteractionOverride = Boolean(selectedNpc.interactionOverride);
 
     return (
       <>
@@ -1494,55 +1808,126 @@ export function MapEditor() {
             Blocks movement
           </label>
           <div className="panel-title secondary">Attributes</div>
+          <div className="coordinate-readout">
+            Source: {hasAttributeOverride ? "instance override" : "definition default"}
+          </div>
           <div className="form-grid compact">
             <label>
               Current health
-              <input min={0} max={selectedNpc.attributes.maxHealth} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, health: Math.min(selectedNpc.attributes.maxHealth, Math.max(0, Number(event.target.value))) } })} type="number" value={selectedNpc.attributes.health} />
+              <input min={0} max={attributes.maxHealth} onChange={(event) => updateSelectedNpcAttributes({ health: Math.min(attributes.maxHealth, Math.max(0, Number(event.target.value))) })} type="number" value={attributes.health} />
             </label>
             <label>
               Max health
               <input min={1} onChange={(event) => {
                 const maxHealth = Math.max(1, Number(event.target.value));
-                updateSelectedNpc({ attributes: { ...selectedNpc.attributes, maxHealth, health: Math.min(selectedNpc.attributes.health, maxHealth) } });
-              }} type="number" value={selectedNpc.attributes.maxHealth} />
+                updateSelectedNpcAttributes({ maxHealth, health: Math.min(attributes.health, maxHealth) });
+              }} type="number" value={attributes.maxHealth} />
             </label>
           </div>
           <label>
             Faction
-            <input onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, faction: event.target.value } })} value={selectedNpc.attributes.faction} />
+            <input onChange={(event) => updateSelectedNpcAttributes({ faction: event.target.value })} value={attributes.faction} />
           </label>
           <label>
             Alignment
-            <select onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, alignment: event.target.value as NPCInstance["attributes"]["alignment"] } })} value={selectedNpc.attributes.alignment}>
+            <select onChange={(event) => updateSelectedNpcAttributes({ alignment: event.target.value as NPCInstance["attributes"]["alignment"] })} value={attributes.alignment}>
               <option value="friendly">Friendly</option>
               <option value="neutral">Neutral</option>
               <option value="hostile">Hostile</option>
             </select>
           </label>
           <label className="checkbox-row standalone">
-            <input checked={selectedNpc.attributes.canInteract} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, canInteract: event.target.checked } })} type="checkbox" />
+            <input checked={attributes.canInteract} onChange={(event) => updateSelectedNpcAttributes({ canInteract: event.target.checked })} type="checkbox" />
             Can interact
           </label>
           <label>
             Movement speed
-            <input min={0.1} max={10} step={0.1} onChange={(event) => updateSelectedNpc({ attributes: { ...selectedNpc.attributes, movementSpeed: Math.max(0.1, Number(event.target.value)) } })} type="number" value={selectedNpc.attributes.movementSpeed ?? 1} />
+            <input min={0.1} max={10} step={0.1} onChange={(event) => updateSelectedNpcAttributes({ movementSpeed: Math.max(0.1, Number(event.target.value)) })} type="number" value={attributes.movementSpeed ?? 1} />
           </label>
+          {hasAttributeOverride ? <button onClick={() => resetSelectedNpcSection("attributes")} type="button">Reset attributes to definition default</button> : null}
+          {attributes.alignment === "hostile" ? (
+            <>
+              <div className="panel-title secondary">Enemy Behaviour</div>
+              <div className="coordinate-readout">
+                Source: {hasEnemyOverride ? "instance override" : "definition default"}
+              </div>
+              <label className="checkbox-row standalone">
+                <input
+                  checked={enemyBehaviour.enabled}
+                  onChange={(event) =>
+                    updateSelectedNpcEnemyBehaviour({ enabled: event.target.checked })
+                  }
+                  type="checkbox"
+                />
+                Enabled
+              </label>
+              <div className="form-grid compact">
+                <label>
+                  Detection radius
+                  <input
+                    min={0}
+                    onChange={(event) =>
+                      updateSelectedNpcEnemyBehaviour({ detectionRadiusTiles: Math.max(0, Number(event.target.value)) })
+                    }
+                    type="number"
+                    value={enemyBehaviour.detectionRadiusTiles}
+                  />
+                </label>
+                <label>
+                  Chase radius
+                  <input
+                    min={0}
+                    onChange={(event) =>
+                      updateSelectedNpcEnemyBehaviour({ chaseRadiusTiles: Math.max(0, Number(event.target.value)) })
+                    }
+                    type="number"
+                    value={enemyBehaviour.chaseRadiusTiles}
+                  />
+                </label>
+                <label>
+                  Contact damage
+                  <input
+                    min={0}
+                    onChange={(event) =>
+                      updateSelectedNpcEnemyBehaviour({ contactDamage: Math.max(0, Number(event.target.value)) })
+                    }
+                    type="number"
+                    value={enemyBehaviour.contactDamage ?? 0}
+                  />
+                </label>
+              </div>
+              <label className="checkbox-row standalone">
+                <input
+                  checked={enemyBehaviour.returnToOrigin}
+                  onChange={(event) =>
+                    updateSelectedNpcEnemyBehaviour({ returnToOrigin: event.target.checked })
+                  }
+                  type="checkbox"
+                />
+                Return to origin when player leaves chase radius
+              </label>
+              {hasEnemyOverride ? <button onClick={() => resetSelectedNpcSection("enemy")} type="button">Reset enemy behaviour to definition default</button> : null}
+            </>
+          ) : null}
           <div className="panel-title secondary">Movement</div>
+          <div className="coordinate-readout">
+            Source: {hasMovementOverride ? "instance override" : "definition default"}
+          </div>
           <label>
             Mode
-            <select onChange={(event) => updateSelectedNpcMovementMode(event.target.value as NPCInstance["movementMode"])} value={selectedNpc.movementMode}>
+            <select onChange={(event) => updateSelectedNpcMovementMode(event.target.value as NPCInstance["movementMode"])} value={selectedResolvedNpc.movementMode}>
               <option value="stationary">Stationary</option>
               <option value="patrol">Patrol</option>
               <option value="wander">Wander</option>
             </select>
           </label>
-          {selectedNpc.movementMode === "patrol" ? (
+          {selectedResolvedNpc.movementMode === "patrol" ? (
             <div className="form-stack">
               <label className="checkbox-row">
-                <input checked={selectedNpc.patrolPath?.loop ?? true} onChange={(event) => updateSelectedNpc({ patrolPath: { points: selectedNpc.patrolPath?.points ?? [], loop: event.target.checked } })} type="checkbox" />
+                <input checked={selectedResolvedNpc.patrolPath?.loop ?? true} onChange={(event) => updateSelectedNpcMovement({ patrolPath: { points: selectedResolvedNpc.patrolPath?.points ?? [], loop: event.target.checked } })} type="checkbox" />
                 Loop patrol
               </label>
-              {(selectedNpc.patrolPath?.points ?? []).map((point, index) => (
+              {(selectedResolvedNpc.patrolPath?.points ?? []).map((point, index) => (
                 <div className="patrol-point-row" key={`${selectedNpc.id}_${index}`}>
                   <span>{index + 1}</span>
                   <input aria-label={`Patrol point ${index + 1} X`} min={0} onChange={(event) => updatePatrolPoint(index, { x: Number(event.target.value) })} type="number" value={point.x} />
@@ -1553,7 +1938,7 @@ export function MapEditor() {
               <button onClick={addPatrolPoint} type="button">Add patrol point</button>
             </div>
           ) : null}
-          {selectedNpc.movementMode === "wander" ? (
+          {selectedResolvedNpc.movementMode === "wander" ? (
             <div className="form-grid compact">
               {(["x", "y", "width", "height"] as const).map((field) => (
                 <label key={field}>
@@ -1561,25 +1946,30 @@ export function MapEditor() {
                   <input
                     min={field === "width" || field === "height" ? 1 : 0}
                     onChange={(event) =>
-                      updateSelectedNpc({
+                      updateSelectedNpcMovement({
                         wanderZone: {
-                          x: selectedNpc.wanderZone?.x ?? selectedNpc.x,
-                          y: selectedNpc.wanderZone?.y ?? selectedNpc.y,
-                          width: selectedNpc.wanderZone?.width ?? 3,
-                          height: selectedNpc.wanderZone?.height ?? 3,
+                          x: selectedResolvedNpc.wanderZone?.x ?? selectedNpc.x,
+                          y: selectedResolvedNpc.wanderZone?.y ?? selectedNpc.y,
+                          width: selectedResolvedNpc.wanderZone?.width ?? 3,
+                          height: selectedResolvedNpc.wanderZone?.height ?? 3,
                           [field]: Math.max(field === "width" || field === "height" ? 1 : 0, Number(event.target.value)),
                         },
                       })
                     }
                     type="number"
-                    value={selectedNpc.wanderZone?.[field] ?? (field === "width" || field === "height" ? 3 : selectedNpc[field])}
+                    value={selectedResolvedNpc.wanderZone?.[field] ?? (field === "width" || field === "height" ? 3 : selectedNpc[field])}
                   />
                 </label>
               ))}
             </div>
           ) : null}
+          {hasMovementOverride ? <button onClick={() => resetSelectedNpcSection("movement")} type="button">Reset movement to definition default</button> : null}
           <div className="coordinate-readout">{definition?.description ?? "Friendly interactable NPC."}</div>
-          {renderInteractionEditor(selectedNpc.interaction)}
+          <div className="coordinate-readout">
+            Interaction source: {hasInteractionOverride ? "instance override" : "definition default"}
+          </div>
+          {renderInteractionEditor(selectedResolvedNpc.interaction)}
+          {hasInteractionOverride ? <button onClick={() => resetSelectedNpcSection("interaction")} type="button">Reset interaction to definition default</button> : null}
           <button className="danger-button" onClick={deleteSelectedNpc} type="button">Delete NPC instance</button>
         </div>
       </>
@@ -1694,6 +2084,10 @@ export function MapEditor() {
 
     if (selectedMapStructure) {
       return renderStructureInspector();
+    }
+
+    if (selectedObject) {
+      return renderObjectInspector();
     }
 
     if (selectedPickup) {
@@ -1910,6 +2304,28 @@ export function MapEditor() {
         </details>
 
         <details open className="palette-section">
+          <summary>Objects</summary>
+          <label>
+            Object definition
+            <select onChange={(event) => setSelectedObjectDefinitionId(event.target.value)} value={selectedObjectDefinitionId}>
+              {project.objects.map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+            </select>
+          </label>
+          <button
+            className={`palette-item ${activeTool === "object" ? "selected" : ""}`}
+            disabled={!selectedObjectDefinitionId}
+            onClick={() => {
+              setActiveTool("object");
+              setPaintLayer("event");
+            }}
+            type="button"
+          >
+            <span className="swatch object-swatch">O</span>
+            {selectedObjectDefinition?.name ?? "Object"}
+          </button>
+        </details>
+
+        <details open className="palette-section">
           <summary>Special</summary>
           <button
             className={`palette-item ${activeTool === "event-block" ? "selected" : ""}`}
@@ -2003,6 +2419,7 @@ export function MapEditor() {
           Overlay
           <select onChange={(event) => setOverlayFilter(event.target.value as MapOverlayFilter)} value={overlayFilter}>
             <option value="npc_paths">NPC paths</option>
+            <option value="enemy_ranges">Enemy ranges</option>
             <option value="none">None</option>
           </select>
         </label>
@@ -2068,10 +2485,12 @@ export function MapEditor() {
               const tileStyle = project.tileStyles[terrainId] ?? { color: terrain.color, label: terrain.label };
               const overlayId = overlayLookup.get(key);
               const eventBlock = eventLookup.get(key);
+              const object = objectLookup.get(key);
               const pickup = pickupLookup.get(key);
               const pickupItem = project.items.find((item) => item.id === pickup?.itemId);
               const npc = npcLookup.get(key);
               const npcDefinition = project.npcs.find((definition) => definition.id === npc?.npcDefinitionId);
+              const resolvedNpc = npc ? resolveNPCInstance(npcDefinition, npc) : undefined;
               const eventLabel = eventBlock?.tag || eventBlock?.name;
               const isOutsideMap = x >= activeArea.width || y >= activeArea.height;
               const isSelectedTerrain =
@@ -2126,6 +2545,17 @@ export function MapEditor() {
                       <span className="event-marker-label">{eventLabel}</span>
                     </span>
                   ) : null}
+                  {object ? (
+                    <span
+                      className={`object-marker ${
+                        selection?.type === "object" && selection.id === object.id ? "selected-object" : ""
+                      }`}
+                    >
+                      <span className="object-marker-icon">
+                        {(object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object").slice(0, 1).toUpperCase()}
+                      </span>
+                    </span>
+                  ) : null}
                   {pickup ? (
                     <span
                       className={`pickup-marker ${
@@ -2138,22 +2568,22 @@ export function MapEditor() {
                   ) : null}
                   {npc ? (
                     <span
-                      className={`npc-marker alignment-${npc.attributes.alignment} ${
+                      className={`npc-marker alignment-${resolvedNpc?.attributes.alignment ?? "friendly"} ${
                         selection?.type === "npc" && selection.id === npc.id ? "selected-npc" : ""
                       }`}
                     >
-                      <span className="npc-marker-icon">{npcDefinition?.name.slice(0, 1).toUpperCase() ?? "?"}</span>
-                      <span className="npc-marker-label">{npcDefinition?.name ?? "NPC"}</span>
+                      <span className="npc-marker-icon">{resolvedNpc?.name.slice(0, 1).toUpperCase() ?? "?"}</span>
+                      <span className="npc-marker-label">{resolvedNpc?.name ?? "NPC"}</span>
                     </span>
                   ) : null}
                 </button>
               );
             }),
           )}
-          {overlayFilter === "npc_paths" && selectedNpc?.movementMode === "patrol" && selectedNpc.patrolPath ? (
+          {overlayFilter === "npc_paths" && selectedResolvedNpc?.movementMode === "patrol" && selectedResolvedNpc.patrolPath ? (
             <svg className="map-npc-path-overlay" height={renderHeight * cellSize} width={renderWidth * cellSize}>
-              <polyline points={selectedNpc.patrolPath.points.map((point) => `${point.x * cellSize + cellSize / 2},${point.y * cellSize + cellSize / 2}`).join(" ")} />
-              {selectedNpc.patrolPath.points.map((point, index) => (
+              <polyline points={selectedResolvedNpc.patrolPath.points.map((point) => `${point.x * cellSize + cellSize / 2},${point.y * cellSize + cellSize / 2}`).join(" ")} />
+              {selectedResolvedNpc.patrolPath.points.map((point, index) => (
                 <g key={`${point.x}_${point.y}_${index}`}>
                   <circle cx={point.x * cellSize + cellSize / 2} cy={point.y * cellSize + cellSize / 2} r={Math.max(5, cellSize * 0.18)} />
                   <text x={point.x * cellSize + cellSize / 2} y={point.y * cellSize + cellSize / 2}>{index + 1}</text>
@@ -2161,18 +2591,44 @@ export function MapEditor() {
               ))}
             </svg>
           ) : null}
-          {overlayFilter === "npc_paths" && selectedNpc?.movementMode === "wander" && selectedNpc.wanderZone ? (
+          {overlayFilter === "npc_paths" && selectedResolvedNpc?.movementMode === "wander" && selectedResolvedNpc.wanderZone ? (
             <div
               className="map-npc-wander-zone"
               style={{
-                left: selectedNpc.wanderZone.x * cellSize,
-                top: selectedNpc.wanderZone.y * cellSize,
-                width: selectedNpc.wanderZone.width * cellSize,
-                height: selectedNpc.wanderZone.height * cellSize,
+                left: selectedResolvedNpc.wanderZone.x * cellSize,
+                top: selectedResolvedNpc.wanderZone.y * cellSize,
+                width: selectedResolvedNpc.wanderZone.width * cellSize,
+                height: selectedResolvedNpc.wanderZone.height * cellSize,
               }}
             >
               Wander
             </div>
+          ) : null}
+          {overlayFilter === "enemy_ranges" && selectedResolvedNpc?.attributes.alignment === "hostile" && selectedResolvedNpc.enemyBehaviour?.enabled ? (
+            <>
+              <div
+                className="map-enemy-range detection"
+                style={{
+                  left: (selectedResolvedNpc.x + 0.5 - selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles) * cellSize,
+                  top: (selectedResolvedNpc.y + 0.5 - selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles) * cellSize,
+                  width: selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles * 2 * cellSize,
+                  height: selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles * 2 * cellSize,
+                }}
+              >
+                Detect
+              </div>
+              <div
+                className="map-enemy-range chase"
+                style={{
+                  left: (selectedResolvedNpc.x + 0.5 - selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) * cellSize,
+                  top: (selectedResolvedNpc.y + 0.5 - selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) * cellSize,
+                  width: selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles * 2 * cellSize,
+                  height: selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles * 2 * cellSize,
+                }}
+              >
+                Chase
+              </div>
+            </>
           ) : null}
           {activeArea.structures.map((structure) => {
             const preset = getStructurePreset(structure.structureId);

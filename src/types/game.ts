@@ -10,9 +10,11 @@ export type GameProject = {
   progression: ProgressionStep[];
   gameState: GameStateConfig;
   items: ItemDefinition[];
+  shops: ShopDefinition[];
   quests: Quest[];
   trackedQuestId?: string;
   npcs: NPCDefinition[];
+  objects: ObjectDefinition[];
   ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
@@ -30,7 +32,7 @@ export type AreaThemeConfig = {
   overlayId?: string;
 };
 
-export type MovementMode = "walk" | "swim" | "sail" | "ride";
+export type MovementMode = "walk" | "swim" | "sail" | "ride" | "drive";
 
 export type MovementRule = {
   walkable?: boolean;
@@ -43,6 +45,13 @@ export type MovementResult = {
   reason?: string;
   speedMultiplier: number;
   movementMode?: MovementMode;
+};
+
+export type PlayerVehicleState = {
+  active: boolean;
+  vehicleObjectInstanceId?: string;
+  vehicleType?: "boat" | "horse" | "cart";
+  movementMode?: "sail" | "ride" | "drive";
 };
 
 export type InteractionActivationMode = "on_touch" | "on_interact" | "both" | "disabled";
@@ -69,6 +78,7 @@ export type Interaction = {
 export type EditorSelection =
   | { type: "eventBlock"; areaId: string; id: string }
   | { type: "structure"; areaId: string; id: string }
+  | { type: "object"; areaId: string; id: string }
   | { type: "pickup"; areaId: string; id: string }
   | { type: "npc"; areaId: string; id: string }
   | { type: "overlay"; areaId: string; x: number; y: number }
@@ -86,6 +96,7 @@ export type GameArea = {
   terrainTiles: MapTile[];
   overlayTiles: OverlayTile[];
   structures: MapStructure[];
+  objects: ObjectInstance[];
   pickups: PickupObject[];
   npcs: NPCInstance[];
   eventBlocks: EventBlock[];
@@ -119,11 +130,59 @@ export type MapStructure = {
   interaction?: Interaction;
 };
 
-export type MapObject = {
+export type ObjectDefinition = {
   id: string;
+  name: string;
+  description?: string;
+  category: "prop" | "container" | "vehicle" | "door" | "switch" | "sign" | "misc";
+  iconId?: string;
+  widthTiles: number;
+  heightTiles: number;
+  blocksMovement: boolean;
+  defaultInteraction?: Interaction;
+  defaultBehaviour?: ObjectBehaviour;
+};
+
+export type ObjectBehaviour =
+  | { type: "none" }
+  | {
+      type: "container";
+      contents: { itemId: string; quantity: number }[];
+      once: boolean;
+      openedFlag?: string;
+    }
+  | {
+      type: "door";
+      targetAreaId?: string;
+      targetEventBlockId?: string;
+      requiredItemId?: string;
+      lockedCutsceneId?: string;
+    }
+  | { type: "sign"; text: string }
+  | {
+      type: "vehicle";
+      vehicleType: "boat" | "horse" | "cart";
+      movementMode: "sail" | "ride" | "drive";
+      allowedTerrainIds: string[];
+      allowedOverlayIds?: string[];
+      dismountAllowedTerrainIds: string[];
+      dismountAllowedOverlayIds?: string[];
+      speedMultiplier?: number;
+    };
+
+export type ObjectInstance = {
+  id: string;
+  objectDefinitionId: string;
+  areaId: string;
   x: number;
   y: number;
-  objectId: string;
+  nameOverride?: string;
+  widthTiles?: number;
+  heightTiles?: number;
+  blocksMovement?: boolean;
+  interaction?: Interaction;
+  behaviourOverride?: ObjectBehaviour;
+  state?: Record<string, boolean | number | string>;
 };
 
 export type PickupObject = {
@@ -144,6 +203,10 @@ export type NPCDefinition = {
   description?: string;
   mapAvatarId: string;
   portraitId?: string;
+  defaultAttributes?: NPCAttributes;
+  defaultMovement?: NPCMovementConfig;
+  defaultEnemyBehaviour?: EnemyBehaviour;
+  defaultInteraction?: Interaction;
 };
 
 export type NPCMovementMode = "stationary" | "patrol" | "wander";
@@ -176,6 +239,21 @@ export type NPCAttributes = {
   movementSpeed?: number;
 };
 
+export type NPCMovementConfig = {
+  movementMode: NPCMovementMode;
+  movementSpeed?: number;
+  patrolPath?: PatrolPath;
+  wanderZone?: WanderZone;
+};
+
+export type EnemyBehaviour = {
+  enabled: boolean;
+  detectionRadiusTiles: number;
+  chaseRadiusTiles: number;
+  returnToOrigin: boolean;
+  contactDamage?: number;
+};
+
 export type NPCInstance = {
   id: string;
   npcDefinitionId: string;
@@ -190,10 +268,27 @@ export type NPCInstance = {
   movementSpeed?: number;
   patrolPath?: PatrolPath;
   wanderZone?: WanderZone;
+  enemyBehaviour?: EnemyBehaviour;
+  interaction?: Interaction;
+  attributesOverride?: Partial<NPCAttributes>;
+  movementOverride?: Partial<NPCMovementConfig>;
+  enemyBehaviourOverride?: Partial<EnemyBehaviour>;
+  interactionOverride?: Interaction;
+};
+
+export type ResolvedNPC = NPCInstance & {
+  definition?: NPCDefinition;
+  name: string;
+  attributes: NPCAttributes;
+  movementMode: NPCMovementMode;
+  movementSpeed: number;
+  patrolPath?: PatrolPath;
+  wanderZone?: WanderZone;
+  enemyBehaviour?: EnemyBehaviour;
   interaction?: Interaction;
 };
 
-export type MapOverlayFilter = "npc_paths" | "event_blocks" | "collision" | "none";
+export type MapOverlayFilter = "npc_paths" | "enemy_ranges" | "event_blocks" | "collision" | "none";
 
 export type EventBlock = {
   id: string;
@@ -242,7 +337,16 @@ export type PlayerConfig = {
   cutscenePortraitId: string;
   speed: number;
   health: number;
+  combat?: PlayerCombatStats;
   canWalkOn: string[];
+};
+
+export type PlayerCombatStats = {
+  maxHealth: number;
+  health: number;
+  attackDamage: number;
+  attackRangeTiles: number;
+  attackCooldownMs: number;
 };
 
 export type Cutscene = {
@@ -287,6 +391,20 @@ export type ItemDefinition = {
   iconId?: string;
   stackable: boolean;
   maxStack?: number;
+};
+
+export type ShopDefinition = {
+  id: string;
+  name: string;
+  currencyItemId: string;
+  entries: ShopEntry[];
+};
+
+export type ShopEntry = {
+  id: string;
+  itemId: string;
+  buyPrice: number;
+  stock?: number;
 };
 
 export type QuestStatus = "inactive" | "active" | "completed" | "failed";
@@ -348,6 +466,8 @@ export type RuleTrigger =
   | { type: "on_area_enter"; areaId: string }
   | { type: "on_cutscene_end"; cutsceneId: string };
 
+// TODO: Add enemy-specific rule triggers such as on_enemy_detect_player and on_enemy_touch_player.
+
 export type VariableComparisonOperator = "==" | "!=" | ">" | "<" | ">=" | "<=";
 
 export type ConditionExpression = SingleCondition | ConditionGroup;
@@ -393,6 +513,7 @@ export type GameAction =
   | { type: "fail_quest"; questId: string }
   | { type: "set_npc_alignment"; npcId: string; alignment: NPCAlignment }
   | { type: "set_npc_health"; npcId: string; value: number }
+  | { type: "open_shop"; shopId: string }
   | { type: "end_game" };
 
-// TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, and asset imports.
+// TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, asset imports, selling, dynamic pricing, and stock refresh.
