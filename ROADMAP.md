@@ -12,8 +12,8 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
 
 ## Gameplay systems
 
-- Boats, horses, carts, and other vehicles.
-- Runtime vehicle boarding/dismounting built from configured object behaviours.
+- Horses, carts, and richer vehicle handling.
+- Advanced boat steering, vehicle animations, and vehicle-specific interactions.
 - Economy and shops.
 - Equipment, armour, and clothes.
 - Enemy NPC behavior built on the shared NPC foundation.

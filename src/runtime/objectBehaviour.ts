@@ -7,7 +7,7 @@ export type ObjectBehaviourResult =
   | { type: "container"; handled: true; opened: boolean; message: string }
   | { type: "door"; handled: true; allowed: boolean; targetAreaId?: string; targetEventBlockId?: string; lockedCutsceneId?: string; message: string }
   | { type: "sign"; handled: true; text: string }
-  | { type: "vehicle"; handled: true; message: string };
+  | { type: "vehicle"; handled: true; behaviour: Extract<ObjectBehaviour, { type: "vehicle" }>; message: string };
 
 export type ObjectBehaviourContext = {
   itemDefinitions: ItemDefinition[];
@@ -79,6 +79,7 @@ export function runObjectBehaviour(
   return {
     type: "vehicle",
     handled: true,
-    message: "Vehicle behaviour configured but runtime boarding is not implemented yet.",
+    behaviour,
+    message: behaviour.vehicleType === "boat" ? "Boarded boat." : "Vehicle behaviour configured but runtime boarding is not implemented yet.",
   };
 }

@@ -73,7 +73,7 @@ describe("object behaviours", () => {
     });
   });
 
-  it("returns vehicle placeholder without mutating movement", () => {
+  it("returns a usable vehicle behaviour result", () => {
     expect(runObjectBehaviour({
       type: "vehicle",
       vehicleType: "boat",
@@ -83,7 +83,8 @@ describe("object behaviours", () => {
     }, makeContext())).toMatchObject({
       type: "vehicle",
       handled: true,
-      message: "Vehicle behaviour configured but runtime boarding is not implemented yet.",
+      behaviour: { type: "vehicle", vehicleType: "boat" },
+      message: "Boarded boat.",
     });
   });
 });

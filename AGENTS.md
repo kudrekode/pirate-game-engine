@@ -71,9 +71,9 @@ Supported behaviour types:
 - `container`, which gives configured item contents and can be once-only
 - `door`, which can require an item and teleport to an area spawn
 - `sign`, which displays cutscene-style text
-- `vehicle`, which is data-only for now and shows a placeholder runtime message
+- `vehicle`, which currently supports simple boat boarding, grid sailing, and dismounting
 
-Direct interactions and rule triggers still run alongside behaviours for compatibility. Vehicle movement, shops, equipment, combat, and enemy behavior remain future work.
+Direct interactions and rule triggers still run alongside behaviours for compatibility. Horse/cart runtime, advanced vehicle steering, shops, equipment, combat, and enemy behavior remain future work.
 
 ## Quests And Objectives
 
@@ -152,6 +152,8 @@ Resolution order:
 5. Missing terrain blocks movement.
 
 This allows overlays such as wooden planks to make water traversable.
+
+Vehicle movement also resolves through `src/runtime/movement.ts`. A boarded boat uses the object behaviour's allowed terrain and dismount terrain lists, skips collision against the currently boarded boat object, and still respects map bounds, structures, blocking objects, and NPCs.
 
 ## Migration
 

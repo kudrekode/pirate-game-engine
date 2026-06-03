@@ -20,7 +20,7 @@ export function makeDefaultObjectBehaviour(type: ObjectBehaviour["type"]): Objec
       vehicleType: "boat",
       movementMode: "sail",
       allowedTerrainIds: ["water"],
-      dismountAllowedTerrainIds: ["grass", "dirt"],
+      dismountAllowedTerrainIds: ["grass", "dirt", "sand", "stone"],
       speedMultiplier: 1,
     };
   }

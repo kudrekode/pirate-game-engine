@@ -16,13 +16,14 @@ import type {
   MovementMode,
   MapStructure,
   NPCInstance,
+  PlayerVehicleState,
   ObjectInstance,
   PixelAsset,
   PickupObject,
   RuleTrigger,
 } from "../types/game";
 import { collectPickup } from "./inventory";
-import { resolveMovementAt } from "./movement";
+import { findDismountTile, resolveMovementAt, type VehicleMovementConfig } from "./movement";
 import { runObjectBehaviour, type ObjectBehaviourResult } from "./objectBehaviour";
 import {
   isNpcTileWalkable,
@@ -48,6 +49,7 @@ import {
   type QuestView,
   type RuntimeQuestState,
 } from "./questEngine";
+import { createBoardedVehicleState } from "./vehicleRuntime";
 
 type WasdKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -116,10 +118,14 @@ export class AdventureScene extends Phaser.Scene {
   private readonly collectedPickupIds = new Set<string>();
   private readonly openedObjectIds = new Set<string>();
   private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
+  private readonly objectMarkers = new Map<string, Phaser.GameObjects.Container>();
   private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private readonly onQuestsChanged?: (quests: QuestView[]) => void;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
+  private playerFacing = { x: 0, y: 1 };
+  private playerVehicleState: PlayerVehicleState = { active: false };
+  private vehicleVisual?: Phaser.GameObjects.GameObject;
   private isCutsceneOpen = false;
   private isFinished = false;
   private isMoving = false;
@@ -205,9 +211,20 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    const interactable = this.findNearestInteractable();
-    this.updatePrompt(interactable);
-    if (this.wasInteractPressed() && interactable) {
+    const interactPressed = this.wasInteractPressed();
+    if (this.playerVehicleState.active) {
+      this.promptText?.setText("Press E to dismount");
+      if (interactPressed) {
+        this.tryDismountVehicle();
+        return;
+      }
+    }
+
+    const interactable = this.playerVehicleState.active ? null : this.findNearestInteractable();
+    if (!this.playerVehicleState.active) {
+      this.updatePrompt(interactable);
+    }
+    if (interactPressed && interactable) {
       const targetId =
         interactable.kind === "event"
           ? interactable.eventBlock.id
@@ -346,6 +363,7 @@ export class AdventureScene extends Phaser.Scene {
     this.worldLayer?.removeAll(true);
     this.playerMarker = undefined;
     this.npcMarkers.clear();
+    this.objectMarkers.clear();
     this.npcMovementStates.clear();
     const overlayLookup = new Map(
       this.currentArea.overlayTiles.map((tile) => [tileKey(tile.x, tile.y), tile.overlayId]),
@@ -622,6 +640,7 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
+    this.leaveVehicle(false);
     const enteredNewArea = nextArea.id !== this.currentArea.id;
     if (enteredNewArea) {
       this.currentArea = nextArea;
@@ -686,7 +705,10 @@ export class AdventureScene extends Phaser.Scene {
         fontStyle: "700",
       })
       .setOrigin(0.5);
-    this.worldLayer?.add(this.add.container(worldX, worldY, [body, label]).setDepth(42));
+    const marker = this.add.container(worldX, worldY, [body, label]).setDepth(42);
+    marker.setName(`object:${object.id}`);
+    this.objectMarkers.set(object.id, marker);
+    this.worldLayer?.add(marker);
   }
 
   private renderNpc(npc: NPCInstance) {
@@ -777,6 +799,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private teleportPlayer(eventBlock: EventBlock) {
+    this.leaveVehicle(false);
     if (!this.playerMarker) {
       this.spawnPlayer(eventBlock);
       return;
@@ -1130,10 +1153,27 @@ export class AdventureScene extends Phaser.Scene {
           : interactable.kind === "npc"
             ? `Press E to talk to ${interactable.label}`
           : interactable.kind === "object"
-            ? this.promptForInteraction(interactable.interaction)
+            ? this.promptForObject(interactable)
           : this.promptForInteraction(interactable.interaction)
         : "",
     );
+  }
+
+  private promptForObject(interactable: Extract<Interactable, { kind: "object" }>): string {
+    const behaviour = this.getObjectBehaviour(interactable.object);
+    if (behaviour.type === "vehicle" && behaviour.vehicleType === "boat") {
+      return "Press E to board";
+    }
+
+    if (behaviour.type === "sign") {
+      return "Press E to read";
+    }
+
+    if (behaviour.type === "container") {
+      return "Press E to open";
+    }
+
+    return this.promptForInteraction(interactable.interaction);
   }
 
   private promptForInteraction(interaction?: Interaction): string {
@@ -1289,7 +1329,104 @@ export class AdventureScene extends Phaser.Scene {
       return true;
     }
 
-    this.setStatus(result.message);
+    if (result.type === "vehicle") {
+      return this.boardVehicle(object, result.behaviour, result.message);
+    }
+
+    return false;
+  }
+
+  private boardVehicle(object: ObjectInstance, behaviour: VehicleMovementConfig, message: string): boolean {
+    if (behaviour.vehicleType !== "boat") {
+      this.setStatus(message);
+      return true;
+    }
+
+    this.playerVehicleState = createBoardedVehicleState(object.id, behaviour);
+    this.currentMovementMode = behaviour.movementMode;
+    this.addVehicleVisual(behaviour);
+    this.updateDebugPanel();
+    this.setStatus("Boarded boat.");
+    return true;
+  }
+
+  private addVehicleVisual(behaviour: VehicleMovementConfig) {
+    this.vehicleVisual?.destroy();
+    if (!this.playerMarker || behaviour.vehicleType !== "boat") {
+      return;
+    }
+
+    const hull = this.add
+      .ellipse(0, this.tileSize * 0.08, this.tileSize * 0.86, this.tileSize * 0.52, 0x075985, 0.88)
+      .setStrokeStyle(2, 0xe0f2fe, 0.86);
+    hull.setDepth(-1);
+    this.vehicleVisual = hull;
+    this.playerMarker.addAt(hull, 0);
+  }
+
+  private leaveVehicle(showMessage: boolean) {
+    if (!this.playerVehicleState.active) {
+      return;
+    }
+
+    this.playerVehicleState = { active: false };
+    this.currentMovementMode = "walk";
+    this.vehicleVisual?.destroy();
+    this.vehicleVisual = undefined;
+    this.updateDebugPanel();
+    if (showMessage) {
+      this.setStatus("Dismounted.");
+    }
+  }
+
+  private getActiveVehicleBehaviour(): VehicleMovementConfig | undefined {
+    if (!this.playerVehicleState.active || !this.playerVehicleState.vehicleObjectInstanceId) {
+      return undefined;
+    }
+
+    const object = this.currentArea.objects.find(
+      (candidate) => candidate.id === this.playerVehicleState.vehicleObjectInstanceId,
+    );
+    const behaviour = object ? this.getObjectBehaviour(object) : undefined;
+    return behaviour?.type === "vehicle" ? behaviour : undefined;
+  }
+
+  private tryDismountVehicle(): boolean {
+    const behaviour = this.getActiveVehicleBehaviour();
+    const vehicleObjectId = this.playerVehicleState.vehicleObjectInstanceId;
+    const vehicleObject = vehicleObjectId
+      ? this.currentArea.objects.find((candidate) => candidate.id === vehicleObjectId)
+      : undefined;
+
+    if (!behaviour || !vehicleObject) {
+      this.leaveVehicle(false);
+      this.setStatus("Vehicle missing.");
+      return false;
+    }
+
+    const waterTile = { ...this.playerPosition };
+    const target = findDismountTile(this.currentArea, this.playerPosition, this.playerFacing, behaviour);
+    if (!target.canDismount) {
+      this.setStatus(target.reason);
+      return false;
+    }
+
+    vehicleObject.x = waterTile.x;
+    vehicleObject.y = waterTile.y;
+    this.objectMarkers
+      .get(vehicleObject.id)
+      ?.setPosition(vehicleObject.x * this.tileSize, vehicleObject.y * this.tileSize);
+
+    this.playerPosition = { x: target.x, y: target.y };
+    this.playerMarker?.setPosition(
+      target.x * this.tileSize + this.tileSize / 2,
+      target.y * this.tileSize + this.tileSize / 2,
+    );
+    this.leaveVehicle(true);
+    if (this.checkTouchInteractions(() => this.checkTrigger())) {
+      return true;
+    }
+    this.checkTrigger();
     return true;
   }
 
@@ -1332,6 +1469,7 @@ export class AdventureScene extends Phaser.Scene {
   }
 
   private tryMove(deltaX: number, deltaY: number, time: number) {
+    this.playerFacing = { x: deltaX, y: deltaY };
     const nextX = this.playerPosition.x + deltaX;
     const nextY = this.playerPosition.y + deltaY;
 
@@ -1344,7 +1482,15 @@ export class AdventureScene extends Phaser.Scene {
       return;
     }
 
-    const movement = resolveMovementAt(this.currentArea, nextX, nextY, this.project.player);
+    const activeVehicle = this.getActiveVehicleBehaviour();
+    const movement = resolveMovementAt(this.currentArea, nextX, nextY, this.project.player, {
+      activeVehicle: activeVehicle
+        ? {
+            ...activeVehicle,
+            vehicleObjectInstanceId: this.playerVehicleState.vehicleObjectInstanceId,
+          }
+        : undefined,
+    });
     if (!movement.canMove) {
       this.setStatus(movement.reason ?? "Blocked.");
       return;
@@ -1401,9 +1547,12 @@ export class AdventureScene extends Phaser.Scene {
       ? this.hasRuleTrigger({ type: "on_touch", targetId: object.id })
       : false;
 
-    if (object && ((objectInteraction && canTouchActivate(objectInteraction)) || objectHasRule || objectBehaviour.type !== "none")) {
+    const objectBehaviourCanTouch = objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
+    if (object && ((objectInteraction && canTouchActivate(objectInteraction)) || objectHasRule || objectBehaviourCanTouch)) {
       this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
-        this.runObjectBehaviour(object);
+        if (objectBehaviourCanTouch) {
+          this.runObjectBehaviour(object);
+        }
         if (objectInteraction && canTouchActivate(objectInteraction)) {
           this.runInteraction(objectInteraction, object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Object");
         }
@@ -1595,10 +1744,19 @@ export class AdventureScene extends Phaser.Scene {
       .map(([itemId, quantity]) => `${itemId}=${quantity}`)
       .join(", ");
 
+    const vehicle = this.playerVehicleState.active
+      ? `${this.playerVehicleState.vehicleType ?? "vehicle"}:${this.playerVehicleState.vehicleObjectInstanceId ?? "-"}`
+      : "-";
+
     this.debugText.setText(
-      [`Area: ${this.currentArea.name}`, `Mode: ${this.currentMovementMode}`, `Flags: ${flags || "-"}`, `Vars: ${variables || "-"}`, `Items: ${inventory || "-"}`].join(
-        "\n",
-      ),
+      [
+        `Area: ${this.currentArea.name}`,
+        `Mode: ${this.currentMovementMode}`,
+        `Vehicle: ${vehicle}`,
+        `Flags: ${flags || "-"}`,
+        `Vars: ${variables || "-"}`,
+        `Items: ${inventory || "-"}`,
+      ].join("\n"),
     );
   }
 

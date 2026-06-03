@@ -360,8 +360,17 @@ function migrateObjectBehaviour(value: unknown): ObjectBehaviour | undefined {
       type: "vehicle",
       vehicleType,
       movementMode,
-      allowedTerrainIds: readStringArray(value.allowedTerrainIds, []),
-      dismountAllowedTerrainIds: readStringArray(value.dismountAllowedTerrainIds, []),
+      allowedTerrainIds: readStringArray(value.allowedTerrainIds, vehicleType === "boat" ? ["water"] : []),
+      ...(readStringArray(value.allowedOverlayIds, []).length > 0
+        ? { allowedOverlayIds: readStringArray(value.allowedOverlayIds, []) }
+        : {}),
+      dismountAllowedTerrainIds: readStringArray(
+        value.dismountAllowedTerrainIds,
+        vehicleType === "boat" ? ["grass", "dirt"] : [],
+      ),
+      ...(readStringArray(value.dismountAllowedOverlayIds, []).length > 0
+        ? { dismountAllowedOverlayIds: readStringArray(value.dismountAllowedOverlayIds, []) }
+        : {}),
       ...(typeof value.speedMultiplier === "number"
         ? { speedMultiplier: readNumber(value.speedMultiplier, 1, 0.1, 10) }
         : {}),

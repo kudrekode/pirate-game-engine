@@ -31,7 +31,7 @@ export type AreaThemeConfig = {
   overlayId?: string;
 };
 
-export type MovementMode = "walk" | "swim" | "sail" | "ride";
+export type MovementMode = "walk" | "swim" | "sail" | "ride" | "drive";
 
 export type MovementRule = {
   walkable?: boolean;
@@ -44,6 +44,13 @@ export type MovementResult = {
   reason?: string;
   speedMultiplier: number;
   movementMode?: MovementMode;
+};
+
+export type PlayerVehicleState = {
+  active: boolean;
+  vehicleObjectInstanceId?: string;
+  vehicleType?: "boat" | "horse" | "cart";
+  movementMode?: "sail" | "ride" | "drive";
 };
 
 export type InteractionActivationMode = "on_touch" | "on_interact" | "both" | "disabled";
@@ -156,7 +163,9 @@ export type ObjectBehaviour =
       vehicleType: "boat" | "horse" | "cart";
       movementMode: "sail" | "ride" | "drive";
       allowedTerrainIds: string[];
+      allowedOverlayIds?: string[];
       dismountAllowedTerrainIds: string[];
+      dismountAllowedOverlayIds?: string[];
       speedMultiplier?: number;
     };
 
