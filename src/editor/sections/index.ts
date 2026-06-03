@@ -9,8 +9,9 @@ import { ItemsEditor } from "./ItemsEditor";
 import { QuestsEditor } from "./QuestsEditor";
 import { NpcsEditor } from "./NpcsEditor";
 import { ObjectsEditor } from "./ObjectsEditor";
+import { ShopsEditor } from "./ShopsEditor";
 
-export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression" | "game-state" | "items" | "quests" | "objects" | "npcs";
+export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression" | "game-state" | "items" | "shops" | "quests" | "objects" | "npcs";
 
 export type EditorSectionConfig = {
   id: EditorSectionId;
@@ -61,6 +62,12 @@ export const editorSections: EditorSectionConfig[] = [
     label: "Items",
     description: "Define inventory items used by pickups, quests, and rules.",
     component: ItemsEditor,
+  },
+  {
+    id: "shops",
+    label: "Shops",
+    description: "Define simple buy-only shops opened by rules.",
+    component: ShopsEditor,
   },
   {
     id: "quests",

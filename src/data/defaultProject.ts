@@ -181,6 +181,24 @@ const mainArea: GameArea = {
       },
     },
     {
+      id: "npc_instance_merchant",
+      npcDefinitionId: "npc_merchant",
+      areaId: "area_main",
+      x: 4,
+      y: 2,
+      facing: "down",
+      blocksMovement: true,
+      movementMode: "stationary",
+      attributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "merchants",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+    },
+    {
       id: "npc_instance_villager",
       npcDefinitionId: "npc_villager",
       areaId: "area_main",
@@ -500,6 +518,18 @@ export const defaultProject: GameProject = {
       maxStack: 12,
     },
   ],
+  shops: [
+    {
+      id: "shop_general_store",
+      name: "General Store",
+      currencyItemId: "gold_coin",
+      entries: [
+        { id: "shop_entry_tavern_key", itemId: "tavern_key", buyPrice: 5, stock: 1 },
+        { id: "shop_entry_rum_bottle", itemId: "rum_bottle", buyPrice: 2, stock: 3 },
+        { id: "shop_entry_boat_pass", itemId: "boat_pass", buyPrice: 8 },
+      ],
+    },
+  ],
   quests: [
     {
       id: "quest_tavern_access",
@@ -546,6 +576,13 @@ export const defaultProject: GameProject = {
       id: "npc_villager",
       name: "Villager",
       description: "A villager wandering through the square.",
+      mapAvatarId: "tinker",
+      portraitId: "portrait_tinker",
+    },
+    {
+      id: "npc_merchant",
+      name: "Merchant",
+      description: "A village shopkeeper selling simple travel supplies.",
       mapAvatarId: "tinker",
       portraitId: "portrait_tinker",
     },
@@ -646,6 +683,14 @@ export const defaultProject: GameProject = {
         { type: "play_cutscene", cutsceneId: "captain_intro" },
         { type: "activate_quest", questId: "quest_tavern_access" },
       ],
+    },
+    {
+      id: "rule_open_general_store",
+      name: "Open General Store",
+      enabled: true,
+      groupId: "rule_group_tavern",
+      trigger: { type: "on_interact", targetId: "npc_instance_merchant" },
+      actions: [{ type: "open_shop", shopId: "shop_general_store" }],
     },
     {
       id: "rule_enter_tavern",

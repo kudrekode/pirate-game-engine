@@ -16,6 +16,7 @@ Read this file first, then identify the likely files before opening broader repo
 
 - Rules and logic engine: `src/runtime/ruleEngine.ts`, `src/editor/sections/ProgressionEditor.tsx`, `src/types/game.ts`, `src/runtime/ruleEngine.test.ts`.
 - Inventory and items: `src/runtime/inventory.ts`, `src/editor/sections/ItemsEditor.tsx`, `src/types/game.ts`, `src/runtime/inventory.test.ts`.
+- Shops and economy: `src/runtime/shopRuntime.ts`, `src/editor/sections/ShopsEditor.tsx`, `src/runtime/RuntimePanel.tsx`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/shopRuntime.test.ts`.
 - Quests and objectives: `src/runtime/questEngine.ts`, `src/editor/sections/QuestsEditor.tsx`, `src/types/game.ts`, `src/runtime/questEngine.test.ts`.
 - NPCs: `src/editor/sections/NpcsEditor.tsx`, `src/runtime/npcMovement.ts`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
 - Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
@@ -30,6 +31,7 @@ Read this file first, then identify the likely files before opening broader repo
 - Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
 - NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, and rule targets.
 - Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
+- Shops: Buy-only `ShopDefinition` records use an inventory item as currency; runtime stock is copied per play session.
 - Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
 - Rules: Friendly WHEN/IF/THEN logic with folders, recursive AND/OR conditions, and runtime actions.
 - Game State: Flags, variables, and optional default inventory are editor defaults copied into runtime memory.
@@ -181,7 +183,7 @@ Condition groups support `AND` and `OR`, including nested groups. Missing or emp
 
 Rules can check item quantities and give or remove items. Removing items never drops below zero; stack limits are enforced by the inventory helper.
 
-Rules can also activate, complete, or fail quests and read or change runtime NPC health and alignment.
+Rules can also open shops, activate, complete, or fail quests, and read or change runtime NPC health and alignment.
 
 Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
 
@@ -234,6 +236,7 @@ Current focused tests cover:
 
 - Rule evaluation and actions
 - Inventory stacking and pickup collection
+- Shop purchases and runtime stock
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
 - Object migration, behaviours, collision, rule targeting, and deletion guards

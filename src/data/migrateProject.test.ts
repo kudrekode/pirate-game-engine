@@ -32,6 +32,7 @@ describe("migrateProject", () => {
     expect(project.areas[0].npcs).toEqual([]);
     expect(project.areas[0].objects).toEqual([]);
     expect(project.items).toEqual([]);
+    expect(project.shops).toEqual([]);
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
     expect(project.objects).toEqual([]);
@@ -91,6 +92,7 @@ describe("migrateProject", () => {
     expect(project.ruleGroups).toEqual([]);
     expect(project.rules).toEqual([]);
     expect(project.items).toEqual([]);
+    expect(project.shops).toEqual([]);
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
     expect(project.objects).toEqual([]);
@@ -162,6 +164,36 @@ describe("migrateProject", () => {
     expect(project.gameState.inventory).toEqual({ tavern_key: 1 });
     expect(project.rules[0].conditionTree).toMatchObject({ type: "has_item", quantity: 1 });
     expect(project.rules[0].actions[0]).toEqual({ type: "remove_item", itemId: "tavern_key", quantity: 1 });
+  });
+
+  it("migrates shops and open shop rule actions", () => {
+    const project = migrateProject({
+      items: [{ id: "gold_coin", name: "Gold Coin", category: "currency", stackable: true }],
+      shops: [
+        {
+          id: "general",
+          name: "General Store",
+          currencyItemId: "gold_coin",
+          entries: [{ id: "key", itemId: "tavern_key", buyPrice: 5, stock: 1 }],
+        },
+      ],
+      rules: [
+        {
+          id: "merchant",
+          name: "Merchant",
+          trigger: { type: "on_interact", targetId: "npc-merchant" },
+          actions: [{ type: "open_shop", shopId: "general" }],
+        },
+      ],
+    });
+
+    expect(project.shops[0]).toEqual({
+      id: "general",
+      name: "General Store",
+      currencyItemId: "gold_coin",
+      entries: [{ id: "key", itemId: "tavern_key", buyPrice: 5, stock: 1 }],
+    });
+    expect(project.rules[0].actions[0]).toEqual({ type: "open_shop", shopId: "general" });
   });
 
   it("migrates quests and defaults missing quest fields", () => {

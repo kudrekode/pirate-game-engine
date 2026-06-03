@@ -10,6 +10,7 @@ import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
 import { QuestsEditor } from "../editor/sections/QuestsEditor";
 import { NpcsEditor } from "../editor/sections/NpcsEditor";
 import { ObjectsEditor } from "../editor/sections/ObjectsEditor";
+import { ShopsEditor } from "../editor/sections/ShopsEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -72,6 +73,13 @@ describe("editor smoke tests", () => {
 
     expect(screen.getByText("Item Definition")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
+  });
+
+  it("renders Shops Editor", () => {
+    render(<ShopsEditor />);
+
+    expect(screen.getByText("Shop Definition")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("General Store")).toBeInTheDocument();
   });
 
   it("renders Quests Editor", () => {

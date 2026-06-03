@@ -39,6 +39,7 @@ import type {
   ProgressionStep,
   RuleGroup,
   RuleTrigger,
+  ShopDefinition,
   SingleCondition,
   TileStyleConfig,
   VariableComparisonOperator,
@@ -800,6 +801,44 @@ function migrateItems(value: unknown): ItemDefinition[] {
   });
 }
 
+function migrateShops(value: unknown): ShopDefinition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((shop, index) => {
+    if (!isRecord(shop)) {
+      return [];
+    }
+
+    const entries = Array.isArray(shop.entries)
+      ? shop.entries.flatMap((entry, entryIndex) => {
+          if (!isRecord(entry)) {
+            return [];
+          }
+
+          const stock = typeof entry.stock === "number" && Number.isFinite(entry.stock)
+            ? Math.max(0, Math.round(entry.stock))
+            : undefined;
+
+          return [{
+            id: readString(entry.id, `shop_entry_${entryIndex + 1}`),
+            itemId: readString(entry.itemId, ""),
+            buyPrice: Math.round(readNumber(entry.buyPrice, 1, 0, 999999)),
+            ...(stock !== undefined ? { stock } : {}),
+          }];
+        })
+      : [];
+
+    return [{
+      id: readString(shop.id, `shop_${index + 1}`),
+      name: readString(shop.name, `Shop ${index + 1}`),
+      currencyItemId: readString(shop.currencyItemId, "gold_coin"),
+      entries,
+    }];
+  });
+}
+
 function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
   if (!Array.isArray(value)) {
     return [];
@@ -1170,6 +1209,13 @@ function migrateGameAction(value: unknown): GameAction | null {
     };
   }
 
+  if (value.type === "open_shop") {
+    return {
+      type: "open_shop",
+      shopId: readString(value.shopId, ""),
+    };
+  }
+
   if (value.type === "give_item" || value.type === "remove_item") {
     return {
       type: value.type,
@@ -1301,6 +1347,7 @@ export function migrateProject(value: unknown): GameProject {
     progression: migrateProgression(source.progression, activeAreaId),
     gameState: migrateGameState(source.gameState),
     items: migrateItems(source.items),
+    shops: migrateShops(source.shops),
     quests: migrateQuests(source.quests),
     ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
     npcs: migrateNpcDefinitions(source.npcs),

@@ -34,6 +34,7 @@ const actionTypes: { label: string; value: GameAction["type"] }[] = [
   { label: "Fail quest", value: "fail_quest" },
   { label: "Set NPC alignment", value: "set_npc_alignment" },
   { label: "Set NPC health", value: "set_npc_health" },
+  { label: "Open shop", value: "open_shop" },
   { label: "End game", value: "end_game" },
 ];
 
@@ -155,6 +156,10 @@ function actionSummary(action: GameAction, labels: Record<string, string>): stri
 
   if (action.type === "set_npc_health") {
     return `set ${labels[action.npcId] ?? action.npcId ?? "NPC"} health to ${action.value}`;
+  }
+
+  if (action.type === "open_shop") {
+    return `open shop "${labels[action.shopId] ?? (action.shopId || "shop")}"`;
   }
 
   return "end game";
@@ -304,9 +309,10 @@ export function ProgressionEditor() {
         ...project.areas.map((area) => [area.id, area.name]),
         ...project.cutscenes.map((cutscene) => [cutscene.id, cutscene.name]),
         ...project.items.map((item) => [item.id, item.name]),
+        ...project.shops.map((shop) => [shop.id, shop.name]),
         ...project.quests.map((quest) => [quest.id, quest.name]),
       ]),
-    [interactTargets, project.areas, project.cutscenes, project.items, project.quests, touchTargets],
+    [interactTargets, project.areas, project.cutscenes, project.items, project.quests, project.shops, touchTargets],
   );
 
   useEffect(() => {
@@ -548,6 +554,10 @@ export function ProgressionEditor() {
 
     if (type === "set_npc_health") {
       return { type, npcId: npcTargets[0]?.id ?? "", value: 100 };
+    }
+
+    if (type === "open_shop") {
+      return { type, shopId: project.shops[0]?.id ?? "" };
     }
 
     return { type: "end_game" };
@@ -931,6 +941,11 @@ export function ProgressionEditor() {
             </select>
             <input min={0} onChange={(event) => setAction({ ...action, value: Math.max(0, Number(event.target.value)) })} type="number" value={action.value} />
           </>
+        ) : null}
+        {action.type === "open_shop" ? (
+          <select onChange={(event) => setAction({ ...action, shopId: event.target.value })} value={action.shopId}>
+            {project.shops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
+          </select>
         ) : null}
         <button
           className="danger-button compact"

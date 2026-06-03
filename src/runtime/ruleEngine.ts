@@ -30,6 +30,7 @@ export type RuleActionContext = {
   activateQuest?: (questId: string) => void;
   completeQuest?: (questId: string) => void;
   failQuest?: (questId: string) => void;
+  openShop?: (shopId: string) => void;
   itemDefinitions?: ItemDefinition[];
   stateChanged?: () => void;
 };
@@ -215,6 +216,12 @@ export function runAction(
       npc.health = Math.min(npc.maxHealth, Math.max(0, action.value));
       context.stateChanged?.();
     }
+    onDone();
+    return;
+  }
+
+  if (action.type === "open_shop") {
+    context.openShop?.(action.shopId);
     onDone();
     return;
   }

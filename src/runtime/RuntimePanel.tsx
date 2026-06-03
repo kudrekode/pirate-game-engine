@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
 import type { QuestView } from "./questEngine";
+import type { RuntimeShopPanelState } from "./shopRuntime";
 
 const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
@@ -14,10 +15,12 @@ type RuntimePanelProps = {
 
 export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<AdventureScene | null>(null);
   const [inventory, setInventory] = useState<Record<string, number>>({});
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
   const [quests, setQuests] = useState<QuestView[]>([]);
   const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
+  const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -38,13 +41,15 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
       return undefined;
     }
 
+    const scene = new AdventureScene(project, setInventory, setQuests, setShopState);
+    sceneRef.current = scene;
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: containerRef.current,
       width: RUNTIME_SCREEN_WIDTH,
       height: RUNTIME_SCREEN_HEIGHT,
       backgroundColor: "#111827",
-      scene: [new AdventureScene(project, setInventory, setQuests)],
+      scene: [scene],
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -53,6 +58,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 
     return () => {
       game.destroy(true);
+      sceneRef.current = null;
     };
   }, [project]);
 
@@ -67,6 +73,10 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const activeQuests = quests.filter((quest) => quest.status === "active");
   const completedQuests = quests.filter((quest) => quest.status === "completed");
   const trackedQuest = quests.find((quest) => quest.id === project.trackedQuestId && quest.status === "active");
+  const activeShop = shopState ? project.shops.find((shop) => shop.id === shopState.shopId) : undefined;
+  const shopCurrency = activeShop
+    ? project.items.find((item) => item.id === activeShop.currencyItemId)
+    : undefined;
 
   function renderQuest(quest: QuestView) {
     return (
@@ -135,6 +145,44 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
             <div className="quest-runtime-section">
               <strong>Completed Quests</strong>
               {completedQuests.length > 0 ? completedQuests.map(renderQuest) : <p>No completed quests.</p>}
+            </div>
+          </aside>
+        ) : null}
+        {activeShop && shopState ? (
+          <aside className="shop-panel">
+            <div className="inventory-heading">
+              <strong>{activeShop.name}</strong>
+              <button onClick={() => sceneRef.current?.closeShop()} type="button">Close</button>
+            </div>
+            <p className="shop-currency">
+              {shopCurrency?.name ?? activeShop.currencyItemId}: {inventory[activeShop.currencyItemId] ?? 0}
+            </p>
+            {shopState.message ? <p className="validation-message">{shopState.message}</p> : null}
+            <div className="inventory-list">
+              {activeShop.entries.map((entry) => {
+                const item = project.items.find((candidate) => candidate.id === entry.itemId);
+                const stock = entry.stock === undefined ? undefined : shopState.stockByEntryId[entry.id] ?? 0;
+                const disabled = stock !== undefined && stock <= 0;
+                return (
+                  <div className="shop-row" key={entry.id}>
+                    <span>
+                      <strong>{item?.name ?? entry.itemId}</strong>
+                      <small>
+                        Price: {entry.buyPrice}
+                        {stock !== undefined ? ` | Stock: ${stock}` : ""}
+                      </small>
+                    </span>
+                    <button
+                      disabled={disabled}
+                      onClick={() => sceneRef.current?.buyShopEntry(entry.id)}
+                      type="button"
+                    >
+                      Buy
+                    </button>
+                  </div>
+                );
+              })}
+              {activeShop.entries.length === 0 ? <p className="inventory-empty">No shop entries.</p> : null}
             </div>
           </aside>
         ) : null}

@@ -39,6 +39,12 @@ import {
   type RuntimeGameState,
 } from "./ruleEngine";
 import {
+  buyShopEntry,
+  createRuntimeShopStocks,
+  type RuntimeShopPanelState,
+  type RuntimeShopStocks,
+} from "./shopRuntime";
+import {
   activateQuest,
   completeQuest as completeRuntimeQuest,
   createRuntimeQuestState,
@@ -122,6 +128,9 @@ export class AdventureScene extends Phaser.Scene {
   private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
   private readonly onQuestsChanged?: (quests: QuestView[]) => void;
+  private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
+  private readonly runtimeShopStocks: RuntimeShopStocks;
+  private activeShopId?: string;
   private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
   private playerFacing = { x: 0, y: 1 };
   private playerVehicleState: PlayerVehicleState = { active: false };
@@ -134,6 +143,7 @@ export class AdventureScene extends Phaser.Scene {
     project: GameProject,
     onInventoryChanged?: (inventory: Record<string, number>) => void,
     onQuestsChanged?: (quests: QuestView[]) => void,
+    onShopChanged?: (shop: RuntimeShopPanelState | null) => void,
   ) {
     super("AdventureScene");
     this.project = project;
@@ -141,8 +151,48 @@ export class AdventureScene extends Phaser.Scene {
     this.tileSize = this.currentArea.tileSize;
     this.runtimeState = createRuntimeState(project.gameState, project.areas.flatMap((area) => area.npcs));
     this.runtimeQuestState = createRuntimeQuestState(project.quests);
+    this.runtimeShopStocks = createRuntimeShopStocks(project.shops);
     this.onInventoryChanged = onInventoryChanged;
     this.onQuestsChanged = onQuestsChanged;
+    this.onShopChanged = onShopChanged;
+  }
+
+  openShop(shopId: string) {
+    const shop = this.project.shops.find((candidate) => candidate.id === shopId);
+    if (!shop) {
+      this.setStatus(`Shop missing: ${shopId}.`);
+      return;
+    }
+
+    this.activeShopId = shopId;
+    this.notifyShopChanged();
+    this.setStatus(`Opened ${shop.name}.`);
+  }
+
+  closeShop() {
+    this.activeShopId = undefined;
+    this.onShopChanged?.(null);
+  }
+
+  buyShopEntry(entryId: string) {
+    if (!this.activeShopId) {
+      return;
+    }
+
+    const shop = this.project.shops.find((candidate) => candidate.id === this.activeShopId);
+    if (!shop) {
+      this.closeShop();
+      return;
+    }
+
+    const stock = this.runtimeShopStocks[shop.id] ?? {};
+    this.runtimeShopStocks[shop.id] = stock;
+    const result = buyShopEntry(shop, entryId, this.runtimeState.inventory, this.project.items, stock);
+    this.setStatus(result.message);
+    this.notifyInventoryChanged();
+    this.syncQuestProgress();
+    this.updateDebugPanel();
+    this.notifyShopChanged(result.message);
   }
 
   create() {
@@ -1715,6 +1765,7 @@ export class AdventureScene extends Phaser.Scene {
         failQuest(this.runtimeQuestState, questId);
         this.syncQuestProgress();
       },
+      openShop: (shopId) => this.openShop(shopId),
       itemDefinitions: this.project.items,
       stateChanged: () => {
         this.updateDebugPanel();
@@ -1762,6 +1813,19 @@ export class AdventureScene extends Phaser.Scene {
 
   private notifyInventoryChanged() {
     this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
+  }
+
+  private notifyShopChanged(message?: string) {
+    if (!this.activeShopId) {
+      this.onShopChanged?.(null);
+      return;
+    }
+
+    this.onShopChanged?.({
+      shopId: this.activeShopId,
+      stockByEntryId: { ...(this.runtimeShopStocks[this.activeShopId] ?? {}) },
+      ...(message ? { message } : {}),
+    });
   }
 
   private syncQuestProgress() {

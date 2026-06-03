@@ -10,6 +10,7 @@ export type GameProject = {
   progression: ProgressionStep[];
   gameState: GameStateConfig;
   items: ItemDefinition[];
+  shops: ShopDefinition[];
   quests: Quest[];
   trackedQuestId?: string;
   npcs: NPCDefinition[];
@@ -347,6 +348,20 @@ export type ItemDefinition = {
   maxStack?: number;
 };
 
+export type ShopDefinition = {
+  id: string;
+  name: string;
+  currencyItemId: string;
+  entries: ShopEntry[];
+};
+
+export type ShopEntry = {
+  id: string;
+  itemId: string;
+  buyPrice: number;
+  stock?: number;
+};
+
 export type QuestStatus = "inactive" | "active" | "completed" | "failed";
 
 export type Quest = {
@@ -451,6 +466,7 @@ export type GameAction =
   | { type: "fail_quest"; questId: string }
   | { type: "set_npc_alignment"; npcId: string; alignment: NPCAlignment }
   | { type: "set_npc_health"; npcId: string; value: number }
+  | { type: "open_shop"; shopId: string }
   | { type: "end_game" };
 
-// TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, and asset imports.
+// TODO: Future foundations: freeform placement, per-area camera overrides, node graph logic, enemies, sounds, UI editor, asset imports, selling, dynamic pricing, and stock refresh.

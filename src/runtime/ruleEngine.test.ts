@@ -36,6 +36,7 @@ function makeContext() {
   const activateQuest = vi.fn();
   const completeQuest = vi.fn();
   const failQuest = vi.fn();
+  const openShop = vi.fn();
   const context: RuleActionContext = {
     state,
     playCutscene: vi.fn(),
@@ -45,13 +46,14 @@ function makeContext() {
     activateQuest,
     completeQuest,
     failQuest,
+    openShop,
     itemDefinitions: [
       { id: "gold_coin", name: "Gold Coin", category: "currency", stackable: true, maxStack: 99 },
       { id: "tavern_key", name: "Tavern Key", category: "key", stackable: false },
     ],
   };
 
-  return { activateQuest, completeQuest, context, failQuest, state, teleport };
+  return { activateQuest, completeQuest, context, failQuest, openShop, state, teleport };
 }
 
 describe("rule engine conditions", () => {
@@ -214,6 +216,21 @@ describe("rule engine triggers and actions", () => {
     expect(activateQuest).toHaveBeenCalledWith("quest-a");
     expect(completeQuest).toHaveBeenCalledWith("quest-b");
     expect(failQuest).toHaveBeenCalledWith("quest-c");
+  });
+
+  it("runs open shop actions", () => {
+    const { context, openShop } = makeContext();
+    const rule: GameRule = {
+      id: "merchant",
+      name: "Merchant",
+      enabled: true,
+      trigger: { type: "on_interact", targetId: "npc-merchant" },
+      actions: [{ type: "open_shop", shopId: "general-store" }],
+    };
+
+    fireTrigger({ type: "on_interact", targetId: "npc-merchant" }, [rule], context);
+
+    expect(openShop).toHaveBeenCalledWith("general-store");
   });
 
   it("fires an NPC on_interact rule that activates a quest", () => {
