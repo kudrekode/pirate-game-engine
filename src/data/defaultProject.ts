@@ -374,7 +374,14 @@ export const defaultProject: GameProject = {
     mapAvatarId: "scout",
     cutscenePortraitId: "portrait_scout",
     speed: 6,
-    health: 5,
+    health: 100,
+    combat: {
+      maxHealth: 100,
+      health: 100,
+      attackDamage: 25,
+      attackRangeTiles: 1,
+      attackCooldownMs: 500,
+    },
     canWalkOn: ["grass", "dirt", "wooden_floor", "stone_floor", "carpet", "cave_floor", "ship_deck"],
   },
   cutscenes: [

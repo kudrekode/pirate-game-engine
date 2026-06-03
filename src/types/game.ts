@@ -310,7 +310,16 @@ export type PlayerConfig = {
   cutscenePortraitId: string;
   speed: number;
   health: number;
+  combat?: PlayerCombatStats;
   canWalkOn: string[];
+};
+
+export type PlayerCombatStats = {
+  maxHealth: number;
+  health: number;
+  attackDamage: number;
+  attackRangeTiles: number;
+  attackCooldownMs: number;
 };
 
 export type Cutscene = {

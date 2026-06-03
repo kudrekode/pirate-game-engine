@@ -89,6 +89,13 @@ describe("migrateProject", () => {
     expect(project.metadata).toMatchObject({ name: "Partial", version: "0.1.0" });
     expect(project.camera.viewportWidthTiles).toBeGreaterThan(0);
     expect(project.player.mapAvatarId).toBeTruthy();
+    expect(project.player.combat).toMatchObject({
+      maxHealth: 100,
+      health: 100,
+      attackDamage: 25,
+      attackRangeTiles: 1,
+      attackCooldownMs: 500,
+    });
     expect(project.ruleGroups).toEqual([]);
     expect(project.rules).toEqual([]);
     expect(project.items).toEqual([]);

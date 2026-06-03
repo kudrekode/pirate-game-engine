@@ -662,6 +662,15 @@ function migrateCamera(value: unknown): CameraConfig {
 function migratePlayer(value: unknown): PlayerConfig {
   const source = isRecord(value) ? value : {};
   const fallback = defaultProject.player;
+  const combatSource = isRecord(source.combat) ? source.combat : {};
+  const fallbackCombat = fallback.combat ?? {
+    maxHealth: 100,
+    health: 100,
+    attackDamage: 25,
+    attackRangeTiles: 1,
+    attackCooldownMs: 500,
+  };
+  const maxHealth = readNumber(combatSource.maxHealth, fallbackCombat.maxHealth, 1, 9999);
 
   return {
     name: readString(source.name, fallback.name),
@@ -672,6 +681,13 @@ function migratePlayer(value: unknown): PlayerConfig {
     ),
     speed: readNumber(source.speed, fallback.speed, 1, 20),
     health: readNumber(source.health, fallback.health, 1, 999),
+    combat: {
+      maxHealth,
+      health: readNumber(combatSource.health, readNumber(source.health, fallbackCombat.health, 0, maxHealth), 0, maxHealth),
+      attackDamage: readNumber(combatSource.attackDamage, fallbackCombat.attackDamage, 0, 9999),
+      attackRangeTiles: Math.round(readNumber(combatSource.attackRangeTiles, fallbackCombat.attackRangeTiles, 1, 20)),
+      attackCooldownMs: Math.round(readNumber(combatSource.attackCooldownMs, fallbackCombat.attackCooldownMs, 0, 60000)),
+    },
     canWalkOn: readStringArray(source.canWalkOn, fallback.canWalkOn),
   };
 }

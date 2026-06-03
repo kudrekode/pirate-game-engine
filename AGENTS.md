@@ -18,7 +18,7 @@ Read this file first, then identify the likely files before opening broader repo
 - Inventory and items: `src/runtime/inventory.ts`, `src/editor/sections/ItemsEditor.tsx`, `src/types/game.ts`, `src/runtime/inventory.test.ts`.
 - Shops and economy: `src/runtime/shopRuntime.ts`, `src/editor/sections/ShopsEditor.tsx`, `src/runtime/RuntimePanel.tsx`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/shopRuntime.test.ts`.
 - Quests and objectives: `src/runtime/questEngine.ts`, `src/editor/sections/QuestsEditor.tsx`, `src/types/game.ts`, `src/runtime/questEngine.test.ts`.
-- NPCs and enemy NPCs: `src/editor/sections/NpcsEditor.tsx`, `src/editor/sections/MapEditor.tsx`, `src/runtime/npcMovement.ts`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
+- NPCs, enemy NPCs, and combat: `src/editor/sections/NpcsEditor.tsx`, `src/editor/sections/MapEditor.tsx`, `src/runtime/npcMovement.ts`, `src/runtime/combat.ts`, `src/runtime/AdventureScene.ts`, `src/runtime/RuntimePanel.tsx`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/runtime/combat.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
 - Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
 - Runtime and Phaser: `src/runtime/AdventureScene.ts`, `src/runtime/PhaserGame.tsx`, `src/runtime/movement.ts`, `src/runtime/movement.test.ts`.
 - Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
@@ -29,7 +29,7 @@ Read this file first, then identify the likely files before opening broader repo
 
 - Areas: Multiple `GameArea` records in `GameProject.areas`; each owns terrain, overlays, structures, objects, pickups, NPCs, and event blocks.
 - Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
-- NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, and rule targets.
+- NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, simple melee combat, and rule targets.
 - Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
 - Shops: Buy-only `ShopDefinition` records use an inventory item as currency; runtime stock is copied per play session.
 - Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
@@ -37,7 +37,7 @@ Read this file first, then identify the likely files before opening broader repo
 - Game State: Flags, variables, and optional default inventory are editor defaults copied into runtime memory.
 - Movement: Grid movement resolves terrain, overlays, structures, objects, NPCs, and vehicle context through `src/runtime/movement.ts`.
 - Vehicles placeholder: Boats have V1 runtime boarding, sailing, and dismounting. Horses/carts and advanced steering remain future work.
-- Runtime UI: React overlays and Phaser UI layers stay camera-independent for inventory, quests, debug text, prompts, and cutscenes.
+- Runtime UI: React overlays and Phaser UI layers stay camera-independent for inventory, quests, combat health, debug text, prompts, and cutscenes.
 
 ## Prompting Guidance
 
@@ -123,7 +123,7 @@ Supported behaviour types:
 - `sign`, which displays cutscene-style text
 - `vehicle`, which currently supports simple boat boarding, grid sailing, and dismounting
 
-Direct interactions and rule triggers still run alongside behaviours for compatibility. Horse/cart runtime, advanced vehicle steering, shops, equipment, combat, and enemy behavior remain future work.
+Direct interactions and rule triggers still run alongside behaviours for compatibility. Horse/cart runtime, advanced vehicle steering, equipment, and advanced enemy behavior remain future work.
 
 ## Quests And Objectives
 
@@ -170,7 +170,9 @@ The Map editor has a lightweight overlay-filter foundation. `npc_paths` renders 
 
 Enemies are hostile `NPCInstance` records with optional `enemyBehaviour.enabled`. They reuse the shared NPC model and do not have a separate enemy entity architecture.
 
-Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults. There are no player attacks, weapons, projectiles, XP, loot drops, or full combat yet.
+Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults.
+
+Combat V1 adds basic melee player attacks in `src/runtime/combat.ts` and `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
 
 ## Rule Engine
 
@@ -243,6 +245,7 @@ Current focused tests cover:
 - Rule evaluation and actions
 - Inventory stacking and pickup collection
 - Shop purchases and runtime stock
+- Combat stat defaults, melee targeting, cooldown, damage, defeat, and collision removal
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
 - Enemy NPC chase, return, contact, and migration helpers

@@ -1479,10 +1479,12 @@ label {
 }
 
 .inventory-hud,
+.combat-hud,
 .inventory-panel,
 .quest-panel,
 .shop-panel,
-.quest-tracker {
+.quest-tracker,
+.runtime-restart-button {
   position: absolute;
   z-index: 5;
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -1497,6 +1499,27 @@ label {
   padding: 7px 10px;
   font-size: 13px;
   font-weight: 800;
+}
+
+.combat-hud {
+  top: 12px;
+  left: 12px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.combat-hud span {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.runtime-restart-button {
+  left: 50%;
+  bottom: 18px;
+  padding: 8px 14px;
+  transform: translateX(-50%);
 }
 
 .inventory-panel {
