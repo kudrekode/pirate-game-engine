@@ -1,5 +1,53 @@
 # Adventure Game Builder Guide
 
+## Fast Start For Agents
+
+Read this file first, then identify the likely files before opening broader repo context. Prefer minimal diffs and avoid scanning unrelated files.
+
+- Run `npm run ci` before the final response.
+- Preserve migration compatibility for old saved/imported projects.
+- Keep runtime state separate from editor defaults in `GameProject`.
+- Add or update tests for engine logic changes.
+- Prefer focused helper tests over browser-heavy tests.
+- Do not redesign architecture unless the prompt explicitly asks for it.
+- Check `ROADMAP.md` before adding future-facing TODOs or major systems.
+
+## Common Files By Task
+
+- Rules and logic engine: `src/runtime/ruleEngine.ts`, `src/editor/sections/ProgressionEditor.tsx`, `src/types/game.ts`, `src/runtime/ruleEngine.test.ts`.
+- Inventory and items: `src/runtime/inventory.ts`, `src/editor/sections/ItemsEditor.tsx`, `src/types/game.ts`, `src/runtime/inventory.test.ts`.
+- Quests and objectives: `src/runtime/questEngine.ts`, `src/editor/sections/QuestsEditor.tsx`, `src/types/game.ts`, `src/runtime/questEngine.test.ts`.
+- NPCs: `src/editor/sections/NpcsEditor.tsx`, `src/runtime/npcMovement.ts`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
+- Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
+- Runtime and Phaser: `src/runtime/AdventureScene.ts`, `src/runtime/PhaserGame.tsx`, `src/runtime/movement.ts`, `src/runtime/movement.test.ts`.
+- Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
+- Editor tabs: `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`.
+- Smoke tests and helpers: `src/test/editorSmoke.test.tsx`, `src/test/testUtils.tsx` if present.
+
+## Current Systems Map
+
+- Areas: Multiple `GameArea` records in `GameProject.areas`; each owns terrain, overlays, structures, objects, pickups, NPCs, and event blocks.
+- Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
+- NPCs: Reusable definitions plus placed instances with attributes, interactions, stationary/patrol/wander movement, and rule targets.
+- Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
+- Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
+- Rules: Friendly WHEN/IF/THEN logic with folders, recursive AND/OR conditions, and runtime actions.
+- Game State: Flags, variables, and optional default inventory are editor defaults copied into runtime memory.
+- Movement: Grid movement resolves terrain, overlays, structures, objects, NPCs, and vehicle context through `src/runtime/movement.ts`.
+- Vehicles placeholder: Boats have V1 runtime boarding, sailing, and dismounting. Horses/carts and advanced steering remain future work.
+- Runtime UI: React overlays and Phaser UI layers stay camera-independent for inventory, quests, debug text, prompts, and cutscenes.
+
+## Prompting Guidance
+
+Future implementation prompts should specify:
+
+- The exact subsystem to change.
+- Systems that must not be touched.
+- Expected files when known.
+- Required tests or acceptance checks.
+- Whether migration/default demo updates are expected.
+- That architecture redesign is out of scope unless explicitly requested.
+
 ## Architecture
 
 The editor and runtime share one schema-driven `GameProject` object from `src/types/game.ts`.
