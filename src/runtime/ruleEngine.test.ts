@@ -231,6 +231,25 @@ describe("rule engine triggers and actions", () => {
     expect(activateQuest).toHaveBeenCalledWith("tavern-access");
   });
 
+  it("fires an object on_interact rule", () => {
+    const { context, state } = makeContext();
+    const rule: GameRule = {
+      id: "open-chest",
+      name: "Open chest",
+      enabled: true,
+      trigger: { type: "on_interact", targetId: "object-chest" },
+      actions: [
+        { type: "give_item", itemId: "gold_coin", quantity: 2 },
+        { type: "set_flag", flag: "has_key", value: false },
+      ],
+    };
+
+    fireTrigger({ type: "on_interact", targetId: "object-chest" }, [rule], context);
+
+    expect(state.inventory.items.gold_coin).toBe(7);
+    expect(state.flags.has_key).toBe(false);
+  });
+
   it("applies NPC alignment and health actions to runtime state", () => {
     const { context, state } = makeContext();
     const rule: GameRule = {

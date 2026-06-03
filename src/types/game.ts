@@ -13,6 +13,7 @@ export type GameProject = {
   quests: Quest[];
   trackedQuestId?: string;
   npcs: NPCDefinition[];
+  objects: ObjectDefinition[];
   ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
@@ -69,6 +70,7 @@ export type Interaction = {
 export type EditorSelection =
   | { type: "eventBlock"; areaId: string; id: string }
   | { type: "structure"; areaId: string; id: string }
+  | { type: "object"; areaId: string; id: string }
   | { type: "pickup"; areaId: string; id: string }
   | { type: "npc"; areaId: string; id: string }
   | { type: "overlay"; areaId: string; x: number; y: number }
@@ -86,6 +88,7 @@ export type GameArea = {
   terrainTiles: MapTile[];
   overlayTiles: OverlayTile[];
   structures: MapStructure[];
+  objects: ObjectInstance[];
   pickups: PickupObject[];
   npcs: NPCInstance[];
   eventBlocks: EventBlock[];
@@ -119,11 +122,30 @@ export type MapStructure = {
   interaction?: Interaction;
 };
 
-export type MapObject = {
+export type ObjectDefinition = {
   id: string;
+  name: string;
+  description?: string;
+  category: "prop" | "container" | "vehicle" | "door" | "switch" | "sign" | "misc";
+  iconId?: string;
+  widthTiles: number;
+  heightTiles: number;
+  blocksMovement: boolean;
+  defaultInteraction?: Interaction;
+};
+
+export type ObjectInstance = {
+  id: string;
+  objectDefinitionId: string;
+  areaId: string;
   x: number;
   y: number;
-  objectId: string;
+  nameOverride?: string;
+  widthTiles?: number;
+  heightTiles?: number;
+  blocksMovement?: boolean;
+  interaction?: Interaction;
+  state?: Record<string, boolean | number | string>;
 };
 
 export type PickupObject = {

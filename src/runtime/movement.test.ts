@@ -29,6 +29,7 @@ function makeArea(patch: Partial<GameArea> = {}): GameArea {
     structures: [],
     eventBlocks: [],
     ...patch,
+    objects: patch.objects ?? [],
     pickups: patch.pickups ?? [],
     npcs: patch.npcs ?? [],
   };
@@ -109,6 +110,28 @@ describe("resolveMovementAt", () => {
     expect(resolveMovementAt(area, 0, 1, player)).toMatchObject({
       canMove: false,
       reason: "Blocked by NPC.",
+    });
+  });
+
+  it("blocks movement through object instances", () => {
+    const area = makeArea({
+      objects: [
+        {
+          id: "chest",
+          objectDefinitionId: "object_chest",
+          areaId: "test-area",
+          x: 0,
+          y: 1,
+          widthTiles: 2,
+          heightTiles: 1,
+          blocksMovement: true,
+        },
+      ],
+    });
+
+    expect(resolveMovementAt(area, 1, 1, player)).toMatchObject({
+      canMove: false,
+      reason: "Blocked by object.",
     });
   });
 });

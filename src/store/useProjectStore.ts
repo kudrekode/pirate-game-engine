@@ -15,6 +15,7 @@ import type {
   MapStructure,
   MapTile,
   NPCInstance,
+  ObjectInstance,
   OverlayTile,
   PlayerConfig,
   PickupObject,
@@ -50,6 +51,9 @@ type ProjectStore = {
   addStructure: (structure: Omit<MapStructure, "id">) => string;
   updateStructure: (id: string, patch: Partial<MapStructure>) => void;
   deleteStructure: (id: string) => void;
+  addObject: (x: number, y: number, objectDefinitionId: string) => string;
+  updateObject: (id: string, patch: Partial<ObjectInstance>) => void;
+  deleteObject: (id: string) => void;
   addPickup: (x: number, y: number) => string;
   updatePickup: (id: string, patch: Partial<PickupObject>) => void;
   deletePickup: (id: string) => void;
@@ -199,6 +203,11 @@ function cleanAreaReferences(project: GameProject, deletedAreaId: string) {
         ? { ...structure, interaction: undefined }
         : structure,
     ),
+    objects: area.objects.map((object) =>
+      interactionTargetsArea(object.interaction, deletedAreaId)
+        ? { ...object, interaction: undefined }
+        : object,
+    ),
     npcs: area.npcs.map((npc) =>
       interactionTargetsArea(npc.interaction, deletedAreaId)
         ? { ...npc, interaction: undefined }
@@ -240,6 +249,11 @@ function clearEventLinkReferences(project: GameProject, areaId: string, eventBlo
         ? { ...structure, interaction: undefined }
         : structure,
     ),
+    objects: area.objects.map((object) =>
+      interactionTargetsEvent(object.interaction, areaId, eventBlockId)
+        ? { ...object, interaction: undefined }
+        : object,
+    ),
     npcs: area.npcs.map((npc) =>
       interactionTargetsEvent(npc.interaction, areaId, eventBlockId)
         ? { ...npc, interaction: undefined }
@@ -271,6 +285,7 @@ function cleanRuleAreaReferences(project: GameProject, area: GameArea) {
     new Set([
       ...area.eventBlocks.map((eventBlock) => eventBlock.id),
       ...area.structures.map((structure) => structure.id),
+      ...area.objects.map((object) => object.id),
       ...area.npcs.map((npc) => npc.id),
     ]),
   );
@@ -527,6 +542,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         structures: area.structures.filter(
           (structure) => structure.x >= 0 && structure.y >= 0 && structure.x < nextWidth && structure.y < nextHeight,
         ),
+        objects: area.objects.filter(
+          (object) => object.x >= 0 && object.y >= 0 && object.x < nextWidth && object.y < nextHeight,
+        ),
         pickups: area.pickups.filter(
           (pickup) => pickup.x >= 0 && pickup.y >= 0 && pickup.x < nextWidth && pickup.y < nextHeight,
         ),
@@ -682,6 +700,69 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         ),
       })),
     })),
+
+  addObject: (x, y, objectDefinitionId) => {
+    const nextX = Math.max(0, Math.round(x));
+    const nextY = Math.max(0, Math.round(y));
+    const id = makeId("object_instance");
+
+    set((state) => {
+      const activeArea = getActiveArea(state.project);
+      const definition = state.project.objects.find((object) => object.id === objectDefinitionId);
+      const widthTiles = definition?.widthTiles ?? 1;
+      const heightTiles = definition?.heightTiles ?? 1;
+      const nextWidth = clampMapSize(Math.max(activeArea.width, nextX + widthTiles));
+      const nextHeight = clampMapSize(Math.max(activeArea.height, nextY + heightTiles));
+      const terrainTiles = buildResizedTerrainTiles(activeArea.terrainTiles, nextWidth, nextHeight);
+
+      return {
+        project: updateActiveArea(state.project, (area) => ({
+          ...area,
+          width: nextWidth,
+          height: nextHeight,
+          terrainTiles,
+          objects: [
+            ...area.objects,
+            {
+              id,
+              objectDefinitionId,
+              areaId: area.id,
+              x: nextX,
+              y: nextY,
+              widthTiles,
+              heightTiles,
+              blocksMovement: definition?.blocksMovement ?? false,
+              interaction: definition?.defaultInteraction,
+            },
+          ],
+        })),
+      };
+    });
+
+    return id;
+  },
+
+  updateObject: (id, patch) =>
+    set((state) => ({
+      project: updateActiveArea(state.project, (area) => ({
+        ...area,
+        objects: area.objects.map((object) =>
+          object.id === id ? { ...object, ...patch, areaId: area.id } : object,
+        ),
+      })),
+    })),
+
+  deleteObject: (id) =>
+    set((state) => {
+      const project = cloneProject(state.project);
+      cleanRuleTargetReferences(project, new Set([id]));
+      return {
+        project: updateActiveArea(project, (area) => ({
+          ...area,
+          objects: area.objects.filter((object) => object.id !== id),
+        })),
+      };
+    }),
 
   addPickup: (x, y) => {
     const nextX = Math.max(0, Math.round(x));

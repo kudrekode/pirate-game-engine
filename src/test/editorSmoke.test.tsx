@@ -9,6 +9,7 @@ import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
 import { QuestsEditor } from "../editor/sections/QuestsEditor";
 import { NpcsEditor } from "../editor/sections/NpcsEditor";
+import { ObjectsEditor } from "../editor/sections/ObjectsEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -87,5 +88,12 @@ describe("editor smoke tests", () => {
     expect(screen.getByDisplayValue("Captain Mira")).toBeInTheDocument();
     expect(screen.getByText("Placed NPC Overview")).toBeInTheDocument();
     expect(screen.getByText("pirates")).toBeInTheDocument();
+  });
+
+  it("renders Objects Editor", () => {
+    render(<ObjectsEditor />);
+
+    expect(screen.getByText("Object Definition")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Sign")).toBeInTheDocument();
   });
 });

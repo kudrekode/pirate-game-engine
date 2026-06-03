@@ -2,6 +2,7 @@ import { getOverlayPreset, getStructurePreset, getTerrainPreset } from "../data/
 import type {
   GameArea,
   MapStructure,
+  ObjectInstance,
   MovementResult,
   MovementRule,
   PlayerConfig,
@@ -14,6 +15,13 @@ function coversTile(structure: MapStructure, x: number, y: number): boolean {
     x < structure.x + structure.widthTiles &&
     y < structure.y + structure.heightTiles
   );
+}
+
+function objectCoversTile(object: ObjectInstance, area: GameArea, x: number, y: number): boolean {
+  void area;
+  const widthTiles = object.widthTiles ?? 1;
+  const heightTiles = object.heightTiles ?? 1;
+  return x >= object.x && y >= object.y && x < object.x + widthTiles && y < object.y + heightTiles;
 }
 
 function normalizeSpeedMultiplier(rule?: MovementRule): number {
@@ -61,6 +69,18 @@ export function resolveMovementAt(
   if (blockingStructure) {
     const preset = getStructurePreset(blockingStructure.structureId);
     return block(`Blocked by ${blockingStructure.name}.`, blockingStructure.movementRule ?? preset.movementRule);
+  }
+
+  const blockingObject = area.objects.find((object) => {
+    if (!objectCoversTile(object, area, x, y)) {
+      return false;
+    }
+
+    return object.blocksMovement === true;
+  });
+
+  if (blockingObject) {
+    return block("Blocked by object.");
   }
 
   const blockingNpc = area.npcs.find((npc) => npc.blocksMovement && npc.x === x && npc.y === y);

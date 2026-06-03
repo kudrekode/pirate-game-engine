@@ -21,6 +21,7 @@ Each area owns:
 - Overlay tiles
 - Structures
 - Pickup objects
+- Generic object instances
 - NPC instances
 - Event blocks
 - Optional theme metadata
@@ -55,6 +56,12 @@ Map entity positions used by Phaser are read from the cloned play snapshot, not 
 `GameProject.items` contains item definitions. V1 supports keys, currency, consumables, quest items, and miscellaneous items without equipment, crafting, or shop behavior.
 
 Each area owns grid-based pickup objects. Pickups can collect on touch or on interact. Runtime inventory helpers live in `src/runtime/inventory.ts`; the React runtime overlay shows collected quantities without being affected by the Phaser world camera.
+
+## Objects
+
+`GameProject.objects` contains reusable generic object definitions. Each area owns placed `ObjectInstance` records.
+
+Objects sit between static structures and NPCs. They are intended for signs, chests, doors, switches, decorative props, and future vehicle markers. They can block movement, expose direct interactions, and target friendly rules by placed instance ID. V1 does not implement vehicles, shops, loot containers, equipment, combat, or enemy behavior.
 
 ## Quests And Objectives
 
@@ -167,6 +174,7 @@ Current focused tests cover:
 - Inventory stacking and pickup collection
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
+- Object migration, collision, rule targeting, and deletion guards
 - NPC stationary, patrol, wander, bounds, and terrain movement helpers
 - Movement resolution
 - Project migration

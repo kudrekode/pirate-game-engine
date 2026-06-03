@@ -16,6 +16,7 @@ import type {
   MovementMode,
   MapStructure,
   NPCInstance,
+  ObjectInstance,
   PixelAsset,
   PickupObject,
   RuleTrigger,
@@ -62,6 +63,7 @@ type InteractKeys = {
 type Interactable =
   | { kind: "event"; label: string; interaction?: Interaction; eventBlock: EventBlock; distance: number }
   | { kind: "structure"; label: string; interaction?: Interaction; structure: MapStructure; distance: number }
+  | { kind: "object"; label: string; interaction?: Interaction; object: ObjectInstance; distance: number }
   | { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
   | { kind: "npc"; label: string; interaction?: Interaction; npc: NPCInstance; distance: number };
 
@@ -209,6 +211,8 @@ export class AdventureScene extends Phaser.Scene {
           ? interactable.eventBlock.id
           : interactable.kind === "structure"
             ? interactable.structure.id
+            : interactable.kind === "object"
+              ? interactable.object.id
             : interactable.kind === "npc"
               ? interactable.npc.id
               : "";
@@ -425,6 +429,7 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     this.currentArea.structures.forEach((structure) => this.renderStructure(structure));
+    this.currentArea.objects.forEach((object) => this.renderObject(object));
     this.currentArea.pickups
       .filter((pickup) => !this.isPickupCollected(pickup))
       .forEach((pickup) => this.renderPickup(pickup));
@@ -645,6 +650,34 @@ export class AdventureScene extends Phaser.Scene {
     const container = this.add.container(centerX, centerY, [body, label]).setDepth(40);
     container.setName(`pickup:${pickup.id}`);
     this.worldLayer?.add(container);
+  }
+
+  private renderObject(object: ObjectInstance) {
+    const definition = this.project.objects.find((candidate) => candidate.id === object.objectDefinitionId);
+    const width = (object.widthTiles ?? definition?.widthTiles ?? 1) * this.tileSize;
+    const height = (object.heightTiles ?? definition?.heightTiles ?? 1) * this.tileSize;
+    const worldX = object.x * this.tileSize;
+    const worldY = object.y * this.tileSize;
+    const categoryColor =
+      definition?.category === "container"
+        ? 0xb45309
+        : definition?.category === "vehicle"
+          ? 0x0369a1
+          : definition?.category === "sign"
+            ? 0x854d0e
+            : 0x64748b;
+    const body = this.add
+      .rectangle(width / 2, height / 2, Math.max(16, width * 0.72), Math.max(16, height * 0.72), categoryColor, 0.94)
+      .setStrokeStyle(2, 0xffffff, 0.8);
+    const label = this.add
+      .text(width / 2, height / 2, (object.nameOverride || definition?.name || "Object").slice(0, 1).toUpperCase(), {
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "13px",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+    this.worldLayer?.add(this.add.container(worldX, worldY, [body, label]).setDepth(42));
   }
 
   private renderNpc(npc: NPCInstance) {
@@ -958,6 +991,25 @@ export class AdventureScene extends Phaser.Scene {
       }
     });
 
+    this.currentArea.objects.forEach((object) => {
+      const interaction = object.interaction ?? this.getObjectDefinition(object)?.defaultInteraction;
+      const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: object.id });
+      if ((!interaction || !canInteractActivate(interaction)) && !hasRule) {
+        return;
+      }
+
+      const distance = this.distanceToObject(object);
+      if (distance <= 1) {
+        candidates.push({
+          kind: "object",
+          label: object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Object",
+          interaction,
+          object,
+          distance,
+        });
+      }
+    });
+
     this.currentArea.pickups.forEach((pickup) => {
       if (pickup.pickupMode !== "on_interact" || this.isPickupCollected(pickup)) {
         return;
@@ -1032,6 +1084,28 @@ export class AdventureScene extends Phaser.Scene {
     return deltaX + deltaY;
   }
 
+  private distanceToObject(object: ObjectInstance): number {
+    const definition = this.getObjectDefinition(object);
+    const minX = object.x;
+    const maxX = object.x + (object.widthTiles ?? definition?.widthTiles ?? 1) - 1;
+    const minY = object.y;
+    const maxY = object.y + (object.heightTiles ?? definition?.heightTiles ?? 1) - 1;
+    const deltaX =
+      this.playerPosition.x < minX
+        ? minX - this.playerPosition.x
+        : this.playerPosition.x > maxX
+          ? this.playerPosition.x - maxX
+          : 0;
+    const deltaY =
+      this.playerPosition.y < minY
+        ? minY - this.playerPosition.y
+        : this.playerPosition.y > maxY
+          ? this.playerPosition.y - maxY
+          : 0;
+
+    return deltaX + deltaY;
+  }
+
   private updatePrompt(interactable: Interactable | null) {
     if (!this.promptText) {
       return;
@@ -1043,6 +1117,8 @@ export class AdventureScene extends Phaser.Scene {
           ? `Press E to pick up ${interactable.label}`
           : interactable.kind === "npc"
             ? `Press E to talk to ${interactable.label}`
+          : interactable.kind === "object"
+            ? this.promptForInteraction(interactable.interaction)
           : this.promptForInteraction(interactable.interaction)
         : "",
     );
@@ -1236,6 +1312,26 @@ export class AdventureScene extends Phaser.Scene {
       return true;
     }
 
+    const object = this.currentArea.objects.find(
+      (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
+    );
+    const objectInteraction = object
+      ? object.interaction ?? this.getObjectDefinition(object)?.defaultInteraction
+      : undefined;
+    const objectHasRule = object
+      ? this.hasRuleTrigger({ type: "on_touch", targetId: object.id })
+      : false;
+
+    if (object && ((objectInteraction && canTouchActivate(objectInteraction)) || objectHasRule)) {
+      this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
+        if (objectInteraction && canTouchActivate(objectInteraction)) {
+          this.runInteraction(objectInteraction, object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Object");
+        }
+        onDone();
+      });
+      return true;
+    }
+
     const eventBlock = this.currentArea.eventBlocks.find(
       (candidate) => candidate.x === this.playerPosition.x && candidate.y === this.playerPosition.y,
     );
@@ -1308,6 +1404,10 @@ export class AdventureScene extends Phaser.Scene {
     }
 
     return undefined;
+  }
+
+  private getObjectDefinition(object: ObjectInstance) {
+    return this.project.objects.find((definition) => definition.id === object.objectDefinitionId);
   }
 
   private hasRuleTrigger(trigger: RuleTrigger): boolean {

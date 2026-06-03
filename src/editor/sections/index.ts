@@ -8,8 +8,9 @@ import { ProgressionEditor } from "./ProgressionEditor";
 import { ItemsEditor } from "./ItemsEditor";
 import { QuestsEditor } from "./QuestsEditor";
 import { NpcsEditor } from "./NpcsEditor";
+import { ObjectsEditor } from "./ObjectsEditor";
 
-export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression" | "game-state" | "items" | "quests" | "npcs";
+export type EditorSectionId = "map" | "character" | "camera" | "cutscenes" | "progression" | "game-state" | "items" | "quests" | "objects" | "npcs";
 
 export type EditorSectionConfig = {
   id: EditorSectionId;
@@ -66,6 +67,12 @@ export const editorSections: EditorSectionConfig[] = [
     label: "Quests",
     description: "Create player-facing objectives and completion rewards.",
     component: QuestsEditor,
+  },
+  {
+    id: "objects",
+    label: "Objects",
+    description: "Define reusable map props such as signs, chests, doors, and vehicle markers.",
+    component: ObjectsEditor,
   },
   {
     id: "npcs",

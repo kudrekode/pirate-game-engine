@@ -6,6 +6,7 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
 
 - Expand map overlay filters for event blocks, collision, quest markers, and NPC movement.
 - Improve editor validation, deletion warnings, and reference navigation.
+- Expand generic object workflows for signs, chests, switches, doors, and decorative props.
 - Add more focused tests around editor workflows and project migration.
 - Export and package a playable game build.
 

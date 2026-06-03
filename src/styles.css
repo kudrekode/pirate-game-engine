@@ -988,6 +988,33 @@ label {
   white-space: nowrap;
 }
 
+.object-swatch {
+  background: #64748b;
+  color: #ffffff;
+}
+
+.object-marker {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ffffff;
+  border-radius: 5px;
+  background: rgba(71, 85, 105, 0.92);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.object-marker.selected-object {
+  box-shadow: 0 0 0 2px rgba(36, 59, 83, 0.55);
+}
+
 .npc-marker {
   position: absolute;
   inset: 3px;
