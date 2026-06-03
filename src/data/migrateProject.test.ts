@@ -30,9 +30,11 @@ describe("migrateProject", () => {
     ]);
     expect(project.areas[0].pickups).toEqual([]);
     expect(project.areas[0].npcs).toEqual([]);
+    expect(project.areas[0].objects).toEqual([]);
     expect(project.items).toEqual([]);
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
+    expect(project.objects).toEqual([]);
   });
 
   it("adds default game state when older projects omit it", () => {
@@ -91,6 +93,41 @@ describe("migrateProject", () => {
     expect(project.items).toEqual([]);
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
+    expect(project.objects).toEqual([]);
+  });
+
+  it("migrates object definitions and placed object instances", () => {
+    const project = migrateProject({
+      objects: [{ id: "sign", name: "Sign", category: "sign", widthTiles: 1, heightTiles: 1, defaultBehaviour: { type: "sign", text: "Hello" } }],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          objects: [{ id: "sign-instance", objectDefinitionId: "sign", x: 1, y: 1, widthTiles: 1, heightTiles: 1, state: { read: false } }],
+        },
+      ],
+    });
+
+    expect(project.objects[0]).toMatchObject({
+      id: "sign",
+      name: "Sign",
+      category: "sign",
+      widthTiles: 1,
+      heightTiles: 1,
+      blocksMovement: false,
+      defaultBehaviour: { type: "sign", text: "Hello" },
+    });
+    expect(project.areas[0].objects[0]).toMatchObject({
+      id: "sign-instance",
+      objectDefinitionId: "sign",
+      areaId: "area_main",
+      x: 1,
+      y: 1,
+      widthTiles: 1,
+      heightTiles: 1,
+      state: { read: false },
+    });
   });
 
   it("migrates inventory rules and pickups", () => {

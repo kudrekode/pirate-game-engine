@@ -23,6 +23,7 @@ function makeArea(patch: Partial<GameArea> = {}): GameArea {
     })),
     overlayTiles: [],
     structures: [],
+    objects: [],
     pickups: [],
     npcs: [],
     eventBlocks: [],

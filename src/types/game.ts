@@ -13,6 +13,7 @@ export type GameProject = {
   quests: Quest[];
   trackedQuestId?: string;
   npcs: NPCDefinition[];
+  objects: ObjectDefinition[];
   ruleGroups: RuleGroup[];
   rules: GameRule[];
 };
@@ -30,7 +31,7 @@ export type AreaThemeConfig = {
   overlayId?: string;
 };
 
-export type MovementMode = "walk" | "swim" | "sail" | "ride";
+export type MovementMode = "walk" | "swim" | "sail" | "ride" | "drive";
 
 export type MovementRule = {
   walkable?: boolean;
@@ -43,6 +44,13 @@ export type MovementResult = {
   reason?: string;
   speedMultiplier: number;
   movementMode?: MovementMode;
+};
+
+export type PlayerVehicleState = {
+  active: boolean;
+  vehicleObjectInstanceId?: string;
+  vehicleType?: "boat" | "horse" | "cart";
+  movementMode?: "sail" | "ride" | "drive";
 };
 
 export type InteractionActivationMode = "on_touch" | "on_interact" | "both" | "disabled";
@@ -69,6 +77,7 @@ export type Interaction = {
 export type EditorSelection =
   | { type: "eventBlock"; areaId: string; id: string }
   | { type: "structure"; areaId: string; id: string }
+  | { type: "object"; areaId: string; id: string }
   | { type: "pickup"; areaId: string; id: string }
   | { type: "npc"; areaId: string; id: string }
   | { type: "overlay"; areaId: string; x: number; y: number }
@@ -86,6 +95,7 @@ export type GameArea = {
   terrainTiles: MapTile[];
   overlayTiles: OverlayTile[];
   structures: MapStructure[];
+  objects: ObjectInstance[];
   pickups: PickupObject[];
   npcs: NPCInstance[];
   eventBlocks: EventBlock[];
@@ -119,11 +129,59 @@ export type MapStructure = {
   interaction?: Interaction;
 };
 
-export type MapObject = {
+export type ObjectDefinition = {
   id: string;
+  name: string;
+  description?: string;
+  category: "prop" | "container" | "vehicle" | "door" | "switch" | "sign" | "misc";
+  iconId?: string;
+  widthTiles: number;
+  heightTiles: number;
+  blocksMovement: boolean;
+  defaultInteraction?: Interaction;
+  defaultBehaviour?: ObjectBehaviour;
+};
+
+export type ObjectBehaviour =
+  | { type: "none" }
+  | {
+      type: "container";
+      contents: { itemId: string; quantity: number }[];
+      once: boolean;
+      openedFlag?: string;
+    }
+  | {
+      type: "door";
+      targetAreaId?: string;
+      targetEventBlockId?: string;
+      requiredItemId?: string;
+      lockedCutsceneId?: string;
+    }
+  | { type: "sign"; text: string }
+  | {
+      type: "vehicle";
+      vehicleType: "boat" | "horse" | "cart";
+      movementMode: "sail" | "ride" | "drive";
+      allowedTerrainIds: string[];
+      allowedOverlayIds?: string[];
+      dismountAllowedTerrainIds: string[];
+      dismountAllowedOverlayIds?: string[];
+      speedMultiplier?: number;
+    };
+
+export type ObjectInstance = {
+  id: string;
+  objectDefinitionId: string;
+  areaId: string;
   x: number;
   y: number;
-  objectId: string;
+  nameOverride?: string;
+  widthTiles?: number;
+  heightTiles?: number;
+  blocksMovement?: boolean;
+  interaction?: Interaction;
+  behaviourOverride?: ObjectBehaviour;
+  state?: Record<string, boolean | number | string>;
 };
 
 export type PickupObject = {

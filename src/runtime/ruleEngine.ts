@@ -6,6 +6,7 @@ import type {
   GameStateValue,
   InventoryState,
   ItemDefinition,
+  MovementMode,
   NPCAttributes,
   NPCInstance,
   RuleTrigger,
@@ -24,7 +25,7 @@ export type RuleActionContext = {
   state: RuntimeGameState;
   playCutscene: (cutsceneId: string, onDone: () => void) => void;
   teleport: (areaId: string, eventBlockId: string) => void;
-  changeMovementMode: (mode: "walk" | "sail" | "ride") => void;
+  changeMovementMode: (mode: Exclude<MovementMode, "swim">) => void;
   endGame: () => void;
   activateQuest?: (questId: string) => void;
   completeQuest?: (questId: string) => void;

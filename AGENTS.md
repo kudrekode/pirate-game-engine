@@ -21,6 +21,7 @@ Each area owns:
 - Overlay tiles
 - Structures
 - Pickup objects
+- Generic object instances
 - NPC instances
 - Event blocks
 - Optional theme metadata
@@ -55,6 +56,24 @@ Map entity positions used by Phaser are read from the cloned play snapshot, not 
 `GameProject.items` contains item definitions. V1 supports keys, currency, consumables, quest items, and miscellaneous items without equipment, crafting, or shop behavior.
 
 Each area owns grid-based pickup objects. Pickups can collect on touch or on interact. Runtime inventory helpers live in `src/runtime/inventory.ts`; the React runtime overlay shows collected quantities without being affected by the Phaser world camera.
+
+## Objects
+
+`GameProject.objects` contains reusable generic object definitions. Each area owns placed `ObjectInstance` records.
+
+Objects sit between static structures and NPCs. They are intended for signs, chests, doors, switches, decorative props, and future vehicle markers. They can block movement, expose direct interactions, and target friendly rules by placed instance ID.
+
+Object behaviours are authored as reusable defaults on `ObjectDefinition.defaultBehaviour` and can be overridden per placed `ObjectInstance.behaviourOverride`. Runtime behaviour helpers live in `src/runtime/objectBehaviour.ts`.
+
+Supported behaviour types:
+
+- `none`
+- `container`, which gives configured item contents and can be once-only
+- `door`, which can require an item and teleport to an area spawn
+- `sign`, which displays cutscene-style text
+- `vehicle`, which currently supports simple boat boarding, grid sailing, and dismounting
+
+Direct interactions and rule triggers still run alongside behaviours for compatibility. Horse/cart runtime, advanced vehicle steering, shops, equipment, combat, and enemy behavior remain future work.
 
 ## Quests And Objectives
 
@@ -134,6 +153,8 @@ Resolution order:
 
 This allows overlays such as wooden planks to make water traversable.
 
+Vehicle movement also resolves through `src/runtime/movement.ts`. A boarded boat uses the object behaviour's allowed terrain and dismount terrain lists, skips collision against the currently boarded boat object, and still respects map bounds, structures, blocking objects, and NPCs.
+
 ## Migration
 
 All imported, loaded, and store-updated projects pass through `migrateProject`.
@@ -167,6 +188,7 @@ Current focused tests cover:
 - Inventory stacking and pickup collection
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
+- Object migration, behaviours, collision, rule targeting, and deletion guards
 - NPC stationary, patrol, wander, bounds, and terrain movement helpers
 - Movement resolution
 - Project migration

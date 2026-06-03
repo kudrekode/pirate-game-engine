@@ -19,6 +19,9 @@ import type {
   Interaction,
   InteractionActivationMode,
   ItemDefinition,
+  ObjectDefinition,
+  ObjectBehaviour,
+  ObjectInstance,
   NPCDefinition,
   NPCInstance,
   MapStructure,
@@ -310,6 +313,118 @@ function migrateStructures(value: unknown): MapStructure[] {
   });
 }
 
+function migrateObjectBehaviour(value: unknown): ObjectBehaviour | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (value.type === "container") {
+    const contents = Array.isArray(value.contents)
+      ? value.contents.flatMap((content) =>
+          isRecord(content)
+            ? [{
+                itemId: readString(content.itemId, ""),
+                quantity: Math.round(readNumber(content.quantity, 1, 1, 9999)),
+              }]
+            : [],
+        )
+      : [];
+    return {
+      type: "container",
+      contents,
+      once: readBoolean(value.once, true),
+      ...(readString(value.openedFlag, "") ? { openedFlag: readString(value.openedFlag, "") } : {}),
+    };
+  }
+
+  if (value.type === "door") {
+    return {
+      type: "door",
+      ...(readString(value.targetAreaId, "") ? { targetAreaId: readString(value.targetAreaId, "") } : {}),
+      ...(readString(value.targetEventBlockId, "") ? { targetEventBlockId: readString(value.targetEventBlockId, "") } : {}),
+      ...(readString(value.requiredItemId, "") ? { requiredItemId: readString(value.requiredItemId, "") } : {}),
+      ...(readString(value.lockedCutsceneId, "") ? { lockedCutsceneId: readString(value.lockedCutsceneId, "") } : {}),
+    };
+  }
+
+  if (value.type === "sign") {
+    return { type: "sign", text: readString(value.text, "") };
+  }
+
+  if (value.type === "vehicle") {
+    const vehicleType =
+      value.vehicleType === "horse" || value.vehicleType === "cart" ? value.vehicleType : "boat";
+    const movementMode =
+      value.movementMode === "ride" || value.movementMode === "drive" ? value.movementMode : "sail";
+    return {
+      type: "vehicle",
+      vehicleType,
+      movementMode,
+      allowedTerrainIds: readStringArray(value.allowedTerrainIds, vehicleType === "boat" ? ["water"] : []),
+      ...(readStringArray(value.allowedOverlayIds, []).length > 0
+        ? { allowedOverlayIds: readStringArray(value.allowedOverlayIds, []) }
+        : {}),
+      dismountAllowedTerrainIds: readStringArray(
+        value.dismountAllowedTerrainIds,
+        vehicleType === "boat" ? ["grass", "dirt"] : [],
+      ),
+      ...(readStringArray(value.dismountAllowedOverlayIds, []).length > 0
+        ? { dismountAllowedOverlayIds: readStringArray(value.dismountAllowedOverlayIds, []) }
+        : {}),
+      ...(typeof value.speedMultiplier === "number"
+        ? { speedMultiplier: readNumber(value.speedMultiplier, 1, 0.1, 10) }
+        : {}),
+    };
+  }
+
+  return { type: "none" };
+}
+
+function migrateObjectInstances(value: unknown, areaId: string): ObjectInstance[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const state: Record<string, boolean | number | string> = {};
+    if (isRecord(item.state)) {
+      Object.entries(item.state).forEach(([key, stateValue]) => {
+        if (
+          key &&
+          (typeof stateValue === "boolean" ||
+            typeof stateValue === "number" ||
+            typeof stateValue === "string")
+        ) {
+          state[key] = stateValue;
+        }
+      });
+    }
+
+    const nameOverride = readString(item.nameOverride, "");
+
+    return [
+      {
+        id: readString(item.id, `object_${Date.now().toString(36)}`),
+        objectDefinitionId: readString(item.objectDefinitionId, readString(item.objectId, "")),
+        areaId,
+        x: readNumber(item.x, 0, 0),
+        y: readNumber(item.y, 0, 0),
+        ...(nameOverride ? { nameOverride } : {}),
+        ...(typeof item.widthTiles === "number" ? { widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)) } : {}),
+        ...(typeof item.heightTiles === "number" ? { heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)) } : {}),
+        ...(typeof item.blocksMovement === "boolean" ? { blocksMovement: item.blocksMovement } : {}),
+        interaction: migrateInteraction(item.interaction, "on_interact"),
+        behaviourOverride: migrateObjectBehaviour(item.behaviourOverride),
+        ...(Object.keys(state).length > 0 ? { state } : {}),
+      },
+    ];
+  });
+}
+
 function migratePickups(value: unknown, areaId: string): PickupObject[] {
   if (!Array.isArray(value)) {
     return [];
@@ -424,6 +539,7 @@ function migrateArea(value: unknown, index: number, fallback: GameArea): GameAre
     terrainTiles,
     overlayTiles: migrateOverlayTiles(source.overlayTiles),
     structures: migrateStructures(source.structures),
+    objects: migrateObjectInstances(source.objects, id),
     pickups: migratePickups(source.pickups, id),
     npcs: migrateNpcInstances(source.npcs, id),
     eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
@@ -679,6 +795,46 @@ function migrateItems(value: unknown): ItemDefinition[] {
         ...(iconId ? { iconId } : {}),
         stackable,
         ...(maxStack ? { maxStack } : {}),
+      },
+    ];
+  });
+}
+
+function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const category =
+      item.category === "prop" ||
+      item.category === "container" ||
+      item.category === "vehicle" ||
+      item.category === "door" ||
+      item.category === "switch" ||
+      item.category === "sign" ||
+      item.category === "misc"
+        ? item.category
+        : "misc";
+    const description = readString(item.description, "");
+    const iconId = readString(item.iconId, "");
+
+    return [
+      {
+        id: readString(item.id, `object_${index + 1}`),
+        name: readString(item.name, `Object ${index + 1}`),
+        ...(description ? { description } : {}),
+        category,
+        ...(iconId ? { iconId } : {}),
+        widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
+        heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
+        blocksMovement: readBoolean(item.blocksMovement, false),
+        defaultInteraction: migrateInteraction(item.defaultInteraction, "on_interact"),
+        defaultBehaviour: migrateObjectBehaviour(item.defaultBehaviour),
       },
     ];
   });
@@ -1148,6 +1304,7 @@ export function migrateProject(value: unknown): GameProject {
     quests: migrateQuests(source.quests),
     ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
     npcs: migrateNpcDefinitions(source.npcs),
+    objects: migrateObjectDefinitions(source.objects),
     ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
   };

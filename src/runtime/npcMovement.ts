@@ -182,6 +182,22 @@ export function isNpcTileWalkable(
     return false;
   }
 
+  if (
+    area.objects.some((object) => {
+      const widthTiles = object.widthTiles ?? 1;
+      const heightTiles = object.heightTiles ?? 1;
+      return (
+        object.blocksMovement === true &&
+        x >= object.x &&
+        y >= object.y &&
+        x < object.x + widthTiles &&
+        y < object.y + heightTiles
+      );
+    })
+  ) {
+    return false;
+  }
+
   const terrainTile = area.terrainTiles.find((tile) => tile.x === x && tile.y === y);
   if (!terrainTile) {
     return false;
@@ -197,4 +213,3 @@ export function isNpcTileWalkable(
 
   return getTerrainPreset(terrainTile.tileId).movementRule.walkable !== false;
 }
-

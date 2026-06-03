@@ -9,6 +9,7 @@ import {
   terrainPresets,
 } from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
+import { makeDefaultObjectBehaviour, ObjectBehaviourEditor } from "../ObjectBehaviourEditor";
 import type {
   EditorSelection,
   EventBlock,
@@ -18,11 +19,13 @@ import type {
   MapOverlayFilter,
   MovementRule,
   NPCInstance,
+  ObjectInstance,
+  ObjectBehaviour,
   PixelAsset,
   PickupObject,
 } from "../../types/game";
 
-type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pickup" | "npc" | "structure" | "pan";
+type MapTool = "paint" | "eraser" | "fill" | "event-block" | "pickup" | "npc" | "object" | "structure" | "pan";
 type BrushSize = 1 | 3 | 5;
 type PaintLayer = "terrain" | "overlay" | "structure" | "event";
 
@@ -105,6 +108,9 @@ export function MapEditor() {
   const addStructure = useProjectStore((state) => state.addStructure);
   const updateStructure = useProjectStore((state) => state.updateStructure);
   const deleteStructure = useProjectStore((state) => state.deleteStructure);
+  const addObject = useProjectStore((state) => state.addObject);
+  const updateObject = useProjectStore((state) => state.updateObject);
+  const deleteObject = useProjectStore((state) => state.deleteObject);
   const addPickup = useProjectStore((state) => state.addPickup);
   const updatePickup = useProjectStore((state) => state.updatePickup);
   const deletePickup = useProjectStore((state) => state.deletePickup);
@@ -127,6 +133,7 @@ export function MapEditor() {
   const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
   const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
   const [selectedStructureId, setSelectedStructureId] = useState("small_house");
+  const [selectedObjectDefinitionId, setSelectedObjectDefinitionId] = useState(project.objects[0]?.id ?? "");
   const [selectedNpcDefinitionId, setSelectedNpcDefinitionId] = useState(project.npcs[0]?.id ?? "");
   const [selection, setSelection] = useState<EditorSelection>({
     type: "area",
@@ -168,6 +175,13 @@ export function MapEditor() {
       if (
         currentSelection.type === "structure" &&
         !activeArea.structures.some((structure) => structure.id === currentSelection.id)
+      ) {
+        return { type: "area", areaId: activeArea.id };
+      }
+
+      if (
+        currentSelection.type === "object" &&
+        !activeArea.objects.some((object) => object.id === currentSelection.id)
       ) {
         return { type: "area", areaId: activeArea.id };
       }
@@ -238,6 +252,12 @@ export function MapEditor() {
     return lookup;
   }, [activeArea.npcs]);
 
+  const objectLookup = useMemo(() => {
+    const lookup = new Map<string, ObjectInstance>();
+    activeArea.objects.forEach((object) => lookup.set(cellKey(object.x, object.y), object));
+    return lookup;
+  }, [activeArea.objects]);
+
   const pixelAssetUrls = useMemo(() => {
     return Object.fromEntries(
       Object.entries(project.pixelAssets).map(([id, asset]) => [id, pixelAssetToDataUrl(asset)]),
@@ -251,6 +271,10 @@ export function MapEditor() {
   const selectedMapStructure =
     selection?.type === "structure" && selection.areaId === activeArea.id
       ? activeArea.structures.find((structure) => structure.id === selection.id)
+      : undefined;
+  const selectedObject =
+    selection?.type === "object" && selection.areaId === activeArea.id
+      ? activeArea.objects.find((object) => object.id === selection.id)
       : undefined;
   const selectedPickup =
     selection?.type === "pickup" && selection.areaId === activeArea.id
@@ -277,6 +301,7 @@ export function MapEditor() {
         }
       : undefined;
   const selectedStructure = getStructurePreset(selectedStructureId);
+  const selectedObjectDefinition = project.objects.find((object) => object.id === selectedObjectDefinitionId);
   const cellSize = Math.round(activeArea.tileSize * zoom);
   const renderWidth = Math.min(MAX_MAP_SIZE, activeArea.width + AUTO_EXPAND_BUFFER_TILES);
   const renderHeight = Math.min(MAX_MAP_SIZE, activeArea.height + AUTO_EXPAND_BUFFER_TILES);
@@ -422,6 +447,15 @@ export function MapEditor() {
     setSelection({ type: "pickup", areaId: activeArea.id, id });
   }
 
+  function placeObject(x: number, y: number) {
+    if (!selectedObjectDefinitionId) {
+      return;
+    }
+
+    const id = addObject(x, y, selectedObjectDefinitionId);
+    setSelection({ type: "object", areaId: activeArea.id, id });
+  }
+
   function placeNpc(x: number, y: number) {
     if (!selectedNpcDefinitionId) {
       return;
@@ -439,6 +473,15 @@ export function MapEditor() {
         x < structure.x + structure.widthTiles &&
         y < structure.y + structure.heightTiles,
     );
+  }
+
+  function findObjectAt(x: number, y: number) {
+    return [...activeArea.objects].reverse().find((object) => {
+      const definition = project.objects.find((candidate) => candidate.id === object.objectDefinitionId);
+      const widthTiles = object.widthTiles ?? definition?.widthTiles ?? 1;
+      const heightTiles = object.heightTiles ?? definition?.heightTiles ?? 1;
+      return x >= object.x && y >= object.y && x < object.x + widthTiles && y < object.y + heightTiles;
+    });
   }
 
   function selectPaintedCell(x: number, y: number) {
@@ -459,6 +502,7 @@ export function MapEditor() {
     event.stopPropagation();
 
     const eventBlock = eventLookup.get(cellKey(x, y));
+    const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
     const pickup = pickupLookup.get(cellKey(x, y));
     const npc = npcLookup.get(cellKey(x, y));
 
@@ -488,6 +532,16 @@ export function MapEditor() {
       return;
     }
 
+    if (activeTool === "object") {
+      if (object) {
+        setSelection({ type: "object", areaId: activeArea.id, id: object.id });
+        return;
+      }
+
+      placeObject(x, y);
+      return;
+    }
+
     if (activeTool === "npc") {
       if (npc) {
         setSelection({ type: "npc", areaId: activeArea.id, id: npc.id });
@@ -500,6 +554,11 @@ export function MapEditor() {
 
     if (eventBlock) {
       setSelection({ type: "eventBlock", areaId: activeArea.id, id: eventBlock.id });
+      return;
+    }
+
+    if (object) {
+      setSelection({ type: "object", areaId: activeArea.id, id: object.id });
       return;
     }
 
@@ -641,6 +700,12 @@ export function MapEditor() {
     }
   }
 
+  function updateSelectedObject(patch: Partial<ObjectInstance>) {
+    if (selectedObject) {
+      updateObject(selectedObject.id, patch);
+    }
+  }
+
   function updateSelectedNpc(patch: Partial<NPCInstance>) {
     if (selectedNpc) {
       updateNpc(selectedNpc.id, patch);
@@ -777,7 +842,7 @@ export function MapEditor() {
   }
 
   function getDefaultActivationMode(type: Exclude<InteractionTypeOption, "none">): InteractionActivationMode {
-    if (selectedMapStructure) {
+    if (selectedMapStructure || selectedObject) {
       return "on_interact";
     }
 
@@ -848,6 +913,11 @@ export function MapEditor() {
   function updateSelectedInteraction(interaction?: Interaction) {
     if (selectedMapStructure) {
       updateSelectedStructure({ interaction });
+      return;
+    }
+
+    if (selectedObject) {
+      updateSelectedObject({ interaction });
       return;
     }
 
@@ -1143,6 +1213,15 @@ export function MapEditor() {
     setSelection({ type: "area", areaId: activeArea.id });
   }
 
+  function deleteSelectedObject() {
+    if (!selectedObject) {
+      return;
+    }
+
+    deleteObject(selectedObject.id);
+    setSelection({ type: "area", areaId: activeArea.id });
+  }
+
   function deleteSelectedPickup() {
     if (!selectedPickup) {
       return;
@@ -1174,7 +1253,7 @@ export function MapEditor() {
           </div>
           <div className="coordinate-readout">
             {activeArea.terrainTiles.length} terrain tiles, {activeArea.overlayTiles.length} overlays,{" "}
-            {activeArea.structures.length} structures, {activeArea.pickups.length} pickups,{" "}
+            {activeArea.structures.length} structures, {activeArea.objects.length} objects, {activeArea.pickups.length} pickups,{" "}
             {activeArea.npcs.length} NPCs, {activeArea.eventBlocks.length} events
           </div>
           <button
@@ -1453,6 +1532,141 @@ export function MapEditor() {
     );
   }
 
+  function parseObjectStateValue(rawValue: string): boolean | number | string {
+    if (rawValue === "true") {
+      return true;
+    }
+
+    if (rawValue === "false") {
+      return false;
+    }
+
+    const numberValue = Number(rawValue);
+    return rawValue.trim() !== "" && Number.isFinite(numberValue) ? numberValue : rawValue;
+  }
+
+  function renderObjectInspector() {
+    if (!selectedObject) {
+      return renderAreaInspector();
+    }
+
+    const definition = project.objects.find((object) => object.id === selectedObject.objectDefinitionId);
+    const blocksMovement = selectedObject.blocksMovement ?? definition?.blocksMovement ?? false;
+    const objectState = selectedObject.state ?? {};
+    const resolvedBehaviour = selectedObject.behaviourOverride ?? definition?.defaultBehaviour ?? makeDefaultObjectBehaviour("none");
+    const useDefaultBehaviour = !selectedObject.behaviourOverride;
+
+    return (
+      <>
+        <div className="panel-title">Object Instance</div>
+        <div className="form-stack">
+          <label>
+            Definition
+            <select
+              onChange={(event) => {
+                const nextDefinition = project.objects.find((object) => object.id === event.target.value);
+                updateSelectedObject({
+                  objectDefinitionId: event.target.value,
+                  widthTiles: nextDefinition?.widthTiles ?? 1,
+                  heightTiles: nextDefinition?.heightTiles ?? 1,
+                  blocksMovement: nextDefinition?.blocksMovement ?? false,
+                  interaction: nextDefinition?.defaultInteraction,
+                });
+              }}
+              value={selectedObject.objectDefinitionId}
+            >
+              {project.objects.map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+            </select>
+          </label>
+          <label>
+            Name override
+            <input onChange={(event) => updateSelectedObject({ nameOverride: event.target.value || undefined })} value={selectedObject.nameOverride ?? ""} />
+          </label>
+          <div className="form-grid compact">
+            <label>
+              X
+              <input min={0} onChange={(event) => updateSelectedObject({ x: Number(event.target.value) })} type="number" value={selectedObject.x} />
+            </label>
+            <label>
+              Y
+              <input min={0} onChange={(event) => updateSelectedObject({ y: Number(event.target.value) })} type="number" value={selectedObject.y} />
+            </label>
+          </div>
+          <label className="checkbox-row standalone">
+            <input checked={blocksMovement} onChange={(event) => updateSelectedObject({ blocksMovement: event.target.checked })} type="checkbox" />
+            Blocks movement
+          </label>
+          <div className="coordinate-readout">
+            Footprint: {selectedObject.widthTiles ?? definition?.widthTiles ?? 1} x {selectedObject.heightTiles ?? definition?.heightTiles ?? 1} tiles
+          </div>
+          <div className="panel-title secondary">Behaviour</div>
+          <div className="coordinate-readout">Resolved behaviour: {resolvedBehaviour.type}</div>
+          <label className="checkbox-row standalone">
+            <input
+              checked={useDefaultBehaviour}
+              onChange={(event) =>
+                updateSelectedObject({
+                  behaviourOverride: event.target.checked ? undefined : resolvedBehaviour,
+                })
+              }
+              type="checkbox"
+            />
+            Use definition default behaviour
+          </label>
+          {!useDefaultBehaviour ? (
+            <ObjectBehaviourEditor
+              behaviour={selectedObject.behaviourOverride ?? makeDefaultObjectBehaviour("none")}
+              onChange={(behaviour: ObjectBehaviour) => updateSelectedObject({ behaviourOverride: behaviour })}
+              project={project}
+            />
+          ) : null}
+          {renderInteractionEditor(selectedObject.interaction)}
+          <div className="panel-title secondary">State</div>
+          {Object.entries(objectState).map(([key, value]) => (
+            <div className="state-row variable" key={key}>
+              <input
+                aria-label={`Object state ${key} key`}
+                onChange={(event) => {
+                  const nextKey = event.target.value.trim();
+                  const nextState = { ...objectState };
+                  delete nextState[key];
+                  if (nextKey) {
+                    nextState[nextKey] = value;
+                  }
+                  updateSelectedObject({ state: nextState });
+                }}
+                value={key}
+              />
+              <input
+                aria-label={`Object state ${key} value`}
+                onChange={(event) => updateSelectedObject({ state: { ...objectState, [key]: parseObjectStateValue(event.target.value) } })}
+                value={String(value)}
+              />
+              <button
+                className="danger-button compact"
+                onClick={() => {
+                  const nextState = { ...objectState };
+                  delete nextState[key];
+                  updateSelectedObject({ state: nextState });
+                }}
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => updateSelectedObject({ state: { ...objectState, [`state_${Object.keys(objectState).length + 1}`]: false } })}
+            type="button"
+          >
+            Add state
+          </button>
+          <button className="danger-button" onClick={deleteSelectedObject} type="button">Delete object instance</button>
+        </div>
+      </>
+    );
+  }
+
   function renderNpcInspector() {
     if (!selectedNpc) {
       return renderAreaInspector();
@@ -1696,6 +1910,10 @@ export function MapEditor() {
       return renderStructureInspector();
     }
 
+    if (selectedObject) {
+      return renderObjectInspector();
+    }
+
     if (selectedPickup) {
       return renderPickupInspector();
     }
@@ -1910,6 +2128,28 @@ export function MapEditor() {
         </details>
 
         <details open className="palette-section">
+          <summary>Objects</summary>
+          <label>
+            Object definition
+            <select onChange={(event) => setSelectedObjectDefinitionId(event.target.value)} value={selectedObjectDefinitionId}>
+              {project.objects.map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+            </select>
+          </label>
+          <button
+            className={`palette-item ${activeTool === "object" ? "selected" : ""}`}
+            disabled={!selectedObjectDefinitionId}
+            onClick={() => {
+              setActiveTool("object");
+              setPaintLayer("event");
+            }}
+            type="button"
+          >
+            <span className="swatch object-swatch">O</span>
+            {selectedObjectDefinition?.name ?? "Object"}
+          </button>
+        </details>
+
+        <details open className="palette-section">
           <summary>Special</summary>
           <button
             className={`palette-item ${activeTool === "event-block" ? "selected" : ""}`}
@@ -2068,6 +2308,7 @@ export function MapEditor() {
               const tileStyle = project.tileStyles[terrainId] ?? { color: terrain.color, label: terrain.label };
               const overlayId = overlayLookup.get(key);
               const eventBlock = eventLookup.get(key);
+              const object = objectLookup.get(key);
               const pickup = pickupLookup.get(key);
               const pickupItem = project.items.find((item) => item.id === pickup?.itemId);
               const npc = npcLookup.get(key);
@@ -2124,6 +2365,17 @@ export function MapEditor() {
                         {eventBlock.kind === "spawn" ? "S" : eventBlock.kind === "area_link" ? "->" : "T"}
                       </span>
                       <span className="event-marker-label">{eventLabel}</span>
+                    </span>
+                  ) : null}
+                  {object ? (
+                    <span
+                      className={`object-marker ${
+                        selection?.type === "object" && selection.id === object.id ? "selected-object" : ""
+                      }`}
+                    >
+                      <span className="object-marker-icon">
+                        {(object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object").slice(0, 1).toUpperCase()}
+                      </span>
                     </span>
                   ) : null}
                   {pickup ? (

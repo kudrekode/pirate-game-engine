@@ -253,6 +253,12 @@ export function ProgressionEditor() {
           id: structure.id,
           label: `${area.name}: ${structure.name} (structure)`,
         })),
+        ...area.objects.map((object) => ({
+          id: object.id,
+          label: `${area.name}: Object: ${
+            object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object"
+          }`,
+        })),
         ...area.eventBlocks.map((eventBlock) => ({
           id: eventBlock.id,
           label: `${area.name}: Event: ${eventBlock.name}`,
@@ -262,17 +268,23 @@ export function ProgressionEditor() {
           label: `${area.name}: NPC: ${project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "NPC"}`,
         })),
       ]),
-    [project.areas, project.npcs],
+    [project.areas, project.npcs, project.objects],
   );
   const touchTargets = useMemo(
     () =>
-      project.areas.flatMap((area) =>
-        area.eventBlocks.map((eventBlock) => ({
+      project.areas.flatMap((area) => [
+        ...area.eventBlocks.map((eventBlock) => ({
           id: eventBlock.id,
           label: `${area.name}: ${eventBlock.name}`,
         })),
-      ),
-    [project.areas],
+        ...area.objects.map((object) => ({
+          id: object.id,
+          label: `${area.name}: Object: ${
+            object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object"
+          }`,
+        })),
+      ]),
+    [project.areas, project.objects],
   );
   const npcTargets = useMemo(
     () =>
