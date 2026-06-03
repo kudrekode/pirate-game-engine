@@ -89,6 +89,13 @@ describe("migrateProject", () => {
     expect(project.metadata).toMatchObject({ name: "Partial", version: "0.1.0" });
     expect(project.camera.viewportWidthTiles).toBeGreaterThan(0);
     expect(project.player.mapAvatarId).toBeTruthy();
+    expect(project.player.combat).toMatchObject({
+      maxHealth: 100,
+      health: 100,
+      attackDamage: 25,
+      attackRangeTiles: 1,
+      attackCooldownMs: 500,
+    });
     expect(project.ruleGroups).toEqual([]);
     expect(project.rules).toEqual([]);
     expect(project.items).toEqual([]);
@@ -96,6 +103,100 @@ describe("migrateProject", () => {
     expect(project.quests).toEqual([]);
     expect(project.npcs).toEqual([]);
     expect(project.objects).toEqual([]);
+  });
+
+  it("migrates legacy NPC instance data as explicit overrides", () => {
+    const project = migrateProject({
+      npcs: [{ id: "guard", name: "Guard", mapAvatarId: "knight" }],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "guard-instance",
+              npcDefinitionId: "guard",
+              x: 1,
+              y: 1,
+              movementMode: "patrol",
+              attributes: {
+                maxHealth: 50,
+                health: 45,
+                faction: "guards",
+                alignment: "neutral",
+                canInteract: true,
+                movementSpeed: 2,
+              },
+              enemyBehaviour: {
+                enabled: true,
+                detectionRadiusTiles: 3,
+                chaseRadiusTiles: 5,
+                returnToOrigin: false,
+                contactDamage: 4,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0].attributesOverride).toMatchObject({ health: 45, faction: "guards" });
+    expect(project.areas[0].npcs[0].movementOverride).toMatchObject({ movementMode: "patrol", movementSpeed: 2 });
+    expect(project.areas[0].npcs[0].enemyBehaviourOverride).toMatchObject({ enabled: true, contactDamage: 4 });
+  });
+
+  it("keeps definition-backed NPC instances free of accidental overrides", () => {
+    const project = migrateProject({
+      npcs: [
+        {
+          id: "bandit",
+          name: "Bandit",
+          mapAvatarId: "scout",
+          defaultAttributes: {
+            maxHealth: 80,
+            health: 80,
+            faction: "pirates",
+            alignment: "hostile",
+            canInteract: true,
+            movementSpeed: 1,
+          },
+          defaultEnemyBehaviour: {
+            enabled: true,
+            detectionRadiusTiles: 4,
+            chaseRadiusTiles: 7,
+            returnToOrigin: true,
+            contactDamage: 10,
+          },
+        },
+      ],
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "bandit-instance",
+              npcDefinitionId: "bandit",
+              x: 1,
+              y: 1,
+              attributes: {
+                maxHealth: 100,
+                health: 100,
+                faction: "villagers",
+                alignment: "friendly",
+                canInteract: true,
+                movementSpeed: 1,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0].attributesOverride).toBeUndefined();
+    expect(project.areas[0].npcs[0].enemyBehaviourOverride).toBeUndefined();
   });
 
   it("migrates object definitions and placed object instances", () => {
@@ -249,6 +350,47 @@ describe("migrateProject", () => {
         alignment: "friendly",
         canInteract: true,
         movementSpeed: 1,
+      },
+    });
+    expect(project.areas[0].npcs[0].enemyBehaviour).toBeUndefined();
+  });
+
+  it("migrates optional enemy behaviour on NPC instances", () => {
+    const project = migrateProject({
+      areas: [
+        {
+          id: "area_main",
+          width: 2,
+          height: 2,
+          npcs: [
+            {
+              id: "bandit",
+              npcDefinitionId: "bandit",
+              x: 1,
+              y: 1,
+              attributes: { alignment: "hostile" },
+              enemyBehaviour: {
+                enabled: true,
+                detectionRadiusTiles: 4,
+                chaseRadiusTiles: 7,
+                returnToOrigin: true,
+                contactDamage: 10,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(project.areas[0].npcs[0]).toMatchObject({
+      id: "bandit",
+      attributes: { alignment: "hostile" },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
       },
     });
   });

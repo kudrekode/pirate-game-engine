@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
+import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { QuestView } from "./questEngine";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 
@@ -21,6 +22,13 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
   const [quests, setQuests] = useState<QuestView[]>([]);
   const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
   const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(null);
+  const [runtimeKey, setRuntimeKey] = useState(0);
+  const initialCombat = getPlayerCombatStats(project.player);
+  const [combat, setCombat] = useState<RuntimeCombatHudState>({
+    playerHealth: initialCombat.health,
+    playerMaxHealth: initialCombat.maxHealth,
+    gameOver: false,
+  });
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -41,7 +49,16 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
       return undefined;
     }
 
-    const scene = new AdventureScene(project, setInventory, setQuests, setShopState);
+    setInventory({});
+    setQuests([]);
+    setShopState(null);
+    setCombat({
+      playerHealth: initialCombat.health,
+      playerMaxHealth: initialCombat.maxHealth,
+      gameOver: false,
+    });
+
+    const scene = new AdventureScene(project, setInventory, setQuests, setShopState, setCombat);
     sceneRef.current = scene;
     const game = new Phaser.Game({
       type: Phaser.AUTO,
@@ -60,7 +77,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
       game.destroy(true);
       sceneRef.current = null;
     };
-  }, [project]);
+  }, [initialCombat.health, initialCombat.maxHealth, project, runtimeKey]);
 
   const inventoryItems = Object.entries(inventory)
     .filter(([, quantity]) => quantity > 0)
@@ -106,6 +123,19 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
       <div className="runtime-stage">
         <div className="phaser-host" ref={containerRef} />
         <div className="inventory-hud">Gold: {goldCount}</div>
+        <div className="combat-hud">
+          <strong>Health {combat.playerHealth}/{combat.playerMaxHealth}</strong>
+          {combat.recentEnemy ? (
+            <span>{combat.recentEnemy.name} {combat.recentEnemy.health}/{combat.recentEnemy.maxHealth}</span>
+          ) : (
+            <span>Space: attack</span>
+          )}
+        </div>
+        {combat.gameOver ? (
+          <button className="runtime-restart-button" onClick={() => setRuntimeKey((key) => key + 1)} type="button">
+            Restart
+          </button>
+        ) : null}
         {trackedQuest ? (
           <aside className="quest-tracker">
             <span>Current Quest</span>

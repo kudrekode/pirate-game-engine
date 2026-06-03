@@ -239,6 +239,13 @@ const mainArea: GameArea = {
         canInteract: true,
         movementSpeed: 1,
       },
+      enemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
+      },
     },
   ],
   eventBlocks: [
@@ -367,7 +374,14 @@ export const defaultProject: GameProject = {
     mapAvatarId: "scout",
     cutscenePortraitId: "portrait_scout",
     speed: 6,
-    health: 5,
+    health: 100,
+    combat: {
+      maxHealth: 100,
+      health: 100,
+      attackDamage: 25,
+      attackRangeTiles: 1,
+      attackCooldownMs: 500,
+    },
     canWalkOn: ["grass", "dirt", "wooden_floor", "stone_floor", "carpet", "cave_floor", "ship_deck"],
   },
   cutscenes: [
@@ -564,6 +578,15 @@ export const defaultProject: GameProject = {
       description: "A retired sailor watching the road near the tavern.",
       mapAvatarId: "ranger",
       portraitId: "portrait_ranger",
+      defaultAttributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "villagers",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+      defaultMovement: { movementMode: "stationary", movementSpeed: 1 },
     },
     {
       id: "npc_village_guard",
@@ -571,6 +594,27 @@ export const defaultProject: GameProject = {
       description: "A guard walking a short route near the village road.",
       mapAvatarId: "knight",
       portraitId: "portrait_knight",
+      defaultAttributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "guards",
+        alignment: "neutral",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+      defaultMovement: {
+        movementMode: "patrol",
+        movementSpeed: 1,
+        patrolPath: {
+          loop: true,
+          points: [
+            { x: 11, y: 3 },
+            { x: 14, y: 3 },
+            { x: 14, y: 5 },
+            { x: 11, y: 5 },
+          ],
+        },
+      },
     },
     {
       id: "npc_villager",
@@ -578,6 +622,19 @@ export const defaultProject: GameProject = {
       description: "A villager wandering through the square.",
       mapAvatarId: "tinker",
       portraitId: "portrait_tinker",
+      defaultAttributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "villagers",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 0.8,
+      },
+      defaultMovement: {
+        movementMode: "wander",
+        movementSpeed: 0.8,
+        wanderZone: { x: 4, y: 4, width: 3, height: 3 },
+      },
     },
     {
       id: "npc_merchant",
@@ -585,6 +642,15 @@ export const defaultProject: GameProject = {
       description: "A village shopkeeper selling simple travel supplies.",
       mapAvatarId: "tinker",
       portraitId: "portrait_tinker",
+      defaultAttributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "merchants",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+      defaultMovement: { movementMode: "stationary", movementSpeed: 1 },
     },
     {
       id: "npc_bandit",
@@ -592,6 +658,22 @@ export const defaultProject: GameProject = {
       description: "A hostile pirate keeping watch near the edge of the village.",
       mapAvatarId: "scout",
       portraitId: "portrait_scout",
+      defaultAttributes: {
+        maxHealth: 100,
+        health: 100,
+        faction: "pirates",
+        alignment: "hostile",
+        canInteract: true,
+        movementSpeed: 1,
+      },
+      defaultMovement: { movementMode: "stationary", movementSpeed: 1 },
+      defaultEnemyBehaviour: {
+        enabled: true,
+        detectionRadiusTiles: 4,
+        chaseRadiusTiles: 7,
+        returnToOrigin: true,
+        contactDamage: 10,
+      },
     },
   ],
   objects: [

@@ -24,6 +24,9 @@ import type {
   ObjectInstance,
   NPCDefinition,
   NPCInstance,
+  NPCAttributes,
+  NPCMovementConfig,
+  EnemyBehaviour,
   MapStructure,
   MapTile,
   MovementRule,
@@ -152,7 +155,8 @@ function migrateMovementRule(value: unknown): MovementRule | undefined {
     value.movementMode === "walk" ||
     value.movementMode === "swim" ||
     value.movementMode === "sail" ||
-    value.movementMode === "ride"
+    value.movementMode === "ride" ||
+    value.movementMode === "drive"
   ) {
     rule.movementMode = value.movementMode;
   }
@@ -453,7 +457,86 @@ function migratePickups(value: unknown, areaId: string): PickupObject[] {
   });
 }
 
-function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
+function migrateNpcAttributes(value: unknown): NPCAttributes | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const maxHealth = readNumber(value.maxHealth, 100, 1);
+  return {
+    maxHealth,
+    health: readNumber(value.health, maxHealth, 0, maxHealth),
+    faction: readString(value.faction, "villagers"),
+    alignment: value.alignment === "neutral" || value.alignment === "hostile" ? value.alignment : "friendly",
+    canInteract: readBoolean(value.canInteract, true),
+    movementSpeed: readNumber(value.movementSpeed, 1, 0.1, 10),
+  };
+}
+
+function migrateNpcMovement(value: unknown, fallbackPosition = { x: 0, y: 0 }): NPCMovementConfig | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const movementMode =
+    value.movementMode === "patrol" || value.movementMode === "wander" ? value.movementMode : "stationary";
+  const patrolSource = isRecord(value.patrolPath) ? value.patrolPath : {};
+  const points = Array.isArray(patrolSource.points)
+    ? patrolSource.points.flatMap((point) =>
+        isRecord(point)
+          ? [{ x: readNumber(point.x, 0, 0), y: readNumber(point.y, 0, 0) }]
+          : [],
+      )
+    : [];
+  const wanderSource = isRecord(value.wanderZone) ? value.wanderZone : {};
+
+  return {
+    movementMode,
+    movementSpeed: readNumber(value.movementSpeed, 1, 0.1, 10),
+    ...(points.length > 0 ? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } } : {}),
+    ...(movementMode === "wander"
+      ? {
+          wanderZone: {
+            x: readNumber(wanderSource.x, fallbackPosition.x, 0),
+            y: readNumber(wanderSource.y, fallbackPosition.y, 0),
+            width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
+            height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
+          },
+        }
+      : {}),
+  };
+}
+
+function migrateEnemyBehaviour(value: unknown): EnemyBehaviour | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  return {
+    enabled: readBoolean(value.enabled, false),
+    detectionRadiusTiles: Math.round(readNumber(value.detectionRadiusTiles, 4, 0, 100)),
+    chaseRadiusTiles: Math.round(readNumber(value.chaseRadiusTiles, 7, 0, 100)),
+    returnToOrigin: readBoolean(value.returnToOrigin, true),
+    ...(typeof value.contactDamage === "number"
+      ? { contactDamage: Math.round(readNumber(value.contactDamage, 0, 0, 999)) }
+      : {}),
+  };
+}
+
+function definitionHasNpcDefaults(definition?: NPCDefinition): boolean {
+  return Boolean(
+    definition?.defaultAttributes ||
+      definition?.defaultMovement ||
+      definition?.defaultEnemyBehaviour ||
+      definition?.defaultInteraction,
+  );
+}
+
+function migrateNpcInstances(
+  value: unknown,
+  areaId: string,
+  definitionsById: Map<string, NPCDefinition> = new Map(),
+): NPCInstance[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -467,63 +550,73 @@ function migrateNpcInstances(value: unknown, areaId: string): NPCInstance[] {
       item.facing === "up" || item.facing === "left" || item.facing === "right"
         ? item.facing
         : "down";
-    const movementMode =
-      item.movementMode === "patrol" || item.movementMode === "wander"
-        ? item.movementMode
-        : "stationary";
-    const patrolSource = isRecord(item.patrolPath) ? item.patrolPath : {};
-    const points = Array.isArray(patrolSource.points)
-      ? patrolSource.points.flatMap((point) =>
-          isRecord(point)
-            ? [{ x: readNumber(point.x, 0, 0), y: readNumber(point.y, 0, 0) }]
-            : [],
-        )
-      : [];
-    const wanderSource = isRecord(item.wanderZone) ? item.wanderZone : {};
-    const attributesSource = isRecord(item.attributes) ? item.attributes : {};
-    const maxHealth = readNumber(attributesSource.maxHealth, 100, 1);
-    const movementSpeed = readNumber(attributesSource.movementSpeed ?? item.movementSpeed, 1, 0.1, 10);
-    const alignment =
-      attributesSource.alignment === "neutral" || attributesSource.alignment === "hostile"
-        ? attributesSource.alignment
-        : "friendly";
+    const npcDefinitionId = readString(item.npcDefinitionId, "");
+    const definition = definitionsById.get(npcDefinitionId);
+    const hasDefinitionDefaults = definitionHasNpcDefaults(definition);
+    const x = readNumber(item.x, 0, 0);
+    const y = readNumber(item.y, 0, 0);
+    const explicitAttributesOverride = migrateNpcAttributes(item.attributesOverride);
+    const legacyAttributesOverride = !hasDefinitionDefaults ? migrateNpcAttributes(item.attributes) : undefined;
+    const attributesOverride = explicitAttributesOverride ?? legacyAttributesOverride;
+    const attributes = migrateNpcAttributes(item.attributes) ??
+      attributesOverride ??
+      definition?.defaultAttributes ??
+      {
+        maxHealth: 100,
+        health: 100,
+        faction: "villagers",
+        alignment: "friendly",
+        canInteract: true,
+        movementSpeed: 1,
+      };
+    const explicitMovementOverride = migrateNpcMovement(item.movementOverride, { x, y });
+    const legacyMovementSource = {
+      ...item,
+      movementSpeed: isRecord(item.attributes) ? item.attributes.movementSpeed : item.movementSpeed,
+    };
+    const legacyMovementOverride = !hasDefinitionDefaults ? migrateNpcMovement(legacyMovementSource, { x, y }) : undefined;
+    const movementOverride = explicitMovementOverride ?? legacyMovementOverride;
+    const movement = migrateNpcMovement(legacyMovementSource, { x, y }) ??
+      movementOverride ??
+      definition?.defaultMovement ??
+      { movementMode: "stationary", movementSpeed: 1 };
+    const explicitEnemyOverride = migrateEnemyBehaviour(item.enemyBehaviourOverride);
+    const legacyEnemyOverride = !hasDefinitionDefaults ? migrateEnemyBehaviour(item.enemyBehaviour) : undefined;
+    const enemyBehaviourOverride = explicitEnemyOverride ?? legacyEnemyOverride;
+    const enemyBehaviour = migrateEnemyBehaviour(item.enemyBehaviour) ?? enemyBehaviourOverride ?? definition?.defaultEnemyBehaviour;
+    const interactionOverride = migrateInteraction(item.interactionOverride, "on_interact") ??
+      (!hasDefinitionDefaults ? migrateInteraction(item.interaction, "on_interact") : undefined);
+    const interaction = migrateInteraction(item.interaction, "on_interact") ?? interactionOverride ?? definition?.defaultInteraction;
 
     return [{
       id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
-      npcDefinitionId: readString(item.npcDefinitionId, ""),
+      npcDefinitionId,
       areaId,
-      x: readNumber(item.x, 0, 0),
-      y: readNumber(item.y, 0, 0),
+      x,
+      y,
       facing,
       blocksMovement: readBoolean(item.blocksMovement, true),
-      movementMode,
-      attributes: {
-        maxHealth,
-        health: readNumber(attributesSource.health, maxHealth, 0, maxHealth),
-        faction: readString(attributesSource.faction, "villagers"),
-        alignment,
-        canInteract: readBoolean(attributesSource.canInteract, true),
-        movementSpeed,
-      },
-      ...(points.length > 0
-        ? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } }
-        : {}),
-      ...(movementMode === "wander"
-        ? {
-            wanderZone: {
-              x: readNumber(wanderSource.x, readNumber(item.x, 0, 0), 0),
-              y: readNumber(wanderSource.y, readNumber(item.y, 0, 0), 0),
-              width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
-              height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
-            },
-          }
-        : {}),
-      interaction: migrateInteraction(item.interaction, "on_interact"),
+      movementMode: movement.movementMode,
+      attributes,
+      ...(movement.movementSpeed ? { movementSpeed: movement.movementSpeed } : {}),
+      ...(movement.patrolPath ? { patrolPath: movement.patrolPath } : {}),
+      ...(movement.wanderZone ? { wanderZone: movement.wanderZone } : {}),
+      ...(enemyBehaviour ? { enemyBehaviour } : {}),
+      ...(interaction ? { interaction } : {}),
+      ...(attributesOverride ? { attributesOverride } : {}),
+      ...(movementOverride ? { movementOverride } : {}),
+      ...(enemyBehaviourOverride ? { enemyBehaviourOverride } : {}),
+      ...(interactionOverride ? { interactionOverride } : {}),
     }];
   });
 }
 
-function migrateArea(value: unknown, index: number, fallback: GameArea): GameArea {
+function migrateArea(
+  value: unknown,
+  index: number,
+  fallback: GameArea,
+  definitionsById: Map<string, NPCDefinition> = new Map(),
+): GameArea {
   const source = isRecord(value) ? value : {};
   const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
   const width = Math.round(readNumber(source.width, fallback.width, 1, 200));
@@ -542,24 +635,26 @@ function migrateArea(value: unknown, index: number, fallback: GameArea): GameAre
     structures: migrateStructures(source.structures),
     objects: migrateObjectInstances(source.objects, id),
     pickups: migratePickups(source.pickups, id),
-    npcs: migrateNpcInstances(source.npcs, id),
+    npcs: migrateNpcInstances(source.npcs, id, definitionsById),
     eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
     theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
   };
 }
 
-function migrateAreas(source: UnknownRecord): GameArea[] {
+function migrateAreas(source: UnknownRecord, npcDefinitions: NPCDefinition[] = []): GameArea[] {
+  const definitionsById = new Map(npcDefinitions.map((definition) => [definition.id, definition]));
+
   if (Array.isArray(source.areas) && source.areas.length > 0) {
     const areas = source.areas.flatMap((area, index) => {
       const fallback = defaultProject.areas[index] ?? defaultProject.areas[0];
-      return fallback ? [migrateArea(area, index, fallback)] : [];
+      return fallback ? [migrateArea(area, index, fallback, definitionsById)] : [];
     });
 
     return areas.length > 0 ? areas : cloneProject(defaultProject).areas;
   }
 
   const legacyMap = isRecord(source.map) ? source.map : {};
-  return [migrateArea(legacyMap, 0, defaultProject.areas[0])];
+  return [migrateArea(legacyMap, 0, defaultProject.areas[0], definitionsById)];
 }
 
 function migrateTileStyles(value: unknown): TileStyleConfig {
@@ -647,6 +742,15 @@ function migrateCamera(value: unknown): CameraConfig {
 function migratePlayer(value: unknown): PlayerConfig {
   const source = isRecord(value) ? value : {};
   const fallback = defaultProject.player;
+  const combatSource = isRecord(source.combat) ? source.combat : {};
+  const fallbackCombat = fallback.combat ?? {
+    maxHealth: 100,
+    health: 100,
+    attackDamage: 25,
+    attackRangeTiles: 1,
+    attackCooldownMs: 500,
+  };
+  const maxHealth = readNumber(combatSource.maxHealth, fallbackCombat.maxHealth, 1, 9999);
 
   return {
     name: readString(source.name, fallback.name),
@@ -657,6 +761,13 @@ function migratePlayer(value: unknown): PlayerConfig {
     ),
     speed: readNumber(source.speed, fallback.speed, 1, 20),
     health: readNumber(source.health, fallback.health, 1, 999),
+    combat: {
+      maxHealth,
+      health: readNumber(combatSource.health, readNumber(source.health, fallbackCombat.health, 0, maxHealth), 0, maxHealth),
+      attackDamage: readNumber(combatSource.attackDamage, fallbackCombat.attackDamage, 0, 9999),
+      attackRangeTiles: Math.round(readNumber(combatSource.attackRangeTiles, fallbackCombat.attackRangeTiles, 1, 20)),
+      attackCooldownMs: Math.round(readNumber(combatSource.attackCooldownMs, fallbackCombat.attackCooldownMs, 0, 60000)),
+    },
     canWalkOn: readStringArray(source.canWalkOn, fallback.canWalkOn),
   };
 }
@@ -891,12 +1002,21 @@ function migrateNpcDefinitions(value: unknown): NPCDefinition[] {
 
     const description = readString(item.description, "");
     const portraitId = readString(item.portraitId, "");
+    const defaultAttributes = migrateNpcAttributes(item.defaultAttributes);
+    const defaultMovement = migrateNpcMovement(item.defaultMovement);
+    const defaultEnemyBehaviour = migrateEnemyBehaviour(item.defaultEnemyBehaviour);
+    const defaultInteraction = migrateInteraction(item.defaultInteraction, "on_interact");
+
     return [{
       id: readString(item.id, `npc_${index + 1}`),
       name: readString(item.name, `NPC ${index + 1}`),
       ...(description ? { description } : {}),
       mapAvatarId: readString(item.mapAvatarId, "ranger"),
       ...(portraitId ? { portraitId } : {}),
+      ...(defaultAttributes ? { defaultAttributes } : {}),
+      ...(defaultMovement ? { defaultMovement } : {}),
+      ...(defaultEnemyBehaviour ? { defaultEnemyBehaviour } : {}),
+      ...(defaultInteraction ? { defaultInteraction } : {}),
     }];
   });
 }
@@ -1323,7 +1443,8 @@ function migrateRuleGroups(value: unknown): RuleGroup[] {
 export function migrateProject(value: unknown): GameProject {
   const source = isRecord(value) ? value : {};
   const metadataSource = isRecord(source.metadata) ? source.metadata : {};
-  const areas = migrateAreas(source);
+  const npcs = migrateNpcDefinitions(source.npcs);
+  const areas = migrateAreas(source, npcs);
   const fallbackActiveAreaId = areas[0]?.id ?? "area_main";
   const requestedActiveAreaId = readString(source.activeAreaId, fallbackActiveAreaId);
   const activeAreaId = areas.some((area) => area.id === requestedActiveAreaId)
@@ -1350,7 +1471,7 @@ export function migrateProject(value: unknown): GameProject {
     shops: migrateShops(source.shops),
     quests: migrateQuests(source.quests),
     ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
-    npcs: migrateNpcDefinitions(source.npcs),
+    npcs,
     objects: migrateObjectDefinitions(source.objects),
     ruleGroups: migrateRuleGroups(source.ruleGroups),
     rules: migrateRules(source.rules),
