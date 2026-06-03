@@ -20,6 +20,7 @@ import type {
   InteractionActivationMode,
   ItemDefinition,
   ObjectDefinition,
+  ObjectBehaviour,
   ObjectInstance,
   NPCDefinition,
   NPCInstance,
@@ -312,6 +313,64 @@ function migrateStructures(value: unknown): MapStructure[] {
   });
 }
 
+function migrateObjectBehaviour(value: unknown): ObjectBehaviour | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (value.type === "container") {
+    const contents = Array.isArray(value.contents)
+      ? value.contents.flatMap((content) =>
+          isRecord(content)
+            ? [{
+                itemId: readString(content.itemId, ""),
+                quantity: Math.round(readNumber(content.quantity, 1, 1, 9999)),
+              }]
+            : [],
+        )
+      : [];
+    return {
+      type: "container",
+      contents,
+      once: readBoolean(value.once, true),
+      ...(readString(value.openedFlag, "") ? { openedFlag: readString(value.openedFlag, "") } : {}),
+    };
+  }
+
+  if (value.type === "door") {
+    return {
+      type: "door",
+      ...(readString(value.targetAreaId, "") ? { targetAreaId: readString(value.targetAreaId, "") } : {}),
+      ...(readString(value.targetEventBlockId, "") ? { targetEventBlockId: readString(value.targetEventBlockId, "") } : {}),
+      ...(readString(value.requiredItemId, "") ? { requiredItemId: readString(value.requiredItemId, "") } : {}),
+      ...(readString(value.lockedCutsceneId, "") ? { lockedCutsceneId: readString(value.lockedCutsceneId, "") } : {}),
+    };
+  }
+
+  if (value.type === "sign") {
+    return { type: "sign", text: readString(value.text, "") };
+  }
+
+  if (value.type === "vehicle") {
+    const vehicleType =
+      value.vehicleType === "horse" || value.vehicleType === "cart" ? value.vehicleType : "boat";
+    const movementMode =
+      value.movementMode === "ride" || value.movementMode === "drive" ? value.movementMode : "sail";
+    return {
+      type: "vehicle",
+      vehicleType,
+      movementMode,
+      allowedTerrainIds: readStringArray(value.allowedTerrainIds, []),
+      dismountAllowedTerrainIds: readStringArray(value.dismountAllowedTerrainIds, []),
+      ...(typeof value.speedMultiplier === "number"
+        ? { speedMultiplier: readNumber(value.speedMultiplier, 1, 0.1, 10) }
+        : {}),
+    };
+  }
+
+  return { type: "none" };
+}
+
 function migrateObjectInstances(value: unknown, areaId: string): ObjectInstance[] {
   if (!Array.isArray(value)) {
     return [];
@@ -350,6 +409,7 @@ function migrateObjectInstances(value: unknown, areaId: string): ObjectInstance[
         ...(typeof item.heightTiles === "number" ? { heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)) } : {}),
         ...(typeof item.blocksMovement === "boolean" ? { blocksMovement: item.blocksMovement } : {}),
         interaction: migrateInteraction(item.interaction, "on_interact"),
+        behaviourOverride: migrateObjectBehaviour(item.behaviourOverride),
         ...(Object.keys(state).length > 0 ? { state } : {}),
       },
     ];
@@ -765,6 +825,7 @@ function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
         heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
         blocksMovement: readBoolean(item.blocksMovement, false),
         defaultInteraction: migrateInteraction(item.defaultInteraction, "on_interact"),
+        defaultBehaviour: migrateObjectBehaviour(item.defaultBehaviour),
       },
     ];
   });

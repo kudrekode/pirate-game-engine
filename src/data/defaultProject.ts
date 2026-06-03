@@ -89,12 +89,6 @@ const mainArea: GameArea = {
       widthTiles: 1,
       heightTiles: 1,
       blocksMovement: false,
-      interaction: {
-        type: "play_cutscene",
-        activationMode: "on_interact",
-        prompt: "Press E to read",
-        cutsceneId: "sign_post",
-      },
     },
     {
       id: "object_coin_chest",
@@ -572,11 +566,9 @@ export const defaultProject: GameProject = {
       widthTiles: 1,
       heightTiles: 1,
       blocksMovement: false,
-      defaultInteraction: {
-        type: "play_cutscene",
-        activationMode: "on_interact",
-        prompt: "Press E to read",
-        cutsceneId: "sign_post",
+      defaultBehaviour: {
+        type: "sign",
+        text: "Village Road. Tavern south, river crossing east. Boats are not ready in this prototype.",
       },
     },
     {
@@ -587,6 +579,12 @@ export const defaultProject: GameProject = {
       widthTiles: 1,
       heightTiles: 1,
       blocksMovement: true,
+      defaultBehaviour: {
+        type: "container",
+        contents: [{ itemId: "gold_coin", quantity: 5 }],
+        once: true,
+        openedFlag: "demo_chest_opened",
+      },
     },
     {
       id: "object_dock_marker",
@@ -596,6 +594,14 @@ export const defaultProject: GameProject = {
       widthTiles: 2,
       heightTiles: 1,
       blocksMovement: false,
+      defaultBehaviour: {
+        type: "vehicle",
+        vehicleType: "boat",
+        movementMode: "sail",
+        allowedTerrainIds: ["water"],
+        dismountAllowedTerrainIds: ["grass", "dirt"],
+        speedMultiplier: 1,
+      },
     },
   ],
   ruleGroups: [
@@ -702,24 +708,6 @@ export const defaultProject: GameProject = {
       },
       actions: [{ type: "teleport", areaId: "area_house", eventBlockId: "spawn_house_entry" }],
       elseActions: [{ type: "play_cutscene", cutsceneId: "locked_door" }],
-    },
-    {
-      id: "rule_chest_open",
-      name: "Open Demo Chest",
-      enabled: true,
-      groupId: "rule_group_tavern",
-      trigger: { type: "on_interact", targetId: "object_coin_chest" },
-      conditionTree: {
-        id: "condition_group_chest_open",
-        type: "group",
-        operator: "AND",
-        conditions: [{ id: "condition_chest_closed", type: "flag_is", flag: "demo_chest_opened", value: false }],
-      },
-      actions: [
-        { type: "give_item", itemId: "gold_coin", quantity: 5 },
-        { type: "set_flag", flag: "demo_chest_opened", value: true },
-      ],
-      elseActions: [{ type: "play_cutscene", cutsceneId: "chest_empty" }],
     },
   ],
 };

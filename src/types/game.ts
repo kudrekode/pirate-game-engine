@@ -132,7 +132,33 @@ export type ObjectDefinition = {
   heightTiles: number;
   blocksMovement: boolean;
   defaultInteraction?: Interaction;
+  defaultBehaviour?: ObjectBehaviour;
 };
+
+export type ObjectBehaviour =
+  | { type: "none" }
+  | {
+      type: "container";
+      contents: { itemId: string; quantity: number }[];
+      once: boolean;
+      openedFlag?: string;
+    }
+  | {
+      type: "door";
+      targetAreaId?: string;
+      targetEventBlockId?: string;
+      requiredItemId?: string;
+      lockedCutsceneId?: string;
+    }
+  | { type: "sign"; text: string }
+  | {
+      type: "vehicle";
+      vehicleType: "boat" | "horse" | "cart";
+      movementMode: "sail" | "ride" | "drive";
+      allowedTerrainIds: string[];
+      dismountAllowedTerrainIds: string[];
+      speedMultiplier?: number;
+    };
 
 export type ObjectInstance = {
   id: string;
@@ -145,6 +171,7 @@ export type ObjectInstance = {
   heightTiles?: number;
   blocksMovement?: boolean;
   interaction?: Interaction;
+  behaviourOverride?: ObjectBehaviour;
   state?: Record<string, boolean | number | string>;
 };
 

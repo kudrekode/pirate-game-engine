@@ -94,6 +94,7 @@ describe("editor smoke tests", () => {
     render(<ObjectsEditor />);
 
     expect(screen.getByText("Object Definition")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Sign")).toBeInTheDocument();
+    expect(screen.getByText("Default Behaviour")).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue("Sign").length).toBeGreaterThan(0);
   });
 });

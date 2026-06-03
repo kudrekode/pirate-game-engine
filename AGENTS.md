@@ -61,7 +61,19 @@ Each area owns grid-based pickup objects. Pickups can collect on touch or on int
 
 `GameProject.objects` contains reusable generic object definitions. Each area owns placed `ObjectInstance` records.
 
-Objects sit between static structures and NPCs. They are intended for signs, chests, doors, switches, decorative props, and future vehicle markers. They can block movement, expose direct interactions, and target friendly rules by placed instance ID. V1 does not implement vehicles, shops, loot containers, equipment, combat, or enemy behavior.
+Objects sit between static structures and NPCs. They are intended for signs, chests, doors, switches, decorative props, and future vehicle markers. They can block movement, expose direct interactions, and target friendly rules by placed instance ID.
+
+Object behaviours are authored as reusable defaults on `ObjectDefinition.defaultBehaviour` and can be overridden per placed `ObjectInstance.behaviourOverride`. Runtime behaviour helpers live in `src/runtime/objectBehaviour.ts`.
+
+Supported behaviour types:
+
+- `none`
+- `container`, which gives configured item contents and can be once-only
+- `door`, which can require an item and teleport to an area spawn
+- `sign`, which displays cutscene-style text
+- `vehicle`, which is data-only for now and shows a placeholder runtime message
+
+Direct interactions and rule triggers still run alongside behaviours for compatibility. Vehicle movement, shops, equipment, combat, and enemy behavior remain future work.
 
 ## Quests And Objectives
 
@@ -174,7 +186,7 @@ Current focused tests cover:
 - Inventory stacking and pickup collection
 - Quest objective evaluation and once-only rewards
 - NPC migration, collision, rule targeting, and deletion guards
-- Object migration, collision, rule targeting, and deletion guards
+- Object migration, behaviours, collision, rule targeting, and deletion guards
 - NPC stationary, patrol, wander, bounds, and terrain movement helpers
 - Movement resolution
 - Project migration

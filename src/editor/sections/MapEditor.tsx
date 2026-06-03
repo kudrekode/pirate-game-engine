@@ -9,6 +9,7 @@ import {
   terrainPresets,
 } from "../../data/mapVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
+import { makeDefaultObjectBehaviour, ObjectBehaviourEditor } from "../ObjectBehaviourEditor";
 import type {
   EditorSelection,
   EventBlock,
@@ -19,6 +20,7 @@ import type {
   MovementRule,
   NPCInstance,
   ObjectInstance,
+  ObjectBehaviour,
   PixelAsset,
   PickupObject,
 } from "../../types/game";
@@ -1551,6 +1553,8 @@ export function MapEditor() {
     const definition = project.objects.find((object) => object.id === selectedObject.objectDefinitionId);
     const blocksMovement = selectedObject.blocksMovement ?? definition?.blocksMovement ?? false;
     const objectState = selectedObject.state ?? {};
+    const resolvedBehaviour = selectedObject.behaviourOverride ?? definition?.defaultBehaviour ?? makeDefaultObjectBehaviour("none");
+    const useDefaultBehaviour = !selectedObject.behaviourOverride;
 
     return (
       <>
@@ -1595,6 +1599,27 @@ export function MapEditor() {
           <div className="coordinate-readout">
             Footprint: {selectedObject.widthTiles ?? definition?.widthTiles ?? 1} x {selectedObject.heightTiles ?? definition?.heightTiles ?? 1} tiles
           </div>
+          <div className="panel-title secondary">Behaviour</div>
+          <div className="coordinate-readout">Resolved behaviour: {resolvedBehaviour.type}</div>
+          <label className="checkbox-row standalone">
+            <input
+              checked={useDefaultBehaviour}
+              onChange={(event) =>
+                updateSelectedObject({
+                  behaviourOverride: event.target.checked ? undefined : resolvedBehaviour,
+                })
+              }
+              type="checkbox"
+            />
+            Use definition default behaviour
+          </label>
+          {!useDefaultBehaviour ? (
+            <ObjectBehaviourEditor
+              behaviour={selectedObject.behaviourOverride ?? makeDefaultObjectBehaviour("none")}
+              onChange={(behaviour: ObjectBehaviour) => updateSelectedObject({ behaviourOverride: behaviour })}
+              project={project}
+            />
+          ) : null}
           {renderInteractionEditor(selectedObject.interaction)}
           <div className="panel-title secondary">State</div>
           {Object.entries(objectState).map(([key, value]) => (

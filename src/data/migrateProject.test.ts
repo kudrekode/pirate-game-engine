@@ -98,7 +98,7 @@ describe("migrateProject", () => {
 
   it("migrates object definitions and placed object instances", () => {
     const project = migrateProject({
-      objects: [{ id: "sign", name: "Sign", category: "sign", widthTiles: 1, heightTiles: 1 }],
+      objects: [{ id: "sign", name: "Sign", category: "sign", widthTiles: 1, heightTiles: 1, defaultBehaviour: { type: "sign", text: "Hello" } }],
       areas: [
         {
           id: "area_main",
@@ -116,6 +116,7 @@ describe("migrateProject", () => {
       widthTiles: 1,
       heightTiles: 1,
       blocksMovement: false,
+      defaultBehaviour: { type: "sign", text: "Hello" },
     });
     expect(project.areas[0].objects[0]).toMatchObject({
       id: "sign-instance",

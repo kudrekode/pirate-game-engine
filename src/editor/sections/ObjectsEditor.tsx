@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { makeDefaultObjectBehaviour, ObjectBehaviourEditor } from "../ObjectBehaviourEditor";
 import { useProjectStore } from "../../store/useProjectStore";
 import type { ObjectDefinition } from "../../types/game";
 
@@ -148,6 +149,12 @@ export function ObjectsEditor() {
               <input checked={selectedObject.blocksMovement} onChange={(event) => updateObject({ blocksMovement: event.target.checked })} type="checkbox" />
               Blocks movement by default
             </label>
+            <div className="panel-title secondary">Default Behaviour</div>
+            <ObjectBehaviourEditor
+              behaviour={selectedObject.defaultBehaviour ?? makeDefaultObjectBehaviour("none")}
+              onChange={(behaviour) => updateObject({ defaultBehaviour: behaviour })}
+              project={project}
+            />
             <div className="panel-title secondary">Default Interaction</div>
             <label>
               Type

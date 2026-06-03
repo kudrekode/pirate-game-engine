@@ -23,6 +23,7 @@ import type {
 } from "../types/game";
 import { collectPickup } from "./inventory";
 import { resolveMovementAt } from "./movement";
+import { runObjectBehaviour, type ObjectBehaviourResult } from "./objectBehaviour";
 import {
   isNpcTileWalkable,
   updatePatrolNPC,
@@ -113,6 +114,7 @@ export class AdventureScene extends Phaser.Scene {
   private readonly runtimeState: RuntimeGameState;
   private readonly runtimeQuestState: RuntimeQuestState;
   private readonly collectedPickupIds = new Set<string>();
+  private readonly openedObjectIds = new Set<string>();
   private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
   private readonly npcMovementStates = new Map<string, { movement: NPCMovementState; nextMoveAt: number }>();
   private readonly onInventoryChanged?: (inventory: Record<string, number>) => void;
@@ -221,6 +223,13 @@ export class AdventureScene extends Phaser.Scene {
         return;
       }
       this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
+        if (interactable.kind === "object" && this.runObjectBehaviour(interactable.object)) {
+          if (interactable.interaction && canInteractActivate(interactable.interaction)) {
+            this.runInteraction(interactable.interaction, interactable.label);
+          }
+          return;
+        }
+
         if (interactable.interaction && canInteractActivate(interactable.interaction)) {
           this.runInteraction(interactable.interaction, interactable.label);
         }
@@ -992,9 +1001,12 @@ export class AdventureScene extends Phaser.Scene {
     });
 
     this.currentArea.objects.forEach((object) => {
-      const interaction = object.interaction ?? this.getObjectDefinition(object)?.defaultInteraction;
+      const definition = this.getObjectDefinition(object);
+      const interaction = object.interaction ?? definition?.defaultInteraction;
       const hasRule = this.hasRuleTrigger({ type: "on_interact", targetId: object.id });
-      if ((!interaction || !canInteractActivate(interaction)) && !hasRule) {
+      const behaviour = this.getObjectBehaviour(object);
+      const hasBehaviour = behaviour.type !== "none";
+      if ((!interaction || !canInteractActivate(interaction)) && !hasRule && !hasBehaviour) {
         return;
       }
 
@@ -1215,6 +1227,72 @@ export class AdventureScene extends Phaser.Scene {
     this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
   }
 
+  private runObjectBehaviour(object: ObjectInstance): boolean {
+    const result = runObjectBehaviour(this.getObjectBehaviour(object), {
+      itemDefinitions: this.project.items,
+      objectId: object.id,
+      openedObjectIds: this.openedObjectIds,
+      state: this.runtimeState,
+    });
+
+    return this.applyObjectBehaviourResult(object, result);
+  }
+
+  private applyObjectBehaviourResult(object: ObjectInstance, result: ObjectBehaviourResult): boolean {
+    if (!result.handled) {
+      return false;
+    }
+
+    if (result.type === "container") {
+      this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
+      this.syncQuestProgress();
+      this.updateDebugPanel();
+      this.setStatus(result.message);
+      return true;
+    }
+
+    if (result.type === "door") {
+      if (!result.allowed) {
+        if (result.lockedCutsceneId) {
+          const cutscene = this.project.cutscenes.find((candidate) => candidate.id === result.lockedCutsceneId);
+          if (cutscene) {
+            this.showCutscene(cutscene, () => undefined);
+            return true;
+          }
+        }
+        this.setStatus(result.message);
+        return true;
+      }
+
+      if (result.targetAreaId && result.targetEventBlockId) {
+        const eventBlock = this.findEventBlock(result.targetEventBlockId, result.targetAreaId);
+        if (eventBlock) {
+          this.movePlayerToArea(result.targetAreaId, eventBlock);
+        } else {
+          this.setStatus(`Door target missing: ${object.id}.`);
+        }
+        return true;
+      }
+
+      this.setStatus(result.message);
+      return true;
+    }
+
+    if (result.type === "sign") {
+      this.showCutscene({
+        id: `object_sign_${object.id}`,
+        name: object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Sign",
+        backgroundImageId: "forest_path",
+        speakerName: object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Sign",
+        text: result.text,
+      }, () => undefined);
+      return true;
+    }
+
+    this.setStatus(result.message);
+    return true;
+  }
+
   private collectPickupObject(pickup: PickupObject): boolean {
     if (this.isPickupCollected(pickup)) {
       return false;
@@ -1318,12 +1396,14 @@ export class AdventureScene extends Phaser.Scene {
     const objectInteraction = object
       ? object.interaction ?? this.getObjectDefinition(object)?.defaultInteraction
       : undefined;
+    const objectBehaviour = object ? this.getObjectBehaviour(object) : { type: "none" as const };
     const objectHasRule = object
       ? this.hasRuleTrigger({ type: "on_touch", targetId: object.id })
       : false;
 
-    if (object && ((objectInteraction && canTouchActivate(objectInteraction)) || objectHasRule)) {
+    if (object && ((objectInteraction && canTouchActivate(objectInteraction)) || objectHasRule || objectBehaviour.type !== "none")) {
       this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
+        this.runObjectBehaviour(object);
         if (objectInteraction && canTouchActivate(objectInteraction)) {
           this.runInteraction(objectInteraction, object.nameOverride ?? this.getObjectDefinition(object)?.name ?? "Object");
         }
@@ -1408,6 +1488,10 @@ export class AdventureScene extends Phaser.Scene {
 
   private getObjectDefinition(object: ObjectInstance) {
     return this.project.objects.find((definition) => definition.id === object.objectDefinitionId);
+  }
+
+  private getObjectBehaviour(object: ObjectInstance) {
+    return object.behaviourOverride ?? this.getObjectDefinition(object)?.defaultBehaviour ?? { type: "none" as const };
   }
 
   private hasRuleTrigger(trigger: RuleTrigger): boolean {
