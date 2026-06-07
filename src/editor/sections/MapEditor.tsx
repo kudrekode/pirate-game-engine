@@ -1,12 +1,12 @@
 import {
+	type CSSProperties,
+	type PointerEvent,
 	useEffect,
 	useMemo,
 	useRef,
 	useState,
-	type CSSProperties,
-	type PointerEvent,
 } from "react";
-import { areaTemplates, type AreaTemplateId } from "../../data/areaTemplates";
+import { type AreaTemplateId, areaTemplates } from "../../data/areaTemplates";
 import {
 	getOverlayPreset,
 	getStructurePreset,
@@ -15,20 +15,18 @@ import {
 	structurePresets,
 	terrainPresets,
 } from "../../data/mapVisuals";
-import { useProjectStore } from "../../store/useProjectStore";
-import {
-	makeDefaultObjectBehaviour,
-	ObjectBehaviourEditor,
-} from "../ObjectBehaviourEditor";
+import { cloneProject } from "../../data/migrateProject";
 import {
 	defaultEnemyBehaviour,
 	resolveNPCInstance,
 } from "../../runtime/npcResolver";
+import { useProjectStore } from "../../store/useProjectStore";
 import type {
-	EnemyBehaviour,
 	EditorSelection,
+	EnemyBehaviour,
 	EventBlock,
 	GameAreaKind,
+	GameProject,
 	Interaction,
 	InteractionActivationMode,
 	MapOverlayFilter,
@@ -36,24 +34,31 @@ import type {
 	NPCAttributes,
 	NPCInstance,
 	NPCMovementConfig,
-	ObjectInstance,
 	ObjectBehaviour,
-	PixelAsset,
+	ObjectInstance,
 	PickupObject,
+	PixelAsset,
 } from "../../types/game";
+import {
+	makeDefaultObjectBehaviour,
+	ObjectBehaviourEditor,
+} from "../ObjectBehaviourEditor";
 
-type MapTool =
-	| "paint"
-	| "eraser"
-	| "fill"
-	| "event-block"
+type MapEditorTool = "select" | "paint" | "erase" | "pan";
+type BrushSize = 1 | 3 | 5;
+type PaintTarget =
+	| "terrain"
+	| "overlay"
+	| "structure"
+	| "eventBlock"
 	| "pickup"
 	| "npc"
-	| "object"
-	| "structure"
-	| "pan";
-type BrushSize = 1 | 3 | 5;
-type PaintLayer = "terrain" | "overlay" | "structure" | "event";
+	| "object";
+
+type MapEditHistoryEntry = {
+	before: GameProject;
+	after: GameProject;
+};
 
 const AUTO_EXPAND_BUFFER_TILES = 12;
 const MAX_MAP_SIZE = 200;
@@ -118,6 +123,29 @@ function isInBounds(
 	return x >= 0 && y >= 0 && x < width && y < height;
 }
 
+function isTypingTarget(target: EventTarget | null) {
+	if (!(target instanceof HTMLElement)) {
+		return false;
+	}
+
+	return (
+		target.tagName === "INPUT" ||
+		target.tagName === "SELECT" ||
+		target.tagName === "TEXTAREA" ||
+		target.isContentEditable
+	);
+}
+
+function getActiveArea(project: GameProject) {
+	const area =
+		project.areas.find((candidate) => candidate.id === project.activeAreaId) ??
+		project.areas[0];
+	if (!area) {
+		throw new Error("Map Editor requires at least one area.");
+	}
+	return area;
+}
+
 function pixelAssetToDataUrl(asset?: PixelAsset): string | undefined {
 	if (!asset) {
 		return undefined;
@@ -148,6 +176,7 @@ function emptyPixels(
 
 export function MapEditor() {
 	const project = useProjectStore((state) => state.project);
+	const setProject = useProjectStore((state) => state.setProject);
 	const setTiles = useProjectStore((state) => state.setTiles);
 	const setOverlayTiles = useProjectStore((state) => state.setOverlayTiles);
 	const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
@@ -177,13 +206,17 @@ export function MapEditor() {
 
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
+	const paintSessionBeforeRef = useRef<GameProject | null>(null);
+	const historyRef = useRef<{
+		undo: MapEditHistoryEntry[];
+		redo: MapEditHistoryEntry[];
+	}>({ undo: [], redo: [] });
+	const panHoldPreviousToolRef = useRef<MapEditorTool | null>(null);
 	const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
-	const activeArea = (project.areas.find(
-		(area) => area.id === project.activeAreaId,
-	) ?? project.areas[0])!;
+	const activeArea = getActiveArea(project);
 
-	const [activeTool, setActiveTool] = useState<MapTool>("paint");
-	const [paintLayer, setPaintLayer] = useState<PaintLayer>("terrain");
+	const [activeTool, setActiveTool] = useState<MapEditorTool>("paint");
+	const [paintTarget, setPaintTarget] = useState<PaintTarget>("terrain");
 	const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
 	const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
 	const [selectedStructureId, setSelectedStructureId] = useState("small_house");
@@ -217,6 +250,7 @@ export function MapEditor() {
 	const [pixelAssetId, setPixelAssetId] = useState("grass");
 	const [pixelColor, setPixelColor] = useState("#4f9a45");
 	const [isPaintingPixel, setIsPaintingPixel] = useState(false);
+	const [historyRevision, setHistoryRevision] = useState(0);
 
 	useEffect(() => {
 		setDraftMapSize({ width: activeArea.width, height: activeArea.height });
@@ -296,49 +330,115 @@ export function MapEditor() {
 		});
 	}, [activeArea]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: history handlers read current refs/store state; only the active tool changes the shortcut behavior.
+	useEffect(() => {
+		function handleKeyDown(event: KeyboardEvent) {
+			if (isTypingTarget(event.target)) {
+				return;
+			}
+
+			const key = event.key.toLowerCase();
+			if ((event.ctrlKey || event.metaKey) && key === "z") {
+				event.preventDefault();
+				if (event.shiftKey) {
+					redoMapEdit();
+				} else {
+					undoMapEdit();
+				}
+				return;
+			}
+
+			if ((event.ctrlKey || event.metaKey) && key === "y") {
+				event.preventDefault();
+				redoMapEdit();
+				return;
+			}
+
+			if (event.key === "1") {
+				setActiveTool("select");
+				return;
+			}
+
+			if (event.key === "2") {
+				setActiveTool("paint");
+				return;
+			}
+
+			if (event.key === "3") {
+				setActiveTool("erase");
+				return;
+			}
+
+			if (event.code === "Space" && !event.repeat) {
+				event.preventDefault();
+				panHoldPreviousToolRef.current = activeTool;
+				setActiveTool("pan");
+			}
+		}
+
+		function handleKeyUp(event: KeyboardEvent) {
+			if (event.code !== "Space" || !panHoldPreviousToolRef.current) {
+				return;
+			}
+
+			event.preventDefault();
+			setActiveTool(panHoldPreviousToolRef.current);
+			panHoldPreviousToolRef.current = null;
+		}
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [activeTool]);
+
 	const terrainLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
-		activeArea.terrainTiles.forEach((tile) =>
-			lookup.set(cellKey(tile.x, tile.y), tile.tileId),
-		);
+		activeArea.terrainTiles.forEach((tile) => {
+			lookup.set(cellKey(tile.x, tile.y), tile.tileId);
+		});
 		return lookup;
 	}, [activeArea.terrainTiles]);
 
 	const overlayLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
-		activeArea.overlayTiles.forEach((tile) =>
-			lookup.set(cellKey(tile.x, tile.y), tile.overlayId),
-		);
+		activeArea.overlayTiles.forEach((tile) => {
+			lookup.set(cellKey(tile.x, tile.y), tile.overlayId);
+		});
 		return lookup;
 	}, [activeArea.overlayTiles]);
 
 	const eventLookup = useMemo(() => {
 		const lookup = new Map<string, EventBlock>();
-		activeArea.eventBlocks.forEach((eventBlock) =>
-			lookup.set(cellKey(eventBlock.x, eventBlock.y), eventBlock),
-		);
+		activeArea.eventBlocks.forEach((eventBlock) => {
+			lookup.set(cellKey(eventBlock.x, eventBlock.y), eventBlock);
+		});
 		return lookup;
 	}, [activeArea.eventBlocks]);
 
 	const pickupLookup = useMemo(() => {
 		const lookup = new Map<string, PickupObject>();
-		activeArea.pickups.forEach((pickup) =>
-			lookup.set(cellKey(pickup.x, pickup.y), pickup),
-		);
+		activeArea.pickups.forEach((pickup) => {
+			lookup.set(cellKey(pickup.x, pickup.y), pickup);
+		});
 		return lookup;
 	}, [activeArea.pickups]);
 
 	const npcLookup = useMemo(() => {
 		const lookup = new Map<string, NPCInstance>();
-		activeArea.npcs.forEach((npc) => lookup.set(cellKey(npc.x, npc.y), npc));
+		activeArea.npcs.forEach((npc) => {
+			lookup.set(cellKey(npc.x, npc.y), npc);
+		});
 		return lookup;
 	}, [activeArea.npcs]);
 
 	const objectLookup = useMemo(() => {
 		const lookup = new Map<string, ObjectInstance>();
-		activeArea.objects.forEach((object) =>
-			lookup.set(cellKey(object.x, object.y), object),
-		);
+		activeArea.objects.forEach((object) => {
+			lookup.set(cellKey(object.x, object.y), object);
+		});
 		return lookup;
 	}, [activeArea.objects]);
 
@@ -434,6 +534,57 @@ export function MapEditor() {
 
 	// TODO: Support negative-direction expansion by shifting terrain/overlay/structure/event coordinates safely.
 
+	function cloneCurrentProject() {
+		return cloneProject(useProjectStore.getState().project);
+	}
+
+	function recordMapEdit(before: GameProject) {
+		const after = cloneCurrentProject();
+		if (JSON.stringify(before) === JSON.stringify(after)) {
+			return;
+		}
+
+		historyRef.current.undo = [
+			...historyRef.current.undo,
+			{ before, after },
+		].slice(-50);
+		historyRef.current.redo = [];
+		setHistoryRevision((revision) => revision + 1);
+	}
+
+	function restoreMapHistoryProject(projectSnapshot: GameProject) {
+		setProject(cloneProject(projectSnapshot));
+		const nextAreaId =
+			projectSnapshot.activeAreaId ??
+			projectSnapshot.areas[0]?.id ??
+			activeArea.id;
+		setSelection({ type: "area", areaId: nextAreaId });
+	}
+
+	function undoMapEdit() {
+		const entry = historyRef.current.undo[historyRef.current.undo.length - 1];
+		if (!entry) {
+			return;
+		}
+
+		historyRef.current.undo = historyRef.current.undo.slice(0, -1);
+		historyRef.current.redo = [...historyRef.current.redo, entry].slice(-50);
+		restoreMapHistoryProject(entry.before);
+		setHistoryRevision((revision) => revision + 1);
+	}
+
+	function redoMapEdit() {
+		const entry = historyRef.current.redo[historyRef.current.redo.length - 1];
+		if (!entry) {
+			return;
+		}
+
+		historyRef.current.redo = historyRef.current.redo.slice(0, -1);
+		historyRef.current.undo = [...historyRef.current.undo, entry].slice(-50);
+		restoreMapHistoryProject(entry.after);
+		setHistoryRevision((revision) => revision + 1);
+	}
+
 	function getBrushCells(centerX: number, centerY: number) {
 		const radius = Math.floor(brushSize / 2);
 		const cells: { x: number; y: number }[] = [];
@@ -450,13 +601,18 @@ export function MapEditor() {
 	}
 
 	function applyBrush(centerX: number, centerY: number) {
-		if (activeTool !== "paint" && activeTool !== "eraser") {
+		if (activeTool !== "paint" && activeTool !== "erase") {
 			return;
 		}
 
 		const cells = getBrushCells(centerX, centerY).filter((cell) => {
 			const key = cellKey(cell.x, cell.y);
-			if (paintedCellsRef.current.has(key) || eventLookup.has(key)) {
+			if (
+				paintedCellsRef.current.has(key) ||
+				(activeTool === "paint" &&
+					paintTarget !== "eventBlock" &&
+					eventLookup.has(key))
+			) {
 				return false;
 			}
 
@@ -464,89 +620,37 @@ export function MapEditor() {
 			return true;
 		});
 
-		if (paintLayer === "overlay") {
-			if (activeTool === "eraser") {
-				eraseOverlayTiles(cells);
-				return;
-			}
+		if (activeTool === "erase") {
+			cells.forEach((cell) => {
+				eraseCellAt(cell.x, cell.y);
+			});
+			return;
+		}
 
+		if (paintTarget === "overlay") {
 			setOverlayTiles(
 				cells.map((cell) => ({ ...cell, overlayId: selectedOverlayId })),
 			);
 			return;
 		}
 
-		if (paintLayer !== "terrain") {
+		if (paintTarget !== "terrain") {
 			return;
 		}
 
-		const targetTileId = activeTool === "eraser" ? "grass" : selectedTerrainId;
 		const updates = cells.flatMap((cell) => {
 			const key = cellKey(cell.x, cell.y);
 			const currentTileId = terrainLookup.get(key) ?? "grass";
 			const isOutsideCurrentMap =
 				cell.x >= activeArea.width || cell.y >= activeArea.height;
-			return currentTileId === targetTileId && !isOutsideCurrentMap
+			return currentTileId === selectedTerrainId && !isOutsideCurrentMap
 				? []
-				: [{ ...cell, tileId: targetTileId }];
+				: [{ ...cell, tileId: selectedTerrainId }];
 		});
 
 		if (updates.length > 0) {
 			setTiles(updates);
 		}
-	}
-
-	function floodFillFrom(startX: number, startY: number) {
-		if (paintLayer !== "terrain") {
-			setOverlayTiles([{ x: startX, y: startY, overlayId: selectedOverlayId }]);
-			return;
-		}
-
-		const startKey = cellKey(startX, startY);
-		if (!isInBounds(startX, startY, activeArea.width, activeArea.height)) {
-			setTiles([{ x: startX, y: startY, tileId: selectedTerrainId }]);
-			return;
-		}
-
-		const sourceTileId = terrainLookup.get(startKey) ?? "grass";
-		const targetTileId = selectedTerrainId;
-		if (sourceTileId === targetTileId || eventLookup.has(startKey)) {
-			return;
-		}
-
-		const visited = new Set<string>();
-		const queue = [{ x: startX, y: startY }];
-		const updates: { x: number; y: number; tileId: string }[] = [];
-
-		while (queue.length > 0) {
-			const cell = queue.shift();
-			if (
-				!cell ||
-				!isInBounds(cell.x, cell.y, activeArea.width, activeArea.height)
-			) {
-				continue;
-			}
-
-			const key = cellKey(cell.x, cell.y);
-			if (visited.has(key) || eventLookup.has(key)) {
-				continue;
-			}
-
-			visited.add(key);
-			if ((terrainLookup.get(key) ?? "grass") !== sourceTileId) {
-				continue;
-			}
-
-			updates.push({ ...cell, tileId: targetTileId });
-			queue.push(
-				{ x: cell.x + 1, y: cell.y },
-				{ x: cell.x - 1, y: cell.y },
-				{ x: cell.x, y: cell.y + 1 },
-				{ x: cell.x, y: cell.y - 1 },
-			);
-		}
-
-		setTiles(updates);
 	}
 
 	function placeStructure(x: number, y: number) {
@@ -613,8 +717,167 @@ export function MapEditor() {
 		});
 	}
 
+	function selectThingAt(x: number, y: number) {
+		const eventBlock = eventLookup.get(cellKey(x, y));
+		const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
+		const pickup = pickupLookup.get(cellKey(x, y));
+		const npc = npcLookup.get(cellKey(x, y));
+		const structure = findStructureAt(x, y);
+
+		if (object) {
+			setSelection({ type: "object", areaId: activeArea.id, id: object.id });
+			return true;
+		}
+
+		if (npc) {
+			setSelection({ type: "npc", areaId: activeArea.id, id: npc.id });
+			return true;
+		}
+
+		if (pickup) {
+			setSelection({ type: "pickup", areaId: activeArea.id, id: pickup.id });
+			return true;
+		}
+
+		if (eventBlock) {
+			setSelection({
+				type: "eventBlock",
+				areaId: activeArea.id,
+				id: eventBlock.id,
+			});
+			return true;
+		}
+
+		if (structure) {
+			setSelection({
+				type: "structure",
+				areaId: activeArea.id,
+				id: structure.id,
+			});
+			return true;
+		}
+
+		if (overlayLookup.has(cellKey(x, y))) {
+			setSelection({ type: "overlay", areaId: activeArea.id, x, y });
+			return true;
+		}
+
+		setSelection({ type: "terrain", areaId: activeArea.id, x, y });
+		return true;
+	}
+
+	function selectedEntityAt(x: number, y: number) {
+		if (!selection || selection.areaId !== activeArea.id) {
+			return undefined;
+		}
+
+		if (
+			selection.type === "object" &&
+			(objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y))?.id ===
+				selection.id
+		) {
+			return { type: "object" as const, id: selection.id };
+		}
+
+		if (
+			selection.type === "npc" &&
+			npcLookup.get(cellKey(x, y))?.id === selection.id
+		) {
+			return { type: "npc" as const, id: selection.id };
+		}
+
+		if (
+			selection.type === "pickup" &&
+			pickupLookup.get(cellKey(x, y))?.id === selection.id
+		) {
+			return { type: "pickup" as const, id: selection.id };
+		}
+
+		if (
+			selection.type === "eventBlock" &&
+			eventLookup.get(cellKey(x, y))?.id === selection.id
+		) {
+			return { type: "eventBlock" as const, id: selection.id };
+		}
+
+		if (
+			selection.type === "structure" &&
+			findStructureAt(x, y)?.id === selection.id
+		) {
+			return { type: "structure" as const, id: selection.id };
+		}
+
+		return undefined;
+	}
+
+	function deleteEntity(
+		entity: NonNullable<ReturnType<typeof selectedEntityAt>>,
+	) {
+		if (entity.type === "object") {
+			deleteObject(entity.id);
+		} else if (entity.type === "npc") {
+			deleteNpc(entity.id);
+		} else if (entity.type === "pickup") {
+			deletePickup(entity.id);
+		} else if (entity.type === "eventBlock") {
+			deleteEventBlock(entity.id);
+		} else {
+			deleteStructure(entity.id);
+		}
+		setSelection({ type: "area", areaId: activeArea.id });
+	}
+
+	function eraseCellAt(x: number, y: number) {
+		const selectedEntity = selectedEntityAt(x, y);
+		if (selectedEntity) {
+			deleteEntity(selectedEntity);
+			return;
+		}
+
+		const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
+		if (object) {
+			deleteEntity({ type: "object", id: object.id });
+			return;
+		}
+
+		const npc = npcLookup.get(cellKey(x, y));
+		if (npc) {
+			deleteEntity({ type: "npc", id: npc.id });
+			return;
+		}
+
+		const pickup = pickupLookup.get(cellKey(x, y));
+		if (pickup) {
+			deleteEntity({ type: "pickup", id: pickup.id });
+			return;
+		}
+
+		const eventBlock = eventLookup.get(cellKey(x, y));
+		if (eventBlock) {
+			deleteEntity({ type: "eventBlock", id: eventBlock.id });
+			return;
+		}
+
+		const structure = findStructureAt(x, y);
+		if (structure) {
+			deleteEntity({ type: "structure", id: structure.id });
+			return;
+		}
+
+		if (overlayLookup.has(cellKey(x, y))) {
+			eraseOverlayTiles([{ x, y }]);
+			setSelection({ type: "terrain", areaId: activeArea.id, x, y });
+			return;
+		}
+
+		if ((terrainLookup.get(cellKey(x, y)) ?? "grass") !== "grass") {
+			setTiles([{ x, y, tileId: "grass" }]);
+			setSelection({ type: "terrain", areaId: activeArea.id, x, y });
+		}
+	}
+
 	function selectPaintedCell(x: number, y: number) {
-		if (paintLayer === "overlay" && activeTool === "paint") {
+		if (paintTarget === "overlay" && activeTool === "paint") {
 			setSelection({ type: "overlay", areaId: activeArea.id, x, y });
 			return;
 		}
@@ -634,12 +897,21 @@ export function MapEditor() {
 		event.preventDefault();
 		event.stopPropagation();
 
-		const eventBlock = eventLookup.get(cellKey(x, y));
-		const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
-		const pickup = pickupLookup.get(cellKey(x, y));
-		const npc = npcLookup.get(cellKey(x, y));
+		if (activeTool === "select") {
+			selectThingAt(x, y);
+			return;
+		}
 
-		if (activeTool === "event-block") {
+		if (activeTool === "erase") {
+			paintedCellsRef.current.clear();
+			paintSessionBeforeRef.current = cloneCurrentProject();
+			setIsPainting(true);
+			applyBrush(x, y);
+			return;
+		}
+
+		if (paintTarget === "eventBlock") {
+			const eventBlock = eventLookup.get(cellKey(x, y));
 			if (eventBlock) {
 				setSelection({
 					type: "eventBlock",
@@ -649,96 +921,61 @@ export function MapEditor() {
 				return;
 			}
 
+			const before = cloneCurrentProject();
 			const id = addEventBlock(x, y);
 			setSelection({ type: "eventBlock", areaId: activeArea.id, id });
+			recordMapEdit(before);
 			return;
 		}
 
-		if (activeTool === "structure") {
+		if (paintTarget === "structure") {
+			const before = cloneCurrentProject();
 			placeStructure(x, y);
+			recordMapEdit(before);
 			return;
 		}
 
-		if (activeTool === "pickup") {
+		if (paintTarget === "pickup") {
+			const pickup = pickupLookup.get(cellKey(x, y));
 			if (pickup) {
 				setSelection({ type: "pickup", areaId: activeArea.id, id: pickup.id });
 				return;
 			}
 
+			const before = cloneCurrentProject();
 			placePickup(x, y);
+			recordMapEdit(before);
 			return;
 		}
 
-		if (activeTool === "object") {
+		if (paintTarget === "object") {
+			const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
 			if (object) {
 				setSelection({ type: "object", areaId: activeArea.id, id: object.id });
 				return;
 			}
 
+			const before = cloneCurrentProject();
 			placeObject(x, y);
+			recordMapEdit(before);
 			return;
 		}
 
-		if (activeTool === "npc") {
+		if (paintTarget === "npc") {
+			const npc = npcLookup.get(cellKey(x, y));
 			if (npc) {
 				setSelection({ type: "npc", areaId: activeArea.id, id: npc.id });
 				return;
 			}
 
+			const before = cloneCurrentProject();
 			placeNpc(x, y);
-			return;
-		}
-
-		if (eventBlock) {
-			setSelection({
-				type: "eventBlock",
-				areaId: activeArea.id,
-				id: eventBlock.id,
-			});
-			return;
-		}
-
-		if (object) {
-			setSelection({ type: "object", areaId: activeArea.id, id: object.id });
-			return;
-		}
-
-		if (pickup) {
-			setSelection({ type: "pickup", areaId: activeArea.id, id: pickup.id });
-			return;
-		}
-
-		if (npc) {
-			setSelection({ type: "npc", areaId: activeArea.id, id: npc.id });
-			return;
-		}
-
-		const structure = findStructureAt(x, y);
-		if (structure) {
-			setSelection({
-				type: "structure",
-				areaId: activeArea.id,
-				id: structure.id,
-			});
-			return;
-		}
-
-		if (
-			overlayLookup.has(cellKey(x, y)) &&
-			activeTool !== "eraser" &&
-			paintLayer !== "overlay"
-		) {
-			setSelection({ type: "overlay", areaId: activeArea.id, x, y });
-			return;
-		}
-
-		if (activeTool === "fill") {
-			floodFillFrom(x, y);
-			selectPaintedCell(x, y);
+			recordMapEdit(before);
 			return;
 		}
 
 		paintedCellsRef.current.clear();
+		paintSessionBeforeRef.current = cloneCurrentProject();
 		setIsPainting(true);
 		applyBrush(x, y);
 		selectPaintedCell(x, y);
@@ -774,7 +1011,7 @@ export function MapEditor() {
 	}
 
 	function handleCellPointerEnter(x: number, y: number) {
-		if (!isPainting || (activeTool !== "paint" && activeTool !== "eraser")) {
+		if (!isPainting || (activeTool !== "paint" && activeTool !== "erase")) {
 			return;
 		}
 
@@ -782,7 +1019,11 @@ export function MapEditor() {
 	}
 
 	function stopPainting() {
+		if (isPainting && paintSessionBeforeRef.current) {
+			recordMapEdit(paintSessionBeforeRef.current);
+		}
 		setIsPainting(false);
+		paintSessionBeforeRef.current = null;
 		paintedCellsRef.current.clear();
 	}
 
@@ -1456,8 +1697,10 @@ export function MapEditor() {
 			return;
 		}
 
+		const before = cloneCurrentProject();
 		deleteEventBlock(selectedEventBlock.id);
 		setSelection({ type: "area", areaId: activeArea.id });
+		recordMapEdit(before);
 	}
 
 	function applyMapResize() {
@@ -1509,20 +1752,20 @@ export function MapEditor() {
 
 	function selectTerrain(id: string) {
 		setSelectedTerrainId(id);
-		setPaintLayer("terrain");
+		setPaintTarget("terrain");
 		setActiveTool("paint");
 	}
 
 	function selectOverlay(id: string) {
 		setSelectedOverlayId(id);
-		setPaintLayer("overlay");
+		setPaintTarget("overlay");
 		setActiveTool("paint");
 	}
 
 	function selectStructure(id: string) {
 		setSelectedStructureId(id);
-		setPaintLayer("structure");
-		setActiveTool("structure");
+		setPaintTarget("structure");
+		setActiveTool("paint");
 	}
 
 	function movementRuleSummary(
@@ -1553,8 +1796,10 @@ export function MapEditor() {
 			return;
 		}
 
+		const before = cloneCurrentProject();
 		deleteStructure(selectedMapStructure.id);
 		setSelection({ type: "area", areaId: activeArea.id });
+		recordMapEdit(before);
 	}
 
 	function deleteSelectedObject() {
@@ -1562,8 +1807,10 @@ export function MapEditor() {
 			return;
 		}
 
+		const before = cloneCurrentProject();
 		deleteObject(selectedObject.id);
 		setSelection({ type: "area", areaId: activeArea.id });
+		recordMapEdit(before);
 	}
 
 	function deleteSelectedPickup() {
@@ -1571,8 +1818,10 @@ export function MapEditor() {
 			return;
 		}
 
+		const before = cloneCurrentProject();
 		deletePickup(selectedPickup.id);
 		setSelection({ type: "area", areaId: activeArea.id });
+		recordMapEdit(before);
 	}
 
 	function deleteSelectedNpc() {
@@ -1580,8 +1829,10 @@ export function MapEditor() {
 			return;
 		}
 
+		const before = cloneCurrentProject();
 		deleteNpc(selectedNpc.id);
 		setSelection({ type: "area", areaId: activeArea.id });
+		recordMapEdit(before);
 	}
 
 	function renderAreaInspector() {
@@ -2441,6 +2692,7 @@ export function MapEditor() {
 								(point, index) => (
 									<div
 										className="patrol-point-row"
+										// biome-ignore lint/suspicious/noArrayIndexKey: patrol paths may intentionally revisit the same coordinate, so sequence position is part of identity.
 										key={`${selectedNpc.id}_${index}`}
 									>
 										<span>{index + 1}</span>
@@ -2705,6 +2957,101 @@ export function MapEditor() {
 		return renderAreaInspector();
 	}
 
+	function getToolLabel() {
+		return activeTool.charAt(0).toUpperCase() + activeTool.slice(1);
+	}
+
+	function getPaletteLabel() {
+		if (paintTarget === "eventBlock") {
+			return "Event";
+		}
+
+		return paintTarget.charAt(0).toUpperCase() + paintTarget.slice(1);
+	}
+
+	function getPaintTargetLabel() {
+		if (paintTarget === "terrain") {
+			const preset = getTerrainPreset(selectedTerrainId);
+			const style = project.tileStyles[selectedTerrainId] ?? {
+				color: preset.color,
+				label: preset.label,
+			};
+			return `${style.label ?? preset.label} Tile`;
+		}
+
+		if (paintTarget === "overlay") {
+			return `${getOverlayPreset(selectedOverlayId).label} Overlay`;
+		}
+
+		if (paintTarget === "structure") {
+			return `${selectedStructure.label} Structure`;
+		}
+
+		if (paintTarget === "eventBlock") {
+			return "Event Block";
+		}
+
+		if (paintTarget === "pickup") {
+			return `${project.items[0]?.name ?? "Item"} Pickup`;
+		}
+
+		if (paintTarget === "npc") {
+			return `${project.npcs.find((npc) => npc.id === selectedNpcDefinitionId)?.name ?? "NPC"} NPC`;
+		}
+
+		return `${selectedObjectDefinition?.name ?? "Object"} Object`;
+	}
+
+	function getCurrentSelectionLabel() {
+		if (selectedEventBlock) {
+			return `${selectedEventBlock.name} Event`;
+		}
+
+		if (selectedMapStructure) {
+			return `${selectedMapStructure.name} Structure`;
+		}
+
+		if (selectedObject) {
+			const definition = project.objects.find(
+				(object) => object.id === selectedObject.objectDefinitionId,
+			);
+			return `${selectedObject.nameOverride ?? definition?.name ?? "Object"} Object`;
+		}
+
+		if (selectedPickup) {
+			const item = project.items.find(
+				(item) => item.id === selectedPickup.itemId,
+			);
+			return `${item?.name ?? "Item"} Pickup`;
+		}
+
+		if (selectedResolvedNpc) {
+			return `${selectedResolvedNpc.name} NPC`;
+		}
+
+		if (selectedOverlayTile?.overlayId) {
+			return `${getOverlayPreset(selectedOverlayTile.overlayId).label} Overlay`;
+		}
+
+		if (selectedTerrainTile) {
+			const preset = getTerrainPreset(selectedTerrainTile.tileId);
+			const style = project.tileStyles[selectedTerrainTile.tileId] ?? {
+				color: preset.color,
+				label: preset.label,
+			};
+			return `${style.label ?? preset.label} Tile`;
+		}
+
+		return activeArea.name;
+	}
+
+	const canUndo = historyRevision >= 0 && historyRef.current.undo.length > 0;
+	const canRedo = historyRevision >= 0 && historyRef.current.redo.length > 0;
+	const statusSelectedLabel =
+		activeTool === "select"
+			? getCurrentSelectionLabel()
+			: getPaintTargetLabel();
+
 	return (
 		<section
 			className="editor-panel map-editor"
@@ -2855,7 +3202,7 @@ export function MapEditor() {
 							return (
 								<button
 									className={`palette-item ${
-										selectedTerrainId === tile.id && paintLayer === "terrain"
+										selectedTerrainId === tile.id && paintTarget === "terrain"
 											? "selected"
 											: ""
 									}`}
@@ -2883,7 +3230,7 @@ export function MapEditor() {
 						{overlayPresets.map((overlay) => (
 							<button
 								className={`palette-item ${
-									selectedOverlayId === overlay.id && paintLayer === "overlay"
+									selectedOverlayId === overlay.id && paintTarget === "overlay"
 										? "selected"
 										: ""
 								}`}
@@ -2911,7 +3258,7 @@ export function MapEditor() {
 							<button
 								className={`palette-item ${
 									selectedStructureId === structure.id &&
-									activeTool === "structure"
+									paintTarget === "structure"
 										? "selected"
 										: ""
 								}`}
@@ -2947,11 +3294,11 @@ export function MapEditor() {
 						</select>
 					</label>
 					<button
-						className={`palette-item ${activeTool === "object" ? "selected" : ""}`}
+						className={`palette-item ${paintTarget === "object" ? "selected" : ""}`}
 						disabled={!selectedObjectDefinitionId}
 						onClick={() => {
-							setActiveTool("object");
-							setPaintLayer("event");
+							setActiveTool("paint");
+							setPaintTarget("object");
 						}}
 						type="button"
 					>
@@ -2963,10 +3310,10 @@ export function MapEditor() {
 				<details open className="palette-section">
 					<summary>Special</summary>
 					<button
-						className={`palette-item ${activeTool === "event-block" ? "selected" : ""}`}
+						className={`palette-item ${paintTarget === "eventBlock" ? "selected" : ""}`}
 						onClick={() => {
-							setActiveTool("event-block");
-							setPaintLayer("event");
+							setActiveTool("paint");
+							setPaintTarget("eventBlock");
 						}}
 						type="button"
 					>
@@ -2974,10 +3321,10 @@ export function MapEditor() {
 						Event block
 					</button>
 					<button
-						className={`palette-item ${activeTool === "pickup" ? "selected" : ""}`}
+						className={`palette-item ${paintTarget === "pickup" ? "selected" : ""}`}
 						onClick={() => {
-							setActiveTool("pickup");
-							setPaintLayer("event");
+							setActiveTool("paint");
+							setPaintTarget("pickup");
 						}}
 						type="button"
 					>
@@ -3000,11 +3347,11 @@ export function MapEditor() {
 						</select>
 					</label>
 					<button
-						className={`palette-item ${activeTool === "npc" ? "selected" : ""}`}
+						className={`palette-item ${paintTarget === "npc" ? "selected" : ""}`}
 						disabled={!selectedNpcDefinitionId}
 						onClick={() => {
-							setActiveTool("npc");
-							setPaintLayer("event");
+							setActiveTool("paint");
+							setPaintTarget("npc");
 						}}
 						type="button"
 					>
@@ -3016,6 +3363,13 @@ export function MapEditor() {
 				<div className="panel-title">Tools</div>
 				<div className="tool-button-grid">
 					<button
+						className={activeTool === "select" ? "selected" : ""}
+						onClick={() => setActiveTool("select")}
+						type="button"
+					>
+						Select
+					</button>
+					<button
 						className={activeTool === "paint" ? "selected" : ""}
 						onClick={() => setActiveTool("paint")}
 						type="button"
@@ -3023,18 +3377,11 @@ export function MapEditor() {
 						Paint
 					</button>
 					<button
-						className={activeTool === "eraser" ? "selected" : ""}
-						onClick={() => setActiveTool("eraser")}
+						className={activeTool === "erase" ? "selected" : ""}
+						onClick={() => setActiveTool("erase")}
 						type="button"
 					>
-						Eraser
-					</button>
-					<button
-						className={activeTool === "fill" ? "selected" : ""}
-						onClick={() => setActiveTool("fill")}
-						type="button"
-					>
-						Fill
+						Erase
 					</button>
 					<button
 						className={activeTool === "pan" ? "selected" : ""}
@@ -3045,9 +3392,17 @@ export function MapEditor() {
 					</button>
 				</div>
 				<p className="tool-note">
-					Layer: <strong>{paintLayer}</strong>. Terrain eraser resets to grass;
-					overlay eraser clears paths.
+					Hotkeys: 1 Select, 2 Paint, 3 Erase. Erase removes entities, then
+					overlays, then resets terrain to grass.
 				</p>
+				<div className="inline-actions map-history-actions">
+					<button disabled={!canUndo} onClick={undoMapEdit} type="button">
+						Undo
+					</button>
+					<button disabled={!canRedo} onClick={redoMapEdit} type="button">
+						Redo
+					</button>
+				</div>
 
 				<div className="panel-title">Brush</div>
 				<div className="segmented-control">
@@ -3166,7 +3521,26 @@ export function MapEditor() {
 					stopPanning(event);
 				}}
 				ref={mapStageRef}
+				role="application"
 			>
+				<div
+					aria-label="Map editor status"
+					className="map-status-bar"
+					role="status"
+				>
+					<span>
+						Tool: <strong>{getToolLabel()}</strong>
+					</span>
+					<span>
+						Palette: <strong>{getPaletteLabel()}</strong>
+					</span>
+					<span>
+						Selected: <strong>{statusSelectedLabel}</strong>
+					</span>
+					<span>
+						Area: <strong>{activeArea.name}</strong>
+					</span>
+				</div>
 				<div className="active-area-banner">
 					Editing: <strong>{activeArea.name}</strong>
 					<span>
@@ -3334,6 +3708,7 @@ export function MapEditor() {
 							height={renderHeight * cellSize}
 							width={renderWidth * cellSize}
 						>
+							<title>Selected NPC patrol path</title>
 							<polyline
 								points={selectedResolvedNpc.patrolPath.points
 									.map(
@@ -3343,6 +3718,7 @@ export function MapEditor() {
 									.join(" ")}
 							/>
 							{selectedResolvedNpc.patrolPath.points.map((point, index) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: patrol paths may intentionally revisit the same coordinate, so sequence position is part of identity.
 								<g key={`${point.x}_${point.y}_${index}`}>
 									<circle
 										cx={point.x * cellSize + cellSize / 2}
@@ -3530,6 +3906,7 @@ export function MapEditor() {
 									<button
 										aria-label={`Pixel ${x}, ${y}`}
 										className="pixel-cell"
+										// biome-ignore lint/suspicious/noArrayIndexKey: pixel coordinates are stable identities in the fixed-size asset grid.
 										key={`${x}:${y}`}
 										onPointerDown={() => {
 											setIsPaintingPixel(true);
