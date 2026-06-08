@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { editorSections, type EditorSectionId } from "./editor/sections";
+import { validateProject } from "./data/validateProject";
+import { type EditorSectionId, editorSections } from "./editor/sections";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import { useProjectStore } from "./store/useProjectStore";
 import type { GameProject } from "./types/game";
@@ -43,6 +44,7 @@ export default function App() {
 	const [statusMessage, setStatusMessage] = useState(
 		"Unsaved changes stay in this browser tab.",
 	);
+	const [isValidationOpen, setIsValidationOpen] = useState(false);
 	const importInputRef = useRef<HTMLInputElement>(null);
 	const savedProjectSnapshotRef = useRef(JSON.stringify(project));
 	const hasUnsavedChanges =
@@ -55,6 +57,16 @@ export default function App() {
 		[activeSectionId],
 	);
 	const ActiveSectionComponent = activeSection.component;
+	const validationIssues = useMemo(() => validateProject(project), [project]);
+	const validationErrorCount = validationIssues.filter(
+		(issue) => issue.severity === "error",
+	).length;
+	const validationLabel =
+		validationIssues.length === 0
+			? "0 issues"
+			: validationErrorCount > 0
+				? `${validationIssues.length} issues`
+				: `${validationIssues.length} warning${validationIssues.length === 1 ? "" : "s"}`;
 
 	function handleSave() {
 		saveToLocalStorage();
@@ -133,6 +145,55 @@ export default function App() {
 				</div>
 
 				<div className="top-actions">
+					<div className="validation-control">
+						<button
+							aria-controls="validation-panel"
+							aria-expanded={isValidationOpen}
+							className={`validation-indicator ${
+								validationErrorCount > 0
+									? "error"
+									: validationIssues.length > 0
+										? "warning"
+										: ""
+							}`}
+							onClick={() => setIsValidationOpen((open) => !open)}
+							type="button"
+						>
+							{validationLabel}
+						</button>
+						{isValidationOpen ? (
+							<section
+								aria-label="Project validation issues"
+								className="validation-panel"
+								id="validation-panel"
+							>
+								<div className="validation-panel-header">
+									<strong>Validation</strong>
+									<span>{validationLabel}</span>
+								</div>
+								{validationIssues.length === 0 ? (
+									<p>No validation issues.</p>
+								) : (
+									<div className="validation-issue-list">
+										{validationIssues.map((issue) => (
+											<div
+												className={`validation-issue ${issue.severity}`}
+												key={issue.id}
+											>
+												<div className="validation-issue-heading">
+													<strong>{issue.severity}</strong>
+													{issue.entityType ? (
+														<span>{issue.entityType}</span>
+													) : null}
+												</div>
+												<p>{issue.message}</p>
+											</div>
+										))}
+									</div>
+								)}
+							</section>
+						) : null}
+					</div>
 					<button onClick={handleSave} type="button">
 						Save
 					</button>

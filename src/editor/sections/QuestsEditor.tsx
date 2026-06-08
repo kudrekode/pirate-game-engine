@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
+	GameAction,
 	GameStateValue,
 	Objective,
 	ObjectiveCondition,
@@ -31,6 +32,15 @@ function readValue(
 	referenceValue: GameStateValue,
 ): GameStateValue {
 	return typeof referenceValue === "number" ? Number(rawValue) : rawValue;
+}
+
+function actionReferencesQuest(action: GameAction, questId: string) {
+	return (
+		(action.type === "activate_quest" ||
+			action.type === "complete_quest" ||
+			action.type === "fail_quest") &&
+		action.questId === questId
+	);
 }
 
 export function QuestsEditor() {
@@ -82,7 +92,15 @@ export function QuestsEditor() {
 			return;
 		}
 
-		if (!window.confirm(`Delete quest "${selectedQuest.name}"?`)) {
+		const isReferenced = project.rules.some((rule) =>
+			[...rule.actions, ...(rule.elseActions ?? [])].some((action) =>
+				actionReferencesQuest(action, selectedQuest.id),
+			),
+		);
+		const confirmation = isReferenced
+			? `Delete quest "${selectedQuest.name}"? Rules referencing it will remain and appear as validation warnings.`
+			: `Delete quest "${selectedQuest.name}"?`;
+		if (!window.confirm(confirmation)) {
 			return;
 		}
 

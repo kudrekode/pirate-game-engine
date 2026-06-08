@@ -62,6 +62,23 @@ describe("editor smoke tests", () => {
 		expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
 	}, 15000);
 
+	it("shows project validation issues from the top bar", () => {
+		const project = cloneProject(defaultProject);
+		project.rules[0].actions.push({
+			type: "give_item",
+			itemId: "missing_item",
+			quantity: 1,
+		});
+		useProjectStore.getState().setProject(project);
+
+		render(<App />);
+
+		fireEvent.click(screen.getByRole("button", { name: "1 warning" }));
+		expect(
+			screen.getByLabelText("Project validation issues"),
+		).toHaveTextContent('missing item "missing_item"');
+	}, 15000);
+
 	it("renders Map Editor", () => {
 		render(<MapEditor />);
 
@@ -283,6 +300,18 @@ describe("editor smoke tests", () => {
 
 		expect(screen.getAllByText("Get Tavern Access")).toHaveLength(2);
 		expect(screen.getByDisplayValue("Have 5 Gold Coins")).toBeInTheDocument();
+	});
+
+	it("warns when deleting a quest referenced by rules", () => {
+		const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+		render(<QuestsEditor />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Delete quest" }));
+
+		expect(confirm).toHaveBeenCalledWith(
+			expect.stringContaining("appear as validation warnings"),
+		);
+		confirm.mockRestore();
 	});
 
 	it("renders NPCs Editor", () => {
