@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import {
-	createAreaFromTemplate,
 	type AreaTemplateId,
+	createAreaFromTemplate,
 } from "../data/areaTemplates";
 import { defaultProject } from "../data/defaultProject";
-import { cloneProject, migrateProject } from "../data/migrateProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
+import { cloneProject, migrateProject } from "../data/migrateProject";
 import { backgroundPresets, portraitPresets } from "../data/presets";
 import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
@@ -21,15 +21,16 @@ import type {
 	NPCInstance,
 	ObjectInstance,
 	OverlayTile,
-	PlayerConfig,
 	PickupObject,
 	PixelAsset,
+	PlayerConfig,
 	ProgressionAction,
 	ProgressionStep,
 	TileStyleConfig,
 } from "../types/game";
 
 const STORAGE_KEY = "adventure-builder-project-v1";
+const AUTOSAVE_DRAFT_STORAGE_KEY = "adventure-builder-project-draft-v1";
 
 type ProgressionType = ProgressionAction["type"];
 
@@ -1255,4 +1256,4 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		})),
 }));
 
-export { STORAGE_KEY };
+export { AUTOSAVE_DRAFT_STORAGE_KEY, STORAGE_KEY };

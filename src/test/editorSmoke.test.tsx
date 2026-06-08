@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { defaultProject } from "../data/defaultProject";
@@ -11,7 +11,11 @@ import { ObjectsEditor } from "../editor/sections/ObjectsEditor";
 import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
 import { QuestsEditor } from "../editor/sections/QuestsEditor";
 import { ShopsEditor } from "../editor/sections/ShopsEditor";
-import { useProjectStore } from "../store/useProjectStore";
+import {
+	AUTOSAVE_DRAFT_STORAGE_KEY,
+	STORAGE_KEY,
+	useProjectStore,
+} from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
 	RuntimePanel: () => <div>Runtime mock</div>,
@@ -49,7 +53,7 @@ describe("editor smoke tests", () => {
 
 		expect(screen.getByDisplayValue("Demo Adventure")).toBeInTheDocument();
 		expect(screen.getByText("Saved")).toBeInTheDocument();
-		const logicTab = screen.getByRole("button", { name: "Logic" });
+		const logicTab = getButtonByText("Logic");
 		expect(logicTab).toHaveAttribute(
 			"title",
 			"Build plain-English rules using triggers, conditions, and actions.",
@@ -73,19 +77,72 @@ describe("editor smoke tests", () => {
 
 		render(<App />);
 
-		fireEvent.click(screen.getByRole("button", { name: "1 warning" }));
+		fireEvent.click(getButtonByText("1 warning"));
 		expect(
 			screen.getByLabelText("Project validation issues"),
 		).toHaveTextContent('missing item "missing_item"');
+	}, 15000);
+
+	it("saves with Ctrl+S", () => {
+		localStorage.removeItem(STORAGE_KEY);
+		render(<App />);
+
+		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
+			target: { value: "Shortcut Save" },
+		});
+		fireEvent.keyDown(window, { ctrlKey: true, key: "s" });
+
+		expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}")).toMatchObject(
+			{
+				metadata: { name: "Shortcut Save" },
+			},
+		);
+		expect(screen.getByText("Saved to localStorage.")).toBeInTheDocument();
+	}, 15000);
+
+	it("autosaves changes to a separate draft key", () => {
+		vi.useFakeTimers();
+		localStorage.removeItem(STORAGE_KEY);
+		localStorage.removeItem(AUTOSAVE_DRAFT_STORAGE_KEY);
+		render(<App />);
+
+		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
+			target: { value: "Autosaved Draft" },
+		});
+		act(() => vi.advanceTimersByTime(3000));
+
+		expect(
+			JSON.parse(localStorage.getItem(AUTOSAVE_DRAFT_STORAGE_KEY) ?? "{}"),
+		).toMatchObject({ metadata: { name: "Autosaved Draft" } });
+		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+		expect(screen.getByText(/Draft autosaved/)).toBeInTheDocument();
+		vi.useRealTimers();
+	});
+
+	it("restores editor panel scroll position when switching tabs", () => {
+		render(<App />);
+		const mapToolPanel = document.querySelector<HTMLElement>(
+			".map-tool-panel-content",
+		);
+		expect(mapToolPanel).not.toBeNull();
+		if (!mapToolPanel) {
+			throw new Error("Map tool panel not found.");
+		}
+		mapToolPanel.scrollTop = 180;
+
+		fireEvent.click(getButtonByText("Logic"));
+		fireEvent.click(getButtonByText("Map"));
+
+		expect(
+			document.querySelector<HTMLElement>(".map-tool-panel-content")?.scrollTop,
+		).toBe(180);
 	}, 15000);
 
 	it("renders Map Editor", () => {
 		render(<MapEditor />);
 
 		expect(screen.getByText("Map size")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "Reset Zoom" }),
-		).toBeInTheDocument();
+		expect(getButtonByText("Reset Zoom")).toBeInTheDocument();
 	}, 15000);
 
 	it("edits selected NPC attributes in the Map inspector", () => {
@@ -264,6 +321,76 @@ describe("editor smoke tests", () => {
 		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
 			"Area: Main Area",
 		);
+	}, 15000);
+
+	it("resizes and persists the Map sidebars", () => {
+		render(<MapEditor />);
+		const paletteHandle = document.querySelector<HTMLElement>(
+			".palette-resize-handle",
+		);
+		const palette = paletteHandle?.parentElement;
+		const inspectorHandle = document.querySelector<HTMLElement>(
+			".inspector-resize-handle",
+		);
+		const inspector = inspectorHandle?.parentElement;
+		const mapEditor = document.querySelector<HTMLElement>(".map-editor");
+		expect(paletteHandle).not.toBeNull();
+		expect(palette).not.toBeNull();
+		expect(inspectorHandle).not.toBeNull();
+		expect(inspector).not.toBeNull();
+		expect(mapEditor).not.toBeNull();
+		if (
+			!paletteHandle ||
+			!palette ||
+			!inspectorHandle ||
+			!inspector ||
+			!mapEditor
+		) {
+			throw new Error("Map sidebar resize elements not found.");
+		}
+		paletteHandle.setPointerCapture = vi.fn();
+		paletteHandle.hasPointerCapture = vi.fn(() => true);
+		paletteHandle.releasePointerCapture = vi.fn();
+		palette.getBoundingClientRect = vi.fn(() => ({ left: 100 }) as DOMRect);
+		inspectorHandle.setPointerCapture = vi.fn();
+		inspectorHandle.hasPointerCapture = vi.fn(() => true);
+		inspectorHandle.releasePointerCapture = vi.fn();
+		inspector.getBoundingClientRect = vi.fn(() => ({ right: 800 }) as DOMRect);
+
+		fireEvent.pointerDown(paletteHandle, { pointerId: 1 });
+		fireEvent.pointerMove(paletteHandle, { clientX: 400, pointerId: 1 });
+		fireEvent.pointerUp(paletteHandle, { pointerId: 1 });
+		fireEvent.pointerDown(inspectorHandle, { pointerId: 2 });
+		fireEvent.pointerMove(inspectorHandle, { clientX: 500, pointerId: 2 });
+		fireEvent.pointerUp(inspectorHandle, { pointerId: 2 });
+
+		expect(mapEditor.style.getPropertyValue("--map-palette-width")).toBe(
+			"300px",
+		);
+		expect(mapEditor.style.getPropertyValue("--map-inspector-width")).toBe(
+			"300px",
+		);
+		expect(localStorage.getItem("map-editor-palette-width-v3")).toBe("300");
+		expect(localStorage.getItem("map-editor-inspector-width-v1")).toBe("300");
+	}, 15000);
+
+	it("keeps the Map palette scrollbar separate from its resize handle", () => {
+		render(<MapEditor />);
+
+		const sidebar = document.querySelector<HTMLElement>(".map-tool-panel");
+		const content = document.querySelector<HTMLElement>(
+			".map-tool-panel-content",
+		);
+		const handle = document.querySelector<HTMLElement>(
+			".palette-resize-handle",
+		);
+		if (!sidebar || !content || !handle) {
+			throw new Error("Map palette layout elements not found.");
+		}
+
+		expect(sidebar.children).toHaveLength(2);
+		expect(sidebar.children[0]).toBe(content);
+		expect(sidebar.children[1]).toBe(handle);
 	}, 15000);
 
 	it("renders Logic Builder", () => {

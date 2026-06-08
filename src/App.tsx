@@ -1,8 +1,18 @@
-import { useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { validateProject } from "./data/validateProject";
 import { type EditorSectionId, editorSections } from "./editor/sections";
 import { RuntimePanel } from "./runtime/RuntimePanel";
-import { useProjectStore } from "./store/useProjectStore";
+import {
+	AUTOSAVE_DRAFT_STORAGE_KEY,
+	useProjectStore,
+} from "./store/useProjectStore";
 import type { GameProject } from "./types/game";
 
 function cloneProject(project: GameProject): GameProject {
@@ -23,6 +33,15 @@ function downloadJson(project: GameProject) {
 	link.remove();
 	URL.revokeObjectURL(url);
 }
+
+type ScrollPosition = {
+	scrollLeft: number;
+	scrollTop: number;
+};
+
+const EDITOR_SCROLL_SELECTOR =
+	".map-tool-panel-content, .tool-panel:not(.map-tool-panel), .inspector-panel, .content-panel, .map-stage";
+const AUTOSAVE_DELAY_MS = 3000;
 
 export default function App() {
 	const project = useProjectStore((state) => state.project);
@@ -45,8 +64,14 @@ export default function App() {
 		"Unsaved changes stay in this browser tab.",
 	);
 	const [isValidationOpen, setIsValidationOpen] = useState(false);
+	const [autosaveTimestamp, setAutosaveTimestamp] = useState("");
+	const editorShellRef = useRef<HTMLElement>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
 	const savedProjectSnapshotRef = useRef(JSON.stringify(project));
+	const autosavedProjectSnapshotRef = useRef(JSON.stringify(project));
+	const tabScrollPositionsRef = useRef(
+		new Map<EditorSectionId, ScrollPosition[]>(),
+	);
 	const hasUnsavedChanges =
 		JSON.stringify(project) !== savedProjectSnapshotRef.current;
 
@@ -68,10 +93,77 @@ export default function App() {
 				? `${validationIssues.length} issues`
 				: `${validationIssues.length} warning${validationIssues.length === 1 ? "" : "s"}`;
 
-	function handleSave() {
+	const handleSave = useCallback(() => {
 		saveToLocalStorage();
 		savedProjectSnapshotRef.current = JSON.stringify(project);
 		setStatusMessage("Saved to localStorage.");
+	}, [project, saveToLocalStorage]);
+
+	useEffect(() => {
+		function handleSaveShortcut(event: KeyboardEvent) {
+			if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+				event.preventDefault();
+				handleSave();
+			}
+		}
+
+		window.addEventListener("keydown", handleSaveShortcut);
+		return () => window.removeEventListener("keydown", handleSaveShortcut);
+	}, [handleSave]);
+
+	useEffect(() => {
+		const snapshot = JSON.stringify(project);
+		if (snapshot === autosavedProjectSnapshotRef.current) {
+			return;
+		}
+
+		const timeoutId = window.setTimeout(() => {
+			localStorage.setItem(AUTOSAVE_DRAFT_STORAGE_KEY, snapshot);
+			autosavedProjectSnapshotRef.current = snapshot;
+			setAutosaveTimestamp(
+				new Date().toLocaleTimeString([], {
+					hour: "2-digit",
+					minute: "2-digit",
+				}),
+			);
+		}, AUTOSAVE_DELAY_MS);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [project]);
+
+	useLayoutEffect(() => {
+		const positions = tabScrollPositionsRef.current.get(activeSectionId);
+		if (!positions || !editorShellRef.current) {
+			return;
+		}
+
+		const elements = Array.from(
+			editorShellRef.current.querySelectorAll<HTMLElement>(
+				EDITOR_SCROLL_SELECTOR,
+			),
+		);
+		elements.forEach((element, index) => {
+			const position = positions[index];
+			if (position) {
+				element.scrollLeft = position.scrollLeft;
+				element.scrollTop = position.scrollTop;
+			}
+		});
+	}, [activeSectionId]);
+
+	function handleSectionChange(nextSectionId: EditorSectionId) {
+		if (editorShellRef.current) {
+			const positions = Array.from(
+				editorShellRef.current.querySelectorAll<HTMLElement>(
+					EDITOR_SCROLL_SELECTOR,
+				),
+			).map((element) => ({
+				scrollLeft: element.scrollLeft,
+				scrollTop: element.scrollTop,
+			}));
+			tabScrollPositionsRef.current.set(activeSectionId, positions);
+		}
+		setActiveSectionId(nextSectionId);
 	}
 
 	function handleLoad() {
@@ -142,6 +234,11 @@ export default function App() {
 						{hasUnsavedChanges ? "Unsaved changes" : "Saved"}
 					</span>
 					<span>{statusMessage}</span>
+					{autosaveTimestamp ? (
+						<span className="autosave-time">
+							Draft autosaved {autosaveTimestamp}
+						</span>
+					) : null}
 				</div>
 
 				<div className="top-actions">
@@ -194,7 +291,12 @@ export default function App() {
 							</section>
 						) : null}
 					</div>
-					<button onClick={handleSave} type="button">
+					<button
+						className="primary-button"
+						onClick={handleSave}
+						title="Save project (Ctrl/Cmd+S)"
+						type="button"
+					>
 						Save
 					</button>
 					<button onClick={handleLoad} type="button">
@@ -243,7 +345,7 @@ export default function App() {
 				/>
 			) : (
 				<>
-					<main className="editor-shell">
+					<main className="editor-shell" ref={editorShellRef}>
 						<ActiveSectionComponent />
 					</main>
 					<nav className="bottom-tabs" aria-label="Editor sections">
@@ -251,7 +353,7 @@ export default function App() {
 							<button
 								className={activeSectionId === section.id ? "active" : ""}
 								key={section.id}
-								onClick={() => setActiveSectionId(section.id)}
+								onClick={() => handleSectionChange(section.id)}
 								title={section.description}
 								type="button"
 							>
