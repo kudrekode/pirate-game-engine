@@ -6,11 +6,17 @@ import {
 	useRef,
 	useState,
 } from "react";
+import {
+	createProjectFromPreset,
+	type ProjectPresetId,
+	projectPresets,
+} from "./data/projectPresets";
 import { validateProject } from "./data/validateProject";
 import { type EditorSectionId, editorSections } from "./editor/sections";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import {
 	AUTOSAVE_DRAFT_STORAGE_KEY,
+	STORAGE_KEY,
 	useProjectStore,
 } from "./store/useProjectStore";
 import type { GameProject } from "./types/game";
@@ -53,8 +59,10 @@ export default function App() {
 		(state) => state.loadFromLocalStorage,
 	);
 	const setProject = useProjectStore((state) => state.setProject);
-	const resetProject = useProjectStore((state) => state.resetProject);
 
+	const [isStartupReady, setIsStartupReady] = useState(false);
+	const [isPresetChooserOpen, setIsPresetChooserOpen] = useState(false);
+	const [isInitialPresetChoice, setIsInitialPresetChoice] = useState(false);
 	const [activeSectionId, setActiveSectionId] =
 		useState<EditorSectionId>("map");
 	const [runtimeProject, setRuntimeProject] = useState<GameProject | null>(
@@ -98,6 +106,32 @@ export default function App() {
 		savedProjectSnapshotRef.current = JSON.stringify(project);
 		setStatusMessage("Saved to localStorage.");
 	}, [project, saveToLocalStorage]);
+
+	useEffect(() => {
+		try {
+			if (localStorage.getItem(STORAGE_KEY)) {
+				loadFromLocalStorage();
+				savedProjectSnapshotRef.current = JSON.stringify(
+					useProjectStore.getState().project,
+				);
+				setStatusMessage("Loaded saved project.");
+			} else {
+				const draft = localStorage.getItem(AUTOSAVE_DRAFT_STORAGE_KEY);
+				if (draft) {
+					setProject(JSON.parse(draft) as GameProject);
+					setStatusMessage("Loaded autosaved draft.");
+				} else {
+					setIsInitialPresetChoice(true);
+					setIsPresetChooserOpen(true);
+				}
+			}
+		} catch {
+			setStatusMessage("Could not load saved project.");
+			setIsPresetChooserOpen(true);
+		} finally {
+			setIsStartupReady(true);
+		}
+	}, [loadFromLocalStorage, setProject]);
 
 	useEffect(() => {
 		function handleSaveShortcut(event: KeyboardEvent) {
@@ -185,6 +219,28 @@ export default function App() {
 		}
 	}
 
+	function handlePresetSelection(presetId: ProjectPresetId) {
+		const preset =
+			projectPresets.find((candidate) => candidate.id === presetId) ??
+			projectPresets[0];
+		if (
+			isStartupReady &&
+			hasUnsavedChanges &&
+			!window.confirm(
+				`Start a new ${preset.label}? Unsaved changes will be lost.`,
+			)
+		) {
+			return;
+		}
+
+		setProject(createProjectFromPreset(preset.id));
+		savedProjectSnapshotRef.current = "";
+		setRuntimeProject(null);
+		setIsInitialPresetChoice(false);
+		setIsPresetChooserOpen(false);
+		setStatusMessage(`Created ${preset.label}.`);
+	}
+
 	function handleImport(event: React.ChangeEvent<HTMLInputElement>) {
 		const file = event.target.files?.[0];
 		if (!file) {
@@ -210,6 +266,10 @@ export default function App() {
 			.finally(() => {
 				event.target.value = "";
 			});
+	}
+
+	if (!isStartupReady) {
+		return null;
 	}
 
 	return (
@@ -292,6 +352,15 @@ export default function App() {
 						) : null}
 					</div>
 					<button
+						onClick={() => {
+							setIsInitialPresetChoice(false);
+							setIsPresetChooserOpen(true);
+						}}
+						type="button"
+					>
+						New Project
+					</button>
+					<button
 						className="primary-button"
 						onClick={handleSave}
 						title="Save project (Ctrl/Cmd+S)"
@@ -310,12 +379,12 @@ export default function App() {
 					</button>
 					<button
 						onClick={() => {
-							resetProject();
+							setProject(createProjectFromPreset("demo"));
 							savedProjectSnapshotRef.current = JSON.stringify(
 								useProjectStore.getState().project,
 							);
 							setRuntimeProject(null);
-							setStatusMessage("Reset to demo project.");
+							setStatusMessage("Reset to Demo Project.");
 						}}
 						type="button"
 					>
@@ -363,6 +432,47 @@ export default function App() {
 					</nav>
 				</>
 			)}
+			{isPresetChooserOpen ? (
+				<div className="preset-chooser-backdrop">
+					<section
+						aria-label="Choose a starter project"
+						className="preset-chooser"
+					>
+						<div className="preset-chooser-heading">
+							<div>
+								<strong>Choose a starter project</strong>
+								<p>Start clean or explore the feature demo.</p>
+							</div>
+							{!isInitialPresetChoice ? (
+								<button
+									aria-label="Close preset chooser"
+									onClick={() => setIsPresetChooserOpen(false)}
+									type="button"
+								>
+									Close
+								</button>
+							) : null}
+						</div>
+						<div className="preset-options">
+							{projectPresets.map((preset) => (
+								<button
+									className="preset-option"
+									key={preset.id}
+									onClick={() => handlePresetSelection(preset.id)}
+									type="button"
+								>
+									<strong>{preset.label}</strong>
+									<span>
+										{preset.id === "blank"
+											? "One clean area with only the required player spawn."
+											: "Feature-rich demo content with a clean active map area."}
+									</span>
+								</button>
+							))}
+						</div>
+					</section>
+				</div>
+			) : null}
 		</div>
 	);
 }

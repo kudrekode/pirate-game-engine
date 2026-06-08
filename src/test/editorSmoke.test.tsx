@@ -22,7 +22,9 @@ vi.mock("../runtime/RuntimePanel", () => ({
 }));
 
 beforeEach(() => {
+	localStorage.clear();
 	useProjectStore.getState().setProject(cloneProject(defaultProject));
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProject));
 });
 
 function getMapTile(name: string) {
@@ -47,11 +49,17 @@ function getButtonByText(text: string) {
 	return button;
 }
 
+function getPresetButton(name: string) {
+	return screen.getByRole("button", { name: new RegExp(name) });
+}
+
 describe("editor smoke tests", () => {
-	it("renders App and switches to the Logic tab", () => {
+	it("renders App and switches to the Logic tab", async () => {
 		render(<App />);
 
-		expect(screen.getByDisplayValue("Demo Adventure")).toBeInTheDocument();
+		expect(
+			await screen.findByDisplayValue("Demo Adventure"),
+		).toBeInTheDocument();
 		expect(screen.getByText("Saved")).toBeInTheDocument();
 		const logicTab = getButtonByText("Logic");
 		expect(logicTab).toHaveAttribute(
@@ -66,7 +74,7 @@ describe("editor smoke tests", () => {
 		expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
 	}, 15000);
 
-	it("shows project validation issues from the top bar", () => {
+	it("shows project validation issues from the top bar", async () => {
 		const project = cloneProject(defaultProject);
 		project.rules[0].actions.push({
 			type: "give_item",
@@ -74,18 +82,23 @@ describe("editor smoke tests", () => {
 			quantity: 1,
 		});
 		useProjectStore.getState().setProject(project);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
 
 		render(<App />);
 
+		await screen.findByDisplayValue("Demo Adventure");
 		fireEvent.click(getButtonByText("1 warning"));
 		expect(
 			screen.getByLabelText("Project validation issues"),
 		).toHaveTextContent('missing item "missing_item"');
 	}, 15000);
 
-	it("saves with Ctrl+S", () => {
+	it("saves with Ctrl+S", async () => {
 		localStorage.removeItem(STORAGE_KEY);
 		render(<App />);
+		fireEvent.click(
+			await screen.findByRole("button", { name: /Demo Project/ }),
+		);
 
 		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
 			target: { value: "Shortcut Save" },
@@ -100,11 +113,38 @@ describe("editor smoke tests", () => {
 		expect(screen.getByText("Saved to localStorage.")).toBeInTheDocument();
 	}, 15000);
 
+	it("replaces the current project from a preset after confirming unsaved changes", async () => {
+		const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+		render(<App />);
+
+		await screen.findByDisplayValue("Demo Adventure");
+		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
+			target: { value: "Unsaved Adventure" },
+		});
+		fireEvent.click(getButtonByText("New Project"));
+		fireEvent.click(getPresetButton("Blank Project"));
+		expect(useProjectStore.getState().project.metadata.name).toBe(
+			"Unsaved Adventure",
+		);
+
+		confirm.mockReturnValue(true);
+		fireEvent.click(getPresetButton("Blank Project"));
+
+		const project = useProjectStore.getState().project;
+		expect(confirm).toHaveBeenCalledTimes(2);
+		expect(project.metadata.name).toBe("Blank Project");
+		expect(project.areas).toHaveLength(1);
+		expect(project.items).toEqual([]);
+		expect(project.npcs).toEqual([]);
+		expect(screen.getByText("Created Blank Project.")).toBeInTheDocument();
+	}, 15000);
+
 	it("autosaves changes to a separate draft key", () => {
 		vi.useFakeTimers();
 		localStorage.removeItem(STORAGE_KEY);
 		localStorage.removeItem(AUTOSAVE_DRAFT_STORAGE_KEY);
 		render(<App />);
+		fireEvent.click(getPresetButton("Demo Project"));
 
 		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
 			target: { value: "Autosaved Draft" },
@@ -117,6 +157,55 @@ describe("editor smoke tests", () => {
 		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
 		expect(screen.getByText(/Draft autosaved/)).toBeInTheDocument();
 		vi.useRealTimers();
+	}, 15000);
+
+	it("shows the preset chooser on first load and creates a blank project", () => {
+		localStorage.clear();
+		render(<App />);
+
+		expect(
+			screen.getByLabelText("Choose a starter project"),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByLabelText("Close preset chooser"),
+		).not.toBeInTheDocument();
+		fireEvent.click(getPresetButton("Blank Project"));
+
+		const project = useProjectStore.getState().project;
+		expect(project.metadata.name).toBe("Blank Project");
+		expect(project.areas).toHaveLength(1);
+		expect(project.areas[0].objects).toEqual([]);
+		expect(project.areas[0].npcs).toEqual([]);
+	}, 15000);
+
+	it("selects the feature demo with a clean active area on first load", () => {
+		localStorage.clear();
+		render(<App />);
+
+		fireEvent.click(getPresetButton("Demo Project"));
+
+		const project = useProjectStore.getState().project;
+		expect(project.metadata.name).toBe("Demo Adventure");
+		expect(project.activeAreaId).toBe("area_demo_blank");
+		expect(project.areas[0].name).toBe("Blank Demo Area");
+		expect(project.items.length).toBeGreaterThan(0);
+	}, 15000);
+
+	it("loads an autosaved draft instead of showing the startup chooser", async () => {
+		localStorage.clear();
+		const draft = cloneProject(defaultProject);
+		draft.metadata.name = "Recovered Draft";
+		localStorage.setItem(AUTOSAVE_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+
+		render(<App />);
+
+		expect(
+			await screen.findByDisplayValue("Recovered Draft"),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByLabelText("Choose a starter project"),
+		).not.toBeInTheDocument();
+		expect(screen.getByText("Loaded autosaved draft.")).toBeInTheDocument();
 	});
 
 	it("restores editor panel scroll position when switching tabs", () => {
