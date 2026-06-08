@@ -1,13 +1,10 @@
-import { defaultProject } from "./defaultProject";
-import { createDefaultPixelAssets } from "./mapVisuals";
-import { defaultCameraConfig } from "./projectDefaults";
-import { defaultTileStyles, tilePresets } from "./presets";
 import type {
 	AreaLink,
 	CameraConfig,
 	ConditionExpression,
 	ConditionGroup,
 	Cutscene,
+	EnemyBehaviour,
 	EventBlock,
 	GameAction,
 	GameArea,
@@ -19,27 +16,26 @@ import type {
 	Interaction,
 	InteractionActivationMode,
 	ItemDefinition,
-	ObjectDefinition,
-	ObjectBehaviour,
-	ObjectInstance,
-	NPCDefinition,
-	NPCInstance,
-	NPCAttributes,
-	NPCMovementConfig,
-	EnemyBehaviour,
 	MapStructure,
 	MapTile,
 	MovementRule,
-	OverlayTile,
-	PickupObject,
-	Quest,
-	QuestReward,
+	NPCAttributes,
+	NPCDefinition,
+	NPCInstance,
+	NPCMovementConfig,
+	ObjectBehaviour,
+	ObjectDefinition,
+	ObjectInstance,
 	Objective,
 	ObjectiveCondition,
-	PlayerConfig,
+	OverlayTile,
+	PickupObject,
 	PixelAsset,
+	PlayerConfig,
 	ProgressionAction,
 	ProgressionStep,
+	Quest,
+	QuestReward,
 	RuleGroup,
 	RuleTrigger,
 	ShopDefinition,
@@ -47,6 +43,10 @@ import type {
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
+import { defaultProject } from "./defaultProject";
+import { createDefaultPixelAssets } from "./mapVisuals";
+import { defaultTileStyles, tilePresets } from "./presets";
+import { defaultCameraConfig } from "./projectDefaults";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -1037,7 +1037,9 @@ function migrateProgression(
 		return migrated ? [migrated] : [];
 	});
 
-	return steps.length > 0 ? steps : cloneProject(defaultProject).progression;
+	return Array.isArray(value)
+		? steps
+		: cloneProject(defaultProject).progression;
 }
 
 function migrateGameState(value: unknown): GameStateConfig {
@@ -1659,6 +1661,7 @@ function migrateRules(value: unknown): GameRule[] {
 				id: ruleId,
 				name: readString(rule.name, `Rule ${index + 1}`),
 				enabled: readBoolean(rule.enabled, true),
+				...(rule.runPolicy === "once" ? { runPolicy: "once" as const } : {}),
 				...(groupId ? { groupId } : {}),
 				trigger: migrateRuleTrigger(rule.trigger),
 				...(conditionTree ? { conditionTree } : {}),

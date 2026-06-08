@@ -20,6 +20,11 @@ describe("project presets", () => {
 		expect(blankProject.areas[0].objects).toEqual([]);
 		expect(blankProject.areas[0].pickups).toEqual([]);
 		expect(blankProject.areas[0].npcs).toEqual([]);
+		expect(
+			blankProject.progression.every(
+				(step) => step.action.type === "spawn_player",
+			),
+		).toBe(true);
 	});
 
 	it("keeps the demo project valid and opens on a clean area", () => {

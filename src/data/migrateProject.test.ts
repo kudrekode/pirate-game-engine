@@ -90,6 +90,37 @@ describe("migrateProject", () => {
 		});
 	});
 
+	it("defaults old rules to always and preserves once run policy", () => {
+		const project = migrateProject({
+			rules: [
+				{
+					id: "always_rule",
+					name: "Always",
+					enabled: true,
+					trigger: { type: "on_game_start" },
+					actions: [],
+				},
+				{
+					id: "once_rule",
+					name: "Once",
+					enabled: true,
+					runPolicy: "once",
+					trigger: { type: "on_game_start" },
+					actions: [],
+				},
+			],
+		});
+
+		expect(project.rules[0].runPolicy).toBeUndefined();
+		expect(project.rules[1].runPolicy).toBe("once");
+	});
+
+	it("preserves explicitly empty progression", () => {
+		const project = migrateProject({ progression: [] });
+
+		expect(project.progression).toEqual([]);
+	});
+
 	it("fills missing project fields safely", () => {
 		const project = migrateProject({
 			metadata: { name: "Partial" },

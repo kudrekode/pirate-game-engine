@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { ItemDefinition, Quest } from "../types/game";
-import { createRuntimeState } from "./ruleEngine";
 import {
 	activateQuest,
 	completeQuest,
 	createRuntimeQuestState,
 	evaluateObjectiveCondition,
 	failQuest,
+	getObjectiveEvaluationDiagnostic,
+	getQuestSyncDiagnosticMessages,
 	grantQuestReward,
 	markAreaEntered,
 	updateQuestProgress,
 } from "./questEngine";
+import { createRuntimeState, fireTrigger } from "./ruleEngine";
 
 const items: ItemDefinition[] = [
 	{
@@ -170,5 +172,396 @@ describe("quest progress", () => {
 
 		expect(runtimeState.flags.reward_claimed).toBe(true);
 		expect(runtimeState.variables.gold).toBe(14);
+	});
+
+	it("completes an active flag objective after a rule sets it and rewards once", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: false },
+			variables: {},
+		});
+		const quest: Quest = {
+			id: "talk-quest",
+			name: "Talk Quest",
+			status: "active",
+			objectives: [
+				{
+					id: "talked",
+					description: "Talk to the captain",
+					condition: { type: "flag", flag: "flag_1", value: true },
+				},
+			],
+			rewards: [{ type: "item", itemId: "gold_coin", quantity: 2 }],
+		};
+		const questState = createRuntimeQuestState([quest]);
+		const context = {
+			state: runtimeState,
+			playCutscene: () => undefined,
+			teleport: () => undefined,
+			changeMovementMode: () => undefined,
+			endGame: () => undefined,
+			itemDefinitions: items,
+		};
+
+		fireTrigger(
+			{ type: "on_interact", targetId: "captain" },
+			[
+				{
+					id: "talk",
+					name: "Talk",
+					enabled: true,
+					trigger: { type: "on_interact", targetId: "captain" },
+					actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+				},
+			],
+			context,
+		);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(true);
+		expect(questState.quests[0].status).toBe("completed");
+		expect(runtimeState.inventory.items.gold_coin).toBe(2);
+
+		fireTrigger(
+			{ type: "on_interact", targetId: "captain" },
+			[
+				{
+					id: "talk",
+					name: "Talk",
+					enabled: true,
+					trigger: { type: "on_interact", targetId: "captain" },
+					actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+				},
+			],
+			context,
+		);
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(false);
+		expect(runtimeState.inventory.items.gold_coin).toBe(2);
+	});
+
+	it("does not progress inactive quests until a rule activates them", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: true },
+			variables: {},
+		});
+		const quest: Quest = {
+			id: "inactive-quest",
+			name: "Inactive Quest",
+			status: "inactive",
+			objectives: [
+				{
+					id: "flag",
+					description: "Flag is true",
+					condition: { type: "flag", flag: "flag_1", value: true },
+				},
+			],
+		};
+		const questState = createRuntimeQuestState([quest]);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(false);
+		expect(questState.quests[0].status).toBe("inactive");
+
+		activateQuest(questState, quest.id);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(true);
+		expect(questState.quests[0].status).toBe("completed");
+	});
+
+	it("supports game-start rules before the first quest sync", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: false },
+			variables: {},
+		});
+		const quest: Quest = {
+			id: "startup-quest",
+			name: "Startup Quest",
+			status: "active",
+			objectives: [
+				{
+					id: "flag",
+					description: "Flag is initialized",
+					condition: { type: "flag", flag: "flag_1", value: true },
+				},
+			],
+		};
+		const questState = createRuntimeQuestState([quest]);
+
+		fireTrigger(
+			{ type: "on_game_start" },
+			[
+				{
+					id: "startup-rule",
+					name: "Startup Rule",
+					enabled: true,
+					trigger: { type: "on_game_start" },
+					actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+				},
+			],
+			{
+				state: runtimeState,
+				playCutscene: () => undefined,
+				teleport: () => undefined,
+				changeMovementMode: () => undefined,
+				endGame: () => undefined,
+				itemDefinitions: items,
+			},
+		);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(true);
+		expect(questState.quests[0].status).toBe("completed");
+	});
+
+	it("does not complete a false flag objective before game-start rules can initialize it", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: false },
+			variables: {},
+		});
+		const quest: Quest = {
+			id: "false-flag-quest",
+			name: "False Flag Quest",
+			status: "active",
+			objectives: [
+				{
+					id: "flag",
+					description: "Flag stays false",
+					condition: { type: "flag", flag: "flag_1", value: false },
+				},
+			],
+		};
+		const questState = createRuntimeQuestState([quest]);
+
+		fireTrigger(
+			{ type: "on_game_start" },
+			[
+				{
+					id: "startup-rule",
+					name: "Startup Rule",
+					enabled: true,
+					trigger: { type: "on_game_start" },
+					actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+				},
+			],
+			{
+				state: runtimeState,
+				playCutscene: () => undefined,
+				teleport: () => undefined,
+				changeMovementMode: () => undefined,
+				endGame: () => undefined,
+				itemDefinitions: items,
+			},
+		);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(false);
+		expect(questState.quests[0].status).toBe("active");
+	});
+
+	it("completes active variable and item objectives after runtime actions", () => {
+		const runtimeState = createRuntimeState({
+			flags: {},
+			variables: { gold: 0 },
+			inventory: {},
+		});
+		const quest: Quest = {
+			id: "state-quest",
+			name: "State Quest",
+			status: "active",
+			objectives: [
+				{
+					id: "set-variable",
+					description: "Set gold",
+					condition: {
+						type: "variable_compare",
+						variable: "gold",
+						operator: ">=",
+						value: 10,
+					},
+				},
+				{
+					id: "has-item",
+					description: "Have boat pass",
+					condition: { type: "has_item", itemId: "boat_pass", quantity: 1 },
+				},
+			],
+		};
+		const questState = createRuntimeQuestState([quest]);
+
+		fireTrigger(
+			{ type: "on_interact", targetId: "captain" },
+			[
+				{
+					id: "state-rule",
+					name: "State Rule",
+					enabled: true,
+					trigger: { type: "on_interact", targetId: "captain" },
+					actions: [
+						{ type: "set_variable", variable: "gold", value: 6 },
+						{ type: "change_variable", variable: "gold", amount: 4 },
+						{ type: "give_item", itemId: "boat_pass", quantity: 1 },
+					],
+				},
+			],
+			{
+				state: runtimeState,
+				playCutscene: () => undefined,
+				teleport: () => undefined,
+				changeMovementMode: () => undefined,
+				endGame: () => undefined,
+				itemDefinitions: items,
+			},
+		);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(true);
+		expect(questState.quests[0].status).toBe("completed");
+	});
+
+	it("does not mutate editor quest defaults when runtime rewards are granted", () => {
+		const runtimeState = makeRuntimeState();
+		const editorQuest = makeQuest();
+		const questState = createRuntimeQuestState([editorQuest]);
+		markAreaEntered(questState, "tavern");
+
+		updateQuestProgress(questState, runtimeState, items);
+
+		expect(editorQuest.status).toBe("active");
+		expect(editorQuest.objectives).toHaveLength(4);
+		expect(editorQuest.rewards).toEqual([
+			{ type: "item", itemId: "boat_pass", quantity: 1 },
+		]);
+		expect(runtimeState.inventory.items.boat_pass).toBe(1);
+	});
+
+	it("re-evaluates and completes a flag objective through the rule stateChanged callback", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: false },
+			variables: {},
+		});
+		const quest: Quest = {
+			id: "callback-quest",
+			name: "Callback Quest",
+			status: "active",
+			objectives: [
+				{
+					id: "flag",
+					description: "Set flag_1",
+					condition: { type: "flag", flag: "flag_1", value: true },
+				},
+			],
+			rewards: [{ type: "item", itemId: "gold_coin", quantity: 2 }],
+		};
+		const questState = createRuntimeQuestState([quest]);
+		const syncQuestProgress = () =>
+			updateQuestProgress(questState, runtimeState, items);
+
+		fireTrigger(
+			{ type: "on_interact", targetId: "captain" },
+			[
+				{
+					id: "set-flag",
+					name: "Set Flag",
+					enabled: true,
+					trigger: { type: "on_interact", targetId: "captain" },
+					actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+				},
+			],
+			{
+				state: runtimeState,
+				playCutscene: () => undefined,
+				teleport: () => undefined,
+				changeMovementMode: () => undefined,
+				endGame: () => undefined,
+				itemDefinitions: items,
+				stateChanged: syncQuestProgress,
+			},
+		);
+
+		expect(questState.quests[0].status).toBe("completed");
+		expect(runtimeState.inventory.items.gold_coin).toBe(2);
+
+		fireTrigger(
+			{ type: "on_interact", targetId: "captain" },
+			[
+				{
+					id: "set-flag",
+					name: "Set Flag",
+					enabled: true,
+					trigger: { type: "on_interact", targetId: "captain" },
+					actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+				},
+			],
+			{
+				state: runtimeState,
+				playCutscene: () => undefined,
+				teleport: () => undefined,
+				changeMovementMode: () => undefined,
+				endGame: () => undefined,
+				itemDefinitions: items,
+				stateChanged: syncQuestProgress,
+			},
+		);
+
+		expect(runtimeState.inventory.items.gold_coin).toBe(2);
+	});
+
+	it("reports an exact flag ID mismatch and does not complete the quest", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: true },
+			variables: {},
+		});
+		const condition = { type: "flag", flag: "flag-1", value: true } as const;
+		const questState = createRuntimeQuestState([
+			{
+				id: "mismatch",
+				name: "Mismatch",
+				status: "active",
+				objectives: [
+					{
+						id: "flag",
+						description: "Set mismatched flag",
+						condition,
+					},
+				],
+			},
+		]);
+
+		expect(updateQuestProgress(questState, runtimeState, items)).toBe(false);
+		expect(questState.quests[0].status).toBe("active");
+		expect(
+			getObjectiveEvaluationDiagnostic(
+				condition,
+				runtimeState,
+				questState.enteredAreaIds,
+			),
+		).toEqual({
+			conditionType: "flag",
+			expected: "flag-1=true",
+			actual: "missing (defaults false)",
+			passed: false,
+		});
+		expect(getQuestSyncDiagnosticMessages(questState, runtimeState)).toEqual([
+			"Quest check: Mismatch / Set mismatched flag [flag] expected flag-1=true, actual missing (defaults false), passed false.",
+		]);
+	});
+
+	it("reports when inactive quests leave no active quests to evaluate", () => {
+		const runtimeState = createRuntimeState({
+			flags: { flag_1: true },
+			variables: {},
+		});
+		const questState = createRuntimeQuestState([
+			{
+				id: "inactive",
+				name: "Inactive",
+				status: "inactive",
+				objectives: [
+					{
+						id: "flag",
+						description: "Set flag",
+						condition: { type: "flag", flag: "flag_1", value: true },
+					},
+				],
+			},
+		]);
+
+		expect(getQuestSyncDiagnosticMessages(questState, runtimeState)).toEqual([
+			"Quest sync: no active quests evaluated.",
+		]);
 	});
 });

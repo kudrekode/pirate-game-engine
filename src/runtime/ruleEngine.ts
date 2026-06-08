@@ -21,6 +21,7 @@ export type RuntimeGameState = {
 	variables: Record<string, GameStateValue>;
 	inventory: InventoryState;
 	npcs: Record<string, NPCAttributes>;
+	completedRuleIds: Set<string>;
 };
 
 export type RuleActionContext = {
@@ -35,7 +36,33 @@ export type RuleActionContext = {
 	openShop?: (shopId: string) => void;
 	itemDefinitions?: ItemDefinition[];
 	stateChanged?: () => void;
+	logEvent?: (message: string) => void;
 };
+
+function describeAction(action: GameAction): string {
+	if (action.type === "set_flag") {
+		return `set flag ${action.flag} to ${action.value}`;
+	}
+	if (action.type === "set_variable") {
+		return `set variable ${action.variable} to ${action.value}`;
+	}
+	if (action.type === "change_variable") {
+		return `change variable ${action.variable} by ${action.amount}`;
+	}
+	if (action.type === "give_item" || action.type === "remove_item") {
+		return `${action.type === "give_item" ? "give" : "remove"} item ${action.itemId} x${action.quantity}`;
+	}
+	if (action.type === "play_cutscene") {
+		return `play cutscene ${action.cutsceneId}`;
+	}
+	if (action.type === "teleport") {
+		return `teleport to ${action.areaId}:${action.eventBlockId}`;
+	}
+	if (action.type === "open_shop") {
+		return `open shop ${action.shopId}`;
+	}
+	return action.type.replace(/_/g, " ");
+}
 
 export function createRuntimeNpcState(
 	npcs: NPCInstance[],
@@ -66,6 +93,7 @@ export function createRuntimeState(
 		variables: { ...config.variables },
 		inventory: createInventory(config.inventory),
 		npcs: createRuntimeNpcState(npcs, definitions),
+		completedRuleIds: new Set<string>(),
 	};
 }
 
@@ -179,6 +207,7 @@ export function runAction(
 	context: RuleActionContext,
 	onDone: () => void,
 ): void {
+	context.logEvent?.(`Action ran: ${describeAction(action)}.`);
 	if (action.type === "set_flag") {
 		context.state.flags[action.flag] = action.value;
 		context.stateChanged?.();
@@ -307,10 +336,31 @@ export function runRule(
 	context: RuleActionContext,
 	onDone: () => void,
 ): void {
-	const actions = evaluateConditionExpression(rule.conditionTree, context.state)
-		? rule.actions
-		: (rule.elseActions ?? []);
-	runActions(actions, context, onDone);
+	if (
+		rule.runPolicy === "once" &&
+		context.state.completedRuleIds.has(rule.id)
+	) {
+		context.logEvent?.(`Rule skipped: ${rule.name} already ran.`);
+		onDone();
+		return;
+	}
+
+	const conditionsPassed = evaluateConditionExpression(
+		rule.conditionTree,
+		context.state,
+	);
+	context.logEvent?.(
+		conditionsPassed
+			? `Rule fired: ${rule.name}.`
+			: `Rule skipped: ${rule.name} conditions failed.`,
+	);
+	const actions = conditionsPassed ? rule.actions : (rule.elseActions ?? []);
+	runActions(actions, context, () => {
+		if (conditionsPassed && rule.runPolicy === "once") {
+			context.state.completedRuleIds.add(rule.id);
+		}
+		onDone();
+	});
 }
 
 function triggersMatch(expected: RuleTrigger, actual: RuleTrigger): boolean {

@@ -184,7 +184,8 @@ export function ItemsEditor() {
 						<div className="panel-title">Item Definition</div>
 						<p className="helper-text">
 							Items are project definitions. Inventory quantities are copied
-							into runtime state when play starts.
+							into runtime state when play starts. Currency items are physical
+							inventory items owned by the player.
 						</p>
 						{message ? (
 							<div className="validation-message">{message}</div>

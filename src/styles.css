@@ -1686,6 +1686,7 @@ label {
 .quest-panel,
 .shop-panel,
 .quest-tracker,
+.runtime-debug-log,
 .runtime-restart-button {
 	position: absolute;
 	z-index: 5;
@@ -1698,6 +1699,9 @@ label {
 .inventory-hud {
 	bottom: 12px;
 	left: 12px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 	padding: 7px 10px;
 	font-size: 13px;
 	font-weight: 800;
@@ -1762,6 +1766,52 @@ label {
 	font-size: 11px;
 	font-weight: 800;
 	text-transform: uppercase;
+}
+
+.quest-tracker.empty {
+	display: grid;
+	gap: 4px;
+}
+
+.quest-tracker.empty p {
+	margin: 0;
+	color: #cbd5e1;
+	font-size: 12px;
+}
+
+.runtime-debug-log {
+	top: 12px;
+	left: 50%;
+	width: min(300px, calc(100% - 24px));
+	max-height: calc(100% - 24px);
+	padding: 7px 10px;
+	transform: translateX(-50%);
+}
+
+.runtime-debug-log summary {
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.runtime-debug-events {
+	display: grid;
+	gap: 4px;
+	max-height: 220px;
+	overflow: auto;
+	margin-top: 6px;
+	color: #dbeafe;
+	font-size: 12px;
+}
+
+.runtime-debug-events p {
+	margin: 0;
+	color: #cbd5e1;
+}
+
+.runtime-debug-event {
+	border-top: 1px solid rgba(255, 255, 255, 0.12);
+	padding-top: 4px;
 }
 
 .inventory-heading,

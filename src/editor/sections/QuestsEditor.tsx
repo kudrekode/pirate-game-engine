@@ -79,7 +79,7 @@ export function QuestsEditor() {
 			draft.quests.push({
 				id,
 				name: `Quest ${draft.quests.length + 1}`,
-				status: "inactive",
+				status: "active",
 				objectives: [],
 				rewards: [],
 			});
@@ -116,7 +116,7 @@ export function QuestsEditor() {
 
 	function makeCondition(type: ObjectiveCondition["type"]): ObjectiveCondition {
 		if (type === "flag") {
-			return { type, flag: flagNames[0] ?? "", value: true };
+			return { type, flag: flagNames[0] ?? "flag_1", value: true };
 		}
 
 		if (type === "has_item") {
@@ -217,158 +217,206 @@ export function QuestsEditor() {
 		});
 	}
 
+	function getObjectiveReferenceWarning(condition: ObjectiveCondition) {
+		if (
+			condition.type === "flag" &&
+			!(condition.flag in project.gameState.flags)
+		) {
+			return `Unknown flag: ${condition.flag}`;
+		}
+		if (
+			condition.type === "variable_compare" &&
+			!(condition.variable in project.gameState.variables)
+		) {
+			return `Unknown variable: ${condition.variable}`;
+		}
+		if (
+			condition.type === "has_item" &&
+			!project.items.some((item) => item.id === condition.itemId)
+		) {
+			return `Unknown item: ${condition.itemId}`;
+		}
+		if (
+			condition.type === "enter_area" &&
+			!project.areas.some((area) => area.id === condition.areaId)
+		) {
+			return `Unknown area: ${condition.areaId}`;
+		}
+		return "";
+	}
+
 	function renderCondition(objective: Objective) {
 		const condition = objective.condition;
+		const warning = getObjectiveReferenceWarning(condition);
 		return (
-			<div className="quest-condition-row">
-				<select
-					aria-label="Objective condition type"
-					onChange={(event) =>
-						updateObjective(objective.id, {
-							condition: makeCondition(
-								event.target.value as ObjectiveCondition["type"],
-							),
-						})
-					}
-					value={condition.type}
-				>
-					<option value="flag">Flag is</option>
-					<option value="has_item">Player has item</option>
-					<option value="variable_compare">Variable comparison</option>
-					<option value="enter_area">Player enters area</option>
-				</select>
-				{condition.type === "flag" ? (
-					<>
-						<select
-							onChange={(event) =>
-								updateObjective(objective.id, {
-									condition: { ...condition, flag: event.target.value },
-								})
-							}
-							value={condition.flag}
-						>
-							{flagNames.map((flag) => (
-								<option key={flag} value={flag}>
-									{flag}
-								</option>
-							))}
-						</select>
-						<select
-							onChange={(event) =>
-								updateObjective(objective.id, {
-									condition: {
-										...condition,
-										value: event.target.value === "true",
-									},
-								})
-							}
-							value={String(condition.value)}
-						>
-							<option value="true">true</option>
-							<option value="false">false</option>
-						</select>
-					</>
-				) : null}
-				{condition.type === "has_item" ? (
-					<>
-						<select
-							onChange={(event) =>
-								updateObjective(objective.id, {
-									condition: { ...condition, itemId: event.target.value },
-								})
-							}
-							value={condition.itemId}
-						>
-							{project.items.map((item) => (
-								<option key={item.id} value={item.id}>
-									{item.name}
-								</option>
-							))}
-						</select>
-						<input
-							min={1}
-							onChange={(event) =>
-								updateObjective(objective.id, {
-									condition: {
-										...condition,
-										quantity: Math.max(1, Number(event.target.value)),
-									},
-								})
-							}
-							type="number"
-							value={condition.quantity ?? 1}
-						/>
-					</>
-				) : null}
-				{condition.type === "variable_compare" ? (
-					<>
-						<select
-							onChange={(event) => {
-								const variable = event.target.value;
-								updateObjective(objective.id, {
-									condition: {
-										...condition,
-										variable,
-										value: project.gameState.variables[variable] ?? 0,
-									},
-								});
-							}}
-							value={condition.variable}
-						>
-							{variableNames.map((variable) => (
-								<option key={variable} value={variable}>
-									{variable}
-								</option>
-							))}
-						</select>
-						<select
-							onChange={(event) =>
-								updateObjective(objective.id, {
-									condition: {
-										...condition,
-										operator: event.target.value as VariableComparisonOperator,
-									},
-								})
-							}
-							value={condition.operator}
-						>
-							{comparisonOperators.map((operator) => (
-								<option key={operator} value={operator}>
-									{operator}
-								</option>
-							))}
-						</select>
-						<input
-							onChange={(event) =>
-								updateObjective(objective.id, {
-									condition: {
-										...condition,
-										value: readValue(event.target.value, condition.value),
-									},
-								})
-							}
-							type={typeof condition.value === "number" ? "number" : "text"}
-							value={condition.value}
-						/>
-					</>
-				) : null}
-				{condition.type === "enter_area" ? (
+			<>
+				<div className="quest-condition-row">
 					<select
+						aria-label="Objective condition type"
 						onChange={(event) =>
 							updateObjective(objective.id, {
-								condition: { ...condition, areaId: event.target.value },
+								condition: makeCondition(
+									event.target.value as ObjectiveCondition["type"],
+								),
 							})
 						}
-						value={condition.areaId}
+						value={condition.type}
 					>
-						{project.areas.map((area) => (
-							<option key={area.id} value={area.id}>
-								{area.name}
-							</option>
-						))}
+						<option value="flag">Flag is</option>
+						<option value="has_item">Player has item</option>
+						<option value="variable_compare">Variable comparison</option>
+						<option value="enter_area">Player enters area</option>
 					</select>
-				) : null}
-			</div>
+					{condition.type === "flag" ? (
+						<>
+							<select
+								aria-label="Objective flag ID"
+								onChange={(event) =>
+									updateObjective(objective.id, {
+										condition: { ...condition, flag: event.target.value },
+									})
+								}
+								value={condition.flag}
+							>
+								{!flagNames.includes(condition.flag) ? (
+									<option value={condition.flag}>{condition.flag}</option>
+								) : null}
+								{flagNames.map((flag) => (
+									<option key={flag} value={flag}>
+										{flag}
+									</option>
+								))}
+							</select>
+							<select
+								onChange={(event) =>
+									updateObjective(objective.id, {
+										condition: {
+											...condition,
+											value: event.target.value === "true",
+										},
+									})
+								}
+								value={String(condition.value)}
+							>
+								<option value="true">true</option>
+								<option value="false">false</option>
+							</select>
+						</>
+					) : null}
+					{condition.type === "has_item" ? (
+						<>
+							<select
+								onChange={(event) =>
+									updateObjective(objective.id, {
+										condition: { ...condition, itemId: event.target.value },
+									})
+								}
+								value={condition.itemId}
+							>
+								{!project.items.some((item) => item.id === condition.itemId) ? (
+									<option value={condition.itemId}>{condition.itemId}</option>
+								) : null}
+								{project.items.map((item) => (
+									<option key={item.id} value={item.id}>
+										{item.name} ({item.id})
+									</option>
+								))}
+							</select>
+							<input
+								min={1}
+								onChange={(event) =>
+									updateObjective(objective.id, {
+										condition: {
+											...condition,
+											quantity: Math.max(1, Number(event.target.value)),
+										},
+									})
+								}
+								type="number"
+								value={condition.quantity ?? 1}
+							/>
+						</>
+					) : null}
+					{condition.type === "variable_compare" ? (
+						<>
+							<select
+								onChange={(event) => {
+									const variable = event.target.value;
+									updateObjective(objective.id, {
+										condition: {
+											...condition,
+											variable,
+											value: project.gameState.variables[variable] ?? 0,
+										},
+									});
+								}}
+								value={condition.variable}
+							>
+								{!variableNames.includes(condition.variable) ? (
+									<option value={condition.variable}>
+										{condition.variable}
+									</option>
+								) : null}
+								{variableNames.map((variable) => (
+									<option key={variable} value={variable}>
+										{variable}
+									</option>
+								))}
+							</select>
+							<select
+								onChange={(event) =>
+									updateObjective(objective.id, {
+										condition: {
+											...condition,
+											operator: event.target
+												.value as VariableComparisonOperator,
+										},
+									})
+								}
+								value={condition.operator}
+							>
+								{comparisonOperators.map((operator) => (
+									<option key={operator} value={operator}>
+										{operator}
+									</option>
+								))}
+							</select>
+							<input
+								onChange={(event) =>
+									updateObjective(objective.id, {
+										condition: {
+											...condition,
+											value: readValue(event.target.value, condition.value),
+										},
+									})
+								}
+								type={typeof condition.value === "number" ? "number" : "text"}
+								value={condition.value}
+							/>
+						</>
+					) : null}
+					{condition.type === "enter_area" ? (
+						<select
+							onChange={(event) =>
+								updateObjective(objective.id, {
+									condition: { ...condition, areaId: event.target.value },
+								})
+							}
+							value={condition.areaId}
+						>
+							{!project.areas.some((area) => area.id === condition.areaId) ? (
+								<option value={condition.areaId}>{condition.areaId}</option>
+							) : null}
+							{project.areas.map((area) => (
+								<option key={area.id} value={area.id}>
+									{area.name} ({area.id})
+								</option>
+							))}
+						</select>
+					) : null}
+				</div>
+				{warning ? <div className="validation-message">{warning}</div> : null}
+			</>
 		);
 	}
 
@@ -485,7 +533,8 @@ export function QuestsEditor() {
 			<aside className="tool-panel">
 				<div className="panel-title">Quests</div>
 				<p className="helper-text">
-					Player-facing objectives that reuse game state and inventory.
+					Active quests can progress during play. Tracked quests are shown on
+					the HUD. Completed quests move to the completed section.
 				</p>
 				<button
 					className="primary-button full-width"
@@ -513,7 +562,7 @@ export function QuestsEditor() {
 					) : null}
 				</div>
 				<label>
-					Tracked quest
+					Tracked Quest HUD
 					<select
 						onChange={(event) =>
 							updateProject((draft) => {
@@ -530,6 +579,10 @@ export function QuestsEditor() {
 						))}
 					</select>
 				</label>
+				<p className="helper-text">
+					Choose which active quest appears during play. With none selected, the
+					first active quest appears automatically.
+				</p>
 			</aside>
 
 			<div className="content-panel quest-editor">
@@ -556,13 +609,24 @@ export function QuestsEditor() {
 									}
 									value={selectedQuest.status}
 								>
-									<option value="inactive">Inactive</option>
-									<option value="active">Active</option>
-									<option value="completed">Completed</option>
-									<option value="failed">Failed</option>
+									<option value="active">
+										Active - can progress during play
+									</option>
+									<option value="inactive">
+										Inactive - waits for a rule to activate it
+									</option>
+									<option value="completed">
+										Completed - completed at play start
+									</option>
+									<option value="failed">Failed - failed at play start</option>
 								</select>
 							</label>
 						</div>
+						{selectedQuest.status === "inactive" ? (
+							<div className="validation-message">
+								Inactive quests do not progress until activated by a rule.
+							</div>
+						) : null}
 						<label>
 							Description
 							<textarea

@@ -169,6 +169,16 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 				entityId,
 			);
 		}
+		if (interaction.type === "set_flag") {
+			checkReference(
+				context.flagNames,
+				interaction.flag,
+				"flag",
+				`${path}.flag`,
+				entityType,
+				entityId,
+			);
+		}
 	}
 
 	function checkObjectBehaviour(
@@ -238,6 +248,26 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 				condition.itemId,
 				"item",
 				`${path}.itemId`,
+				"Rule",
+				ruleId,
+			);
+		}
+		if (condition.type === "flag_is") {
+			checkReference(
+				context.flagNames,
+				condition.flag,
+				"flag",
+				`${path}.flag`,
+				"Rule",
+				ruleId,
+			);
+		}
+		if (condition.type === "variable_compare") {
+			checkReference(
+				context.variableNames,
+				condition.variable,
+				"variable",
+				`${path}.variable`,
 				"Rule",
 				ruleId,
 			);
@@ -315,6 +345,27 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 				action.areaId,
 				action.eventBlockId,
 				path,
+				"Rule",
+				ruleId,
+			);
+		} else if (action.type === "set_flag") {
+			checkReference(
+				context.flagNames,
+				action.flag,
+				"flag",
+				`${path}.flag`,
+				"Rule",
+				ruleId,
+			);
+		} else if (
+			action.type === "change_variable" ||
+			action.type === "set_variable"
+		) {
+			checkReference(
+				context.variableNames,
+				action.variable,
+				"variable",
+				`${path}.variable`,
 				"Rule",
 				ruleId,
 			);

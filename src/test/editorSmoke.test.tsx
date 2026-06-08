@@ -270,7 +270,6 @@ describe("editor smoke tests", () => {
 	it("selects explicit map tool modes", () => {
 		render(<MapEditor />);
 
-		fireEvent.click(getButtonByText("Select"));
 		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
 			"Tool: Select",
 		);
@@ -399,13 +398,13 @@ describe("editor smoke tests", () => {
 		render(<MapEditor />);
 
 		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
-			"Tool: Paint",
+			"Tool: Select",
 		);
 		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
 			"Palette: Terrain",
 		);
 		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
-			"Selected: Grass Tile",
+			"Selected: Main Area",
 		);
 		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
 			"Area: Main Area",
@@ -482,11 +481,74 @@ describe("editor smoke tests", () => {
 		expect(sidebar.children[1]).toBe(handle);
 	}, 15000);
 
+	it("warns when a selected map target has direct interaction and rule logic", () => {
+		const project = cloneProject(defaultProject);
+		const captain = project.areas[0].npcs.find(
+			(candidate) => candidate.id === "npc_instance_captain_mira",
+		);
+		if (!captain) {
+			throw new Error("Captain instance not found.");
+		}
+		captain.interactionOverride = {
+			type: "set_flag",
+			activationMode: "on_interact",
+			flag: "flag_1",
+			value: true,
+		};
+		useProjectStore.getState().setProject(project);
+
+		render(<MapEditor />);
+		fireEvent.click(getButtonByText("Select"));
+		fireEvent.pointerDown(getMapTile("Tile 3, 4"));
+
+		expect(
+			screen.getByText(
+				"This target has a direct interaction and rule-based logic. Both may run.",
+			),
+		).toBeInTheDocument();
+	}, 15000);
+
 	it("renders Logic Builder", () => {
 		render(<ProgressionEditor />);
 
 		expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
 		expect(screen.getAllByDisplayValue("Opening / Tutorial")).toHaveLength(2);
+		expect(screen.getByText("Set flag to:")).toBeInTheDocument();
+	});
+
+	it("warns about and quick-creates a missing rule flag", () => {
+		const project = cloneProject(defaultProject);
+		project.rules = [
+			{
+				id: "missing-flag-rule",
+				name: "Missing flag rule",
+				enabled: true,
+				trigger: { type: "on_game_start" },
+				actions: [{ type: "set_flag", flag: "flag_1", value: true }],
+			},
+		];
+		useProjectStore.getState().setProject(project);
+
+		render(<ProgressionEditor />);
+
+		expect(screen.getByText("Unknown flag: flag_1")).toBeInTheDocument();
+		fireEvent.click(getButtonByText("Create flag"));
+
+		expect(useProjectStore.getState().project.gameState.flags.flag_1).toBe(
+			false,
+		);
+		expect(screen.queryByText("Unknown flag: flag_1")).not.toBeInTheDocument();
+	});
+
+	it("sets a rule to run once and shows it in the summary", () => {
+		render(<ProgressionEditor />);
+
+		fireEvent.change(screen.getByLabelText("Run"), {
+			target: { value: "once" },
+		});
+
+		expect(useProjectStore.getState().project.rules[0].runPolicy).toBe("once");
+		expect(screen.getAllByText("Runs once").length).toBeGreaterThan(0);
 	});
 
 	it("renders Game State Editor", () => {
@@ -495,6 +557,9 @@ describe("editor smoke tests", () => {
 		expect(screen.getByText("Game State")).toBeInTheDocument();
 		expect(screen.getByText("intro_seen")).toBeInTheDocument();
 		expect(screen.getByText("gold")).toBeInTheDocument();
+		expect(
+			screen.getByText(/Variables are abstract numbers\/text used by logic/),
+		).toBeInTheDocument();
 	});
 
 	it("renders Items Editor", () => {
@@ -502,6 +567,9 @@ describe("editor smoke tests", () => {
 
 		expect(screen.getByText("Item Definition")).toBeInTheDocument();
 		expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
+		expect(
+			screen.getByText(/Currency items are physical inventory items/),
+		).toBeInTheDocument();
 	});
 
 	it("renders Shops Editor", () => {
@@ -509,6 +577,7 @@ describe("editor smoke tests", () => {
 
 		expect(screen.getByText("Shop Definition")).toBeInTheDocument();
 		expect(screen.getByDisplayValue("General Store")).toBeInTheDocument();
+		expect(screen.getByText(/not Game State variables/)).toBeInTheDocument();
 	});
 
 	it("renders Quests Editor", () => {
@@ -516,6 +585,58 @@ describe("editor smoke tests", () => {
 
 		expect(screen.getAllByText("Get Tavern Access")).toHaveLength(2);
 		expect(screen.getByDisplayValue("Have 5 Gold Coins")).toBeInTheDocument();
+		expect(screen.getByText("Tracked Quest HUD")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"Choose which active quest appears during play. With none selected, the first active quest appears automatically.",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("warns about an unknown quest objective flag ID", () => {
+		const project = cloneProject(defaultProject);
+		project.quests[0].objectives = [
+			{
+				id: "mismatch",
+				description: "Watch mismatched flag",
+				condition: { type: "flag", flag: "flag-1", value: true },
+			},
+		];
+		useProjectStore.getState().setProject(project);
+
+		render(<QuestsEditor />);
+
+		expect(screen.getByLabelText("Objective flag ID")).toHaveValue("flag-1");
+		expect(screen.getByText("Unknown flag: flag-1")).toBeInTheDocument();
+	});
+
+	it("explains that inactive quests do not progress", () => {
+		const project = cloneProject(defaultProject);
+		project.quests[0].status = "inactive";
+		useProjectStore.getState().setProject(project);
+
+		render(<QuestsEditor />);
+
+		expect(
+			screen.getByText(
+				"Inactive quests do not progress until activated by a rule.",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("creates new quests active by default", () => {
+		const project = cloneProject(defaultProject);
+		project.quests = [];
+		project.trackedQuestId = undefined;
+		useProjectStore.getState().setProject(project);
+		render(<QuestsEditor />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Add quest" }));
+
+		expect(useProjectStore.getState().project.quests[0].status).toBe("active");
+		expect(
+			screen.getByDisplayValue("Active - can progress during play"),
+		).toBeInTheDocument();
 	});
 
 	it("warns when deleting a quest referenced by rules", () => {

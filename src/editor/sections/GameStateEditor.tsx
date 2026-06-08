@@ -185,7 +185,9 @@ export function GameStateEditor() {
 				<div className="panel-title">Game State</div>
 				<div className="logic-helper">
 					Flags and variables are editor defaults. They are copied into separate
-					runtime memory each time Play starts.
+					runtime memory each time Play starts. Variables are abstract
+					numbers/text used by logic, not inventory items. Flag IDs are exact
+					and case-sensitive.
 				</div>
 
 				{errorMessage ? (

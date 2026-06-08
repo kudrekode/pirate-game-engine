@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
+import { useEffect, useRef, useState } from "react";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
+import type { RuntimeDebugEvent } from "./debugLog";
 import type { QuestView } from "./questEngine";
+import { getCurrencyHudEntries, getQuestTrackerState } from "./runtimeHud";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 
 const RUNTIME_SCREEN_WIDTH = 640;
@@ -24,6 +26,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 	const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(
 		null,
 	);
+	const [debugEvents, setDebugEvents] = useState<RuntimeDebugEvent[]>([]);
 	const [runtimeKey, setRuntimeKey] = useState(0);
 	const initialCombat = getPlayerCombatStats(project.player);
 	const [combat, setCombat] = useState<RuntimeCombatHudState>({
@@ -50,10 +53,12 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 		if (!containerRef.current) {
 			return undefined;
 		}
+		void runtimeKey;
 
 		setInventory({});
 		setQuests([]);
 		setShopState(null);
+		setDebugEvents([]);
 		setCombat({
 			playerHealth: initialCombat.health,
 			playerMaxHealth: initialCombat.maxHealth,
@@ -66,6 +71,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 			setQuests,
 			setShopState,
 			setCombat,
+			setDebugEvents,
 		);
 		sceneRef.current = scene;
 		const game = new Phaser.Game({
@@ -94,14 +100,12 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 			itemId,
 			quantity,
 		}));
-	const goldCount = inventory.gold_coin ?? 0;
+	const currencyHudEntries = getCurrencyHudEntries(project, inventory);
 	const activeQuests = quests.filter((quest) => quest.status === "active");
 	const completedQuests = quests.filter(
 		(quest) => quest.status === "completed",
 	);
-	const trackedQuest = quests.find(
-		(quest) => quest.id === project.trackedQuestId && quest.status === "active",
-	);
+	const questTracker = getQuestTrackerState(project, quests);
 	const activeShop = shopState
 		? project.shops.find((shop) => shop.id === shopState.shopId)
 		: undefined;
@@ -138,7 +142,17 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 			</div>
 			<div className="runtime-stage">
 				<div className="phaser-host" ref={containerRef} />
-				<div className="inventory-hud">Gold: {goldCount}</div>
+				<div className="inventory-hud">
+					{currencyHudEntries.length > 0 ? (
+						currencyHudEntries.map((entry) => (
+							<span key={entry.id}>
+								{entry.name}: {entry.quantity}
+							</span>
+						))
+					) : (
+						<span>Currency: none</span>
+					)}
+				</div>
 				<div className="combat-hud">
 					<strong>
 						Health {combat.playerHealth}/{combat.playerMaxHealth}
@@ -161,12 +175,32 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 						Restart
 					</button>
 				) : null}
-				{trackedQuest ? (
+				<details className="runtime-debug-log">
+					<summary>Flow Log ({debugEvents.length})</summary>
+					<div className="runtime-debug-events">
+						{debugEvents.length > 0 ? (
+							debugEvents.map((event) => (
+								<div className="runtime-debug-event" key={event.id}>
+									{event.message}
+								</div>
+							))
+						) : (
+							<p>No events yet.</p>
+						)}
+					</div>
+				</details>
+				{questTracker.kind === "quest" ? (
 					<aside className="quest-tracker">
-						<span>Current Quest</span>
-						{renderQuest(trackedQuest)}
+						<span>{questTracker.label}</span>
+						{renderQuest(questTracker.quest)}
 					</aside>
-				) : null}
+				) : (
+					<aside className="quest-tracker empty">
+						<span>{questTracker.label}</span>
+						<strong>{questTracker.title}</strong>
+						<p>{questTracker.message}</p>
+					</aside>
+				)}
 				{isInventoryOpen ? (
 					<aside className="inventory-panel">
 						<div className="inventory-heading">

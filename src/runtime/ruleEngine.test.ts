@@ -449,4 +449,82 @@ describe("rule engine triggers and actions", () => {
 			health: 75,
 		});
 	});
+
+	it("runs a once rule only once per runtime session", () => {
+		const { context, state } = makeContext();
+		const rule: GameRule = {
+			id: "gift-once",
+			name: "Gift once",
+			enabled: true,
+			runPolicy: "once",
+			trigger: { type: "on_interact", targetId: "npc-captain" },
+			actions: [{ type: "give_item", itemId: "gold_coin", quantity: 2 }],
+		};
+
+		fireTrigger(rule.trigger, [rule], context);
+		fireTrigger(rule.trigger, [rule], context);
+
+		expect(state.inventory.items.gold_coin).toBe(7);
+		expect(state.completedRuleIds).toEqual(new Set(["gift-once"]));
+		expect(rule).not.toHaveProperty("completed");
+	});
+
+	it("does not complete a once rule when conditions fail and ELSE runs", () => {
+		const { context, state } = makeContext();
+		const rule: GameRule = {
+			id: "conditional-once",
+			name: "Conditional once",
+			enabled: true,
+			runPolicy: "once",
+			trigger: { type: "on_game_start" },
+			conditionTree: {
+				id: "missing",
+				type: "flag_is",
+				flag: "admin_override",
+				value: true,
+			},
+			actions: [{ type: "give_item", itemId: "gold_coin", quantity: 2 }],
+			elseActions: [{ type: "set_flag", flag: "has_key", value: false }],
+		};
+
+		fireTrigger(rule.trigger, [rule], context);
+
+		expect(state.flags.has_key).toBe(false);
+		expect(state.completedRuleIds).not.toContain(rule.id);
+	});
+
+	it("logs fired, skipped, and action events without changing rule behavior", () => {
+		const { context, state } = makeContext();
+		const logEvent = vi.fn();
+		context.logEvent = logEvent;
+		const rule: GameRule = {
+			id: "logged-rule",
+			name: "Logged Rule",
+			enabled: true,
+			trigger: { type: "on_game_start" },
+			conditionTree: {
+				id: "condition",
+				type: "flag_is",
+				flag: "admin_override",
+				value: true,
+			},
+			actions: [{ type: "set_flag", flag: "has_key", value: false }],
+		};
+
+		fireTrigger(rule.trigger, [rule], context);
+
+		expect(state.flags.has_key).toBe(true);
+		expect(logEvent).toHaveBeenCalledWith(
+			"Rule skipped: Logged Rule conditions failed.",
+		);
+
+		state.flags.admin_override = true;
+		fireTrigger(rule.trigger, [rule], context);
+
+		expect(state.flags.has_key).toBe(false);
+		expect(logEvent).toHaveBeenCalledWith("Rule fired: Logged Rule.");
+		expect(logEvent).toHaveBeenCalledWith(
+			"Action ran: set flag has_key to false.",
+		);
+	});
 });

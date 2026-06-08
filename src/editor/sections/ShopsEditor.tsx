@@ -178,8 +178,8 @@ export function ShopsEditor() {
 					<>
 						<div className="panel-title">Shop Definition</div>
 						<p className="helper-text">
-							Shops use inventory items as currency. Runtime stock is copied per
-							play session.
+							Shops use inventory currency items, not Game State variables.
+							Runtime stock is copied per play session.
 						</p>
 						{message ? (
 							<div className="validation-message">{message}</div>

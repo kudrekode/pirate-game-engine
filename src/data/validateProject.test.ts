@@ -23,6 +23,32 @@ describe("validateProject", () => {
 		).toBe(true);
 	});
 
+	it("detects missing flags and variables referenced by rules", () => {
+		const project = cloneProject(defaultProject);
+		project.rules[0].conditionTree = {
+			id: "missing-flag",
+			type: "flag_is",
+			flag: "flag_1",
+			value: true,
+		};
+		project.rules[0].actions.push({
+			type: "set_variable",
+			variable: "missing_variable",
+			value: 1,
+		});
+
+		const issues = validateProject(project);
+
+		expect(
+			issues.some((issue) => issue.message.includes('missing flag "flag_1"')),
+		).toBe(true);
+		expect(
+			issues.some((issue) =>
+				issue.message.includes('missing variable "missing_variable"'),
+			),
+		).toBe(true);
+	});
+
 	it("detects a missing event block referenced by teleport", () => {
 		const project = cloneProject(defaultProject);
 		project.rules[0].actions.push({
@@ -55,6 +81,26 @@ describe("validateProject", () => {
 				(issue) =>
 					issue.entityType === "Quest" &&
 					issue.message.includes('missing item "missing_item"'),
+			),
+		).toBe(true);
+	});
+
+	it("detects a mismatched quest objective flag ID", () => {
+		const project = cloneProject(defaultProject);
+		project.gameState.flags.flag_1 = false;
+		project.quests[0].objectives.push({
+			id: "mismatched_flag_objective",
+			description: "Watch the mismatched flag",
+			condition: { type: "flag", flag: "flag-1", value: true },
+		});
+
+		const issues = validateProject(project);
+
+		expect(
+			issues.some(
+				(issue) =>
+					issue.entityType === "Quest" &&
+					issue.message.includes('missing flag "flag-1"'),
 			),
 		).toBe(true);
 	});

@@ -196,6 +196,7 @@ function emptyPixels(
 export function MapEditor() {
 	const project = useProjectStore((state) => state.project);
 	const setProject = useProjectStore((state) => state.setProject);
+	const updateProject = useProjectStore((state) => state.updateProject);
 	const setTiles = useProjectStore((state) => state.setTiles);
 	const setOverlayTiles = useProjectStore((state) => state.setOverlayTiles);
 	const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
@@ -234,7 +235,7 @@ export function MapEditor() {
 	const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
 	const activeArea = getActiveArea(project);
 
-	const [activeTool, setActiveTool] = useState<MapEditorTool>("paint");
+	const [activeTool, setActiveTool] = useState<MapEditorTool>("select");
 	const [paintTarget, setPaintTarget] = useState<PaintTarget>("terrain");
 	const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
 	const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
@@ -1547,14 +1548,39 @@ export function MapEditor() {
 		}
 	}
 
-	function renderInteractionEditor(interaction?: Interaction) {
+	function countRulesTargeting(targetId?: string) {
+		if (!targetId) {
+			return 0;
+		}
+
+		return project.rules.filter(
+			(rule) =>
+				(rule.trigger.type === "on_interact" ||
+					rule.trigger.type === "on_touch") &&
+				rule.trigger.targetId === targetId,
+		).length;
+	}
+
+	function renderInteractionEditor(
+		interaction?: Interaction,
+		targetId?: string,
+	) {
 		const interactionType = interaction?.type ?? "none";
 		const targetArea = getInteractionTargetArea(interaction);
 		const targetEventBlocks = targetArea?.eventBlocks ?? [];
+		const targetingRuleCount = countRulesTargeting(targetId);
+		const hasDirectInteraction =
+			Boolean(interaction) && interaction?.activationMode !== "disabled";
 
 		return (
 			<div className="interaction-editor">
 				<div className="panel-title secondary">Interaction</div>
+				{hasDirectInteraction && targetingRuleCount > 0 ? (
+					<div className="validation-message">
+						This target has a direct interaction and rule-based logic. Both may
+						run.
+					</div>
+				) : null}
 				<label>
 					Type
 					<select
@@ -1706,18 +1732,38 @@ export function MapEditor() {
 								value={interaction.flag ?? ""}
 							/>
 						</label>
-						<label className="checkbox-row standalone">
-							<input
-								checked={interaction.value ?? true}
+						{interaction.flag &&
+						!(interaction.flag in project.gameState.flags) ? (
+							<div className="validation-message">
+								Missing flag "{interaction.flag}".
+								<button
+									onClick={() =>
+										updateProject((draft) => {
+											if (interaction.flag) {
+												draft.gameState.flags[interaction.flag] = false;
+											}
+										})
+									}
+									type="button"
+								>
+									Create flag
+								</button>
+							</div>
+						) : null}
+						<label>
+							Set flag to:
+							<select
 								onChange={(event) =>
 									updateSelectedInteraction({
 										...interaction,
-										value: event.target.checked,
+										value: event.target.value === "true",
 									})
 								}
-								type="checkbox"
-							/>
-							Value true
+								value={String(interaction.value ?? true)}
+							>
+								<option value="true">true</option>
+								<option value="false">false</option>
+							</select>
 						</label>
 					</>
 				) : null}
@@ -2135,7 +2181,10 @@ export function MapEditor() {
 							selectedMapStructure.movementRule ?? preset.movementRule,
 						)}
 					</div>
-					{renderInteractionEditor(selectedMapStructure.interaction)}
+					{renderInteractionEditor(
+						selectedMapStructure.interaction,
+						selectedMapStructure.id,
+					)}
 					<button
 						className="danger-button"
 						onClick={deleteSelectedStructure}
@@ -2364,7 +2413,10 @@ export function MapEditor() {
 							project={project}
 						/>
 					) : null}
-					{renderInteractionEditor(selectedObject.interaction)}
+					{renderInteractionEditor(
+						selectedObject.interaction,
+						selectedObject.id,
+					)}
 					<div className="panel-title secondary">State</div>
 					{Object.entries(objectState).map(([key, value]) => (
 						<div className="state-row variable" key={key}>
@@ -2835,7 +2887,10 @@ export function MapEditor() {
 							? "instance override"
 							: "definition default"}
 					</div>
-					{renderInteractionEditor(selectedResolvedNpc.interaction)}
+					{renderInteractionEditor(
+						selectedResolvedNpc.interaction,
+						selectedNpc.id,
+					)}
 					{hasInteractionOverride ? (
 						<button
 							onClick={() => resetSelectedNpcSection("interaction")}
@@ -2964,7 +3019,10 @@ export function MapEditor() {
 								: "Trigger"}{" "}
 						at x {selectedEventBlock.x}, y {selectedEventBlock.y}
 					</div>
-					{renderInteractionEditor(selectedEventBlock.interaction)}
+					{renderInteractionEditor(
+						selectedEventBlock.interaction,
+						selectedEventBlock.id,
+					)}
 					<button
 						className="danger-button"
 						onClick={deleteSelectedEventBlock}
@@ -3275,7 +3333,7 @@ export function MapEditor() {
 						</div>
 					</details>
 
-					<details open className="palette-section">
+					<details className="palette-section">
 						<summary>Overlays</summary>
 						<div className="palette-list tile-palette">
 							{overlayPresets.map((overlay) => (
@@ -3303,7 +3361,7 @@ export function MapEditor() {
 						</div>
 					</details>
 
-					<details open className="palette-section">
+					<details className="palette-section">
 						<summary>Structures</summary>
 						<div className="palette-list tile-palette">
 							{structurePresets.map((structure) => (
@@ -3328,7 +3386,7 @@ export function MapEditor() {
 						</div>
 					</details>
 
-					<details open className="palette-section">
+					<details className="palette-section">
 						<summary>Objects</summary>
 						<label>
 							Object definition
@@ -3359,7 +3417,7 @@ export function MapEditor() {
 						</button>
 					</details>
 
-					<details open className="palette-section">
+					<details className="palette-section">
 						<summary>Special</summary>
 						<button
 							className={`palette-item ${paintTarget === "eventBlock" ? "selected" : ""}`}
