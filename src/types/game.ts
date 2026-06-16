@@ -437,6 +437,8 @@ export type Quest = {
 	description?: string;
 	status: QuestStatus;
 	objectives: Objective[];
+	completionActions?: GameAction[];
+	// Legacy compatibility. Imported projects migrate these into completionActions.
 	rewards?: QuestReward[];
 };
 
@@ -462,10 +464,13 @@ export type QuestReward =
 	| { type: "flag"; flag: string; value: boolean }
 	| { type: "variable"; variable: string; amount: number };
 
+export type RuleRunPolicy = "always" | "once";
+
 export type GameRule = {
 	id: string;
 	name: string;
 	enabled: boolean;
+	runPolicy?: RuleRunPolicy;
 	groupId?: string;
 	trigger: RuleTrigger;
 	conditionTree?: ConditionExpression;

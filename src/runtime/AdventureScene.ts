@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
 import {
 	backgroundPresets,
 	characterSprites,
@@ -6,51 +7,65 @@ import {
 	getVisualPreset,
 	portraitPresets,
 } from "../data/presets";
-import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
 import type {
 	Cutscene,
 	EventBlock,
 	GameArea,
 	GameProject,
 	Interaction,
-	MovementMode,
 	MapStructure,
+	MovementMode,
 	NPCInstance,
-	PlayerVehicleState,
 	ObjectInstance,
-	PixelAsset,
 	PickupObject,
+	PixelAsset,
+	PlayerVehicleState,
+	Quest,
 	RuleTrigger,
 } from "../types/game";
-import { collectPickup } from "./inventory";
 import {
 	canAttack,
 	damageNpc,
 	damagePlayer,
 	findAttackTarget,
 	getPlayerCombatStats,
-	removeDefeatedNpc,
 	type RuntimeCombatHudState,
+	removeDefeatedNpc,
 } from "./combat";
-import { resolveNPCInstance } from "./npcResolver";
+import { appendRuntimeDebugEvent, type RuntimeDebugEvent } from "./debugLog";
+import { collectPickup } from "./inventory";
 import {
 	findDismountTile,
 	resolveMovementAt,
 	type VehicleMovementConfig,
 } from "./movement";
 import {
-	runObjectBehaviour,
-	type ObjectBehaviourResult,
-} from "./objectBehaviour";
-import {
-	isNpcTileWalkable,
 	isEnemyTouchingPlayer,
+	isNpcTileWalkable,
+	type NPCMovementState,
 	updateEnemyNPC,
 	updatePatrolNPC,
 	updateStationaryNPC,
 	updateWanderNPC,
-	type NPCMovementState,
 } from "./npcMovement";
+import { resolveNPCInstance } from "./npcResolver";
+import {
+	type ObjectBehaviourResult,
+	runObjectBehaviour,
+} from "./objectBehaviour";
+import {
+	activateQuest,
+	completeQuest as completeRuntimeQuest,
+	createRuntimeQuestState,
+	failQuest,
+	getQuestSyncDiagnosticMessages,
+	getQuestViews,
+	markAreaEntered,
+	type QuestView,
+	type RuntimeQuestState,
+	runQuestCompletionActionsOnce,
+	updateQuestProgress,
+} from "./questEngine";
 import {
 	createRuntimeState,
 	fireTrigger,
@@ -63,17 +78,6 @@ import {
 	type RuntimeShopPanelState,
 	type RuntimeShopStocks,
 } from "./shopRuntime";
-import {
-	activateQuest,
-	completeQuest as completeRuntimeQuest,
-	createRuntimeQuestState,
-	failQuest,
-	getQuestViews,
-	markAreaEntered,
-	updateQuestProgress,
-	type QuestView,
-	type RuntimeQuestState,
-} from "./questEngine";
 import { createBoardedVehicleState } from "./vehicleRuntime";
 
 type WasdKeys = {
@@ -136,9 +140,13 @@ function tileKey(x: number, y: number): string {
 }
 
 function getInitialArea(project: GameProject): GameArea {
+	const firstArea = project.areas[0];
+	if (!firstArea) {
+		throw new Error("Project has no areas.");
+	}
+
 	return (
-		project.areas.find((area) => area.id === project.activeAreaId) ??
-		project.areas[0]!
+		project.areas.find((area) => area.id === project.activeAreaId) ?? firstArea
 	);
 }
 
@@ -198,8 +206,10 @@ export class AdventureScene extends Phaser.Scene {
 	private readonly onQuestsChanged?: (quests: QuestView[]) => void;
 	private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
 	private readonly onCombatChanged?: (combat: RuntimeCombatHudState) => void;
+	private readonly onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void;
 	private readonly runtimeShopStocks: RuntimeShopStocks;
 	private readonly defeatedNpcIds = new Set<string>();
+	private readonly completedQuestActionIds = new Set<string>();
 	private activeShopId?: string;
 	private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
 	private playerFacing = { x: 0, y: 1 };
@@ -212,6 +222,8 @@ export class AdventureScene extends Phaser.Scene {
 	private isCutsceneOpen = false;
 	private isFinished = false;
 	private isMoving = false;
+	private runtimeDebugEvents: RuntimeDebugEvent[] = [];
+	private nextDebugEventId = 1;
 
 	constructor(
 		project: GameProject,
@@ -219,6 +231,7 @@ export class AdventureScene extends Phaser.Scene {
 		onQuestsChanged?: (quests: QuestView[]) => void,
 		onShopChanged?: (shop: RuntimeShopPanelState | null) => void,
 		onCombatChanged?: (combat: RuntimeCombatHudState) => void,
+		onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void,
 	) {
 		super("AdventureScene");
 		this.project = project;
@@ -237,6 +250,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.onQuestsChanged = onQuestsChanged;
 		this.onShopChanged = onShopChanged;
 		this.onCombatChanged = onCombatChanged;
+		this.onDebugEventsChanged = onDebugEventsChanged;
 	}
 
 	openShop(shopId: string) {
@@ -281,6 +295,9 @@ export class AdventureScene extends Phaser.Scene {
 			stock,
 		);
 		this.setStatus(result.message);
+		this.logEvent(
+			result.success ? `Shop purchase: ${result.message}` : result.message,
+		);
 		this.notifyInventoryChanged();
 		this.syncQuestProgress();
 		this.updateDebugPanel();
@@ -288,6 +305,7 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	create() {
+		this.logEvent("Game started.");
 		this.worldLayer = this.add.container(0, 0);
 		this.uiLayer = this.add.container(0, 0).setDepth(1000).setScrollFactor(0);
 		this.createPixelTextures();
@@ -333,12 +351,12 @@ export class AdventureScene extends Phaser.Scene {
 		this.updateDebugPanel();
 		this.notifyInventoryChanged();
 		this.notifyCombatChanged();
-		markAreaEntered(this.runtimeQuestState, this.currentArea.id);
-		this.syncQuestProgress();
 
-		this.fireRuleTrigger({ type: "on_game_start" }, () =>
-			this.processProgression(),
-		);
+		this.fireRuleTrigger({ type: "on_game_start" }, () => {
+			this.processProgression();
+			this.markRuntimeAreaEntered(this.currentArea);
+			this.syncQuestProgress();
+		});
 	}
 
 	update(time: number) {
@@ -372,6 +390,7 @@ export class AdventureScene extends Phaser.Scene {
 			this.updatePrompt(interactable);
 		}
 		if (interactPressed && interactable) {
+			this.logEvent(`Interacted with ${interactable.label}.`);
 			const targetId =
 				interactable.kind === "event"
 					? interactable.eventBlock.id
@@ -642,16 +661,22 @@ export class AdventureScene extends Phaser.Scene {
 			}
 		}
 
-		this.currentArea.structures.forEach((structure) =>
-			this.renderStructure(structure),
-		);
-		this.currentArea.objects.forEach((object) => this.renderObject(object));
+		this.currentArea.structures.forEach((structure) => {
+			this.renderStructure(structure);
+		});
+		this.currentArea.objects.forEach((object) => {
+			this.renderObject(object);
+		});
 		this.currentArea.pickups
 			.filter((pickup) => !this.isPickupCollected(pickup))
-			.forEach((pickup) => this.renderPickup(pickup));
+			.forEach((pickup) => {
+				this.renderPickup(pickup);
+			});
 		this.currentArea.npcs
 			.filter((npc) => !this.defeatedNpcIds.has(npc.id))
-			.forEach((npc) => this.renderNpc(npc));
+			.forEach((npc) => {
+				this.renderNpc(npc);
+			});
 	}
 
 	private createPixelTextures() {
@@ -899,7 +924,7 @@ export class AdventureScene extends Phaser.Scene {
 		}
 
 		this.spawnPlayer(eventBlock);
-		markAreaEntered(this.runtimeQuestState, nextArea.id);
+		this.markRuntimeAreaEntered(nextArea);
 		this.syncQuestProgress();
 		this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
 		this.updateDebugPanel();
@@ -1148,22 +1173,6 @@ export class AdventureScene extends Phaser.Scene {
 		this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
 		this.configurePlayerCamera(centerX, centerY);
 		this.setStatus(`${this.project.player.name} spawned.`);
-	}
-
-	private teleportPlayer(eventBlock: EventBlock) {
-		this.leaveVehicle(false);
-		if (!this.playerMarker) {
-			this.spawnPlayer(eventBlock);
-			return;
-		}
-
-		const centerX = eventBlock.x * this.tileSize + this.tileSize / 2;
-		const centerY = eventBlock.y * this.tileSize + this.tileSize / 2;
-
-		this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
-		this.playerMarker.setPosition(centerX, centerY);
-		this.setStatus(`${this.project.player.name} moved to ${eventBlock.name}.`);
-		this.updateDebugPanel();
 	}
 
 	private showCutscene(cutscene: Cutscene, onDone: () => void) {
@@ -1658,6 +1667,8 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		this.logEvent(`Direct interaction: ${label} -> ${interaction.type}.`);
+
 		if (interaction.type === "area_link" || interaction.type === "teleport") {
 			if (!interaction.targetAreaId || !interaction.targetEventBlockId) {
 				this.setStatus(`Interaction target missing: ${label}.`);
@@ -1775,6 +1786,7 @@ export class AdventureScene extends Phaser.Scene {
 			this.defeatNpc(target, enemyName);
 		} else {
 			this.setStatus(`Hit ${enemyName} for ${this.playerCombat.attackDamage}.`);
+			this.logEvent(`Combat hit: ${enemyName}.`);
 		}
 
 		this.updateDebugPanel();
@@ -1791,6 +1803,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.npcMovementStates.delete(npc.id);
 		this.enemyContactCooldowns.delete(npc.id);
 		this.setStatus(`${enemyName} defeated.`);
+		this.logEvent(`Combat defeated: ${enemyName}.`);
 		this.syncQuestProgress();
 		// TODO: Add on_npc_defeated rule trigger and combat rule actions when Logic Builder scope expands.
 	}
@@ -2356,6 +2369,12 @@ export class AdventureScene extends Phaser.Scene {
 				this.syncQuestProgress();
 			},
 			completeQuest: (questId) => {
+				const quest = this.runtimeQuestState.quests.find(
+					(candidate) => candidate.id === questId,
+				);
+				const wasCompleted = quest?.status === "completed";
+				const wasRewarded =
+					this.runtimeQuestState.rewardedQuestIds.has(questId);
 				if (
 					completeRuntimeQuest(
 						this.runtimeQuestState,
@@ -2367,6 +2386,17 @@ export class AdventureScene extends Phaser.Scene {
 					this.notifyInventoryChanged();
 					this.updateDebugPanel();
 				}
+				if (!wasCompleted && quest?.status === "completed") {
+					this.logEvent(`Quest completed: ${quest.name}.`);
+					this.runQuestCompletionActions(quest);
+				}
+				if (
+					!wasRewarded &&
+					this.runtimeQuestState.rewardedQuestIds.has(questId) &&
+					quest
+				) {
+					this.logEvent(`Quest reward granted: ${quest.name}.`);
+				}
 				this.syncQuestProgress();
 			},
 			failQuest: (questId) => {
@@ -2375,6 +2405,8 @@ export class AdventureScene extends Phaser.Scene {
 			},
 			openShop: (shopId) => this.openShop(shopId),
 			itemDefinitions: this.project.items,
+			shopDefinitions: this.project.shops,
+			logEvent: (message) => this.logEvent(message),
 			stateChanged: () => {
 				this.updateDebugPanel();
 				this.notifyInventoryChanged();
@@ -2387,6 +2419,7 @@ export class AdventureScene extends Phaser.Scene {
 		trigger: RuleTrigger,
 		onDone: () => void = () => undefined,
 	) {
+		this.logEvent(`Trigger: ${trigger.type}.`);
 		fireTrigger(trigger, this.project.rules, this.getRuleContext(), onDone);
 	}
 
@@ -2449,12 +2482,69 @@ export class AdventureScene extends Phaser.Scene {
 		});
 	}
 
+	private markRuntimeAreaEntered(area: GameArea) {
+		const alreadyEntered = this.runtimeQuestState.enteredAreaIds.has(area.id);
+		markAreaEntered(this.runtimeQuestState, area.id);
+		if (!alreadyEntered) {
+			this.logEvent(`Area entered: ${area.name}.`);
+		}
+	}
+
+	private runQuestCompletionActions(quest: Quest) {
+		if (
+			this.completedQuestActionIds.has(quest.id) ||
+			!quest.completionActions?.length
+		) {
+			return;
+		}
+		this.logEvent(`Quest completion actions: ${quest.name}.`);
+		runQuestCompletionActionsOnce(
+			quest,
+			this.completedQuestActionIds,
+			this.getRuleContext(),
+		);
+	}
+
 	private syncQuestProgress() {
+		this.logEvent("Quest sync running.");
+		for (const message of getQuestSyncDiagnosticMessages(
+			this.runtimeQuestState,
+			this.runtimeState,
+		)) {
+			this.logEvent(message);
+		}
+		const completedObjectiveIds = new Set(
+			this.runtimeQuestState.completedObjectiveIds,
+		);
+		const rewardedQuestIds = new Set(this.runtimeQuestState.rewardedQuestIds);
+		const questStatuses = new Map(
+			this.runtimeQuestState.quests.map((quest) => [quest.id, quest.status]),
+		);
 		const stateChanged = updateQuestProgress(
 			this.runtimeQuestState,
 			this.runtimeState,
 			this.project.items,
 		);
+		for (const objectiveId of this.runtimeQuestState.completedObjectiveIds) {
+			if (!completedObjectiveIds.has(objectiveId)) {
+				this.logEvent(`Quest objective completed: ${objectiveId}.`);
+			}
+		}
+		for (const quest of this.runtimeQuestState.quests) {
+			if (
+				questStatuses.get(quest.id) !== "completed" &&
+				quest.status === "completed"
+			) {
+				this.logEvent(`Quest completed: ${quest.name}.`);
+				this.runQuestCompletionActions(quest);
+			}
+			if (
+				!rewardedQuestIds.has(quest.id) &&
+				this.runtimeQuestState.rewardedQuestIds.has(quest.id)
+			) {
+				this.logEvent(`Quest reward granted: ${quest.name}.`);
+			}
+		}
 		if (stateChanged) {
 			this.notifyInventoryChanged();
 			this.updateDebugPanel();
@@ -2462,6 +2552,16 @@ export class AdventureScene extends Phaser.Scene {
 		this.onQuestsChanged?.(
 			getQuestViews(this.runtimeQuestState, this.runtimeState),
 		);
+	}
+
+	private logEvent(message: string) {
+		this.runtimeDebugEvents = appendRuntimeDebugEvent(
+			this.runtimeDebugEvents,
+			message,
+			this.nextDebugEventId,
+		);
+		this.nextDebugEventId += 1;
+		this.onDebugEventsChanged?.([...this.runtimeDebugEvents]);
 	}
 
 	private setStatus(message: string) {

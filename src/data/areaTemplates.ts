@@ -1,6 +1,12 @@
 import type { GameArea, GameAreaKind, MapTile } from "../types/game";
 
-export type AreaTemplateId = "outdoor" | "indoor" | "cave" | "ship" | "dungeon";
+export type AreaTemplateId =
+	| "blank"
+	| "outdoor"
+	| "indoor"
+	| "cave"
+	| "ship"
+	| "dungeon";
 
 export type AreaTemplate = {
 	id: AreaTemplateId;
@@ -15,6 +21,14 @@ export type AreaTemplate = {
 };
 
 export const areaTemplates: AreaTemplate[] = [
+	{
+		id: "blank",
+		label: "Blank",
+		kind: "custom",
+		width: 20,
+		height: 15,
+		baseTerrainId: "grass",
+	},
 	{
 		id: "outdoor",
 		label: "Outdoor grass",
@@ -111,6 +125,7 @@ export function createAreaFromTemplate(
 ): GameArea {
 	const template =
 		areaTemplates.find((candidate) => candidate.id === templateId) ??
+		areaTemplates.find((candidate) => candidate.id === "outdoor") ??
 		areaTemplates[0];
 	const spawnX = Math.min(
 		template.width - 2,
@@ -140,16 +155,19 @@ export function createAreaFromTemplate(
 		objects: [],
 		pickups: [],
 		npcs: [],
-		eventBlocks: [
-			{
-				id: `${id}_spawn`,
-				name: "Entry",
-				x: spawnX,
-				y: spawnY,
-				tag: "entry",
-				kind: "spawn",
-			},
-		],
+		eventBlocks:
+			template.id === "blank"
+				? []
+				: [
+						{
+							id: `${id}_spawn`,
+							name: "Entry",
+							x: spawnX,
+							y: spawnY,
+							tag: "entry",
+							kind: "spawn",
+						},
+					],
 		theme: {
 			primaryTerrainId: template.baseTerrainId,
 			accentTerrainId: template.accentTerrainId,

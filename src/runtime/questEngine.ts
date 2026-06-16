@@ -7,7 +7,11 @@ import type {
 	QuestStatus,
 } from "../types/game";
 import { giveItem, hasItem } from "./inventory";
-import type { RuntimeGameState } from "./ruleEngine";
+import {
+	type RuleActionContext,
+	type RuntimeGameState,
+	runActions,
+} from "./ruleEngine";
 
 export type RuntimeQuestState = {
 	quests: Quest[];
@@ -26,6 +30,13 @@ export type QuestView = {
 		description: string;
 		complete: boolean;
 	}[];
+};
+
+export type ObjectiveEvaluationDiagnostic = {
+	conditionType: ObjectiveCondition["type"];
+	expected: string;
+	actual: string;
+	passed: boolean;
 };
 
 function cloneQuests(quests: Quest[]): Quest[] {
@@ -111,6 +122,97 @@ export function evaluateObjectiveCondition(
 		: compareValues(value, condition.value, condition.operator);
 }
 
+export function getObjectiveEvaluationDiagnostic(
+	condition: ObjectiveCondition,
+	runtimeState: RuntimeGameState,
+	enteredAreaIds: Set<string>,
+): ObjectiveEvaluationDiagnostic {
+	const passed = evaluateObjectiveCondition(
+		condition,
+		runtimeState,
+		enteredAreaIds,
+	);
+	if (condition.type === "flag") {
+		const actual =
+			condition.flag in runtimeState.flags
+				? String(runtimeState.flags[condition.flag])
+				: "missing (defaults false)";
+		return {
+			conditionType: condition.type,
+			expected: `${condition.flag}=${condition.value}`,
+			actual,
+			passed,
+		};
+	}
+
+	if (condition.type === "has_item") {
+		return {
+			conditionType: condition.type,
+			expected: `${condition.itemId}>=${condition.quantity}`,
+			actual: String(runtimeState.inventory.items[condition.itemId] ?? 0),
+			passed,
+		};
+	}
+
+	if (condition.type === "enter_area") {
+		return {
+			conditionType: condition.type,
+			expected: `entered ${condition.areaId}`,
+			actual: String(enteredAreaIds.has(condition.areaId)),
+			passed,
+		};
+	}
+
+	const actual = runtimeState.variables[condition.variable];
+	return {
+		conditionType: condition.type,
+		expected: `${condition.variable}${condition.operator}${String(condition.value)}`,
+		actual: actual === undefined ? "missing" : String(actual),
+		passed,
+	};
+}
+
+export function getQuestSyncDiagnosticMessages(
+	state: RuntimeQuestState,
+	runtimeState: RuntimeGameState,
+): string[] {
+	const activeQuests = state.quests.filter(
+		(quest) => quest.status === "active",
+	);
+	if (activeQuests.length === 0) {
+		return ["Quest sync: no active quests evaluated."];
+	}
+
+	return activeQuests.flatMap((quest) =>
+		quest.objectives.map((objective) => {
+			const diagnostic = getObjectiveEvaluationDiagnostic(
+				objective.condition,
+				runtimeState,
+				state.enteredAreaIds,
+			);
+			return `Quest check: ${quest.name} / ${objective.description} [${diagnostic.conditionType}] expected ${diagnostic.expected}, actual ${diagnostic.actual}, passed ${diagnostic.passed}.`;
+		}),
+	);
+}
+
+export function runQuestCompletionActionsOnce(
+	quest: Quest,
+	completedQuestActionIds: Set<string>,
+	context: RuleActionContext,
+	onDone: () => void = () => undefined,
+): boolean {
+	if (
+		completedQuestActionIds.has(quest.id) ||
+		!quest.completionActions?.length
+	) {
+		return false;
+	}
+
+	completedQuestActionIds.add(quest.id);
+	runActions(quest.completionActions, context, onDone);
+	return true;
+}
+
 export function evaluateObjective(
 	objective: Objective,
 	runtimeState: RuntimeGameState,
@@ -174,16 +276,16 @@ export function completeQuest(
 
 	const statusChanged = quest.status !== "completed";
 	quest.status = "completed";
-	quest.objectives.forEach((objective) =>
-		state.completedObjectiveIds.add(objectiveKey(quest.id, objective.id)),
-	);
+	quest.objectives.forEach((objective) => {
+		state.completedObjectiveIds.add(objectiveKey(quest.id, objective.id));
+	});
 	if (state.rewardedQuestIds.has(quest.id)) {
 		return statusChanged;
 	}
 
-	quest.rewards?.forEach((reward) =>
-		grantQuestReward(reward, runtimeState, itemDefinitions),
-	);
+	quest.rewards?.forEach((reward) => {
+		grantQuestReward(reward, runtimeState, itemDefinitions);
+	});
 	state.rewardedQuestIds.add(quest.id);
 	return true;
 }
@@ -257,7 +359,7 @@ export function updateQuestProgress(
 
 export function getQuestViews(
 	state: RuntimeQuestState,
-	runtimeState: RuntimeGameState,
+	_runtimeState: RuntimeGameState,
 ): QuestView[] {
 	return state.quests.map((quest) => ({
 		id: quest.id,

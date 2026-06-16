@@ -1,9 +1,9 @@
 import {
+	type CSSProperties,
+	type ReactNode,
 	useEffect,
 	useMemo,
 	useState,
-	type CSSProperties,
-	type ReactNode,
 } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
@@ -193,6 +193,7 @@ function actionSummary(
 function ruleSummary(rule: GameRule, labels: Record<string, string>): string[] {
 	return [
 		triggerSummary(rule.trigger, labels),
+		...(rule.runPolicy === "once" ? ["Runs once"] : []),
 		`IF ${conditionSummary(rule.conditionTree, labels)}`,
 		`THEN ${rule.actions.map((action) => actionSummary(action, labels)).join(", ") || "do nothing"}`,
 		...(rule.elseActions && rule.elseActions.length > 0
@@ -381,6 +382,51 @@ export function ProgressionEditor() {
 		});
 	}
 
+	function createFlag(name: string) {
+		const flag = name.trim();
+		if (!flag || flag in project.gameState.flags) {
+			return;
+		}
+		updateProject((draft) => {
+			draft.gameState.flags[flag] = false;
+		});
+	}
+
+	function createVariable(name: string, type: "number" | "string") {
+		const variable = name.trim();
+		if (!variable || variable in project.gameState.variables) {
+			return;
+		}
+		updateProject((draft) => {
+			draft.gameState.variables[variable] = type === "number" ? 0 : "";
+		});
+	}
+
+	function renderMissingFlag(name: string) {
+		return name && !(name in project.gameState.flags) ? (
+			<>
+				<span className="validation-message">Unknown flag: {name}</span>
+				<button onClick={() => createFlag(name)} type="button">
+					Create flag
+				</button>
+			</>
+		) : null;
+	}
+
+	function renderMissingVariable(name: string) {
+		return name && !(name in project.gameState.variables) ? (
+			<>
+				<span className="validation-message">Missing variable "{name}".</span>
+				<button onClick={() => createVariable(name, "number")} type="button">
+					Create number
+				</button>
+				<button onClick={() => createVariable(name, "string")} type="button">
+					Create text
+				</button>
+			</>
+		) : null;
+	}
+
 	function createRule(groupId?: string) {
 		const rule: GameRule = {
 			id: makeId("rule"),
@@ -487,7 +533,7 @@ export function ProgressionEditor() {
 		id = makeId("condition"),
 	): SingleCondition {
 		if (type === "flag_is") {
-			return { id, type, flag: flagNames[0] ?? "", value: true };
+			return { id, type, flag: flagNames[0] ?? "flag_1", value: true };
 		}
 
 		if (type === "has_item" || type === "not_has_item") {
@@ -606,7 +652,7 @@ export function ProgressionEditor() {
 
 	function makeAction(type: GameAction["type"]): GameAction {
 		if (type === "set_flag") {
-			return { type, flag: flagNames[0] ?? "", value: true };
+			return { type, flag: flagNames[0] ?? "flag_1", value: true };
 		}
 
 		if (type === "change_variable") {
@@ -793,6 +839,7 @@ export function ProgressionEditor() {
 				{condition.type === "flag_is" ? (
 					<>
 						<select
+							aria-label="Flag name"
 							onChange={(event) =>
 								replaceCondition(rule, condition.id, {
 									...condition,
@@ -801,12 +848,16 @@ export function ProgressionEditor() {
 							}
 							value={condition.flag}
 						>
+							{!flagNames.includes(condition.flag) ? (
+								<option value={condition.flag}>{condition.flag}</option>
+							) : null}
 							{flagNames.map((flag) => (
 								<option key={flag} value={flag}>
 									{flag}
 								</option>
 							))}
 						</select>
+						{renderMissingFlag(condition.flag)}
 						<span>is</span>
 						<select
 							onChange={(event) =>
@@ -823,7 +874,9 @@ export function ProgressionEditor() {
 					</>
 				) : condition.type === "variable_compare" ? (
 					<>
-						<select
+						<input
+							aria-label="Variable name"
+							list="rule-variable-names"
 							onChange={(event) => {
 								const variable = event.target.value;
 								replaceCondition(rule, condition.id, {
@@ -833,13 +886,8 @@ export function ProgressionEditor() {
 								});
 							}}
 							value={condition.variable}
-						>
-							{variableNames.map((variable) => (
-								<option key={variable} value={variable}>
-									{variable}
-								</option>
-							))}
-						</select>
+						/>
+						{renderMissingVariable(condition.variable)}
 						<select
 							onChange={(event) =>
 								replaceCondition(rule, condition.id, {
@@ -1088,6 +1136,9 @@ export function ProgressionEditor() {
 			nextActions[index] = nextAction;
 			updateActions(rule, branch, nextActions);
 		};
+		const missingActionShop =
+			action.type === "open_shop" &&
+			!project.shops.some((shop) => shop.id === action.shopId);
 
 		return (
 			<div className="logic-row" key={`${rule.id}_${branch}_${index}`}>
@@ -1106,17 +1157,23 @@ export function ProgressionEditor() {
 				{action.type === "set_flag" ? (
 					<>
 						<select
+							aria-label="Flag name"
 							onChange={(event) =>
 								setAction({ ...action, flag: event.target.value })
 							}
 							value={action.flag}
 						>
+							{!flagNames.includes(action.flag) ? (
+								<option value={action.flag}>{action.flag}</option>
+							) : null}
 							{flagNames.map((flag) => (
 								<option key={flag} value={flag}>
 									{flag}
 								</option>
 							))}
 						</select>
+						{renderMissingFlag(action.flag)}
+						<span>Set flag to:</span>
 						<select
 							onChange={(event) =>
 								setAction({ ...action, value: event.target.value === "true" })
@@ -1130,18 +1187,16 @@ export function ProgressionEditor() {
 				) : null}
 				{action.type === "change_variable" ? (
 					<>
-						<select
+						<input
+							aria-label="Variable name"
+							list="rule-variable-names"
 							onChange={(event) =>
 								setAction({ ...action, variable: event.target.value })
 							}
 							value={action.variable}
-						>
-							{variableNames.map((variable) => (
-								<option key={variable} value={variable}>
-									{variable}
-								</option>
-							))}
-						</select>
+						/>
+						{renderMissingVariable(action.variable)}
+						<span>Change variable by:</span>
 						<input
 							onChange={(event) =>
 								setAction({ ...action, amount: Number(event.target.value) })
@@ -1153,7 +1208,9 @@ export function ProgressionEditor() {
 				) : null}
 				{action.type === "set_variable" ? (
 					<>
-						<select
+						<input
+							aria-label="Variable name"
+							list="rule-variable-names"
 							onChange={(event) => {
 								const variable = event.target.value;
 								setAction({
@@ -1163,13 +1220,9 @@ export function ProgressionEditor() {
 								});
 							}}
 							value={action.variable}
-						>
-							{variableNames.map((variable) => (
-								<option key={variable} value={variable}>
-									{variable}
-								</option>
-							))}
-						</select>
+						/>
+						{renderMissingVariable(action.variable)}
+						<span>Set variable to:</span>
 						<input
 							onChange={(event) =>
 								setAction({
@@ -1251,6 +1304,9 @@ export function ProgressionEditor() {
 				) : null}
 				{action.type === "give_item" || action.type === "remove_item" ? (
 					<>
+						<span>
+							{action.type === "give_item" ? "Give item:" : "Remove item:"}
+						</span>
 						<select
 							onChange={(event) =>
 								setAction({ ...action, itemId: event.target.value })
@@ -1358,9 +1414,14 @@ export function ProgressionEditor() {
 						}
 						value={action.shopId}
 					>
+						{missingActionShop ? (
+							<option value={action.shopId}>
+								{action.shopId || "No shop selected"}
+							</option>
+						) : null}
 						{project.shops.map((shop) => (
 							<option key={shop.id} value={shop.id}>
-								{shop.name}
+								{shop.name} ({shop.id})
 							</option>
 						))}
 					</select>
@@ -1378,6 +1439,11 @@ export function ProgressionEditor() {
 				>
 					Delete
 				</button>
+				{missingActionShop ? (
+					<span className="validation-message">
+						Unknown shop: {action.shopId || "(missing shop)"}
+					</span>
+				) : null}
 			</div>
 		);
 	}
@@ -1392,6 +1458,9 @@ export function ProgressionEditor() {
 		return (
 			<section className="logic-block">
 				<div className="logic-block-heading">{heading}</div>
+				<div className="logic-helper">
+					This happens when the rule runs, not at game start.
+				</div>
 				{actions.map((action, index) =>
 					renderAction(rule, action, index, branch),
 				)}
@@ -1418,8 +1487,8 @@ export function ProgressionEditor() {
 			>
 				<strong>{rule.name}</strong>
 				<span>{rule.enabled ? "Enabled" : "Disabled"}</span>
-				{summary.map((line, index) => (
-					<small key={`${index}_${line}`}>{line}</small>
+				{summary.map((line) => (
+					<small key={`${rule.id}_${line}`}>{line}</small>
 				))}
 			</button>
 		);
@@ -1483,6 +1552,16 @@ export function ProgressionEditor() {
 
 	return (
 		<section className="editor-panel progression-editor">
+			<datalist id="rule-flag-names">
+				{flagNames.map((flag) => (
+					<option key={flag} value={flag} />
+				))}
+			</datalist>
+			<datalist id="rule-variable-names">
+				{variableNames.map((variable) => (
+					<option key={variable} value={variable} />
+				))}
+			</datalist>
 			<aside className="tool-panel logic-rule-list">
 				<div className="panel-title">Rules</div>
 				<p className="helper-text">
@@ -1574,10 +1653,38 @@ export function ProgressionEditor() {
 									))}
 								</select>
 							</label>
+							<label>
+								Run
+								<select
+									onChange={(event) =>
+										updateRule({
+											...selectedRule,
+											runPolicy:
+												event.target.value === "once" ? "once" : undefined,
+										})
+									}
+									value={selectedRule.runPolicy ?? "always"}
+								>
+									<option value="always">Every time</option>
+									<option value="once">Once per playthrough</option>
+								</select>
+							</label>
 						</div>
+						<p className="helper-text">
+							Use Once for rewards/dialogue that should not repeat.
+						</p>
+						{selectedRule.trigger.type === "on_interact" &&
+						selectedRule.runPolicy !== "once" &&
+						selectedRule.actions.some(
+							(action) => action.type === "give_item",
+						) ? (
+							<div className="validation-message">
+								This may give items every time the player interacts.
+							</div>
+						) : null}
 						<section className="rule-summary">
-							{ruleSummary(selectedRule, labels).map((line, index) => (
-								<div key={`${index}_${line}`}>{line}</div>
+							{ruleSummary(selectedRule, labels).map((line) => (
+								<div key={`${selectedRule.id}_${line}`}>{line}</div>
 							))}
 						</section>
 						<section className="logic-block">
@@ -1596,8 +1703,7 @@ export function ProgressionEditor() {
 									selective.
 								</div>
 							)}
-							{!selectedRule.conditionTree ||
-							selectedRule.conditionTree.type !== "group" ? (
+							{selectedRule.conditionTree?.type !== "group" ? (
 								<button
 									onClick={() =>
 										addRootCondition(selectedRule, makeCondition("flag_is"))

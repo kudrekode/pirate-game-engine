@@ -88,6 +88,8 @@ Terrain remains grid-based. Runtime camera settings live at the project level in
 
 Each Play session copies these defaults into separate runtime memory. Variables remain general number or text state. Inventory item definitions live in `GameProject.items`; runtime quantities are separate from those definitions.
 
+Variables are abstract numbers/text used by logic. Shop currencies are inventory items with the `currency` category; do not treat variables and currency items as the same state.
+
 ## Editor Defaults Versus Runtime State
 
 `GameProject` stores authoring defaults. A Play session must not mutate those editor defaults.
@@ -129,6 +131,8 @@ Direct interactions and rule triggers still run alongside behaviours for compati
 
 `GameProject.quests` contains player-facing quest definitions. `trackedQuestId` optionally selects the compact play-mode tracker.
 
+Active quests can progress. Tracked quests are a HUD display choice; when no tracked quest is selected, the runtime tracker falls back to the first active quest. Completed quests remain visible in the quest panel.
+
 Quests organise guidance and progress; they do not replace flags, variables, inventory, areas, or friendly rules. Objectives read those existing systems:
 
 - Flag value
@@ -139,6 +143,8 @@ Quests organise guidance and progress; they do not replace flags, variables, inv
 Runtime quest state is copied per Play session. Completed objectives stay complete once achieved, and quest rewards are granted once. Pure quest evaluation and reward helpers live in `src/runtime/questEngine.ts`. The React runtime overlay owns the `J` quest panel and tracked quest display, so neither is affected by the Phaser camera.
 
 Friendly rules can activate, complete, or fail quests explicitly. Active quests also complete automatically when all objectives have been achieved.
+
+Runtime startup creates isolated runtime state, renders the initial area/player, fires `on_game_start` rules, processes initial progression/spawn movement, marks the actual runtime area as entered, then performs the first automatic quest sync.
 
 ## NPCs
 
@@ -198,6 +204,10 @@ Rules can also open shops, activate, complete, or fail quests, and read or chang
 Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
 
 Direct interactions on structures and event blocks still work alongside rules for backward compatibility.
+
+Direct interactions and rules targeting the same entity both run. The Map editor warns when a selected target has both so authors can avoid accidental duplicate effects.
+
+Play mode includes a lightweight flow log for meaningful discrete events such as triggers, rules, actions, area entry, quest progress/rewards, purchases, and combat results. It is an authoring/debug aid and must not become gameplay state.
 
 ## Movement
 

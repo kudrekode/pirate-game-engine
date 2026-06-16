@@ -11,6 +11,7 @@ import type {
 	NPCDefinition,
 	NPCInstance,
 	RuleTrigger,
+	ShopDefinition,
 	SingleCondition,
 } from "../types/game";
 import { createInventory, giveItem, hasItem, removeItem } from "./inventory";
@@ -21,6 +22,7 @@ export type RuntimeGameState = {
 	variables: Record<string, GameStateValue>;
 	inventory: InventoryState;
 	npcs: Record<string, NPCAttributes>;
+	completedRuleIds: Set<string>;
 };
 
 export type RuleActionContext = {
@@ -34,8 +36,83 @@ export type RuleActionContext = {
 	failQuest?: (questId: string) => void;
 	openShop?: (shopId: string) => void;
 	itemDefinitions?: ItemDefinition[];
+	shopDefinitions?: ShopDefinition[];
 	stateChanged?: () => void;
+	logEvent?: (message: string) => void;
 };
+
+function describeAction(action: GameAction): string {
+	if (action.type === "set_flag") {
+		return `set flag ${action.flag} to ${action.value}`;
+	}
+	if (action.type === "set_variable") {
+		return `set variable ${action.variable} to ${action.value}`;
+	}
+	if (action.type === "change_variable") {
+		return `change variable ${action.variable} by ${action.amount}`;
+	}
+	if (action.type === "give_item" || action.type === "remove_item") {
+		return `${action.type === "give_item" ? "give" : "remove"} item ${action.itemId || "(missing item)"} x${action.quantity}`;
+	}
+	if (action.type === "play_cutscene") {
+		return `play cutscene ${action.cutsceneId}`;
+	}
+	if (action.type === "teleport") {
+		return `teleport to ${action.areaId}:${action.eventBlockId}`;
+	}
+	if (action.type === "open_shop") {
+		return `open shop ${action.shopId || "(missing shop)"}`;
+	}
+	return action.type.replace(/_/g, " ");
+}
+
+function resolveActionShopId(
+	action: Extract<GameAction, { type: "open_shop" }>,
+	context: RuleActionContext,
+): string | undefined {
+	if (context.shopDefinitions?.some((shop) => shop.id === action.shopId)) {
+		return action.shopId;
+	}
+
+	if (!action.shopId && context.shopDefinitions?.length === 1) {
+		const shop = context.shopDefinitions[0];
+		context.logEvent?.(
+			`Action repaired: open shop target was missing, using ${shop.name} (${shop.id}).`,
+		);
+		return shop.id;
+	}
+
+	context.logEvent?.(
+		`Action skipped: open shop target "${action.shopId || "(missing shop)"}" was not found.`,
+	);
+	return undefined;
+}
+
+function resolveActionItemId(
+	action: Extract<GameAction, { type: "give_item" | "remove_item" }>,
+	context: RuleActionContext,
+): string | undefined {
+	if (context.itemDefinitions?.some((item) => item.id === action.itemId)) {
+		return action.itemId;
+	}
+
+	if (action.type === "give_item" && !action.itemId) {
+		const currencyItems =
+			context.itemDefinitions?.filter((item) => item.category === "currency") ??
+			[];
+		if (currencyItems.length === 1) {
+			context.logEvent?.(
+				`Action repaired: give item target was missing, using ${currencyItems[0].name} (${currencyItems[0].id}).`,
+			);
+			return currencyItems[0].id;
+		}
+	}
+
+	context.logEvent?.(
+		`Action skipped: ${action.type === "give_item" ? "give" : "remove"} item target "${action.itemId || "(missing item)"}" was not found.`,
+	);
+	return undefined;
+}
 
 export function createRuntimeNpcState(
 	npcs: NPCInstance[],
@@ -66,6 +143,7 @@ export function createRuntimeState(
 		variables: { ...config.variables },
 		inventory: createInventory(config.inventory),
 		npcs: createRuntimeNpcState(npcs, definitions),
+		completedRuleIds: new Set<string>(),
 	};
 }
 
@@ -179,6 +257,7 @@ export function runAction(
 	context: RuleActionContext,
 	onDone: () => void,
 ): void {
+	context.logEvent?.(`Action ran: ${describeAction(action)}.`);
 	if (action.type === "set_flag") {
 		context.state.flags[action.flag] = action.value;
 		context.stateChanged?.();
@@ -208,10 +287,15 @@ export function runAction(
 	}
 
 	if (action.type === "give_item") {
+		const itemId = resolveActionItemId(action, context);
+		if (!itemId) {
+			onDone();
+			return;
+		}
 		giveItem(
 			context.state.inventory,
 			context.itemDefinitions ?? [],
-			action.itemId,
+			itemId,
 			action.quantity,
 		);
 		context.stateChanged?.();
@@ -220,7 +304,12 @@ export function runAction(
 	}
 
 	if (action.type === "remove_item") {
-		removeItem(context.state.inventory, action.itemId, action.quantity);
+		const itemId = resolveActionItemId(action, context);
+		if (!itemId) {
+			onDone();
+			return;
+		}
+		removeItem(context.state.inventory, itemId, action.quantity);
 		context.stateChanged?.();
 		onDone();
 		return;
@@ -265,7 +354,10 @@ export function runAction(
 	}
 
 	if (action.type === "open_shop") {
-		context.openShop?.(action.shopId);
+		const shopId = resolveActionShopId(action, context);
+		if (shopId) {
+			context.openShop?.(shopId);
+		}
 		onDone();
 		return;
 	}
@@ -286,7 +378,7 @@ export function runAction(
 	onDone();
 }
 
-function runActions(
+export function runActions(
 	actions: GameAction[],
 	context: RuleActionContext,
 	onDone: () => void,
@@ -307,10 +399,31 @@ export function runRule(
 	context: RuleActionContext,
 	onDone: () => void,
 ): void {
-	const actions = evaluateConditionExpression(rule.conditionTree, context.state)
-		? rule.actions
-		: (rule.elseActions ?? []);
-	runActions(actions, context, onDone);
+	if (
+		rule.runPolicy === "once" &&
+		context.state.completedRuleIds.has(rule.id)
+	) {
+		context.logEvent?.(`Rule skipped: ${rule.name} already ran.`);
+		onDone();
+		return;
+	}
+
+	const conditionsPassed = evaluateConditionExpression(
+		rule.conditionTree,
+		context.state,
+	);
+	context.logEvent?.(
+		conditionsPassed
+			? `Rule fired: ${rule.name}.`
+			: `Rule skipped: ${rule.name} conditions failed.`,
+	);
+	const actions = conditionsPassed ? rule.actions : (rule.elseActions ?? []);
+	runActions(actions, context, () => {
+		if (conditionsPassed && rule.runPolicy === "once") {
+			context.state.completedRuleIds.add(rule.id);
+		}
+		onDone();
+	});
 }
 
 function triggersMatch(expected: RuleTrigger, actual: RuleTrigger): boolean {

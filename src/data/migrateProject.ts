@@ -1,13 +1,10 @@
-import { defaultProject } from "./defaultProject";
-import { createDefaultPixelAssets } from "./mapVisuals";
-import { defaultCameraConfig } from "./projectDefaults";
-import { defaultTileStyles, tilePresets } from "./presets";
 import type {
 	AreaLink,
 	CameraConfig,
 	ConditionExpression,
 	ConditionGroup,
 	Cutscene,
+	EnemyBehaviour,
 	EventBlock,
 	GameAction,
 	GameArea,
@@ -19,27 +16,26 @@ import type {
 	Interaction,
 	InteractionActivationMode,
 	ItemDefinition,
-	ObjectDefinition,
-	ObjectBehaviour,
-	ObjectInstance,
-	NPCDefinition,
-	NPCInstance,
-	NPCAttributes,
-	NPCMovementConfig,
-	EnemyBehaviour,
 	MapStructure,
 	MapTile,
 	MovementRule,
-	OverlayTile,
-	PickupObject,
-	Quest,
-	QuestReward,
+	NPCAttributes,
+	NPCDefinition,
+	NPCInstance,
+	NPCMovementConfig,
+	ObjectBehaviour,
+	ObjectDefinition,
+	ObjectInstance,
 	Objective,
 	ObjectiveCondition,
-	PlayerConfig,
+	OverlayTile,
+	PickupObject,
 	PixelAsset,
+	PlayerConfig,
 	ProgressionAction,
 	ProgressionStep,
+	Quest,
+	QuestReward,
 	RuleGroup,
 	RuleTrigger,
 	ShopDefinition,
@@ -47,6 +43,10 @@ import type {
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
+import { defaultProject } from "./defaultProject";
+import { createDefaultPixelAssets } from "./mapVisuals";
+import { defaultTileStyles, tilePresets } from "./presets";
+import { defaultCameraConfig } from "./projectDefaults";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -1037,7 +1037,9 @@ function migrateProgression(
 		return migrated ? [migrated] : [];
 	});
 
-	return steps.length > 0 ? steps : cloneProject(defaultProject).progression;
+	return Array.isArray(value)
+		? steps
+		: cloneProject(defaultProject).progression;
 }
 
 function migrateGameState(value: unknown): GameStateConfig {
@@ -1346,6 +1348,30 @@ function migrateQuestRewards(value: unknown): QuestReward[] {
 	});
 }
 
+function questRewardsToActions(rewards: QuestReward[]): GameAction[] {
+	return rewards.map((reward) => {
+		if (reward.type === "item") {
+			return {
+				type: "give_item" as const,
+				itemId: reward.itemId,
+				quantity: reward.quantity,
+			};
+		}
+		if (reward.type === "flag") {
+			return {
+				type: "set_flag" as const,
+				flag: reward.flag,
+				value: reward.value,
+			};
+		}
+		return {
+			type: "change_variable" as const,
+			variable: reward.variable,
+			amount: reward.amount,
+		};
+	});
+}
+
 function migrateQuests(value: unknown): Quest[] {
 	if (!Array.isArray(value)) {
 		return [];
@@ -1363,6 +1389,10 @@ function migrateQuests(value: unknown): Quest[] {
 				? quest.status
 				: "inactive";
 		const description = readString(quest.description, "");
+		const legacyRewards = migrateQuestRewards(quest.rewards);
+		const completionActions = Array.isArray(quest.completionActions)
+			? migrateActions(quest.completionActions)
+			: questRewardsToActions(legacyRewards);
 
 		return [
 			{
@@ -1371,7 +1401,8 @@ function migrateQuests(value: unknown): Quest[] {
 				...(description ? { description } : {}),
 				status,
 				objectives: migrateObjectives(quest.objectives),
-				rewards: migrateQuestRewards(quest.rewards),
+				completionActions,
+				rewards: Array.isArray(quest.completionActions) ? legacyRewards : [],
 			},
 		];
 	});
@@ -1659,6 +1690,7 @@ function migrateRules(value: unknown): GameRule[] {
 				id: ruleId,
 				name: readString(rule.name, `Rule ${index + 1}`),
 				enabled: readBoolean(rule.enabled, true),
+				...(rule.runPolicy === "once" ? { runPolicy: "once" as const } : {}),
 				...(groupId ? { groupId } : {}),
 				trigger: migrateRuleTrigger(rule.trigger),
 				...(conditionTree ? { conditionTree } : {}),
