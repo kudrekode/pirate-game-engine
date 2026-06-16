@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import { editorSections } from "../editor/sections";
+import { MapEditor } from "../editor/sections/MapEditor";
 import { ThreeDPreview } from "../editor/sections/ThreeDPreview";
 import { useProjectStore } from "../store/useProjectStore";
 
@@ -119,6 +120,90 @@ beforeEach(() => {
 });
 
 describe("ThreeDPreview", () => {
+	it("renders the Map workspace with a 2D/3D view toggle", () => {
+		render(<MapEditor />);
+
+		expect(screen.getByRole("button", { name: "2D View" })).toHaveClass(
+			"selected",
+		);
+		expect(screen.getByText("View: 2D")).toBeInTheDocument();
+		expect(screen.getByLabelText("Map editing canvas")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+
+		expect(screen.getByRole("button", { name: "3D View" })).toHaveClass(
+			"selected",
+		);
+		expect(screen.getByText("View: 3D")).toBeInTheDocument();
+		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("keeps entity placement status visible when switching to 3D view", () => {
+		render(<MapEditor />);
+
+		const npcButton = screen.getByText("NPC").closest("button");
+		expect(npcButton).not.toBeNull();
+		fireEvent.click(npcButton as HTMLButtonElement);
+		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+
+		expect(
+			screen.getByText("Tool: Place NPC - Captain Mira"),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Placing NPC: Captain Mira. Click terrain to place."),
+		).toBeInTheDocument();
+		expect(npcButton).toHaveClass("selected");
+
+		fireEvent.click(screen.getByRole("button", { name: "2D View" }));
+		expect(
+			screen.getByText("Tool: Place NPC - Captain Mira"),
+		).toBeInTheDocument();
+		expect(npcButton).toHaveClass("selected");
+	});
+
+	it("selecting in embedded 3D updates the shared inspector without leaving 3D view", async () => {
+		const rectSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+			.mockReturnValue({
+				bottom: 240,
+				height: 240,
+				left: 0,
+				right: 320,
+				toJSON: () => ({}),
+				top: 0,
+				width: 320,
+				x: 0,
+				y: 0,
+			});
+		render(<MapEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+
+		await waitFor(() =>
+			expect(useProjectStore.getState().editorSelection).toMatchObject({
+				type: "npc",
+			}),
+		);
+		expect(screen.getByRole("button", { name: "3D View" })).toHaveClass(
+			"selected",
+		);
+		expect(screen.getByLabelText("Faction")).toBeInTheDocument();
+
+		rectSpy.mockRestore();
+	});
+
 	it("is registered as an editor tab and renders preview controls", () => {
 		expect(editorSections).toEqual(
 			expect.arrayContaining([

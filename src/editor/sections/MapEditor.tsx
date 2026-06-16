@@ -41,6 +41,7 @@ import {
 	makeDefaultObjectBehaviour,
 	ObjectBehaviourEditor,
 } from "../ObjectBehaviourEditor";
+import { ThreeDPreview } from "./ThreeDPreview";
 
 type MapTool =
 	| "paint"
@@ -54,6 +55,7 @@ type MapTool =
 	| "pan";
 type BrushSize = 1 | 3 | 5;
 type PaintLayer = "terrain" | "overlay" | "structure" | "event";
+type MapWorkspaceView = "2d" | "3d";
 
 const AUTO_EXPAND_BUFFER_TILES = 12;
 const MAX_MAP_SIZE = 200;
@@ -193,6 +195,9 @@ export function MapEditor() {
 	const deleteEventBlock = useProjectStore((state) => state.deleteEventBlock);
 	const selection = useProjectStore((state) => state.editorSelection);
 	const setSelection = useProjectStore((state) => state.setEditorSelection);
+	const setMapPaletteSelection = useProjectStore(
+		(state) => state.setMapPaletteSelection,
+	);
 
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
@@ -200,6 +205,7 @@ export function MapEditor() {
 	const activeArea = getEditorActiveArea(project);
 
 	const [activeTool, setActiveTool] = useState<MapTool>("paint");
+	const [mapView, setMapView] = useState<MapWorkspaceView>("2d");
 	const [paintLayer, setPaintLayer] = useState<PaintLayer>("terrain");
 	const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
 	const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
@@ -409,6 +415,29 @@ export function MapEditor() {
 	const selectedObjectDefinition = project.objects.find(
 		(object) => object.id === selectedObjectDefinitionId,
 	);
+	const selectedNpcDefinitionForPalette = project.npcs.find(
+		(npc) => npc.id === selectedNpcDefinitionId,
+	);
+	const mapWorkspaceStatus =
+		activeTool === "structure"
+			? `Tool: Place Structure - ${selectedStructure.label}`
+			: activeTool === "object"
+				? `Tool: Place Object - ${selectedObjectDefinition?.name ?? "Object"}`
+				: activeTool === "npc"
+					? `Tool: Place NPC - ${selectedNpcDefinitionForPalette?.name ?? "NPC"}`
+					: activeTool === "pickup"
+						? `Tool: Place Pickup - ${project.items[0]?.name ?? "Item"} x1`
+						: activeTool === "event-block"
+							? "Tool: Place Event Block"
+							: activeTool === "eraser"
+								? "Tool: Erase"
+								: activeTool === "pan"
+									? "Tool: Pan"
+									: activeTool === "fill"
+										? `Tool: Fill Terrain - ${selectedTerrainId}`
+										: paintLayer === "overlay"
+											? `Tool: Paint Overlay - ${selectedOverlayId}`
+											: `Tool: Paint Terrain - ${selectedTerrainId}`;
 	const cellSize = Math.round(activeArea.tileSize * zoom);
 	const renderWidth = Math.min(
 		MAX_MAP_SIZE,
@@ -1520,18 +1549,21 @@ export function MapEditor() {
 		setSelectedTerrainId(id);
 		setPaintLayer("terrain");
 		setActiveTool("paint");
+		setMapPaletteSelection({ type: "none" });
 	}
 
 	function selectOverlay(id: string) {
 		setSelectedOverlayId(id);
 		setPaintLayer("overlay");
 		setActiveTool("paint");
+		setMapPaletteSelection({ type: "none" });
 	}
 
 	function selectStructure(id: string) {
 		setSelectedStructureId(id);
 		setPaintLayer("structure");
 		setActiveTool("structure");
+		setMapPaletteSelection({ structureId: id, type: "structure" });
 	}
 
 	function movementRuleSummary(
@@ -2943,9 +2975,15 @@ export function MapEditor() {
 					<label>
 						Object definition
 						<select
-							onChange={(event) =>
-								setSelectedObjectDefinitionId(event.target.value)
-							}
+							onChange={(event) => {
+								setSelectedObjectDefinitionId(event.target.value);
+								if (activeTool === "object") {
+									setMapPaletteSelection({
+										objectDefinitionId: event.target.value,
+										type: "object",
+									});
+								}
+							}}
 							value={selectedObjectDefinitionId}
 						>
 							{project.objects.map((object) => (
@@ -2961,6 +2999,10 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("object");
 							setPaintLayer("event");
+							setMapPaletteSelection({
+								objectDefinitionId: selectedObjectDefinitionId,
+								type: "object",
+							});
 						}}
 						type="button"
 					>
@@ -2976,6 +3018,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("event-block");
 							setPaintLayer("event");
+							setMapPaletteSelection({ type: "eventBlock" });
 						}}
 						type="button"
 					>
@@ -2987,6 +3030,10 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("pickup");
 							setPaintLayer("event");
+							setMapPaletteSelection({
+								itemId: project.items[0]?.id,
+								type: "pickup",
+							});
 						}}
 						type="button"
 					>
@@ -2996,9 +3043,15 @@ export function MapEditor() {
 					<label>
 						NPC definition
 						<select
-							onChange={(event) =>
-								setSelectedNpcDefinitionId(event.target.value)
-							}
+							onChange={(event) => {
+								setSelectedNpcDefinitionId(event.target.value);
+								if (activeTool === "npc") {
+									setMapPaletteSelection({
+										npcDefinitionId: event.target.value,
+										type: "npc",
+									});
+								}
+							}}
 							value={selectedNpcDefinitionId}
 						>
 							{project.npcs.map((npc) => (
@@ -3014,6 +3067,10 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("npc");
 							setPaintLayer("event");
+							setMapPaletteSelection({
+								npcDefinitionId: selectedNpcDefinitionId,
+								type: "npc",
+							});
 						}}
 						type="button"
 					>
@@ -3026,28 +3083,40 @@ export function MapEditor() {
 				<div className="tool-button-grid">
 					<button
 						className={activeTool === "paint" ? "selected" : ""}
-						onClick={() => setActiveTool("paint")}
+						onClick={() => {
+							setActiveTool("paint");
+							setMapPaletteSelection({ type: "none" });
+						}}
 						type="button"
 					>
 						Paint
 					</button>
 					<button
 						className={activeTool === "eraser" ? "selected" : ""}
-						onClick={() => setActiveTool("eraser")}
+						onClick={() => {
+							setActiveTool("eraser");
+							setMapPaletteSelection({ type: "none" });
+						}}
 						type="button"
 					>
 						Eraser
 					</button>
 					<button
 						className={activeTool === "fill" ? "selected" : ""}
-						onClick={() => setActiveTool("fill")}
+						onClick={() => {
+							setActiveTool("fill");
+							setMapPaletteSelection({ type: "none" });
+						}}
 						type="button"
 					>
 						Fill
 					</button>
 					<button
 						className={activeTool === "pan" ? "selected" : ""}
-						onClick={() => setActiveTool("pan")}
+						onClick={() => {
+							setActiveTool("pan");
+							setMapPaletteSelection({ type: "none" });
+						}}
 						type="button"
 					>
 						Pan
@@ -3161,330 +3230,366 @@ export function MapEditor() {
 				</div>
 			</aside>
 
-			<div
-				aria-label="Map editing canvas"
-				className={`map-stage ${activeTool === "pan" || isPanning ? "pan-ready" : ""}`}
-				onContextMenu={(event) => {
-					if (activeTool === "pan" || isPanning) {
-						event.preventDefault();
-					}
-				}}
-				onPointerDown={startPanning}
-				onPointerMove={panStage}
-				onPointerUp={(event) => {
-					stopPainting();
-					stopPanning(event);
-				}}
-				ref={mapStageRef}
-				role="application"
-			>
-				<div className="active-area-banner">
-					Editing: <strong>{activeArea.name}</strong>
-					<span>
-						{activeArea.width} x {activeArea.height} tiles
-					</span>
-				</div>
-				<div
-					className={`tile-grid ${showGrid ? "show-grid" : "hide-grid"}`}
-					onPointerLeave={stopPainting}
-					onPointerUp={stopPainting}
-					style={{
-						gridTemplateColumns: `repeat(${renderWidth}, ${cellSize}px)`,
-					}}
-				>
-					{Array.from({ length: renderHeight }).map((_, y) =>
-						Array.from({ length: renderWidth }).map((__, x) => {
-							const key = cellKey(x, y);
-							const terrainId = terrainLookup.get(key) ?? "grass";
-							const terrain = getTerrainPreset(terrainId);
-							const tileStyle = project.tileStyles[terrainId] ?? {
-								color: terrain.color,
-								label: terrain.label,
-							};
-							const overlayId = overlayLookup.get(key);
-							const eventBlock = eventLookup.get(key);
-							const object = objectLookup.get(key);
-							const pickup = pickupLookup.get(key);
-							const pickupItem = project.items.find(
-								(item) => item.id === pickup?.itemId,
-							);
-							const npc = npcLookup.get(key);
-							const npcDefinition = project.npcs.find(
-								(definition) => definition.id === npc?.npcDefinitionId,
-							);
-							const resolvedNpc = npc
-								? resolveNPCInstance(npcDefinition, npc)
-								: undefined;
-							const eventLabel = eventBlock?.tag || eventBlock?.name;
-							const isOutsideMap =
-								x >= activeArea.width || y >= activeArea.height;
-							const isSelectedTerrain =
-								selection?.type === "terrain" &&
-								selection.areaId === activeArea.id &&
-								selection.x === x &&
-								selection.y === y;
-							const isSelectedOverlay =
-								selection?.type === "overlay" &&
-								selection.areaId === activeArea.id &&
-								selection.x === x &&
-								selection.y === y;
-
-							return (
-								<button
-									aria-label={`Tile ${x}, ${y}`}
-									className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""} ${
-										isSelectedTerrain || isSelectedOverlay
-											? "selected-cell"
-											: ""
-									} ${isSelectedOverlay ? "selected-overlay-cell" : ""}`}
-									key={key}
-									onPointerDown={(event) => handleCellPointerDown(event, x, y)}
-									onPointerEnter={() => handleCellPointerEnter(x, y)}
-									style={{
-										width: cellSize,
-										height: cellSize,
-										background: tileStyle.color,
-										color: terrain.textColor,
-									}}
-									type="button"
-								>
-									<span
-										className="tile-pixel-layer"
-										style={{ backgroundImage: pixelAssetUrls[terrainId] }}
-									/>
-									{overlayId ? (
-										<span
-											className="overlay-pixel-layer"
-											style={{ backgroundImage: pixelAssetUrls[overlayId] }}
-										/>
-									) : null}
-									{eventBlock ? (
-										<span
-											className={`event-marker ${eventBlock.kind} ${
-												selection?.type === "eventBlock" &&
-												selection.id === eventBlock.id
-													? "selected-event"
-													: ""
-											}`}
-										>
-											<span className="event-marker-kind">
-												{eventBlock.kind === "spawn"
-													? "S"
-													: eventBlock.kind === "area_link"
-														? "->"
-														: "T"}
-											</span>
-											<span className="event-marker-label">{eventLabel}</span>
-										</span>
-									) : null}
-									{object ? (
-										<span
-											className={`object-marker ${
-												selection?.type === "object" &&
-												selection.id === object.id
-													? "selected-object"
-													: ""
-											}`}
-										>
-											<span className="object-marker-icon">
-												{(
-													object.nameOverride ??
-													project.objects.find(
-														(definition) =>
-															definition.id === object.objectDefinitionId,
-													)?.name ??
-													"Object"
-												)
-													.slice(0, 1)
-													.toUpperCase()}
-											</span>
-										</span>
-									) : null}
-									{pickup ? (
-										<span
-											className={`pickup-marker ${
-												selection?.type === "pickup" &&
-												selection.id === pickup.id
-													? "selected-pickup"
-													: ""
-											}`}
-										>
-											<span className="pickup-marker-icon">
-												{pickupItem?.name.slice(0, 1).toUpperCase() ?? "?"}
-											</span>
-											<span className="pickup-marker-label">
-												{pickupItem?.name ?? "Pickup"} x{pickup.quantity}
-											</span>
-										</span>
-									) : null}
-									{npc ? (
-										<span
-											className={`npc-marker alignment-${resolvedNpc?.attributes.alignment ?? "friendly"} ${
-												selection?.type === "npc" && selection.id === npc.id
-													? "selected-npc"
-													: ""
-											}`}
-										>
-											<span className="npc-marker-icon">
-												{resolvedNpc?.name.slice(0, 1).toUpperCase() ?? "?"}
-											</span>
-											<span className="npc-marker-label">
-												{resolvedNpc?.name ?? "NPC"}
-											</span>
-										</span>
-									) : null}
-								</button>
-							);
-						}),
-					)}
-					{overlayFilter === "npc_paths" &&
-					selectedResolvedNpc?.movementMode === "patrol" &&
-					selectedResolvedNpc.patrolPath ? (
-						<svg
-							aria-label="NPC patrol path"
-							className="map-npc-path-overlay"
-							height={renderHeight * cellSize}
-							role="img"
-							width={renderWidth * cellSize}
+			<div className="map-workspace-main">
+				<div className="map-workspace-toolbar">
+					<div className="segmented-control map-view-toggle">
+						<button
+							className={mapView === "2d" ? "selected" : ""}
+							onClick={() => setMapView("2d")}
+							type="button"
 						>
-							<polyline
-								points={selectedResolvedNpc.patrolPath.points
-									.map(
-										(point) =>
-											`${point.x * cellSize + cellSize / 2},${point.y * cellSize + cellSize / 2}`,
-									)
-									.join(" ")}
-							/>
-							{selectedResolvedNpc.patrolPath.points.map((point, index) => (
-								<g key={`${point.x}_${point.y}`}>
-									<circle
-										cx={point.x * cellSize + cellSize / 2}
-										cy={point.y * cellSize + cellSize / 2}
-										r={Math.max(5, cellSize * 0.18)}
-									/>
-									<text
-										x={point.x * cellSize + cellSize / 2}
-										y={point.y * cellSize + cellSize / 2}
-									>
-										{index + 1}
-									</text>
-								</g>
-							))}
-						</svg>
-					) : null}
-					{overlayFilter === "npc_paths" &&
-					selectedResolvedNpc?.movementMode === "wander" &&
-					selectedResolvedNpc.wanderZone ? (
+							2D View
+						</button>
+						<button
+							className={mapView === "3d" ? "selected" : ""}
+							onClick={() => setMapView("3d")}
+							type="button"
+						>
+							3D View
+						</button>
+					</div>
+					<div className="map-workspace-status">
+						<span>{mapWorkspaceStatus}</span>
+						<span>View: {mapView === "3d" ? "3D" : "2D"}</span>
+					</div>
+				</div>
+				{mapView === "2d" ? (
+					<div
+						aria-label="Map editing canvas"
+						className={`map-stage ${activeTool === "pan" || isPanning ? "pan-ready" : ""}`}
+						onContextMenu={(event) => {
+							if (activeTool === "pan" || isPanning) {
+								event.preventDefault();
+							}
+						}}
+						onPointerDown={startPanning}
+						onPointerMove={panStage}
+						onPointerUp={(event) => {
+							stopPainting();
+							stopPanning(event);
+						}}
+						ref={mapStageRef}
+						role="application"
+					>
+						<div className="active-area-banner">
+							Editing: <strong>{activeArea.name}</strong>
+							<span>
+								{activeArea.width} x {activeArea.height} tiles
+							</span>
+						</div>
 						<div
-							className="map-npc-wander-zone"
+							className={`tile-grid ${showGrid ? "show-grid" : "hide-grid"}`}
+							onPointerLeave={stopPainting}
+							onPointerUp={stopPainting}
 							style={{
-								left: selectedResolvedNpc.wanderZone.x * cellSize,
-								top: selectedResolvedNpc.wanderZone.y * cellSize,
-								width: selectedResolvedNpc.wanderZone.width * cellSize,
-								height: selectedResolvedNpc.wanderZone.height * cellSize,
+								gridTemplateColumns: `repeat(${renderWidth}, ${cellSize}px)`,
 							}}
 						>
-							Wander
+							{Array.from({ length: renderHeight }).map((_, y) =>
+								Array.from({ length: renderWidth }).map((__, x) => {
+									const key = cellKey(x, y);
+									const terrainId = terrainLookup.get(key) ?? "grass";
+									const terrain = getTerrainPreset(terrainId);
+									const tileStyle = project.tileStyles[terrainId] ?? {
+										color: terrain.color,
+										label: terrain.label,
+									};
+									const overlayId = overlayLookup.get(key);
+									const eventBlock = eventLookup.get(key);
+									const object = objectLookup.get(key);
+									const pickup = pickupLookup.get(key);
+									const pickupItem = project.items.find(
+										(item) => item.id === pickup?.itemId,
+									);
+									const npc = npcLookup.get(key);
+									const npcDefinition = project.npcs.find(
+										(definition) => definition.id === npc?.npcDefinitionId,
+									);
+									const resolvedNpc = npc
+										? resolveNPCInstance(npcDefinition, npc)
+										: undefined;
+									const eventLabel = eventBlock?.tag || eventBlock?.name;
+									const isOutsideMap =
+										x >= activeArea.width || y >= activeArea.height;
+									const isSelectedTerrain =
+										selection?.type === "terrain" &&
+										selection.areaId === activeArea.id &&
+										selection.x === x &&
+										selection.y === y;
+									const isSelectedOverlay =
+										selection?.type === "overlay" &&
+										selection.areaId === activeArea.id &&
+										selection.x === x &&
+										selection.y === y;
+
+									return (
+										<button
+											aria-label={`Tile ${x}, ${y}`}
+											className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""} ${
+												isSelectedTerrain || isSelectedOverlay
+													? "selected-cell"
+													: ""
+											} ${isSelectedOverlay ? "selected-overlay-cell" : ""}`}
+											key={key}
+											onPointerDown={(event) =>
+												handleCellPointerDown(event, x, y)
+											}
+											onPointerEnter={() => handleCellPointerEnter(x, y)}
+											style={{
+												width: cellSize,
+												height: cellSize,
+												background: tileStyle.color,
+												color: terrain.textColor,
+											}}
+											type="button"
+										>
+											<span
+												className="tile-pixel-layer"
+												style={{ backgroundImage: pixelAssetUrls[terrainId] }}
+											/>
+											{overlayId ? (
+												<span
+													className="overlay-pixel-layer"
+													style={{ backgroundImage: pixelAssetUrls[overlayId] }}
+												/>
+											) : null}
+											{eventBlock ? (
+												<span
+													className={`event-marker ${eventBlock.kind} ${
+														selection?.type === "eventBlock" &&
+														selection.id === eventBlock.id
+															? "selected-event"
+															: ""
+													}`}
+												>
+													<span className="event-marker-kind">
+														{eventBlock.kind === "spawn"
+															? "S"
+															: eventBlock.kind === "area_link"
+																? "->"
+																: "T"}
+													</span>
+													<span className="event-marker-label">
+														{eventLabel}
+													</span>
+												</span>
+											) : null}
+											{object ? (
+												<span
+													className={`object-marker ${
+														selection?.type === "object" &&
+														selection.id === object.id
+															? "selected-object"
+															: ""
+													}`}
+												>
+													<span className="object-marker-icon">
+														{(
+															object.nameOverride ??
+															project.objects.find(
+																(definition) =>
+																	definition.id === object.objectDefinitionId,
+															)?.name ??
+															"Object"
+														)
+															.slice(0, 1)
+															.toUpperCase()}
+													</span>
+												</span>
+											) : null}
+											{pickup ? (
+												<span
+													className={`pickup-marker ${
+														selection?.type === "pickup" &&
+														selection.id === pickup.id
+															? "selected-pickup"
+															: ""
+													}`}
+												>
+													<span className="pickup-marker-icon">
+														{pickupItem?.name.slice(0, 1).toUpperCase() ?? "?"}
+													</span>
+													<span className="pickup-marker-label">
+														{pickupItem?.name ?? "Pickup"} x{pickup.quantity}
+													</span>
+												</span>
+											) : null}
+											{npc ? (
+												<span
+													className={`npc-marker alignment-${resolvedNpc?.attributes.alignment ?? "friendly"} ${
+														selection?.type === "npc" && selection.id === npc.id
+															? "selected-npc"
+															: ""
+													}`}
+												>
+													<span className="npc-marker-icon">
+														{resolvedNpc?.name.slice(0, 1).toUpperCase() ?? "?"}
+													</span>
+													<span className="npc-marker-label">
+														{resolvedNpc?.name ?? "NPC"}
+													</span>
+												</span>
+											) : null}
+										</button>
+									);
+								}),
+							)}
+							{overlayFilter === "npc_paths" &&
+							selectedResolvedNpc?.movementMode === "patrol" &&
+							selectedResolvedNpc.patrolPath ? (
+								<svg
+									aria-label="NPC patrol path"
+									className="map-npc-path-overlay"
+									height={renderHeight * cellSize}
+									role="img"
+									width={renderWidth * cellSize}
+								>
+									<polyline
+										points={selectedResolvedNpc.patrolPath.points
+											.map(
+												(point) =>
+													`${point.x * cellSize + cellSize / 2},${point.y * cellSize + cellSize / 2}`,
+											)
+											.join(" ")}
+									/>
+									{selectedResolvedNpc.patrolPath.points.map((point, index) => (
+										<g key={`${point.x}_${point.y}`}>
+											<circle
+												cx={point.x * cellSize + cellSize / 2}
+												cy={point.y * cellSize + cellSize / 2}
+												r={Math.max(5, cellSize * 0.18)}
+											/>
+											<text
+												x={point.x * cellSize + cellSize / 2}
+												y={point.y * cellSize + cellSize / 2}
+											>
+												{index + 1}
+											</text>
+										</g>
+									))}
+								</svg>
+							) : null}
+							{overlayFilter === "npc_paths" &&
+							selectedResolvedNpc?.movementMode === "wander" &&
+							selectedResolvedNpc.wanderZone ? (
+								<div
+									className="map-npc-wander-zone"
+									style={{
+										left: selectedResolvedNpc.wanderZone.x * cellSize,
+										top: selectedResolvedNpc.wanderZone.y * cellSize,
+										width: selectedResolvedNpc.wanderZone.width * cellSize,
+										height: selectedResolvedNpc.wanderZone.height * cellSize,
+									}}
+								>
+									Wander
+								</div>
+							) : null}
+							{overlayFilter === "enemy_ranges" &&
+							selectedResolvedNpc?.attributes.alignment === "hostile" &&
+							selectedResolvedNpc.enemyBehaviour?.enabled ? (
+								<>
+									<div
+										className="map-enemy-range detection"
+										style={{
+											left:
+												(selectedResolvedNpc.x +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour
+														.detectionRadiusTiles) *
+												cellSize,
+											top:
+												(selectedResolvedNpc.y +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour
+														.detectionRadiusTiles) *
+												cellSize,
+											width:
+												selectedResolvedNpc.enemyBehaviour
+													.detectionRadiusTiles *
+												2 *
+												cellSize,
+											height:
+												selectedResolvedNpc.enemyBehaviour
+													.detectionRadiusTiles *
+												2 *
+												cellSize,
+										}}
+									>
+										Detect
+									</div>
+									<div
+										className="map-enemy-range chase"
+										style={{
+											left:
+												(selectedResolvedNpc.x +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
+												cellSize,
+											top:
+												(selectedResolvedNpc.y +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
+												cellSize,
+											width:
+												selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
+												2 *
+												cellSize,
+											height:
+												selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
+												2 *
+												cellSize,
+										}}
+									>
+										Chase
+									</div>
+								</>
+							) : null}
+							{activeArea.structures.map((structure) => {
+								const preset = getStructurePreset(structure.structureId);
+								return (
+									<button
+										className={`map-structure ${
+											selection?.type === "structure" &&
+											selection.id === structure.id
+												? "selected"
+												: ""
+										}`}
+										key={structure.id}
+										onClick={(event) => {
+											event.preventDefault();
+											setSelection({
+												type: "structure",
+												areaId: activeArea.id,
+												id: structure.id,
+											});
+										}}
+										onPointerDown={(event) => {
+											event.stopPropagation();
+										}}
+										style={
+											{
+												left: structure.x * cellSize,
+												top: structure.y * cellSize,
+												width: structure.widthTiles * cellSize,
+												height: structure.heightTiles * cellSize,
+												"--structure-roof": preset.roofColor,
+												"--structure-wall": preset.wallColor,
+												"--structure-shadow": preset.shadowColor,
+											} as CSSProperties
+										}
+										type="button"
+									>
+										<span className="structure-roof" />
+										<span className="structure-wall" />
+										<span className="structure-label">{structure.name}</span>
+									</button>
+								);
+							})}
 						</div>
-					) : null}
-					{overlayFilter === "enemy_ranges" &&
-					selectedResolvedNpc?.attributes.alignment === "hostile" &&
-					selectedResolvedNpc.enemyBehaviour?.enabled ? (
-						<>
-							<div
-								className="map-enemy-range detection"
-								style={{
-									left:
-										(selectedResolvedNpc.x +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles) *
-										cellSize,
-									top:
-										(selectedResolvedNpc.y +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles) *
-										cellSize,
-									width:
-										selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles *
-										2 *
-										cellSize,
-									height:
-										selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles *
-										2 *
-										cellSize,
-								}}
-							>
-								Detect
-							</div>
-							<div
-								className="map-enemy-range chase"
-								style={{
-									left:
-										(selectedResolvedNpc.x +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
-										cellSize,
-									top:
-										(selectedResolvedNpc.y +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
-										cellSize,
-									width:
-										selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
-										2 *
-										cellSize,
-									height:
-										selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
-										2 *
-										cellSize,
-								}}
-							>
-								Chase
-							</div>
-						</>
-					) : null}
-					{activeArea.structures.map((structure) => {
-						const preset = getStructurePreset(structure.structureId);
-						return (
-							<button
-								className={`map-structure ${
-									selection?.type === "structure" &&
-									selection.id === structure.id
-										? "selected"
-										: ""
-								}`}
-								key={structure.id}
-								onClick={(event) => {
-									event.preventDefault();
-									setSelection({
-										type: "structure",
-										areaId: activeArea.id,
-										id: structure.id,
-									});
-								}}
-								onPointerDown={(event) => {
-									event.stopPropagation();
-								}}
-								style={
-									{
-										left: structure.x * cellSize,
-										top: structure.y * cellSize,
-										width: structure.widthTiles * cellSize,
-										height: structure.heightTiles * cellSize,
-										"--structure-roof": preset.roofColor,
-										"--structure-wall": preset.wallColor,
-										"--structure-shadow": preset.shadowColor,
-									} as CSSProperties
-								}
-								type="button"
-							>
-								<span className="structure-roof" />
-								<span className="structure-wall" />
-								<span className="structure-label">{structure.name}</span>
-							</button>
-						);
-					})}
-				</div>
+					</div>
+				) : (
+					<ThreeDPreview embedded hideDetails />
+				)}
 			</div>
 
 			<aside className="inspector-panel">{renderInspector()}</aside>

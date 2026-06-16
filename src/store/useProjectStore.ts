@@ -34,13 +34,23 @@ const STORAGE_KEY = "adventure-builder-project-v1";
 
 type ProgressionType = ProgressionAction["type"];
 
+export type MapPaletteSelection =
+	| { type: "none" }
+	| { type: "npc"; npcDefinitionId: string }
+	| { type: "object"; objectDefinitionId: string }
+	| { type: "pickup"; itemId?: string }
+	| { type: "eventBlock" }
+	| { type: "structure"; structureId: string };
+
 type ProjectStore = {
 	project: GameProject;
 	editorSelection: EditorSelection;
+	mapPaletteSelection: MapPaletteSelection;
 	setProject: (project: GameProject) => void;
 	updateProject: (updater: (project: GameProject) => void) => void;
 	resetProject: () => void;
 	setEditorSelection: (selection: EditorSelection) => void;
+	setMapPaletteSelection: (selection: MapPaletteSelection) => void;
 	saveToLocalStorage: () => void;
 	loadFromLocalStorage: () => boolean;
 	updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
@@ -475,6 +485,7 @@ const initialProject = migrateProject(defaultProject);
 export const useProjectStore = create<ProjectStore>((set, get) => ({
 	project: initialProject,
 	editorSelection: areaSelection(initialProject),
+	mapPaletteSelection: { type: "none" },
 
 	setProject: (project) => {
 		const migratedProject = migrateProject(project);
@@ -497,6 +508,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 	},
 
 	setEditorSelection: (selection) => set({ editorSelection: selection }),
+	setMapPaletteSelection: (selection) =>
+		set({ mapPaletteSelection: selection }),
 
 	saveToLocalStorage: () => {
 		localStorage.setItem(
