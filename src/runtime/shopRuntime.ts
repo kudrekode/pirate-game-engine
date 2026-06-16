@@ -51,7 +51,17 @@ export function buyShopEntry(
 	}
 
 	if (!hasItem(inventory, shop.currencyItemId, entry.buyPrice)) {
-		return { success: false, message: "Not enough currency." };
+		const currency = itemDefinitions.find(
+			(item) => item.id === shop.currencyItemId,
+		);
+		const owned = inventory.items[shop.currencyItemId] ?? 0;
+		const label = currency
+			? `${currency.name} (${currency.id})`
+			: shop.currencyItemId;
+		return {
+			success: false,
+			message: `Shop purchase failed: need ${entry.buyPrice} ${label}, player has ${owned} ${label}.`,
+		};
 	}
 
 	removeItem(inventory, shop.currencyItemId, entry.buyPrice);

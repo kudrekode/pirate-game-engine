@@ -437,6 +437,8 @@ export type Quest = {
 	description?: string;
 	status: QuestStatus;
 	objectives: Objective[];
+	completionActions?: GameAction[];
+	// Legacy compatibility. Imported projects migrate these into completionActions.
 	rewards?: QuestReward[];
 };
 

@@ -10,6 +10,7 @@ import {
 	getQuestSyncDiagnosticMessages,
 	grantQuestReward,
 	markAreaEntered,
+	runQuestCompletionActionsOnce,
 	updateQuestProgress,
 } from "./questEngine";
 import { createRuntimeState, fireTrigger } from "./ruleEngine";
@@ -563,5 +564,47 @@ describe("quest progress", () => {
 		expect(getQuestSyncDiagnosticMessages(questState, runtimeState)).toEqual([
 			"Quest sync: no active quests evaluated.",
 		]);
+	});
+
+	it("runs quest completion actions through the rule action pipeline once", () => {
+		const runtimeState = createRuntimeState({
+			flags: {},
+			variables: {},
+			inventory: {},
+		});
+		let playedCutscene = "";
+		const quest: Quest = {
+			id: "completion-actions",
+			name: "Completion Actions",
+			status: "completed",
+			objectives: [],
+			completionActions: [
+				{ type: "give_item", itemId: "gold_coin", quantity: 2 },
+				{ type: "play_cutscene", cutsceneId: "ending" },
+			],
+		};
+		const completedIds = new Set<string>();
+		const context = {
+			state: runtimeState,
+			playCutscene: (cutsceneId: string, onDone: () => void) => {
+				playedCutscene = cutsceneId;
+				onDone();
+			},
+			teleport: () => undefined,
+			changeMovementMode: () => undefined,
+			endGame: () => undefined,
+			itemDefinitions: items,
+		};
+
+		expect(runQuestCompletionActionsOnce(quest, completedIds, context)).toBe(
+			true,
+		);
+		expect(runtimeState.inventory.items.gold_coin).toBe(2);
+		expect(playedCutscene).toBe("ending");
+
+		expect(runQuestCompletionActionsOnce(quest, completedIds, context)).toBe(
+			false,
+		);
+		expect(runtimeState.inventory.items.gold_coin).toBe(2);
 	});
 });

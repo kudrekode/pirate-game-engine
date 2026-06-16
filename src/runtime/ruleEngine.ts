@@ -11,6 +11,7 @@ import type {
 	NPCDefinition,
 	NPCInstance,
 	RuleTrigger,
+	ShopDefinition,
 	SingleCondition,
 } from "../types/game";
 import { createInventory, giveItem, hasItem, removeItem } from "./inventory";
@@ -35,6 +36,7 @@ export type RuleActionContext = {
 	failQuest?: (questId: string) => void;
 	openShop?: (shopId: string) => void;
 	itemDefinitions?: ItemDefinition[];
+	shopDefinitions?: ShopDefinition[];
 	stateChanged?: () => void;
 	logEvent?: (message: string) => void;
 };
@@ -50,7 +52,7 @@ function describeAction(action: GameAction): string {
 		return `change variable ${action.variable} by ${action.amount}`;
 	}
 	if (action.type === "give_item" || action.type === "remove_item") {
-		return `${action.type === "give_item" ? "give" : "remove"} item ${action.itemId} x${action.quantity}`;
+		return `${action.type === "give_item" ? "give" : "remove"} item ${action.itemId || "(missing item)"} x${action.quantity}`;
 	}
 	if (action.type === "play_cutscene") {
 		return `play cutscene ${action.cutsceneId}`;
@@ -59,9 +61,57 @@ function describeAction(action: GameAction): string {
 		return `teleport to ${action.areaId}:${action.eventBlockId}`;
 	}
 	if (action.type === "open_shop") {
-		return `open shop ${action.shopId}`;
+		return `open shop ${action.shopId || "(missing shop)"}`;
 	}
 	return action.type.replace(/_/g, " ");
+}
+
+function resolveActionShopId(
+	action: Extract<GameAction, { type: "open_shop" }>,
+	context: RuleActionContext,
+): string | undefined {
+	if (context.shopDefinitions?.some((shop) => shop.id === action.shopId)) {
+		return action.shopId;
+	}
+
+	if (!action.shopId && context.shopDefinitions?.length === 1) {
+		const shop = context.shopDefinitions[0];
+		context.logEvent?.(
+			`Action repaired: open shop target was missing, using ${shop.name} (${shop.id}).`,
+		);
+		return shop.id;
+	}
+
+	context.logEvent?.(
+		`Action skipped: open shop target "${action.shopId || "(missing shop)"}" was not found.`,
+	);
+	return undefined;
+}
+
+function resolveActionItemId(
+	action: Extract<GameAction, { type: "give_item" | "remove_item" }>,
+	context: RuleActionContext,
+): string | undefined {
+	if (context.itemDefinitions?.some((item) => item.id === action.itemId)) {
+		return action.itemId;
+	}
+
+	if (action.type === "give_item" && !action.itemId) {
+		const currencyItems =
+			context.itemDefinitions?.filter((item) => item.category === "currency") ??
+			[];
+		if (currencyItems.length === 1) {
+			context.logEvent?.(
+				`Action repaired: give item target was missing, using ${currencyItems[0].name} (${currencyItems[0].id}).`,
+			);
+			return currencyItems[0].id;
+		}
+	}
+
+	context.logEvent?.(
+		`Action skipped: ${action.type === "give_item" ? "give" : "remove"} item target "${action.itemId || "(missing item)"}" was not found.`,
+	);
+	return undefined;
 }
 
 export function createRuntimeNpcState(
@@ -237,10 +287,15 @@ export function runAction(
 	}
 
 	if (action.type === "give_item") {
+		const itemId = resolveActionItemId(action, context);
+		if (!itemId) {
+			onDone();
+			return;
+		}
 		giveItem(
 			context.state.inventory,
 			context.itemDefinitions ?? [],
-			action.itemId,
+			itemId,
 			action.quantity,
 		);
 		context.stateChanged?.();
@@ -249,7 +304,12 @@ export function runAction(
 	}
 
 	if (action.type === "remove_item") {
-		removeItem(context.state.inventory, action.itemId, action.quantity);
+		const itemId = resolveActionItemId(action, context);
+		if (!itemId) {
+			onDone();
+			return;
+		}
+		removeItem(context.state.inventory, itemId, action.quantity);
 		context.stateChanged?.();
 		onDone();
 		return;
@@ -294,7 +354,10 @@ export function runAction(
 	}
 
 	if (action.type === "open_shop") {
-		context.openShop?.(action.shopId);
+		const shopId = resolveActionShopId(action, context);
+		if (shopId) {
+			context.openShop?.(shopId);
+		}
 		onDone();
 		return;
 	}
@@ -315,7 +378,7 @@ export function runAction(
 	onDone();
 }
 
-function runActions(
+export function runActions(
 	actions: GameAction[],
 	context: RuleActionContext,
 	onDone: () => void,

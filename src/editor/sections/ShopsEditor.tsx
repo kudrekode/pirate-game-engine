@@ -33,6 +33,13 @@ export function ShopsEditor() {
 	);
 	const [message, setMessage] = useState("");
 	const selectedShop = project.shops.find((shop) => shop.id === selectedShopId);
+	const currencyItems = [
+		...project.items.filter((item) => item.category === "currency"),
+		...project.items.filter((item) => item.category !== "currency"),
+	];
+	const selectedCurrency = project.items.find(
+		(item) => item.id === selectedShop?.currencyItemId,
+	);
 
 	useEffect(() => {
 		if (!selectedShop) {
@@ -58,7 +65,10 @@ export function ShopsEditor() {
 			draft.shops.push({
 				id,
 				name: `Shop ${draft.shops.length + 1}`,
-				currencyItemId: draft.items[0]?.id ?? "",
+				currencyItemId:
+					draft.items.find((item) => item.category === "currency")?.id ??
+					draft.items[0]?.id ??
+					"",
 				entries: [],
 			});
 		});
@@ -204,14 +214,19 @@ export function ShopsEditor() {
 									}
 									value={selectedShop.currencyItemId}
 								>
-									{project.items.map((item) => (
+									{currencyItems.map((item) => (
 										<option key={item.id} value={item.id}>
-											{item.name}
+											{item.name} ({item.id}) - {item.category}
 										</option>
 									))}
 								</select>
 							</label>
 						</div>
+						{selectedCurrency && selectedCurrency.category !== "currency" ? (
+							<div className="validation-message">
+								Selected shop currency is not a currency-category item.
+							</div>
+						) : null}
 
 						<div className="panel-title secondary">Entries</div>
 						<div className="list-stack">
@@ -225,7 +240,7 @@ export function ShopsEditor() {
 									>
 										{project.items.map((item) => (
 											<option key={item.id} value={item.id}>
-												{item.name}
+												{item.name} ({item.id})
 											</option>
 										))}
 									</select>

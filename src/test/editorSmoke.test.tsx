@@ -330,6 +330,60 @@ describe("editor smoke tests", () => {
 		).toBe(false);
 	}, 15000);
 
+	it("drags selected NPCs and objects without painting terrain", () => {
+		render(<MapEditor />);
+		fireEvent.click(getButtonByText("Select"));
+		const beforeArea = useProjectStore.getState().project.areas[0];
+		const npcDestinationTerrain = beforeArea.terrainTiles.find(
+			(tile) => tile.x === 4 && tile.y === 4,
+		)?.tileId;
+		const objectDestinationTerrain = beforeArea.terrainTiles.find(
+			(tile) => tile.x === 7 && tile.y === 4,
+		)?.tileId;
+
+		const npcStart = getMapTile("Tile 3, 4");
+		const npcEnd = getMapTile("Tile 4, 4");
+		fireEvent.pointerDown(npcStart);
+		fireEvent.pointerEnter(npcEnd);
+		fireEvent.pointerUp(npcEnd);
+
+		const objectStart = getMapTile("Tile 6, 4");
+		const objectEnd = getMapTile("Tile 7, 4");
+		fireEvent.pointerDown(objectStart);
+		fireEvent.pointerEnter(objectEnd);
+		fireEvent.pointerUp(objectEnd);
+
+		const area = useProjectStore.getState().project.areas[0];
+		expect(area.npcs.some((npc) => npc.x === 4 && npc.y === 4)).toBe(true);
+		expect(
+			area.objects.some((object) => object.x === 7 && object.y === 4),
+		).toBe(true);
+		expect(
+			area.terrainTiles.find((tile) => tile.x === 4 && tile.y === 4)?.tileId,
+		).toBe(npcDestinationTerrain);
+		expect(
+			area.terrainTiles.find((tile) => tile.x === 7 && tile.y === 4)?.tileId,
+		).toBe(objectDestinationTerrain);
+	}, 15000);
+
+	it("paints terrain underneath an event block without removing it", () => {
+		render(<MapEditor />);
+		fireEvent.click(getButtonByText("Water"));
+		const eventTile = getMapTile("Tile 18, 10");
+		fireEvent.pointerDown(eventTile);
+		fireEvent.pointerUp(eventTile);
+
+		const area = useProjectStore.getState().project.areas[0];
+		expect(
+			area.terrainTiles.find((tile) => tile.x === 18 && tile.y === 10)?.tileId,
+		).toBe("water");
+		expect(
+			area.eventBlocks.some(
+				(eventBlock) => eventBlock.x === 18 && eventBlock.y === 10,
+			),
+		).toBe(true);
+	}, 15000);
+
 	it("undoes and redoes deleted and painted map edits", () => {
 		render(<MapEditor />);
 
@@ -540,6 +594,27 @@ describe("editor smoke tests", () => {
 		expect(screen.queryByText("Unknown flag: flag_1")).not.toBeInTheDocument();
 	});
 
+	it("shows missing rule open shop action targets", () => {
+		const project = cloneProject(defaultProject);
+		project.rules = [
+			{
+				id: "missing-shop-rule",
+				name: "Missing shop rule",
+				enabled: true,
+				trigger: { type: "on_interact", targetId: "merchant" },
+				actions: [{ type: "open_shop", shopId: "" }],
+			},
+		];
+		useProjectStore.getState().setProject(project);
+
+		render(<ProgressionEditor />);
+
+		expect(screen.getByText("No shop selected")).toBeInTheDocument();
+		expect(
+			screen.getByText("Unknown shop: (missing shop)"),
+		).toBeInTheDocument();
+	});
+
 	it("sets a rule to run once and shows it in the summary", () => {
 		render(<ProgressionEditor />);
 
@@ -549,6 +624,29 @@ describe("editor smoke tests", () => {
 
 		expect(useProjectStore.getState().project.rules[0].runPolicy).toBe("once");
 		expect(screen.getAllByText("Runs once").length).toBeGreaterThan(0);
+	});
+
+	it("warns when an interaction rule gives items every time", () => {
+		const project = cloneProject(defaultProject);
+		project.rules = [
+			{
+				id: "repeat-gift",
+				name: "Repeat Gift",
+				enabled: true,
+				trigger: { type: "on_interact", targetId: "npc_instance_captain_mira" },
+				actions: [{ type: "give_item", itemId: "gold_coin", quantity: 1 }],
+			},
+		];
+		useProjectStore.getState().setProject(project);
+
+		render(<ProgressionEditor />);
+
+		expect(
+			screen.getByText("This may give items every time the player interacts."),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Use Once for rewards/dialogue that should not repeat."),
+		).toBeInTheDocument();
 	});
 
 	it("renders Game State Editor", () => {
@@ -578,6 +676,23 @@ describe("editor smoke tests", () => {
 		expect(screen.getByText("Shop Definition")).toBeInTheDocument();
 		expect(screen.getByDisplayValue("General Store")).toBeInTheDocument();
 		expect(screen.getByText(/not Game State variables/)).toBeInTheDocument();
+		expect(
+			screen.getByRole("option", { name: "Gold Coin (gold_coin) - currency" }),
+		).toBeInTheDocument();
+	});
+
+	it("warns when a shop uses a non-currency item", () => {
+		const project = cloneProject(defaultProject);
+		project.shops[0].currencyItemId = "tavern_key";
+		useProjectStore.getState().setProject(project);
+
+		render(<ShopsEditor />);
+
+		expect(
+			screen.getByText(
+				"Selected shop currency is not a currency-category item.",
+			),
+		).toBeInTheDocument();
 	});
 
 	it("renders Quests Editor", () => {
@@ -590,6 +705,9 @@ describe("editor smoke tests", () => {
 			screen.getByText(
 				"Choose which active quest appears during play. With none selected, the first active quest appears automatically.",
 			),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Rewards / Completion Actions"),
 		).toBeInTheDocument();
 	});
 
@@ -636,6 +754,48 @@ describe("editor smoke tests", () => {
 		expect(useProjectStore.getState().project.quests[0].status).toBe("active");
 		expect(
 			screen.getByDisplayValue("Active - can progress during play"),
+		).toBeInTheDocument();
+	});
+
+	it("adds quest completion actions", () => {
+		const project = cloneProject(defaultProject);
+		project.quests[0].completionActions = [];
+		project.quests[0].rewards = [];
+		useProjectStore.getState().setProject(project);
+		render(<QuestsEditor />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Add action" }));
+
+		expect(
+			useProjectStore.getState().project.quests[0].completionActions,
+		).toEqual([{ type: "give_item", itemId: "gold_coin", quantity: 1 }]);
+	});
+
+	it("shows missing quest completion action item targets", () => {
+		const project = cloneProject(defaultProject);
+		project.quests[0].completionActions = [
+			{ type: "give_item", itemId: "", quantity: 1000 },
+		];
+		project.quests[0].rewards = [];
+		useProjectStore.getState().setProject(project);
+		render(<QuestsEditor />);
+
+		expect(screen.getByText("No item selected")).toBeInTheDocument();
+		expect(
+			screen.getByText("Unknown item: (missing item)"),
+		).toBeInTheDocument();
+	});
+
+	it("shows missing quest completion open shop action targets", () => {
+		const project = cloneProject(defaultProject);
+		project.quests[0].completionActions = [{ type: "open_shop", shopId: "" }];
+		project.quests[0].rewards = [];
+		useProjectStore.getState().setProject(project);
+		render(<QuestsEditor />);
+
+		expect(screen.getByText("No shop selected")).toBeInTheDocument();
+		expect(
+			screen.getByText("Unknown shop: (missing shop)"),
 		).toBeInTheDocument();
 	});
 

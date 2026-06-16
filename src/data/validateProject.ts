@@ -544,6 +544,13 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 				);
 			}
 		});
+		quest.completionActions?.forEach((action, actionIndex) => {
+			checkAction(
+				action,
+				`quests.${questIndex}.completionActions.${actionIndex}`,
+				quest.id,
+			);
+		});
 	});
 
 	project.shops.forEach((shop, shopIndex) => {

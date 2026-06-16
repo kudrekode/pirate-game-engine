@@ -7,7 +7,11 @@ import type {
 	QuestStatus,
 } from "../types/game";
 import { giveItem, hasItem } from "./inventory";
-import type { RuntimeGameState } from "./ruleEngine";
+import {
+	type RuleActionContext,
+	type RuntimeGameState,
+	runActions,
+} from "./ruleEngine";
 
 export type RuntimeQuestState = {
 	quests: Quest[];
@@ -189,6 +193,24 @@ export function getQuestSyncDiagnosticMessages(
 			return `Quest check: ${quest.name} / ${objective.description} [${diagnostic.conditionType}] expected ${diagnostic.expected}, actual ${diagnostic.actual}, passed ${diagnostic.passed}.`;
 		}),
 	);
+}
+
+export function runQuestCompletionActionsOnce(
+	quest: Quest,
+	completedQuestActionIds: Set<string>,
+	context: RuleActionContext,
+	onDone: () => void = () => undefined,
+): boolean {
+	if (
+		completedQuestActionIds.has(quest.id) ||
+		!quest.completionActions?.length
+	) {
+		return false;
+	}
+
+	completedQuestActionIds.add(quest.id);
+	runActions(quest.completionActions, context, onDone);
+	return true;
 }
 
 export function evaluateObjective(

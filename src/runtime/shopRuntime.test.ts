@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ItemDefinition, Quest, ShopDefinition } from "../types/game";
 import { createInventory } from "./inventory";
-import { createRuntimeQuestState, updateQuestProgress } from "./questEngine";
+import {
+	createRuntimeQuestState,
+	runQuestCompletionActionsOnce,
+	updateQuestProgress,
+} from "./questEngine";
 import { createRuntimeState } from "./ruleEngine";
 import { buyShopEntry, createRuntimeShopStocks } from "./shopRuntime";
 
@@ -55,7 +59,8 @@ describe("shop runtime", () => {
 			buyShopEntry(shop, "key", inventory, items, stocks.general_store),
 		).toEqual({
 			success: false,
-			message: "Not enough currency.",
+			message:
+				"Shop purchase failed: need 5 Gold Coin (gold_coin), player has 4 Gold Coin (gold_coin).",
 		});
 		expect(inventory.items.gold_coin).toBe(4);
 		expect(inventory.items.tavern_key).toBeUndefined();
@@ -120,5 +125,115 @@ describe("shop runtime", () => {
 
 		expect(updateQuestProgress(questState, runtimeState, items)).toBe(true);
 		expect(questState.quests[0].status).toBe("completed");
+	});
+
+	it("succeeds when a quest-style reward uses the shop currency item ID", () => {
+		const runtimeState = createRuntimeState({
+			flags: {},
+			variables: {},
+			inventory: {},
+		});
+		const stocks = createRuntimeShopStocks([shop]);
+		const quest: Quest = {
+			id: "currency-reward",
+			name: "Currency Reward",
+			status: "completed",
+			objectives: [],
+			completionActions: [
+				{ type: "give_item", itemId: "gold_coin", quantity: 5 },
+			],
+		};
+		runQuestCompletionActionsOnce(quest, new Set(), {
+			state: runtimeState,
+			playCutscene: () => undefined,
+			teleport: () => undefined,
+			changeMovementMode: () => undefined,
+			endGame: () => undefined,
+			itemDefinitions: items,
+		});
+
+		expect(
+			buyShopEntry(
+				shop,
+				"key",
+				runtimeState.inventory,
+				items,
+				stocks.general_store,
+			).success,
+		).toBe(true);
+	});
+
+	it("makes a currency item ID mismatch obvious", () => {
+		const inventory = createInventory({ silver: 1000 });
+		const stocks = createRuntimeShopStocks([shop]);
+
+		expect(
+			buyShopEntry(shop, "key", inventory, items, stocks.general_store),
+		).toEqual({
+			success: false,
+			message:
+				"Shop purchase failed: need 5 Gold Coin (gold_coin), player has 0 Gold Coin (gold_coin).",
+		});
+	});
+
+	it("repairs a missing quest currency reward target when one currency item exists", () => {
+		const silverItems: ItemDefinition[] = [
+			{
+				id: "item_78643486",
+				name: "silver",
+				category: "currency",
+				stackable: true,
+				maxStack: 9999,
+			},
+			{
+				id: "cutlass",
+				name: "Cutlass",
+				category: "misc",
+				stackable: false,
+			},
+		];
+		const silverShop: ShopDefinition = {
+			id: "merchant",
+			name: "Merchant",
+			currencyItemId: "item_78643486",
+			entries: [{ id: "cutlass", itemId: "cutlass", buyPrice: 1000 }],
+		};
+		const runtimeState = createRuntimeState({
+			flags: {},
+			variables: {},
+			inventory: {},
+		});
+		const quest: Quest = {
+			id: "silver-reward",
+			name: "Silver Reward",
+			status: "completed",
+			objectives: [],
+			completionActions: [{ type: "give_item", itemId: "", quantity: 1000 }],
+		};
+		const logs: string[] = [];
+		runQuestCompletionActionsOnce(quest, new Set(), {
+			state: runtimeState,
+			playCutscene: () => undefined,
+			teleport: () => undefined,
+			changeMovementMode: () => undefined,
+			endGame: () => undefined,
+			itemDefinitions: silverItems,
+			logEvent: (message) => logs.push(message),
+		});
+
+		expect(runtimeState.inventory.items.item_78643486).toBe(1000);
+		expect(runtimeState.inventory.items[""]).toBeUndefined();
+		expect(logs).toContain(
+			"Action repaired: give item target was missing, using silver (item_78643486).",
+		);
+		expect(
+			buyShopEntry(
+				silverShop,
+				"cutlass",
+				runtimeState.inventory,
+				silverItems,
+				{},
+			).success,
+		).toBe(true);
 	});
 });

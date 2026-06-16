@@ -65,6 +65,14 @@ function makeContext() {
 				stackable: false,
 			},
 		],
+		shopDefinitions: [
+			{
+				id: "general-store",
+				name: "General Store",
+				currencyItemId: "gold_coin",
+				entries: [],
+			},
+		],
 	};
 
 	return {
@@ -377,6 +385,50 @@ describe("rule engine triggers and actions", () => {
 		);
 
 		expect(openShop).toHaveBeenCalledWith("general-store");
+	});
+
+	it("repairs missing open shop action targets when one shop exists", () => {
+		const { context, openShop } = makeContext();
+		const logs: string[] = [];
+		const rule: GameRule = {
+			id: "merchant",
+			name: "Merchant",
+			enabled: true,
+			trigger: { type: "on_interact", targetId: "npc-merchant" },
+			actions: [{ type: "open_shop", shopId: "" }],
+		};
+
+		fireTrigger({ type: "on_interact", targetId: "npc-merchant" }, [rule], {
+			...context,
+			logEvent: (message) => logs.push(message),
+		});
+
+		expect(openShop).toHaveBeenCalledWith("general-store");
+		expect(logs).toContain(
+			"Action repaired: open shop target was missing, using General Store (general-store).",
+		);
+	});
+
+	it("skips unknown open shop action targets", () => {
+		const { context, openShop } = makeContext();
+		const logs: string[] = [];
+		const rule: GameRule = {
+			id: "merchant",
+			name: "Merchant",
+			enabled: true,
+			trigger: { type: "on_interact", targetId: "npc-merchant" },
+			actions: [{ type: "open_shop", shopId: "missing-shop" }],
+		};
+
+		fireTrigger({ type: "on_interact", targetId: "npc-merchant" }, [rule], {
+			...context,
+			logEvent: (message) => logs.push(message),
+		});
+
+		expect(openShop).not.toHaveBeenCalled();
+		expect(logs).toContain(
+			'Action skipped: open shop target "missing-shop" was not found.',
+		);
 	});
 
 	it("fires an NPC on_interact rule that activates a quest", () => {

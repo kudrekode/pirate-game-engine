@@ -424,7 +424,10 @@ describe("migrateProject", () => {
 					condition: { type: "enter_area", areaId: "area_house" },
 				},
 			],
-			rewards: [{ type: "item", itemId: "boat_pass", quantity: 1 }],
+			completionActions: [
+				{ type: "give_item", itemId: "boat_pass", quantity: 1 },
+			],
+			rewards: [],
 		});
 	});
 

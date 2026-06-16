@@ -20,6 +20,7 @@ import type {
 	PickupObject,
 	PixelAsset,
 	PlayerVehicleState,
+	Quest,
 	RuleTrigger,
 } from "../types/game";
 import {
@@ -62,6 +63,7 @@ import {
 	markAreaEntered,
 	type QuestView,
 	type RuntimeQuestState,
+	runQuestCompletionActionsOnce,
 	updateQuestProgress,
 } from "./questEngine";
 import {
@@ -207,6 +209,7 @@ export class AdventureScene extends Phaser.Scene {
 	private readonly onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void;
 	private readonly runtimeShopStocks: RuntimeShopStocks;
 	private readonly defeatedNpcIds = new Set<string>();
+	private readonly completedQuestActionIds = new Set<string>();
 	private activeShopId?: string;
 	private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
 	private playerFacing = { x: 0, y: 1 };
@@ -292,7 +295,9 @@ export class AdventureScene extends Phaser.Scene {
 			stock,
 		);
 		this.setStatus(result.message);
-		this.logEvent(`Shop purchase: ${result.message}`);
+		this.logEvent(
+			result.success ? `Shop purchase: ${result.message}` : result.message,
+		);
 		this.notifyInventoryChanged();
 		this.syncQuestProgress();
 		this.updateDebugPanel();
@@ -2383,6 +2388,7 @@ export class AdventureScene extends Phaser.Scene {
 				}
 				if (!wasCompleted && quest?.status === "completed") {
 					this.logEvent(`Quest completed: ${quest.name}.`);
+					this.runQuestCompletionActions(quest);
 				}
 				if (
 					!wasRewarded &&
@@ -2399,6 +2405,7 @@ export class AdventureScene extends Phaser.Scene {
 			},
 			openShop: (shopId) => this.openShop(shopId),
 			itemDefinitions: this.project.items,
+			shopDefinitions: this.project.shops,
 			logEvent: (message) => this.logEvent(message),
 			stateChanged: () => {
 				this.updateDebugPanel();
@@ -2483,6 +2490,21 @@ export class AdventureScene extends Phaser.Scene {
 		}
 	}
 
+	private runQuestCompletionActions(quest: Quest) {
+		if (
+			this.completedQuestActionIds.has(quest.id) ||
+			!quest.completionActions?.length
+		) {
+			return;
+		}
+		this.logEvent(`Quest completion actions: ${quest.name}.`);
+		runQuestCompletionActionsOnce(
+			quest,
+			this.completedQuestActionIds,
+			this.getRuleContext(),
+		);
+	}
+
 	private syncQuestProgress() {
 		this.logEvent("Quest sync running.");
 		for (const message of getQuestSyncDiagnosticMessages(
@@ -2514,6 +2536,7 @@ export class AdventureScene extends Phaser.Scene {
 				quest.status === "completed"
 			) {
 				this.logEvent(`Quest completed: ${quest.name}.`);
+				this.runQuestCompletionActions(quest);
 			}
 			if (
 				!rewardedQuestIds.has(quest.id) &&

@@ -45,6 +45,12 @@ import {
 } from "../ObjectBehaviourEditor";
 
 type MapEditorTool = "select" | "paint" | "erase" | "pan";
+type DraggableEntityType =
+	| "npc"
+	| "object"
+	| "pickup"
+	| "eventBlock"
+	| "structure";
 type BrushSize = 1 | 3 | 5;
 type PaintTarget =
 	| "terrain"
@@ -227,6 +233,12 @@ export function MapEditor() {
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
 	const paintSessionBeforeRef = useRef<GameProject | null>(null);
+	const dragEntityRef = useRef<{
+		type: DraggableEntityType;
+		id: string;
+		before: GameProject;
+		moved: boolean;
+	} | null>(null);
 	const historyRef = useRef<{
 		undo: MapEditHistoryEntry[];
 		redo: MapEditHistoryEntry[];
@@ -634,6 +646,7 @@ export function MapEditor() {
 			if (
 				paintedCellsRef.current.has(key) ||
 				(activeTool === "paint" &&
+					paintTarget !== "terrain" &&
 					paintTarget !== "eventBlock" &&
 					eventLookup.has(key))
 			) {
@@ -790,6 +803,48 @@ export function MapEditor() {
 		return true;
 	}
 
+	function getDraggableEntityAt(x: number, y: number) {
+		const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
+		if (object) {
+			return { type: "object" as const, id: object.id };
+		}
+		const npc = npcLookup.get(cellKey(x, y));
+		if (npc) {
+			return { type: "npc" as const, id: npc.id };
+		}
+		const pickup = pickupLookup.get(cellKey(x, y));
+		if (pickup) {
+			return { type: "pickup" as const, id: pickup.id };
+		}
+		const eventBlock = eventLookup.get(cellKey(x, y));
+		if (eventBlock) {
+			return { type: "eventBlock" as const, id: eventBlock.id };
+		}
+		const structure = findStructureAt(x, y);
+		return structure
+			? { type: "structure" as const, id: structure.id }
+			: undefined;
+	}
+
+	function moveDraggedEntity(x: number, y: number) {
+		const drag = dragEntityRef.current;
+		if (!drag) {
+			return;
+		}
+		if (drag.type === "npc") {
+			updateNpc(drag.id, { x, y });
+		} else if (drag.type === "object") {
+			updateObject(drag.id, { x, y });
+		} else if (drag.type === "pickup") {
+			updatePickup(drag.id, { x, y });
+		} else if (drag.type === "eventBlock") {
+			updateEventBlock(drag.id, { x, y });
+		} else {
+			updateStructure(drag.id, { x, y });
+		}
+		drag.moved = true;
+	}
+
 	function selectedEntityAt(x: number, y: number) {
 		if (!selection || selection.areaId !== activeArea.id) {
 			return undefined;
@@ -923,6 +978,10 @@ export function MapEditor() {
 
 		if (activeTool === "select") {
 			selectThingAt(x, y);
+			const entity = getDraggableEntityAt(x, y);
+			dragEntityRef.current = entity
+				? { ...entity, before: cloneCurrentProject(), moved: false }
+				: null;
 			return;
 		}
 
@@ -1064,6 +1123,10 @@ export function MapEditor() {
 	}
 
 	function handleCellPointerEnter(x: number, y: number) {
+		if (activeTool === "select" && dragEntityRef.current) {
+			moveDraggedEntity(x, y);
+			return;
+		}
 		if (!isPainting || (activeTool !== "paint" && activeTool !== "erase")) {
 			return;
 		}
@@ -1078,6 +1141,10 @@ export function MapEditor() {
 		setIsPainting(false);
 		paintSessionBeforeRef.current = null;
 		paintedCellsRef.current.clear();
+		if (dragEntityRef.current?.moved) {
+			recordMapEdit(dragEntityRef.current.before);
+		}
+		dragEntityRef.current = null;
 	}
 
 	function startPanning(event: PointerEvent<HTMLDivElement>) {

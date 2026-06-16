@@ -1348,6 +1348,30 @@ function migrateQuestRewards(value: unknown): QuestReward[] {
 	});
 }
 
+function questRewardsToActions(rewards: QuestReward[]): GameAction[] {
+	return rewards.map((reward) => {
+		if (reward.type === "item") {
+			return {
+				type: "give_item" as const,
+				itemId: reward.itemId,
+				quantity: reward.quantity,
+			};
+		}
+		if (reward.type === "flag") {
+			return {
+				type: "set_flag" as const,
+				flag: reward.flag,
+				value: reward.value,
+			};
+		}
+		return {
+			type: "change_variable" as const,
+			variable: reward.variable,
+			amount: reward.amount,
+		};
+	});
+}
+
 function migrateQuests(value: unknown): Quest[] {
 	if (!Array.isArray(value)) {
 		return [];
@@ -1365,6 +1389,10 @@ function migrateQuests(value: unknown): Quest[] {
 				? quest.status
 				: "inactive";
 		const description = readString(quest.description, "");
+		const legacyRewards = migrateQuestRewards(quest.rewards);
+		const completionActions = Array.isArray(quest.completionActions)
+			? migrateActions(quest.completionActions)
+			: questRewardsToActions(legacyRewards);
 
 		return [
 			{
@@ -1373,7 +1401,8 @@ function migrateQuests(value: unknown): Quest[] {
 				...(description ? { description } : {}),
 				status,
 				objectives: migrateObjectives(quest.objectives),
-				rewards: migrateQuestRewards(quest.rewards),
+				completionActions,
+				rewards: Array.isArray(quest.completionActions) ? legacyRewards : [],
 			},
 		];
 	});

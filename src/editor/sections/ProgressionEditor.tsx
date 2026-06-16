@@ -1136,6 +1136,9 @@ export function ProgressionEditor() {
 			nextActions[index] = nextAction;
 			updateActions(rule, branch, nextActions);
 		};
+		const missingActionShop =
+			action.type === "open_shop" &&
+			!project.shops.some((shop) => shop.id === action.shopId);
 
 		return (
 			<div className="logic-row" key={`${rule.id}_${branch}_${index}`}>
@@ -1411,9 +1414,14 @@ export function ProgressionEditor() {
 						}
 						value={action.shopId}
 					>
+						{missingActionShop ? (
+							<option value={action.shopId}>
+								{action.shopId || "No shop selected"}
+							</option>
+						) : null}
 						{project.shops.map((shop) => (
 							<option key={shop.id} value={shop.id}>
-								{shop.name}
+								{shop.name} ({shop.id})
 							</option>
 						))}
 					</select>
@@ -1431,6 +1439,11 @@ export function ProgressionEditor() {
 				>
 					Delete
 				</button>
+				{missingActionShop ? (
+					<span className="validation-message">
+						Unknown shop: {action.shopId || "(missing shop)"}
+					</span>
+				) : null}
 			</div>
 		);
 	}
@@ -1657,6 +1670,18 @@ export function ProgressionEditor() {
 								</select>
 							</label>
 						</div>
+						<p className="helper-text">
+							Use Once for rewards/dialogue that should not repeat.
+						</p>
+						{selectedRule.trigger.type === "on_interact" &&
+						selectedRule.runPolicy !== "once" &&
+						selectedRule.actions.some(
+							(action) => action.type === "give_item",
+						) ? (
+							<div className="validation-message">
+								This may give items every time the player interacts.
+							</div>
+						) : null}
 						<section className="rule-summary">
 							{ruleSummary(selectedRule, labels).map((line) => (
 								<div key={`${selectedRule.id}_${line}`}>{line}</div>

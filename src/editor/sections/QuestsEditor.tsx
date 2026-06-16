@@ -81,6 +81,7 @@ export function QuestsEditor() {
 				name: `Quest ${draft.quests.length + 1}`,
 				status: "active",
 				objectives: [],
+				completionActions: [],
 				rewards: [],
 			});
 		});
@@ -189,16 +190,6 @@ export function QuestsEditor() {
 		return { type, variable: variableNames[0] ?? "", amount: 1 };
 	}
 
-	function addReward() {
-		if (!selectedQuest) {
-			return;
-		}
-
-		updateQuest({
-			rewards: [...(selectedQuest.rewards ?? []), makeReward("item")],
-		});
-	}
-
 	function updateReward(index: number, reward: QuestReward) {
 		if (!selectedQuest) {
 			return;
@@ -215,6 +206,307 @@ export function QuestsEditor() {
 				(_, rewardIndex) => rewardIndex !== index,
 			),
 		});
+	}
+
+	function makeCompletionAction(type: GameAction["type"]): GameAction {
+		if (type === "set_flag") {
+			return { type, flag: flagNames[0] ?? "flag_1", value: true };
+		}
+		if (type === "set_variable") {
+			const variable = variableNames[0] ?? "";
+			return {
+				type,
+				variable,
+				value: project.gameState.variables[variable] ?? 0,
+			};
+		}
+		if (type === "change_variable") {
+			return { type, variable: variableNames[0] ?? "", amount: 1 };
+		}
+		if (type === "give_item" || type === "remove_item") {
+			return { type, itemId: project.items[0]?.id ?? "", quantity: 1 };
+		}
+		if (type === "play_cutscene") {
+			return { type, cutsceneId: project.cutscenes[0]?.id ?? "" };
+		}
+		if (
+			type === "activate_quest" ||
+			type === "complete_quest" ||
+			type === "fail_quest"
+		) {
+			return { type, questId: project.quests[0]?.id ?? "" };
+		}
+		if (type === "teleport") {
+			const area = project.areas[0];
+			return {
+				type,
+				areaId: area?.id ?? "",
+				eventBlockId: area?.eventBlocks[0]?.id ?? "",
+			};
+		}
+		if (type === "open_shop") {
+			return { type, shopId: project.shops[0]?.id ?? "" };
+		}
+		return {
+			type: "give_item",
+			itemId: project.items[0]?.id ?? "",
+			quantity: 1,
+		};
+	}
+
+	function addCompletionAction() {
+		updateQuest({
+			completionActions: [
+				...(selectedQuest?.completionActions ?? []),
+				makeCompletionAction("give_item"),
+			],
+		});
+	}
+
+	function updateCompletionAction(index: number, action: GameAction) {
+		const actions = [...(selectedQuest?.completionActions ?? [])];
+		actions[index] = action;
+		updateQuest({ completionActions: actions });
+	}
+
+	function deleteCompletionAction(index: number) {
+		updateQuest({
+			completionActions: (selectedQuest?.completionActions ?? []).filter(
+				(_, actionIndex) => actionIndex !== index,
+			),
+		});
+	}
+
+	function renderCompletionAction(action: GameAction, index: number) {
+		const setAction = (next: GameAction) => updateCompletionAction(index, next);
+		const area =
+			action.type === "teleport"
+				? project.areas.find((candidate) => candidate.id === action.areaId)
+				: undefined;
+		const missingActionItem =
+			(action.type === "give_item" || action.type === "remove_item") &&
+			!project.items.some((item) => item.id === action.itemId);
+		const missingActionShop =
+			action.type === "open_shop" &&
+			!project.shops.some((shop) => shop.id === action.shopId);
+		return (
+			<div
+				className="quest-reward-row"
+				key={`${selectedQuest?.id}_action_${index}`}
+			>
+				<select
+					aria-label="Quest completion action type"
+					onChange={(event) =>
+						setAction(
+							makeCompletionAction(event.target.value as GameAction["type"]),
+						)
+					}
+					value={action.type}
+				>
+					<option value="give_item">Give item</option>
+					<option value="remove_item">Remove item</option>
+					<option value="set_flag">Set flag</option>
+					<option value="set_variable">Set variable</option>
+					<option value="change_variable">Change variable</option>
+					<option value="play_cutscene">Play cutscene</option>
+					<option value="activate_quest">Activate quest</option>
+					<option value="complete_quest">Complete quest</option>
+					<option value="fail_quest">Fail quest</option>
+					<option value="teleport">Teleport</option>
+					<option value="open_shop">Open shop</option>
+				</select>
+				{action.type === "give_item" || action.type === "remove_item" ? (
+					<>
+						<select
+							onChange={(event) =>
+								setAction({ ...action, itemId: event.target.value })
+							}
+							value={action.itemId}
+						>
+							{missingActionItem ? (
+								<option value={action.itemId}>
+									{action.itemId || "No item selected"}
+								</option>
+							) : null}
+							{project.items.map((item) => (
+								<option key={item.id} value={item.id}>
+									{item.name} ({item.id})
+								</option>
+							))}
+						</select>
+						<input
+							min={1}
+							onChange={(event) =>
+								setAction({
+									...action,
+									quantity: Math.max(1, Number(event.target.value)),
+								})
+							}
+							type="number"
+							value={action.quantity}
+						/>
+					</>
+				) : null}
+				{action.type === "set_flag" ? (
+					<>
+						<select
+							onChange={(event) =>
+								setAction({ ...action, flag: event.target.value })
+							}
+							value={action.flag}
+						>
+							{flagNames.map((flag) => (
+								<option key={flag} value={flag}>
+									{flag}
+								</option>
+							))}
+						</select>
+						<select
+							onChange={(event) =>
+								setAction({ ...action, value: event.target.value === "true" })
+							}
+							value={String(action.value)}
+						>
+							<option value="true">true</option>
+							<option value="false">false</option>
+						</select>
+					</>
+				) : null}
+				{action.type === "set_variable" || action.type === "change_variable" ? (
+					<>
+						<select
+							onChange={(event) =>
+								setAction({ ...action, variable: event.target.value })
+							}
+							value={action.variable}
+						>
+							{variableNames.map((variable) => (
+								<option key={variable} value={variable}>
+									{variable}
+								</option>
+							))}
+						</select>
+						<input
+							onChange={(event) =>
+								setAction(
+									action.type === "set_variable"
+										? {
+												...action,
+												value: readValue(event.target.value, action.value),
+											}
+										: { ...action, amount: Number(event.target.value) },
+								)
+							}
+							type="number"
+							value={
+								action.type === "set_variable" ? action.value : action.amount
+							}
+						/>
+					</>
+				) : null}
+				{action.type === "play_cutscene" ? (
+					<select
+						onChange={(event) =>
+							setAction({ ...action, cutsceneId: event.target.value })
+						}
+						value={action.cutsceneId}
+					>
+						{project.cutscenes.map((cutscene) => (
+							<option key={cutscene.id} value={cutscene.id}>
+								{cutscene.name} ({cutscene.id})
+							</option>
+						))}
+					</select>
+				) : null}
+				{action.type === "activate_quest" ||
+				action.type === "complete_quest" ||
+				action.type === "fail_quest" ? (
+					<select
+						onChange={(event) =>
+							setAction({ ...action, questId: event.target.value })
+						}
+						value={action.questId}
+					>
+						{project.quests.map((quest) => (
+							<option key={quest.id} value={quest.id}>
+								{quest.name} ({quest.id})
+							</option>
+						))}
+					</select>
+				) : null}
+				{action.type === "teleport" ? (
+					<>
+						<select
+							onChange={(event) => {
+								const nextArea = project.areas.find(
+									(candidate) => candidate.id === event.target.value,
+								);
+								setAction({
+									...action,
+									areaId: event.target.value,
+									eventBlockId: nextArea?.eventBlocks[0]?.id ?? "",
+								});
+							}}
+							value={action.areaId}
+						>
+							{project.areas.map((candidate) => (
+								<option key={candidate.id} value={candidate.id}>
+									{candidate.name} ({candidate.id})
+								</option>
+							))}
+						</select>
+						<select
+							onChange={(event) =>
+								setAction({ ...action, eventBlockId: event.target.value })
+							}
+							value={action.eventBlockId}
+						>
+							{area?.eventBlocks.map((eventBlock) => (
+								<option key={eventBlock.id} value={eventBlock.id}>
+									{eventBlock.name} ({eventBlock.id})
+								</option>
+							))}
+						</select>
+					</>
+				) : null}
+				{action.type === "open_shop" ? (
+					<select
+						onChange={(event) =>
+							setAction({ ...action, shopId: event.target.value })
+						}
+						value={action.shopId}
+					>
+						{missingActionShop ? (
+							<option value={action.shopId}>
+								{action.shopId || "No shop selected"}
+							</option>
+						) : null}
+						{project.shops.map((shop) => (
+							<option key={shop.id} value={shop.id}>
+								{shop.name} ({shop.id})
+							</option>
+						))}
+					</select>
+				) : null}
+				<button
+					className="danger-button compact"
+					onClick={() => deleteCompletionAction(index)}
+					type="button"
+				>
+					Delete
+				</button>
+				{missingActionItem ? (
+					<span className="validation-message">
+						Unknown item: {action.itemId || "(missing item)"}
+					</span>
+				) : null}
+				{missingActionShop ? (
+					<span className="validation-message">
+						Unknown shop: {action.shopId || "(missing shop)"}
+					</span>
+				) : null}
+			</div>
+		);
 	}
 
 	function getObjectiveReferenceWarning(condition: ObjectiveCondition) {
@@ -670,15 +962,23 @@ export function QuestsEditor() {
 						</section>
 						<section className="quest-section">
 							<div className="quest-section-heading">
-								<strong>Rewards</strong>
-								<button onClick={addReward} type="button">
-									Add reward
+								<strong>Rewards / Completion Actions</strong>
+								<button onClick={addCompletionAction} type="button">
+									Add action
 								</button>
 							</div>
-							{(selectedQuest.rewards ?? []).map(renderReward)}
-							{(selectedQuest.rewards ?? []).length === 0 ? (
-								<p className="empty-state compact">No rewards configured.</p>
+							{(selectedQuest.completionActions ?? []).map(
+								renderCompletionAction,
+							)}
+							{(selectedQuest.completionActions ?? []).length === 0 ? (
+								<p className="empty-state compact">
+									No completion actions configured.
+								</p>
 							) : null}
+							{(selectedQuest.rewards ?? []).length > 0 ? (
+								<p className="helper-text">Legacy rewards</p>
+							) : null}
+							{(selectedQuest.rewards ?? []).map(renderReward)}
 						</section>
 						<button
 							className="danger-button"
