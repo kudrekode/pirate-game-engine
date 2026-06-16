@@ -118,6 +118,39 @@ describe("migrateProject", () => {
 		expect(project.objects).toEqual([]);
 	});
 
+	it("migrates optional terrain heights without requiring existing projects to define them", () => {
+		const project = migrateProject({
+			areas: [
+				{
+					height: 2,
+					id: "height-area",
+					terrainHeights: [
+						{ x: 0, y: 0, height: 2 },
+						{ x: 1, y: 0, height: 99 },
+						{ x: 0, y: 1, height: 0 },
+					],
+					terrainTiles: [
+						{ x: 0, y: 0, tileId: "grass" },
+						{ x: 1, y: 0, tileId: "grass" },
+					],
+					width: 2,
+				},
+				{
+					height: 1,
+					id: "flat-area",
+					terrainTiles: [{ x: 0, y: 0, tileId: "grass" }],
+					width: 1,
+				},
+			],
+		});
+
+		expect(project.areas[0].terrainHeights).toEqual([
+			{ x: 0, y: 0, height: 2 },
+			{ x: 1, y: 0, height: 8 },
+		]);
+		expect(project.areas[1].terrainHeights).toBeUndefined();
+	});
+
 	it("migrates legacy NPC instance data as explicit overrides", () => {
 		const project = migrateProject({
 			npcs: [{ id: "guard", name: "Guard", mapAvatarId: "knight" }],

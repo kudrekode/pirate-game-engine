@@ -104,6 +104,7 @@ export type GameArea = {
 	height: number;
 	tileSize: number;
 	terrainTiles: MapTile[];
+	terrainHeights?: TerrainHeightTile[];
 	overlayTiles: OverlayTile[];
 	structures: MapStructure[];
 	objects: ObjectInstance[];
@@ -119,6 +120,12 @@ export type MapTile = {
 	x: number;
 	y: number;
 	tileId: string;
+};
+
+export type TerrainHeightTile = {
+	x: number;
+	y: number;
+	height: number;
 };
 
 export type OverlayTile = {

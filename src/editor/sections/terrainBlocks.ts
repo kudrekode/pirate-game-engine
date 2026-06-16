@@ -1,3 +1,4 @@
+import { getTerrainHeight } from "../../data/terrainHeight";
 import type { GameArea } from "../../types/game";
 
 export type TerrainBlockKind =
@@ -16,6 +17,8 @@ export type TerrainBlock = {
 	tileId: string;
 	color: number;
 	height: number;
+	terrainHeight: number;
+	surfaceY: number;
 	yOffset: number;
 	threeX: number;
 	threeZ: number;
@@ -69,7 +72,10 @@ export function terrainTilesToBlocks(
 		)
 		.map((tile) => {
 			const kind = getTerrainBlockKind(tile.tileId);
-			const height = kind === "water" ? 0.18 : 1;
+			const terrainHeight = getTerrainHeight(area, tile.x, tile.y);
+			const surfaceY = terrainHeight + (kind === "water" ? 0.18 : 1);
+			const baseY = Math.min(0, terrainHeight);
+			const height = Math.max(0.18, surfaceY - baseY);
 			return {
 				color: TERRAIN_BLOCK_COLORS[kind],
 				gridX: tile.x,
@@ -77,10 +83,12 @@ export function terrainTilesToBlocks(
 				height,
 				id: `${tile.x}_${tile.y}_${tile.tileId}`,
 				kind,
+				surfaceY,
+				terrainHeight,
 				tileId: tile.tileId,
 				threeX: tile.x - centerX,
 				threeZ: tile.y - centerZ,
-				yOffset: height / 2,
+				yOffset: baseY + height / 2,
 			};
 		});
 }

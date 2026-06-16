@@ -1,3 +1,4 @@
+import { getTerrainHeight } from "../../data/terrainHeight";
 import { resolveNPCInstance } from "../../runtime/npcResolver";
 import type {
 	EditorSelection,
@@ -80,6 +81,10 @@ export function getPreviewSelectionDetails(
 				...baseRows,
 				{ label: "Position", value: `${selection.x}, ${selection.y}` },
 				{ label: "Tile ID", value: tileId },
+				{
+					label: "Height",
+					value: String(getTerrainHeight(area, selection.x, selection.y)),
+				},
 				{
 					label: "Movement",
 					value: project.player.canWalkOn.includes(tileId)

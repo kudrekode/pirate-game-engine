@@ -39,6 +39,8 @@ describe("terrainTilesToBlocks", () => {
 				gridY: 0,
 				height: 1,
 				kind: "grass",
+				surfaceY: 1,
+				terrainHeight: 0,
 				threeX: -1.5,
 				threeZ: -1,
 				tileId: "grass",
@@ -50,6 +52,8 @@ describe("terrainTilesToBlocks", () => {
 				gridY: 2,
 				height: 1,
 				kind: "stone",
+				surfaceY: 1,
+				terrainHeight: 0,
 				threeX: 1.5,
 				threeZ: 1,
 				tileId: "stone_floor",
@@ -65,8 +69,37 @@ describe("terrainTilesToBlocks", () => {
 
 		expect(water.kind).toBe("water");
 		expect(water.height).toBe(0.18);
+		expect(water.surfaceY).toBe(0.18);
 		expect(water.yOffset).toBe(0.09);
 		expect(water.color).toBe(0x4f9fd9);
+	});
+
+	it("uses authored terrain height for raised and lowered blocks", () => {
+		const blocks = terrainTilesToBlocks(
+			makeArea({
+				terrainHeights: [
+					{ x: 0, y: 0, height: 2 },
+					{ x: 1, y: 0, height: -1 },
+				],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "grass" },
+				],
+			}),
+		);
+
+		expect(blocks[0]).toMatchObject({
+			height: 3,
+			surfaceY: 3,
+			terrainHeight: 2,
+			yOffset: 1.5,
+		});
+		expect(blocks[1]).toMatchObject({
+			height: 1,
+			surfaceY: 0,
+			terrainHeight: -1,
+			yOffset: -0.5,
+		});
 	});
 
 	it("uses unknown styling for unrecognised terrain IDs", () => {

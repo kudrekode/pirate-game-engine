@@ -218,7 +218,7 @@ describe("ThreeDPreview", () => {
 
 		expect(
 			screen.getByText(
-				"3D Preview is experimental. Entity movement edits the current project; terrain is inspect-only.",
+				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
 			),
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Top" })).toBeInTheDocument();
@@ -262,7 +262,29 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByText("Terrain 0, 0")).toBeInTheDocument();
 		expect(screen.getByText("Tile ID")).toBeInTheDocument();
 		expect(screen.getByText("grass")).toBeInTheDocument();
+		expect(screen.getByText("Height")).toBeInTheDocument();
 	});
+
+	it("shows height sculpting controls in the Map workspace", () => {
+		render(<MapEditor />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Raise" }));
+		expect(screen.getByRole("button", { name: "Raise" })).toHaveClass(
+			"selected",
+		);
+		expect(screen.getByText("Tool: Raise Height")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Set Height" }));
+		fireEvent.change(screen.getByLabelText("Height value"), {
+			target: { value: "2" },
+		});
+
+		expect(screen.getByText("Tool: Set Height = 2")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+		expect(
+			screen.getByText("Height tool: set. Click or drag terrain to sculpt."),
+		).toBeInTheDocument();
+	}, 10000);
 
 	it("mounts against a blank project without crashing", () => {
 		const blankProject = cloneProject(defaultProject);
@@ -279,7 +301,7 @@ describe("ThreeDPreview", () => {
 
 		expect(
 			screen.getByText(
-				"3D Preview is experimental. Entity movement edits the current project; terrain is inspect-only.",
+				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
 			),
 		).toBeInTheDocument();
 		expect(screen.getByLabelText("Show event blocks")).toBeInTheDocument();

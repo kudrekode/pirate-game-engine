@@ -1,13 +1,10 @@
-import { defaultProject } from "./defaultProject";
-import { createDefaultPixelAssets } from "./mapVisuals";
-import { defaultCameraConfig } from "./projectDefaults";
-import { defaultTileStyles, tilePresets } from "./presets";
 import type {
 	AreaLink,
 	CameraConfig,
 	ConditionExpression,
 	ConditionGroup,
 	Cutscene,
+	EnemyBehaviour,
 	EventBlock,
 	GameAction,
 	GameArea,
@@ -19,27 +16,26 @@ import type {
 	Interaction,
 	InteractionActivationMode,
 	ItemDefinition,
-	ObjectDefinition,
-	ObjectBehaviour,
-	ObjectInstance,
-	NPCDefinition,
-	NPCInstance,
-	NPCAttributes,
-	NPCMovementConfig,
-	EnemyBehaviour,
 	MapStructure,
 	MapTile,
 	MovementRule,
-	OverlayTile,
-	PickupObject,
-	Quest,
-	QuestReward,
+	NPCAttributes,
+	NPCDefinition,
+	NPCInstance,
+	NPCMovementConfig,
+	ObjectBehaviour,
+	ObjectDefinition,
+	ObjectInstance,
 	Objective,
 	ObjectiveCondition,
-	PlayerConfig,
+	OverlayTile,
+	PickupObject,
 	PixelAsset,
+	PlayerConfig,
 	ProgressionAction,
 	ProgressionStep,
+	Quest,
+	QuestReward,
 	RuleGroup,
 	RuleTrigger,
 	ShopDefinition,
@@ -47,6 +43,11 @@ import type {
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
+import { defaultProject } from "./defaultProject";
+import { createDefaultPixelAssets } from "./mapVisuals";
+import { defaultTileStyles, tilePresets } from "./presets";
+import { defaultCameraConfig } from "./projectDefaults";
+import { migrateTerrainHeights } from "./terrainHeight";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -732,6 +733,7 @@ function migrateArea(
 		source.terrainTiles ?? source.tiles,
 		fallback.terrainTiles,
 	);
+	const terrainHeights = migrateTerrainHeights(source.terrainHeights);
 
 	return {
 		id,
@@ -746,6 +748,7 @@ function migrateArea(
 			readNumber(source.tileSize, fallback.tileSize, 8, 128),
 		),
 		terrainTiles,
+		...(terrainHeights.length > 0 ? { terrainHeights } : {}),
 		overlayTiles: migrateOverlayTiles(source.overlayTiles),
 		structures: migrateStructures(source.structures),
 		objects: migrateObjectInstances(source.objects, id),

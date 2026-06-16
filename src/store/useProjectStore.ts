@@ -7,6 +7,7 @@ import { defaultProject } from "../data/defaultProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
 import { cloneProject, migrateProject } from "../data/migrateProject";
 import { backgroundPresets, portraitPresets } from "../data/presets";
+import { adjustTerrainHeight, setTerrainHeight } from "../data/terrainHeight";
 import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
 	CameraConfig,
@@ -66,6 +67,12 @@ type ProjectStore = {
 	resizeMap: (width: number, height: number) => number;
 	setTile: (x: number, y: number, tileId: string) => void;
 	setTiles: (tiles: { x: number; y: number; tileId: string }[]) => void;
+	setTerrainHeights: (
+		tiles: { x: number; y: number; height: number }[],
+	) => void;
+	adjustTerrainHeights: (
+		tiles: { x: number; y: number; delta: number }[],
+	) => void;
 	setOverlayTiles: (
 		tiles: { x: number; y: number; overlayId: string }[],
 	) => void;
@@ -653,6 +660,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 				width: nextWidth,
 				height: nextHeight,
 				terrainTiles,
+				terrainHeights: area.terrainHeights?.filter(
+					(tile) =>
+						tile.x >= 0 &&
+						tile.y >= 0 &&
+						tile.x < nextWidth &&
+						tile.y < nextHeight,
+				),
 				overlayTiles: area.overlayTiles.filter(
 					(tile) =>
 						tile.x >= 0 &&
@@ -763,6 +777,40 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 					height: nextHeight,
 					terrainTiles,
 				})),
+			};
+		}),
+
+	setTerrainHeights: (heightUpdates) =>
+		set((state) => {
+			if (heightUpdates.length === 0) {
+				return state;
+			}
+
+			return {
+				project: updateActiveArea(state.project, (area) =>
+					heightUpdates.reduce(
+						(nextArea, tile) =>
+							setTerrainHeight(nextArea, tile.x, tile.y, tile.height),
+						area,
+					),
+				),
+			};
+		}),
+
+	adjustTerrainHeights: (heightUpdates) =>
+		set((state) => {
+			if (heightUpdates.length === 0) {
+				return state;
+			}
+
+			return {
+				project: updateActiveArea(state.project, (area) =>
+					heightUpdates.reduce(
+						(nextArea, tile) =>
+							adjustTerrainHeight(nextArea, tile.x, tile.y, tile.delta),
+						area,
+					),
+				),
 			};
 		}),
 

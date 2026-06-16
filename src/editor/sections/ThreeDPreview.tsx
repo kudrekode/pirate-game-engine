@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { getTerrainSurfaceY } from "../../data/terrainHeight";
 import { useProjectStore } from "../../store/useProjectStore";
 import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
@@ -26,11 +27,15 @@ import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import { terrainTilesToBlocks } from "./terrainBlocks";
 
 type PreviewCameraPreset = "top" | "isometric" | "low";
+export type TerrainHeightTool = "raise" | "lower" | "flatten" | "set";
 
 type ThreeDPreviewProps = {
+	brushSize?: 1 | 3 | 5;
 	embedded?: boolean;
+	heightToolValue?: number;
 	hideDetails?: boolean;
 	onOpenInMapEditor?: () => void;
+	terrainHeightTool?: TerrainHeightTool;
 };
 
 function getPreviewSize(element: HTMLElement) {
@@ -55,9 +60,12 @@ function getCameraPosition(
 }
 
 export function ThreeDPreview({
+	brushSize = 1,
 	embedded = false,
+	heightToolValue = 0,
 	hideDetails = false,
 	onOpenInMapEditor,
+	terrainHeightTool,
 }: ThreeDPreviewProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const [mountError, setMountError] = useState("");
@@ -70,6 +78,10 @@ export function ThreeDPreview({
 		(state) => state.setEditorSelection,
 	);
 	const updateProject = useProjectStore((state) => state.updateProject);
+	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
+	const adjustTerrainHeights = useProjectStore(
+		(state) => state.adjustTerrainHeights,
+	);
 	const mapPaletteSelection = useProjectStore(
 		(state) => state.mapPaletteSelection,
 	);
@@ -238,8 +250,10 @@ export function ThreeDPreview({
 			y: number;
 			metadata?: PreviewSelectionMetadata;
 			didDrag: boolean;
+			heightEditing?: boolean;
 			latestPosition?: PreviewGridPosition;
 		} | null = null;
+		const editedHeightCells = new Set<string>();
 
 		const setPointerFromEvent = (event: PointerEvent) => {
 			const rect = renderer.domElement.getBoundingClientRect();
@@ -327,7 +341,11 @@ export function ThreeDPreview({
 		};
 
 		const getPlacementPositionFromPointer = (event: PointerEvent) => {
-			if (!activeArea || !placementInfo.active || !setPointerFromEvent(event)) {
+			if (
+				!activeArea ||
+				(!placementInfo.active && !terrainHeightTool) ||
+				!setPointerFromEvent(event)
+			) {
 				return undefined;
 			}
 			raycaster.setFromCamera(pointer, camera);
@@ -343,6 +361,67 @@ export function ThreeDPreview({
 					width: Math.max(1, Math.round(placementInfo.width)),
 				},
 			);
+		};
+
+		const getBrushPositions = (position: PreviewGridPosition) => {
+			if (!activeArea) {
+				return [];
+			}
+			const radius = Math.floor(brushSize / 2);
+			const positions: PreviewGridPosition[] = [];
+			for (let y = position.y - radius; y <= position.y + radius; y += 1) {
+				for (let x = position.x - radius; x <= position.x + radius; x += 1) {
+					if (
+						x >= 0 &&
+						y >= 0 &&
+						x < activeArea.width &&
+						y < activeArea.height
+					) {
+						positions.push({ x, y });
+					}
+				}
+			}
+			return positions;
+		};
+
+		const applyHeightToolFromPointer = (event: PointerEvent) => {
+			if (!activeArea || !terrainHeightTool) {
+				return false;
+			}
+			const position = getPlacementPositionFromPointer(event);
+			if (!position) {
+				return false;
+			}
+			const positions = getBrushPositions(position).filter((cell) => {
+				const key = `${cell.x}:${cell.y}`;
+				if (editedHeightCells.has(key)) {
+					return false;
+				}
+				editedHeightCells.add(key);
+				return true;
+			});
+			if (positions.length === 0) {
+				return true;
+			}
+			if (terrainHeightTool === "raise") {
+				adjustTerrainHeights(positions.map((cell) => ({ ...cell, delta: 1 })));
+			} else if (terrainHeightTool === "lower") {
+				adjustTerrainHeights(positions.map((cell) => ({ ...cell, delta: -1 })));
+			} else {
+				setTerrainHeights(
+					positions.map((cell) => ({
+						...cell,
+						height: terrainHeightTool === "flatten" ? 0 : heightToolValue,
+					})),
+				);
+			}
+			setEditorSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: position.x,
+				y: position.y,
+			});
+			return true;
 		};
 
 		const updateDragGhost = (
@@ -370,7 +449,11 @@ export function ThreeDPreview({
 				);
 				scene.add(dragGhost);
 			}
-			dragGhost.position.set(threePoint.x, 1.06, threePoint.z);
+			dragGhost.position.set(
+				threePoint.x,
+				getTerrainSurfaceY(activeArea, position.x, position.y) + 0.06,
+				threePoint.z,
+			);
 		};
 
 		const updatePlacementGhost = (position: PreviewGridPosition) => {
@@ -413,13 +496,27 @@ export function ThreeDPreview({
 			}
 			placementGhost.position.set(
 				threePoint.x,
-				Math.max(1.08, placementInfo.height / 2 + 1),
+				getTerrainSurfaceY(activeArea, position.x, position.y) +
+					placementInfo.height / 2,
 				threePoint.z,
 			);
 			latestPlacementPosition = position;
 		};
 
 		const handlePointerDown = (event: PointerEvent) => {
+			if (terrainHeightTool) {
+				editedHeightCells.clear();
+				pointerStart = {
+					didDrag: false,
+					heightEditing: true,
+					x: event.clientX,
+					y: event.clientY,
+				};
+				controls.enabled = false;
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+				applyHeightToolFromPointer(event);
+				return;
+			}
 			if (placementInfo.active) {
 				pointerStart = {
 					didDrag: false,
@@ -446,6 +543,11 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerMove = (event: PointerEvent) => {
+			if (pointerStart?.heightEditing) {
+				pointerStart.didDrag = true;
+				applyHeightToolFromPointer(event);
+				return;
+			}
 			if (placementInfo.active && !pointerStart?.metadata) {
 				const nextPosition = getPlacementPositionFromPointer(event);
 				if (nextPosition) {
@@ -477,6 +579,13 @@ export function ThreeDPreview({
 
 		const handlePointerUp = (event: PointerEvent) => {
 			if (!pointerStart) {
+				return;
+			}
+			if (pointerStart.heightEditing) {
+				controls.enabled = true;
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				editedHeightCells.clear();
+				pointerStart = null;
 				return;
 			}
 			if (placementInfo.active) {
@@ -587,13 +696,18 @@ export function ThreeDPreview({
 		addObject,
 		addPickup,
 		addStructure,
+		adjustTerrainHeights,
+		brushSize,
 		cameraPreset,
 		editorSelection,
 		entityMarkers,
+		heightToolValue,
 		mapPaletteSelection,
 		placementInfo,
 		setEditorSelection,
+		setTerrainHeights,
 		terrainBlocks,
+		terrainHeightTool,
 		updatePickup,
 		updateProject,
 	]);
@@ -608,7 +722,7 @@ export function ThreeDPreview({
 				<div className="panel-title">3D Preview</div>
 				<p className="helper-text">
 					3D Preview is experimental. Entity movement edits the current project;
-					terrain is inspect-only.
+					height tools sculpt the current area.
 				</p>
 				<p className="helper-text">
 					Showing terrain and entity placeholders for{" "}
@@ -619,9 +733,11 @@ export function ThreeDPreview({
 					on the grid.
 				</p>
 				<p className="helper-text">
-					{placementInfo.active
-						? `${placementInfo.label}. Click terrain to place.`
-						: "No placeable selected."}
+					{terrainHeightTool
+						? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
+						: placementInfo.active
+							? `${placementInfo.label}. Click terrain to place.`
+							: "No placeable selected."}
 				</p>
 				<div className="three-d-preview-controls">
 					<button

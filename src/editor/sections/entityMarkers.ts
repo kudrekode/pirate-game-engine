@@ -1,3 +1,4 @@
+import { getTerrainSurfaceY } from "../../data/terrainHeight";
 import type { GameArea, ObjectDefinition } from "../../types/game";
 
 export type EntityMarkerKind =
@@ -57,6 +58,22 @@ function isVehicleObject(definition: ObjectDefinition | undefined): boolean {
 	);
 }
 
+function getFootprintSurfaceY(
+	area: GameArea,
+	x: number,
+	y: number,
+	widthTiles = 1,
+	heightTiles = 1,
+): number {
+	let surfaceY = getTerrainSurfaceY(area, x, y);
+	for (let tileY = y; tileY < y + heightTiles; tileY += 1) {
+		for (let tileX = x; tileX < x + widthTiles; tileX += 1) {
+			surfaceY = Math.max(surfaceY, getTerrainSurfaceY(area, tileX, tileY));
+		}
+	}
+	return surfaceY;
+}
+
 export function areaEntitiesToMarkers(
 	area: GameArea | undefined,
 	objectDefinitions: ObjectDefinition[],
@@ -79,6 +96,13 @@ export function areaEntitiesToMarkers(
 			structure.widthTiles,
 			structure.heightTiles,
 		);
+		const surfaceY = getFootprintSurfaceY(
+			area,
+			structure.x,
+			structure.y,
+			structure.widthTiles,
+			structure.heightTiles,
+		);
 		markers.push({
 			color: ENTITY_MARKER_COLORS.structure,
 			depth: structure.heightTiles * 0.96,
@@ -90,7 +114,7 @@ export function areaEntitiesToMarkers(
 			opacity: 1,
 			shape: "box",
 			threeX,
-			threeY: 1.85,
+			threeY: surfaceY + 0.85,
 			threeZ,
 			width: structure.widthTiles * 0.96,
 		});
@@ -110,6 +134,14 @@ export function areaEntitiesToMarkers(
 			widthTiles,
 			heightTiles,
 		);
+		const surfaceY = getFootprintSurfaceY(
+			area,
+			object.x,
+			object.y,
+			widthTiles,
+			heightTiles,
+		);
+		const markerHeight = isVehicle ? 0.35 : 0.8;
 		markers.push({
 			color: isVehicle
 				? ENTITY_MARKER_COLORS.vehicle
@@ -117,13 +149,13 @@ export function areaEntitiesToMarkers(
 			depth: isVehicle ? Math.max(0.65, heightTiles * 0.7) : heightTiles * 0.74,
 			gridX: object.x,
 			gridY: object.y,
-			height: isVehicle ? 0.35 : 0.8,
+			height: markerHeight,
 			id: object.id,
 			kind: isVehicle ? "vehicle" : "object",
 			opacity: 1,
 			shape: "box",
 			threeX,
-			threeY: isVehicle ? 1.18 : 1.4,
+			threeY: surfaceY + markerHeight / 2,
 			threeZ,
 			width: isVehicle ? Math.max(1.1, widthTiles * 0.9) : widthTiles * 0.74,
 		});
@@ -131,18 +163,19 @@ export function areaEntitiesToMarkers(
 
 	area.npcs.forEach((npc) => {
 		const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
+		const markerHeight = 1.25;
 		markers.push({
 			color: ENTITY_MARKER_COLORS.npc,
 			depth: 0.48,
 			gridX: npc.x,
 			gridY: npc.y,
-			height: 1.25,
+			height: markerHeight,
 			id: npc.id,
 			kind: "npc",
 			opacity: 1,
 			shape: "cylinder",
 			threeX,
-			threeY: 1.62,
+			threeY: getTerrainSurfaceY(area, npc.x, npc.y) + markerHeight / 2,
 			threeZ,
 			width: 0.48,
 		});
@@ -150,18 +183,19 @@ export function areaEntitiesToMarkers(
 
 	area.pickups.forEach((pickup) => {
 		const { threeX, threeZ } = toThreePosition(area, pickup.x, pickup.y);
+		const markerHeight = 0.34;
 		markers.push({
 			color: ENTITY_MARKER_COLORS.pickup,
 			depth: 0.34,
 			gridX: pickup.x,
 			gridY: pickup.y,
-			height: 0.34,
+			height: markerHeight,
 			id: pickup.id,
 			kind: "pickup",
 			opacity: 1,
 			shape: "box",
 			threeX,
-			threeY: 1.75,
+			threeY: getTerrainSurfaceY(area, pickup.x, pickup.y) + 0.75,
 			threeZ,
 			width: 0.34,
 		});
@@ -174,18 +208,19 @@ export function areaEntitiesToMarkers(
 				eventBlock.x,
 				eventBlock.y,
 			);
+			const markerHeight = 0.12;
 			markers.push({
 				color: ENTITY_MARKER_COLORS.event,
 				depth: 0.72,
 				gridX: eventBlock.x,
 				gridY: eventBlock.y,
-				height: 0.12,
+				height: markerHeight,
 				id: eventBlock.id,
 				kind: "event",
 				opacity: 0.72,
 				shape: "box",
 				threeX,
-				threeY: 1.08,
+				threeY: getTerrainSurfaceY(area, eventBlock.x, eventBlock.y) + 0.06,
 				threeZ,
 				width: 0.72,
 			});

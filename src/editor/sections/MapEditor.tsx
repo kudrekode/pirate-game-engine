@@ -15,6 +15,7 @@ import {
 	structurePresets,
 	terrainPresets,
 } from "../../data/mapVisuals";
+import { getTerrainHeight } from "../../data/terrainHeight";
 import {
 	defaultEnemyBehaviour,
 	resolveNPCInstance,
@@ -52,6 +53,10 @@ type MapTool =
 	| "npc"
 	| "object"
 	| "structure"
+	| "raise-height"
+	| "lower-height"
+	| "flatten-height"
+	| "set-height"
 	| "pan";
 type BrushSize = 1 | 3 | 5;
 type PaintLayer = "terrain" | "overlay" | "structure" | "event";
@@ -168,6 +173,10 @@ function emptyPixels(
 export function MapEditor() {
 	const project = useProjectStore((state) => state.project);
 	const setTiles = useProjectStore((state) => state.setTiles);
+	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
+	const adjustTerrainHeights = useProjectStore(
+		(state) => state.adjustTerrainHeights,
+	);
 	const setOverlayTiles = useProjectStore((state) => state.setOverlayTiles);
 	const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
 	const resizeMap = useProjectStore((state) => state.resizeMap);
@@ -220,6 +229,7 @@ export function MapEditor() {
 	const [isPanning, setIsPanning] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const [brushSize, setBrushSize] = useState<BrushSize>(1);
+	const [heightToolValue, setHeightToolValue] = useState(0);
 	const [showGrid, setShowGrid] = useState(true);
 	const [overlayFilter, setOverlayFilter] =
 		useState<MapOverlayFilter>("npc_paths");
@@ -405,6 +415,7 @@ export function MapEditor() {
 	const selectedTerrainTile =
 		selection?.type === "terrain" && selection.areaId === activeArea.id
 			? {
+					height: getTerrainHeight(activeArea, selection.x, selection.y),
 					x: selection.x,
 					y: selection.y,
 					tileId:
@@ -433,11 +444,19 @@ export function MapEditor() {
 								? "Tool: Erase"
 								: activeTool === "pan"
 									? "Tool: Pan"
-									: activeTool === "fill"
-										? `Tool: Fill Terrain - ${selectedTerrainId}`
-										: paintLayer === "overlay"
-											? `Tool: Paint Overlay - ${selectedOverlayId}`
-											: `Tool: Paint Terrain - ${selectedTerrainId}`;
+									: activeTool === "raise-height"
+										? "Tool: Raise Height"
+										: activeTool === "lower-height"
+											? "Tool: Lower Height"
+											: activeTool === "flatten-height"
+												? "Tool: Flatten Height"
+												: activeTool === "set-height"
+													? `Tool: Set Height = ${heightToolValue}`
+													: activeTool === "fill"
+														? `Tool: Fill Terrain - ${selectedTerrainId}`
+														: paintLayer === "overlay"
+															? `Tool: Paint Overlay - ${selectedOverlayId}`
+															: `Tool: Paint Terrain - ${selectedTerrainId}`;
 	const cellSize = Math.round(activeArea.tileSize * zoom);
 	const renderWidth = Math.min(
 		MAX_MAP_SIZE,
@@ -487,8 +506,21 @@ export function MapEditor() {
 		return cells;
 	}
 
+	function isHeightTool(tool: MapTool) {
+		return (
+			tool === "raise-height" ||
+			tool === "lower-height" ||
+			tool === "flatten-height" ||
+			tool === "set-height"
+		);
+	}
+
 	function applyBrush(centerX: number, centerY: number) {
-		if (activeTool !== "paint" && activeTool !== "eraser") {
+		if (
+			activeTool !== "paint" &&
+			activeTool !== "eraser" &&
+			!isHeightTool(activeTool)
+		) {
 			return;
 		}
 
@@ -515,6 +547,28 @@ export function MapEditor() {
 		}
 
 		if (paintLayer !== "terrain") {
+			return;
+		}
+
+		if (activeTool === "raise-height") {
+			adjustTerrainHeights(cells.map((cell) => ({ ...cell, delta: 1 })));
+			return;
+		}
+
+		if (activeTool === "lower-height") {
+			adjustTerrainHeights(cells.map((cell) => ({ ...cell, delta: -1 })));
+			return;
+		}
+
+		if (activeTool === "flatten-height") {
+			setTerrainHeights(cells.map((cell) => ({ ...cell, height: 0 })));
+			return;
+		}
+
+		if (activeTool === "set-height") {
+			setTerrainHeights(
+				cells.map((cell) => ({ ...cell, height: heightToolValue })),
+			);
 			return;
 		}
 
@@ -764,6 +818,7 @@ export function MapEditor() {
 		if (
 			overlayLookup.has(cellKey(x, y)) &&
 			activeTool !== "eraser" &&
+			!isHeightTool(activeTool) &&
 			paintLayer !== "overlay"
 		) {
 			setSelection({ type: "overlay", areaId: activeArea.id, x, y });
@@ -812,7 +867,12 @@ export function MapEditor() {
 	}
 
 	function handleCellPointerEnter(x: number, y: number) {
-		if (!isPainting || (activeTool !== "paint" && activeTool !== "eraser")) {
+		if (
+			!isPainting ||
+			(activeTool !== "paint" &&
+				activeTool !== "eraser" &&
+				!isHeightTool(activeTool))
+		) {
 			return;
 		}
 
@@ -1677,6 +1737,24 @@ export function MapEditor() {
 					<div className="coordinate-readout">
 						{movementRuleSummary(terrain.movementRule)}
 					</div>
+					<label>
+						Height
+						<input
+							max="8"
+							min="-2"
+							onChange={(event) =>
+								setTerrainHeights([
+									{
+										height: Number(event.target.value),
+										x: selectedTerrainTile.x,
+										y: selectedTerrainTile.y,
+									},
+								])
+							}
+							type="number"
+							value={selectedTerrainTile.height}
+						/>
+					</label>
 					<button
 						onClick={() =>
 							setTiles([
@@ -3122,6 +3200,63 @@ export function MapEditor() {
 						Pan
 					</button>
 				</div>
+				<div className="panel-title secondary">Height</div>
+				<div className="tool-button-grid">
+					<button
+						className={activeTool === "raise-height" ? "selected" : ""}
+						onClick={() => {
+							setActiveTool("raise-height");
+							setPaintLayer("terrain");
+							setMapPaletteSelection({ type: "none" });
+						}}
+						type="button"
+					>
+						Raise
+					</button>
+					<button
+						className={activeTool === "lower-height" ? "selected" : ""}
+						onClick={() => {
+							setActiveTool("lower-height");
+							setPaintLayer("terrain");
+							setMapPaletteSelection({ type: "none" });
+						}}
+						type="button"
+					>
+						Lower
+					</button>
+					<button
+						className={activeTool === "flatten-height" ? "selected" : ""}
+						onClick={() => {
+							setActiveTool("flatten-height");
+							setPaintLayer("terrain");
+							setMapPaletteSelection({ type: "none" });
+						}}
+						type="button"
+					>
+						Flatten
+					</button>
+					<button
+						className={activeTool === "set-height" ? "selected" : ""}
+						onClick={() => {
+							setActiveTool("set-height");
+							setPaintLayer("terrain");
+							setMapPaletteSelection({ type: "none" });
+						}}
+						type="button"
+					>
+						Set Height
+					</button>
+				</div>
+				<label>
+					Height value
+					<input
+						max="8"
+						min="-2"
+						onChange={(event) => setHeightToolValue(Number(event.target.value))}
+						type="number"
+						value={heightToolValue}
+					/>
+				</label>
 				<p className="tool-note">
 					Layer: <strong>{paintLayer}</strong>. Terrain eraser resets to grass;
 					overlay eraser clears paths.
@@ -3588,7 +3723,23 @@ export function MapEditor() {
 						</div>
 					</div>
 				) : (
-					<ThreeDPreview embedded hideDetails />
+					<ThreeDPreview
+						brushSize={brushSize}
+						embedded
+						heightToolValue={heightToolValue}
+						hideDetails
+						terrainHeightTool={
+							activeTool === "raise-height"
+								? "raise"
+								: activeTool === "lower-height"
+									? "lower"
+									: activeTool === "flatten-height"
+										? "flatten"
+										: activeTool === "set-height"
+											? "set"
+											: undefined
+						}
+					/>
 				)}
 			</div>
 

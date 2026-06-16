@@ -156,6 +156,39 @@ describe("areaEntitiesToMarkers", () => {
 		]);
 	});
 
+	it("places entity markers on top of raised terrain", () => {
+		const markers = areaEntitiesToMarkers(
+			makeArea({
+				npcs: [
+					{
+						areaId: "area",
+						attributes: {
+							alignment: "friendly",
+							canInteract: true,
+							faction: "villagers",
+							health: 10,
+							maxHealth: 10,
+						},
+						blocksMovement: true,
+						id: "npc",
+						movementMode: "stationary",
+						npcDefinitionId: "captain",
+						x: 1,
+						y: 1,
+					},
+				],
+				terrainHeights: [{ x: 1, y: 1, height: 2 }],
+				terrainTiles: [{ x: 1, y: 1, tileId: "grass" }],
+			}),
+			objectDefinitions,
+			false,
+		);
+
+		expect(markers.find((marker) => marker.id === "npc")).toMatchObject({
+			threeY: 3.625,
+		});
+	});
+
 	it("handles missing areas", () => {
 		expect(areaEntitiesToMarkers(undefined, objectDefinitions, true)).toEqual(
 			[],

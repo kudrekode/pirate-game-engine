@@ -15,6 +15,8 @@ const terrainBlock: TerrainBlock = {
 	height: 1,
 	id: "2_3_grass",
 	kind: "grass",
+	surfaceY: 1,
+	terrainHeight: 0,
 	threeX: 0,
 	threeZ: 0,
 	tileId: "grass",
