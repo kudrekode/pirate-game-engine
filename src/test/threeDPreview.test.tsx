@@ -50,6 +50,7 @@ vi.mock("three", () => {
 			}
 		},
 		MeshStandardMaterial: Disposable,
+		Plane: class {},
 		PerspectiveCamera: class {
 			aspect = 1;
 			position = { set: vi.fn() };
@@ -59,8 +60,18 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
+			remove = vi.fn();
 		},
 		Raycaster: class {
+			ray = {
+				intersectPlane: vi.fn(
+					(_plane: unknown, target: { x: number; z: number }) => {
+						target.x = 0;
+						target.z = 0;
+						return target;
+					},
+				),
+			};
 			setFromCamera = vi.fn();
 			intersectObjects = vi.fn(
 				(objects: { userData: Record<string, unknown> }[]) => {
@@ -79,6 +90,17 @@ vi.mock("three", () => {
 		Vector2: class {
 			x = 0;
 			y = 0;
+		},
+		Vector3: class {
+			x = 0;
+			y = 0;
+			z = 0;
+
+			constructor(x = 0, y = 0, z = 0) {
+				this.x = x;
+				this.y = y;
+				this.z = z;
+			}
 		},
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
@@ -110,7 +132,9 @@ describe("ThreeDPreview", () => {
 		render(<ThreeDPreview />);
 
 		expect(
-			screen.getByText("3D Preview is experimental and read-only."),
+			screen.getByText(
+				"3D Preview is experimental. Entity movement edits the current project; terrain is inspect-only.",
+			),
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Top" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
@@ -169,7 +193,9 @@ describe("ThreeDPreview", () => {
 		render(<ThreeDPreview />);
 
 		expect(
-			screen.getByText("3D Preview is experimental and read-only."),
+			screen.getByText(
+				"3D Preview is experimental. Entity movement edits the current project; terrain is inspect-only.",
+			),
 		).toBeInTheDocument();
 		expect(screen.getByLabelText("Show event blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
@@ -212,6 +238,9 @@ describe("ThreeDPreview", () => {
 		);
 		expect(onOpenInMapEditor).not.toHaveBeenCalled();
 		expect(screen.getAllByText("Captain Mira").length).toBeGreaterThan(0);
+		expect(
+			screen.getByText("Move mode: drag the selected marker to another tile."),
+		).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Open in Map Editor" }));
 		expect(onOpenInMapEditor).toHaveBeenCalledTimes(1);

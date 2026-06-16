@@ -4,6 +4,14 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useProjectStore } from "../../store/useProjectStore";
 import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
+	getPreviewSelectionFootprint,
+	isMovablePreviewSelection,
+	movePreviewSelectionInProject,
+	type PreviewGridPosition,
+	previewGridPositionToThreePoint,
+	threePointToPreviewGridPosition,
+} from "./previewMove";
+import {
 	entityMarkerToSelectionMetadata,
 	metadataToEditorSelection,
 	type PreviewSelectionMetadata,
@@ -51,6 +59,7 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 	const setEditorSelection = useProjectStore(
 		(state) => state.setEditorSelection,
 	);
+	const updateProject = useProjectStore((state) => state.updateProject);
 	const activeArea = useMemo(
 		() =>
 			project.areas.find((area) => area.id === project.activeAreaId) ??
@@ -69,6 +78,9 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 		() => getPreviewSelectionDetails(project, editorSelection),
 		[editorSelection, project],
 	);
+	const canMoveSelection =
+		isMovablePreviewSelection(editorSelection) &&
+		editorSelection.areaId === activeArea?.id;
 
 	useEffect(() => {
 		const host = hostRef.current;
@@ -180,36 +192,175 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 
 		const raycaster = new THREE.Raycaster();
 		const pointer = new THREE.Vector2();
-		let pointerStart: { x: number; y: number } | null = null;
+		const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+		const groundPoint = new THREE.Vector3();
+		let dragGhost: THREE.Mesh | null = null;
+		let pointerStart: {
+			x: number;
+			y: number;
+			metadata?: PreviewSelectionMetadata;
+			didDrag: boolean;
+			latestPosition?: PreviewGridPosition;
+		} | null = null;
 
-		const selectFromPointer = (event: PointerEvent) => {
+		const setPointerFromEvent = (event: PointerEvent) => {
 			const rect = renderer.domElement.getBoundingClientRect();
 			if (rect.width <= 0 || rect.height <= 0) {
-				return;
+				return false;
 			}
 			pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
 			pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+			return true;
+		};
+
+		const getPointerHit = (event: PointerEvent) => {
+			if (!setPointerFromEvent(event)) {
+				return undefined;
+			}
 			raycaster.setFromCamera(pointer, camera);
 			const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
-			const metadata = hit?.object.userData.selectionMetadata as
+			return hit?.object.userData.selectionMetadata as
 				| PreviewSelectionMetadata
 				| undefined;
+		};
+
+		const selectFromPointer = (event: PointerEvent) => {
+			const metadata = getPointerHit(event);
 			if (!metadata) {
 				return;
 			}
 			setEditorSelection(metadataToEditorSelection(metadata));
 		};
 
+		const cleanupDragGhost = () => {
+			if (!dragGhost) {
+				return;
+			}
+			scene.remove(dragGhost);
+			dragGhost.geometry.dispose();
+			if (Array.isArray(dragGhost.material)) {
+				dragGhost.material.forEach((material) => {
+					material.dispose();
+				});
+			} else {
+				dragGhost.material.dispose();
+			}
+			dragGhost = null;
+		};
+
+		const metadataIsMovable = (metadata: PreviewSelectionMetadata) =>
+			isMovablePreviewSelection(metadataToEditorSelection(metadata));
+
+		const getGridPositionFromPointer = (
+			event: PointerEvent,
+			metadata: PreviewSelectionMetadata,
+		) => {
+			if (!activeArea || !setPointerFromEvent(event)) {
+				return undefined;
+			}
+			raycaster.setFromCamera(pointer, camera);
+			const point = raycaster.ray.intersectPlane(groundPlane, groundPoint);
+			if (!point) {
+				return undefined;
+			}
+			const selection = metadataToEditorSelection(metadata);
+			return threePointToPreviewGridPosition(
+				activeArea,
+				{ x: point.x, z: point.z },
+				getPreviewSelectionFootprint(activeArea, selection),
+			);
+		};
+
+		const updateDragGhost = (
+			metadata: PreviewSelectionMetadata,
+			position: PreviewGridPosition,
+		) => {
+			if (!activeArea) {
+				return;
+			}
+			const selection = metadataToEditorSelection(metadata);
+			const footprint = getPreviewSelectionFootprint(activeArea, selection);
+			const threePoint = previewGridPositionToThreePoint(
+				activeArea,
+				position,
+				footprint,
+			);
+			if (!dragGhost) {
+				dragGhost = new THREE.Mesh(
+					new THREE.BoxGeometry(footprint.width, 0.12, footprint.height),
+					new THREE.MeshStandardMaterial({
+						color: 0xfacc15,
+						opacity: 0.42,
+						transparent: true,
+					}),
+				);
+				scene.add(dragGhost);
+			}
+			dragGhost.position.set(threePoint.x, 1.06, threePoint.z);
+		};
+
 		const handlePointerDown = (event: PointerEvent) => {
-			pointerStart = { x: event.clientX, y: event.clientY };
+			const metadata = getPointerHit(event);
+			const startsSelectedMove =
+				metadata &&
+				metadataIsMovable(metadata) &&
+				selectionMatchesMetadata(editorSelection, metadata);
+			pointerStart = {
+				didDrag: false,
+				metadata: startsSelectedMove ? metadata : undefined,
+				x: event.clientX,
+				y: event.clientY,
+			};
+			if (startsSelectedMove) {
+				controls.enabled = false;
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+			}
+		};
+
+		const handlePointerMove = (event: PointerEvent) => {
+			if (!pointerStart?.metadata) {
+				return;
+			}
+			const deltaX = Math.abs(event.clientX - pointerStart.x);
+			const deltaY = Math.abs(event.clientY - pointerStart.y);
+			if (deltaX <= 4 && deltaY <= 4) {
+				return;
+			}
+			const nextPosition = getGridPositionFromPointer(
+				event,
+				pointerStart.metadata,
+			);
+			if (!nextPosition) {
+				return;
+			}
+			pointerStart.didDrag = true;
+			pointerStart.latestPosition = nextPosition;
+			updateDragGhost(pointerStart.metadata, nextPosition);
 		};
 
 		const handlePointerUp = (event: PointerEvent) => {
 			if (!pointerStart) {
 				return;
 			}
+			if (pointerStart.didDrag && pointerStart.metadata) {
+				const selection = metadataToEditorSelection(pointerStart.metadata);
+				const nextPosition = pointerStart.latestPosition;
+				if (nextPosition) {
+					updateProject((draft) => {
+						movePreviewSelectionInProject(draft, selection, nextPosition);
+					});
+				}
+				cleanupDragGhost();
+				controls.enabled = true;
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				pointerStart = null;
+				return;
+			}
 			const deltaX = Math.abs(event.clientX - pointerStart.x);
 			const deltaY = Math.abs(event.clientY - pointerStart.y);
+			cleanupDragGhost();
+			controls.enabled = true;
+			renderer.domElement.releasePointerCapture?.(event.pointerId);
 			pointerStart = null;
 			if (deltaX <= 4 && deltaY <= 4) {
 				selectFromPointer(event);
@@ -217,6 +368,7 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 		};
 
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
+		renderer.domElement.addEventListener("pointermove", handlePointerMove);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
 
 		let animationFrame = 0;
@@ -246,9 +398,11 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 			window.cancelAnimationFrame(animationFrame);
 			window.removeEventListener("resize", resize);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
+			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			resizeObserver?.disconnect();
 			controls.dispose();
+			cleanupDragGhost();
 			renderer.dispose();
 			[...meshes, ...markerMeshes].forEach((mesh) => {
 				mesh.geometry.dispose();
@@ -271,19 +425,24 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 		entityMarkers,
 		setEditorSelection,
 		terrainBlocks,
+		updateProject,
 	]);
 
 	return (
 		<section className="editor-panel three-d-preview">
 			<div className="content-panel three-d-preview-panel">
 				<div className="panel-title">3D Preview</div>
-				<p className="helper-text">3D Preview is experimental and read-only.</p>
+				<p className="helper-text">
+					3D Preview is experimental. Entity movement edits the current project;
+					terrain is inspect-only.
+				</p>
 				<p className="helper-text">
 					Showing terrain and entity placeholders for{" "}
 					{activeArea?.name ?? "No active area"}.
 				</p>
 				<p className="helper-text">
-					Click objects in 3D to inspect them. 3D editing is read-only for now.
+					Click objects in 3D to inspect them. Drag a selected entity to move it
+					on the grid.
 				</p>
 				<div className="three-d-preview-controls">
 					<button
@@ -345,6 +504,11 @@ export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 								<button onClick={onOpenInMapEditor} type="button">
 									Open in Map Editor
 								</button>
+							) : null}
+							{canMoveSelection ? (
+								<p className="helper-text three-d-move-hint">
+									Move mode: drag the selected marker to another tile.
+								</p>
 							) : null}
 						</>
 					) : (
