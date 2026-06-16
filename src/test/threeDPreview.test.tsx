@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import App from "../App";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
+import { editorSections } from "../editor/sections";
 import { ThreeDPreview } from "../editor/sections/ThreeDPreview";
 import { useProjectStore } from "../store/useProjectStore";
 
@@ -97,14 +97,18 @@ beforeEach(() => {
 });
 
 describe("ThreeDPreview", () => {
-	it("renders from the 3D Preview tab", () => {
-		render(<App />);
-
-		fireEvent.click(screen.getByRole("button", { name: "3D Preview" }));
-
-		expect(screen.getByRole("button", { name: "3D Preview" })).toHaveClass(
-			"active",
+	it("is registered as an editor tab and renders preview controls", () => {
+		expect(editorSections).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "three-d-preview",
+					label: "3D Preview",
+				}),
+			]),
 		);
+
+		render(<ThreeDPreview />);
+
 		expect(
 			screen.getByText("3D Preview is experimental and read-only."),
 		).toBeInTheDocument();
@@ -122,6 +126,33 @@ describe("ThreeDPreview", () => {
 		);
 		expect(screen.getByLabelText("Show event blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("renders the empty details state when nothing is selected", () => {
+		useProjectStore.getState().setEditorSelection(null);
+
+		render(<ThreeDPreview />);
+
+		expect(
+			screen.getByText(
+				"Click a tile, NPC, object, or marker in the 3D preview to inspect it.",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("renders terrain details from shared selection", () => {
+		useProjectStore.getState().setEditorSelection({
+			areaId: "area_main",
+			type: "terrain",
+			x: 0,
+			y: 0,
+		});
+
+		render(<ThreeDPreview />);
+
+		expect(screen.getByText("Terrain 0, 0")).toBeInTheDocument();
+		expect(screen.getByText("Tile ID")).toBeInTheDocument();
+		expect(screen.getByText("grass")).toBeInTheDocument();
 	});
 
 	it("mounts against a blank project without crashing", () => {
@@ -144,7 +175,8 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
 	});
 
-	it("clicking a 3D NPC marker selects it without leaving the 3D Preview tab", () => {
+	it("clicking a 3D NPC marker selects it without navigating", async () => {
+		const onOpenInMapEditor = vi.fn();
 		const rectSpy = vi
 			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
 			.mockReturnValue({
@@ -158,8 +190,7 @@ describe("ThreeDPreview", () => {
 				x: 0,
 				y: 0,
 			});
-		render(<App />);
-		fireEvent.click(screen.getByRole("button", { name: "3D Preview" }));
+		render(<ThreeDPreview onOpenInMapEditor={onOpenInMapEditor} />);
 
 		const canvas = screen
 			.getByLabelText("3D preview viewport")
@@ -174,17 +205,16 @@ describe("ThreeDPreview", () => {
 			clientY: 120,
 		});
 
-		expect(useProjectStore.getState().editorSelection).toMatchObject({
-			type: "npc",
-		});
-		expect(screen.getByRole("button", { name: "3D Preview" })).toHaveClass(
-			"active",
+		await waitFor(() =>
+			expect(useProjectStore.getState().editorSelection).toMatchObject({
+				type: "npc",
+			}),
 		);
-		expect(
-			screen.getByText(
-				"Click objects in 3D to inspect them. 3D editing is read-only for now.",
-			),
-		).toBeInTheDocument();
+		expect(onOpenInMapEditor).not.toHaveBeenCalled();
+		expect(screen.getAllByText("Captain Mira").length).toBeGreaterThan(0);
+
+		fireEvent.click(screen.getByRole("button", { name: "Open in Map Editor" }));
+		expect(onOpenInMapEditor).toHaveBeenCalledTimes(1);
 
 		rectSpy.mockRestore();
 	});

@@ -10,9 +10,14 @@ import {
 	selectionMatchesMetadata,
 	terrainBlockToSelectionMetadata,
 } from "./previewSelection";
+import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import { terrainTilesToBlocks } from "./terrainBlocks";
 
 type PreviewCameraPreset = "top" | "isometric" | "low";
+
+type ThreeDPreviewProps = {
+	onOpenInMapEditor?: () => void;
+};
 
 function getPreviewSize(element: HTMLElement) {
 	const rect = element.getBoundingClientRect();
@@ -35,7 +40,7 @@ function getCameraPosition(
 	return [cameraDistance, cameraDistance * 0.85, cameraDistance];
 }
 
-export function ThreeDPreview() {
+export function ThreeDPreview({ onOpenInMapEditor }: ThreeDPreviewProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const [mountError, setMountError] = useState("");
 	const [showEventMarkers, setShowEventMarkers] = useState(false);
@@ -59,6 +64,10 @@ export function ThreeDPreview() {
 	const entityMarkers = useMemo(
 		() => areaEntitiesToMarkers(activeArea, project.objects, showEventMarkers),
 		[activeArea, project.objects, showEventMarkers],
+	);
+	const selectionDetails = useMemo(
+		() => getPreviewSelectionDetails(project, editorSelection),
+		[editorSelection, project],
 	);
 
 	useEffect(() => {
@@ -316,6 +325,35 @@ export function ThreeDPreview() {
 					ref={hostRef}
 					role="img"
 				/>
+				<aside className="three-d-selection-details">
+					<div className="panel-title">Selected</div>
+					{selectionDetails ? (
+						<>
+							<h3>{selectionDetails.title}</h3>
+							<dl>
+								{selectionDetails.rows.map((row) => (
+									<div
+										className="three-d-selection-detail-row"
+										key={`${row.label}:${row.value}`}
+									>
+										<dt>{row.label}</dt>
+										<dd>{row.value}</dd>
+									</div>
+								))}
+							</dl>
+							{selectionDetails.canOpenInMap && onOpenInMapEditor ? (
+								<button onClick={onOpenInMapEditor} type="button">
+									Open in Map Editor
+								</button>
+							) : null}
+						</>
+					) : (
+						<p className="helper-text">
+							Click a tile, NPC, object, or marker in the 3D preview to inspect
+							it.
+						</p>
+					)}
+				</aside>
 				{mountError ? (
 					<div className="validation-message">{mountError}</div>
 				) : null}

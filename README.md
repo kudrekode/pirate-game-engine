@@ -1,6 +1,6 @@
 ﻿# Adventure Game Builder
 
-Adventure Game Builder is a browser-based 2D adventure game editor and runtime built with Vite, React, TypeScript, Phaser 3, and Zustand. It is designed as a small game-building tool rather than a full engine: authors edit one schema-driven `GameProject`, then press Play to test that project in a Phaser runtime.
+Adventure Game Builder is a browser-based 2D adventure game editor and runtime built with Vite, React, TypeScript, Phaser 3, Three.js, and Zustand. It is designed as a small game-building tool rather than a full engine: authors edit one schema-driven `GameProject`, then press Play to test that project in a Phaser runtime.
 
 Current status: active prototype / V1-style editor-runtime loop with several playable systems implemented. The project is intentionally pragmatic and keeps features simple, data-driven, and testable.
 
@@ -10,6 +10,7 @@ Long-term goal: become a lightweight builder for classic 2D adventure/RPG-style 
 
 - Areas: projects can contain multiple linked maps/areas such as outdoor, indoor, cave, ship, dungeon, or custom areas.
 - Map Editor: grid terrain editing, overlays, structures, event blocks, pickups, objects, NPC placement, pan/zoom, brush tools, palette resizing, and area selection.
+- 3D Preview: read-only Three.js preview of the active area's terrain and placeholder entity markers, with orbit/pan/zoom controls, camera presets, event-block debug markers, and click-to-select sync with the existing editor selection.
 - Objects: reusable object definitions and placed instances with behaviours for containers, doors, signs, and vehicles.
 - NPCs: reusable NPC definitions with defaults plus placed instances with overrides.
 - NPC Movement: stationary, patrol, and wander movement modes; hostile NPCs can chase the player with simple grid movement.
@@ -29,6 +30,8 @@ Long-term goal: become a lightweight builder for classic 2D adventure/RPG-style 
 The central schema is `GameProject` in `src/types/game.ts`. Editor sections modify this object. The Phaser runtime reads a cloned snapshot of the object when Play starts.
 
 Editor state is kept separate from project data where possible. UI-only concerns such as selection, map pan/zoom, and palette sizing should not become gameplay schema unless they affect the authored game.
+
+The 3D Preview tab is an editor-only visualization layer. It renders the active area's terrain tiles and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select existing editor entities, but it does not edit map data, replace Phaser, or affect runtime gameplay.
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
@@ -94,6 +97,7 @@ GitHub Actions is configured for pull requests to `release/staging` and `main`. 
 - `src/data/`: default demo project, migrations, presets, and map visuals.
 - `src/store/`: Zustand project store and editor-facing project mutations.
 - `src/editor/`: React editor sections, inspectors, and editor helpers.
+- `src/editor/sections/ThreeDPreview.tsx`: read-only Three.js preview for inspecting active-area terrain and entity placement.
 - `src/runtime/`: Phaser runtime, rule engine, movement, inventory, quests, shops, objects, vehicles, NPC movement, combat, and focused runtime tests.
 - `src/test/`: shared test utilities and editor smoke tests.
 - `.github/workflows/`: GitHub Actions CI workflow.

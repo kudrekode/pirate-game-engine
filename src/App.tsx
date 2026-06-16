@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { type EditorSectionId, editorSections } from "./editor/sections";
+import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import { useProjectStore } from "./store/useProjectStore";
 import type { GameProject } from "./types/game";
@@ -183,7 +184,13 @@ export default function App() {
 			) : (
 				<>
 					<main className="editor-shell">
-						<ActiveSectionComponent />
+						{activeSectionId === "three-d-preview" ? (
+							<ThreeDPreview
+								onOpenInMapEditor={() => setActiveSectionId("map")}
+							/>
+						) : (
+							<ActiveSectionComponent />
+						)}
 					</main>
 					<nav className="bottom-tabs" aria-label="Editor sections">
 						{editorSections.map((section) => (

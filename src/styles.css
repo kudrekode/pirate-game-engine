@@ -269,7 +269,7 @@ label {
 
 .three-d-preview-panel {
 	display: grid;
-	grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto;
+	grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto auto;
 	gap: 10px;
 }
 
@@ -297,6 +297,51 @@ label {
 	border-color: #2f9e44;
 	background: #e9f7ec;
 	color: #1b6b32;
+}
+
+.three-d-selection-details {
+	display: grid;
+	gap: 8px;
+	border: 1px solid #d8e0e7;
+	border-radius: 8px;
+	background: #f8fafc;
+	padding: 10px;
+}
+
+.three-d-selection-details h3 {
+	margin: 0;
+	color: #1f2933;
+	font-size: 16px;
+}
+
+.three-d-selection-details dl {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 8px 12px;
+	margin: 0;
+}
+
+.three-d-selection-detail-row {
+	min-width: 0;
+}
+
+.three-d-selection-details dt {
+	color: #687581;
+	font-size: 11px;
+	font-weight: 800;
+	text-transform: uppercase;
+}
+
+.three-d-selection-details dd {
+	margin: 2px 0 0;
+	overflow-wrap: anywhere;
+	color: #243b53;
+	font-size: 13px;
+	font-weight: 650;
+}
+
+.three-d-selection-details button {
+	justify-self: start;
 }
 
 .inline-toggle {
