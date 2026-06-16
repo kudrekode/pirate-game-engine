@@ -1,16 +1,17 @@
 import { create } from "zustand";
 import {
-	createAreaFromTemplate,
 	type AreaTemplateId,
+	createAreaFromTemplate,
 } from "../data/areaTemplates";
 import { defaultProject } from "../data/defaultProject";
-import { cloneProject, migrateProject } from "../data/migrateProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
+import { cloneProject, migrateProject } from "../data/migrateProject";
 import { backgroundPresets, portraitPresets } from "../data/presets";
 import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
 	CameraConfig,
 	Cutscene,
+	EditorSelection,
 	EventBlock,
 	GameAction,
 	GameArea,
@@ -21,9 +22,9 @@ import type {
 	NPCInstance,
 	ObjectInstance,
 	OverlayTile,
-	PlayerConfig,
 	PickupObject,
 	PixelAsset,
+	PlayerConfig,
 	ProgressionAction,
 	ProgressionStep,
 	TileStyleConfig,
@@ -35,9 +36,11 @@ type ProgressionType = ProgressionAction["type"];
 
 type ProjectStore = {
 	project: GameProject;
+	editorSelection: EditorSelection;
 	setProject: (project: GameProject) => void;
 	updateProject: (updater: (project: GameProject) => void) => void;
 	resetProject: () => void;
+	setEditorSelection: (selection: EditorSelection) => void;
 	saveToLocalStorage: () => void;
 	loadFromLocalStorage: () => boolean;
 	updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
@@ -460,10 +463,26 @@ function makeProgressionStep(
 	};
 }
 
-export const useProjectStore = create<ProjectStore>((set, get) => ({
-	project: migrateProject(defaultProject),
+function areaSelection(project: GameProject): EditorSelection {
+	return {
+		type: "area",
+		areaId: project.activeAreaId || project.areas[0]?.id || "",
+	};
+}
 
-	setProject: (project) => set({ project: migrateProject(project) }),
+const initialProject = migrateProject(defaultProject);
+
+export const useProjectStore = create<ProjectStore>((set, get) => ({
+	project: initialProject,
+	editorSelection: areaSelection(initialProject),
+
+	setProject: (project) => {
+		const migratedProject = migrateProject(project);
+		set({
+			editorSelection: areaSelection(migratedProject),
+			project: migratedProject,
+		});
+	},
 
 	updateProject: (updater) =>
 		set((state) => {
@@ -472,7 +491,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 			return { project: migrateProject(project) };
 		}),
 
-	resetProject: () => set({ project: migrateProject(defaultProject) }),
+	resetProject: () => {
+		const project = migrateProject(defaultProject);
+		set({ editorSelection: areaSelection(project), project });
+	},
+
+	setEditorSelection: (selection) => set({ editorSelection: selection }),
 
 	saveToLocalStorage: () => {
 		localStorage.setItem(
@@ -488,7 +512,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		}
 
 		const project = migrateProject(JSON.parse(raw));
-		set({ project });
+		set({ editorSelection: areaSelection(project), project });
 		return true;
 	},
 
@@ -532,6 +556,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		set((state) =>
 			state.project.areas.some((area) => area.id === areaId)
 				? {
+						editorSelection: { type: "area", areaId },
 						project: {
 							...state.project,
 							activeAreaId: areaId,
@@ -546,6 +571,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		const area = createAreaFromTemplate(templateId, id, `Area ${index}`);
 
 		set((state) => ({
+			editorSelection: { type: "area", areaId: id },
 			project: {
 				...state.project,
 				areas: [...state.project.areas, area],
@@ -581,7 +607,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 				project.activeAreaId = project.areas[0]?.id ?? "";
 			}
 
-			return { project };
+			return { editorSelection: areaSelection(project), project };
 		}),
 
 	resizeMap: (width, height) => {

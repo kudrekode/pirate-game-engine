@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { editorSections, type EditorSectionId } from "./editor/sections";
+import { type EditorSectionId, editorSections } from "./editor/sections";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import { useProjectStore } from "./store/useProjectStore";
 import type { GameProject } from "./types/game";

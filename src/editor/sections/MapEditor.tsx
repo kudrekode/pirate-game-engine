@@ -1,12 +1,12 @@
 import {
+	type CSSProperties,
+	type PointerEvent,
 	useEffect,
 	useMemo,
 	useRef,
 	useState,
-	type CSSProperties,
-	type PointerEvent,
 } from "react";
-import { areaTemplates, type AreaTemplateId } from "../../data/areaTemplates";
+import { type AreaTemplateId, areaTemplates } from "../../data/areaTemplates";
 import {
 	getOverlayPreset,
 	getStructurePreset,
@@ -15,19 +15,15 @@ import {
 	structurePresets,
 	terrainPresets,
 } from "../../data/mapVisuals";
-import { useProjectStore } from "../../store/useProjectStore";
-import {
-	makeDefaultObjectBehaviour,
-	ObjectBehaviourEditor,
-} from "../ObjectBehaviourEditor";
 import {
 	defaultEnemyBehaviour,
 	resolveNPCInstance,
 } from "../../runtime/npcResolver";
+import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	EnemyBehaviour,
-	EditorSelection,
 	EventBlock,
+	GameArea,
 	GameAreaKind,
 	Interaction,
 	InteractionActivationMode,
@@ -36,11 +32,15 @@ import type {
 	NPCAttributes,
 	NPCInstance,
 	NPCMovementConfig,
-	ObjectInstance,
 	ObjectBehaviour,
-	PixelAsset,
+	ObjectInstance,
 	PickupObject,
+	PixelAsset,
 } from "../../types/game";
+import {
+	makeDefaultObjectBehaviour,
+	ObjectBehaviourEditor,
+} from "../ObjectBehaviourEditor";
 
 type MapTool =
 	| "paint"
@@ -87,6 +87,23 @@ const activationModes: InteractionActivationMode[] = [
 
 function cellKey(x: number, y: number): string {
 	return `${x}:${y}`;
+}
+
+function pixelCellKey(assetId: string, x: number, y: number): string {
+	return `${assetId}:${x}:${y}`;
+}
+
+function getEditorActiveArea(project: {
+	areas: GameArea[];
+	activeAreaId: string;
+}): GameArea {
+	const activeArea =
+		project.areas.find((area) => area.id === project.activeAreaId) ??
+		project.areas[0];
+	if (!activeArea) {
+		throw new Error("Project has no editable areas.");
+	}
+	return activeArea;
 }
 
 function clampMapSize(value: number): number {
@@ -174,13 +191,13 @@ export function MapEditor() {
 	const addEventBlock = useProjectStore((state) => state.addEventBlock);
 	const updateEventBlock = useProjectStore((state) => state.updateEventBlock);
 	const deleteEventBlock = useProjectStore((state) => state.deleteEventBlock);
+	const selection = useProjectStore((state) => state.editorSelection);
+	const setSelection = useProjectStore((state) => state.setEditorSelection);
 
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
 	const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
-	const activeArea = (project.areas.find(
-		(area) => area.id === project.activeAreaId,
-	) ?? project.areas[0])!;
+	const activeArea = getEditorActiveArea(project);
 
 	const [activeTool, setActiveTool] = useState<MapTool>("paint");
 	const [paintLayer, setPaintLayer] = useState<PaintLayer>("terrain");
@@ -193,10 +210,6 @@ export function MapEditor() {
 	const [selectedNpcDefinitionId, setSelectedNpcDefinitionId] = useState(
 		project.npcs[0]?.id ?? "",
 	);
-	const [selection, setSelection] = useState<EditorSelection>({
-		type: "area",
-		areaId: activeArea.id,
-	});
 	const [isPainting, setIsPainting] = useState(false);
 	const [isPanning, setIsPanning] = useState(false);
 	const [zoom, setZoom] = useState(1);
@@ -220,125 +233,121 @@ export function MapEditor() {
 
 	useEffect(() => {
 		setDraftMapSize({ width: activeArea.width, height: activeArea.height });
-		setSelection((currentSelection) => {
-			if (!currentSelection || currentSelection.areaId !== activeArea.id) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (!selection || selection.areaId !== activeArea.id) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "eventBlock" &&
-				!activeArea.eventBlocks.some(
-					(eventBlock) => eventBlock.id === currentSelection.id,
-				)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "eventBlock" &&
+			!activeArea.eventBlocks.some(
+				(eventBlock) => eventBlock.id === selection.id,
+			)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "structure" &&
-				!activeArea.structures.some(
-					(structure) => structure.id === currentSelection.id,
-				)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "structure" &&
+			!activeArea.structures.some((structure) => structure.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "object" &&
-				!activeArea.objects.some((object) => object.id === currentSelection.id)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "object" &&
+			!activeArea.objects.some((object) => object.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "pickup" &&
-				!activeArea.pickups.some((pickup) => pickup.id === currentSelection.id)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "pickup" &&
+			!activeArea.pickups.some((pickup) => pickup.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "npc" &&
-				!activeArea.npcs.some((npc) => npc.id === currentSelection.id)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "npc" &&
+			!activeArea.npcs.some((npc) => npc.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				(currentSelection.type === "overlay" ||
-					currentSelection.type === "terrain") &&
-				!isInBounds(
-					currentSelection.x,
-					currentSelection.y,
-					activeArea.width,
-					activeArea.height,
-				)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			(selection.type === "overlay" || selection.type === "terrain") &&
+			!isInBounds(selection.x, selection.y, activeArea.width, activeArea.height)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "overlay" &&
-				!activeArea.overlayTiles.some(
-					(tile) =>
-						tile.x === currentSelection.x && tile.y === currentSelection.y,
-				)
-			) {
-				return {
-					type: "terrain",
-					areaId: activeArea.id,
-					x: currentSelection.x,
-					y: currentSelection.y,
-				};
-			}
-
-			return currentSelection;
-		});
-	}, [activeArea]);
+		if (
+			selection.type === "overlay" &&
+			!activeArea.overlayTiles.some(
+				(tile) => tile.x === selection.x && tile.y === selection.y,
+			)
+		) {
+			setSelection({
+				type: "terrain",
+				areaId: activeArea.id,
+				x: selection.x,
+				y: selection.y,
+			});
+		}
+	}, [activeArea, selection, setSelection]);
 
 	const terrainLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
-		activeArea.terrainTiles.forEach((tile) =>
-			lookup.set(cellKey(tile.x, tile.y), tile.tileId),
-		);
+		activeArea.terrainTiles.forEach((tile) => {
+			lookup.set(cellKey(tile.x, tile.y), tile.tileId);
+		});
 		return lookup;
 	}, [activeArea.terrainTiles]);
 
 	const overlayLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
-		activeArea.overlayTiles.forEach((tile) =>
-			lookup.set(cellKey(tile.x, tile.y), tile.overlayId),
-		);
+		activeArea.overlayTiles.forEach((tile) => {
+			lookup.set(cellKey(tile.x, tile.y), tile.overlayId);
+		});
 		return lookup;
 	}, [activeArea.overlayTiles]);
 
 	const eventLookup = useMemo(() => {
 		const lookup = new Map<string, EventBlock>();
-		activeArea.eventBlocks.forEach((eventBlock) =>
-			lookup.set(cellKey(eventBlock.x, eventBlock.y), eventBlock),
-		);
+		activeArea.eventBlocks.forEach((eventBlock) => {
+			lookup.set(cellKey(eventBlock.x, eventBlock.y), eventBlock);
+		});
 		return lookup;
 	}, [activeArea.eventBlocks]);
 
 	const pickupLookup = useMemo(() => {
 		const lookup = new Map<string, PickupObject>();
-		activeArea.pickups.forEach((pickup) =>
-			lookup.set(cellKey(pickup.x, pickup.y), pickup),
-		);
+		activeArea.pickups.forEach((pickup) => {
+			lookup.set(cellKey(pickup.x, pickup.y), pickup);
+		});
 		return lookup;
 	}, [activeArea.pickups]);
 
 	const npcLookup = useMemo(() => {
 		const lookup = new Map<string, NPCInstance>();
-		activeArea.npcs.forEach((npc) => lookup.set(cellKey(npc.x, npc.y), npc));
+		activeArea.npcs.forEach((npc) => {
+			lookup.set(cellKey(npc.x, npc.y), npc);
+		});
 		return lookup;
 	}, [activeArea.npcs]);
 
 	const objectLookup = useMemo(() => {
 		const lookup = new Map<string, ObjectInstance>();
-		activeArea.objects.forEach((object) =>
-			lookup.set(cellKey(object.x, object.y), object),
-		);
+		activeArea.objects.forEach((object) => {
+			lookup.set(cellKey(object.x, object.y), object);
+		});
 		return lookup;
 	}, [activeArea.objects]);
 
@@ -2441,7 +2450,7 @@ export function MapEditor() {
 								(point, index) => (
 									<div
 										className="patrol-point-row"
-										key={`${selectedNpc.id}_${index}`}
+										key={`${selectedNpc.id}_${point.x}_${point.y}`}
 									>
 										<span>{index + 1}</span>
 										<input
@@ -3153,6 +3162,7 @@ export function MapEditor() {
 			</aside>
 
 			<div
+				aria-label="Map editing canvas"
 				className={`map-stage ${activeTool === "pan" || isPanning ? "pan-ready" : ""}`}
 				onContextMenu={(event) => {
 					if (activeTool === "pan" || isPanning) {
@@ -3166,6 +3176,7 @@ export function MapEditor() {
 					stopPanning(event);
 				}}
 				ref={mapStageRef}
+				role="application"
 			>
 				<div className="active-area-banner">
 					Editing: <strong>{activeArea.name}</strong>
@@ -3330,8 +3341,10 @@ export function MapEditor() {
 					selectedResolvedNpc?.movementMode === "patrol" &&
 					selectedResolvedNpc.patrolPath ? (
 						<svg
+							aria-label="NPC patrol path"
 							className="map-npc-path-overlay"
 							height={renderHeight * cellSize}
+							role="img"
 							width={renderWidth * cellSize}
 						>
 							<polyline
@@ -3343,7 +3356,7 @@ export function MapEditor() {
 									.join(" ")}
 							/>
 							{selectedResolvedNpc.patrolPath.points.map((point, index) => (
-								<g key={`${point.x}_${point.y}_${index}`}>
+								<g key={`${point.x}_${point.y}`}>
 									<circle
 										cx={point.x * cellSize + cellSize / 2}
 										cy={point.y * cellSize + cellSize / 2}
@@ -3530,7 +3543,7 @@ export function MapEditor() {
 									<button
 										aria-label={`Pixel ${x}, ${y}`}
 										className="pixel-cell"
-										key={`${x}:${y}`}
+										key={pixelCellKey(editingPixelAsset.id, x, y)}
 										onPointerDown={() => {
 											setIsPaintingPixel(true);
 											paintPixel(x, y);

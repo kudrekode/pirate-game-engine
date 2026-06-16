@@ -42,6 +42,7 @@ vi.mock("three", () => {
 			material: Disposable;
 			position = { set: vi.fn(), y: 0 };
 			rotation = { y: 0 };
+			userData: Record<string, unknown> = {};
 
 			constructor(geometry: Disposable, material: Disposable) {
 				this.geometry = geometry;
@@ -58,6 +59,26 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
+		},
+		Raycaster: class {
+			setFromCamera = vi.fn();
+			intersectObjects = vi.fn(
+				(objects: { userData: Record<string, unknown> }[]) => {
+					const npc = objects.find(
+						(object) =>
+							(
+								object.userData.selectionMetadata as
+									| { entityType?: string }
+									| undefined
+							)?.entityType === "npc",
+					);
+					return npc ? [{ object: npc }] : [];
+				},
+			);
+		},
+		Vector2: class {
+			x = 0;
+			y = 0;
 		},
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
@@ -121,5 +142,50 @@ describe("ThreeDPreview", () => {
 		).toBeInTheDocument();
 		expect(screen.getByLabelText("Show event blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("clicking a 3D NPC marker selects it without leaving the 3D Preview tab", () => {
+		const rectSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+			.mockReturnValue({
+				bottom: 240,
+				height: 240,
+				left: 0,
+				right: 320,
+				toJSON: () => ({}),
+				top: 0,
+				width: 320,
+				x: 0,
+				y: 0,
+			});
+		render(<App />);
+		fireEvent.click(screen.getByRole("button", { name: "3D Preview" }));
+
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+
+		expect(useProjectStore.getState().editorSelection).toMatchObject({
+			type: "npc",
+		});
+		expect(screen.getByRole("button", { name: "3D Preview" })).toHaveClass(
+			"active",
+		);
+		expect(
+			screen.getByText(
+				"Click objects in 3D to inspect them. 3D editing is read-only for now.",
+			),
+		).toBeInTheDocument();
+
+		rectSpy.mockRestore();
 	});
 });
