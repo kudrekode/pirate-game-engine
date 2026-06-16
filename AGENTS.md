@@ -78,6 +78,16 @@ Each area owns:
 
 Terrain remains grid-based. Runtime camera settings live at the project level in `camera`; editor zoom and pan are separate UI concerns.
 
+## Map Workspace and 3D View
+
+`GameProject` remains the source of truth for authored map data. The 2D Map view and Three.js 3D view both edit the same areas, terrain, overlays, entities, selection, palette choices, and inspector state through `src/store/useProjectStore.ts`.
+
+Phaser remains the active gameplay runtime. Three.js is currently editor/preview only and must not become a second runtime or a parallel map schema. Pressing Play clones the current project and runs the existing 2D Phaser runtime.
+
+The Map Workspace should stay one shared editor with multiple views. Do not create a second parallel map editor for 3D. New 3D placement or movement behavior should reuse existing store placement/update methods so entities are identical to 2D placements and inspector selection stays synced.
+
+Terrain height/elevation is optional per-tile editor data used for 3D presentation and height sculpting. Missing height means `0`. Runtime movement currently ignores height; future height-aware rules such as cliffs, stairs, ramps, and water depth should be added deliberately in movement helpers, not hidden inside the Three.js view.
+
 ## Game State
 
 `GameProject.gameState` contains runtime defaults:

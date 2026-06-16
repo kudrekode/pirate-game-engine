@@ -4,12 +4,12 @@ import App from "../App";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import { GameStateEditor } from "../editor/sections/GameStateEditor";
-import { MapEditor } from "../editor/sections/MapEditor";
 import { ItemsEditor } from "../editor/sections/ItemsEditor";
-import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
-import { QuestsEditor } from "../editor/sections/QuestsEditor";
+import { MapEditor } from "../editor/sections/MapEditor";
 import { NpcsEditor } from "../editor/sections/NpcsEditor";
 import { ObjectsEditor } from "../editor/sections/ObjectsEditor";
+import { ProgressionEditor } from "../editor/sections/ProgressionEditor";
+import { QuestsEditor } from "../editor/sections/QuestsEditor";
 import { ShopsEditor } from "../editor/sections/ShopsEditor";
 import { useProjectStore } from "../store/useProjectStore";
 
@@ -44,9 +44,22 @@ describe("editor smoke tests", () => {
 		render(<MapEditor />);
 
 		expect(screen.getByText("Map size")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "2D View" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "3D View" })).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Reset Zoom" }),
 		).toBeInTheDocument();
+	}, 15000);
+
+	it("keeps Play mode on the Phaser runtime path", () => {
+		render(<App />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+		expect(screen.getByText("Runtime mock")).toBeInTheDocument();
+		expect(
+			screen.queryByLabelText("3D preview viewport"),
+		).not.toBeInTheDocument();
 	}, 15000);
 
 	it("edits selected NPC attributes in the Map inspector", () => {

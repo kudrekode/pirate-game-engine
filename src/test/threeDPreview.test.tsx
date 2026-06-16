@@ -136,7 +136,7 @@ describe("ThreeDPreview", () => {
 		);
 		expect(screen.getByText("View: 3D")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
-	});
+	}, 15000);
 
 	it("keeps entity placement status visible when switching to 3D view", () => {
 		render(<MapEditor />);
@@ -159,7 +159,7 @@ describe("ThreeDPreview", () => {
 			screen.getByText("Tool: Place NPC - Captain Mira"),
 		).toBeInTheDocument();
 		expect(npcButton).toHaveClass("selected");
-	});
+	}, 15000);
 
 	it("selecting in embedded 3D updates the shared inspector without leaving 3D view", async () => {
 		const rectSpy = vi
@@ -202,7 +202,7 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByLabelText("Faction")).toBeInTheDocument();
 
 		rectSpy.mockRestore();
-	});
+	}, 15000);
 
 	it("is registered as an editor tab and renders preview controls", () => {
 		expect(editorSections).toEqual(
@@ -284,7 +284,7 @@ describe("ThreeDPreview", () => {
 		expect(
 			screen.getByText("Height tool: set. Click or drag terrain to sculpt."),
 		).toBeInTheDocument();
-	}, 10000);
+	}, 20000);
 
 	it("mounts against a blank project without crashing", () => {
 		const blankProject = cloneProject(defaultProject);

@@ -9,8 +9,9 @@ Long-term goal: become a lightweight builder for classic 2D adventure/RPG-style 
 ## Current Features
 
 - Areas: projects can contain multiple linked maps/areas such as outdoor, indoor, cave, ship, dungeon, or custom areas.
-- Map Editor: grid terrain editing, overlays, structures, event blocks, pickups, objects, NPC placement, pan/zoom, brush tools, palette resizing, and area selection.
-- 3D Preview: read-only Three.js preview of the active area's terrain and placeholder entity markers, with orbit/pan/zoom controls, camera presets, event-block debug markers, and click-to-select sync with the existing editor selection.
+- Map Workspace: shared 2D/3D map editing workspace with grid terrain editing, overlays, structures, event blocks, pickups, objects, NPC placement, pan/zoom, brush tools, palette resizing, area selection, and shared inspector state.
+- 3D Preview / Editor View: Three.js view of the active area's terrain and placeholder entity markers, with orbit/pan/zoom controls, camera presets, event-block debug markers, click-to-select sync, 3D entity movement/placement, and terrain height editing.
+- Terrain Height: optional per-tile height/elevation data for Minecraft-like 3D block presentation and simple editor sculpting tools. The 2D Phaser runtime currently treats terrain height as editor/visual data.
 - Objects: reusable object definitions and placed instances with behaviours for containers, doors, signs, and vehicles.
 - NPCs: reusable NPC definitions with defaults plus placed instances with overrides.
 - NPC Movement: stationary, patrol, and wander movement modes; hostile NPCs can chase the player with simple grid movement.
@@ -31,7 +32,11 @@ The central schema is `GameProject` in `src/types/game.ts`. Editor sections modi
 
 Editor state is kept separate from project data where possible. UI-only concerns such as selection, map pan/zoom, and palette sizing should not become gameplay schema unless they affect the authored game.
 
-The 3D Preview tab is an editor-only visualization layer. It renders the active area's terrain tiles and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select existing editor entities, but it does not edit map data, replace Phaser, or affect runtime gameplay.
+The Map Workspace has shared 2D and 3D view modes. Both views edit the same `GameProject` map data and share palette, tool, selection, and inspector state.
+
+The Three.js 3D view is editor-only. It renders the active area's terrain tiles, per-tile height/elevation, and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select, move, and place existing editor entities and sculpt terrain height, but it does not replace Phaser or affect runtime gameplay.
+
+The Phaser runtime remains the primary playable runtime. Pressing Play clones the current project and runs that snapshot through the existing 2D Phaser systems.
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
@@ -97,7 +102,8 @@ GitHub Actions is configured for pull requests to `release/staging` and `main`. 
 - `src/data/`: default demo project, migrations, presets, and map visuals.
 - `src/store/`: Zustand project store and editor-facing project mutations.
 - `src/editor/`: React editor sections, inspectors, and editor helpers.
-- `src/editor/sections/ThreeDPreview.tsx`: read-only Three.js preview for inspecting active-area terrain and entity placement.
+- `src/editor/sections/MapEditor.tsx`: Map Workspace with shared 2D/3D map tools, palette, selection, and inspector.
+- `src/editor/sections/ThreeDPreview.tsx`: Three.js editor view for active-area terrain, height sculpting, placeholder entities, selection, movement, and placement.
 - `src/runtime/`: Phaser runtime, rule engine, movement, inventory, quests, shops, objects, vehicles, NPC movement, combat, and focused runtime tests.
 - `src/test/`: shared test utilities and editor smoke tests.
 - `.github/workflows/`: GitHub Actions CI workflow.
