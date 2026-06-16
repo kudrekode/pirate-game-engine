@@ -1,1479 +1,1772 @@
+import type {
+	AreaLink,
+	CameraConfig,
+	ConditionExpression,
+	ConditionGroup,
+	Cutscene,
+	EnemyBehaviour,
+	EventBlock,
+	GameAction,
+	GameArea,
+	GameAreaKind,
+	GameProject,
+	GameRule,
+	GameStateConfig,
+	GameStateValue,
+	Interaction,
+	InteractionActivationMode,
+	ItemDefinition,
+	MapStructure,
+	MapTile,
+	MovementRule,
+	NPCAttributes,
+	NPCDefinition,
+	NPCInstance,
+	NPCMovementConfig,
+	ObjectBehaviour,
+	ObjectDefinition,
+	ObjectInstance,
+	Objective,
+	ObjectiveCondition,
+	OverlayTile,
+	PickupObject,
+	PixelAsset,
+	PlayerConfig,
+	ProgressionAction,
+	ProgressionStep,
+	Quest,
+	QuestReward,
+	RuleGroup,
+	RuleTrigger,
+	ShopDefinition,
+	SingleCondition,
+	TileStyleConfig,
+	VariableComparisonOperator,
+} from "../types/game";
 import { defaultProject } from "./defaultProject";
 import { createDefaultPixelAssets } from "./mapVisuals";
-import { defaultCameraConfig } from "./projectDefaults";
 import { defaultTileStyles, tilePresets } from "./presets";
-import type {
-  AreaLink,
-  CameraConfig,
-  ConditionExpression,
-  ConditionGroup,
-  Cutscene,
-  EventBlock,
-  GameAction,
-  GameArea,
-  GameAreaKind,
-  GameProject,
-  GameRule,
-  GameStateConfig,
-  GameStateValue,
-  Interaction,
-  InteractionActivationMode,
-  ItemDefinition,
-  ObjectDefinition,
-  ObjectBehaviour,
-  ObjectInstance,
-  NPCDefinition,
-  NPCInstance,
-  NPCAttributes,
-  NPCMovementConfig,
-  EnemyBehaviour,
-  MapStructure,
-  MapTile,
-  MovementRule,
-  OverlayTile,
-  PickupObject,
-  Quest,
-  QuestReward,
-  Objective,
-  ObjectiveCondition,
-  PlayerConfig,
-  PixelAsset,
-  ProgressionAction,
-  ProgressionStep,
-  RuleGroup,
-  RuleTrigger,
-  ShopDefinition,
-  SingleCondition,
-  TileStyleConfig,
-  VariableComparisonOperator,
-} from "../types/game";
+import { defaultCameraConfig } from "./projectDefaults";
 
 type UnknownRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function cloneProject(project: GameProject): GameProject {
-  return JSON.parse(JSON.stringify(project)) as GameProject;
+	return JSON.parse(JSON.stringify(project)) as GameProject;
 }
 
 function readString(value: unknown, fallback: string): string {
-  return typeof value === "string" ? value : fallback;
+	return typeof value === "string" ? value : fallback;
 }
 
-function readNumber(value: unknown, fallback: number, min?: number, max?: number): number {
-  const numberValue = typeof value === "number" && Number.isFinite(value) ? value : fallback;
-  const withMin = min === undefined ? numberValue : Math.max(min, numberValue);
-  return max === undefined ? withMin : Math.min(max, withMin);
+function readNumber(
+	value: unknown,
+	fallback: number,
+	min?: number,
+	max?: number,
+): number {
+	const numberValue =
+		typeof value === "number" && Number.isFinite(value) ? value : fallback;
+	const withMin = min === undefined ? numberValue : Math.max(min, numberValue);
+	return max === undefined ? withMin : Math.min(max, withMin);
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
+	return typeof value === "boolean" ? value : fallback;
 }
 
 function readStringArray(value: unknown, fallback: string[]): string[] {
-  if (!Array.isArray(value)) {
-    return [...fallback];
-  }
+	if (!Array.isArray(value)) {
+		return [...fallback];
+	}
 
-  const strings = value.filter((item): item is string => typeof item === "string");
-  return strings.length > 0 ? strings : [...fallback];
+	const strings = value.filter(
+		(item): item is string => typeof item === "string",
+	);
+	return strings.length > 0 ? strings : [...fallback];
 }
 
 function readAreaKind(value: unknown, fallback: GameAreaKind): GameAreaKind {
-  return value === "outdoor" ||
-    value === "indoor" ||
-    value === "cave" ||
-    value === "ship" ||
-    value === "dungeon" ||
-    value === "custom"
-    ? value
-    : fallback;
+	return value === "outdoor" ||
+		value === "indoor" ||
+		value === "cave" ||
+		value === "ship" ||
+		value === "dungeon" ||
+		value === "custom"
+		? value
+		: fallback;
 }
 
 function migrateTiles(value: unknown, fallbackTiles: MapTile[]): MapTile[] {
-  if (!Array.isArray(value)) {
-    return fallbackTiles.map((tile) => ({ ...tile }));
-  }
+	if (!Array.isArray(value)) {
+		return fallbackTiles.map((tile) => ({ ...tile }));
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    return [
-      {
-        x: readNumber(item.x, 0, 0),
-        y: readNumber(item.y, 0, 0),
-        tileId: readString(item.tileId, "grass"),
-      },
-    ];
-  });
+		return [
+			{
+				x: readNumber(item.x, 0, 0),
+				y: readNumber(item.y, 0, 0),
+				tileId: readString(item.tileId, "grass"),
+			},
+		];
+	});
 }
 
 function migrateOverlayTiles(value: unknown): OverlayTile[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    return [
-      {
-        x: readNumber(item.x, 0, 0),
-        y: readNumber(item.y, 0, 0),
-        overlayId: readString(item.overlayId, ""),
-      },
-    ];
-  });
+		return [
+			{
+				x: readNumber(item.x, 0, 0),
+				y: readNumber(item.y, 0, 0),
+				overlayId: readString(item.overlayId, ""),
+			},
+		];
+	});
 }
 
 function migrateAreaLink(value: unknown): AreaLink | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  const targetAreaId = readString(value.targetAreaId, "");
-  const targetEventBlockId = readString(value.targetEventBlockId, "");
-  return targetAreaId && targetEventBlockId ? { targetAreaId, targetEventBlockId } : undefined;
+	const targetAreaId = readString(value.targetAreaId, "");
+	const targetEventBlockId = readString(value.targetEventBlockId, "");
+	return targetAreaId && targetEventBlockId
+		? { targetAreaId, targetEventBlockId }
+		: undefined;
 }
 
 function migrateMovementRule(value: unknown): MovementRule | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  const rule: MovementRule = {};
-  if (typeof value.walkable === "boolean") {
-    rule.walkable = value.walkable;
-  }
-  if (
-    value.movementMode === "walk" ||
-    value.movementMode === "swim" ||
-    value.movementMode === "sail" ||
-    value.movementMode === "ride" ||
-    value.movementMode === "drive"
-  ) {
-    rule.movementMode = value.movementMode;
-  }
-  if (typeof value.speedMultiplier === "number" && Number.isFinite(value.speedMultiplier)) {
-    rule.speedMultiplier = readNumber(value.speedMultiplier, 1, 0.1, 10);
-  }
+	const rule: MovementRule = {};
+	if (typeof value.walkable === "boolean") {
+		rule.walkable = value.walkable;
+	}
+	if (
+		value.movementMode === "walk" ||
+		value.movementMode === "swim" ||
+		value.movementMode === "sail" ||
+		value.movementMode === "ride" ||
+		value.movementMode === "drive"
+	) {
+		rule.movementMode = value.movementMode;
+	}
+	if (
+		typeof value.speedMultiplier === "number" &&
+		Number.isFinite(value.speedMultiplier)
+	) {
+		rule.speedMultiplier = readNumber(value.speedMultiplier, 1, 0.1, 10);
+	}
 
-  return Object.keys(rule).length > 0 ? rule : undefined;
+	return Object.keys(rule).length > 0 ? rule : undefined;
 }
 
 function readActivationMode(
-  value: unknown,
-  fallback: InteractionActivationMode,
+	value: unknown,
+	fallback: InteractionActivationMode,
 ): InteractionActivationMode {
-  return value === "on_touch" ||
-    value === "on_interact" ||
-    value === "both" ||
-    value === "disabled"
-    ? value
-    : fallback;
+	return value === "on_touch" ||
+		value === "on_interact" ||
+		value === "both" ||
+		value === "disabled"
+		? value
+		: fallback;
 }
 
 function withInteractionBase(
-  source: UnknownRecord,
-  fallbackActivationMode: InteractionActivationMode,
-  interaction: Omit<Interaction, "activationMode">,
+	source: UnknownRecord,
+	fallbackActivationMode: InteractionActivationMode,
+	interaction: Omit<Interaction, "activationMode">,
 ): Interaction {
-  const prompt = readString(source.prompt, "");
-  return {
-    ...interaction,
-    activationMode: readActivationMode(source.activationMode, fallbackActivationMode),
-    ...(prompt ? { prompt } : {}),
-  };
+	const prompt = readString(source.prompt, "");
+	return {
+		...interaction,
+		activationMode: readActivationMode(
+			source.activationMode,
+			fallbackActivationMode,
+		),
+		...(prompt ? { prompt } : {}),
+	};
 }
 
 function migrateInteraction(
-  value: unknown,
-  fallbackActivationMode: InteractionActivationMode,
+	value: unknown,
+	fallbackActivationMode: InteractionActivationMode,
 ): Interaction | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  if (value.type === "area_link" || value.type === "teleport") {
-    const targetAreaId = readString(value.targetAreaId, "");
-    const targetEventBlockId = readString(value.targetEventBlockId, "");
-    return targetAreaId && targetEventBlockId
-      ? withInteractionBase(value, fallbackActivationMode, {
-          type: value.type,
-          targetAreaId,
-          targetEventBlockId,
-        })
-      : undefined;
-  }
+	if (value.type === "area_link" || value.type === "teleport") {
+		const targetAreaId = readString(value.targetAreaId, "");
+		const targetEventBlockId = readString(value.targetEventBlockId, "");
+		return targetAreaId && targetEventBlockId
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: value.type,
+					targetAreaId,
+					targetEventBlockId,
+				})
+			: undefined;
+	}
 
-  if (value.type === "play_cutscene") {
-    const cutsceneId = readString(value.cutsceneId, "");
-    return cutsceneId
-      ? withInteractionBase(value, fallbackActivationMode, {
-          type: "play_cutscene",
-          cutsceneId,
-        })
-      : undefined;
-  }
+	if (value.type === "play_cutscene") {
+		const cutsceneId = readString(value.cutsceneId, "");
+		return cutsceneId
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: "play_cutscene",
+					cutsceneId,
+				})
+			: undefined;
+	}
 
-  if (value.type === "set_flag") {
-    const flag = readString(value.flag, "");
-    return flag
-      ? withInteractionBase(value, fallbackActivationMode, {
-          type: "set_flag",
-          flag,
-          value: readBoolean(value.value, true),
-        })
-      : undefined;
-  }
+	if (value.type === "set_flag") {
+		const flag = readString(value.flag, "");
+		return flag
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: "set_flag",
+					flag,
+					value: readBoolean(value.value, true),
+				})
+			: undefined;
+	}
 
-  if (
-    value.type === "change_movement_mode" &&
-    (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
-  ) {
-    return withInteractionBase(value, fallbackActivationMode, {
-      type: "change_movement_mode",
-      mode: value.mode,
-    });
-  }
+	if (
+		value.type === "change_movement_mode" &&
+		(value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
+	) {
+		return withInteractionBase(value, fallbackActivationMode, {
+			type: "change_movement_mode",
+			mode: value.mode,
+		});
+	}
 
-  return undefined;
+	return undefined;
 }
 
-function migrateEventBlocks(value: unknown, fallbackEventBlocks: EventBlock[]): EventBlock[] {
-  if (!Array.isArray(value)) {
-    return fallbackEventBlocks.map((eventBlock) => ({ ...eventBlock }));
-  }
+function migrateEventBlocks(
+	value: unknown,
+	fallbackEventBlocks: EventBlock[],
+): EventBlock[] {
+	if (!Array.isArray(value)) {
+		return fallbackEventBlocks.map((eventBlock) => ({ ...eventBlock }));
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const kind =
-      item.kind === "spawn" || item.kind === "trigger" || item.kind === "area_link"
-        ? item.kind
-        : "trigger";
+		const kind =
+			item.kind === "spawn" ||
+			item.kind === "trigger" ||
+			item.kind === "area_link"
+				? item.kind
+				: "trigger";
 
-    const link = kind === "area_link" ? migrateAreaLink(item.link) : undefined;
-    const fallbackActivationMode =
-      kind === "area_link" || kind === "trigger" ? "on_touch" : "on_interact";
-    const interaction =
-      migrateInteraction(item.interaction, fallbackActivationMode) ??
-      (kind === "area_link" && link
-        ? {
-            type: "area_link" as const,
-            activationMode: "on_touch" as const,
-            ...link,
-          }
-        : undefined);
+		const link = kind === "area_link" ? migrateAreaLink(item.link) : undefined;
+		const fallbackActivationMode =
+			kind === "area_link" || kind === "trigger" ? "on_touch" : "on_interact";
+		const interaction =
+			migrateInteraction(item.interaction, fallbackActivationMode) ??
+			(kind === "area_link" && link
+				? {
+						type: "area_link" as const,
+						activationMode: "on_touch" as const,
+						...link,
+					}
+				: undefined);
 
-    return [
-      {
-        id: readString(item.id, `event_${Date.now().toString(36)}`),
-        name: readString(item.name, "Event"),
-        x: readNumber(item.x, 0, 0),
-        y: readNumber(item.y, 0, 0),
-        tag: readString(item.tag, "event"),
-        kind,
-        link,
-        interaction,
-      },
-    ];
-  });
+		return [
+			{
+				id: readString(item.id, `event_${Date.now().toString(36)}`),
+				name: readString(item.name, "Event"),
+				x: readNumber(item.x, 0, 0),
+				y: readNumber(item.y, 0, 0),
+				tag: readString(item.tag, "event"),
+				kind,
+				link,
+				interaction,
+			},
+		];
+	});
 }
 
 function migrateStructures(value: unknown): MapStructure[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const interaction = migrateInteraction(item.interaction, "on_interact");
+		const interaction = migrateInteraction(item.interaction, "on_interact");
 
-    return [
-      {
-        id: readString(item.id, `structure_${Date.now().toString(36)}`),
-        structureId: readString(item.structureId, "small_house"),
-        name: readString(item.name, "Structure"),
-        x: readNumber(item.x, 0, 0),
-        y: readNumber(item.y, 0, 0),
-        widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
-        heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
-        blocksMovement: readBoolean(item.blocksMovement, true),
-        movementRule: migrateMovementRule(item.movementRule),
-        interaction,
-      },
-    ];
-  });
+		return [
+			{
+				id: readString(item.id, `structure_${Date.now().toString(36)}`),
+				structureId: readString(item.structureId, "small_house"),
+				name: readString(item.name, "Structure"),
+				x: readNumber(item.x, 0, 0),
+				y: readNumber(item.y, 0, 0),
+				widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
+				heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
+				blocksMovement: readBoolean(item.blocksMovement, true),
+				movementRule: migrateMovementRule(item.movementRule),
+				interaction,
+			},
+		];
+	});
 }
 
 function migrateObjectBehaviour(value: unknown): ObjectBehaviour | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  if (value.type === "container") {
-    const contents = Array.isArray(value.contents)
-      ? value.contents.flatMap((content) =>
-          isRecord(content)
-            ? [{
-                itemId: readString(content.itemId, ""),
-                quantity: Math.round(readNumber(content.quantity, 1, 1, 9999)),
-              }]
-            : [],
-        )
-      : [];
-    return {
-      type: "container",
-      contents,
-      once: readBoolean(value.once, true),
-      ...(readString(value.openedFlag, "") ? { openedFlag: readString(value.openedFlag, "") } : {}),
-    };
-  }
+	if (value.type === "container") {
+		const contents = Array.isArray(value.contents)
+			? value.contents.flatMap((content) =>
+					isRecord(content)
+						? [
+								{
+									itemId: readString(content.itemId, ""),
+									quantity: Math.round(
+										readNumber(content.quantity, 1, 1, 9999),
+									),
+								},
+							]
+						: [],
+				)
+			: [];
+		return {
+			type: "container",
+			contents,
+			once: readBoolean(value.once, true),
+			...(readString(value.openedFlag, "")
+				? { openedFlag: readString(value.openedFlag, "") }
+				: {}),
+		};
+	}
 
-  if (value.type === "door") {
-    return {
-      type: "door",
-      ...(readString(value.targetAreaId, "") ? { targetAreaId: readString(value.targetAreaId, "") } : {}),
-      ...(readString(value.targetEventBlockId, "") ? { targetEventBlockId: readString(value.targetEventBlockId, "") } : {}),
-      ...(readString(value.requiredItemId, "") ? { requiredItemId: readString(value.requiredItemId, "") } : {}),
-      ...(readString(value.lockedCutsceneId, "") ? { lockedCutsceneId: readString(value.lockedCutsceneId, "") } : {}),
-    };
-  }
+	if (value.type === "door") {
+		return {
+			type: "door",
+			...(readString(value.targetAreaId, "")
+				? { targetAreaId: readString(value.targetAreaId, "") }
+				: {}),
+			...(readString(value.targetEventBlockId, "")
+				? { targetEventBlockId: readString(value.targetEventBlockId, "") }
+				: {}),
+			...(readString(value.requiredItemId, "")
+				? { requiredItemId: readString(value.requiredItemId, "") }
+				: {}),
+			...(readString(value.lockedCutsceneId, "")
+				? { lockedCutsceneId: readString(value.lockedCutsceneId, "") }
+				: {}),
+		};
+	}
 
-  if (value.type === "sign") {
-    return { type: "sign", text: readString(value.text, "") };
-  }
+	if (value.type === "sign") {
+		return { type: "sign", text: readString(value.text, "") };
+	}
 
-  if (value.type === "vehicle") {
-    const vehicleType =
-      value.vehicleType === "horse" || value.vehicleType === "cart" ? value.vehicleType : "boat";
-    const movementMode =
-      value.movementMode === "ride" || value.movementMode === "drive" ? value.movementMode : "sail";
-    return {
-      type: "vehicle",
-      vehicleType,
-      movementMode,
-      allowedTerrainIds: readStringArray(value.allowedTerrainIds, vehicleType === "boat" ? ["water"] : []),
-      ...(readStringArray(value.allowedOverlayIds, []).length > 0
-        ? { allowedOverlayIds: readStringArray(value.allowedOverlayIds, []) }
-        : {}),
-      dismountAllowedTerrainIds: readStringArray(
-        value.dismountAllowedTerrainIds,
-        vehicleType === "boat" ? ["grass", "dirt"] : [],
-      ),
-      ...(readStringArray(value.dismountAllowedOverlayIds, []).length > 0
-        ? { dismountAllowedOverlayIds: readStringArray(value.dismountAllowedOverlayIds, []) }
-        : {}),
-      ...(typeof value.speedMultiplier === "number"
-        ? { speedMultiplier: readNumber(value.speedMultiplier, 1, 0.1, 10) }
-        : {}),
-    };
-  }
+	if (value.type === "vehicle") {
+		const vehicleType =
+			value.vehicleType === "horse" || value.vehicleType === "cart"
+				? value.vehicleType
+				: "boat";
+		const movementMode =
+			value.movementMode === "ride" || value.movementMode === "drive"
+				? value.movementMode
+				: "sail";
+		return {
+			type: "vehicle",
+			vehicleType,
+			movementMode,
+			allowedTerrainIds: readStringArray(
+				value.allowedTerrainIds,
+				vehicleType === "boat" ? ["water"] : [],
+			),
+			...(readStringArray(value.allowedOverlayIds, []).length > 0
+				? { allowedOverlayIds: readStringArray(value.allowedOverlayIds, []) }
+				: {}),
+			dismountAllowedTerrainIds: readStringArray(
+				value.dismountAllowedTerrainIds,
+				vehicleType === "boat" ? ["grass", "dirt"] : [],
+			),
+			...(readStringArray(value.dismountAllowedOverlayIds, []).length > 0
+				? {
+						dismountAllowedOverlayIds: readStringArray(
+							value.dismountAllowedOverlayIds,
+							[],
+						),
+					}
+				: {}),
+			...(typeof value.speedMultiplier === "number"
+				? { speedMultiplier: readNumber(value.speedMultiplier, 1, 0.1, 10) }
+				: {}),
+		};
+	}
 
-  return { type: "none" };
+	return { type: "none" };
 }
 
-function migrateObjectInstances(value: unknown, areaId: string): ObjectInstance[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+function migrateObjectInstances(
+	value: unknown,
+	areaId: string,
+): ObjectInstance[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const state: Record<string, boolean | number | string> = {};
-    if (isRecord(item.state)) {
-      Object.entries(item.state).forEach(([key, stateValue]) => {
-        if (
-          key &&
-          (typeof stateValue === "boolean" ||
-            typeof stateValue === "number" ||
-            typeof stateValue === "string")
-        ) {
-          state[key] = stateValue;
-        }
-      });
-    }
+		const state: Record<string, boolean | number | string> = {};
+		if (isRecord(item.state)) {
+			Object.entries(item.state).forEach(([key, stateValue]) => {
+				if (
+					key &&
+					(typeof stateValue === "boolean" ||
+						typeof stateValue === "number" ||
+						typeof stateValue === "string")
+				) {
+					state[key] = stateValue;
+				}
+			});
+		}
 
-    const nameOverride = readString(item.nameOverride, "");
+		const nameOverride = readString(item.nameOverride, "");
 
-    return [
-      {
-        id: readString(item.id, `object_${Date.now().toString(36)}`),
-        objectDefinitionId: readString(item.objectDefinitionId, readString(item.objectId, "")),
-        areaId,
-        x: readNumber(item.x, 0, 0),
-        y: readNumber(item.y, 0, 0),
-        ...(nameOverride ? { nameOverride } : {}),
-        ...(typeof item.widthTiles === "number" ? { widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)) } : {}),
-        ...(typeof item.heightTiles === "number" ? { heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)) } : {}),
-        ...(typeof item.blocksMovement === "boolean" ? { blocksMovement: item.blocksMovement } : {}),
-        interaction: migrateInteraction(item.interaction, "on_interact"),
-        behaviourOverride: migrateObjectBehaviour(item.behaviourOverride),
-        ...(Object.keys(state).length > 0 ? { state } : {}),
-      },
-    ];
-  });
+		return [
+			{
+				id: readString(item.id, `object_${Date.now().toString(36)}`),
+				objectDefinitionId: readString(
+					item.objectDefinitionId,
+					readString(item.objectId, ""),
+				),
+				areaId,
+				x: readNumber(item.x, 0, 0),
+				y: readNumber(item.y, 0, 0),
+				...(nameOverride ? { nameOverride } : {}),
+				...(typeof item.widthTiles === "number"
+					? { widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)) }
+					: {}),
+				...(typeof item.heightTiles === "number"
+					? { heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)) }
+					: {}),
+				...(typeof item.blocksMovement === "boolean"
+					? { blocksMovement: item.blocksMovement }
+					: {}),
+				interaction: migrateInteraction(item.interaction, "on_interact"),
+				behaviourOverride: migrateObjectBehaviour(item.behaviourOverride),
+				...(Object.keys(state).length > 0 ? { state } : {}),
+			},
+		];
+	});
 }
 
 function migratePickups(value: unknown, areaId: string): PickupObject[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const collectedFlag = readString(item.collectedFlag, "");
-    return [
-      {
-        id: readString(item.id, `pickup_${Date.now().toString(36)}`),
-        itemId: readString(item.itemId, ""),
-        quantity: Math.round(readNumber(item.quantity, 1, 1, 9999)),
-        areaId,
-        x: readNumber(item.x, 0, 0),
-        y: readNumber(item.y, 0, 0),
-        pickupMode: item.pickupMode === "on_interact" ? "on_interact" : "on_touch",
-        once: readBoolean(item.once, true),
-        ...(collectedFlag ? { collectedFlag } : {}),
-      },
-    ];
-  });
+		const collectedFlag = readString(item.collectedFlag, "");
+		return [
+			{
+				id: readString(item.id, `pickup_${Date.now().toString(36)}`),
+				itemId: readString(item.itemId, ""),
+				quantity: Math.round(readNumber(item.quantity, 1, 1, 9999)),
+				areaId,
+				x: readNumber(item.x, 0, 0),
+				y: readNumber(item.y, 0, 0),
+				pickupMode:
+					item.pickupMode === "on_interact" ? "on_interact" : "on_touch",
+				once: readBoolean(item.once, true),
+				...(collectedFlag ? { collectedFlag } : {}),
+			},
+		];
+	});
 }
 
 function migrateNpcAttributes(value: unknown): NPCAttributes | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  const maxHealth = readNumber(value.maxHealth, 100, 1);
-  return {
-    maxHealth,
-    health: readNumber(value.health, maxHealth, 0, maxHealth),
-    faction: readString(value.faction, "villagers"),
-    alignment: value.alignment === "neutral" || value.alignment === "hostile" ? value.alignment : "friendly",
-    canInteract: readBoolean(value.canInteract, true),
-    movementSpeed: readNumber(value.movementSpeed, 1, 0.1, 10),
-  };
+	const maxHealth = readNumber(value.maxHealth, 100, 1);
+	return {
+		maxHealth,
+		health: readNumber(value.health, maxHealth, 0, maxHealth),
+		faction: readString(value.faction, "villagers"),
+		alignment:
+			value.alignment === "neutral" || value.alignment === "hostile"
+				? value.alignment
+				: "friendly",
+		canInteract: readBoolean(value.canInteract, true),
+		movementSpeed: readNumber(value.movementSpeed, 1, 0.1, 10),
+	};
 }
 
-function migrateNpcMovement(value: unknown, fallbackPosition = { x: 0, y: 0 }): NPCMovementConfig | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+function migrateNpcMovement(
+	value: unknown,
+	fallbackPosition = { x: 0, y: 0 },
+): NPCMovementConfig | undefined {
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  const movementMode =
-    value.movementMode === "patrol" || value.movementMode === "wander" ? value.movementMode : "stationary";
-  const patrolSource = isRecord(value.patrolPath) ? value.patrolPath : {};
-  const points = Array.isArray(patrolSource.points)
-    ? patrolSource.points.flatMap((point) =>
-        isRecord(point)
-          ? [{ x: readNumber(point.x, 0, 0), y: readNumber(point.y, 0, 0) }]
-          : [],
-      )
-    : [];
-  const wanderSource = isRecord(value.wanderZone) ? value.wanderZone : {};
+	const movementMode =
+		value.movementMode === "patrol" || value.movementMode === "wander"
+			? value.movementMode
+			: "stationary";
+	const patrolSource = isRecord(value.patrolPath) ? value.patrolPath : {};
+	const points = Array.isArray(patrolSource.points)
+		? patrolSource.points.flatMap((point) =>
+				isRecord(point)
+					? [{ x: readNumber(point.x, 0, 0), y: readNumber(point.y, 0, 0) }]
+					: [],
+			)
+		: [];
+	const wanderSource = isRecord(value.wanderZone) ? value.wanderZone : {};
 
-  return {
-    movementMode,
-    movementSpeed: readNumber(value.movementSpeed, 1, 0.1, 10),
-    ...(points.length > 0 ? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } } : {}),
-    ...(movementMode === "wander"
-      ? {
-          wanderZone: {
-            x: readNumber(wanderSource.x, fallbackPosition.x, 0),
-            y: readNumber(wanderSource.y, fallbackPosition.y, 0),
-            width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
-            height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
-          },
-        }
-      : {}),
-  };
+	return {
+		movementMode,
+		movementSpeed: readNumber(value.movementSpeed, 1, 0.1, 10),
+		...(points.length > 0
+			? { patrolPath: { points, loop: readBoolean(patrolSource.loop, true) } }
+			: {}),
+		...(movementMode === "wander"
+			? {
+					wanderZone: {
+						x: readNumber(wanderSource.x, fallbackPosition.x, 0),
+						y: readNumber(wanderSource.y, fallbackPosition.y, 0),
+						width: Math.round(readNumber(wanderSource.width, 3, 1, 200)),
+						height: Math.round(readNumber(wanderSource.height, 3, 1, 200)),
+					},
+				}
+			: {}),
+	};
 }
 
 function migrateEnemyBehaviour(value: unknown): EnemyBehaviour | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+	if (!isRecord(value)) {
+		return undefined;
+	}
 
-  return {
-    enabled: readBoolean(value.enabled, false),
-    detectionRadiusTiles: Math.round(readNumber(value.detectionRadiusTiles, 4, 0, 100)),
-    chaseRadiusTiles: Math.round(readNumber(value.chaseRadiusTiles, 7, 0, 100)),
-    returnToOrigin: readBoolean(value.returnToOrigin, true),
-    ...(typeof value.contactDamage === "number"
-      ? { contactDamage: Math.round(readNumber(value.contactDamage, 0, 0, 999)) }
-      : {}),
-  };
+	return {
+		enabled: readBoolean(value.enabled, false),
+		detectionRadiusTiles: Math.round(
+			readNumber(value.detectionRadiusTiles, 4, 0, 100),
+		),
+		chaseRadiusTiles: Math.round(readNumber(value.chaseRadiusTiles, 7, 0, 100)),
+		returnToOrigin: readBoolean(value.returnToOrigin, true),
+		...(typeof value.contactDamage === "number"
+			? {
+					contactDamage: Math.round(readNumber(value.contactDamage, 0, 0, 999)),
+				}
+			: {}),
+	};
 }
 
 function definitionHasNpcDefaults(definition?: NPCDefinition): boolean {
-  return Boolean(
-    definition?.defaultAttributes ||
-      definition?.defaultMovement ||
-      definition?.defaultEnemyBehaviour ||
-      definition?.defaultInteraction,
-  );
+	return Boolean(
+		definition?.defaultAttributes ||
+			definition?.defaultMovement ||
+			definition?.defaultEnemyBehaviour ||
+			definition?.defaultInteraction,
+	);
 }
 
 function migrateNpcInstances(
-  value: unknown,
-  areaId: string,
-  definitionsById: Map<string, NPCDefinition> = new Map(),
+	value: unknown,
+	areaId: string,
+	definitionsById: Map<string, NPCDefinition> = new Map(),
 ): NPCInstance[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const facing =
-      item.facing === "up" || item.facing === "left" || item.facing === "right"
-        ? item.facing
-        : "down";
-    const npcDefinitionId = readString(item.npcDefinitionId, "");
-    const definition = definitionsById.get(npcDefinitionId);
-    const hasDefinitionDefaults = definitionHasNpcDefaults(definition);
-    const x = readNumber(item.x, 0, 0);
-    const y = readNumber(item.y, 0, 0);
-    const explicitAttributesOverride = migrateNpcAttributes(item.attributesOverride);
-    const legacyAttributesOverride = !hasDefinitionDefaults ? migrateNpcAttributes(item.attributes) : undefined;
-    const attributesOverride = explicitAttributesOverride ?? legacyAttributesOverride;
-    const attributes = migrateNpcAttributes(item.attributes) ??
-      attributesOverride ??
-      definition?.defaultAttributes ??
-      {
-        maxHealth: 100,
-        health: 100,
-        faction: "villagers",
-        alignment: "friendly",
-        canInteract: true,
-        movementSpeed: 1,
-      };
-    const explicitMovementOverride = migrateNpcMovement(item.movementOverride, { x, y });
-    const legacyMovementSource = {
-      ...item,
-      movementSpeed: isRecord(item.attributes) ? item.attributes.movementSpeed : item.movementSpeed,
-    };
-    const legacyMovementOverride = !hasDefinitionDefaults ? migrateNpcMovement(legacyMovementSource, { x, y }) : undefined;
-    const movementOverride = explicitMovementOverride ?? legacyMovementOverride;
-    const movement = migrateNpcMovement(legacyMovementSource, { x, y }) ??
-      movementOverride ??
-      definition?.defaultMovement ??
-      { movementMode: "stationary", movementSpeed: 1 };
-    const explicitEnemyOverride = migrateEnemyBehaviour(item.enemyBehaviourOverride);
-    const legacyEnemyOverride = !hasDefinitionDefaults ? migrateEnemyBehaviour(item.enemyBehaviour) : undefined;
-    const enemyBehaviourOverride = explicitEnemyOverride ?? legacyEnemyOverride;
-    const enemyBehaviour = migrateEnemyBehaviour(item.enemyBehaviour) ?? enemyBehaviourOverride ?? definition?.defaultEnemyBehaviour;
-    const interactionOverride = migrateInteraction(item.interactionOverride, "on_interact") ??
-      (!hasDefinitionDefaults ? migrateInteraction(item.interaction, "on_interact") : undefined);
-    const interaction = migrateInteraction(item.interaction, "on_interact") ?? interactionOverride ?? definition?.defaultInteraction;
+		const facing =
+			item.facing === "up" || item.facing === "left" || item.facing === "right"
+				? item.facing
+				: "down";
+		const npcDefinitionId = readString(item.npcDefinitionId, "");
+		const definition = definitionsById.get(npcDefinitionId);
+		const hasDefinitionDefaults = definitionHasNpcDefaults(definition);
+		const x = readNumber(item.x, 0, 0);
+		const y = readNumber(item.y, 0, 0);
+		const explicitAttributesOverride = migrateNpcAttributes(
+			item.attributesOverride,
+		);
+		const legacyAttributesOverride = !hasDefinitionDefaults
+			? migrateNpcAttributes(item.attributes)
+			: undefined;
+		const attributesOverride =
+			explicitAttributesOverride ?? legacyAttributesOverride;
+		const attributes = migrateNpcAttributes(item.attributes) ??
+			attributesOverride ??
+			definition?.defaultAttributes ?? {
+				maxHealth: 100,
+				health: 100,
+				faction: "villagers",
+				alignment: "friendly",
+				canInteract: true,
+				movementSpeed: 1,
+			};
+		const explicitMovementOverride = migrateNpcMovement(item.movementOverride, {
+			x,
+			y,
+		});
+		const legacyMovementSource = {
+			...item,
+			movementSpeed: isRecord(item.attributes)
+				? item.attributes.movementSpeed
+				: item.movementSpeed,
+		};
+		const legacyMovementOverride = !hasDefinitionDefaults
+			? migrateNpcMovement(legacyMovementSource, { x, y })
+			: undefined;
+		const movementOverride = explicitMovementOverride ?? legacyMovementOverride;
+		const movement = migrateNpcMovement(legacyMovementSource, { x, y }) ??
+			movementOverride ??
+			definition?.defaultMovement ?? {
+				movementMode: "stationary",
+				movementSpeed: 1,
+			};
+		const explicitEnemyOverride = migrateEnemyBehaviour(
+			item.enemyBehaviourOverride,
+		);
+		const legacyEnemyOverride = !hasDefinitionDefaults
+			? migrateEnemyBehaviour(item.enemyBehaviour)
+			: undefined;
+		const enemyBehaviourOverride = explicitEnemyOverride ?? legacyEnemyOverride;
+		const enemyBehaviour =
+			migrateEnemyBehaviour(item.enemyBehaviour) ??
+			enemyBehaviourOverride ??
+			definition?.defaultEnemyBehaviour;
+		const interactionOverride =
+			migrateInteraction(item.interactionOverride, "on_interact") ??
+			(!hasDefinitionDefaults
+				? migrateInteraction(item.interaction, "on_interact")
+				: undefined);
+		const interaction =
+			migrateInteraction(item.interaction, "on_interact") ??
+			interactionOverride ??
+			definition?.defaultInteraction;
 
-    return [{
-      id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
-      npcDefinitionId,
-      areaId,
-      x,
-      y,
-      facing,
-      blocksMovement: readBoolean(item.blocksMovement, true),
-      movementMode: movement.movementMode,
-      attributes,
-      ...(movement.movementSpeed ? { movementSpeed: movement.movementSpeed } : {}),
-      ...(movement.patrolPath ? { patrolPath: movement.patrolPath } : {}),
-      ...(movement.wanderZone ? { wanderZone: movement.wanderZone } : {}),
-      ...(enemyBehaviour ? { enemyBehaviour } : {}),
-      ...(interaction ? { interaction } : {}),
-      ...(attributesOverride ? { attributesOverride } : {}),
-      ...(movementOverride ? { movementOverride } : {}),
-      ...(enemyBehaviourOverride ? { enemyBehaviourOverride } : {}),
-      ...(interactionOverride ? { interactionOverride } : {}),
-    }];
-  });
+		return [
+			{
+				id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
+				npcDefinitionId,
+				areaId,
+				x,
+				y,
+				facing,
+				blocksMovement: readBoolean(item.blocksMovement, true),
+				movementMode: movement.movementMode,
+				attributes,
+				...(movement.movementSpeed
+					? { movementSpeed: movement.movementSpeed }
+					: {}),
+				...(movement.patrolPath ? { patrolPath: movement.patrolPath } : {}),
+				...(movement.wanderZone ? { wanderZone: movement.wanderZone } : {}),
+				...(enemyBehaviour ? { enemyBehaviour } : {}),
+				...(interaction ? { interaction } : {}),
+				...(attributesOverride ? { attributesOverride } : {}),
+				...(movementOverride ? { movementOverride } : {}),
+				...(enemyBehaviourOverride ? { enemyBehaviourOverride } : {}),
+				...(interactionOverride ? { interactionOverride } : {}),
+			},
+		];
+	});
 }
 
 function migrateArea(
-  value: unknown,
-  index: number,
-  fallback: GameArea,
-  definitionsById: Map<string, NPCDefinition> = new Map(),
+	value: unknown,
+	index: number,
+	fallback: GameArea,
+	definitionsById: Map<string, NPCDefinition> = new Map(),
 ): GameArea {
-  const source = isRecord(value) ? value : {};
-  const id = readString(source.id, index === 0 ? "area_main" : `area_${index + 1}`);
-  const width = Math.round(readNumber(source.width, fallback.width, 1, 200));
-  const height = Math.round(readNumber(source.height, fallback.height, 1, 200));
-  const terrainTiles = migrateTiles(source.terrainTiles ?? source.tiles, fallback.terrainTiles);
+	const source = isRecord(value) ? value : {};
+	const id = readString(
+		source.id,
+		index === 0 ? "area_main" : `area_${index + 1}`,
+	);
+	const width = Math.round(readNumber(source.width, fallback.width, 1, 200));
+	const height = Math.round(readNumber(source.height, fallback.height, 1, 200));
+	const terrainTiles = migrateTiles(
+		source.terrainTiles ?? source.tiles,
+		fallback.terrainTiles,
+	);
 
-  return {
-    id,
-    name: readString(source.name, index === 0 ? "Main Area" : `Area ${index + 1}`),
-    kind: readAreaKind(source.kind, fallback.kind),
-    width,
-    height,
-    tileSize: Math.round(readNumber(source.tileSize, fallback.tileSize, 8, 128)),
-    terrainTiles,
-    overlayTiles: migrateOverlayTiles(source.overlayTiles),
-    structures: migrateStructures(source.structures),
-    objects: migrateObjectInstances(source.objects, id),
-    pickups: migratePickups(source.pickups, id),
-    npcs: migrateNpcInstances(source.npcs, id, definitionsById),
-    eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
-    theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
-  };
+	return {
+		id,
+		name: readString(
+			source.name,
+			index === 0 ? "Main Area" : `Area ${index + 1}`,
+		),
+		kind: readAreaKind(source.kind, fallback.kind),
+		width,
+		height,
+		tileSize: Math.round(
+			readNumber(source.tileSize, fallback.tileSize, 8, 128),
+		),
+		terrainTiles,
+		overlayTiles: migrateOverlayTiles(source.overlayTiles),
+		structures: migrateStructures(source.structures),
+		objects: migrateObjectInstances(source.objects, id),
+		pickups: migratePickups(source.pickups, id),
+		npcs: migrateNpcInstances(source.npcs, id, definitionsById),
+		eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
+		theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
+	};
 }
 
-function migrateAreas(source: UnknownRecord, npcDefinitions: NPCDefinition[] = []): GameArea[] {
-  const definitionsById = new Map(npcDefinitions.map((definition) => [definition.id, definition]));
+function migrateAreas(
+	source: UnknownRecord,
+	npcDefinitions: NPCDefinition[] = [],
+): GameArea[] {
+	const definitionsById = new Map(
+		npcDefinitions.map((definition) => [definition.id, definition]),
+	);
 
-  if (Array.isArray(source.areas) && source.areas.length > 0) {
-    const areas = source.areas.flatMap((area, index) => {
-      const fallback = defaultProject.areas[index] ?? defaultProject.areas[0];
-      return fallback ? [migrateArea(area, index, fallback, definitionsById)] : [];
-    });
+	if (Array.isArray(source.areas) && source.areas.length > 0) {
+		const areas = source.areas.flatMap((area, index) => {
+			const fallback = defaultProject.areas[index] ?? defaultProject.areas[0];
+			return fallback
+				? [migrateArea(area, index, fallback, definitionsById)]
+				: [];
+		});
 
-    return areas.length > 0 ? areas : cloneProject(defaultProject).areas;
-  }
+		return areas.length > 0 ? areas : cloneProject(defaultProject).areas;
+	}
 
-  const legacyMap = isRecord(source.map) ? source.map : {};
-  return [migrateArea(legacyMap, 0, defaultProject.areas[0], definitionsById)];
+	const legacyMap = isRecord(source.map) ? source.map : {};
+	return [migrateArea(legacyMap, 0, defaultProject.areas[0], definitionsById)];
 }
 
 function migrateTileStyles(value: unknown): TileStyleConfig {
-  const source = isRecord(value) ? value : {};
-  const styles: TileStyleConfig = {};
+	const source = isRecord(value) ? value : {};
+	const styles: TileStyleConfig = {};
 
-  tilePresets.forEach((tile) => {
-    const customStyleSource = source[tile.id];
-    const customStyle = isRecord(customStyleSource) ? customStyleSource : {};
-    styles[tile.id] = {
-      color: readString(customStyle.color, defaultTileStyles[tile.id]?.color ?? tile.color),
-      label: readString(customStyle.label, defaultTileStyles[tile.id]?.label ?? tile.label),
-    };
-  });
+	tilePresets.forEach((tile) => {
+		const customStyleSource = source[tile.id];
+		const customStyle = isRecord(customStyleSource) ? customStyleSource : {};
+		styles[tile.id] = {
+			color: readString(
+				customStyle.color,
+				defaultTileStyles[tile.id]?.color ?? tile.color,
+			),
+			label: readString(
+				customStyle.label,
+				defaultTileStyles[tile.id]?.label ?? tile.label,
+			),
+		};
+	});
 
-  return styles;
+	return styles;
 }
 
 function migratePixelAssets(value: unknown): Record<string, PixelAsset> {
-  const defaults = createDefaultPixelAssets();
-  const source = isRecord(value) ? value : {};
-  const assets: Record<string, PixelAsset> = { ...defaults };
+	const defaults = createDefaultPixelAssets();
+	const source = isRecord(value) ? value : {};
+	const assets: Record<string, PixelAsset> = { ...defaults };
 
-  Object.entries(source).forEach(([id, item]) => {
-    if (!isRecord(item) || !Array.isArray(item.pixels)) {
-      return;
-    }
+	Object.entries(source).forEach(([id, item]) => {
+		if (!isRecord(item) || !Array.isArray(item.pixels)) {
+			return;
+		}
 
-    const kind =
-      item.kind === "terrain" ||
-      item.kind === "overlay" ||
-      item.kind === "structure" ||
-      item.kind === "character" ||
-      item.kind === "portrait"
-        ? item.kind
-        : "terrain";
-    const width = Math.round(readNumber(item.width, 16, 1, 128));
-    const height = Math.round(readNumber(item.height, 16, 1, 128));
-    const pixels = item.pixels.slice(0, height).map((row) => {
-      if (!Array.isArray(row)) {
-        return Array.from({ length: width }, () => "transparent");
-      }
+		const kind =
+			item.kind === "terrain" ||
+			item.kind === "overlay" ||
+			item.kind === "structure" ||
+			item.kind === "character" ||
+			item.kind === "portrait"
+				? item.kind
+				: "terrain";
+		const width = Math.round(readNumber(item.width, 16, 1, 128));
+		const height = Math.round(readNumber(item.height, 16, 1, 128));
+		const pixels = item.pixels.slice(0, height).map((row) => {
+			if (!Array.isArray(row)) {
+				return Array.from({ length: width }, () => "transparent");
+			}
 
-      return Array.from({ length: width }, (_, index) => readString(row[index], "transparent"));
-    });
+			return Array.from({ length: width }, (_, index) =>
+				readString(row[index], "transparent"),
+			);
+		});
 
-    while (pixels.length < height) {
-      pixels.push(Array.from({ length: width }, () => "transparent"));
-    }
+		while (pixels.length < height) {
+			pixels.push(Array.from({ length: width }, () => "transparent"));
+		}
 
-    assets[id] = {
-      id,
-      name: readString(item.name, defaults[id]?.name ?? id),
-      kind,
-      width,
-      height,
-      pixels,
-    };
-  });
+		assets[id] = {
+			id,
+			name: readString(item.name, defaults[id]?.name ?? id),
+			kind,
+			width,
+			height,
+			pixels,
+		};
+	});
 
-  return assets;
+	return assets;
 }
 
 function migrateCamera(value: unknown): CameraConfig {
-  const source = isRecord(value) ? value : {};
+	const source = isRecord(value) ? value : {};
 
-  return {
-    viewportWidthTiles: Math.round(
-      readNumber(source.viewportWidthTiles, defaultCameraConfig.viewportWidthTiles, 1, 100),
-    ),
-    viewportHeightTiles: Math.round(
-      readNumber(source.viewportHeightTiles, defaultCameraConfig.viewportHeightTiles, 1, 100),
-    ),
-    followPlayer: readBoolean(source.followPlayer, defaultCameraConfig.followPlayer),
-    followSmoothing: readNumber(source.followSmoothing, defaultCameraConfig.followSmoothing, 0, 1),
-    deadzoneWidthTiles: Math.round(
-      readNumber(source.deadzoneWidthTiles, defaultCameraConfig.deadzoneWidthTiles ?? 0, 0, 100),
-    ),
-    deadzoneHeightTiles: Math.round(
-      readNumber(source.deadzoneHeightTiles, defaultCameraConfig.deadzoneHeightTiles ?? 0, 0, 100),
-    ),
-  };
+	return {
+		viewportWidthTiles: Math.round(
+			readNumber(
+				source.viewportWidthTiles,
+				defaultCameraConfig.viewportWidthTiles,
+				1,
+				100,
+			),
+		),
+		viewportHeightTiles: Math.round(
+			readNumber(
+				source.viewportHeightTiles,
+				defaultCameraConfig.viewportHeightTiles,
+				1,
+				100,
+			),
+		),
+		followPlayer: readBoolean(
+			source.followPlayer,
+			defaultCameraConfig.followPlayer,
+		),
+		followSmoothing: readNumber(
+			source.followSmoothing,
+			defaultCameraConfig.followSmoothing,
+			0,
+			1,
+		),
+		deadzoneWidthTiles: Math.round(
+			readNumber(
+				source.deadzoneWidthTiles,
+				defaultCameraConfig.deadzoneWidthTiles ?? 0,
+				0,
+				100,
+			),
+		),
+		deadzoneHeightTiles: Math.round(
+			readNumber(
+				source.deadzoneHeightTiles,
+				defaultCameraConfig.deadzoneHeightTiles ?? 0,
+				0,
+				100,
+			),
+		),
+	};
 }
 
 function migratePlayer(value: unknown): PlayerConfig {
-  const source = isRecord(value) ? value : {};
-  const fallback = defaultProject.player;
-  const combatSource = isRecord(source.combat) ? source.combat : {};
-  const fallbackCombat = fallback.combat ?? {
-    maxHealth: 100,
-    health: 100,
-    attackDamage: 25,
-    attackRangeTiles: 1,
-    attackCooldownMs: 500,
-  };
-  const maxHealth = readNumber(combatSource.maxHealth, fallbackCombat.maxHealth, 1, 9999);
+	const source = isRecord(value) ? value : {};
+	const fallback = defaultProject.player;
+	const combatSource = isRecord(source.combat) ? source.combat : {};
+	const fallbackCombat = fallback.combat ?? {
+		maxHealth: 100,
+		health: 100,
+		attackDamage: 25,
+		attackRangeTiles: 1,
+		attackCooldownMs: 500,
+	};
+	const maxHealth = readNumber(
+		combatSource.maxHealth,
+		fallbackCombat.maxHealth,
+		1,
+		9999,
+	);
 
-  return {
-    name: readString(source.name, fallback.name),
-    mapAvatarId: readString(source.mapAvatarId ?? source.spriteId, fallback.mapAvatarId),
-    cutscenePortraitId: readString(
-      source.cutscenePortraitId ?? source.portraitId,
-      fallback.cutscenePortraitId,
-    ),
-    speed: readNumber(source.speed, fallback.speed, 1, 20),
-    health: readNumber(source.health, fallback.health, 1, 999),
-    combat: {
-      maxHealth,
-      health: readNumber(combatSource.health, readNumber(source.health, fallbackCombat.health, 0, maxHealth), 0, maxHealth),
-      attackDamage: readNumber(combatSource.attackDamage, fallbackCombat.attackDamage, 0, 9999),
-      attackRangeTiles: Math.round(readNumber(combatSource.attackRangeTiles, fallbackCombat.attackRangeTiles, 1, 20)),
-      attackCooldownMs: Math.round(readNumber(combatSource.attackCooldownMs, fallbackCombat.attackCooldownMs, 0, 60000)),
-    },
-    canWalkOn: readStringArray(source.canWalkOn, fallback.canWalkOn),
-  };
+	return {
+		name: readString(source.name, fallback.name),
+		mapAvatarId: readString(
+			source.mapAvatarId ?? source.spriteId,
+			fallback.mapAvatarId,
+		),
+		cutscenePortraitId: readString(
+			source.cutscenePortraitId ?? source.portraitId,
+			fallback.cutscenePortraitId,
+		),
+		speed: readNumber(source.speed, fallback.speed, 1, 20),
+		health: readNumber(source.health, fallback.health, 1, 999),
+		combat: {
+			maxHealth,
+			health: readNumber(
+				combatSource.health,
+				readNumber(source.health, fallbackCombat.health, 0, maxHealth),
+				0,
+				maxHealth,
+			),
+			attackDamage: readNumber(
+				combatSource.attackDamage,
+				fallbackCombat.attackDamage,
+				0,
+				9999,
+			),
+			attackRangeTiles: Math.round(
+				readNumber(
+					combatSource.attackRangeTiles,
+					fallbackCombat.attackRangeTiles,
+					1,
+					20,
+				),
+			),
+			attackCooldownMs: Math.round(
+				readNumber(
+					combatSource.attackCooldownMs,
+					fallbackCombat.attackCooldownMs,
+					0,
+					60000,
+				),
+			),
+		},
+		canWalkOn: readStringArray(source.canWalkOn, fallback.canWalkOn),
+	};
 }
 
-function migrateAction(value: unknown, fallback: ProgressionAction, defaultAreaId: string): ProgressionAction {
-  if (!isRecord(value)) {
-    return fallback;
-  }
+function migrateAction(
+	value: unknown,
+	fallback: ProgressionAction,
+	defaultAreaId: string,
+): ProgressionAction {
+	if (!isRecord(value)) {
+		return fallback;
+	}
 
-  if (value.type === "play_cutscene") {
-    return {
-      type: "play_cutscene",
-      cutsceneId: readString(value.cutsceneId, ""),
-    };
-  }
+	if (value.type === "play_cutscene") {
+		return {
+			type: "play_cutscene",
+			cutsceneId: readString(value.cutsceneId, ""),
+		};
+	}
 
-  if (value.type === "spawn_player" || value.type === "teleport_player") {
-    return {
-      type: value.type,
-      areaId: readString(value.areaId, defaultAreaId),
-      eventBlockId: readString(value.eventBlockId, ""),
-    };
-  }
+	if (value.type === "spawn_player" || value.type === "teleport_player") {
+		return {
+			type: value.type,
+			areaId: readString(value.areaId, defaultAreaId),
+			eventBlockId: readString(value.eventBlockId, ""),
+		};
+	}
 
-  if (value.type === "wait_for_trigger") {
-    return {
-      type: "wait_for_trigger",
-      areaId: readString(value.areaId, defaultAreaId),
-      eventBlockId: readString(value.eventBlockId, ""),
-    };
-  }
+	if (value.type === "wait_for_trigger") {
+		return {
+			type: "wait_for_trigger",
+			areaId: readString(value.areaId, defaultAreaId),
+			eventBlockId: readString(value.eventBlockId, ""),
+		};
+	}
 
-  return { type: "end_game" };
+	return { type: "end_game" };
 }
 
 function migrateProgressionStep(
-  value: unknown,
-  index: number,
-  defaultAreaId: string,
+	value: unknown,
+	index: number,
+	defaultAreaId: string,
 ): ProgressionStep | null {
-  if (!isRecord(value)) {
-    return null;
-  }
+	if (!isRecord(value)) {
+		return null;
+	}
 
-  const id = readString(value.id, `step_${index + 1}`);
-  const label = typeof value.label === "string" && value.label.trim() ? value.label : undefined;
+	const id = readString(value.id, `step_${index + 1}`);
+	const label =
+		typeof value.label === "string" && value.label.trim()
+			? value.label
+			: undefined;
 
-  if (isRecord(value.action)) {
-    return {
-      id,
-      label,
-      action: migrateAction(value.action, { type: "end_game" }, defaultAreaId),
-    };
-  }
+	if (isRecord(value.action)) {
+		return {
+			id,
+			label,
+			action: migrateAction(value.action, { type: "end_game" }, defaultAreaId),
+		};
+	}
 
-  return {
-    id,
-    label,
-    action: migrateAction(value, { type: "end_game" }, defaultAreaId),
-  };
+	return {
+		id,
+		label,
+		action: migrateAction(value, { type: "end_game" }, defaultAreaId),
+	};
 }
 
-function migrateProgression(value: unknown, defaultAreaId: string): ProgressionStep[] {
-  const source = Array.isArray(value) ? value : defaultProject.progression;
-  const steps = source.flatMap((step, index) => {
-    const migrated = migrateProgressionStep(step, index, defaultAreaId);
-    return migrated ? [migrated] : [];
-  });
+function migrateProgression(
+	value: unknown,
+	defaultAreaId: string,
+): ProgressionStep[] {
+	const source = Array.isArray(value) ? value : defaultProject.progression;
+	const steps = source.flatMap((step, index) => {
+		const migrated = migrateProgressionStep(step, index, defaultAreaId);
+		return migrated ? [migrated] : [];
+	});
 
-  return steps.length > 0 ? steps : cloneProject(defaultProject).progression;
+	return Array.isArray(value)
+		? steps
+		: cloneProject(defaultProject).progression;
 }
 
 function migrateGameState(value: unknown): GameStateConfig {
-  const source = isRecord(value) ? value : {};
-  const fallback = defaultProject.gameState;
-  const flagSource = isRecord(source.flags) ? source.flags : fallback.flags;
-  const variableSource = isRecord(source.variables) ? source.variables : fallback.variables;
-  const flags: Record<string, boolean> = {};
-  const variables: Record<string, GameStateValue> = {};
-  const inventory: Record<string, number> = {};
+	const source = isRecord(value) ? value : {};
+	const fallback = defaultProject.gameState;
+	const flagSource = isRecord(source.flags) ? source.flags : fallback.flags;
+	const variableSource = isRecord(source.variables)
+		? source.variables
+		: fallback.variables;
+	const flags: Record<string, boolean> = {};
+	const variables: Record<string, GameStateValue> = {};
+	const inventory: Record<string, number> = {};
 
-  Object.entries(flagSource).forEach(([name, flagValue]) => {
-    if (name) {
-      flags[name] = readBoolean(flagValue, false);
-    }
-  });
+	Object.entries(flagSource).forEach(([name, flagValue]) => {
+		if (name) {
+			flags[name] = readBoolean(flagValue, false);
+		}
+	});
 
-  Object.entries(variableSource).forEach(([name, variableValue]) => {
-    if (name && (typeof variableValue === "number" || typeof variableValue === "string")) {
-      variables[name] = variableValue;
-    }
-  });
+	Object.entries(variableSource).forEach(([name, variableValue]) => {
+		if (
+			name &&
+			(typeof variableValue === "number" || typeof variableValue === "string")
+		) {
+			variables[name] = variableValue;
+		}
+	});
 
-  if (isRecord(source.inventory)) {
-    Object.entries(source.inventory).forEach(([itemId, quantity]) => {
-      if (itemId && typeof quantity === "number" && Number.isFinite(quantity)) {
-        inventory[itemId] = Math.max(0, Math.round(quantity));
-      }
-    });
-  }
+	if (isRecord(source.inventory)) {
+		Object.entries(source.inventory).forEach(([itemId, quantity]) => {
+			if (itemId && typeof quantity === "number" && Number.isFinite(quantity)) {
+				inventory[itemId] = Math.max(0, Math.round(quantity));
+			}
+		});
+	}
 
-  return { flags, variables, inventory };
+	return { flags, variables, inventory };
 }
 
 function migrateItems(value: unknown): ItemDefinition[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item, index) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item, index) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const category =
-      item.category === "key" ||
-      item.category === "currency" ||
-      item.category === "consumable" ||
-      item.category === "quest" ||
-      item.category === "misc"
-        ? item.category
-        : "misc";
-    const description = readString(item.description, "");
-    const iconId = readString(item.iconId, "");
-    const stackable = readBoolean(item.stackable, false);
-    const maxStack =
-      stackable && typeof item.maxStack === "number" && Number.isFinite(item.maxStack)
-        ? Math.round(readNumber(item.maxStack, 1, 1, 9999))
-        : undefined;
+		const category =
+			item.category === "key" ||
+			item.category === "currency" ||
+			item.category === "consumable" ||
+			item.category === "quest" ||
+			item.category === "misc"
+				? item.category
+				: "misc";
+		const description = readString(item.description, "");
+		const iconId = readString(item.iconId, "");
+		const stackable = readBoolean(item.stackable, false);
+		const maxStack =
+			stackable &&
+			typeof item.maxStack === "number" &&
+			Number.isFinite(item.maxStack)
+				? Math.round(readNumber(item.maxStack, 1, 1, 9999))
+				: undefined;
 
-    return [
-      {
-        id: readString(item.id, `item_${index + 1}`),
-        name: readString(item.name, `Item ${index + 1}`),
-        ...(description ? { description } : {}),
-        category,
-        ...(iconId ? { iconId } : {}),
-        stackable,
-        ...(maxStack ? { maxStack } : {}),
-      },
-    ];
-  });
+		return [
+			{
+				id: readString(item.id, `item_${index + 1}`),
+				name: readString(item.name, `Item ${index + 1}`),
+				...(description ? { description } : {}),
+				category,
+				...(iconId ? { iconId } : {}),
+				stackable,
+				...(maxStack ? { maxStack } : {}),
+			},
+		];
+	});
 }
 
 function migrateShops(value: unknown): ShopDefinition[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((shop, index) => {
-    if (!isRecord(shop)) {
-      return [];
-    }
+	return value.flatMap((shop, index) => {
+		if (!isRecord(shop)) {
+			return [];
+		}
 
-    const entries = Array.isArray(shop.entries)
-      ? shop.entries.flatMap((entry, entryIndex) => {
-          if (!isRecord(entry)) {
-            return [];
-          }
+		const entries = Array.isArray(shop.entries)
+			? shop.entries.flatMap((entry, entryIndex) => {
+					if (!isRecord(entry)) {
+						return [];
+					}
 
-          const stock = typeof entry.stock === "number" && Number.isFinite(entry.stock)
-            ? Math.max(0, Math.round(entry.stock))
-            : undefined;
+					const stock =
+						typeof entry.stock === "number" && Number.isFinite(entry.stock)
+							? Math.max(0, Math.round(entry.stock))
+							: undefined;
 
-          return [{
-            id: readString(entry.id, `shop_entry_${entryIndex + 1}`),
-            itemId: readString(entry.itemId, ""),
-            buyPrice: Math.round(readNumber(entry.buyPrice, 1, 0, 999999)),
-            ...(stock !== undefined ? { stock } : {}),
-          }];
-        })
-      : [];
+					return [
+						{
+							id: readString(entry.id, `shop_entry_${entryIndex + 1}`),
+							itemId: readString(entry.itemId, ""),
+							buyPrice: Math.round(readNumber(entry.buyPrice, 1, 0, 999999)),
+							...(stock !== undefined ? { stock } : {}),
+						},
+					];
+				})
+			: [];
 
-    return [{
-      id: readString(shop.id, `shop_${index + 1}`),
-      name: readString(shop.name, `Shop ${index + 1}`),
-      currencyItemId: readString(shop.currencyItemId, "gold_coin"),
-      entries,
-    }];
-  });
+		return [
+			{
+				id: readString(shop.id, `shop_${index + 1}`),
+				name: readString(shop.name, `Shop ${index + 1}`),
+				currencyItemId: readString(shop.currencyItemId, "gold_coin"),
+				entries,
+			},
+		];
+	});
 }
 
 function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item, index) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item, index) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const category =
-      item.category === "prop" ||
-      item.category === "container" ||
-      item.category === "vehicle" ||
-      item.category === "door" ||
-      item.category === "switch" ||
-      item.category === "sign" ||
-      item.category === "misc"
-        ? item.category
-        : "misc";
-    const description = readString(item.description, "");
-    const iconId = readString(item.iconId, "");
+		const category =
+			item.category === "prop" ||
+			item.category === "container" ||
+			item.category === "vehicle" ||
+			item.category === "door" ||
+			item.category === "switch" ||
+			item.category === "sign" ||
+			item.category === "misc"
+				? item.category
+				: "misc";
+		const description = readString(item.description, "");
+		const iconId = readString(item.iconId, "");
 
-    return [
-      {
-        id: readString(item.id, `object_${index + 1}`),
-        name: readString(item.name, `Object ${index + 1}`),
-        ...(description ? { description } : {}),
-        category,
-        ...(iconId ? { iconId } : {}),
-        widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
-        heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
-        blocksMovement: readBoolean(item.blocksMovement, false),
-        defaultInteraction: migrateInteraction(item.defaultInteraction, "on_interact"),
-        defaultBehaviour: migrateObjectBehaviour(item.defaultBehaviour),
-      },
-    ];
-  });
+		return [
+			{
+				id: readString(item.id, `object_${index + 1}`),
+				name: readString(item.name, `Object ${index + 1}`),
+				...(description ? { description } : {}),
+				category,
+				...(iconId ? { iconId } : {}),
+				widthTiles: Math.round(readNumber(item.widthTiles, 1, 1, 20)),
+				heightTiles: Math.round(readNumber(item.heightTiles, 1, 1, 20)),
+				blocksMovement: readBoolean(item.blocksMovement, false),
+				defaultInteraction: migrateInteraction(
+					item.defaultInteraction,
+					"on_interact",
+				),
+				defaultBehaviour: migrateObjectBehaviour(item.defaultBehaviour),
+			},
+		];
+	});
 }
 
 function migrateNpcDefinitions(value: unknown): NPCDefinition[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((item, index) => {
-    if (!isRecord(item)) {
-      return [];
-    }
+	return value.flatMap((item, index) => {
+		if (!isRecord(item)) {
+			return [];
+		}
 
-    const description = readString(item.description, "");
-    const portraitId = readString(item.portraitId, "");
-    const defaultAttributes = migrateNpcAttributes(item.defaultAttributes);
-    const defaultMovement = migrateNpcMovement(item.defaultMovement);
-    const defaultEnemyBehaviour = migrateEnemyBehaviour(item.defaultEnemyBehaviour);
-    const defaultInteraction = migrateInteraction(item.defaultInteraction, "on_interact");
+		const description = readString(item.description, "");
+		const portraitId = readString(item.portraitId, "");
+		const defaultAttributes = migrateNpcAttributes(item.defaultAttributes);
+		const defaultMovement = migrateNpcMovement(item.defaultMovement);
+		const defaultEnemyBehaviour = migrateEnemyBehaviour(
+			item.defaultEnemyBehaviour,
+		);
+		const defaultInteraction = migrateInteraction(
+			item.defaultInteraction,
+			"on_interact",
+		);
 
-    return [{
-      id: readString(item.id, `npc_${index + 1}`),
-      name: readString(item.name, `NPC ${index + 1}`),
-      ...(description ? { description } : {}),
-      mapAvatarId: readString(item.mapAvatarId, "ranger"),
-      ...(portraitId ? { portraitId } : {}),
-      ...(defaultAttributes ? { defaultAttributes } : {}),
-      ...(defaultMovement ? { defaultMovement } : {}),
-      ...(defaultEnemyBehaviour ? { defaultEnemyBehaviour } : {}),
-      ...(defaultInteraction ? { defaultInteraction } : {}),
-    }];
-  });
+		return [
+			{
+				id: readString(item.id, `npc_${index + 1}`),
+				name: readString(item.name, `NPC ${index + 1}`),
+				...(description ? { description } : {}),
+				mapAvatarId: readString(item.mapAvatarId, "ranger"),
+				...(portraitId ? { portraitId } : {}),
+				...(defaultAttributes ? { defaultAttributes } : {}),
+				...(defaultMovement ? { defaultMovement } : {}),
+				...(defaultEnemyBehaviour ? { defaultEnemyBehaviour } : {}),
+				...(defaultInteraction ? { defaultInteraction } : {}),
+			},
+		];
+	});
 }
 
 function migrateObjectiveCondition(value: unknown): ObjectiveCondition | null {
-  if (!isRecord(value)) {
-    return null;
-  }
+	if (!isRecord(value)) {
+		return null;
+	}
 
-  if (value.type === "flag") {
-    return {
-      type: "flag",
-      flag: readString(value.flag, ""),
-      value: readBoolean(value.value, true),
-    };
-  }
+	if (value.type === "flag") {
+		return {
+			type: "flag",
+			flag: readString(value.flag, ""),
+			value: readBoolean(value.value, true),
+		};
+	}
 
-  if (value.type === "has_item") {
-    return {
-      type: "has_item",
-      itemId: readString(value.itemId, ""),
-      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
-    };
-  }
+	if (value.type === "has_item") {
+		return {
+			type: "has_item",
+			itemId: readString(value.itemId, ""),
+			quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+		};
+	}
 
-  if (value.type === "variable_compare") {
-    return {
-      type: "variable_compare",
-      variable: readString(value.variable, ""),
-      operator: readComparisonOperator(value.operator),
-      value: readStateValue(value.value, 0),
-    };
-  }
+	if (value.type === "variable_compare") {
+		return {
+			type: "variable_compare",
+			variable: readString(value.variable, ""),
+			operator: readComparisonOperator(value.operator),
+			value: readStateValue(value.value, 0),
+		};
+	}
 
-  return value.type === "enter_area"
-    ? { type: "enter_area", areaId: readString(value.areaId, "") }
-    : null;
+	return value.type === "enter_area"
+		? { type: "enter_area", areaId: readString(value.areaId, "") }
+		: null;
 }
 
 function migrateObjectives(value: unknown): Objective[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((objective, index) => {
-    if (!isRecord(objective)) {
-      return [];
-    }
+	return value.flatMap((objective, index) => {
+		if (!isRecord(objective)) {
+			return [];
+		}
 
-    const condition = migrateObjectiveCondition(objective.condition);
-    return condition
-      ? [
-          {
-            id: readString(objective.id, `objective_${index + 1}`),
-            description: readString(objective.description, `Objective ${index + 1}`),
-            condition,
-          },
-        ]
-      : [];
-  });
+		const condition = migrateObjectiveCondition(objective.condition);
+		return condition
+			? [
+					{
+						id: readString(objective.id, `objective_${index + 1}`),
+						description: readString(
+							objective.description,
+							`Objective ${index + 1}`,
+						),
+						condition,
+					},
+				]
+			: [];
+	});
 }
 
 function migrateQuestRewards(value: unknown): QuestReward[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((reward): QuestReward[] => {
-    if (!isRecord(reward)) {
-      return [];
-    }
+	return value.flatMap((reward): QuestReward[] => {
+		if (!isRecord(reward)) {
+			return [];
+		}
 
-    if (reward.type === "item") {
-      return [{
-        type: "item" as const,
-        itemId: readString(reward.itemId, ""),
-        quantity: Math.round(readNumber(reward.quantity, 1, 1, 9999)),
-      }];
-    }
+		if (reward.type === "item") {
+			return [
+				{
+					type: "item" as const,
+					itemId: readString(reward.itemId, ""),
+					quantity: Math.round(readNumber(reward.quantity, 1, 1, 9999)),
+				},
+			];
+		}
 
-    if (reward.type === "flag") {
-      return [{
-        type: "flag" as const,
-        flag: readString(reward.flag, ""),
-        value: readBoolean(reward.value, true),
-      }];
-    }
+		if (reward.type === "flag") {
+			return [
+				{
+					type: "flag" as const,
+					flag: readString(reward.flag, ""),
+					value: readBoolean(reward.value, true),
+				},
+			];
+		}
 
-    return reward.type === "variable"
-      ? [{
-          type: "variable" as const,
-          variable: readString(reward.variable, ""),
-          amount: readNumber(reward.amount, 0),
-        }]
-      : [];
-  });
+		return reward.type === "variable"
+			? [
+					{
+						type: "variable" as const,
+						variable: readString(reward.variable, ""),
+						amount: readNumber(reward.amount, 0),
+					},
+				]
+			: [];
+	});
+}
+
+function questRewardsToActions(rewards: QuestReward[]): GameAction[] {
+	return rewards.map((reward) => {
+		if (reward.type === "item") {
+			return {
+				type: "give_item" as const,
+				itemId: reward.itemId,
+				quantity: reward.quantity,
+			};
+		}
+		if (reward.type === "flag") {
+			return {
+				type: "set_flag" as const,
+				flag: reward.flag,
+				value: reward.value,
+			};
+		}
+		return {
+			type: "change_variable" as const,
+			variable: reward.variable,
+			amount: reward.amount,
+		};
+	});
 }
 
 function migrateQuests(value: unknown): Quest[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((quest, index) => {
-    if (!isRecord(quest)) {
-      return [];
-    }
+	return value.flatMap((quest, index) => {
+		if (!isRecord(quest)) {
+			return [];
+		}
 
-    const status =
-      quest.status === "active" ||
-      quest.status === "completed" ||
-      quest.status === "failed"
-        ? quest.status
-        : "inactive";
-    const description = readString(quest.description, "");
+		const status =
+			quest.status === "active" ||
+			quest.status === "completed" ||
+			quest.status === "failed"
+				? quest.status
+				: "inactive";
+		const description = readString(quest.description, "");
+		const legacyRewards = migrateQuestRewards(quest.rewards);
+		const completionActions = Array.isArray(quest.completionActions)
+			? migrateActions(quest.completionActions)
+			: questRewardsToActions(legacyRewards);
 
-    return [{
-      id: readString(quest.id, `quest_${index + 1}`),
-      name: readString(quest.name, `Quest ${index + 1}`),
-      ...(description ? { description } : {}),
-      status,
-      objectives: migrateObjectives(quest.objectives),
-      rewards: migrateQuestRewards(quest.rewards),
-    }];
-  });
+		return [
+			{
+				id: readString(quest.id, `quest_${index + 1}`),
+				name: readString(quest.name, `Quest ${index + 1}`),
+				...(description ? { description } : {}),
+				status,
+				objectives: migrateObjectives(quest.objectives),
+				completionActions,
+				rewards: Array.isArray(quest.completionActions) ? legacyRewards : [],
+			},
+		];
+	});
 }
 
 function readComparisonOperator(value: unknown): VariableComparisonOperator {
-  return value === "==" ||
-    value === "!=" ||
-    value === ">" ||
-    value === "<" ||
-    value === ">=" ||
-    value === "<="
-    ? value
-    : "==";
+	return value === "==" ||
+		value === "!=" ||
+		value === ">" ||
+		value === "<" ||
+		value === ">=" ||
+		value === "<="
+		? value
+		: "==";
 }
 
-function readStateValue(value: unknown, fallback: GameStateValue): GameStateValue {
-  return typeof value === "number" || typeof value === "string" ? value : fallback;
+function readStateValue(
+	value: unknown,
+	fallback: GameStateValue,
+): GameStateValue {
+	return typeof value === "number" || typeof value === "string"
+		? value
+		: fallback;
 }
 
 function migrateRuleTrigger(value: unknown): RuleTrigger {
-  if (!isRecord(value)) {
-    return { type: "on_game_start" };
-  }
+	if (!isRecord(value)) {
+		return { type: "on_game_start" };
+	}
 
-  if (value.type === "on_interact" || value.type === "on_touch") {
-    return { type: value.type, targetId: readString(value.targetId, "") };
-  }
+	if (value.type === "on_interact" || value.type === "on_touch") {
+		return { type: value.type, targetId: readString(value.targetId, "") };
+	}
 
-  if (value.type === "on_area_enter") {
-    return { type: "on_area_enter", areaId: readString(value.areaId, "") };
-  }
+	if (value.type === "on_area_enter") {
+		return { type: "on_area_enter", areaId: readString(value.areaId, "") };
+	}
 
-  if (value.type === "on_cutscene_end") {
-    return { type: "on_cutscene_end", cutsceneId: readString(value.cutsceneId, "") };
-  }
+	if (value.type === "on_cutscene_end") {
+		return {
+			type: "on_cutscene_end",
+			cutsceneId: readString(value.cutsceneId, ""),
+		};
+	}
 
-  return { type: "on_game_start" };
+	return { type: "on_game_start" };
 }
 
-function migrateSingleCondition(value: unknown, fallbackId: string): SingleCondition | null {
-  if (!isRecord(value)) {
-    return null;
-  }
+function migrateSingleCondition(
+	value: unknown,
+	fallbackId: string,
+): SingleCondition | null {
+	if (!isRecord(value)) {
+		return null;
+	}
 
-  if (value.type === "flag_is") {
-    return {
-      id: readString(value.id, fallbackId),
-      type: "flag_is",
-      flag: readString(value.flag, ""),
-      value: readBoolean(value.value, true),
-    };
-  }
+	if (value.type === "flag_is") {
+		return {
+			id: readString(value.id, fallbackId),
+			type: "flag_is",
+			flag: readString(value.flag, ""),
+			value: readBoolean(value.value, true),
+		};
+	}
 
-  if (value.type === "variable_compare") {
-    return {
-      id: readString(value.id, fallbackId),
-      type: "variable_compare",
-      variable: readString(value.variable, ""),
-      operator: readComparisonOperator(value.operator),
-      value: readStateValue(value.value, 0),
-    };
-  }
+	if (value.type === "variable_compare") {
+		return {
+			id: readString(value.id, fallbackId),
+			type: "variable_compare",
+			variable: readString(value.variable, ""),
+			operator: readComparisonOperator(value.operator),
+			value: readStateValue(value.value, 0),
+		};
+	}
 
-  if (value.type === "has_item" || value.type === "not_has_item") {
-    return {
-      id: readString(value.id, fallbackId),
-      type: value.type,
-      itemId: readString(value.itemId, ""),
-      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
-    };
-  }
+	if (value.type === "has_item" || value.type === "not_has_item") {
+		return {
+			id: readString(value.id, fallbackId),
+			type: value.type,
+			itemId: readString(value.itemId, ""),
+			quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+		};
+	}
 
-  if (value.type === "npc_alignment") {
-    return {
-      id: readString(value.id, fallbackId),
-      type: "npc_alignment",
-      npcId: readString(value.npcId, ""),
-      alignment:
-        value.alignment === "neutral" || value.alignment === "hostile"
-          ? value.alignment
-          : "friendly",
-    };
-  }
+	if (value.type === "npc_alignment") {
+		return {
+			id: readString(value.id, fallbackId),
+			type: "npc_alignment",
+			npcId: readString(value.npcId, ""),
+			alignment:
+				value.alignment === "neutral" || value.alignment === "hostile"
+					? value.alignment
+					: "friendly",
+		};
+	}
 
-  if (value.type === "npc_health_compare") {
-    return {
-      id: readString(value.id, fallbackId),
-      type: "npc_health_compare",
-      npcId: readString(value.npcId, ""),
-      operator: readComparisonOperator(value.operator),
-      value: readNumber(value.value, 0, 0),
-    };
-  }
+	if (value.type === "npc_health_compare") {
+		return {
+			id: readString(value.id, fallbackId),
+			type: "npc_health_compare",
+			npcId: readString(value.npcId, ""),
+			operator: readComparisonOperator(value.operator),
+			value: readNumber(value.value, 0, 0),
+		};
+	}
 
-  return null;
+	return null;
 }
 
-function migrateConditionExpression(value: unknown, fallbackId: string): ConditionExpression | null {
-  if (!isRecord(value)) {
-    return null;
-  }
+function migrateConditionExpression(
+	value: unknown,
+	fallbackId: string,
+): ConditionExpression | null {
+	if (!isRecord(value)) {
+		return null;
+	}
 
-  if (value.type === "group") {
-    const groupId = readString(value.id, fallbackId);
-    const conditions = Array.isArray(value.conditions)
-      ? value.conditions.flatMap((condition, index) => {
-          const migrated = migrateConditionExpression(condition, `${groupId}_${index + 1}`);
-          return migrated ? [migrated] : [];
-        })
-      : [];
+	if (value.type === "group") {
+		const groupId = readString(value.id, fallbackId);
+		const conditions = Array.isArray(value.conditions)
+			? value.conditions.flatMap((condition, index) => {
+					const migrated = migrateConditionExpression(
+						condition,
+						`${groupId}_${index + 1}`,
+					);
+					return migrated ? [migrated] : [];
+				})
+			: [];
 
-    return {
-      id: groupId,
-      type: "group",
-      operator: value.operator === "OR" ? "OR" : "AND",
-      conditions,
-    };
-  }
+		return {
+			id: groupId,
+			type: "group",
+			operator: value.operator === "OR" ? "OR" : "AND",
+			conditions,
+		};
+	}
 
-  return migrateSingleCondition(value, fallbackId);
+	return migrateSingleCondition(value, fallbackId);
 }
 
 function migrateGameAction(value: unknown): GameAction | null {
-  if (!isRecord(value)) {
-    return null;
-  }
+	if (!isRecord(value)) {
+		return null;
+	}
 
-  if (value.type === "set_flag") {
-    return {
-      type: "set_flag",
-      flag: readString(value.flag, ""),
-      value: readBoolean(value.value, true),
-    };
-  }
+	if (value.type === "set_flag") {
+		return {
+			type: "set_flag",
+			flag: readString(value.flag, ""),
+			value: readBoolean(value.value, true),
+		};
+	}
 
-  if (value.type === "change_variable") {
-    return {
-      type: "change_variable",
-      variable: readString(value.variable, ""),
-      amount: readNumber(value.amount, 0),
-    };
-  }
+	if (value.type === "change_variable") {
+		return {
+			type: "change_variable",
+			variable: readString(value.variable, ""),
+			amount: readNumber(value.amount, 0),
+		};
+	}
 
-  if (value.type === "set_variable") {
-    return {
-      type: "set_variable",
-      variable: readString(value.variable, ""),
-      value: readStateValue(value.value, 0),
-    };
-  }
+	if (value.type === "set_variable") {
+		return {
+			type: "set_variable",
+			variable: readString(value.variable, ""),
+			value: readStateValue(value.value, 0),
+		};
+	}
 
-  if (value.type === "play_cutscene") {
-    return { type: "play_cutscene", cutsceneId: readString(value.cutsceneId, "") };
-  }
+	if (value.type === "play_cutscene") {
+		return {
+			type: "play_cutscene",
+			cutsceneId: readString(value.cutsceneId, ""),
+		};
+	}
 
-  if (value.type === "teleport") {
-    return {
-      type: "teleport",
-      areaId: readString(value.areaId, ""),
-      eventBlockId: readString(value.eventBlockId, ""),
-    };
-  }
+	if (value.type === "teleport") {
+		return {
+			type: "teleport",
+			areaId: readString(value.areaId, ""),
+			eventBlockId: readString(value.eventBlockId, ""),
+		};
+	}
 
-  if (
-    value.type === "change_movement_mode" &&
-    (value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
-  ) {
-    return { type: "change_movement_mode", mode: value.mode };
-  }
+	if (
+		value.type === "change_movement_mode" &&
+		(value.mode === "walk" || value.mode === "sail" || value.mode === "ride")
+	) {
+		return { type: "change_movement_mode", mode: value.mode };
+	}
 
-  if (value.type === "set_npc_alignment") {
-    return {
-      type: "set_npc_alignment",
-      npcId: readString(value.npcId, ""),
-      alignment:
-        value.alignment === "neutral" || value.alignment === "hostile"
-          ? value.alignment
-          : "friendly",
-    };
-  }
+	if (value.type === "set_npc_alignment") {
+		return {
+			type: "set_npc_alignment",
+			npcId: readString(value.npcId, ""),
+			alignment:
+				value.alignment === "neutral" || value.alignment === "hostile"
+					? value.alignment
+					: "friendly",
+		};
+	}
 
-  if (value.type === "set_npc_health") {
-    return {
-      type: "set_npc_health",
-      npcId: readString(value.npcId, ""),
-      value: readNumber(value.value, 0, 0),
-    };
-  }
+	if (value.type === "set_npc_health") {
+		return {
+			type: "set_npc_health",
+			npcId: readString(value.npcId, ""),
+			value: readNumber(value.value, 0, 0),
+		};
+	}
 
-  if (value.type === "open_shop") {
-    return {
-      type: "open_shop",
-      shopId: readString(value.shopId, ""),
-    };
-  }
+	if (value.type === "open_shop") {
+		return {
+			type: "open_shop",
+			shopId: readString(value.shopId, ""),
+		};
+	}
 
-  if (value.type === "give_item" || value.type === "remove_item") {
-    return {
-      type: value.type,
-      itemId: readString(value.itemId, ""),
-      quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
-    };
-  }
+	if (value.type === "give_item" || value.type === "remove_item") {
+		return {
+			type: value.type,
+			itemId: readString(value.itemId, ""),
+			quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+		};
+	}
 
-  if (
-    value.type === "activate_quest" ||
-    value.type === "complete_quest" ||
-    value.type === "fail_quest"
-  ) {
-    return {
-      type: value.type,
-      questId: readString(value.questId, ""),
-    };
-  }
+	if (
+		value.type === "activate_quest" ||
+		value.type === "complete_quest" ||
+		value.type === "fail_quest"
+	) {
+		return {
+			type: value.type,
+			questId: readString(value.questId, ""),
+		};
+	}
 
-  return value.type === "end_game" ? { type: "end_game" } : null;
+	return value.type === "end_game" ? { type: "end_game" } : null;
 }
 
 function migrateActions(value: unknown): GameAction[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((action) => {
-    const migrated = migrateGameAction(action);
-    return migrated ? [migrated] : [];
-  });
+	return value.flatMap((action) => {
+		const migrated = migrateGameAction(action);
+		return migrated ? [migrated] : [];
+	});
 }
 
 function migrateRules(value: unknown): GameRule[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((rule, index) => {
-    if (!isRecord(rule)) {
-      return [];
-    }
+	return value.flatMap((rule, index) => {
+		if (!isRecord(rule)) {
+			return [];
+		}
 
-    const ruleId = readString(rule.id, `rule_${index + 1}`);
-    const legacyConditions = Array.isArray(rule.conditions)
-      ? rule.conditions.flatMap((condition, conditionIndex) => {
-          const migrated = migrateSingleCondition(
-            condition,
-            `${ruleId}_condition_${conditionIndex + 1}`,
-          );
-          return migrated ? [migrated] : [];
-        })
-      : [];
-    const conditionTree =
-      migrateConditionExpression(rule.conditionTree, `${ruleId}_conditions`) ??
-      (legacyConditions.length > 0
-        ? ({
-            id: `${ruleId}_conditions`,
-            type: "group",
-            operator: "AND",
-            conditions: legacyConditions,
-          } satisfies ConditionGroup)
-        : undefined);
-    const groupId = readString(rule.groupId, "");
+		const ruleId = readString(rule.id, `rule_${index + 1}`);
+		const legacyConditions = Array.isArray(rule.conditions)
+			? rule.conditions.flatMap((condition, conditionIndex) => {
+					const migrated = migrateSingleCondition(
+						condition,
+						`${ruleId}_condition_${conditionIndex + 1}`,
+					);
+					return migrated ? [migrated] : [];
+				})
+			: [];
+		const conditionTree =
+			migrateConditionExpression(rule.conditionTree, `${ruleId}_conditions`) ??
+			(legacyConditions.length > 0
+				? ({
+						id: `${ruleId}_conditions`,
+						type: "group",
+						operator: "AND",
+						conditions: legacyConditions,
+					} satisfies ConditionGroup)
+				: undefined);
+		const groupId = readString(rule.groupId, "");
 
-    return [
-      {
-        id: ruleId,
-        name: readString(rule.name, `Rule ${index + 1}`),
-        enabled: readBoolean(rule.enabled, true),
-        ...(groupId ? { groupId } : {}),
-        trigger: migrateRuleTrigger(rule.trigger),
-        ...(conditionTree ? { conditionTree } : {}),
-        actions: migrateActions(rule.actions),
-        elseActions: migrateActions(rule.elseActions),
-      },
-    ];
-  });
+		return [
+			{
+				id: ruleId,
+				name: readString(rule.name, `Rule ${index + 1}`),
+				enabled: readBoolean(rule.enabled, true),
+				...(rule.runPolicy === "once" ? { runPolicy: "once" as const } : {}),
+				...(groupId ? { groupId } : {}),
+				trigger: migrateRuleTrigger(rule.trigger),
+				...(conditionTree ? { conditionTree } : {}),
+				actions: migrateActions(rule.actions),
+				elseActions: migrateActions(rule.elseActions),
+			},
+		];
+	});
 }
 
 function migrateRuleGroups(value: unknown): RuleGroup[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+	if (!Array.isArray(value)) {
+		return [];
+	}
 
-  return value.flatMap((group, index) => {
-    if (!isRecord(group)) {
-      return [];
-    }
+	return value.flatMap((group, index) => {
+		if (!isRecord(group)) {
+			return [];
+		}
 
-    const description = readString(group.description, "");
-    const parentGroupId = readString(group.parentGroupId, "");
-    return [
-      {
-        id: readString(group.id, `rule_group_${index + 1}`),
-        name: readString(group.name, `Folder ${index + 1}`),
-        ...(description ? { description } : {}),
-        collapsed: readBoolean(group.collapsed, false),
-        ...(parentGroupId ? { parentGroupId } : {}),
-      },
-    ];
-  });
+		const description = readString(group.description, "");
+		const parentGroupId = readString(group.parentGroupId, "");
+		return [
+			{
+				id: readString(group.id, `rule_group_${index + 1}`),
+				name: readString(group.name, `Folder ${index + 1}`),
+				...(description ? { description } : {}),
+				collapsed: readBoolean(group.collapsed, false),
+				...(parentGroupId ? { parentGroupId } : {}),
+			},
+		];
+	});
 }
 
 export function migrateProject(value: unknown): GameProject {
-  const source = isRecord(value) ? value : {};
-  const metadataSource = isRecord(source.metadata) ? source.metadata : {};
-  const npcs = migrateNpcDefinitions(source.npcs);
-  const areas = migrateAreas(source, npcs);
-  const fallbackActiveAreaId = areas[0]?.id ?? "area_main";
-  const requestedActiveAreaId = readString(source.activeAreaId, fallbackActiveAreaId);
-  const activeAreaId = areas.some((area) => area.id === requestedActiveAreaId)
-    ? requestedActiveAreaId
-    : fallbackActiveAreaId;
+	const source = isRecord(value) ? value : {};
+	const metadataSource = isRecord(source.metadata) ? source.metadata : {};
+	const npcs = migrateNpcDefinitions(source.npcs);
+	const areas = migrateAreas(source, npcs);
+	const fallbackActiveAreaId = areas[0]?.id ?? "area_main";
+	const requestedActiveAreaId = readString(
+		source.activeAreaId,
+		fallbackActiveAreaId,
+	);
+	const activeAreaId = areas.some((area) => area.id === requestedActiveAreaId)
+		? requestedActiveAreaId
+		: fallbackActiveAreaId;
 
-  return {
-    metadata: {
-      name: readString(metadataSource.name, defaultProject.metadata.name),
-      version: readString(metadataSource.version, defaultProject.metadata.version),
-    },
-    areas,
-    activeAreaId,
-    camera: migrateCamera(source.camera),
-    tileStyles: migrateTileStyles(source.tileStyles),
-    pixelAssets: migratePixelAssets(source.pixelAssets),
-    player: migratePlayer(source.player),
-    cutscenes: Array.isArray(source.cutscenes)
-      ? (source.cutscenes as Cutscene[])
-      : cloneProject(defaultProject).cutscenes,
-    progression: migrateProgression(source.progression, activeAreaId),
-    gameState: migrateGameState(source.gameState),
-    items: migrateItems(source.items),
-    shops: migrateShops(source.shops),
-    quests: migrateQuests(source.quests),
-    ...(readString(source.trackedQuestId, "") ? { trackedQuestId: readString(source.trackedQuestId, "") } : {}),
-    npcs,
-    objects: migrateObjectDefinitions(source.objects),
-    ruleGroups: migrateRuleGroups(source.ruleGroups),
-    rules: migrateRules(source.rules),
-  };
+	return {
+		metadata: {
+			name: readString(metadataSource.name, defaultProject.metadata.name),
+			version: readString(
+				metadataSource.version,
+				defaultProject.metadata.version,
+			),
+		},
+		areas,
+		activeAreaId,
+		camera: migrateCamera(source.camera),
+		tileStyles: migrateTileStyles(source.tileStyles),
+		pixelAssets: migratePixelAssets(source.pixelAssets),
+		player: migratePlayer(source.player),
+		cutscenes: Array.isArray(source.cutscenes)
+			? (source.cutscenes as Cutscene[])
+			: cloneProject(defaultProject).cutscenes,
+		progression: migrateProgression(source.progression, activeAreaId),
+		gameState: migrateGameState(source.gameState),
+		items: migrateItems(source.items),
+		shops: migrateShops(source.shops),
+		quests: migrateQuests(source.quests),
+		...(readString(source.trackedQuestId, "")
+			? { trackedQuestId: readString(source.trackedQuestId, "") }
+			: {}),
+		npcs,
+		objects: migrateObjectDefinitions(source.objects),
+		ruleGroups: migrateRuleGroups(source.ruleGroups),
+		rules: migrateRules(source.rules),
+	};
 }

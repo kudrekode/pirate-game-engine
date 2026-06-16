@@ -1,323 +1,476 @@
 import type {
-  ConditionExpression,
-  GameAction,
-  GameRule,
-  GameStateConfig,
-  GameStateValue,
-  InventoryState,
-  ItemDefinition,
-  MovementMode,
-  NPCAttributes,
-  NPCDefinition,
-  NPCInstance,
-  RuleTrigger,
-  SingleCondition,
+	ConditionExpression,
+	GameAction,
+	GameRule,
+	GameStateConfig,
+	GameStateValue,
+	InventoryState,
+	ItemDefinition,
+	MovementMode,
+	NPCAttributes,
+	NPCDefinition,
+	NPCInstance,
+	RuleTrigger,
+	ShopDefinition,
+	SingleCondition,
 } from "../types/game";
 import { createInventory, giveItem, hasItem, removeItem } from "./inventory";
 import { resolveNPCInstance } from "./npcResolver";
 
 export type RuntimeGameState = {
-  flags: Record<string, boolean>;
-  variables: Record<string, GameStateValue>;
-  inventory: InventoryState;
-  npcs: Record<string, NPCAttributes>;
+	flags: Record<string, boolean>;
+	variables: Record<string, GameStateValue>;
+	inventory: InventoryState;
+	npcs: Record<string, NPCAttributes>;
+	completedRuleIds: Set<string>;
 };
 
 export type RuleActionContext = {
-  state: RuntimeGameState;
-  playCutscene: (cutsceneId: string, onDone: () => void) => void;
-  teleport: (areaId: string, eventBlockId: string) => void;
-  changeMovementMode: (mode: Exclude<MovementMode, "swim">) => void;
-  endGame: () => void;
-  activateQuest?: (questId: string) => void;
-  completeQuest?: (questId: string) => void;
-  failQuest?: (questId: string) => void;
-  openShop?: (shopId: string) => void;
-  itemDefinitions?: ItemDefinition[];
-  stateChanged?: () => void;
+	state: RuntimeGameState;
+	playCutscene: (cutsceneId: string, onDone: () => void) => void;
+	teleport: (areaId: string, eventBlockId: string) => void;
+	changeMovementMode: (mode: Exclude<MovementMode, "swim">) => void;
+	endGame: () => void;
+	activateQuest?: (questId: string) => void;
+	completeQuest?: (questId: string) => void;
+	failQuest?: (questId: string) => void;
+	openShop?: (shopId: string) => void;
+	itemDefinitions?: ItemDefinition[];
+	shopDefinitions?: ShopDefinition[];
+	stateChanged?: () => void;
+	logEvent?: (message: string) => void;
 };
 
+function describeAction(action: GameAction): string {
+	if (action.type === "set_flag") {
+		return `set flag ${action.flag} to ${action.value}`;
+	}
+	if (action.type === "set_variable") {
+		return `set variable ${action.variable} to ${action.value}`;
+	}
+	if (action.type === "change_variable") {
+		return `change variable ${action.variable} by ${action.amount}`;
+	}
+	if (action.type === "give_item" || action.type === "remove_item") {
+		return `${action.type === "give_item" ? "give" : "remove"} item ${action.itemId || "(missing item)"} x${action.quantity}`;
+	}
+	if (action.type === "play_cutscene") {
+		return `play cutscene ${action.cutsceneId}`;
+	}
+	if (action.type === "teleport") {
+		return `teleport to ${action.areaId}:${action.eventBlockId}`;
+	}
+	if (action.type === "open_shop") {
+		return `open shop ${action.shopId || "(missing shop)"}`;
+	}
+	return action.type.replace(/_/g, " ");
+}
+
+function resolveActionShopId(
+	action: Extract<GameAction, { type: "open_shop" }>,
+	context: RuleActionContext,
+): string | undefined {
+	if (context.shopDefinitions?.some((shop) => shop.id === action.shopId)) {
+		return action.shopId;
+	}
+
+	if (!action.shopId && context.shopDefinitions?.length === 1) {
+		const shop = context.shopDefinitions[0];
+		context.logEvent?.(
+			`Action repaired: open shop target was missing, using ${shop.name} (${shop.id}).`,
+		);
+		return shop.id;
+	}
+
+	context.logEvent?.(
+		`Action skipped: open shop target "${action.shopId || "(missing shop)"}" was not found.`,
+	);
+	return undefined;
+}
+
+function resolveActionItemId(
+	action: Extract<GameAction, { type: "give_item" | "remove_item" }>,
+	context: RuleActionContext,
+): string | undefined {
+	if (context.itemDefinitions?.some((item) => item.id === action.itemId)) {
+		return action.itemId;
+	}
+
+	if (action.type === "give_item" && !action.itemId) {
+		const currencyItems =
+			context.itemDefinitions?.filter((item) => item.category === "currency") ??
+			[];
+		if (currencyItems.length === 1) {
+			context.logEvent?.(
+				`Action repaired: give item target was missing, using ${currencyItems[0].name} (${currencyItems[0].id}).`,
+			);
+			return currencyItems[0].id;
+		}
+	}
+
+	context.logEvent?.(
+		`Action skipped: ${action.type === "give_item" ? "give" : "remove"} item target "${action.itemId || "(missing item)"}" was not found.`,
+	);
+	return undefined;
+}
+
 export function createRuntimeNpcState(
-  npcs: NPCInstance[],
-  definitions: NPCDefinition[] = [],
+	npcs: NPCInstance[],
+	definitions: NPCDefinition[] = [],
 ): Record<string, NPCAttributes> {
-  return Object.fromEntries(
-    npcs.map((npc) => [
-      npc.id,
-      {
-        ...resolveNPCInstance(
-          definitions.find((definition) => definition.id === npc.npcDefinitionId),
-          npc,
-        ).attributes,
-      },
-    ]),
-  );
+	return Object.fromEntries(
+		npcs.map((npc) => [
+			npc.id,
+			{
+				...resolveNPCInstance(
+					definitions.find(
+						(definition) => definition.id === npc.npcDefinitionId,
+					),
+					npc,
+				).attributes,
+			},
+		]),
+	);
 }
 
 export function createRuntimeState(
-  config: GameStateConfig,
-  npcs: NPCInstance[] = [],
-  definitions: NPCDefinition[] = [],
+	config: GameStateConfig,
+	npcs: NPCInstance[] = [],
+	definitions: NPCDefinition[] = [],
 ): RuntimeGameState {
-  return {
-    flags: { ...config.flags },
-    variables: { ...config.variables },
-    inventory: createInventory(config.inventory),
-    npcs: createRuntimeNpcState(npcs, definitions),
-  };
+	return {
+		flags: { ...config.flags },
+		variables: { ...config.variables },
+		inventory: createInventory(config.inventory),
+		npcs: createRuntimeNpcState(npcs, definitions),
+		completedRuleIds: new Set<string>(),
+	};
 }
 
-function compareValues(left: GameStateValue, right: GameStateValue, operator: string): boolean {
-  if (operator === "==") {
-    return left === right;
-  }
+function compareValues(
+	left: GameStateValue,
+	right: GameStateValue,
+	operator: string,
+): boolean {
+	if (operator === "==") {
+		return left === right;
+	}
 
-  if (operator === "!=") {
-    return left !== right;
-  }
+	if (operator === "!=") {
+		return left !== right;
+	}
 
-  if (typeof left !== "number" || typeof right !== "number") {
-    return false;
-  }
+	if (typeof left !== "number" || typeof right !== "number") {
+		return false;
+	}
 
-  if (operator === ">") {
-    return left > right;
-  }
+	if (operator === ">") {
+		return left > right;
+	}
 
-  if (operator === "<") {
-    return left < right;
-  }
+	if (operator === "<") {
+		return left < right;
+	}
 
-  if (operator === ">=") {
-    return left >= right;
-  }
+	if (operator === ">=") {
+		return left >= right;
+	}
 
-  return left <= right;
+	return left <= right;
 }
 
-export function evaluateCondition(condition: SingleCondition, runtimeState: RuntimeGameState): boolean {
-  if (condition.type === "flag_is") {
-    return (runtimeState.flags[condition.flag] ?? false) === condition.value;
-  }
+export function evaluateCondition(
+	condition: SingleCondition,
+	runtimeState: RuntimeGameState,
+): boolean {
+	if (condition.type === "flag_is") {
+		return (runtimeState.flags[condition.flag] ?? false) === condition.value;
+	}
 
-  if (condition.type === "has_item") {
-    return hasItem(runtimeState.inventory, condition.itemId, condition.quantity);
-  }
+	if (condition.type === "has_item") {
+		return hasItem(
+			runtimeState.inventory,
+			condition.itemId,
+			condition.quantity,
+		);
+	}
 
-  if (condition.type === "not_has_item") {
-    return !hasItem(runtimeState.inventory, condition.itemId, condition.quantity);
-  }
+	if (condition.type === "not_has_item") {
+		return !hasItem(
+			runtimeState.inventory,
+			condition.itemId,
+			condition.quantity,
+		);
+	}
 
-  if (condition.type === "npc_alignment") {
-    return runtimeState.npcs[condition.npcId]?.alignment === condition.alignment;
-  }
+	if (condition.type === "npc_alignment") {
+		return (
+			runtimeState.npcs[condition.npcId]?.alignment === condition.alignment
+		);
+	}
 
-  if (condition.type === "npc_health_compare") {
-    const health = runtimeState.npcs[condition.npcId]?.health;
-    return health !== undefined && compareValues(health, condition.value, condition.operator);
-  }
+	if (condition.type === "npc_health_compare") {
+		const health = runtimeState.npcs[condition.npcId]?.health;
+		return (
+			health !== undefined &&
+			compareValues(health, condition.value, condition.operator)
+		);
+	}
 
-  const currentValue = runtimeState.variables[condition.variable];
-  if (currentValue === undefined) {
-    return false;
-  }
+	const currentValue = runtimeState.variables[condition.variable];
+	if (currentValue === undefined) {
+		return false;
+	}
 
-  return compareValues(currentValue, condition.value, condition.operator);
+	return compareValues(currentValue, condition.value, condition.operator);
 }
 
 export function evaluateConditionExpression(
-  expression: ConditionExpression | undefined,
-  runtimeState: RuntimeGameState,
+	expression: ConditionExpression | undefined,
+	runtimeState: RuntimeGameState,
 ): boolean {
-  if (!expression) {
-    return true;
-  }
+	if (!expression) {
+		return true;
+	}
 
-  if (expression.type !== "group") {
-    return evaluateCondition(expression, runtimeState);
-  }
+	if (expression.type !== "group") {
+		return evaluateCondition(expression, runtimeState);
+	}
 
-  if (expression.conditions.length === 0) {
-    return true;
-  }
+	if (expression.conditions.length === 0) {
+		return true;
+	}
 
-  if (expression.operator === "OR") {
-    return expression.conditions.some((condition) =>
-      evaluateConditionExpression(condition, runtimeState),
-    );
-  }
+	if (expression.operator === "OR") {
+		return expression.conditions.some((condition) =>
+			evaluateConditionExpression(condition, runtimeState),
+		);
+	}
 
-  return expression.conditions.every((condition) =>
-    evaluateConditionExpression(condition, runtimeState),
-  );
+	return expression.conditions.every((condition) =>
+		evaluateConditionExpression(condition, runtimeState),
+	);
 }
 
 export function runAction(
-  action: GameAction,
-  context: RuleActionContext,
-  onDone: () => void,
+	action: GameAction,
+	context: RuleActionContext,
+	onDone: () => void,
 ): void {
-  if (action.type === "set_flag") {
-    context.state.flags[action.flag] = action.value;
-    context.stateChanged?.();
-    onDone();
-    return;
-  }
+	context.logEvent?.(`Action ran: ${describeAction(action)}.`);
+	if (action.type === "set_flag") {
+		context.state.flags[action.flag] = action.value;
+		context.stateChanged?.();
+		onDone();
+		return;
+	}
 
-  if (action.type === "change_variable") {
-    const currentValue = context.state.variables[action.variable];
-    context.state.variables[action.variable] =
-      (typeof currentValue === "number" ? currentValue : 0) + action.amount;
-    context.stateChanged?.();
-    onDone();
-    return;
-  }
+	if (action.type === "change_variable") {
+		const currentValue = context.state.variables[action.variable];
+		context.state.variables[action.variable] =
+			(typeof currentValue === "number" ? currentValue : 0) + action.amount;
+		context.stateChanged?.();
+		onDone();
+		return;
+	}
 
-  if (action.type === "set_variable") {
-    context.state.variables[action.variable] = action.value;
-    context.stateChanged?.();
-    onDone();
-    return;
-  }
+	if (action.type === "set_variable") {
+		context.state.variables[action.variable] = action.value;
+		context.stateChanged?.();
+		onDone();
+		return;
+	}
 
-  if (action.type === "play_cutscene") {
-    context.playCutscene(action.cutsceneId, onDone);
-    return;
-  }
+	if (action.type === "play_cutscene") {
+		context.playCutscene(action.cutsceneId, onDone);
+		return;
+	}
 
-  if (action.type === "give_item") {
-    giveItem(context.state.inventory, context.itemDefinitions ?? [], action.itemId, action.quantity);
-    context.stateChanged?.();
-    onDone();
-    return;
-  }
+	if (action.type === "give_item") {
+		const itemId = resolveActionItemId(action, context);
+		if (!itemId) {
+			onDone();
+			return;
+		}
+		giveItem(
+			context.state.inventory,
+			context.itemDefinitions ?? [],
+			itemId,
+			action.quantity,
+		);
+		context.stateChanged?.();
+		onDone();
+		return;
+	}
 
-  if (action.type === "remove_item") {
-    removeItem(context.state.inventory, action.itemId, action.quantity);
-    context.stateChanged?.();
-    onDone();
-    return;
-  }
+	if (action.type === "remove_item") {
+		const itemId = resolveActionItemId(action, context);
+		if (!itemId) {
+			onDone();
+			return;
+		}
+		removeItem(context.state.inventory, itemId, action.quantity);
+		context.stateChanged?.();
+		onDone();
+		return;
+	}
 
-  if (action.type === "activate_quest") {
-    context.activateQuest?.(action.questId);
-    onDone();
-    return;
-  }
+	if (action.type === "activate_quest") {
+		context.activateQuest?.(action.questId);
+		onDone();
+		return;
+	}
 
-  if (action.type === "complete_quest") {
-    context.completeQuest?.(action.questId);
-    onDone();
-    return;
-  }
+	if (action.type === "complete_quest") {
+		context.completeQuest?.(action.questId);
+		onDone();
+		return;
+	}
 
-  if (action.type === "fail_quest") {
-    context.failQuest?.(action.questId);
-    onDone();
-    return;
-  }
+	if (action.type === "fail_quest") {
+		context.failQuest?.(action.questId);
+		onDone();
+		return;
+	}
 
-  if (action.type === "set_npc_alignment") {
-    const npc = context.state.npcs[action.npcId];
-    if (npc) {
-      npc.alignment = action.alignment;
-      context.stateChanged?.();
-    }
-    onDone();
-    return;
-  }
+	if (action.type === "set_npc_alignment") {
+		const npc = context.state.npcs[action.npcId];
+		if (npc) {
+			npc.alignment = action.alignment;
+			context.stateChanged?.();
+		}
+		onDone();
+		return;
+	}
 
-  if (action.type === "set_npc_health") {
-    const npc = context.state.npcs[action.npcId];
-    if (npc) {
-      npc.health = Math.min(npc.maxHealth, Math.max(0, action.value));
-      context.stateChanged?.();
-    }
-    onDone();
-    return;
-  }
+	if (action.type === "set_npc_health") {
+		const npc = context.state.npcs[action.npcId];
+		if (npc) {
+			npc.health = Math.min(npc.maxHealth, Math.max(0, action.value));
+			context.stateChanged?.();
+		}
+		onDone();
+		return;
+	}
 
-  if (action.type === "open_shop") {
-    context.openShop?.(action.shopId);
-    onDone();
-    return;
-  }
+	if (action.type === "open_shop") {
+		const shopId = resolveActionShopId(action, context);
+		if (shopId) {
+			context.openShop?.(shopId);
+		}
+		onDone();
+		return;
+	}
 
-  if (action.type === "teleport") {
-    context.teleport(action.areaId, action.eventBlockId);
-    onDone();
-    return;
-  }
+	if (action.type === "teleport") {
+		context.teleport(action.areaId, action.eventBlockId);
+		onDone();
+		return;
+	}
 
-  if (action.type === "change_movement_mode") {
-    context.changeMovementMode(action.mode);
-    onDone();
-    return;
-  }
+	if (action.type === "change_movement_mode") {
+		context.changeMovementMode(action.mode);
+		onDone();
+		return;
+	}
 
-  context.endGame();
-  onDone();
+	context.endGame();
+	onDone();
 }
 
-function runActions(actions: GameAction[], context: RuleActionContext, onDone: () => void): void {
-  const [action, ...remainingActions] = actions;
-  if (!action) {
-    onDone();
-    return;
-  }
+export function runActions(
+	actions: GameAction[],
+	context: RuleActionContext,
+	onDone: () => void,
+): void {
+	const [action, ...remainingActions] = actions;
+	if (!action) {
+		onDone();
+		return;
+	}
 
-  runAction(action, context, () => runActions(remainingActions, context, onDone));
+	runAction(action, context, () =>
+		runActions(remainingActions, context, onDone),
+	);
 }
 
-export function runRule(rule: GameRule, context: RuleActionContext, onDone: () => void): void {
-  const actions = evaluateConditionExpression(rule.conditionTree, context.state)
-    ? rule.actions
-    : rule.elseActions ?? [];
-  runActions(actions, context, onDone);
+export function runRule(
+	rule: GameRule,
+	context: RuleActionContext,
+	onDone: () => void,
+): void {
+	if (
+		rule.runPolicy === "once" &&
+		context.state.completedRuleIds.has(rule.id)
+	) {
+		context.logEvent?.(`Rule skipped: ${rule.name} already ran.`);
+		onDone();
+		return;
+	}
+
+	const conditionsPassed = evaluateConditionExpression(
+		rule.conditionTree,
+		context.state,
+	);
+	context.logEvent?.(
+		conditionsPassed
+			? `Rule fired: ${rule.name}.`
+			: `Rule skipped: ${rule.name} conditions failed.`,
+	);
+	const actions = conditionsPassed ? rule.actions : (rule.elseActions ?? []);
+	runActions(actions, context, () => {
+		if (conditionsPassed && rule.runPolicy === "once") {
+			context.state.completedRuleIds.add(rule.id);
+		}
+		onDone();
+	});
 }
 
 function triggersMatch(expected: RuleTrigger, actual: RuleTrigger): boolean {
-  if (expected.type !== actual.type) {
-    return false;
-  }
+	if (expected.type !== actual.type) {
+		return false;
+	}
 
-  if (expected.type === "on_interact" && actual.type === "on_interact") {
-    return expected.targetId === actual.targetId;
-  }
+	if (expected.type === "on_interact" && actual.type === "on_interact") {
+		return expected.targetId === actual.targetId;
+	}
 
-  if (expected.type === "on_touch" && actual.type === "on_touch") {
-    return expected.targetId === actual.targetId;
-  }
+	if (expected.type === "on_touch" && actual.type === "on_touch") {
+		return expected.targetId === actual.targetId;
+	}
 
-  if (expected.type === "on_area_enter" && actual.type === "on_area_enter") {
-    return expected.areaId === actual.areaId;
-  }
+	if (expected.type === "on_area_enter" && actual.type === "on_area_enter") {
+		return expected.areaId === actual.areaId;
+	}
 
-  if (expected.type === "on_cutscene_end" && actual.type === "on_cutscene_end") {
-    return expected.cutsceneId === actual.cutsceneId;
-  }
+	if (
+		expected.type === "on_cutscene_end" &&
+		actual.type === "on_cutscene_end"
+	) {
+		return expected.cutsceneId === actual.cutsceneId;
+	}
 
-  return expected.type === "on_game_start" && actual.type === "on_game_start";
+	return expected.type === "on_game_start" && actual.type === "on_game_start";
 }
 
 export function fireTrigger(
-  triggerEvent: RuleTrigger,
-  rules: GameRule[],
-  context: RuleActionContext,
-  onDone: () => void = () => undefined,
+	triggerEvent: RuleTrigger,
+	rules: GameRule[],
+	context: RuleActionContext,
+	onDone: () => void = () => undefined,
 ): void {
-  const matchingRules = rules.filter(
-    (rule) => rule.enabled && triggersMatch(rule.trigger, triggerEvent),
-  );
+	const matchingRules = rules.filter(
+		(rule) => rule.enabled && triggersMatch(rule.trigger, triggerEvent),
+	);
 
-  const runNext = ([rule, ...remainingRules]: GameRule[]) => {
-    if (!rule) {
-      onDone();
-      return;
-    }
+	const runNext = ([rule, ...remainingRules]: GameRule[]) => {
+		if (!rule) {
+			onDone();
+			return;
+		}
 
-    runRule(rule, context, () => runNext(remainingRules));
-  };
+		runRule(rule, context, () => runNext(remainingRules));
+	};
 
-  runNext(matchingRules);
+	runNext(matchingRules);
 }
