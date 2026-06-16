@@ -226,6 +226,10 @@ label {
 	grid-template-columns: 220px minmax(0, 1fr);
 }
 
+.three-d-preview {
+	grid-template-columns: minmax(0, 1fr);
+}
+
 .tool-panel,
 .inspector-panel,
 .content-panel {
@@ -261,6 +265,47 @@ label {
 .tool-panel.wide,
 .inspector-panel.wide {
 	max-width: 760px;
+}
+
+.three-d-preview-panel {
+	display: grid;
+	grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+	gap: 10px;
+}
+
+.three-d-preview-host {
+	min-height: 360px;
+	overflow: hidden;
+	border: 1px solid #cbd5df;
+	border-radius: 8px;
+	background: #f6f8fb;
+}
+
+.three-d-preview-host canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.three-d-preview-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.three-d-preview-controls button.active {
+	border-color: #2f9e44;
+	background: #e9f7ec;
+	color: #1b6b32;
+}
+
+.inline-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: #334e68;
+	font-size: 13px;
+	font-weight: 700;
 }
 
 .panel-title {
@@ -1447,7 +1492,7 @@ label {
 
 .bottom-tabs {
 	display: grid;
-	grid-template-columns: repeat(9, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
 	gap: 8px;
 	border-top: 1px solid #cbd5df;
 	background: #f8fafc;
