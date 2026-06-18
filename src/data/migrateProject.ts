@@ -4,6 +4,10 @@ import type {
 	ConditionExpression,
 	ConditionGroup,
 	Cutscene,
+	DialogueChoice,
+	DialogueCondition,
+	DialogueDefinition,
+	DialogueNode,
 	EnemyBehaviour,
 	EventBlock,
 	GameAction,
@@ -235,6 +239,26 @@ function migrateInteraction(
 			? withInteractionBase(value, fallbackActivationMode, {
 					type: "play_cutscene",
 					cutsceneId,
+				})
+			: undefined;
+	}
+
+	if (value.type === "start_dialogue") {
+		const dialogueId = readString(value.dialogueId, "");
+		return dialogueId
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: "start_dialogue",
+					dialogueId,
+				})
+			: undefined;
+	}
+
+	if (value.type === "open_shop") {
+		const shopId = readString(value.shopId, "");
+		return shopId
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: "open_shop",
+					shopId,
 				})
 			: undefined;
 	}
@@ -1349,6 +1373,159 @@ function migrateQuestRewards(value: unknown): QuestReward[] {
 	});
 }
 
+function migrateDialogueCondition(value: unknown): DialogueCondition | null {
+	if (!isRecord(value)) {
+		return null;
+	}
+
+	if (value.type === "flag_is") {
+		return {
+			type: "flag_is",
+			flag: readString(value.flag, ""),
+			value: readBoolean(value.value, true),
+		};
+	}
+
+	if (value.type === "variable_compare") {
+		return {
+			type: "variable_compare",
+			variable: readString(value.variable, ""),
+			operator: readComparisonOperator(value.operator),
+			value: readStateValue(value.value, 0),
+		};
+	}
+
+	if (value.type === "has_item" || value.type === "not_has_item") {
+		return {
+			type: value.type,
+			itemId: readString(value.itemId, ""),
+			quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+		};
+	}
+
+	if (value.type === "quest_status") {
+		const status =
+			value.status === "active" ||
+			value.status === "completed" ||
+			value.status === "failed"
+				? value.status
+				: "inactive";
+		return {
+			type: "quest_status",
+			questId: readString(value.questId, ""),
+			status,
+		};
+	}
+
+	return null;
+}
+
+function migrateDialogueChoices(value: unknown): DialogueChoice[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((choice, index): DialogueChoice[] => {
+		if (!isRecord(choice)) {
+			return [];
+		}
+
+		return [
+			{
+				id: readString(choice.id, `choice_${index + 1}`),
+				text: readString(choice.text, `Choice ${index + 1}`),
+				targetNodeId: readString(choice.targetNodeId, ""),
+				conditions: Array.isArray(choice.conditions)
+					? choice.conditions.flatMap((condition) => {
+							const migrated = migrateDialogueCondition(condition);
+							return migrated ? [migrated] : [];
+						})
+					: [],
+			},
+		];
+	});
+}
+
+function migrateDialogueNodes(value: unknown): DialogueNode[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((node, index): DialogueNode[] => {
+		if (!isRecord(node)) {
+			return [];
+		}
+
+		const id = readString(node.id, `node_${index + 1}`);
+		const speaker = readString(node.speaker, "");
+		const portraitId = readString(node.portraitId, "");
+		const actions = migrateActions(node.actions);
+		const base = {
+			id,
+			...(speaker ? { speaker } : {}),
+			...(portraitId ? { portraitId } : {}),
+			...(actions.length > 0 ? { actions } : {}),
+		};
+
+		if (node.type === "choice") {
+			const text = readString(node.text, "");
+			return [
+				{
+					...base,
+					type: "choice",
+					...(text ? { text } : {}),
+					choices: migrateDialogueChoices(node.choices),
+				},
+			];
+		}
+
+		if (node.type === "end") {
+			const text = readString(node.text, "");
+			return [
+				{
+					...base,
+					type: "end",
+					...(text ? { text } : {}),
+				},
+			];
+		}
+
+		return [
+			{
+				...base,
+				type: "text",
+				text: readString(node.text, ""),
+				...(readString(node.nextNodeId, "")
+					? { nextNodeId: readString(node.nextNodeId, "") }
+					: {}),
+			},
+		];
+	});
+}
+
+function migrateDialogues(value: unknown): DialogueDefinition[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((dialogue, index): DialogueDefinition[] => {
+		if (!isRecord(dialogue)) {
+			return [];
+		}
+
+		const nodes = migrateDialogueNodes(dialogue.nodes);
+		const fallbackStartNodeId = nodes[0]?.id ?? "";
+		return [
+			{
+				id: readString(dialogue.id, `dialogue_${index + 1}`),
+				name: readString(dialogue.name, `Dialogue ${index + 1}`),
+				startNodeId: readString(dialogue.startNodeId, fallbackStartNodeId),
+				nodes,
+			},
+		];
+	});
+}
+
 function migrateQuests(value: unknown): Quest[] {
 	if (!Array.isArray(value)) {
 		return [];
@@ -1727,6 +1904,7 @@ export function migrateProject(value: unknown): GameProject {
 		cutscenes: Array.isArray(source.cutscenes)
 			? (source.cutscenes as Cutscene[])
 			: cloneProject(defaultProject).cutscenes,
+		dialogues: migrateDialogues(source.dialogues),
 		progression: migrateProgression(source.progression, activeAreaId),
 		gameState: migrateGameState(source.gameState),
 		items: migrateItems(source.items),

@@ -12,6 +12,7 @@ import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
 	CameraConfig,
 	Cutscene,
+	DialogueDefinition,
 	EditorSelection,
 	EventBlock,
 	GameAction,
@@ -98,6 +99,9 @@ type ProjectStore = {
 	addCutscene: () => string;
 	updateCutscene: (id: string, patch: Partial<Cutscene>) => void;
 	deleteCutscene: (id: string) => void;
+	addDialogue: () => string;
+	updateDialogue: (id: string, patch: Partial<DialogueDefinition>) => void;
+	deleteDialogue: (id: string) => void;
 	addProgressionStep: (type: ProgressionType) => string;
 	updateProgressionStep: (id: string, step: ProgressionStep) => void;
 	deleteProgressionStep: (id: string) => void;
@@ -423,6 +427,49 @@ function cleanRuleCutsceneReferences(project: GameProject, cutsceneId: string) {
 					action.type === "play_cutscene" && action.cutsceneId === cutsceneId,
 			),
 		}));
+}
+
+function clearDialogueReferences(project: GameProject, dialogueId: string) {
+	project.areas = project.areas.map((area) => ({
+		...area,
+		eventBlocks: area.eventBlocks.map((eventBlock) =>
+			eventBlock.interaction?.type === "start_dialogue" &&
+			eventBlock.interaction.dialogueId === dialogueId
+				? { ...eventBlock, interaction: undefined }
+				: eventBlock,
+		),
+		structures: area.structures.map((structure) =>
+			structure.interaction?.type === "start_dialogue" &&
+			structure.interaction.dialogueId === dialogueId
+				? { ...structure, interaction: undefined }
+				: structure,
+		),
+		objects: area.objects.map((object) =>
+			object.interaction?.type === "start_dialogue" &&
+			object.interaction.dialogueId === dialogueId
+				? { ...object, interaction: undefined }
+				: object,
+		),
+		npcs: area.npcs.map((npc) =>
+			npc.interaction?.type === "start_dialogue" &&
+			npc.interaction.dialogueId === dialogueId
+				? { ...npc, interaction: undefined, interactionOverride: undefined }
+				: npc,
+		),
+	}));
+
+	project.npcs = project.npcs.map((npc) =>
+		npc.defaultInteraction?.type === "start_dialogue" &&
+		npc.defaultInteraction.dialogueId === dialogueId
+			? { ...npc, defaultInteraction: undefined }
+			: npc,
+	);
+	project.objects = project.objects.map((object) =>
+		object.defaultInteraction?.type === "start_dialogue" &&
+		object.defaultInteraction.dialogueId === dialogueId
+			? { ...object, defaultInteraction: undefined }
+			: object,
+	);
 }
 
 function makeProgressionStep(
@@ -1304,6 +1351,56 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 					step.action.type !== "play_cutscene" || step.action.cutsceneId !== id,
 			);
 			cleanRuleCutsceneReferences(project, id);
+			return { project };
+		}),
+
+	addDialogue: () => {
+		const index = get().project.dialogues.length + 1;
+		const id = makeId("dialogue");
+		const startNodeId = `${id}_start`;
+
+		set((state) => ({
+			project: {
+				...state.project,
+				dialogues: [
+					...state.project.dialogues,
+					{
+						id,
+						name: `Dialogue ${index}`,
+						startNodeId,
+						nodes: [
+							{
+								id: startNodeId,
+								type: "text",
+								speaker: state.project.player.name,
+								text: "New dialogue line.",
+							},
+						],
+					},
+				],
+			},
+		}));
+
+		return id;
+	},
+
+	updateDialogue: (id, patch) =>
+		set((state) => ({
+			project: {
+				...state.project,
+				dialogues: state.project.dialogues.map((dialogue) =>
+					dialogue.id === id ? { ...dialogue, ...patch } : dialogue,
+				),
+			},
+		})),
+
+	deleteDialogue: (id) =>
+		set((state) => {
+			const project = cloneProject(state.project);
+			project.dialogues = project.dialogues.filter(
+				(dialogue) => dialogue.id !== id,
+			);
+			clearDialogueReferences(project, id);
 			return { project };
 		}),
 

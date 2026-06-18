@@ -31,6 +31,14 @@ function formatInteraction(interaction: Interaction | undefined): string {
 		return `Play cutscene ${interaction.cutsceneId ?? "(missing cutscene)"}`;
 	}
 
+	if (interaction.type === "start_dialogue") {
+		return `Start dialogue ${interaction.dialogueId ?? "(missing dialogue)"}`;
+	}
+
+	if (interaction.type === "open_shop") {
+		return `Open shop ${interaction.shopId ?? "(missing shop)"}`;
+	}
+
 	if (interaction.type === "teleport" || interaction.type === "area_link") {
 		return `Link to ${interaction.targetAreaId ?? "(missing area)"}`;
 	}

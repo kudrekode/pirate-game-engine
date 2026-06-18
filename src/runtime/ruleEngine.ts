@@ -286,7 +286,7 @@ export function runAction(
 	onDone();
 }
 
-function runActions(
+export function runActions(
 	actions: GameAction[],
 	context: RuleActionContext,
 	onDone: () => void,

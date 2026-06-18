@@ -458,6 +458,7 @@ export const defaultProject: GameProject = {
 			text: "The chest is empty now.",
 		},
 	],
+	dialogues: [],
 	progression: [
 		{
 			id: "step_spawn",

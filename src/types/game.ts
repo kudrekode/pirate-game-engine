@@ -7,6 +7,7 @@ export type GameProject = {
 	pixelAssets: Record<string, PixelAsset>;
 	player: PlayerConfig;
 	cutscenes: Cutscene[];
+	dialogues: DialogueDefinition[];
 	progression: ProgressionStep[];
 	gameState: GameStateConfig;
 	items: ItemDefinition[];
@@ -70,6 +71,8 @@ export type InteractionType =
 	| "area_link"
 	| "teleport"
 	| "play_cutscene"
+	| "start_dialogue"
+	| "open_shop"
 	| "set_flag"
 	| "change_movement_mode";
 
@@ -80,6 +83,8 @@ export type Interaction = {
 	targetAreaId?: string;
 	targetEventBlockId?: string;
 	cutsceneId?: string;
+	dialogueId?: string;
+	shopId?: string;
 	flag?: string;
 	value?: boolean;
 	mode?: Exclude<MovementMode, "swim">;
@@ -386,6 +391,66 @@ export type Cutscene = {
 	speakerName?: string;
 	text: string;
 };
+
+export type DialogueDefinition = {
+	id: string;
+	name: string;
+	startNodeId: string;
+	nodes: DialogueNode[];
+};
+
+export type DialogueNode =
+	| DialogueTextNode
+	| DialogueChoiceNode
+	| DialogueEndNode;
+
+export type DialogueTextNode = {
+	id: string;
+	type: "text";
+	speaker?: string;
+	portraitId?: string;
+	text: string;
+	nextNodeId?: string;
+	actions?: GameAction[];
+};
+
+export type DialogueChoiceNode = {
+	id: string;
+	type: "choice";
+	speaker?: string;
+	portraitId?: string;
+	text?: string;
+	choices: DialogueChoice[];
+	actions?: GameAction[];
+};
+
+export type DialogueEndNode = {
+	id: string;
+	type: "end";
+	speaker?: string;
+	portraitId?: string;
+	text?: string;
+	actions?: GameAction[];
+};
+
+export type DialogueChoice = {
+	id: string;
+	text: string;
+	targetNodeId: string;
+	conditions?: DialogueCondition[];
+};
+
+export type DialogueCondition =
+	| { type: "flag_is"; flag: string; value: boolean }
+	| {
+			type: "variable_compare";
+			variable: string;
+			operator: VariableComparisonOperator;
+			value: GameStateValue;
+	  }
+	| { type: "has_item"; itemId: string; quantity?: number }
+	| { type: "not_has_item"; itemId: string; quantity?: number }
+	| { type: "quest_status"; questId: string; status: QuestStatus };
 
 export type ProgressionStep = {
 	id: string;

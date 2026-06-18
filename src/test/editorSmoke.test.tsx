@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
+import { DialogueEditor } from "../editor/sections/DialogueEditor";
 import { GameStateEditor } from "../editor/sections/GameStateEditor";
 import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { MapEditor } from "../editor/sections/MapEditor";
@@ -113,6 +114,15 @@ describe("editor smoke tests", () => {
 
 		expect(screen.getByText("Item Definition")).toBeInTheDocument();
 		expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
+	});
+
+	it("renders Dialogue Editor", () => {
+		render(<DialogueEditor />);
+
+		expect(screen.getByText("Dialogues")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Add dialogue" }),
+		).toBeInTheDocument();
 	});
 
 	it("renders Shops Editor", () => {

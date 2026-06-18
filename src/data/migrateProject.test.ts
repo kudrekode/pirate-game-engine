@@ -430,6 +430,91 @@ describe("migrateProject", () => {
 		});
 	});
 
+	it("migrates dialogue definitions and direct dialogue interactions", () => {
+		const project = migrateProject({
+			dialogues: [
+				{
+					id: "captain_dialogue",
+					name: "Captain Dialogue",
+					startNodeId: "start",
+					nodes: [
+						{
+							id: "start",
+							type: "choice",
+							text: "Need work?",
+							choices: [
+								{
+									id: "accept",
+									text: "Yes",
+									targetNodeId: "accepted",
+									conditions: [
+										{
+											type: "quest_status",
+											questId: "quest_test",
+											status: "inactive",
+										},
+									],
+								},
+							],
+							actions: [{ type: "set_flag", flag: "talked", value: true }],
+						},
+						{ id: "accepted", type: "end", text: "Good." },
+					],
+				},
+			],
+			areas: [
+				{
+					id: "area_main",
+					width: 2,
+					height: 2,
+					npcs: [
+						{
+							id: "captain-instance",
+							npcDefinitionId: "captain",
+							x: 1,
+							y: 1,
+							interaction: {
+								type: "start_dialogue",
+								activationMode: "on_interact",
+								dialogueId: "captain_dialogue",
+							},
+						},
+					],
+				},
+			],
+		});
+
+		expect(project.dialogues[0]).toMatchObject({
+			id: "captain_dialogue",
+			startNodeId: "start",
+			nodes: [
+				{
+					id: "start",
+					type: "choice",
+					actions: [{ type: "set_flag", flag: "talked", value: true }],
+					choices: [
+						{
+							id: "accept",
+							conditions: [
+								{
+									type: "quest_status",
+									questId: "quest_test",
+									status: "inactive",
+								},
+							],
+						},
+					],
+				},
+				{ id: "accepted", type: "end" },
+			],
+		});
+		expect(project.areas[0].npcs[0].interaction).toEqual({
+			type: "start_dialogue",
+			activationMode: "on_interact",
+			dialogueId: "captain_dialogue",
+		});
+	});
+
 	it("migrates NPC definitions and placed NPC instances", () => {
 		const project = migrateProject({
 			npcs: [{ id: "captain", name: "Captain Mira", mapAvatarId: "ranger" }],

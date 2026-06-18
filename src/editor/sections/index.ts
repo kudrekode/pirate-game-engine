@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { CameraEditor } from "./CameraEditor";
 import { CharacterEditor } from "./CharacterEditor";
 import { CutsceneEditor } from "./CutsceneEditor";
+import { DialogueEditor } from "./DialogueEditor";
 import { GameStateEditor } from "./GameStateEditor";
 import { ItemsEditor } from "./ItemsEditor";
 import { MapEditor } from "./MapEditor";
@@ -17,6 +18,7 @@ export type EditorSectionId =
 	| "character"
 	| "camera"
 	| "cutscenes"
+	| "dialogues"
 	| "progression"
 	| "game-state"
 	| "items"
@@ -58,6 +60,12 @@ export const editorSections: EditorSectionConfig[] = [
 		label: "Cutscenes",
 		description: "Create simple image and text story moments.",
 		component: CutsceneEditor,
+	},
+	{
+		id: "dialogues",
+		label: "Dialogues",
+		description: "Create branching NPC conversations with choices and actions.",
+		component: DialogueEditor,
 	},
 	{
 		id: "progression",

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
 import {
 	backgroundPresets,
 	characterSprites,
@@ -6,51 +7,71 @@ import {
 	getVisualPreset,
 	portraitPresets,
 } from "../data/presets";
-import { getOverlayPreset, getStructurePreset } from "../data/mapVisuals";
 import type {
 	Cutscene,
+	DialogueDefinition,
+	DialogueNode,
 	EventBlock,
 	GameArea,
 	GameProject,
 	Interaction,
-	MovementMode,
 	MapStructure,
+	MovementMode,
 	NPCInstance,
-	PlayerVehicleState,
 	ObjectInstance,
-	PixelAsset,
 	PickupObject,
+	PixelAsset,
+	PlayerVehicleState,
 	RuleTrigger,
 } from "../types/game";
-import { collectPickup } from "./inventory";
 import {
 	canAttack,
 	damageNpc,
 	damagePlayer,
 	findAttackTarget,
 	getPlayerCombatStats,
-	removeDefeatedNpc,
 	type RuntimeCombatHudState,
+	removeDefeatedNpc,
 } from "./combat";
-import { resolveNPCInstance } from "./npcResolver";
+import {
+	advanceDialogue,
+	createRuntimeDialogueState,
+	enterDialogueNode,
+	getAvailableDialogueChoices,
+	getDialogueNode,
+	type RuntimeDialogueState,
+} from "./dialogueEngine";
+import { collectPickup } from "./inventory";
 import {
 	findDismountTile,
 	resolveMovementAt,
 	type VehicleMovementConfig,
 } from "./movement";
 import {
-	runObjectBehaviour,
-	type ObjectBehaviourResult,
-} from "./objectBehaviour";
-import {
-	isNpcTileWalkable,
 	isEnemyTouchingPlayer,
+	isNpcTileWalkable,
+	type NPCMovementState,
 	updateEnemyNPC,
 	updatePatrolNPC,
 	updateStationaryNPC,
 	updateWanderNPC,
-	type NPCMovementState,
 } from "./npcMovement";
+import { resolveNPCInstance } from "./npcResolver";
+import {
+	type ObjectBehaviourResult,
+	runObjectBehaviour,
+} from "./objectBehaviour";
+import {
+	activateQuest,
+	completeQuest as completeRuntimeQuest,
+	createRuntimeQuestState,
+	failQuest,
+	getQuestViews,
+	markAreaEntered,
+	type QuestView,
+	type RuntimeQuestState,
+	updateQuestProgress,
+} from "./questEngine";
 import {
 	createRuntimeState,
 	fireTrigger,
@@ -63,17 +84,6 @@ import {
 	type RuntimeShopPanelState,
 	type RuntimeShopStocks,
 } from "./shopRuntime";
-import {
-	activateQuest,
-	completeQuest as completeRuntimeQuest,
-	createRuntimeQuestState,
-	failQuest,
-	getQuestViews,
-	markAreaEntered,
-	updateQuestProgress,
-	type QuestView,
-	type RuntimeQuestState,
-} from "./questEngine";
 import { createBoardedVehicleState } from "./vehicleRuntime";
 
 type WasdKeys = {
@@ -136,9 +146,13 @@ function tileKey(x: number, y: number): string {
 }
 
 function getInitialArea(project: GameProject): GameArea {
+	const fallbackArea = project.areas[0];
+	if (!fallbackArea) {
+		throw new Error("Project must include at least one area.");
+	}
 	return (
 		project.areas.find((area) => area.id === project.activeAreaId) ??
-		project.areas[0]!
+		fallbackArea
 	);
 }
 
@@ -210,6 +224,12 @@ export class AdventureScene extends Phaser.Scene {
 	private recentEnemyHud?: RuntimeCombatHudState["recentEnemy"];
 	private vehicleVisual?: Phaser.GameObjects.GameObject;
 	private isCutsceneOpen = false;
+	private isDialogueOpen = false;
+	private activeDialogue?: {
+		container?: Phaser.GameObjects.Container;
+		definition: DialogueDefinition;
+		state: RuntimeDialogueState;
+	};
 	private isFinished = false;
 	private isMoving = false;
 
@@ -342,13 +362,14 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	update(time: number) {
-		if (!this.isCutsceneOpen && !this.isFinished) {
+		if (!this.isCutsceneOpen && !this.isDialogueOpen && !this.isFinished) {
 			this.updateNpcMovement(time);
 		}
 
 		if (
 			!this.playerMarker ||
 			this.isCutsceneOpen ||
+			this.isDialogueOpen ||
 			this.isFinished ||
 			this.isMoving ||
 			time < this.nextMoveAt
@@ -642,16 +663,22 @@ export class AdventureScene extends Phaser.Scene {
 			}
 		}
 
-		this.currentArea.structures.forEach((structure) =>
-			this.renderStructure(structure),
-		);
-		this.currentArea.objects.forEach((object) => this.renderObject(object));
+		this.currentArea.structures.forEach((structure) => {
+			this.renderStructure(structure);
+		});
+		this.currentArea.objects.forEach((object) => {
+			this.renderObject(object);
+		});
 		this.currentArea.pickups
 			.filter((pickup) => !this.isPickupCollected(pickup))
-			.forEach((pickup) => this.renderPickup(pickup));
+			.forEach((pickup) => {
+				this.renderPickup(pickup);
+			});
 		this.currentArea.npcs
 			.filter((npc) => !this.defeatedNpcIds.has(npc.id))
-			.forEach((npc) => this.renderNpc(npc));
+			.forEach((npc) => {
+				this.renderNpc(npc);
+			});
 	}
 
 	private createPixelTextures() {
@@ -1150,22 +1177,6 @@ export class AdventureScene extends Phaser.Scene {
 		this.setStatus(`${this.project.player.name} spawned.`);
 	}
 
-	private teleportPlayer(eventBlock: EventBlock) {
-		this.leaveVehicle(false);
-		if (!this.playerMarker) {
-			this.spawnPlayer(eventBlock);
-			return;
-		}
-
-		const centerX = eventBlock.x * this.tileSize + this.tileSize / 2;
-		const centerY = eventBlock.y * this.tileSize + this.tileSize / 2;
-
-		this.playerPosition = { x: eventBlock.x, y: eventBlock.y };
-		this.playerMarker.setPosition(centerX, centerY);
-		this.setStatus(`${this.project.player.name} moved to ${eventBlock.name}.`);
-		this.updateDebugPanel();
-	}
-
 	private showCutscene(cutscene: Cutscene, onDone: () => void) {
 		this.promptText?.setText("");
 		const width = this.scale.width;
@@ -1277,6 +1288,176 @@ export class AdventureScene extends Phaser.Scene {
 
 		this.input.once(Phaser.Input.Events.POINTER_DOWN, close);
 		this.input.keyboard?.once(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, close);
+	}
+
+	private showDialogue(dialogue: DialogueDefinition) {
+		this.promptText?.setText("");
+		this.closeShop();
+		this.isDialogueOpen = true;
+		this.activeDialogue = {
+			definition: dialogue,
+			state: createRuntimeDialogueState(dialogue),
+		};
+		this.renderActiveDialogueNode();
+	}
+
+	private closeDialogue() {
+		this.activeDialogue?.container?.destroy(true);
+		this.activeDialogue = undefined;
+		this.isDialogueOpen = false;
+		this.updatePrompt(this.findNearestInteractable());
+	}
+
+	private renderActiveDialogueNode() {
+		const active = this.activeDialogue;
+		if (!active) {
+			return;
+		}
+
+		active.container?.destroy(true);
+		active.container = undefined;
+
+		const node = getDialogueNode(active.definition, active.state.nodeId);
+		if (!node) {
+			this.closeDialogue();
+			return;
+		}
+
+		enterDialogueNode(active.state, node, this.getRuleContext(), () =>
+			this.renderDialogueNodeContent(node),
+		);
+	}
+
+	private renderDialogueNodeContent(node: DialogueNode) {
+		const active = this.activeDialogue;
+		if (!active) {
+			return;
+		}
+
+		const width = this.scale.width;
+		const height = this.scale.height;
+		const panelY = height - 112;
+		const panelWidth = Math.max(220, width - 32);
+		const portrait = node.portraitId
+			? getVisualPreset(node.portraitId, portraitPresets)
+			: undefined;
+		const showPortrait = Boolean(portrait && width >= 320);
+		const textX = showPortrait ? 126 : 32;
+		const container = this.add.container(0, 0).setDepth(520).setScrollFactor(0);
+		this.uiLayer?.add(container);
+		active.container = container;
+
+		container.add(
+			this.add.rectangle(0, 0, width, height, 0x000000, 0.2).setOrigin(0),
+		);
+		container.add(
+			this.add
+				.rectangle(width / 2, panelY, panelWidth, 184, 0x18181b, 0.94)
+				.setStrokeStyle(2, 0xffffff, 0.18),
+		);
+
+		if (portrait) {
+			container.add(
+				this.add
+					.rectangle(70, panelY - 18, 72, 72, hexToNumber(portrait.color), 1)
+					.setStrokeStyle(2, hexToNumber(portrait.accent), 0.9),
+			);
+			container.add(
+				this.add
+					.text(70, panelY - 18, (node.speaker ?? "NPC").slice(0, 1), {
+						color: portrait.accent,
+						fontFamily: "Arial, sans-serif",
+						fontSize: "28px",
+						fontStyle: "700",
+					})
+					.setOrigin(0.5),
+			);
+		}
+
+		container.add(
+			this.add.text(
+				textX,
+				panelY - 78,
+				node.speaker ?? active.definition.name,
+				{
+					color: "#f8fafc",
+					fontFamily: "Arial, sans-serif",
+					fontSize: "15px",
+					fontStyle: "700",
+				},
+			),
+		);
+		container.add(
+			this.add.text(textX, panelY - 52, node.text ?? "", {
+				color: "#ffffff",
+				fontFamily: "Arial, sans-serif",
+				fontSize: "16px",
+				lineSpacing: 4,
+				wordWrap: { width: Math.max(120, width - textX - 34) },
+			}),
+		);
+
+		if (node.type === "choice") {
+			const choices = getAvailableDialogueChoices(
+				node,
+				this.runtimeState,
+				this.runtimeQuestState,
+			);
+			choices.forEach((choice, index) => {
+				const choiceText = this.add
+					.text(
+						textX,
+						panelY + 4 + index * 28,
+						`${index + 1}. ${choice.text}`,
+						{
+							backgroundColor: "#263244",
+							color: "#f8fafc",
+							fontFamily: "Arial, sans-serif",
+							fontSize: "14px",
+							padding: { x: 8, y: 5 },
+						},
+					)
+					.setInteractive({ useHandCursor: true });
+				choiceText.on(Phaser.Input.Events.POINTER_DOWN, () => {
+					advanceDialogue(active.definition, active.state, choice.id);
+					this.renderActiveDialogueNode();
+				});
+				container.add(choiceText);
+			});
+			if (choices.length === 0) {
+				container.add(
+					this.add.text(textX, panelY + 8, "No available choices.", {
+						color: "#cbd5e1",
+						fontFamily: "Arial, sans-serif",
+						fontSize: "14px",
+					}),
+				);
+			}
+			return;
+		}
+
+		const buttonLabel =
+			node.type === "text" && node.nextNodeId ? "Next" : "End conversation";
+		const nextButton = this.add
+			.text(width - 42, height - 36, buttonLabel, {
+				backgroundColor: "#f8fafc",
+				color: "#111827",
+				fontFamily: "Arial, sans-serif",
+				fontSize: "14px",
+				fontStyle: "700",
+				padding: { x: 10, y: 6 },
+			})
+			.setOrigin(1, 0.5)
+			.setInteractive({ useHandCursor: true });
+		nextButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			const nextNode = advanceDialogue(active.definition, active.state);
+			if (!nextNode) {
+				this.closeDialogue();
+				return;
+			}
+			this.renderActiveDialogueNode();
+		});
+		container.add(nextButton);
 	}
 
 	private showEndMessage() {
@@ -1650,6 +1831,14 @@ export class AdventureScene extends Phaser.Scene {
 				: "Press E to ride";
 		}
 
+		if (interaction.type === "start_dialogue") {
+			return "Press E to talk";
+		}
+
+		if (interaction.type === "open_shop") {
+			return "Press E to shop";
+		}
+
 		return "Press E to inspect";
 	}
 
@@ -1702,6 +1891,34 @@ export class AdventureScene extends Phaser.Scene {
 					},
 				);
 			});
+			return;
+		}
+
+		if (interaction.type === "start_dialogue") {
+			if (!interaction.dialogueId) {
+				this.setStatus(`Dialogue missing: ${label}.`);
+				return;
+			}
+
+			const dialogue = this.project.dialogues.find(
+				(candidate) => candidate.id === interaction.dialogueId,
+			);
+			if (!dialogue) {
+				this.setStatus(`Dialogue missing: ${label}.`);
+				return;
+			}
+
+			this.showDialogue(dialogue);
+			return;
+		}
+
+		if (interaction.type === "open_shop") {
+			if (!interaction.shopId) {
+				this.setStatus(`Shop missing: ${label}.`);
+				return;
+			}
+
+			this.openShop(interaction.shopId);
 			return;
 		}
 

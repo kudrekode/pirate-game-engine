@@ -80,6 +80,8 @@ const interactionTypes = [
 	"area_link",
 	"teleport",
 	"play_cutscene",
+	"start_dialogue",
+	"open_shop",
 	"set_flag",
 	"change_movement_mode",
 ] as const;
@@ -1269,6 +1271,14 @@ export function MapEditor() {
 			return mode === "sail" ? "Press E to board" : "Press E to ride";
 		}
 
+		if (type === "start_dialogue") {
+			return "Press E to talk";
+		}
+
+		if (type === "open_shop") {
+			return "Press E to shop";
+		}
+
 		return "Press E to inspect";
 	}
 
@@ -1293,6 +1303,24 @@ export function MapEditor() {
 				prompt: getDefaultPrompt(type),
 				flag: "flag_1",
 				value: true,
+			};
+		}
+
+		if (type === "start_dialogue") {
+			return {
+				type,
+				activationMode,
+				prompt: getDefaultPrompt(type),
+				dialogueId: project.dialogues[0]?.id ?? "",
+			};
+		}
+
+		if (type === "open_shop") {
+			return {
+				type,
+				activationMode,
+				prompt: getDefaultPrompt(type),
+				shopId: project.shops[0]?.id ?? "",
 			};
 		}
 
@@ -1377,6 +1405,8 @@ export function MapEditor() {
 						<option value="area_link">Area link</option>
 						<option value="teleport">Teleport</option>
 						<option value="play_cutscene">Play cutscene</option>
+						<option value="start_dialogue">Start dialogue</option>
+						<option value="open_shop">Open shop</option>
 						<option value="set_flag">Set flag</option>
 						<option value="change_movement_mode">Change movement mode</option>
 					</select>
@@ -1491,6 +1521,50 @@ export function MapEditor() {
 							{project.cutscenes.map((cutscene) => (
 								<option key={cutscene.id} value={cutscene.id}>
 									{cutscene.name}
+								</option>
+							))}
+						</select>
+					</label>
+				) : null}
+
+				{interaction?.type === "start_dialogue" ? (
+					<label>
+						Dialogue
+						<select
+							onChange={(event) =>
+								updateSelectedInteraction({
+									...interaction,
+									dialogueId: event.target.value,
+								})
+							}
+							value={interaction.dialogueId ?? ""}
+						>
+							<option value="">Select dialogue</option>
+							{project.dialogues.map((dialogue) => (
+								<option key={dialogue.id} value={dialogue.id}>
+									{dialogue.name}
+								</option>
+							))}
+						</select>
+					</label>
+				) : null}
+
+				{interaction?.type === "open_shop" ? (
+					<label>
+						Shop
+						<select
+							onChange={(event) =>
+								updateSelectedInteraction({
+									...interaction,
+									shopId: event.target.value,
+								})
+							}
+							value={interaction.shopId ?? ""}
+						>
+							<option value="">Select shop</option>
+							{project.shops.map((shop) => (
+								<option key={shop.id} value={shop.id}>
+									{shop.name}
 								</option>
 							))}
 						</select>
