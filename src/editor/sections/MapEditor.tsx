@@ -219,6 +219,7 @@ export function MapEditor() {
 	const [mapView, setMapView] = useState<MapWorkspaceView>("2d");
 	const [paintLayer, setPaintLayer] = useState<PaintLayer>("terrain");
 	const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
+	const [isTerrainPaintArmed, setIsTerrainPaintArmed] = useState(false);
 	const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
 	const [selectedStructureId, setSelectedStructureId] = useState("small_house");
 	const [selectedObjectDefinitionId, setSelectedObjectDefinitionId] = useState(
@@ -1683,6 +1684,7 @@ export function MapEditor() {
 		setSelectedTerrainId(id);
 		setPaintLayer("terrain");
 		setActiveTool("paint");
+		setIsTerrainPaintArmed(true);
 		setMapPaletteSelection({ type: "none" });
 	}
 
@@ -1690,6 +1692,7 @@ export function MapEditor() {
 		setSelectedOverlayId(id);
 		setPaintLayer("overlay");
 		setActiveTool("paint");
+		setIsTerrainPaintArmed(false);
 		setMapPaletteSelection({ type: "none" });
 	}
 
@@ -1697,6 +1700,7 @@ export function MapEditor() {
 		setSelectedStructureId(id);
 		setPaintLayer("structure");
 		setActiveTool("structure");
+		setIsTerrainPaintArmed(false);
 		setMapPaletteSelection({ structureId: id, type: "structure" });
 	}
 
@@ -3151,6 +3155,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("object");
 							setPaintLayer("event");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({
 								objectDefinitionId: selectedObjectDefinitionId,
 								type: "object",
@@ -3170,6 +3175,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("event-block");
 							setPaintLayer("event");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "eventBlock" });
 						}}
 						type="button"
@@ -3182,6 +3188,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("pickup");
 							setPaintLayer("event");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({
 								itemId: project.items[0]?.id,
 								type: "pickup",
@@ -3219,6 +3226,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("npc");
 							setPaintLayer("event");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({
 								npcDefinitionId: selectedNpcDefinitionId,
 								type: "npc",
@@ -3237,6 +3245,7 @@ export function MapEditor() {
 						className={activeTool === "paint" ? "selected" : ""}
 						onClick={() => {
 							setActiveTool("paint");
+							setIsTerrainPaintArmed(paintLayer === "terrain");
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3247,6 +3256,7 @@ export function MapEditor() {
 						className={activeTool === "eraser" ? "selected" : ""}
 						onClick={() => {
 							setActiveTool("eraser");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3257,6 +3267,7 @@ export function MapEditor() {
 						className={activeTool === "fill" ? "selected" : ""}
 						onClick={() => {
 							setActiveTool("fill");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3267,6 +3278,7 @@ export function MapEditor() {
 						className={activeTool === "pan" ? "selected" : ""}
 						onClick={() => {
 							setActiveTool("pan");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3281,6 +3293,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("raise-height");
 							setPaintLayer("terrain");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3292,6 +3305,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("lower-height");
 							setPaintLayer("terrain");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3303,6 +3317,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("flatten-height");
 							setPaintLayer("terrain");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3314,6 +3329,7 @@ export function MapEditor() {
 						onClick={() => {
 							setActiveTool("set-height");
 							setPaintLayer("terrain");
+							setIsTerrainPaintArmed(false);
 							setMapPaletteSelection({ type: "none" });
 						}}
 						type="button"
@@ -3802,6 +3818,13 @@ export function MapEditor() {
 						embedded
 						heightToolValue={heightToolValue}
 						hideDetails
+						terrainPaintTileId={
+							isTerrainPaintArmed &&
+							activeTool === "paint" &&
+							paintLayer === "terrain"
+								? selectedTerrainId
+								: undefined
+						}
 						terrainHeightTool={
 							activeTool === "raise-height"
 								? "raise"

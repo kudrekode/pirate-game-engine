@@ -286,6 +286,85 @@ describe("ThreeDPreview", () => {
 		).toBeInTheDocument();
 	}, 20000);
 
+	it("paints selected terrain in embedded 3D without resetting height", async () => {
+		const rectSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+			.mockReturnValue({
+				bottom: 240,
+				height: 240,
+				left: 0,
+				right: 320,
+				toJSON: () => ({}),
+				top: 0,
+				width: 320,
+				x: 0,
+				y: 0,
+			});
+		const project = cloneProject(defaultProject);
+		const area =
+			project.areas.find(
+				(candidate) => candidate.id === project.activeAreaId,
+			) ?? project.areas[0];
+		const target = {
+			x: Math.round((area.width - 1) / 2),
+			y: Math.round((area.height - 1) / 2),
+		};
+		area.terrainHeights = [{ ...target, height: 3 }];
+		useProjectStore.getState().setProject(project);
+		render(<MapEditor />);
+
+		const sandButton = screen.getAllByText("Sand")[0].closest("button");
+		expect(sandButton).not.toBeNull();
+		fireEvent.click(sandButton as HTMLButtonElement);
+		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+		expect(
+			screen.getByText("Click terrain to paint selected terrain type: sand."),
+		).toBeInTheDocument();
+
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		fireEvent.pointerMove(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+
+		await waitFor(() => {
+			const nextArea =
+				useProjectStore
+					.getState()
+					.project.areas.find(
+						(candidate) => candidate.id === project.activeAreaId,
+					) ?? useProjectStore.getState().project.areas[0];
+			expect(
+				nextArea.terrainTiles.find(
+					(tile) => tile.x === target.x && tile.y === target.y,
+				)?.tileId,
+			).toBe("sand");
+			expect(
+				nextArea.terrainHeights?.find(
+					(tile) => tile.x === target.x && tile.y === target.y,
+				)?.height,
+			).toBe(3);
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "2D View" }));
+		expect(screen.getByRole("button", { name: "2D View" })).toHaveClass(
+			"selected",
+		);
+
+		rectSpy.mockRestore();
+	}, 20000);
+
 	it("mounts against a blank project without crashing", () => {
 		const blankProject = cloneProject(defaultProject);
 		blankProject.areas = [];

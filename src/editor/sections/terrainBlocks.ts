@@ -52,6 +52,10 @@ function getTerrainBlockKind(tileId: string): TerrainBlockKind {
 	return "unknown";
 }
 
+export function getTerrainBlockColor(tileId: string): number {
+	return TERRAIN_BLOCK_COLORS[getTerrainBlockKind(tileId)];
+}
+
 export function terrainTilesToBlocks(
 	area: GameArea | undefined,
 ): TerrainBlock[] {
@@ -77,7 +81,7 @@ export function terrainTilesToBlocks(
 			const baseY = Math.min(0, terrainHeight);
 			const height = Math.max(0.18, surfaceY - baseY);
 			return {
-				color: TERRAIN_BLOCK_COLORS[kind],
+				color: getTerrainBlockColor(tile.tileId),
 				gridX: tile.x,
 				gridY: tile.y,
 				height,
