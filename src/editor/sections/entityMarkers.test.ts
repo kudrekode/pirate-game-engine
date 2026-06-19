@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { GameArea, ObjectDefinition } from "../../types/game";
 import { areaEntitiesToMarkers } from "./entityMarkers";
+import {
+	HIDE_ALL_OVERLAY_FILTERS,
+	SHOW_ALL_OVERLAY_FILTERS,
+} from "./overlayFilters";
 
 function makeArea(overrides: Partial<GameArea> = {}): GameArea {
 	return {
@@ -154,6 +158,103 @@ describe("areaEntitiesToMarkers", () => {
 				opacity: 0.72,
 			},
 		]);
+	});
+
+	it("filters hidden entity markers", () => {
+		const area = makeArea({
+			eventBlocks: [
+				{
+					id: "spawn",
+					kind: "spawn",
+					name: "Spawn",
+					tag: "start",
+					x: 3,
+					y: 4,
+				},
+				{
+					id: "trigger",
+					kind: "trigger",
+					name: "Trigger",
+					tag: "trigger",
+					x: 4,
+					y: 4,
+				},
+			],
+			npcs: [
+				{
+					areaId: "area",
+					attributes: {
+						alignment: "friendly",
+						canInteract: true,
+						faction: "villagers",
+						health: 10,
+						maxHealth: 10,
+					},
+					blocksMovement: true,
+					id: "npc",
+					movementMode: "stationary",
+					npcDefinitionId: "captain",
+					x: 1,
+					y: 1,
+				},
+			],
+			objects: [
+				{
+					areaId: "area",
+					id: "chest-1",
+					objectDefinitionId: "chest",
+					x: 1,
+					y: 2,
+				},
+			],
+			pickups: [
+				{
+					areaId: "area",
+					id: "coin",
+					itemId: "gold",
+					once: true,
+					pickupMode: "on_touch",
+					quantity: 1,
+					x: 2,
+					y: 3,
+				},
+			],
+			structures: [
+				{
+					blocksMovement: true,
+					heightTiles: 2,
+					id: "house",
+					name: "House",
+					structureId: "small_house",
+					widthTiles: 3,
+					x: 2,
+					y: 1,
+				},
+			],
+		});
+
+		expect(
+			areaEntitiesToMarkers(area, objectDefinitions, HIDE_ALL_OVERLAY_FILTERS),
+		).toEqual([]);
+		expect(
+			areaEntitiesToMarkers(area, objectDefinitions, {
+				...HIDE_ALL_OVERLAY_FILTERS,
+				npcs: true,
+			}).map((marker) => marker.kind),
+		).toEqual(["npc"]);
+		expect(
+			areaEntitiesToMarkers(area, objectDefinitions, {
+				...HIDE_ALL_OVERLAY_FILTERS,
+				spawnPoints: true,
+			}).map((marker) => marker.id),
+		).toEqual(["spawn"]);
+		expect(
+			areaEntitiesToMarkers(
+				area,
+				objectDefinitions,
+				SHOW_ALL_OVERLAY_FILTERS,
+			).map((marker) => marker.id),
+		).toEqual(["house", "chest-1", "npc", "coin", "spawn", "trigger"]);
 	});
 
 	it("places entity markers on top of raised terrain", () => {

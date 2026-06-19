@@ -28,7 +28,6 @@ import type {
 	GameAreaKind,
 	Interaction,
 	InteractionActivationMode,
-	MapOverlayFilter,
 	MovementRule,
 	NPCAttributes,
 	NPCInstance,
@@ -42,6 +41,15 @@ import {
 	makeDefaultObjectBehaviour,
 	ObjectBehaviourEditor,
 } from "../ObjectBehaviourEditor";
+import {
+	GAMEPLAY_OVERLAY_FILTERS,
+	HIDE_ALL_OVERLAY_FILTERS,
+	OVERLAY_FILTER_OPTIONS,
+	readStoredMapOverlayFilters,
+	SHOW_ALL_OVERLAY_FILTERS,
+	toggleMapOverlayFilter,
+	writeStoredMapOverlayFilters,
+} from "./overlayFilters";
 import { ThreeDPreview } from "./ThreeDPreview";
 
 type MapTool =
@@ -234,8 +242,9 @@ export function MapEditor() {
 	const [brushSize, setBrushSize] = useState<BrushSize>(1);
 	const [heightToolValue, setHeightToolValue] = useState(0);
 	const [showGrid, setShowGrid] = useState(true);
-	const [overlayFilter, setOverlayFilter] =
-		useState<MapOverlayFilter>("npc_paths");
+	const [overlayFilters, setOverlayFilters] = useState(
+		readStoredMapOverlayFilters,
+	);
 	const [paletteWidth, setPaletteWidth] = useState(readStoredPaletteWidth);
 	const [isResizingPalette, setIsResizingPalette] = useState(false);
 	const [draftMapSize, setDraftMapSize] = useState({
@@ -321,6 +330,10 @@ export function MapEditor() {
 			});
 		}
 	}, [activeArea, selection, setSelection]);
+
+	useEffect(() => {
+		writeStoredMapOverlayFilters(overlayFilters);
+	}, [overlayFilters]);
 
 	const terrainLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
@@ -3405,23 +3418,43 @@ export function MapEditor() {
 					/>
 					Show grid
 				</label>
-				<label>
-					Overlay
-					<select
-						onChange={(event) =>
-							setOverlayFilter(event.target.value as MapOverlayFilter)
-						}
-						value={overlayFilter}
+				<div className="panel-title">Filters</div>
+				<div className="filter-button-row">
+					<button
+						onClick={() => setOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)}
+						type="button"
 					>
-						<option value="npc_paths">NPC paths</option>
-						<option value="enemy_ranges">Enemy ranges</option>
-						<option value="none">None</option>
-					</select>
-				</label>
-				<p className="tool-note">
-					TODO: Add event block, collision, quest marker, and enemy territory
-					overlays.
-				</p>
+						Show All
+					</button>
+					<button
+						onClick={() => setOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)}
+						type="button"
+					>
+						Hide All
+					</button>
+					<button
+						onClick={() => setOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)}
+						type="button"
+					>
+						Gameplay View
+					</button>
+				</div>
+				<div className="filter-grid">
+					{OVERLAY_FILTER_OPTIONS.map((option) => (
+						<label className="checkbox-row compact" key={option.key}>
+							<input
+								checked={overlayFilters[option.key]}
+								onChange={() =>
+									setOverlayFilters((filters) =>
+										toggleMapOverlayFilter(filters, option.key),
+									)
+								}
+								type="checkbox"
+							/>
+							{option.label}
+						</label>
+					))}
+				</div>
 
 				<button
 					className="primary-button full-width"
@@ -3520,13 +3553,26 @@ export function MapEditor() {
 										label: terrain.label,
 									};
 									const overlayId = overlayLookup.get(key);
-									const eventBlock = eventLookup.get(key);
-									const object = objectLookup.get(key);
-									const pickup = pickupLookup.get(key);
+									const rawEventBlock = eventLookup.get(key);
+									const eventBlock =
+										rawEventBlock &&
+										(rawEventBlock.kind === "spawn"
+											? overlayFilters.spawnPoints || overlayFilters.eventBlocks
+											: overlayFilters.eventBlocks)
+											? rawEventBlock
+											: undefined;
+									const object = overlayFilters.objects
+										? objectLookup.get(key)
+										: undefined;
+									const pickup = overlayFilters.pickups
+										? pickupLookup.get(key)
+										: undefined;
 									const pickupItem = project.items.find(
 										(item) => item.id === pickup?.itemId,
 									);
-									const npc = npcLookup.get(key);
+									const npc = overlayFilters.npcs
+										? npcLookup.get(key)
+										: undefined;
 									const npcDefinition = project.npcs.find(
 										(definition) => definition.id === npc?.npcDefinitionId,
 									);
@@ -3659,7 +3705,7 @@ export function MapEditor() {
 									);
 								}),
 							)}
-							{overlayFilter === "npc_paths" &&
+							{overlayFilters.npcPaths &&
 							selectedResolvedNpc?.movementMode === "patrol" &&
 							selectedResolvedNpc.patrolPath ? (
 								<svg
@@ -3694,7 +3740,7 @@ export function MapEditor() {
 									))}
 								</svg>
 							) : null}
-							{overlayFilter === "npc_paths" &&
+							{overlayFilters.npcPaths &&
 							selectedResolvedNpc?.movementMode === "wander" &&
 							selectedResolvedNpc.wanderZone ? (
 								<div
@@ -3709,7 +3755,7 @@ export function MapEditor() {
 									Wander
 								</div>
 							) : null}
-							{overlayFilter === "enemy_ranges" &&
+							{overlayFilters.collision &&
 							selectedResolvedNpc?.attributes.alignment === "hostile" &&
 							selectedResolvedNpc.enemyBehaviour?.enabled ? (
 								<>
@@ -3769,47 +3815,51 @@ export function MapEditor() {
 									</div>
 								</>
 							) : null}
-							{activeArea.structures.map((structure) => {
-								const preset = getStructurePreset(structure.structureId);
-								return (
-									<button
-										className={`map-structure ${
-											selection?.type === "structure" &&
-											selection.id === structure.id
-												? "selected"
-												: ""
-										}`}
-										key={structure.id}
-										onClick={(event) => {
-											event.preventDefault();
-											setSelection({
-												type: "structure",
-												areaId: activeArea.id,
-												id: structure.id,
-											});
-										}}
-										onPointerDown={(event) => {
-											event.stopPropagation();
-										}}
-										style={
-											{
-												left: structure.x * cellSize,
-												top: structure.y * cellSize,
-												width: structure.widthTiles * cellSize,
-												height: structure.heightTiles * cellSize,
-												"--structure-roof": preset.roofColor,
-												"--structure-wall": preset.wallColor,
-												"--structure-shadow": preset.shadowColor,
-											} as CSSProperties
-										}
-										type="button"
-									>
-										<span className="structure-roof" />
-										<span className="structure-wall" />
-										<span className="structure-label">{structure.name}</span>
-									</button>
-								);
-							})}
+							{overlayFilters.structures
+								? activeArea.structures.map((structure) => {
+										const preset = getStructurePreset(structure.structureId);
+										return (
+											<button
+												className={`map-structure ${
+													selection?.type === "structure" &&
+													selection.id === structure.id
+														? "selected"
+														: ""
+												}`}
+												key={structure.id}
+												onClick={(event) => {
+													event.preventDefault();
+													setSelection({
+														type: "structure",
+														areaId: activeArea.id,
+														id: structure.id,
+													});
+												}}
+												onPointerDown={(event) => {
+													event.stopPropagation();
+												}}
+												style={
+													{
+														left: structure.x * cellSize,
+														top: structure.y * cellSize,
+														width: structure.widthTiles * cellSize,
+														height: structure.heightTiles * cellSize,
+														"--structure-roof": preset.roofColor,
+														"--structure-wall": preset.wallColor,
+														"--structure-shadow": preset.shadowColor,
+													} as CSSProperties
+												}
+												type="button"
+											>
+												<span className="structure-roof" />
+												<span className="structure-wall" />
+												<span className="structure-label">
+													{structure.name}
+												</span>
+											</button>
+										);
+									})
+								: null}
 						</div>
 					</div>
 				) : (
@@ -3818,6 +3868,7 @@ export function MapEditor() {
 						embedded
 						heightToolValue={heightToolValue}
 						hideDetails
+						overlayFilters={overlayFilters}
 						terrainPaintTileId={
 							isTerrainPaintArmed &&
 							activeTool === "paint" &&

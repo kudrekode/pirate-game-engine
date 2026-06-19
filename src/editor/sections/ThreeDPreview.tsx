@@ -5,6 +5,16 @@ import { getTerrainSurfaceY } from "../../data/terrainHeight";
 import { useProjectStore } from "../../store/useProjectStore";
 import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
+	GAMEPLAY_OVERLAY_FILTERS,
+	HIDE_ALL_OVERLAY_FILTERS,
+	type MapOverlayFilters,
+	OVERLAY_FILTER_OPTIONS,
+	readStoredMapOverlayFilters,
+	SHOW_ALL_OVERLAY_FILTERS,
+	toggleMapOverlayFilter,
+	writeStoredMapOverlayFilters,
+} from "./overlayFilters";
+import {
 	getPreviewSelectionFootprint,
 	isMovablePreviewSelection,
 	movePreviewSelectionInProject,
@@ -35,6 +45,7 @@ type ThreeDPreviewProps = {
 	heightToolValue?: number;
 	hideDetails?: boolean;
 	onOpenInMapEditor?: () => void;
+	overlayFilters?: MapOverlayFilters;
 	terrainPaintTileId?: string;
 	terrainHeightTool?: TerrainHeightTool;
 };
@@ -66,14 +77,18 @@ export function ThreeDPreview({
 	heightToolValue = 0,
 	hideDetails = false,
 	onOpenInMapEditor,
+	overlayFilters: controlledOverlayFilters,
 	terrainPaintTileId,
 	terrainHeightTool,
 }: ThreeDPreviewProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const [mountError, setMountError] = useState("");
-	const [showEventMarkers, setShowEventMarkers] = useState(false);
+	const [localOverlayFilters, setLocalOverlayFilters] = useState(
+		readStoredMapOverlayFilters,
+	);
 	const [cameraPreset, setCameraPreset] =
 		useState<PreviewCameraPreset>("isometric");
+	const overlayFilters = controlledOverlayFilters ?? localOverlayFilters;
 	const project = useProjectStore((state) => state.project);
 	const editorSelection = useProjectStore((state) => state.editorSelection);
 	const setEditorSelection = useProjectStore(
@@ -108,8 +123,8 @@ export function ThreeDPreview({
 		[activeArea],
 	);
 	const entityMarkers = useMemo(
-		() => areaEntitiesToMarkers(activeArea, project.objects, showEventMarkers),
-		[activeArea, project.objects, showEventMarkers],
+		() => areaEntitiesToMarkers(activeArea, project.objects, overlayFilters),
+		[activeArea, overlayFilters, project.objects],
 	);
 	const selectionDetails = useMemo(
 		() => getPreviewSelectionDetails(project, editorSelection),
@@ -132,6 +147,16 @@ export function ThreeDPreview({
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [setMapPaletteSelection]);
+
+	useEffect(() => {
+		if (!controlledOverlayFilters) {
+			writeStoredMapOverlayFilters(localOverlayFilters);
+		}
+	}, [controlledOverlayFilters, localOverlayFilters]);
+
+	const updateLocalOverlayFilters = (filters: MapOverlayFilters) => {
+		setLocalOverlayFilters(filters);
+	};
 
 	useEffect(() => {
 		const host = hostRef.current;
@@ -915,14 +940,52 @@ export function ThreeDPreview({
 						Reset camera
 					</button>
 				</div>
-				<label className="inline-toggle">
-					<input
-						checked={showEventMarkers}
-						onChange={(event) => setShowEventMarkers(event.target.checked)}
-						type="checkbox"
-					/>
-					Show event blocks
-				</label>
+				{controlledOverlayFilters ? null : (
+					<div className="preview-filter-panel">
+						<div className="filter-button-row">
+							<button
+								onClick={() =>
+									updateLocalOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)
+								}
+								type="button"
+							>
+								Show All
+							</button>
+							<button
+								onClick={() =>
+									updateLocalOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)
+								}
+								type="button"
+							>
+								Hide All
+							</button>
+							<button
+								onClick={() =>
+									updateLocalOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)
+								}
+								type="button"
+							>
+								Gameplay View
+							</button>
+						</div>
+						<div className="filter-grid">
+							{OVERLAY_FILTER_OPTIONS.map((option) => (
+								<label className="checkbox-row compact" key={option.key}>
+									<input
+										checked={overlayFilters[option.key]}
+										onChange={() =>
+											updateLocalOverlayFilters(
+												toggleMapOverlayFilter(overlayFilters, option.key),
+											)
+										}
+										type="checkbox"
+									/>
+									{option.label}
+								</label>
+							))}
+						</div>
+					</div>
+				)}
 				<div
 					aria-label="3D preview viewport"
 					className="three-d-preview-host"

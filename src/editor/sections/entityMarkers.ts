@@ -1,5 +1,6 @@
 import { getTerrainSurfaceY } from "../../data/terrainHeight";
 import type { GameArea, ObjectDefinition } from "../../types/game";
+import type { MapOverlayFilters } from "./overlayFilters";
 
 export type EntityMarkerKind =
 	| "object"
@@ -77,132 +78,159 @@ function getFootprintSurfaceY(
 export function areaEntitiesToMarkers(
 	area: GameArea | undefined,
 	objectDefinitions: ObjectDefinition[],
-	includeEventBlocks: boolean,
+	filtersOrIncludeEventBlocks: boolean | MapOverlayFilters,
 ): EntityMarker[] {
 	if (!area) {
 		return [];
 	}
+	const filters =
+		typeof filtersOrIncludeEventBlocks === "boolean"
+			? ({
+					eventBlocks: filtersOrIncludeEventBlocks,
+					npcs: true,
+					objects: true,
+					pickups: true,
+					spawnPoints: filtersOrIncludeEventBlocks,
+					structures: true,
+				} as MapOverlayFilters)
+			: filtersOrIncludeEventBlocks;
 
 	const objectDefinitionsById = new Map(
 		objectDefinitions.map((definition) => [definition.id, definition]),
 	);
 	const markers: EntityMarker[] = [];
 
-	area.structures.forEach((structure) => {
-		const { threeX, threeZ } = toThreePosition(
-			area,
-			structure.x,
-			structure.y,
-			structure.widthTiles,
-			structure.heightTiles,
-		);
-		const surfaceY = getFootprintSurfaceY(
-			area,
-			structure.x,
-			structure.y,
-			structure.widthTiles,
-			structure.heightTiles,
-		);
-		markers.push({
-			color: ENTITY_MARKER_COLORS.structure,
-			depth: structure.heightTiles * 0.96,
-			gridX: structure.x,
-			gridY: structure.y,
-			height: 1.7,
-			id: structure.id,
-			kind: "structure",
-			opacity: 1,
-			shape: "box",
-			threeX,
-			threeY: surfaceY + 0.85,
-			threeZ,
-			width: structure.widthTiles * 0.96,
+	if (filters.structures) {
+		area.structures.forEach((structure) => {
+			const { threeX, threeZ } = toThreePosition(
+				area,
+				structure.x,
+				structure.y,
+				structure.widthTiles,
+				structure.heightTiles,
+			);
+			const surfaceY = getFootprintSurfaceY(
+				area,
+				structure.x,
+				structure.y,
+				structure.widthTiles,
+				structure.heightTiles,
+			);
+			markers.push({
+				color: ENTITY_MARKER_COLORS.structure,
+				depth: structure.heightTiles * 0.96,
+				gridX: structure.x,
+				gridY: structure.y,
+				height: 1.7,
+				id: structure.id,
+				kind: "structure",
+				opacity: 1,
+				shape: "box",
+				threeX,
+				threeY: surfaceY + 0.85,
+				threeZ,
+				width: structure.widthTiles * 0.96,
+			});
 		});
-	});
+	}
 
-	area.objects.forEach((object) => {
-		const definition = objectDefinitionsById.get(object.objectDefinitionId);
-		const widthTiles = object.widthTiles ?? definition?.widthTiles ?? 1;
-		const heightTiles = object.heightTiles ?? definition?.heightTiles ?? 1;
-		const isVehicle =
-			object.behaviourOverride?.type === "vehicle" ||
-			isVehicleObject(definition);
-		const { threeX, threeZ } = toThreePosition(
-			area,
-			object.x,
-			object.y,
-			widthTiles,
-			heightTiles,
-		);
-		const surfaceY = getFootprintSurfaceY(
-			area,
-			object.x,
-			object.y,
-			widthTiles,
-			heightTiles,
-		);
-		const markerHeight = isVehicle ? 0.35 : 0.8;
-		markers.push({
-			color: isVehicle
-				? ENTITY_MARKER_COLORS.vehicle
-				: ENTITY_MARKER_COLORS.object,
-			depth: isVehicle ? Math.max(0.65, heightTiles * 0.7) : heightTiles * 0.74,
-			gridX: object.x,
-			gridY: object.y,
-			height: markerHeight,
-			id: object.id,
-			kind: isVehicle ? "vehicle" : "object",
-			opacity: 1,
-			shape: "box",
-			threeX,
-			threeY: surfaceY + markerHeight / 2,
-			threeZ,
-			width: isVehicle ? Math.max(1.1, widthTiles * 0.9) : widthTiles * 0.74,
+	if (filters.objects) {
+		area.objects.forEach((object) => {
+			const definition = objectDefinitionsById.get(object.objectDefinitionId);
+			const widthTiles = object.widthTiles ?? definition?.widthTiles ?? 1;
+			const heightTiles = object.heightTiles ?? definition?.heightTiles ?? 1;
+			const isVehicle =
+				object.behaviourOverride?.type === "vehicle" ||
+				isVehicleObject(definition);
+			const { threeX, threeZ } = toThreePosition(
+				area,
+				object.x,
+				object.y,
+				widthTiles,
+				heightTiles,
+			);
+			const surfaceY = getFootprintSurfaceY(
+				area,
+				object.x,
+				object.y,
+				widthTiles,
+				heightTiles,
+			);
+			const markerHeight = isVehicle ? 0.35 : 0.8;
+			markers.push({
+				color: isVehicle
+					? ENTITY_MARKER_COLORS.vehicle
+					: ENTITY_MARKER_COLORS.object,
+				depth: isVehicle
+					? Math.max(0.65, heightTiles * 0.7)
+					: heightTiles * 0.74,
+				gridX: object.x,
+				gridY: object.y,
+				height: markerHeight,
+				id: object.id,
+				kind: isVehicle ? "vehicle" : "object",
+				opacity: 1,
+				shape: "box",
+				threeX,
+				threeY: surfaceY + markerHeight / 2,
+				threeZ,
+				width: isVehicle ? Math.max(1.1, widthTiles * 0.9) : widthTiles * 0.74,
+			});
 		});
-	});
+	}
 
-	area.npcs.forEach((npc) => {
-		const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
-		const markerHeight = 1.25;
-		markers.push({
-			color: ENTITY_MARKER_COLORS.npc,
-			depth: 0.48,
-			gridX: npc.x,
-			gridY: npc.y,
-			height: markerHeight,
-			id: npc.id,
-			kind: "npc",
-			opacity: 1,
-			shape: "cylinder",
-			threeX,
-			threeY: getTerrainSurfaceY(area, npc.x, npc.y) + markerHeight / 2,
-			threeZ,
-			width: 0.48,
+	if (filters.npcs) {
+		area.npcs.forEach((npc) => {
+			const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
+			const markerHeight = 1.25;
+			markers.push({
+				color: ENTITY_MARKER_COLORS.npc,
+				depth: 0.48,
+				gridX: npc.x,
+				gridY: npc.y,
+				height: markerHeight,
+				id: npc.id,
+				kind: "npc",
+				opacity: 1,
+				shape: "cylinder",
+				threeX,
+				threeY: getTerrainSurfaceY(area, npc.x, npc.y) + markerHeight / 2,
+				threeZ,
+				width: 0.48,
+			});
 		});
-	});
+	}
 
-	area.pickups.forEach((pickup) => {
-		const { threeX, threeZ } = toThreePosition(area, pickup.x, pickup.y);
-		const markerHeight = 0.34;
-		markers.push({
-			color: ENTITY_MARKER_COLORS.pickup,
-			depth: 0.34,
-			gridX: pickup.x,
-			gridY: pickup.y,
-			height: markerHeight,
-			id: pickup.id,
-			kind: "pickup",
-			opacity: 1,
-			shape: "box",
-			threeX,
-			threeY: getTerrainSurfaceY(area, pickup.x, pickup.y) + 0.75,
-			threeZ,
-			width: 0.34,
+	if (filters.pickups) {
+		area.pickups.forEach((pickup) => {
+			const { threeX, threeZ } = toThreePosition(area, pickup.x, pickup.y);
+			const markerHeight = 0.34;
+			markers.push({
+				color: ENTITY_MARKER_COLORS.pickup,
+				depth: 0.34,
+				gridX: pickup.x,
+				gridY: pickup.y,
+				height: markerHeight,
+				id: pickup.id,
+				kind: "pickup",
+				opacity: 1,
+				shape: "box",
+				threeX,
+				threeY: getTerrainSurfaceY(area, pickup.x, pickup.y) + 0.75,
+				threeZ,
+				width: 0.34,
+			});
 		});
-	});
+	}
 
-	if (includeEventBlocks) {
+	if (filters.eventBlocks || filters.spawnPoints) {
 		area.eventBlocks.forEach((eventBlock) => {
+			if (
+				(eventBlock.kind === "spawn" && !filters.spawnPoints) ||
+				(eventBlock.kind !== "spawn" && !filters.eventBlocks)
+			) {
+				return;
+			}
 			const { threeX, threeZ } = toThreePosition(
 				area,
 				eventBlock.x,

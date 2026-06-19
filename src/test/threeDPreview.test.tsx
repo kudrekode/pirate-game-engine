@@ -233,7 +233,7 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
 			"active",
 		);
-		expect(screen.getByLabelText("Show event blocks")).toBeInTheDocument();
+		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
 	});
 
@@ -383,7 +383,7 @@ describe("ThreeDPreview", () => {
 				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
 			),
 		).toBeInTheDocument();
-		expect(screen.getByLabelText("Show event blocks")).toBeInTheDocument();
+		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
 	});
 
