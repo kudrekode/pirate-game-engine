@@ -249,6 +249,29 @@ describe("ThreeDPreview", () => {
 		).toBeInTheDocument();
 	});
 
+	it("starts and stops the experimental 3D walk preview", () => {
+		render(<ThreeDPreview />);
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Start 3D Walk Preview" }),
+		);
+
+		expect(
+			screen.getAllByText("Experimental 3D walk preview — game logic disabled.")
+				.length,
+		).toBeGreaterThan(0);
+		expect(
+			screen.getByRole("button", { name: "Stop 3D Walk Preview" }),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Walk preview at x/)).toBeInTheDocument();
+
+		fireEvent.keyDown(window, { key: "Escape" });
+
+		expect(
+			screen.getByRole("button", { name: "Start 3D Walk Preview" }),
+		).toBeInTheDocument();
+	});
+
 	it("renders terrain details from shared selection", () => {
 		useProjectStore.getState().setEditorSelection({
 			areaId: "area_main",

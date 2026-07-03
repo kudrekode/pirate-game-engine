@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { getTerrainSurfaceY } from "../../data/terrainHeight";
@@ -35,6 +35,11 @@ import {
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import { getTerrainBlockColor, terrainTilesToBlocks } from "./terrainBlocks";
+import {
+	getWalkPreviewDirectionFromKey,
+	getWalkPreviewStart,
+	moveWalkPreview,
+} from "./threeDWalkPreview";
 
 type PreviewCameraPreset = "top" | "isometric" | "low";
 export type TerrainHeightTool = "raise" | "lower" | "flatten" | "set";
@@ -88,6 +93,9 @@ export function ThreeDPreview({
 	);
 	const [cameraPreset, setCameraPreset] =
 		useState<PreviewCameraPreset>("isometric");
+	const [walkPreviewPosition, setWalkPreviewPosition] =
+		useState<PreviewGridPosition>();
+	const [walkPreviewMessage, setWalkPreviewMessage] = useState("");
 	const overlayFilters = controlledOverlayFilters ?? localOverlayFilters;
 	const project = useProjectStore((state) => state.project);
 	const editorSelection = useProjectStore((state) => state.editorSelection);
@@ -137,16 +145,68 @@ export function ThreeDPreview({
 	const canMoveSelection =
 		isMovablePreviewSelection(editorSelection) &&
 		editorSelection.areaId === activeArea?.id;
+	const isWalkPreviewActive = Boolean(walkPreviewPosition);
+
+	const startWalkPreview = () => {
+		const start = getWalkPreviewStart(activeArea);
+		if (!start) {
+			setWalkPreviewMessage("No active area for 3D walk preview.");
+			return;
+		}
+		setWalkPreviewPosition(start);
+		setWalkPreviewMessage(
+			"Experimental 3D walk preview — game logic disabled.",
+		);
+	};
+
+	const stopWalkPreview = useCallback(() => {
+		setWalkPreviewPosition(undefined);
+		setWalkPreviewMessage("");
+	}, []);
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === "Escape") {
-				setMapPaletteSelection({ type: "none" });
+				if (walkPreviewPosition) {
+					event.preventDefault();
+					stopWalkPreview();
+				} else {
+					setMapPaletteSelection({ type: "none" });
+				}
+				return;
 			}
+			const direction = getWalkPreviewDirectionFromKey(event.key);
+			if (!direction || !activeArea || !walkPreviewPosition) {
+				return;
+			}
+			event.preventDefault();
+			setWalkPreviewPosition((position) => {
+				if (!position) {
+					return position;
+				}
+				const result = moveWalkPreview(
+					activeArea,
+					project.player,
+					position,
+					direction,
+				);
+				setWalkPreviewMessage(
+					result.blockedReason
+						? `Blocked: ${result.blockedReason}`
+						: "Experimental 3D walk preview — game logic disabled.",
+				);
+				return result.position;
+			});
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [setMapPaletteSelection]);
+	}, [
+		activeArea,
+		project.player,
+		setMapPaletteSelection,
+		stopWalkPreview,
+		walkPreviewPosition,
+	]);
 
 	useEffect(() => {
 		if (!controlledOverlayFilters) {
@@ -171,8 +231,30 @@ export function ThreeDPreview({
 		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
 		const areaHeight = Math.max(activeArea?.height ?? 8, 8);
 		const cameraDistance = Math.max(areaWidth, areaHeight) * 0.9;
-		camera.position.set(...getCameraPosition(cameraPreset, cameraDistance));
-		camera.lookAt(0, 0, 0);
+		const walkPreviewPoint =
+			activeArea && walkPreviewPosition
+				? previewGridPositionToThreePoint(activeArea, walkPreviewPosition, {
+						height: 1,
+						width: 1,
+					})
+				: undefined;
+		const cameraFocusX = walkPreviewPoint?.x ?? 0;
+		const cameraFocusY =
+			activeArea && walkPreviewPosition
+				? getTerrainSurfaceY(
+						activeArea,
+						walkPreviewPosition.x,
+						walkPreviewPosition.y,
+					)
+				: 0;
+		const cameraFocusZ = walkPreviewPoint?.z ?? 0;
+		const cameraPosition = getCameraPosition(cameraPreset, cameraDistance);
+		camera.position.set(
+			cameraPosition[0] + cameraFocusX,
+			cameraPosition[1] + cameraFocusY,
+			cameraPosition[2] + cameraFocusZ,
+		);
+		camera.lookAt(new THREE.Vector3(cameraFocusX, cameraFocusY, cameraFocusZ));
 
 		const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
 		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.85);
@@ -240,6 +322,34 @@ export function ThreeDPreview({
 			scene.add(mesh);
 			return mesh;
 		});
+		const walkPreviewMesh =
+			activeArea && walkPreviewPosition
+				? new THREE.Mesh(
+						new THREE.CylinderGeometry(0.28, 0.36, 1.25, 16),
+						new THREE.MeshStandardMaterial({
+							color: 0x2563eb,
+							emissive: 0x93c5fd,
+							emissiveIntensity: 0.35,
+						}),
+					)
+				: undefined;
+		if (
+			walkPreviewMesh &&
+			activeArea &&
+			walkPreviewPosition &&
+			walkPreviewPoint
+		) {
+			walkPreviewMesh.position.set(
+				walkPreviewPoint.x,
+				getTerrainSurfaceY(
+					activeArea,
+					walkPreviewPosition.x,
+					walkPreviewPosition.y,
+				) + 0.625,
+				walkPreviewPoint.z,
+			);
+			scene.add(walkPreviewMesh);
+		}
 		const selectableMeshes = [...meshes, ...markerMeshes];
 
 		let renderer: THREE.WebGLRenderer;
@@ -263,7 +373,7 @@ export function ThreeDPreview({
 		controls.enableZoom = true;
 		controls.maxDistance = cameraDistance * 3;
 		controls.minDistance = 3;
-		controls.target.set(0, 0, 0);
+		controls.target.set(cameraFocusX, cameraFocusY, cameraFocusZ);
 		controls.update();
 
 		const raycaster = new THREE.Raycaster();
@@ -856,6 +966,17 @@ export function ThreeDPreview({
 					mesh.material.dispose();
 				}
 			});
+			if (walkPreviewMesh) {
+				scene.remove(walkPreviewMesh);
+				walkPreviewMesh.geometry.dispose();
+				if (Array.isArray(walkPreviewMesh.material)) {
+					walkPreviewMesh.material.forEach((material) => {
+						material.dispose();
+					});
+				} else {
+					walkPreviewMesh.material.dispose();
+				}
+			}
 			if (host.contains(renderer.domElement)) {
 				host.removeChild(renderer.domElement);
 			}
@@ -883,6 +1004,7 @@ export function ThreeDPreview({
 		terrainHeightTool,
 		updatePickup,
 		updateProject,
+		walkPreviewPosition,
 	]);
 
 	return (
@@ -905,6 +1027,11 @@ export function ThreeDPreview({
 					Click objects in 3D to inspect them. Drag a selected entity to move it
 					on the grid.
 				</p>
+				{isWalkPreviewActive ? (
+					<p className="helper-text">
+						Experimental 3D walk preview — game logic disabled.
+					</p>
+				) : null}
 				<p className="helper-text">
 					{terrainHeightTool
 						? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
@@ -939,7 +1066,25 @@ export function ThreeDPreview({
 					<button onClick={() => setCameraPreset("isometric")} type="button">
 						Reset camera
 					</button>
+					{isWalkPreviewActive ? (
+						<button onClick={stopWalkPreview} type="button">
+							Stop 3D Walk Preview
+						</button>
+					) : (
+						<button onClick={startWalkPreview} type="button">
+							Start 3D Walk Preview
+						</button>
+					)}
 				</div>
+				{walkPreviewPosition ? (
+					<p className="helper-text">
+						Walk preview at x {walkPreviewPosition.x}, y {walkPreviewPosition.y}
+						. Use WASD or arrow keys. Press Escape to stop.
+					</p>
+				) : null}
+				{walkPreviewMessage ? (
+					<p className="helper-text">{walkPreviewMessage}</p>
+				) : null}
 				{controlledOverlayFilters ? null : (
 					<div className="preview-filter-panel">
 						<div className="filter-button-row">
