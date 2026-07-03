@@ -38,6 +38,16 @@ import {
 	getDialogueNode,
 	type RuntimeDialogueState,
 } from "./dialogueEngine";
+import {
+	canInteractActivate,
+	canTouchActivate,
+	findNearestInteractableTarget,
+	findObjectDefinition,
+	findTouchInteractableTarget,
+	type InteractableTarget,
+	resolveEventInteraction,
+	resolveObjectBehaviour,
+} from "./interactionDiscovery";
 import { collectPickup } from "./inventory";
 import {
 	findDismountTile,
@@ -91,37 +101,6 @@ type CombatKeys = {
 	SPACE: Phaser.Input.Keyboard.Key;
 };
 
-type Interactable =
-	| {
-			kind: "event";
-			label: string;
-			interaction?: Interaction;
-			eventBlock: EventBlock;
-			distance: number;
-	  }
-	| {
-			kind: "structure";
-			label: string;
-			interaction?: Interaction;
-			structure: MapStructure;
-			distance: number;
-	  }
-	| {
-			kind: "object";
-			label: string;
-			interaction?: Interaction;
-			object: ObjectInstance;
-			distance: number;
-	  }
-	| { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
-	| {
-			kind: "npc";
-			label: string;
-			interaction?: Interaction;
-			npc: NPCInstance;
-			distance: number;
-	  };
-
 function hexToNumber(hex: string): number {
 	return Phaser.Display.Color.HexStringToColor(hex).color;
 }
@@ -132,20 +111,6 @@ function clamp(value: number, min: number, max: number): number {
 
 function tileKey(x: number, y: number): string {
 	return `${x}:${y}`;
-}
-
-function canTouchActivate(interaction: Interaction): boolean {
-	return (
-		interaction.activationMode === "on_touch" ||
-		interaction.activationMode === "both"
-	);
-}
-
-function canInteractActivate(interaction: Interaction): boolean {
-	return (
-		interaction.activationMode === "on_interact" ||
-		interaction.activationMode === "both"
-	);
 }
 
 export class AdventureScene extends Phaser.Scene {
@@ -461,22 +426,22 @@ export class AdventureScene extends Phaser.Scene {
 		}
 		if (interactPressed && interactable) {
 			const targetId =
-				interactable.kind === "event"
+				interactable.type === "eventBlock"
 					? interactable.eventBlock.id
-					: interactable.kind === "structure"
+					: interactable.type === "structure"
 						? interactable.structure.id
-						: interactable.kind === "object"
+						: interactable.type === "object"
 							? interactable.object.id
-							: interactable.kind === "npc"
+							: interactable.type === "npc"
 								? interactable.npc.id
 								: "";
-			if (interactable.kind === "pickup") {
+			if (interactable.type === "pickup") {
 				this.collectPickupObject(interactable.pickup);
 				return;
 			}
 			this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
 				if (
-					interactable.kind === "object" &&
+					interactable.type === "object" &&
 					this.runObjectBehaviour(interactable.object)
 				) {
 					if (
@@ -1646,215 +1611,29 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
-	private findNearestInteractable(): Interactable | null {
-		const candidates: Interactable[] = [];
-
-		this.currentArea.eventBlocks.forEach((eventBlock) => {
-			const interaction = this.getEventInteraction(eventBlock);
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: eventBlock.id,
-			});
-
-			if ((!interaction || !canInteractActivate(interaction)) && !hasRule) {
-				return;
-			}
-
-			const distance =
-				Math.abs(eventBlock.x - this.playerPosition.x) +
-				Math.abs(eventBlock.y - this.playerPosition.y);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "event",
-					label: eventBlock.name,
-					interaction,
-					eventBlock,
-					distance,
-				});
-			}
+	private findNearestInteractable(): InteractableTarget | null {
+		return findNearestInteractableTarget({
+			project: this.project,
+			area: this.currentArea,
+			playerPosition: this.playerPosition,
+			runtimeState: this.runtimeState,
+			collectedPickupIds: this.collectedPickupIds,
+			defeatedNpcIds: this.defeatedNpcIds,
 		});
-
-		this.currentArea.structures.forEach((structure) => {
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: structure.id,
-			});
-			if (
-				(!structure.interaction ||
-					!canInteractActivate(structure.interaction)) &&
-				!hasRule
-			) {
-				return;
-			}
-
-			const distance = this.distanceToStructure(structure);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "structure",
-					label: structure.name,
-					interaction: structure.interaction,
-					structure,
-					distance,
-				});
-			}
-		});
-
-		this.currentArea.objects.forEach((object) => {
-			const definition = this.getObjectDefinition(object);
-			const interaction = object.interaction ?? definition?.defaultInteraction;
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: object.id,
-			});
-			const behaviour = this.getObjectBehaviour(object);
-			const hasBehaviour = behaviour.type !== "none";
-			if (
-				(!interaction || !canInteractActivate(interaction)) &&
-				!hasRule &&
-				!hasBehaviour
-			) {
-				return;
-			}
-
-			const distance = this.distanceToObject(object);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "object",
-					label:
-						object.nameOverride ??
-						this.getObjectDefinition(object)?.name ??
-						"Object",
-					interaction,
-					object,
-					distance,
-				});
-			}
-		});
-
-		this.currentArea.pickups.forEach((pickup) => {
-			if (
-				pickup.pickupMode !== "on_interact" ||
-				this.isPickupCollected(pickup)
-			) {
-				return;
-			}
-
-			const distance =
-				Math.abs(pickup.x - this.playerPosition.x) +
-				Math.abs(pickup.y - this.playerPosition.y);
-			if (distance <= 1) {
-				const item = this.project.items.find(
-					(candidate) => candidate.id === pickup.itemId,
-				);
-				candidates.push({
-					kind: "pickup",
-					label: item?.name ?? "item",
-					pickup,
-					distance,
-				});
-			}
-		});
-
-		this.currentArea.npcs.forEach((npc) => {
-			const resolved = this.getResolvedNpc(npc);
-			const attributes = this.runtimeState.npcs[npc.id] ?? resolved.attributes;
-			if (!attributes.canInteract) {
-				return;
-			}
-
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: npc.id,
-			});
-			if (
-				(!resolved.interaction || !canInteractActivate(resolved.interaction)) &&
-				!hasRule
-			) {
-				return;
-			}
-
-			const distance =
-				Math.abs(npc.x - this.playerPosition.x) +
-				Math.abs(npc.y - this.playerPosition.y);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "npc",
-					label: resolved.name,
-					interaction: resolved.interaction,
-					npc,
-					distance,
-				});
-			}
-		});
-
-		return (
-			candidates.sort((a, b) => {
-				if (a.distance !== b.distance) {
-					return a.distance - b.distance;
-				}
-
-				return a.kind === "event" ? -1 : 1;
-			})[0] ?? null
-		);
 	}
 
-	private distanceToStructure(structure: MapStructure): number {
-		const minX = structure.x;
-		const maxX = structure.x + structure.widthTiles - 1;
-		const minY = structure.y;
-		const maxY = structure.y + structure.heightTiles - 1;
-		const deltaX =
-			this.playerPosition.x < minX
-				? minX - this.playerPosition.x
-				: this.playerPosition.x > maxX
-					? this.playerPosition.x - maxX
-					: 0;
-		const deltaY =
-			this.playerPosition.y < minY
-				? minY - this.playerPosition.y
-				: this.playerPosition.y > maxY
-					? this.playerPosition.y - maxY
-					: 0;
-
-		return deltaX + deltaY;
-	}
-
-	private distanceToObject(object: ObjectInstance): number {
-		const definition = this.getObjectDefinition(object);
-		const minX = object.x;
-		const maxX =
-			object.x + (object.widthTiles ?? definition?.widthTiles ?? 1) - 1;
-		const minY = object.y;
-		const maxY =
-			object.y + (object.heightTiles ?? definition?.heightTiles ?? 1) - 1;
-		const deltaX =
-			this.playerPosition.x < minX
-				? minX - this.playerPosition.x
-				: this.playerPosition.x > maxX
-					? this.playerPosition.x - maxX
-					: 0;
-		const deltaY =
-			this.playerPosition.y < minY
-				? minY - this.playerPosition.y
-				: this.playerPosition.y > maxY
-					? this.playerPosition.y - maxY
-					: 0;
-
-		return deltaX + deltaY;
-	}
-
-	private updatePrompt(interactable: Interactable | null) {
+	private updatePrompt(interactable: InteractableTarget | null) {
 		if (!this.promptText) {
 			return;
 		}
 
 		this.promptText.setText(
 			interactable
-				? interactable.kind === "pickup"
+				? interactable.type === "pickup"
 					? `Press E to pick up ${interactable.label}`
-					: interactable.kind === "npc"
+					: interactable.type === "npc"
 						? `Press E to talk to ${interactable.label}`
-						: interactable.kind === "object"
+						: interactable.type === "object"
 							? this.promptForObject(interactable)
 							: this.promptForInteraction(interactable.interaction)
 				: "",
@@ -1862,7 +1641,7 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private promptForObject(
-		interactable: Extract<Interactable, { kind: "object" }>,
+		interactable: Extract<InteractableTarget, { type: "object" }>,
 	): string {
 		const behaviour = this.getObjectBehaviour(interactable.object);
 		if (behaviour.type === "vehicle" && behaviour.vehicleType === "boat") {
@@ -2381,77 +2160,46 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private checkTouchInteractions(onDone: () => void): boolean {
-		const pickup = this.currentArea.pickups.find(
-			(candidate) =>
-				candidate.pickupMode === "on_touch" &&
-				candidate.x === this.playerPosition.x &&
-				candidate.y === this.playerPosition.y,
-		);
-		if (pickup && this.collectPickupObject(pickup)) {
-			onDone();
-			return true;
+		const target = findTouchInteractableTarget({
+			project: this.project,
+			area: this.currentArea,
+			playerPosition: this.playerPosition,
+			runtimeState: this.runtimeState,
+			collectedPickupIds: this.collectedPickupIds,
+		});
+
+		if (!target) {
+			return false;
 		}
 
-		const object = this.currentArea.objects.find(
-			(candidate) =>
-				candidate.x === this.playerPosition.x &&
-				candidate.y === this.playerPosition.y,
-		);
-		const objectInteraction = object
-			? (object.interaction ??
-				this.getObjectDefinition(object)?.defaultInteraction)
-			: undefined;
-		const objectBehaviour = object
-			? this.getObjectBehaviour(object)
-			: { type: "none" as const };
-		const objectHasRule = object
-			? this.hasRuleTrigger({ type: "on_touch", targetId: object.id })
-			: false;
+		if (target.type === "pickup") {
+			if (this.collectPickupObject(target.pickup)) {
+				onDone();
+				return true;
+			}
+			return false;
+		}
 
-		const objectBehaviourCanTouch =
-			objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
-		if (
-			object &&
-			((objectInteraction && canTouchActivate(objectInteraction)) ||
-				objectHasRule ||
-				objectBehaviourCanTouch)
-		) {
+		if (target.type === "object") {
+			const object = target.object;
+			const objectInteraction = target.interaction;
+			const objectBehaviour = this.getObjectBehaviour(object);
+			const objectBehaviourCanTouch =
+				objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
 			this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
 				if (objectBehaviourCanTouch) {
 					this.runObjectBehaviour(object);
 				}
 				if (objectInteraction && canTouchActivate(objectInteraction)) {
-					this.runInteraction(
-						objectInteraction,
-						object.nameOverride ??
-							this.getObjectDefinition(object)?.name ??
-							"Object",
-					);
+					this.runInteraction(objectInteraction, target.label);
 				}
 				onDone();
 			});
 			return true;
 		}
 
-		const eventBlock = this.currentArea.eventBlocks.find(
-			(candidate) =>
-				candidate.x === this.playerPosition.x &&
-				candidate.y === this.playerPosition.y,
-		);
-		const interaction = eventBlock
-			? this.getEventInteraction(eventBlock)
-			: undefined;
-		const hasRule = eventBlock
-			? this.hasRuleTrigger({ type: "on_touch", targetId: eventBlock.id })
-			: false;
-
-		if (
-			!eventBlock ||
-			((!interaction || !canTouchActivate(interaction)) && !hasRule)
-		) {
-			return false;
-		}
-
+		const eventBlock = target.eventBlock;
+		const interaction = target.interaction;
 		this.fireRuleTrigger({ type: "on_touch", targetId: eventBlock.id }, () => {
 			if (interaction && canTouchActivate(interaction)) {
 				this.runInteraction(interaction, eventBlock.name);
@@ -2512,26 +2260,11 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
-		// TODO: Migrate legacy direct interactions into friendly rules once the rule editor covers every use case.
-		if (eventBlock.interaction) {
-			return eventBlock.interaction;
-		}
-
-		if (eventBlock.kind === "area_link" && eventBlock.link) {
-			return {
-				type: "area_link",
-				activationMode: "on_touch",
-				...eventBlock.link,
-			};
-		}
-
-		return undefined;
+		return resolveEventInteraction(eventBlock);
 	}
 
 	private getObjectDefinition(object: ObjectInstance) {
-		return this.project.objects.find(
-			(definition) => definition.id === object.objectDefinitionId,
-		);
+		return findObjectDefinition(this.project, object);
 	}
 
 	private getNpcName(npc: NPCInstance): string {
@@ -2557,50 +2290,7 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private getObjectBehaviour(object: ObjectInstance) {
-		return (
-			object.behaviourOverride ??
-			this.getObjectDefinition(object)?.defaultBehaviour ?? {
-				type: "none" as const,
-			}
-		);
-	}
-
-	private hasRuleTrigger(trigger: RuleTrigger): boolean {
-		return this.project.rules.some((rule) => {
-			if (!rule.enabled || rule.trigger.type !== trigger.type) {
-				return false;
-			}
-
-			if (
-				rule.trigger.type === "on_interact" &&
-				trigger.type === "on_interact"
-			) {
-				return rule.trigger.targetId === trigger.targetId;
-			}
-
-			if (rule.trigger.type === "on_touch" && trigger.type === "on_touch") {
-				return rule.trigger.targetId === trigger.targetId;
-			}
-
-			if (
-				rule.trigger.type === "on_area_enter" &&
-				trigger.type === "on_area_enter"
-			) {
-				return rule.trigger.areaId === trigger.areaId;
-			}
-
-			if (
-				rule.trigger.type === "on_cutscene_end" &&
-				trigger.type === "on_cutscene_end"
-			) {
-				return rule.trigger.cutsceneId === trigger.cutsceneId;
-			}
-
-			return (
-				rule.trigger.type === "on_game_start" &&
-				trigger.type === "on_game_start"
-			);
-		});
+		return resolveObjectBehaviour(this.project, object);
 	}
 
 	private getRuleContext(): RuleActionContext {
