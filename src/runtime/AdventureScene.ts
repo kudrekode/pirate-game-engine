@@ -66,15 +66,16 @@ import {
 } from "./objectBehaviour";
 import { attemptPlayerMove } from "./playerMovementTransaction";
 import {
-	activateQuest,
-	completeQuest as completeRuntimeQuest,
-	failQuest,
 	getQuestViews,
 	markAreaEntered,
 	type QuestView,
 	updateQuestProgress,
 } from "./questEngine";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
+import {
+	createRuntimeRuleContext,
+	type RuntimeRuleEvent,
+} from "./runtimeRuleActionDispatcher";
 import {
 	createRuntimeSession,
 	getInitialRuntimeArea,
@@ -2283,68 +2284,75 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private getRuleContext(): RuleActionContext {
-		return {
-			state: this.runtimeState,
-			playCutscene: (cutsceneId, onDone) => {
-				const cutscene = this.project.cutscenes.find(
-					(candidate) => candidate.id === cutsceneId,
+		return createRuntimeRuleContext(this.session, (event) =>
+			this.handleRuntimeRuleEvent(event),
+		);
+	}
+
+	private handleRuntimeRuleEvent(event: RuntimeRuleEvent) {
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
+
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+			return;
+		}
+
+		if (event.type === "shopOpened") {
+			this.notifyShopChanged(event.message);
+			return;
+		}
+
+		if (event.type === "cutsceneRequested") {
+			const cutscene = this.project.cutscenes.find(
+				(candidate) => candidate.id === event.cutsceneId,
+			);
+			if (!cutscene) {
+				event.onDone();
+				return;
+			}
+
+			this.promptText?.setText("");
+			this.showCutscene(cutscene, () => {
+				this.fireRuleTrigger(
+					{ type: "on_cutscene_end", cutsceneId: event.cutsceneId },
+					event.onDone,
 				);
-				if (!cutscene) {
-					this.setStatus(`Rule cutscene missing: ${cutsceneId}.`);
-					onDone();
-					return;
-				}
+			});
+			return;
+		}
 
-				this.promptText?.setText("");
-				this.showCutscene(cutscene, () => {
-					this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId }, onDone);
-				});
-			},
-			teleport: (areaId, eventBlockId) => {
-				const eventBlock = this.findEventBlock(eventBlockId, areaId);
-				if (!eventBlock) {
-					this.setStatus(`Rule teleport target missing: ${eventBlockId}.`);
-					return;
-				}
+		if (event.type === "teleportRequested") {
+			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
+			if (!eventBlock) {
+				this.setStatus(`Rule teleport target missing: ${event.eventBlockId}.`);
+				return;
+			}
 
-				this.movePlayerToArea(areaId, eventBlock);
-			},
-			changeMovementMode: (mode) => {
-				this.currentMovementMode = mode;
-				this.setStatus(`Movement mode: ${mode}.`);
-				this.updateDebugPanel();
-			},
-			endGame: () => this.showEndMessage(),
-			activateQuest: (questId) => {
-				activateQuest(this.runtimeQuestState, questId);
-				this.syncQuestProgress();
-			},
-			completeQuest: (questId) => {
-				if (
-					completeRuntimeQuest(
-						this.runtimeQuestState,
-						questId,
-						this.runtimeState,
-						this.project.items,
-					)
-				) {
-					this.notifyInventoryChanged();
-					this.updateDebugPanel();
-				}
-				this.syncQuestProgress();
-			},
-			failQuest: (questId) => {
-				failQuest(this.runtimeQuestState, questId);
-				this.syncQuestProgress();
-			},
-			openShop: (shopId) => this.openShop(shopId),
-			itemDefinitions: this.project.items,
-			stateChanged: () => {
-				this.updateDebugPanel();
-				this.notifyInventoryChanged();
-				this.syncQuestProgress();
-			},
-		};
+			this.movePlayerToArea(event.areaId, eventBlock);
+			return;
+		}
+
+		if (event.type === "movementModeChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "gameEnded") {
+			this.showEndMessage();
+		}
 	}
 
 	private fireRuleTrigger(
