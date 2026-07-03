@@ -45,12 +45,12 @@ import {
 	findObjectDefinition,
 	findTouchInteractableTarget,
 	type InteractableTarget,
+	isPickupCollected,
 	resolveEventInteraction,
 	resolveObjectBehaviour,
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
-import { collectPickup } from "./inventory";
-import { findDismountTile, type VehicleMovementConfig } from "./movement";
+import type { VehicleMovementConfig } from "./movement";
 import {
 	isEnemyTouchingPlayer,
 	isNpcTileWalkable,
@@ -60,10 +60,6 @@ import {
 	updateWanderNPC,
 } from "./npcMovement";
 import { resolveNPCInstance } from "./npcResolver";
-import {
-	type ObjectBehaviourResult,
-	runObjectBehaviour,
-} from "./objectBehaviour";
 import { attemptPlayerMove } from "./playerMovementTransaction";
 import {
 	getQuestViews,
@@ -72,6 +68,15 @@ import {
 	updateQuestProgress,
 } from "./questEngine";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
+import {
+	buyRuntimeShopEntry,
+	closeRuntimeShop,
+	collectRuntimePickup,
+	dismountRuntimeVehicle,
+	openRuntimeShop,
+	type RuntimeObjectInteractionEvent,
+	runRuntimeObjectBehaviour,
+} from "./runtimeObjectInteractions";
 import {
 	checkRuntimeWaitingTrigger,
 	completeRuntimeProgressionCutscene,
@@ -88,8 +93,7 @@ import {
 	getInitialRuntimeArea,
 	type RuntimeSessionState,
 } from "./runtimeSession";
-import { buyShopEntry, type RuntimeShopPanelState } from "./shopRuntime";
-import { createBoardedVehicleState } from "./vehicleRuntime";
+import type { RuntimeShopPanelState } from "./shopRuntime";
 
 type WasdKeys = {
 	W: Phaser.Input.Keyboard.Key;
@@ -298,51 +302,21 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	openShop(shopId: string) {
-		const shop = this.project.shops.find(
-			(candidate) => candidate.id === shopId,
+		openRuntimeShop(this.session, shopId, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
 		);
-		if (!shop) {
-			this.setStatus(`Shop missing: ${shopId}.`);
-			return;
-		}
-
-		this.activeShopId = shopId;
-		this.notifyShopChanged();
-		this.setStatus(`Opened ${shop.name}.`);
 	}
 
 	closeShop() {
-		this.activeShopId = undefined;
-		this.onShopChanged?.(null);
+		closeRuntimeShop(this.session, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
+		);
 	}
 
 	buyShopEntry(entryId: string) {
-		if (!this.activeShopId) {
-			return;
-		}
-
-		const shop = this.project.shops.find(
-			(candidate) => candidate.id === this.activeShopId,
+		buyRuntimeShopEntry(this.session, entryId, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
 		);
-		if (!shop) {
-			this.closeShop();
-			return;
-		}
-
-		const stock = this.runtimeShopStocks[shop.id] ?? {};
-		this.runtimeShopStocks[shop.id] = stock;
-		const result = buyShopEntry(
-			shop,
-			entryId,
-			this.runtimeState.inventory,
-			this.project.items,
-			stock,
-		);
-		this.setStatus(result.message);
-		this.notifyInventoryChanged();
-		this.syncQuestProgress();
-		this.updateDebugPanel();
-		this.notifyShopChanged(result.message);
 	}
 
 	create() {
@@ -708,7 +682,14 @@ export class AdventureScene extends Phaser.Scene {
 			this.renderObject(object);
 		});
 		this.currentArea.pickups
-			.filter((pickup) => !this.isPickupCollected(pickup))
+			.filter(
+				(pickup) =>
+					!isPickupCollected(
+						pickup,
+						this.runtimeState,
+						this.collectedPickupIds,
+					),
+			)
 			.forEach((pickup) => {
 				this.renderPickup(pickup);
 			});
@@ -964,6 +945,97 @@ export class AdventureScene extends Phaser.Scene {
 
 		if (event.type === "endGame") {
 			this.showEndMessage();
+		}
+	}
+
+	private handleRuntimeObjectInteractionEvent(
+		event: RuntimeObjectInteractionEvent,
+	) {
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
+
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+			return;
+		}
+
+		if (event.type === "cutsceneRequested") {
+			const cutscene = event.cutsceneId
+				? this.project.cutscenes.find(
+						(candidate) => candidate.id === event.cutsceneId,
+					)
+				: event.cutscene;
+			if (cutscene) {
+				this.showCutscene(cutscene, () => undefined);
+			}
+			return;
+		}
+
+		if (event.type === "teleportRequested") {
+			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
+			if (eventBlock) {
+				this.movePlayerToArea(event.areaId, eventBlock);
+			}
+			return;
+		}
+
+		if (event.type === "shopChanged") {
+			this.notifyShopChanged(event.message);
+			return;
+		}
+
+		if (event.type === "shopClosed") {
+			this.onShopChanged?.(null);
+			return;
+		}
+
+		if (event.type === "pickupCollected") {
+			if (event.once) {
+				this.worldLayer?.getByName(`pickup:${event.pickupId}`)?.destroy();
+			}
+			return;
+		}
+
+		if (event.type === "vehicleBoarded") {
+			this.addVehicleVisual(event.behaviour);
+			return;
+		}
+
+		if (event.type === "vehicleDismounted") {
+			this.vehicleVisual?.destroy();
+			this.vehicleVisual = undefined;
+			return;
+		}
+
+		if (event.type === "movementModeChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "objectMoved") {
+			this.objectMarkers
+				.get(event.objectId)
+				?.setPosition(event.x * this.tileSize, event.y * this.tileSize);
+			return;
+		}
+
+		if (event.type === "playerMoved") {
+			this.playerMarker?.setPosition(
+				event.x * this.tileSize + this.tileSize / 2,
+				event.y * this.tileSize + this.tileSize / 2,
+			);
 		}
 	}
 
@@ -1793,14 +1865,9 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private runObjectBehaviour(object: ObjectInstance): boolean {
-		const result = runObjectBehaviour(this.getObjectBehaviour(object), {
-			itemDefinitions: this.project.items,
-			objectId: object.id,
-			openedObjectIds: this.openedObjectIds,
-			state: this.runtimeState,
-		});
-
-		return this.applyObjectBehaviourResult(object, result);
+		return runRuntimeObjectBehaviour(this.session, object, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
+		);
 	}
 
 	private tryAttack(time: number): boolean {
@@ -1858,99 +1925,6 @@ export class AdventureScene extends Phaser.Scene {
 		// TODO: Add on_npc_defeated rule trigger and combat rule actions when Logic Builder scope expands.
 	}
 
-	private applyObjectBehaviourResult(
-		object: ObjectInstance,
-		result: ObjectBehaviourResult,
-	): boolean {
-		if (!result.handled) {
-			return false;
-		}
-
-		if (result.type === "container") {
-			this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
-			this.syncQuestProgress();
-			this.updateDebugPanel();
-			this.setStatus(result.message);
-			return true;
-		}
-
-		if (result.type === "door") {
-			if (!result.allowed) {
-				if (result.lockedCutsceneId) {
-					const cutscene = this.project.cutscenes.find(
-						(candidate) => candidate.id === result.lockedCutsceneId,
-					);
-					if (cutscene) {
-						this.showCutscene(cutscene, () => undefined);
-						return true;
-					}
-				}
-				this.setStatus(result.message);
-				return true;
-			}
-
-			if (result.targetAreaId && result.targetEventBlockId) {
-				const eventBlock = this.findEventBlock(
-					result.targetEventBlockId,
-					result.targetAreaId,
-				);
-				if (eventBlock) {
-					this.movePlayerToArea(result.targetAreaId, eventBlock);
-				} else {
-					this.setStatus(`Door target missing: ${object.id}.`);
-				}
-				return true;
-			}
-
-			this.setStatus(result.message);
-			return true;
-		}
-
-		if (result.type === "sign") {
-			this.showCutscene(
-				{
-					id: `object_sign_${object.id}`,
-					name:
-						object.nameOverride ??
-						this.getObjectDefinition(object)?.name ??
-						"Sign",
-					backgroundImageId: "forest_path",
-					speakerName:
-						object.nameOverride ??
-						this.getObjectDefinition(object)?.name ??
-						"Sign",
-					text: result.text,
-				},
-				() => undefined,
-			);
-			return true;
-		}
-
-		if (result.type === "vehicle") {
-			return this.boardVehicle(object, result.behaviour, result.message);
-		}
-
-		return false;
-	}
-
-	private boardVehicle(
-		object: ObjectInstance,
-		behaviour: VehicleMovementConfig,
-		message: string,
-	): boolean {
-		if (behaviour.vehicleType !== "boat") {
-			this.setStatus(message);
-			return true;
-		}
-
-		this.playerVehicleState = createBoardedVehicleState(object.id, behaviour);
-		this.currentMovementMode = behaviour.movementMode;
-		this.addVehicleVisual(behaviour);
-		this.updateDebugPanel();
-		this.setStatus("Boarded boat.");
-		return true;
-	}
-
 	private addVehicleVisual(behaviour: VehicleMovementConfig) {
 		this.vehicleVisual?.destroy();
 		if (!this.playerMarker || behaviour.vehicleType !== "boat") {
@@ -1972,79 +1946,17 @@ export class AdventureScene extends Phaser.Scene {
 		this.playerMarker.addAt(hull, 0);
 	}
 
-	private leaveVehicle(showMessage: boolean) {
-		if (!this.playerVehicleState.active) {
-			return;
-		}
-
-		this.playerVehicleState = { active: false };
-		this.currentMovementMode = "walk";
-		this.vehicleVisual?.destroy();
-		this.vehicleVisual = undefined;
-		this.updateDebugPanel();
-		if (showMessage) {
-			this.setStatus("Dismounted.");
-		}
-	}
-
-	private getActiveVehicleBehaviour(): VehicleMovementConfig | undefined {
-		if (
-			!this.playerVehicleState.active ||
-			!this.playerVehicleState.vehicleObjectInstanceId
-		) {
-			return undefined;
-		}
-
-		const object = this.currentArea.objects.find(
-			(candidate) =>
-				candidate.id === this.playerVehicleState.vehicleObjectInstanceId,
-		);
-		const behaviour = object ? this.getObjectBehaviour(object) : undefined;
-		return behaviour?.type === "vehicle" ? behaviour : undefined;
-	}
-
 	private tryDismountVehicle(): boolean {
-		const behaviour = this.getActiveVehicleBehaviour();
-		const vehicleObjectId = this.playerVehicleState.vehicleObjectInstanceId;
-		const vehicleObject = vehicleObjectId
-			? this.currentArea.objects.find(
-					(candidate) => candidate.id === vehicleObjectId,
-				)
-			: undefined;
-
-		if (!behaviour || !vehicleObject) {
-			this.leaveVehicle(false);
-			this.setStatus("Vehicle missing.");
+		if (
+			!dismountRuntimeVehicle(
+				this.session,
+				(event) => this.handleRuntimeObjectInteractionEvent(event),
+				this.currentArea,
+			)
+		) {
 			return false;
 		}
 
-		const waterTile = { ...this.playerPosition };
-		const target = findDismountTile(
-			this.currentArea,
-			this.playerPosition,
-			this.playerFacing,
-			behaviour,
-		);
-		if (!target.canDismount) {
-			this.setStatus(target.reason);
-			return false;
-		}
-
-		vehicleObject.x = waterTile.x;
-		vehicleObject.y = waterTile.y;
-		this.objectMarkers
-			.get(vehicleObject.id)
-			?.setPosition(
-				vehicleObject.x * this.tileSize,
-				vehicleObject.y * this.tileSize,
-			);
-
-		this.playerPosition = { x: target.x, y: target.y };
-		this.playerMarker?.setPosition(
-			target.x * this.tileSize + this.tileSize / 2,
-			target.y * this.tileSize + this.tileSize / 2,
-		);
-		this.leaveVehicle(true);
 		if (this.checkTouchInteractions(() => this.checkTrigger())) {
 			return true;
 		}
@@ -2053,45 +1965,8 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private collectPickupObject(pickup: PickupObject): boolean {
-		if (this.isPickupCollected(pickup)) {
-			return false;
-		}
-
-		const collected = collectPickup(
-			pickup,
-			this.runtimeState.inventory,
-			this.project.items,
-			this.collectedPickupIds,
-		);
-		if (!collected) {
-			return false;
-		}
-
-		if (pickup.collectedFlag) {
-			this.runtimeState.flags[pickup.collectedFlag] = true;
-		}
-
-		const item = this.project.items.find(
-			(candidate) => candidate.id === pickup.itemId,
-		);
-		if (pickup.once) {
-			this.worldLayer?.getByName(`pickup:${pickup.id}`)?.destroy();
-		}
-		this.notifyInventoryChanged();
-		this.syncQuestProgress();
-		this.updateDebugPanel();
-		this.setStatus(
-			`Picked up ${item?.name ?? pickup.itemId} x${pickup.quantity}.`,
-		);
-		return true;
-	}
-
-	private isPickupCollected(pickup: PickupObject): boolean {
-		return Boolean(
-			pickup.once &&
-				(this.collectedPickupIds.has(pickup.id) ||
-					(pickup.collectedFlag &&
-						this.runtimeState.flags[pickup.collectedFlag])),
+		return collectRuntimePickup(this.session, pickup, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
 		);
 	}
 
