@@ -111,6 +111,14 @@ Runtime-owned copies currently include:
 
 Map entity positions used by Phaser are read from the cloned play snapshot, not the live editor project.
 
+## Shared Runtime Direction
+
+`GameProject` is authoring/source data. `RuntimeSession` is the renderer-independent play snapshot/state used by runtime adapters.
+
+Phaser and any future Three.js runtime adapter must consume the same runtime session semantics. `RuntimeSession` must not depend on Phaser, Three.js, React, or editor state.
+
+Existing helper modules remain the gameplay engine. Do not duplicate movement, rules, quests, inventory, shops, NPC, combat, object behaviour, or dialogue logic in renderer adapters.
+
 ## Items And Pickups
 
 `GameProject.items` contains item definitions. V1 supports keys, currency, consumables, quest items, and miscellaneous items without equipment, crafting, or shop behavior.

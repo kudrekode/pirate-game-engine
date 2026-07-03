@@ -16,12 +16,10 @@ import type {
 	GameProject,
 	Interaction,
 	MapStructure,
-	MovementMode,
 	NPCInstance,
 	ObjectInstance,
 	PickupObject,
 	PixelAsset,
-	PlayerVehicleState,
 	RuleTrigger,
 } from "../types/game";
 import {
@@ -29,7 +27,6 @@ import {
 	damageNpc,
 	damagePlayer,
 	findAttackTarget,
-	getPlayerCombatStats,
 	type RuntimeCombatHudState,
 	removeDefeatedNpc,
 } from "./combat";
@@ -50,7 +47,6 @@ import {
 import {
 	isEnemyTouchingPlayer,
 	isNpcTileWalkable,
-	type NPCMovementState,
 	updateEnemyNPC,
 	updatePatrolNPC,
 	updateStationaryNPC,
@@ -64,26 +60,19 @@ import {
 import {
 	activateQuest,
 	completeQuest as completeRuntimeQuest,
-	createRuntimeQuestState,
 	failQuest,
 	getQuestViews,
 	markAreaEntered,
 	type QuestView,
-	type RuntimeQuestState,
 	updateQuestProgress,
 } from "./questEngine";
+import { fireTrigger, type RuleActionContext } from "./ruleEngine";
 import {
-	createRuntimeState,
-	fireTrigger,
-	type RuleActionContext,
-	type RuntimeGameState,
-} from "./ruleEngine";
-import {
-	buyShopEntry,
-	createRuntimeShopStocks,
-	type RuntimeShopPanelState,
-	type RuntimeShopStocks,
-} from "./shopRuntime";
+	createRuntimeSession,
+	getInitialRuntimeArea,
+	type RuntimeSessionState,
+} from "./runtimeSession";
+import { buyShopEntry, type RuntimeShopPanelState } from "./shopRuntime";
 import { createBoardedVehicleState } from "./vehicleRuntime";
 
 type WasdKeys = {
@@ -145,17 +134,6 @@ function tileKey(x: number, y: number): string {
 	return `${x}:${y}`;
 }
 
-function getInitialArea(project: GameProject): GameArea {
-	const fallbackArea = project.areas[0];
-	if (!fallbackArea) {
-		throw new Error("Project must include at least one area.");
-	}
-	return (
-		project.areas.find((area) => area.id === project.activeAreaId) ??
-		fallbackArea
-	);
-}
-
 function canTouchActivate(interaction: Interaction): boolean {
 	return (
 		interaction.activationMode === "on_touch" ||
@@ -172,6 +150,7 @@ function canInteractActivate(interaction: Interaction): boolean {
 
 export class AdventureScene extends Phaser.Scene {
 	private readonly project: GameProject;
+	private readonly session: RuntimeSessionState;
 	private currentArea: GameArea;
 	private tileSize: number;
 	private readonly pixelTextureKeys = new Map<string, string>();
@@ -183,45 +162,21 @@ export class AdventureScene extends Phaser.Scene {
 	private interactKeys?: InteractKeys;
 	private combatKeys?: CombatKeys;
 	private playerMarker?: Phaser.GameObjects.Container;
-	private playerPosition = { x: 0, y: 0 };
-	private progressionIndex = 0;
-	private waitingForTrigger: { areaId?: string; eventBlockId: string } | null =
-		null;
 	private nextMoveAt = 0;
 	private statusText?: Phaser.GameObjects.Text;
 	private promptText?: Phaser.GameObjects.Text;
 	private debugText?: Phaser.GameObjects.Text;
-	private readonly runtimeState: RuntimeGameState;
-	private readonly runtimeQuestState: RuntimeQuestState;
-	private readonly collectedPickupIds = new Set<string>();
-	private readonly openedObjectIds = new Set<string>();
 	private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
 	private readonly objectMarkers = new Map<
 		string,
 		Phaser.GameObjects.Container
 	>();
-	private readonly npcMovementStates = new Map<
-		string,
-		{ movement: NPCMovementState; nextMoveAt: number }
-	>();
-	private readonly enemyOrigins = new Map<string, { x: number; y: number }>();
-	private readonly enemyContactCooldowns = new Map<string, number>();
 	private readonly onInventoryChanged?: (
 		inventory: Record<string, number>,
 	) => void;
 	private readonly onQuestsChanged?: (quests: QuestView[]) => void;
 	private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
 	private readonly onCombatChanged?: (combat: RuntimeCombatHudState) => void;
-	private readonly runtimeShopStocks: RuntimeShopStocks;
-	private readonly defeatedNpcIds = new Set<string>();
-	private activeShopId?: string;
-	private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
-	private playerFacing = { x: 0, y: 1 };
-	private playerVehicleState: PlayerVehicleState = { active: false };
-	private readonly playerCombat: ReturnType<typeof getPlayerCombatStats>;
-	private runtimePlayerHealth: number;
-	private nextAttackAt = 0;
-	private recentEnemyHud?: RuntimeCombatHudState["recentEnemy"];
 	private vehicleVisual?: Phaser.GameObjects.GameObject;
 	private isCutsceneOpen = false;
 	private isDialogueOpen = false;
@@ -241,22 +196,134 @@ export class AdventureScene extends Phaser.Scene {
 		onCombatChanged?: (combat: RuntimeCombatHudState) => void,
 	) {
 		super("AdventureScene");
-		this.project = project;
-		this.currentArea = getInitialArea(project);
+		this.session = createRuntimeSession(project);
+		this.project = this.session.project;
+		this.currentArea = getInitialRuntimeArea(this.project);
 		this.tileSize = this.currentArea.tileSize;
-		this.playerCombat = getPlayerCombatStats(project.player);
-		this.runtimePlayerHealth = this.playerCombat.health;
-		this.runtimeState = createRuntimeState(
-			project.gameState,
-			project.areas.flatMap((area) => area.npcs),
-			project.npcs,
-		);
-		this.runtimeQuestState = createRuntimeQuestState(project.quests);
-		this.runtimeShopStocks = createRuntimeShopStocks(project.shops);
 		this.onInventoryChanged = onInventoryChanged;
 		this.onQuestsChanged = onQuestsChanged;
 		this.onShopChanged = onShopChanged;
 		this.onCombatChanged = onCombatChanged;
+	}
+
+	private get playerPosition() {
+		return this.session.playerPosition;
+	}
+
+	private set playerPosition(position: RuntimeSessionState["playerPosition"]) {
+		this.session.playerPosition = position;
+	}
+
+	private get progressionIndex() {
+		return this.session.progressionIndex;
+	}
+
+	private set progressionIndex(index: number) {
+		this.session.progressionIndex = index;
+	}
+
+	private get waitingForTrigger() {
+		return this.session.waitingForTrigger;
+	}
+
+	private set waitingForTrigger(trigger: RuntimeSessionState["waitingForTrigger"],) {
+		this.session.waitingForTrigger = trigger;
+	}
+
+	private get runtimeState() {
+		return this.session.runtimeState;
+	}
+
+	private get runtimeQuestState() {
+		return this.session.runtimeQuestState;
+	}
+
+	private get collectedPickupIds() {
+		return this.session.collectedPickupIds;
+	}
+
+	private get openedObjectIds() {
+		return this.session.openedObjectIds;
+	}
+
+	private get npcMovementStates() {
+		return this.session.npcMovementStates;
+	}
+
+	private get enemyOrigins() {
+		return this.session.enemyOrigins;
+	}
+
+	private get enemyContactCooldowns() {
+		return this.session.enemyContactCooldowns;
+	}
+
+	private get runtimeShopStocks() {
+		return this.session.runtimeShopStocks;
+	}
+
+	private get defeatedNpcIds() {
+		return this.session.defeatedNpcIds;
+	}
+
+	private get activeShopId() {
+		return this.session.activeShopId;
+	}
+
+	private set activeShopId(shopId: RuntimeSessionState["activeShopId"]) {
+		this.session.activeShopId = shopId;
+	}
+
+	private get currentMovementMode() {
+		return this.session.currentMovementMode;
+	}
+
+	private set currentMovementMode(mode: RuntimeSessionState["currentMovementMode"],) {
+		this.session.currentMovementMode = mode;
+	}
+
+	private get playerFacing() {
+		return this.session.playerFacing;
+	}
+
+	private set playerFacing(facing: RuntimeSessionState["playerFacing"]) {
+		this.session.playerFacing = facing;
+	}
+
+	private get playerVehicleState() {
+		return this.session.playerVehicleState;
+	}
+
+	private set playerVehicleState(vehicleState: RuntimeSessionState["playerVehicleState"],) {
+		this.session.playerVehicleState = vehicleState;
+	}
+
+	private get playerCombat() {
+		return this.session.playerCombat;
+	}
+
+	private get runtimePlayerHealth() {
+		return this.session.runtimePlayerHealth;
+	}
+
+	private set runtimePlayerHealth(health: number) {
+		this.session.runtimePlayerHealth = health;
+	}
+
+	private get nextAttackAt() {
+		return this.session.nextAttackAt;
+	}
+
+	private set nextAttackAt(time: number) {
+		this.session.nextAttackAt = time;
+	}
+
+	private get recentEnemyHud() {
+		return this.session.recentEnemy;
+	}
+
+	private set recentEnemyHud(enemy: RuntimeSessionState["recentEnemy"]) {
+		this.session.recentEnemy = enemy;
 	}
 
 	openShop(shopId: string) {
@@ -917,6 +984,7 @@ export class AdventureScene extends Phaser.Scene {
 
 		this.leaveVehicle(false);
 		const enteredNewArea = nextArea.id !== this.currentArea.id;
+		this.session.currentAreaId = nextArea.id;
 		if (enteredNewArea) {
 			this.currentArea = nextArea;
 			this.tileSize = nextArea.tileSize;
