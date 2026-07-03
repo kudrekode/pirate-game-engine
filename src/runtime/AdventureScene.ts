@@ -73,6 +73,13 @@ import {
 } from "./questEngine";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
 import {
+	checkRuntimeWaitingTrigger,
+	completeRuntimeProgressionCutscene,
+	processRuntimeProgression,
+	type RuntimeProgressionEvent,
+	transitionRuntimeArea,
+} from "./runtimeProgression";
+import {
 	createRuntimeRuleContext,
 	type RuntimeRuleEvent,
 } from "./runtimeRuleActionDispatcher";
@@ -867,103 +874,96 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private processProgression() {
-		while (this.progressionIndex < this.project.progression.length) {
-			const step = this.project.progression[this.progressionIndex];
-			const action = step.action;
-
-			if (action.type === "play_cutscene") {
-				const cutscene = this.project.cutscenes.find(
-					(candidate) => candidate.id === action.cutsceneId,
-				);
-
-				if (!cutscene) {
-					this.progressionIndex += 1;
-					continue;
-				}
-
-				this.showCutscene(cutscene, () => {
-					this.fireRuleTrigger(
-						{ type: "on_cutscene_end", cutsceneId: cutscene.id },
-						() => {
-							this.progressionIndex += 1;
-							this.processProgression();
-						},
-					);
-				});
-				return;
-			}
-
-			if (action.type === "spawn_player") {
-				const eventBlock = this.findEventBlock(
-					action.eventBlockId,
-					action.areaId,
-				);
-				if (eventBlock) {
-					this.movePlayerToArea(action.areaId, eventBlock);
-				}
-				this.progressionIndex += 1;
-				continue;
-			}
-
-			if (action.type === "teleport_player") {
-				const eventBlock = this.findEventBlock(
-					action.eventBlockId,
-					action.areaId,
-				);
-				if (eventBlock) {
-					this.movePlayerToArea(action.areaId, eventBlock);
-				}
-				this.progressionIndex += 1;
-				continue;
-			}
-
-			if (action.type === "wait_for_trigger") {
-				const eventBlock = this.findEventBlock(
-					action.eventBlockId,
-					action.areaId,
-				);
-				this.waitingForTrigger = {
-					areaId: action.areaId,
-					eventBlockId: action.eventBlockId,
-				};
-				this.setStatus(
-					eventBlock ? `Find trigger: ${eventBlock.name}` : "Find the trigger.",
-				);
-				return;
-			}
-
-			this.showEndMessage();
-			this.progressionIndex = this.project.progression.length;
-			return;
-		}
-
-		this.setStatus("Progression complete.");
+		processRuntimeProgression(this.session, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
 	}
 
 	private movePlayerToArea(areaId: string, eventBlock: EventBlock) {
-		const nextArea = this.findArea(areaId);
-		if (!nextArea) {
-			return;
-		}
+		transitionRuntimeArea(this.session, areaId, eventBlock.id, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
+	}
 
-		this.leaveVehicle(false);
-		const enteredNewArea = nextArea.id !== this.currentArea.id;
-		this.session.currentAreaId = nextArea.id;
-		if (enteredNewArea) {
+	private handleRuntimeProgressionEvent(event: RuntimeProgressionEvent) {
+		if (event.type === "areaChanged") {
+			const nextArea = this.findArea(event.areaId);
+			if (!nextArea) {
+				return;
+			}
+
 			this.currentArea = nextArea;
 			this.tileSize = nextArea.tileSize;
 			this.isMoving = false;
 			this.renderMap();
 			this.configureCameras();
+			return;
 		}
 
-		this.spawnPlayer(eventBlock);
-		markAreaEntered(this.runtimeQuestState, nextArea.id);
-		this.syncQuestProgress();
-		this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
-		this.updateDebugPanel();
-		if (enteredNewArea) {
-			this.fireRuleTrigger({ type: "on_area_enter", areaId: nextArea.id });
+		if (event.type === "vehicleLeft") {
+			this.vehicleVisual?.destroy();
+			this.vehicleVisual = undefined;
+			return;
+		}
+
+		if (event.type === "spawnPlayer") {
+			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
+			if (eventBlock) {
+				this.spawnPlayer(eventBlock);
+			}
+			return;
+		}
+
+		if (event.type === "cutsceneRequested") {
+			const cutscene = this.project.cutscenes.find(
+				(candidate) => candidate.id === event.cutsceneId,
+			);
+			if (!cutscene) {
+				completeRuntimeProgressionCutscene(this.session, (nextEvent) =>
+					this.handleRuntimeProgressionEvent(nextEvent),
+				);
+				return;
+			}
+
+			this.showCutscene(cutscene, () => {
+				this.fireRuleTrigger(
+					{ type: "on_cutscene_end", cutsceneId: cutscene.id },
+					() =>
+						completeRuntimeProgressionCutscene(this.session, (nextEvent) =>
+							this.handleRuntimeProgressionEvent(nextEvent),
+						),
+				);
+			});
+			return;
+		}
+
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
+
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+			return;
+		}
+
+		if (event.type === "areaEnterTriggerRequested") {
+			this.fireRuleTrigger({ type: "on_area_enter", areaId: event.areaId });
+			return;
+		}
+
+		if (event.type === "endGame") {
+			this.showEndMessage();
 		}
 	}
 
@@ -2186,47 +2186,11 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private checkTrigger(triggerTargets?: InteractableTarget[]) {
-		if (!this.waitingForTrigger) {
-			return;
-		}
-
-		const triggerTarget = triggerTargets?.find(
-			(target) =>
-				target.type === "eventBlock" &&
-				target.id === this.waitingForTrigger?.eventBlockId &&
-				(!this.waitingForTrigger.areaId ||
-					this.waitingForTrigger.areaId === target.areaId),
+		checkRuntimeWaitingTrigger(
+			this.session,
+			(event) => this.handleRuntimeProgressionEvent(event),
+			triggerTargets,
 		);
-		if (triggerTarget) {
-			this.waitingForTrigger = null;
-			this.progressionIndex += 1;
-			this.processProgression();
-			return;
-		}
-
-		const eventBlock = this.findEventBlock(
-			this.waitingForTrigger.eventBlockId,
-			this.waitingForTrigger.areaId,
-		);
-		if (!eventBlock) {
-			this.waitingForTrigger = null;
-			this.progressionIndex += 1;
-			this.processProgression();
-			return;
-		}
-
-		const isInTargetArea =
-			!this.waitingForTrigger.areaId ||
-			this.waitingForTrigger.areaId === this.currentArea.id;
-		if (
-			isInTargetArea &&
-			eventBlock.x === this.playerPosition.x &&
-			eventBlock.y === this.playerPosition.y
-		) {
-			this.waitingForTrigger = null;
-			this.progressionIndex += 1;
-			this.processProgression();
-		}
 	}
 
 	private tileIdAt(x: number, y: number): string {
