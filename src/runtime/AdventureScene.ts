@@ -47,13 +47,10 @@ import {
 	type InteractableTarget,
 	resolveEventInteraction,
 	resolveObjectBehaviour,
+	type TouchInteractableTarget,
 } from "./interactionDiscovery";
 import { collectPickup } from "./inventory";
-import {
-	findDismountTile,
-	resolveMovementAt,
-	type VehicleMovementConfig,
-} from "./movement";
+import { findDismountTile, type VehicleMovementConfig } from "./movement";
 import {
 	isEnemyTouchingPlayer,
 	isNpcTileWalkable,
@@ -67,6 +64,7 @@ import {
 	type ObjectBehaviourResult,
 	runObjectBehaviour,
 } from "./objectBehaviour";
+import { attemptPlayerMove } from "./playerMovementTransaction";
 import {
 	activateQuest,
 	completeQuest as completeRuntimeQuest,
@@ -2097,76 +2095,53 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private tryMove(deltaX: number, deltaY: number, time: number) {
-		this.playerFacing = { x: deltaX, y: deltaY };
-		const nextX = this.playerPosition.x + deltaX;
-		const nextY = this.playerPosition.y + deltaY;
-
-		if (
-			nextX < 0 ||
-			nextY < 0 ||
-			nextX >= this.currentArea.width ||
-			nextY >= this.currentArea.height
-		) {
+		const move = attemptPlayerMove(this.session, { x: deltaX, y: deltaY });
+		if (move.type === "blocked") {
+			if (move.reason) {
+				this.setStatus(move.reason);
+			}
 			return;
 		}
 
-		const activeVehicle = this.getActiveVehicleBehaviour();
-		const movement = resolveMovementAt(
-			this.currentArea,
-			nextX,
-			nextY,
-			this.project.player,
-			{
-				activeVehicle: activeVehicle
-					? {
-							...activeVehicle,
-							vehicleObjectInstanceId:
-								this.playerVehicleState.vehicleObjectInstanceId,
-						}
-					: undefined,
-			},
-		);
-		if (!movement.canMove) {
-			this.setStatus(movement.reason ?? "Blocked.");
-			return;
-		}
-
-		const duration = this.getMoveDuration(movement.speedMultiplier);
-		const destinationX = nextX * this.tileSize + this.tileSize / 2;
-		const destinationY = nextY * this.tileSize + this.tileSize / 2;
+		const destinationX = move.to.x * this.tileSize + this.tileSize / 2;
+		const destinationY = move.to.y * this.tileSize + this.tileSize / 2;
 
 		this.isMoving = true;
-		this.nextMoveAt = time + duration;
-		this.playerPosition = { x: nextX, y: nextY };
+		this.nextMoveAt = time + move.moveDurationMs;
 		this.tweens.add({
 			targets: this.playerMarker,
 			x: destinationX,
 			y: destinationY,
-			duration,
+			duration: move.moveDurationMs,
 			ease: "Sine.easeInOut",
 			onComplete: () => {
 				this.isMoving = false;
-				if (this.checkTouchInteractions(() => this.checkTrigger())) {
+				if (
+					this.checkTouchInteractions(
+						() => this.checkTrigger(),
+						move.touchTargets,
+					)
+				) {
 					return;
 				}
-				this.checkTrigger();
+				this.checkTrigger(move.triggerTargets);
 			},
 		});
 	}
 
-	private getMoveDuration(speedMultiplier = 1): number {
-		const baseDuration = 360 - clamp(this.project.player.speed, 1, 20) * 24;
-		return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
-	}
-
-	private checkTouchInteractions(onDone: () => void): boolean {
-		const target = findTouchInteractableTarget({
-			project: this.project,
-			area: this.currentArea,
-			playerPosition: this.playerPosition,
-			runtimeState: this.runtimeState,
-			collectedPickupIds: this.collectedPickupIds,
-		});
+	private checkTouchInteractions(
+		onDone: () => void,
+		touchTargets?: TouchInteractableTarget[],
+	): boolean {
+		const target =
+			touchTargets?.[0] ??
+			findTouchInteractableTarget({
+				project: this.project,
+				area: this.currentArea,
+				playerPosition: this.playerPosition,
+				runtimeState: this.runtimeState,
+				collectedPickupIds: this.collectedPickupIds,
+			});
 
 		if (!target) {
 			return false;
@@ -2209,8 +2184,22 @@ export class AdventureScene extends Phaser.Scene {
 		return true;
 	}
 
-	private checkTrigger() {
+	private checkTrigger(triggerTargets?: InteractableTarget[]) {
 		if (!this.waitingForTrigger) {
+			return;
+		}
+
+		const triggerTarget = triggerTargets?.find(
+			(target) =>
+				target.type === "eventBlock" &&
+				target.id === this.waitingForTrigger?.eventBlockId &&
+				(!this.waitingForTrigger.areaId ||
+					this.waitingForTrigger.areaId === target.areaId),
+		);
+		if (triggerTarget) {
+			this.waitingForTrigger = null;
+			this.progressionIndex += 1;
+			this.processProgression();
 			return;
 		}
 
