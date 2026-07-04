@@ -5,6 +5,10 @@ import type {
 	ObjectBehaviour,
 	ObjectDefinition,
 } from "../../types/game";
+import {
+	createWorldMaterial,
+	getWorldMaterialColor,
+} from "./worldPresentation";
 
 export type PlaceholderVisualType =
 	| "tree"
@@ -69,15 +73,18 @@ export type PlaceholderMeshOptions = {
 };
 
 export const PLACEHOLDER_MATERIAL_COLORS = {
-	foliage: 0x2f9e44,
-	friendly: 0x2563eb,
-	hostile: 0xdc2626,
-	itemAccent: 0xfacc15,
-	neutral: 0xf97316,
-	roof: 0xb91c1c,
-	stone: 0x64748b,
-	waterAccent: 0x0ea5e9,
-	wood: 0x8b5a2b,
+	foliage: getWorldMaterialColor("foliage"),
+	friendly: getWorldMaterialColor("friendly"),
+	hostile: getWorldMaterialColor("hostile"),
+	houseWall: getWorldMaterialColor("houseWall"),
+	itemAccent: getWorldMaterialColor("itemAccent"),
+	marketCanopy: getWorldMaterialColor("marketCanopy"),
+	neutral: getWorldMaterialColor("default"),
+	roof: getWorldMaterialColor("roof"),
+	skin: getWorldMaterialColor("skin"),
+	stone: getWorldMaterialColor("stone"),
+	waterAccent: getWorldMaterialColor("waterAccent"),
+	wood: getWorldMaterialColor("wood"),
 } as const;
 
 function textIncludes(text: string | undefined, fragments: string[]): boolean {
@@ -160,12 +167,10 @@ function makeMaterial(
 	color: number,
 	{ opacity = 1, selected = false } = {},
 ): THREE.MeshStandardMaterial {
-	return new THREE.MeshStandardMaterial({
+	return createWorldMaterial("default", {
 		color,
-		emissive: selected ? 0xfef08a : 0x000000,
-		emissiveIntensity: selected ? 0.55 : 0,
 		opacity,
-		transparent: opacity < 1,
+		selected,
 	});
 }
 
@@ -283,7 +288,13 @@ function buildHouse(
 	const baseHeight = marker.height * 0.62;
 	addPart(
 		group,
-		makeBox(marker.width, baseHeight, marker.depth, 0xd6c7a1, { selected }),
+		makeBox(
+			marker.width,
+			baseHeight,
+			marker.depth,
+			PLACEHOLDER_MATERIAL_COLORS.houseWall,
+			{ selected },
+		),
 		0,
 		baseHeight / 2,
 		0,
@@ -309,16 +320,26 @@ function buildMarketStall(
 ) {
 	addPart(
 		group,
-		makeBox(marker.width * 0.78, 0.24, marker.depth * 0.58, 0xa16207, {
-			selected,
-		}),
+		makeBox(
+			marker.width * 0.78,
+			0.24,
+			marker.depth * 0.58,
+			PLACEHOLDER_MATERIAL_COLORS.wood,
+			{ selected },
+		),
 		0,
 		0.32,
 		0,
 	);
 	addPart(
 		group,
-		makeBox(marker.width, 0.16, marker.depth * 0.82, 0xef4444, { selected }),
+		makeBox(
+			marker.width,
+			0.16,
+			marker.depth * 0.82,
+			PLACEHOLDER_MATERIAL_COLORS.marketCanopy,
+			{ selected },
+		),
 		0,
 		0.92,
 		0,
@@ -360,7 +381,7 @@ function buildBoat(
 			Math.max(0.7, marker.width * 0.55),
 			0.12,
 			Math.max(0.28, marker.depth * 0.36),
-			0xe0f2fe,
+			getWorldMaterialColor("water"),
 			{ opacity: marker.opacity, selected },
 		),
 		0,
@@ -376,18 +397,26 @@ function buildChest(
 ) {
 	addPart(
 		group,
-		makeBox(marker.width * 0.72, 0.38, marker.depth * 0.62, 0x92400e, {
-			selected,
-		}),
+		makeBox(
+			marker.width * 0.72,
+			0.38,
+			marker.depth * 0.62,
+			PLACEHOLDER_MATERIAL_COLORS.wood,
+			{ selected },
+		),
 		0,
 		0.22,
 		0,
 	);
 	addPart(
 		group,
-		makeBox(marker.width * 0.78, 0.14, marker.depth * 0.68, 0xf59e0b, {
-			selected,
-		}),
+		makeBox(
+			marker.width * 0.78,
+			0.14,
+			marker.depth * 0.68,
+			PLACEHOLDER_MATERIAL_COLORS.itemAccent,
+			{ selected },
+		),
 		0,
 		0.5,
 		0,
@@ -410,7 +439,9 @@ function buildSign(
 	);
 	addPart(
 		group,
-		makeBox(marker.width * 0.78, 0.28, 0.08, 0xd97706, { selected }),
+		makeBox(marker.width * 0.78, 0.28, 0.08, PLACEHOLDER_MATERIAL_COLORS.wood, {
+			selected,
+		}),
 		0,
 		0.72,
 		0,
@@ -470,7 +501,13 @@ function buildPickup(
 		0.22,
 		0,
 	);
-	addPart(group, makeBox(0.22, 0.05, 0.22, 0xfef3c7, { selected }), 0, 0.06, 0);
+	addPart(
+		group,
+		makeBox(0.22, 0.05, 0.22, getWorldMaterialColor("sand"), { selected }),
+		0,
+		0.06,
+		0,
+	);
 }
 
 function buildNpc(group: THREE.Group, selected: boolean, hostile: boolean) {
@@ -484,9 +521,23 @@ function buildNpc(group: THREE.Group, selected: boolean, hostile: boolean) {
 		0.44,
 		0,
 	);
-	addPart(group, makeSphere(0.19, 0xf8d5b8, { selected }), 0, 0.92, 0);
+	addPart(
+		group,
+		makeSphere(0.19, PLACEHOLDER_MATERIAL_COLORS.skin, { selected }),
+		0,
+		0.92,
+		0,
+	);
 	if (hostile) {
-		addPart(group, makeCone(0.15, 0.24, 0x7f1d1d, { selected }), 0, 1.16, 0);
+		addPart(
+			group,
+			makeCone(0.15, 0.24, PLACEHOLDER_MATERIAL_COLORS.hostile, {
+				selected,
+			}),
+			0,
+			1.16,
+			0,
+		);
 	}
 }
 

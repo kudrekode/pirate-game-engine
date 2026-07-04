@@ -15,6 +15,7 @@ const terrainBlock: TerrainBlock = {
 	height: 1,
 	id: "2_3_grass",
 	kind: "grass",
+	materialKey: "grass",
 	surfaceY: 1,
 	terrainHeight: 0,
 	threeX: 0,

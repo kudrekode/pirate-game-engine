@@ -1,4 +1,9 @@
 import { getTerrainHeight } from "../../data/terrainHeight";
+import {
+	getWorldMaterialColor,
+	resolveTerrainMaterialKey,
+	type WorldMaterialKey,
+} from "../../runtime/three/worldPresentation";
 import type { GameArea } from "../../types/game";
 
 export type TerrainBlockKind =
@@ -22,15 +27,7 @@ export type TerrainBlock = {
 	yOffset: number;
 	threeX: number;
 	threeZ: number;
-};
-
-const TERRAIN_BLOCK_COLORS: Record<TerrainBlockKind, number> = {
-	dirt: 0x8a5a2b,
-	grass: 0x5aa95a,
-	sand: 0xd8c77a,
-	stone: 0x8f969f,
-	unknown: 0x9aa4af,
-	water: 0x4f9fd9,
+	materialKey: WorldMaterialKey;
 };
 
 function getTerrainBlockKind(tileId: string): TerrainBlockKind {
@@ -53,7 +50,7 @@ function getTerrainBlockKind(tileId: string): TerrainBlockKind {
 }
 
 export function getTerrainBlockColor(tileId: string): number {
-	return TERRAIN_BLOCK_COLORS[getTerrainBlockKind(tileId)];
+	return getWorldMaterialColor(resolveTerrainMaterialKey(tileId));
 }
 
 export function terrainTilesToBlocks(
@@ -76,6 +73,7 @@ export function terrainTilesToBlocks(
 		)
 		.map((tile) => {
 			const kind = getTerrainBlockKind(tile.tileId);
+			const materialKey = resolveTerrainMaterialKey(tile.tileId);
 			const terrainHeight = getTerrainHeight(area, tile.x, tile.y);
 			const surfaceY = terrainHeight + (kind === "water" ? 0.18 : 1);
 			const baseY = Math.min(0, terrainHeight);
@@ -87,6 +85,7 @@ export function terrainTilesToBlocks(
 				height,
 				id: `${tile.x}_${tile.y}_${tile.tileId}`,
 				kind,
+				materialKey,
 				surfaceY,
 				terrainHeight,
 				tileId: tile.tileId,

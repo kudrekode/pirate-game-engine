@@ -75,6 +75,15 @@ import {
 	type VisualGridPosition,
 	type VisualWorldPosition,
 } from "./visualSmoothing";
+import {
+	addThreeWorldLighting,
+	applyShadowRole,
+	configureThreeRenderer,
+	configureThreeWorldScene,
+	createTerrainMaterial,
+	createWorldMaterial,
+	getWorldMaterialColor,
+} from "./worldPresentation";
 
 type PendingCutscene = {
 	cutscene: Cutscene;
@@ -198,7 +207,7 @@ function setObjectFacing(
 function createFacingMarker(color: number, y: number, z: number): THREE.Mesh {
 	const marker = new THREE.Mesh(
 		new THREE.BoxGeometry(0.16, 0.12, 0.3),
-		new THREE.MeshStandardMaterial({ color }),
+		createWorldMaterial("default", { color }),
 	);
 	marker.position.set(0, y, z);
 	return marker;
@@ -208,11 +217,11 @@ function createRuntimePlayerMesh(): THREE.Group {
 	const group = new THREE.Group();
 	const body = new THREE.Mesh(
 		new THREE.CylinderGeometry(0.32, 0.32, 1.25, 16),
-		new THREE.MeshStandardMaterial({ color: 0x38bdf8 }),
+		createWorldMaterial("friendly"),
 	);
 	body.position.set(0, 0.625, 0);
 	group.add(body);
-	group.add(createFacingMarker(0xe0f2fe, 0.78, -0.36));
+	group.add(createFacingMarker(getWorldMaterialColor("water"), 0.78, -0.36));
 	return group;
 }
 
@@ -961,7 +970,7 @@ export function ThreeRuntimePanel({
 
 		host.replaceChildren();
 		const scene = new THREE.Scene();
-		scene.background = new THREE.Color(0x0f172a);
+		configureThreeWorldScene(scene, { fogFar: 52, fogNear: 20 });
 		const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
 		const initialPlayerVisual =
 			playerVisualRef.current ??
@@ -984,10 +993,7 @@ export function ThreeRuntimePanel({
 			cameraRig.position.z,
 		);
 		camera.lookAt(cameraRig.lookAt.x, cameraRig.lookAt.y, cameraRig.lookAt.z);
-		scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-		const light = new THREE.DirectionalLight(0xffffff, 0.85);
-		light.position.set(4, 8, 5);
-		scene.add(light);
+		addThreeWorldLighting(scene, { enableShadows: true });
 
 		const renderObjects: THREE.Object3D[] = [];
 		const addRenderObject = (object: THREE.Object3D) => {
@@ -998,12 +1004,9 @@ export function ThreeRuntimePanel({
 		terrainTilesToBlocks(area).forEach((block) => {
 			const mesh = new THREE.Mesh(
 				new THREE.BoxGeometry(0.98, block.height, 0.98),
-				new THREE.MeshStandardMaterial({
-					color: block.color,
-					opacity: block.kind === "water" ? 0.76 : 1,
-					transparent: block.kind === "water",
-				}),
+				createTerrainMaterial(block.kind),
 			);
+			applyShadowRole(mesh, { receive: block.kind !== "water" });
 			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
 			addRenderObject(mesh);
 		});
@@ -1027,7 +1030,9 @@ export function ThreeRuntimePanel({
 				if (marker.kind === "npc") {
 					const npcVisual = npcVisualsRef.current.get(marker.id);
 					if (npcVisual) {
-						group.add(createFacingMarker(0xfef3c7, 0.58, -0.34));
+						group.add(
+							createFacingMarker(getWorldMaterialColor("sand"), 0.58, -0.34),
+						);
 						setObjectBasePosition(
 							group,
 							area,
@@ -1037,11 +1042,16 @@ export function ThreeRuntimePanel({
 						npcRenderGroups.set(marker.id, group);
 					}
 				}
+				applyShadowRole(group, {
+					cast: true,
+					receive: marker.kind !== "event",
+				});
 				addRenderObject(group);
 			},
 		);
 
 		const playerMesh = createRuntimePlayerMesh();
+		applyShadowRole(playerMesh, { cast: true });
 		setObjectBasePosition(playerMesh, area, initialPlayerPosition);
 		setObjectFacing(playerMesh, initialPlayerVisual.facing);
 		addRenderObject(playerMesh);
@@ -1058,6 +1068,7 @@ export function ThreeRuntimePanel({
 			return undefined;
 		}
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
+		configureThreeRenderer(renderer, { enableShadows: true });
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);

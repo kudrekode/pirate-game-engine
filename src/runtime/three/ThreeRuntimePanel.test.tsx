@@ -123,7 +123,9 @@ vi.mock("three", () => {
 
 	class Object3D {
 		children: Object3D[] = [];
+		castShadow = false;
 		position = { set: vi.fn() };
+		receiveShadow = false;
 		rotation = { y: 0 };
 		userData: Record<string, unknown> = {};
 
@@ -140,9 +142,11 @@ vi.mock("three", () => {
 	}
 
 	class Mesh {
+		castShadow = false;
 		geometry: Disposable;
 		material: Disposable | Disposable[];
 		position = { set: vi.fn() };
+		receiveShadow = false;
 		rotation = { y: 0 };
 		userData: Record<string, unknown> = {};
 
@@ -157,17 +161,26 @@ vi.mock("three", () => {
 	}
 
 	return {
+		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
 		BoxGeometry: Disposable,
 		ConeGeometry: Disposable,
 		Color: class {},
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
+			castShadow = false;
 			position = { set: vi.fn() };
+			shadow = {
+				camera: { far: 0, near: 0 },
+				mapSize: { height: 0, width: 0 },
+			};
 		},
+		Fog: class {},
 		Group: Object3D,
+		HemisphereLight: class {},
 		Mesh,
 		MeshStandardMaterial: Disposable,
+		PCFSoftShadowMap: "PCFSoftShadowMap",
 		PerspectiveCamera: class {
 			lookAt = vi.fn();
 			position = { set: vi.fn() };
@@ -179,15 +192,21 @@ vi.mock("three", () => {
 		},
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
+			outputColorSpace: unknown;
 			dispose = vi.fn();
 			render = vi.fn();
+			setClearColor = vi.fn();
 			setPixelRatio = vi.fn();
 			setSize = vi.fn();
+			shadowMap = { enabled: false, type: undefined as unknown };
+			toneMapping: unknown;
+			toneMappingExposure = 1;
 
 			constructor(...args: unknown[]) {
 				threeSpies.WebGLRenderer(...args);
 			}
 		},
+		SRGBColorSpace: "SRGBColorSpace",
 	};
 });
 

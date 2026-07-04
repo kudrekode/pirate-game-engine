@@ -34,11 +34,12 @@ describe("terrainTilesToBlocks", () => {
 
 		expect(blocks).toMatchObject([
 			{
-				color: 0x5aa95a,
+				color: 0x4f8f45,
 				gridX: 0,
 				gridY: 0,
 				height: 1,
 				kind: "grass",
+				materialKey: "grass",
 				surfaceY: 1,
 				terrainHeight: 0,
 				threeX: -1.5,
@@ -47,11 +48,12 @@ describe("terrainTilesToBlocks", () => {
 				yOffset: 0.5,
 			},
 			{
-				color: 0x8f969f,
+				color: 0x7d8791,
 				gridX: 3,
 				gridY: 2,
 				height: 1,
 				kind: "stone",
+				materialKey: "stone",
 				surfaceY: 1,
 				terrainHeight: 0,
 				threeX: 1.5,
@@ -71,7 +73,8 @@ describe("terrainTilesToBlocks", () => {
 		expect(water.height).toBe(0.18);
 		expect(water.surfaceY).toBe(0.18);
 		expect(water.yOffset).toBe(0.09);
-		expect(water.color).toBe(0x4f9fd9);
+		expect(water.color).toBe(0x2f9fd8);
+		expect(water.materialKey).toBe("water");
 	});
 
 	it("uses authored terrain height for raised and lowered blocks", () => {
@@ -108,7 +111,8 @@ describe("terrainTilesToBlocks", () => {
 		);
 
 		expect(unknown.kind).toBe("unknown");
-		expect(unknown.color).toBe(0x9aa4af);
+		expect(unknown.color).toBe(0x94a3b8);
+		expect(unknown.materialKey).toBe("default");
 	});
 
 	it("ignores out-of-bounds tiles and handles empty areas", () => {

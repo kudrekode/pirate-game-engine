@@ -7,6 +7,16 @@ import {
 	disposePlaceholderObject,
 	getPlaceholderSelectableObjects,
 } from "../../runtime/three/placeholderMeshes";
+import {
+	addThreeWorldLighting,
+	applyShadowRole,
+	configureThreeRenderer,
+	configureThreeWorldScene,
+	createTerrainMaterial,
+	createWorldMaterial,
+	getWorldMaterialColor,
+	resolveTerrainMaterialKey,
+} from "../../runtime/three/worldPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
 import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
@@ -39,7 +49,7 @@ import {
 	terrainBlockToSelectionMetadata,
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
-import { getTerrainBlockColor, terrainTilesToBlocks } from "./terrainBlocks";
+import { terrainTilesToBlocks } from "./terrainBlocks";
 import {
 	getWalkPreviewDirectionFromKey,
 	getWalkPreviewStart,
@@ -230,7 +240,7 @@ export function ThreeDPreview({
 		}
 
 		const scene = new THREE.Scene();
-		scene.background = new THREE.Color(0xf6f8fb);
+		configureThreeWorldScene(scene);
 
 		const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
 		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
@@ -261,13 +271,15 @@ export function ThreeDPreview({
 		);
 		camera.lookAt(new THREE.Vector3(cameraFocusX, cameraFocusY, cameraFocusZ));
 
-		const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
-		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.85);
-		directionalLight.position.set(3, 6, 4);
-		scene.add(ambientLight, directionalLight);
+		addThreeWorldLighting(scene, { enableShadows: true });
 
 		const gridSize = Math.max(areaWidth, areaHeight, 8);
-		const grid = new THREE.GridHelper(gridSize, gridSize, 0x7b8794, 0xd0d7de);
+		const grid = new THREE.GridHelper(
+			gridSize,
+			gridSize,
+			getWorldMaterialColor("stone"),
+			getWorldMaterialColor("default"),
+		);
 		scene.add(grid);
 
 		const meshes = terrainBlocks.map((block) => {
@@ -281,14 +293,9 @@ export function ThreeDPreview({
 			);
 			const mesh = new THREE.Mesh(
 				new THREE.BoxGeometry(0.96, block.height, 0.96),
-				new THREE.MeshStandardMaterial({
-					color: block.color,
-					emissive: isSelected ? 0xfef08a : 0x000000,
-					emissiveIntensity: isSelected ? 0.65 : 0,
-					transparent: block.kind === "water",
-					opacity: block.kind === "water" ? 0.72 : 1,
-				}),
+				createTerrainMaterial(block.kind, { selected: isSelected }),
 			);
+			applyShadowRole(mesh, { receive: block.kind !== "water" });
 			mesh.userData.selectionMetadata = selectionMetadata;
 			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
 			scene.add(mesh);
@@ -307,6 +314,7 @@ export function ThreeDPreview({
 				metadata: selectionMetadata,
 				selected: isSelected,
 			});
+			applyShadowRole(group, { cast: true, receive: marker.kind !== "event" });
 			scene.add(group);
 			return group;
 		});
@@ -314,11 +322,7 @@ export function ThreeDPreview({
 			activeArea && walkPreviewPosition
 				? new THREE.Mesh(
 						new THREE.CylinderGeometry(0.28, 0.36, 1.25, 16),
-						new THREE.MeshStandardMaterial({
-							color: 0x2563eb,
-							emissive: 0x93c5fd,
-							emissiveIntensity: 0.35,
-						}),
+						createWorldMaterial("friendly", { selected: true }),
 					)
 				: undefined;
 		if (
@@ -327,6 +331,7 @@ export function ThreeDPreview({
 			walkPreviewPosition &&
 			walkPreviewPoint
 		) {
+			applyShadowRole(walkPreviewMesh, { cast: true });
 			walkPreviewMesh.position.set(
 				walkPreviewPoint.x,
 				getTerrainSurfaceY(
@@ -355,6 +360,7 @@ export function ThreeDPreview({
 			return;
 		}
 
+		configureThreeRenderer(renderer, { enableShadows: true });
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		host.appendChild(renderer.domElement);
 
@@ -623,11 +629,7 @@ export function ThreeDPreview({
 			if (!dragGhost) {
 				dragGhost = new THREE.Mesh(
 					new THREE.BoxGeometry(footprint.width, 0.12, footprint.height),
-					new THREE.MeshStandardMaterial({
-						color: 0xfacc15,
-						opacity: 0.42,
-						transparent: true,
-					}),
+					createWorldMaterial("itemAccent", { opacity: 0.42 }),
 				);
 				scene.add(dragGhost);
 			}
@@ -668,10 +670,9 @@ export function ThreeDPreview({
 							);
 				placementGhost = new THREE.Mesh(
 					geometry,
-					new THREE.MeshStandardMaterial({
+					createWorldMaterial("default", {
 						color: placementInfo.color,
 						opacity: 0.42,
-						transparent: true,
 					}),
 				);
 				scene.add(placementGhost);
@@ -720,10 +721,8 @@ export function ThreeDPreview({
 						0.08,
 						footprint.height * 0.96,
 					),
-					new THREE.MeshStandardMaterial({
-						color: getTerrainBlockColor(terrainPaintTileId),
+					createWorldMaterial(resolveTerrainMaterialKey(terrainPaintTileId), {
 						opacity: 0.48,
-						transparent: true,
 					}),
 				);
 				scene.add(terrainPaintGhost);
