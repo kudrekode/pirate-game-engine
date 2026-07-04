@@ -25,7 +25,6 @@ import type {
 import {
 	canAttack,
 	damageNpc,
-	damagePlayer,
 	findAttackTarget,
 	type RuntimeCombatHudState,
 	removeDefeatedNpc,
@@ -51,14 +50,6 @@ import {
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
 import type { VehicleMovementConfig } from "./movement";
-import {
-	isEnemyTouchingPlayer,
-	isNpcTileWalkable,
-	updateEnemyNPC,
-	updatePatrolNPC,
-	updateStationaryNPC,
-	updateWanderNPC,
-} from "./npcMovement";
 import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
 import {
@@ -68,6 +59,7 @@ import {
 	updateQuestProgress,
 } from "./questEngine";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
+import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "./runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
 	closeRuntimeShop,
@@ -1151,101 +1143,41 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private updateNpcMovement(time: number) {
-		this.currentArea.npcs.forEach((npc) => {
-			if (this.defeatedNpcIds.has(npc.id)) {
-				return;
-			}
-
-			const runtime = this.npcMovementStates.get(npc.id) ?? {
-				movement: { patrolIndex: 0 },
-				nextMoveAt: time + 450,
-			};
-			if (time < runtime.nextMoveAt) {
-				this.npcMovementStates.set(npc.id, runtime);
-				return;
-			}
-
-			const canMove = (x: number, y: number) =>
-				!(this.playerPosition.x === x && this.playerPosition.y === y) &&
-				isNpcTileWalkable(this.currentArea, npc.id, x, y);
-			const origin = this.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
-			this.enemyOrigins.set(npc.id, origin);
-			const resolved = this.getResolvedNpc(npc);
-			const canUseEnemyMovement =
-				resolved.attributes.alignment === "hostile" &&
-				resolved.enemyBehaviour?.enabled === true;
-			const update = canUseEnemyMovement
-				? updateEnemyNPC(
-						resolved,
-						this.playerPosition,
-						origin,
-						runtime.movement,
-						canMove,
-					)
-				: resolved.movementMode === "patrol"
-					? updatePatrolNPC(resolved, runtime.movement, canMove)
-					: resolved.movementMode === "wander"
-						? updateWanderNPC(
-								resolved,
-								this.currentArea,
-								runtime.movement,
-								canMove,
-							)
-						: updateStationaryNPC(resolved, runtime.movement);
-			const speed = clamp(
-				this.runtimeState.npcs[npc.id]?.movementSpeed ?? resolved.movementSpeed,
-				0.1,
-				10,
-			);
-			const duration = Math.max(80, 360 / speed);
-			const wait = update.moved ? 320 : 560;
-
-			npc.x = update.x;
-			npc.y = update.y;
-			npc.facing = update.facing;
-			this.npcMovementStates.set(npc.id, {
-				movement: update.state,
-				nextMoveAt: time + duration + wait,
-			});
-
-			if (update.moved) {
-				this.tweens.add({
-					targets: this.npcMarkers.get(npc.id),
-					x: npc.x * this.tileSize + this.tileSize / 2,
-					y: npc.y * this.tileSize + this.tileSize / 2,
-					duration,
-					ease: "Sine.easeInOut",
-				});
-			}
-
-			if (isEnemyTouchingPlayer(resolved, this.playerPosition)) {
-				this.handleEnemyContact(resolved, time);
-			}
-		});
+		tickRuntimeNpcs(this.session, this.currentArea, time, (event) =>
+			this.handleRuntimeNpcTickEvent(event),
+		);
 	}
 
-	private handleEnemyContact(npc: NPCInstance, time: number) {
-		const nextAllowedAt = this.enemyContactCooldowns.get(npc.id) ?? 0;
-		if (time < nextAllowedAt) {
+	private handleRuntimeNpcTickEvent(event: RuntimeNpcTickEvent) {
+		if (event.type === "npcMoved") {
+			this.tweens.add({
+				targets: this.npcMarkers.get(event.npcId),
+				x: event.to.x * this.tileSize + this.tileSize / 2,
+				y: event.to.y * this.tileSize + this.tileSize / 2,
+				duration: event.durationMs,
+				ease: "Sine.easeInOut",
+			});
 			return;
 		}
 
-		const damage = npc.enemyBehaviour?.contactDamage ?? 0;
-		if (damage > 0) {
-			const result = damagePlayer(this.runtimePlayerHealth, damage);
-			this.runtimePlayerHealth = result.health;
-			this.setStatus(
-				`Enemy touched player. Health ${this.runtimePlayerHealth}/${this.playerCombat.maxHealth}.`,
-			);
-			if (result.defeated) {
-				this.showGameOverMessage();
-			}
-		} else {
-			this.setStatus("Enemy touched player.");
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
 		}
-		this.enemyContactCooldowns.set(npc.id, time + 1200);
-		this.updateDebugPanel();
-		this.notifyCombatChanged();
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "combatChanged") {
+			this.notifyCombatChanged();
+			return;
+		}
+
+		if (event.type === "gameOver") {
+			this.showGameOverMessage();
+		}
 	}
 
 	private spawnPlayer(eventBlock: EventBlock) {
