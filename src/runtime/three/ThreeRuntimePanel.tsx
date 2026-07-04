@@ -224,6 +224,7 @@ export function ThreeRuntimePanel({
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
+	const cameraRigRef = useRef<CameraFollowRig | null>(null);
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
@@ -251,6 +252,7 @@ export function ThreeRuntimePanel({
 
 	function resetPlayerVisual(
 		session: RuntimeSessionState | null = getSession(),
+		{ resetCamera = false }: { resetCamera?: boolean } = {},
 	) {
 		playerVisualRef.current = session
 			? resetVisualEntityState(
@@ -259,12 +261,15 @@ export function ThreeRuntimePanel({
 					session.playerFacing,
 				)
 			: null;
+		if (resetCamera) {
+			cameraRigRef.current = null;
+		}
 	}
 
 	function resetPresentationVisuals(
 		session: RuntimeSessionState | null = getSession(),
 	) {
-		resetPlayerVisual(session);
+		resetPlayerVisual(session, { resetCamera: true });
 		npcVisualsRef.current = new Map();
 	}
 
@@ -345,7 +350,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "spawnPlayer") {
-			resetPlayerVisual(session);
+			resetPlayerVisual(session, { resetCamera: true });
 			forceRender();
 			return;
 		}
@@ -355,7 +360,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "vehicleLeft") {
-			resetPlayerVisual(session);
+			resetPlayerVisual(session, { resetCamera: true });
 			forceRender();
 			return;
 		}
@@ -535,7 +540,7 @@ export function ThreeRuntimePanel({
 			event.type === "vehicleDismounted" ||
 			event.type === "playerMoved"
 		) {
-			resetPlayerVisual(session);
+			resetPlayerVisual(session, { resetCamera: true });
 			forceRender();
 			return;
 		}
@@ -575,7 +580,6 @@ export function ThreeRuntimePanel({
 					),
 				);
 			}
-			forceRender();
 			return;
 		}
 		if (event.type === "npcFacingChanged") {
@@ -594,7 +598,6 @@ export function ThreeRuntimePanel({
 								toVisualFacing(event.facing),
 							),
 				);
-				forceRender();
 			}
 			return;
 		}
@@ -808,7 +811,6 @@ export function ThreeRuntimePanel({
 				move.triggerTargets,
 			);
 		}
-		forceRender();
 	}
 
 	function handleInteract(): void {
@@ -973,9 +975,9 @@ export function ThreeRuntimePanel({
 			initialPlayerVisual,
 			performance.now(),
 		).position;
-		let cameraRig: CameraFollowRig = getCameraFollowTarget(
-			getVisualPlayerCenter(area, initialPlayerPosition),
-		);
+		let cameraRig: CameraFollowRig =
+			cameraRigRef.current ??
+			getCameraFollowTarget(getVisualPlayerCenter(area, initialPlayerPosition));
 		camera.position.set(
 			cameraRig.position.x,
 			cameraRig.position.y,
@@ -1104,6 +1106,7 @@ export function ThreeRuntimePanel({
 				nextCameraTarget,
 				getFrameLerpAlpha(deltaMs),
 			);
+			cameraRigRef.current = cameraRig;
 			camera.position.set(
 				cameraRig.position.x,
 				cameraRig.position.y,

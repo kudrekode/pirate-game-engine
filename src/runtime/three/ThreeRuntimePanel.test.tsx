@@ -24,6 +24,10 @@ const phaserSpies = vi.hoisted(() => ({
 	Game: vi.fn(),
 }));
 
+const threeSpies = vi.hoisted(() => ({
+	WebGLRenderer: vi.fn(),
+}));
+
 vi.mock("../runtimeSession", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("../runtimeSession")>();
 	return {
@@ -179,6 +183,10 @@ vi.mock("three", () => {
 			render = vi.fn();
 			setPixelRatio = vi.fn();
 			setSize = vi.fn();
+
+			constructor(...args: unknown[]) {
+				threeSpies.WebGLRenderer(...args);
+			}
 		},
 	};
 });
@@ -296,6 +304,7 @@ beforeEach(() => {
 	runtimeSpies.dismountRuntimeVehicle.mockClear();
 	runtimeSpies.runRuntimeObjectBehaviour.mockClear();
 	phaserSpies.Game.mockClear();
+	threeSpies.WebGLRenderer.mockClear();
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
 	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
 });
@@ -324,6 +333,28 @@ describe("ThreeRuntimePanel", () => {
 			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument();
 		});
 		expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+	});
+
+	it("does not rebuild the Three scene for plain player movement", async () => {
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+			expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+		});
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
 	});
 
 	it("reports a blank project startup error without crashing", () => {

@@ -62,6 +62,37 @@ describe("Three visual smoothing helpers", () => {
 		expect(getVisualStateTargetPosition(second)).toEqual({ x: 2, y: 0 });
 	});
 
+	it("continues from the latest rendered position after an active motion settles for a frame", () => {
+		const first = startVisualGridMove(
+			resetVisualEntityState("area", { x: 0, y: 0 }),
+			"area",
+			{
+				durationMs: 200,
+				facing: { x: 1, y: 0 },
+				from: { x: 0, y: 0 },
+				to: { x: 1, y: 0 },
+			},
+			1000,
+		);
+		const renderedState = settleVisualEntityState(first, 1100);
+		const second = startVisualGridMove(
+			renderedState,
+			"area",
+			{
+				durationMs: 200,
+				facing: { x: 1, y: 0 },
+				from: { x: 1, y: 0 },
+				to: { x: 2, y: 0 },
+			},
+			1120,
+		);
+
+		expect(renderedState.motion).toBeDefined();
+		expect(renderedState.position).toEqual({ x: 0.5, y: 0 });
+		expect(second.motion?.from).toEqual({ x: 0.6, y: 0 });
+		expect(getVisualStateTargetPosition(second)).toEqual({ x: 2, y: 0 });
+	});
+
 	it("snaps to a reset position for teleport or area transition presentation", () => {
 		const moving = startVisualGridMove(
 			resetVisualEntityState("area_a", { x: 0, y: 0 }),
