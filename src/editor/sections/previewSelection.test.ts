@@ -37,6 +37,7 @@ function makeMarker(marker: Partial<EntityMarker>): EntityMarker {
 		threeX: 0,
 		threeY: 1,
 		threeZ: 0,
+		visualType: "genericObject",
 		width: 1,
 		...marker,
 	};

@@ -1,4 +1,8 @@
 import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import {
+	type PlaceholderVisualType,
+	resolvePlaceholderVisualType,
+} from "../../runtime/three/placeholderMeshes";
 import type { GameArea, ObjectDefinition } from "../../types/game";
 import type { MapOverlayFilters } from "./overlayFilters";
 
@@ -26,6 +30,7 @@ export type EntityMarker = {
 	threeX: number;
 	threeY: number;
 	threeZ: number;
+	visualType: PlaceholderVisualType;
 };
 
 const ENTITY_MARKER_COLORS: Record<EntityMarkerKind, number> = {
@@ -129,6 +134,11 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: surfaceY + 0.85,
 				threeZ,
+				visualType: resolvePlaceholderVisualType({
+					kind: "structure",
+					name: structure.name,
+					structureId: structure.structureId,
+				}),
 				width: structure.widthTiles * 0.96,
 			});
 		});
@@ -174,6 +184,13 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: surfaceY + markerHeight / 2,
 				threeZ,
+				visualType: resolvePlaceholderVisualType({
+					behaviour: object.behaviourOverride ?? definition?.defaultBehaviour,
+					category: definition?.category,
+					interaction: object.interaction ?? definition?.defaultInteraction,
+					kind: "object",
+					name: object.nameOverride ?? definition?.name,
+				}),
 				width: isVehicle ? Math.max(1.1, widthTiles * 0.9) : widthTiles * 0.74,
 			});
 		});
@@ -196,6 +213,11 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: getTerrainSurfaceY(area, npc.x, npc.y) + markerHeight / 2,
 				threeZ,
+				visualType: resolvePlaceholderVisualType({
+					attributes: npc.attributes,
+					enemyEnabled: npc.enemyBehaviour?.enabled,
+					kind: "npc",
+				}),
 				width: 0.48,
 			});
 		});
@@ -218,6 +240,7 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: getTerrainSurfaceY(area, pickup.x, pickup.y) + 0.75,
 				threeZ,
+				visualType: resolvePlaceholderVisualType({ kind: "pickup" }),
 				width: 0.34,
 			});
 		});
@@ -250,6 +273,10 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: getTerrainSurfaceY(area, eventBlock.x, eventBlock.y) + 0.06,
 				threeZ,
+				visualType: resolvePlaceholderVisualType({
+					kind: "event",
+					name: eventBlock.name,
+				}),
 				width: 0.72,
 			});
 		});

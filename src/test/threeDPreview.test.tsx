@@ -74,27 +74,47 @@ vi.mock("three", () => {
 		dispose = vi.fn();
 	}
 
+	class Object3D {
+		children: Object3D[] = [];
+		position = { set: vi.fn(), y: 0 };
+		rotation = { y: 0 };
+		userData: Record<string, unknown> = {};
+
+		add = vi.fn((...children: Object3D[]) => {
+			this.children.push(...children);
+		});
+
+		traverse(callback: (child: Object3D) => void) {
+			callback(this);
+			this.children.forEach((child) => {
+				child.traverse(callback);
+			});
+		}
+	}
+
+	class Mesh extends Object3D {
+		geometry: Disposable;
+		material: Disposable;
+
+		constructor(geometry: Disposable, material: Disposable) {
+			super();
+			this.geometry = geometry;
+			this.material = material;
+		}
+	}
+
 	return {
 		AmbientLight: class {},
 		BoxGeometry: Disposable,
 		Color: class {},
+		ConeGeometry: Disposable,
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			position = { set: vi.fn() };
 		},
 		GridHelper: class {},
-		Mesh: class {
-			geometry: Disposable;
-			material: Disposable;
-			position = { set: vi.fn(), y: 0 };
-			rotation = { y: 0 };
-			userData: Record<string, unknown> = {};
-
-			constructor(geometry: Disposable, material: Disposable) {
-				this.geometry = geometry;
-				this.material = material;
-			}
-		},
+		Group: Object3D,
+		Mesh,
 		MeshStandardMaterial: Disposable,
 		Plane: class {},
 		PerspectiveCamera: class {
@@ -148,6 +168,7 @@ vi.mock("three", () => {
 				this.z = z;
 			}
 		},
+		SphereGeometry: Disposable,
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
 			dispose = vi.fn();

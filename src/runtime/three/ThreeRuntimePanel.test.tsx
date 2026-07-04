@@ -117,6 +117,23 @@ vi.mock("three", () => {
 		dispose = vi.fn();
 	}
 
+	class Object3D {
+		children: Object3D[] = [];
+		position = { set: vi.fn() };
+		userData: Record<string, unknown> = {};
+
+		add = vi.fn((...children: Object3D[]) => {
+			this.children.push(...children);
+		});
+
+		traverse(callback: (child: Object3D) => void) {
+			callback(this);
+			this.children.forEach((child) => {
+				child.traverse(callback);
+			});
+		}
+	}
+
 	class Mesh {
 		geometry: Disposable;
 		material: Disposable | Disposable[];
@@ -127,22 +144,29 @@ vi.mock("three", () => {
 			this.geometry = geometry;
 			this.material = material;
 		}
+
+		traverse(callback: (child: Mesh) => void) {
+			callback(this);
+		}
 	}
 
 	return {
 		AmbientLight: class {},
 		BoxGeometry: Disposable,
+		ConeGeometry: Disposable,
 		Color: class {},
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			position = { set: vi.fn() };
 		},
+		Group: Object3D,
 		Mesh,
 		MeshStandardMaterial: Disposable,
 		PerspectiveCamera: class {
 			lookAt = vi.fn();
 			position = { set: vi.fn() };
 		},
+		SphereGeometry: Disposable,
 		Scene: class {
 			background: unknown;
 			add = vi.fn();

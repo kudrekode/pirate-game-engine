@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import {
+	createPlaceholderMeshGroup,
+	disposePlaceholderObject,
+	getPlaceholderSelectableObjects,
+} from "../../runtime/three/placeholderMeshes";
 import { useProjectStore } from "../../store/useProjectStore";
 import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
@@ -298,29 +303,12 @@ export function ThreeDPreview({
 				editorSelection,
 				selectionMetadata,
 			);
-			const geometry =
-				marker.shape === "cylinder"
-					? new THREE.CylinderGeometry(
-							marker.width / 2,
-							marker.depth / 2,
-							marker.height,
-							12,
-						)
-					: new THREE.BoxGeometry(marker.width, marker.height, marker.depth);
-			const mesh = new THREE.Mesh(
-				geometry,
-				new THREE.MeshStandardMaterial({
-					color: marker.color,
-					emissive: isSelected ? 0xfef08a : 0x000000,
-					emissiveIntensity: isSelected ? 0.65 : 0,
-					transparent: marker.opacity < 1,
-					opacity: marker.opacity,
-				}),
-			);
-			mesh.userData.selectionMetadata = selectionMetadata;
-			mesh.position.set(marker.threeX, marker.threeY, marker.threeZ);
-			scene.add(mesh);
-			return mesh;
+			const group = createPlaceholderMeshGroup(marker, {
+				metadata: selectionMetadata,
+				selected: isSelected,
+			});
+			scene.add(group);
+			return group;
 		});
 		const walkPreviewMesh =
 			activeArea && walkPreviewPosition
@@ -350,7 +338,10 @@ export function ThreeDPreview({
 			);
 			scene.add(walkPreviewMesh);
 		}
-		const selectableMeshes = [...meshes, ...markerMeshes];
+		const selectableMeshes = [
+			...meshes,
+			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
+		];
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -956,7 +947,7 @@ export function ThreeDPreview({
 			cleanupPlacementGhost();
 			cleanupTerrainPaintGhost();
 			renderer.dispose();
-			[...meshes, ...markerMeshes].forEach((mesh) => {
+			meshes.forEach((mesh) => {
 				mesh.geometry.dispose();
 				if (Array.isArray(mesh.material)) {
 					mesh.material.forEach((material) => {
@@ -966,6 +957,7 @@ export function ThreeDPreview({
 					mesh.material.dispose();
 				}
 			});
+			markerMeshes.forEach(disposePlaceholderObject);
 			if (walkPreviewMesh) {
 				scene.remove(walkPreviewMesh);
 				walkPreviewMesh.geometry.dispose();

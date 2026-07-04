@@ -54,6 +54,10 @@ import {
 	type RuntimeGridPosition,
 	type RuntimeSessionState,
 } from "../runtimeSession";
+import {
+	createPlaceholderMeshGroup,
+	disposePlaceholderObject,
+} from "./placeholderMeshes";
 
 type PendingCutscene = {
 	cutscene: Cutscene;
@@ -719,10 +723,10 @@ export function ThreeRuntimePanel({
 		light.position.set(4, 8, 5);
 		scene.add(light);
 
-		const meshes: THREE.Mesh[] = [];
-		const addMesh = (mesh: THREE.Mesh) => {
-			meshes.push(mesh);
-			scene.add(mesh);
+		const renderObjects: THREE.Object3D[] = [];
+		const addRenderObject = (object: THREE.Object3D) => {
+			renderObjects.push(object);
+			scene.add(object);
 		};
 
 		terrainTilesToBlocks(area).forEach((block) => {
@@ -735,7 +739,7 @@ export function ThreeRuntimePanel({
 				}),
 			);
 			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
-			addMesh(mesh);
+			addRenderObject(mesh);
 		});
 
 		const runtimeArea: GameArea = {
@@ -752,25 +756,7 @@ export function ThreeRuntimePanel({
 		};
 		areaEntitiesToMarkers(runtimeArea, session.project.objects, true).forEach(
 			(marker) => {
-				const geometry =
-					marker.shape === "cylinder"
-						? new THREE.CylinderGeometry(
-								marker.width / 2,
-								marker.width / 2,
-								marker.height,
-								14,
-							)
-						: new THREE.BoxGeometry(marker.width, marker.height, marker.depth);
-				const mesh = new THREE.Mesh(
-					geometry,
-					new THREE.MeshStandardMaterial({
-						color: marker.color,
-						opacity: marker.opacity,
-						transparent: marker.opacity < 1,
-					}),
-				);
-				mesh.position.set(marker.threeX, marker.threeY, marker.threeZ);
-				addMesh(mesh);
+				addRenderObject(createPlaceholderMeshGroup(marker));
 			},
 		);
 
@@ -783,7 +769,7 @@ export function ThreeRuntimePanel({
 			playerSurface + 0.625,
 			playerPoint.z,
 		);
-		addMesh(playerMesh);
+		addRenderObject(playerMesh);
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -811,16 +797,7 @@ export function ThreeRuntimePanel({
 		return () => {
 			window.cancelAnimationFrame(animationFrame);
 			renderer.dispose();
-			meshes.forEach((mesh) => {
-				mesh.geometry.dispose();
-				if (Array.isArray(mesh.material)) {
-					mesh.material.forEach((material) => {
-						material.dispose();
-					});
-				} else {
-					mesh.material.dispose();
-				}
-			});
+			renderObjects.forEach(disposePlaceholderObject);
 			if (renderer.domElement.parentElement === host) {
 				host.removeChild(renderer.domElement);
 			}
