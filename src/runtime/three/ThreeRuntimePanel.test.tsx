@@ -2,7 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../../data/defaultProject";
 import { cloneProject } from "../../data/migrateProject";
-import type { GameArea, GameProject } from "../../types/game";
+import type {
+	GameArea,
+	GameProject,
+	ObjectBehaviour,
+	ObjectInstance,
+} from "../../types/game";
 import { RuntimePanel } from "../RuntimePanel";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 // @ts-expect-error Vite raw import used for a source-boundary test.
@@ -11,6 +16,8 @@ import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
 	createRuntimeSession: vi.fn(),
+	dismountRuntimeVehicle: vi.fn(),
+	runRuntimeObjectBehaviour: vi.fn(),
 }));
 
 const phaserSpies = vi.hoisted(() => ({
@@ -40,6 +47,26 @@ vi.mock("../playerMovementTransaction", async (importOriginal) => {
 		) => {
 			runtimeSpies.attemptPlayerMove(...args);
 			return actual.attemptPlayerMove(...args);
+		},
+	};
+});
+
+vi.mock("../runtimeObjectInteractions", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("../runtimeObjectInteractions")>();
+	return {
+		...actual,
+		dismountRuntimeVehicle: (
+			...args: Parameters<typeof actual.dismountRuntimeVehicle>
+		) => {
+			runtimeSpies.dismountRuntimeVehicle(...args);
+			return actual.dismountRuntimeVehicle(...args);
+		},
+		runRuntimeObjectBehaviour: (
+			...args: Parameters<typeof actual.runRuntimeObjectBehaviour>
+		) => {
+			runtimeSpies.runRuntimeObjectBehaviour(...args);
+			return actual.runRuntimeObjectBehaviour(...args);
 		},
 	};
 });
@@ -130,6 +157,15 @@ vi.mock("three", () => {
 	};
 });
 
+const boatBehaviour: Extract<ObjectBehaviour, { type: "vehicle" }> = {
+	type: "vehicle",
+	vehicleType: "boat",
+	movementMode: "sail",
+	allowedTerrainIds: ["water"],
+	dismountAllowedTerrainIds: ["grass"],
+	speedMultiplier: 1.5,
+};
+
 function makeArea(patch: Partial<GameArea> = {}): GameArea {
 	return {
 		eventBlocks: [],
@@ -159,6 +195,18 @@ function makeArea(patch: Partial<GameArea> = {}): GameArea {
 	};
 }
 
+function makeObject(patch: Partial<ObjectInstance> = {}): ObjectInstance {
+	return {
+		areaId: "area_test",
+		blocksMovement: true,
+		id: "boat",
+		objectDefinitionId: "boat_def",
+		x: 1,
+		y: 0,
+		...patch,
+	};
+}
+
 function makeProject(patch: Partial<GameProject> = {}): GameProject {
 	const area = makeArea();
 	const project = cloneProject(defaultProject);
@@ -183,9 +231,44 @@ function makeProject(patch: Partial<GameProject> = {}): GameProject {
 	return { ...project, ...patch };
 }
 
+function makeBoatProject(areaPatch: Partial<GameArea> = {}): GameProject {
+	return makeProject({
+		areas: [
+			makeArea({
+				objects: [makeObject()],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "water" },
+					{ x: 2, y: 0, tileId: "water" },
+					{ x: 0, y: 1, tileId: "grass" },
+					{ x: 1, y: 1, tileId: "grass" },
+					{ x: 2, y: 1, tileId: "grass" },
+					{ x: 0, y: 2, tileId: "grass" },
+					{ x: 1, y: 2, tileId: "grass" },
+					{ x: 2, y: 2, tileId: "grass" },
+				],
+				...areaPatch,
+			}),
+		],
+		objects: [
+			{
+				blocksMovement: true,
+				category: "vehicle",
+				defaultBehaviour: boatBehaviour,
+				heightTiles: 1,
+				id: "boat_def",
+				name: "Boat",
+				widthTiles: 1,
+			},
+		],
+	});
+}
+
 beforeEach(() => {
 	runtimeSpies.attemptPlayerMove.mockClear();
 	runtimeSpies.createRuntimeSession.mockClear();
+	runtimeSpies.dismountRuntimeVehicle.mockClear();
+	runtimeSpies.runRuntimeObjectBehaviour.mockClear();
 	phaserSpies.Game.mockClear();
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
 	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
@@ -233,6 +316,81 @@ describe("ThreeRuntimePanel", () => {
 	it("does not import editor store state", () => {
 		expect(threeRuntimeSource).not.toContain("useProjectStore");
 		expect(threeRuntimeSource).not.toMatch(/from\s+["'][^"']*store/);
+	});
+
+	it("uses shared vehicle dismount instead of normal interaction while boarded", async () => {
+		render(
+			<ThreeRuntimePanel onRestart={vi.fn()} project={makeBoatProject()} />,
+		);
+
+		fireEvent.keyDown(window, { key: "e" });
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		await waitFor(() =>
+			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument(),
+		);
+		runtimeSpies.dismountRuntimeVehicle.mockClear();
+		runtimeSpies.runRuntimeObjectBehaviour.mockClear();
+
+		fireEvent.keyDown(window, { key: "e" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.dismountRuntimeVehicle).toHaveBeenCalledTimes(1);
+			expect(screen.getByText("Pos: 1, 1")).toBeInTheDocument();
+			expect(screen.getByText("Dismounted.")).toBeInTheDocument();
+		});
+		expect(runtimeSpies.runRuntimeObjectBehaviour).not.toHaveBeenCalled();
+
+		fireEvent.keyDown(window, { key: "ArrowUp" });
+		await waitFor(() =>
+			expect(screen.getByText("Blocked by object.")).toBeInTheDocument(),
+		);
+		expect(screen.getByText("Pos: 1, 1")).toBeInTheDocument();
+	});
+
+	it("keeps the player boarded when shared vehicle dismount fails", async () => {
+		render(
+			<ThreeRuntimePanel
+				onRestart={vi.fn()}
+				project={makeBoatProject({
+					terrainTiles: [
+						{ x: 0, y: 0, tileId: "water" },
+						{ x: 1, y: 0, tileId: "water" },
+						{ x: 2, y: 0, tileId: "water" },
+						{ x: 0, y: 1, tileId: "water" },
+						{ x: 1, y: 1, tileId: "water" },
+						{ x: 2, y: 1, tileId: "water" },
+						{ x: 0, y: 2, tileId: "water" },
+						{ x: 1, y: 2, tileId: "water" },
+						{ x: 2, y: 2, tileId: "water" },
+					],
+				})}
+			/>,
+		);
+
+		fireEvent.keyDown(window, { key: "e" });
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		await waitFor(() =>
+			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument(),
+		);
+		runtimeSpies.dismountRuntimeVehicle.mockClear();
+
+		fireEvent.keyDown(window, { key: "Enter" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.dismountRuntimeVehicle).toHaveBeenCalledTimes(1);
+			expect(screen.getByText("No place to dismount.")).toBeInTheDocument();
+		});
+		expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument();
+
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		await waitFor(() =>
+			expect(screen.getByText("Pos: 2, 0")).toBeInTheDocument(),
+		);
+	});
+
+	it("delegates vehicle dismount to the shared helper", () => {
+		expect(threeRuntimeSource).toContain("dismountRuntimeVehicle");
+		expect(threeRuntimeSource).not.toContain("findDismountTile");
 	});
 });
 

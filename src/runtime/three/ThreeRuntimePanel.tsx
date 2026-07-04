@@ -31,6 +31,7 @@ import {
 	buyRuntimeShopEntry,
 	closeRuntimeShop,
 	collectRuntimePickup,
+	dismountRuntimeVehicle,
 	openRuntimeShop,
 	type RuntimeObjectInteractionEvent,
 	runRuntimeObjectBehaviour,
@@ -558,6 +559,11 @@ export function ThreeRuntimePanel({
 		const session = getSession();
 		const area = session ? getArea(session) : undefined;
 		if (!session || !area || pendingCutscene || gameOver) {
+			return;
+		}
+
+		if (session.playerVehicleState.active) {
+			dismountRuntimeVehicle(session, handleObjectEvent, area);
 			return;
 		}
 
