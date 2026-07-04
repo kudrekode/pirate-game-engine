@@ -120,6 +120,7 @@ vi.mock("three", () => {
 	class Object3D {
 		children: Object3D[] = [];
 		position = { set: vi.fn() };
+		rotation = { y: 0 };
 		userData: Record<string, unknown> = {};
 
 		add = vi.fn((...children: Object3D[]) => {
@@ -138,6 +139,7 @@ vi.mock("three", () => {
 		geometry: Disposable;
 		material: Disposable | Disposable[];
 		position = { set: vi.fn() };
+		rotation = { y: 0 };
 		userData: Record<string, unknown> = {};
 
 		constructor(geometry: Disposable, material: Disposable | Disposable[]) {
