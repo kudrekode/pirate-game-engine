@@ -5,6 +5,7 @@ import type { EventBlock, GameArea, GameProject } from "../types/game";
 import {
 	checkRuntimeWaitingTrigger,
 	completeRuntimeProgressionCutscene,
+	markRuntimeAreaEntered,
 	processRuntimeProgression,
 	type RuntimeProgressionEvent,
 	transitionRuntimeArea,
@@ -203,6 +204,43 @@ describe("runtime progression", () => {
 					event.quests[0]?.objectives[0]?.complete === true,
 			),
 		).toBe(true);
+	});
+
+	it("marks the current area entered without performing a transition", () => {
+		const session = createRuntimeSession(
+			makeProject({
+				quests: [
+					{
+						id: "visit-start-area",
+						name: "Visit Start Area",
+						status: "active",
+						objectives: [
+							{
+								id: "enter",
+								description: "Enter the start area",
+								condition: { type: "enter_area", areaId: "area_one" },
+							},
+						],
+					},
+				],
+			}),
+		);
+		const { emit, events } = collectEvents();
+
+		markRuntimeAreaEntered(session, "area_one", emit);
+
+		expect(session.currentAreaId).toBe("area_one");
+		expect(session.playerPosition).toEqual({ x: 0, y: 0 });
+		expect(session.runtimeQuestState.enteredAreaIds.has("area_one")).toBe(true);
+		expect(
+			events.some(
+				(event) =>
+					event.type === "questsChanged" &&
+					event.quests[0]?.objectives[0]?.complete === true,
+			),
+		).toBe(true);
+		expect(events.some((event) => event.type === "areaChanged")).toBe(false);
+		expect(events.some((event) => event.type === "spawnPlayer")).toBe(false);
 	});
 
 	it("waits for trigger progression until the matching trigger is reached", () => {

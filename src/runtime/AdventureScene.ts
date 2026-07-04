@@ -35,23 +35,16 @@ import {
 	canInteractActivate,
 	canTouchActivate,
 	findNearestInteractableTarget,
-	findObjectDefinition,
 	findTouchInteractableTarget,
 	type InteractableTarget,
 	isPickupCollected,
-	resolveEventInteraction,
 	resolveObjectBehaviour,
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
 import type { VehicleMovementConfig } from "./movement";
 import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
-import {
-	getQuestViews,
-	markAreaEntered,
-	type QuestView,
-	updateQuestProgress,
-} from "./questEngine";
+import type { QuestView } from "./questEngine";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
 import {
 	attemptRuntimeCombatAttack,
@@ -70,8 +63,10 @@ import {
 import {
 	checkRuntimeWaitingTrigger,
 	completeRuntimeProgressionCutscene,
+	markRuntimeAreaEntered,
 	processRuntimeProgression,
 	type RuntimeProgressionEvent,
+	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "./runtimeProgression";
 import {
@@ -114,20 +109,18 @@ function tileKey(x: number, y: number): string {
 }
 
 export class AdventureScene extends Phaser.Scene {
+	// Shared runtime session state. Phaser reads from this instead of owning gameplay state.
 	private readonly project: GameProject;
 	private readonly session: RuntimeSessionState;
 	private currentArea: GameArea;
 	private tileSize: number;
+
+	// Phaser rendering cache.
 	private readonly pixelTextureKeys = new Map<string, string>();
 	private worldLayer?: Phaser.GameObjects.Container;
 	private uiLayer?: Phaser.GameObjects.Container;
 	private uiCamera?: Phaser.Cameras.Scene2D.Camera;
-	private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-	private wasd?: WasdKeys;
-	private interactKeys?: InteractKeys;
-	private combatKeys?: CombatKeys;
 	private playerMarker?: Phaser.GameObjects.Container;
-	private nextMoveAt = 0;
 	private statusText?: Phaser.GameObjects.Text;
 	private promptText?: Phaser.GameObjects.Text;
 	private debugText?: Phaser.GameObjects.Text;
@@ -136,13 +129,23 @@ export class AdventureScene extends Phaser.Scene {
 		string,
 		Phaser.GameObjects.Container
 	>();
+	private vehicleVisual?: Phaser.GameObjects.GameObject;
+
+	// Phaser input and animation gating.
+	private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+	private wasd?: WasdKeys;
+	private interactKeys?: InteractKeys;
+	private combatKeys?: CombatKeys;
+	private nextMoveAt = 0;
+	private isMoving = false;
+
+	// React/Phaser overlay callbacks and presentation-only modal state.
 	private readonly onInventoryChanged?: (
 		inventory: Record<string, number>,
 	) => void;
 	private readonly onQuestsChanged?: (quests: QuestView[]) => void;
 	private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
 	private readonly onCombatChanged?: (combat: RuntimeCombatHudState) => void;
-	private vehicleVisual?: Phaser.GameObjects.GameObject;
 	private isCutsceneOpen = false;
 	private isDialogueOpen = false;
 	private activeDialogue?: {
@@ -151,7 +154,6 @@ export class AdventureScene extends Phaser.Scene {
 		state: RuntimeDialogueState;
 	};
 	private isFinished = false;
-	private isMoving = false;
 
 	constructor(
 		project: GameProject,
@@ -279,6 +281,7 @@ export class AdventureScene extends Phaser.Scene {
 		return this.session.recentEnemy;
 	}
 
+	// Runtime-facing entry points used by React overlays.
 	openShop(shopId: string) {
 		openRuntimeShop(this.session, shopId, (event) =>
 			this.handleRuntimeObjectInteractionEvent(event),
@@ -297,6 +300,7 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
+	// Phaser scene lifecycle.
 	create() {
 		this.worldLayer = this.add.container(0, 0);
 		this.uiLayer = this.add.container(0, 0).setDepth(1000).setScrollFactor(0);
@@ -343,14 +347,16 @@ export class AdventureScene extends Phaser.Scene {
 		this.updateDebugPanel();
 		this.notifyInventoryChanged();
 		this.notifyCombatChanged();
-		markAreaEntered(this.runtimeQuestState, this.currentArea.id);
-		this.syncQuestProgress();
+		markRuntimeAreaEntered(this.session, this.currentArea.id, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
 
 		this.fireRuleTrigger({ type: "on_game_start" }, () =>
 			this.processProgression(),
 		);
 	}
 
+	// Input translation into shared runtime transactions.
 	update(time: number) {
 		if (!this.isCutsceneOpen && !this.isDialogueOpen && !this.isFinished) {
 			this.updateNpcMovement(time);
@@ -434,6 +440,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.tryMove(direction.x, direction.y, time);
 	}
 
+	// Phaser input setup.
 	private createInput() {
 		const keyboard = this.input.keyboard;
 		if (!keyboard) {
@@ -456,6 +463,7 @@ export class AdventureScene extends Phaser.Scene {
 		};
 	}
 
+	// Phaser camera configuration.
 	private configureCameras() {
 		const screenWidth = this.scale.width;
 		const screenHeight = this.scale.height;
@@ -548,6 +556,7 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
+	// Phaser world rendering.
 	private renderMap() {
 		this.worldLayer?.removeAll(true);
 		this.playerMarker = undefined;
@@ -832,6 +841,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.worldLayer?.add(container);
 	}
 
+	// Shared runtime progression event translation.
 	private processProgression() {
 		processRuntimeProgression(this.session, (event) =>
 			this.handleRuntimeProgressionEvent(event),
@@ -926,6 +936,7 @@ export class AdventureScene extends Phaser.Scene {
 		}
 	}
 
+	// Shared runtime object/shop/vehicle event translation.
 	private handleRuntimeObjectInteractionEvent(
 		event: RuntimeObjectInteractionEvent,
 	) {
@@ -1128,6 +1139,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.worldLayer?.add(marker);
 	}
 
+	// Shared runtime NPC tick event translation.
 	private updateNpcMovement(time: number) {
 		tickRuntimeNpcs(this.session, this.currentArea, time, (event) =>
 			this.handleRuntimeNpcTickEvent(event),
@@ -1199,6 +1211,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.setStatus(`${this.project.player.name} spawned.`);
 	}
 
+	// UI/cutscene/dialogue presentation.
 	private showCutscene(cutscene: Cutscene, onDone: () => void) {
 		this.promptText?.setText("");
 		const width = this.scale.width;
@@ -1678,6 +1691,7 @@ export class AdventureScene extends Phaser.Scene {
 		return "Press E to inspect";
 	}
 
+	// Legacy direct interaction presentation and compatibility handling.
 	private runInteraction(interaction: Interaction, label: string) {
 		if (interaction.activationMode === "disabled") {
 			return;
@@ -1797,6 +1811,7 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
+	// Shared runtime combat event translation.
 	private handleRuntimeCombatEvent(event: RuntimeCombatEvent) {
 		if (event.type === "status") {
 			this.setStatus(event.message);
@@ -1874,6 +1889,7 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
+	// Runtime movement transaction plus Phaser tween/animation.
 	private tryMove(deltaX: number, deltaY: number, time: number) {
 		const move = attemptPlayerMove(this.session, { x: deltaX, y: deltaY });
 		if (move.type === "blocked") {
@@ -1992,14 +2008,6 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
-	private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
-		return resolveEventInteraction(eventBlock);
-	}
-
-	private getObjectDefinition(object: ObjectInstance) {
-		return findObjectDefinition(this.project, object);
-	}
-
 	private getResolvedNpc(npc: NPCInstance) {
 		const resolved = resolveNPCInstance(
 			this.project.npcs.find(
@@ -2022,6 +2030,7 @@ export class AdventureScene extends Phaser.Scene {
 		return resolveObjectBehaviour(this.project, object);
 	}
 
+	// Shared runtime rule action event translation.
 	private getRuleContext(): RuleActionContext {
 		return createRuntimeRuleContext(this.session, (event) =>
 			this.handleRuntimeRuleEvent(event),
@@ -2161,17 +2170,8 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private syncQuestProgress() {
-		const stateChanged = updateQuestProgress(
-			this.runtimeQuestState,
-			this.runtimeState,
-			this.project.items,
-		);
-		if (stateChanged) {
-			this.notifyInventoryChanged();
-			this.updateDebugPanel();
-		}
-		this.onQuestsChanged?.(
-			getQuestViews(this.runtimeQuestState, this.runtimeState),
+		syncRuntimeQuestProgress(this.session, (event) =>
+			this.handleRuntimeProgressionEvent(event),
 		);
 	}
 

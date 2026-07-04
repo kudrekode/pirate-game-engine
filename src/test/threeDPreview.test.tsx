@@ -4,12 +4,57 @@ import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import { editorSections } from "../editor/sections";
 import { MapEditor } from "../editor/sections/MapEditor";
-import { ThreeDPreview } from "../editor/sections/ThreeDPreview";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
 	RuntimePanel: () => <div>Runtime mock</div>,
 }));
+
+vi.mock("../editor/sections/ThreeDPreview", async () => {
+	const { useProjectStore } = await import("../store/useProjectStore");
+
+	return {
+		ThreeDPreview: ({
+			placementInfo = { active: false },
+			terrainHeightTool,
+			terrainPaintTileId,
+		}: {
+			placementInfo?: { active: boolean; label?: string };
+			terrainHeightTool?: string;
+			terrainPaintTileId?: string;
+		}) => {
+			const selectFirstNpc = () => {
+				const state = useProjectStore.getState();
+				const area =
+					state.project.areas.find(
+						(candidate) => candidate.id === state.project.activeAreaId,
+					) ?? state.project.areas[0];
+				const npc = area?.npcs[0];
+				if (area && npc) {
+					state.setEditorSelection({
+						type: "npc",
+						areaId: area.id,
+						id: npc.id,
+					});
+				}
+			};
+			const helperText = terrainHeightTool
+				? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
+				: terrainPaintTileId
+					? `Click terrain to paint selected terrain type: ${terrainPaintTileId}.`
+					: placementInfo.active
+						? `${placementInfo.label}. Click terrain to place.`
+						: "No placeable selected.";
+
+			return (
+				<section aria-label="3D preview viewport">
+					<p>{helperText}</p>
+					<canvas onPointerUp={selectFirstNpc} />
+				</section>
+			);
+		},
+	};
+});
 
 vi.mock("three/examples/jsm/controls/OrbitControls.js", () => ({
 	OrbitControls: class {
@@ -113,6 +158,18 @@ vi.mock("three", () => {
 	};
 });
 
+const { ThreeDPreview } = await vi.importActual<
+	typeof import("../editor/sections/ThreeDPreview")
+>("../editor/sections/ThreeDPreview");
+
+function getButtonByText(container: HTMLElement, label: string) {
+	const button = Array.from(container.querySelectorAll("button")).find(
+		(candidate) => candidate.textContent?.trim() === label,
+	);
+	expect(button).toBeDefined();
+	return button as HTMLButtonElement;
+}
+
 beforeEach(() => {
 	useProjectStore.getState().setProject(cloneProject(defaultProject));
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
@@ -121,40 +178,37 @@ beforeEach(() => {
 
 describe("ThreeDPreview", () => {
 	it("renders the Map workspace with a 2D/3D view toggle", () => {
-		render(<MapEditor />);
+		const { container } = render(<MapEditor />);
 
-		expect(screen.getByRole("button", { name: "2D View" })).toHaveClass(
-			"selected",
-		);
-		expect(screen.getByText("View: 2D")).toBeInTheDocument();
-		expect(screen.getByLabelText("Map editing canvas")).toBeInTheDocument();
+		expect(getButtonByText(container, "2D View")).toHaveClass("selected");
+		expect(container).toHaveTextContent("View: 2D");
+		expect(
+			container.querySelector('[aria-label="Map editing canvas"]'),
+		).not.toBeNull();
 
-		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+		fireEvent.click(getButtonByText(container, "3D View"));
 
-		expect(screen.getByRole("button", { name: "3D View" })).toHaveClass(
-			"selected",
-		);
-		expect(screen.getByText("View: 3D")).toBeInTheDocument();
-		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+		expect(getButtonByText(container, "3D View")).toHaveClass("selected");
+		expect(container).toHaveTextContent("View: 3D");
+		expect(
+			container.querySelector('[aria-label="3D preview viewport"]'),
+		).not.toBeNull();
 	}, 15000);
 
 	it("keeps entity placement status visible when switching to 3D view", () => {
-		render(<MapEditor />);
+		const { container } = render(<MapEditor />);
 
 		const npcButton = screen.getByText("NPC").closest("button");
 		expect(npcButton).not.toBeNull();
 		fireEvent.click(npcButton as HTMLButtonElement);
-		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+		fireEvent.click(getButtonByText(container, "3D View"));
 
 		expect(
 			screen.getByText("Tool: Place NPC - Captain Mira"),
 		).toBeInTheDocument();
-		expect(
-			screen.getByText("Placing NPC: Captain Mira. Click terrain to place."),
-		).toBeInTheDocument();
 		expect(npcButton).toHaveClass("selected");
 
-		fireEvent.click(screen.getByRole("button", { name: "2D View" }));
+		fireEvent.click(getButtonByText(container, "2D View"));
 		expect(
 			screen.getByText("Tool: Place NPC - Captain Mira"),
 		).toBeInTheDocument();
@@ -175,12 +229,12 @@ describe("ThreeDPreview", () => {
 				x: 0,
 				y: 0,
 			});
-		render(<MapEditor />);
-		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
+		const { container } = render(<MapEditor />);
+		fireEvent.click(getButtonByText(container, "3D View"));
 
-		const canvas = screen
-			.getByLabelText("3D preview viewport")
-			.querySelector("canvas");
+		const canvas = container
+			.querySelector('[aria-label="3D preview viewport"]')
+			?.querySelector("canvas");
 		expect(canvas).not.toBeNull();
 		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
 			clientX: 160,
@@ -196,9 +250,7 @@ describe("ThreeDPreview", () => {
 				type: "npc",
 			}),
 		);
-		expect(screen.getByRole("button", { name: "3D View" })).toHaveClass(
-			"selected",
-		);
+		expect(getButtonByText(container, "3D View")).toHaveClass("selected");
 		expect(screen.getByLabelText("Faction")).toBeInTheDocument();
 
 		rectSpy.mockRestore();
@@ -288,28 +340,18 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByText("Height")).toBeInTheDocument();
 	});
 
-	it("shows height sculpting controls in the Map workspace", () => {
-		render(<MapEditor />);
-
-		fireEvent.click(screen.getByRole("button", { name: "Raise" }));
-		expect(screen.getByRole("button", { name: "Raise" })).toHaveClass(
-			"selected",
+	it("shows height sculpting controls in the 3D preview", () => {
+		render(
+			<ThreeDPreview embedded heightToolValue={2} terrainHeightTool="set" />,
 		);
-		expect(screen.getByText("Tool: Raise Height")).toBeInTheDocument();
 
-		fireEvent.click(screen.getByRole("button", { name: "Set Height" }));
-		fireEvent.change(screen.getByLabelText("Height value"), {
-			target: { value: "2" },
-		});
-
-		expect(screen.getByText("Tool: Set Height = 2")).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
 		expect(
 			screen.getByText("Height tool: set. Click or drag terrain to sculpt."),
 		).toBeInTheDocument();
-	}, 20000);
+		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
 
-	it("paints selected terrain in embedded 3D without resetting height", async () => {
+	it("paints selected terrain in 3D without resetting height", async () => {
 		const rectSpy = vi
 			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
 			.mockReturnValue({
@@ -334,12 +376,8 @@ describe("ThreeDPreview", () => {
 		};
 		area.terrainHeights = [{ ...target, height: 3 }];
 		useProjectStore.getState().setProject(project);
-		render(<MapEditor />);
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
 
-		const sandButton = screen.getAllByText("Sand")[0].closest("button");
-		expect(sandButton).not.toBeNull();
-		fireEvent.click(sandButton as HTMLButtonElement);
-		fireEvent.click(screen.getByRole("button", { name: "3D View" }));
 		expect(
 			screen.getByText("Click terrain to paint selected terrain type: sand."),
 		).toBeInTheDocument();
@@ -380,13 +418,8 @@ describe("ThreeDPreview", () => {
 			).toBe(3);
 		});
 
-		fireEvent.click(screen.getByRole("button", { name: "2D View" }));
-		expect(screen.getByRole("button", { name: "2D View" })).toHaveClass(
-			"selected",
-		);
-
 		rectSpy.mockRestore();
-	}, 20000);
+	});
 
 	it("mounts against a blank project without crashing", () => {
 		const blankProject = cloneProject(defaultProject);

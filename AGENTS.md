@@ -119,6 +119,8 @@ Phaser and any future Three.js runtime adapter must consume the same runtime ses
 
 Existing helper modules remain the gameplay engine. Do not duplicate movement, rules, quests, inventory, shops, NPC, combat, object behaviour, or dialogue logic in renderer adapters.
 
+`src/runtime/AdventureScene.ts` is the Phaser adapter. It should translate Phaser input, tweens, cameras, rendering, and UI/cutscene/dialogue presentation into calls to shared runtime helpers such as interaction discovery, player movement transactions, rule action dispatch, progression, object/pickup/shop/vehicle interactions, NPC ticks, and combat attacks. New gameplay state belongs in `RuntimeSessionState` or renderer-independent helpers, not in AdventureScene fields.
+
 ## Items And Pickups
 
 `GameProject.items` contains item definitions. V1 supports keys, currency, consumables, quest items, and miscellaneous items without equipment, crafting, or shop behavior.
@@ -192,7 +194,7 @@ Enemies are hostile `NPCInstance` records with optional `enemyBehaviour.enabled`
 
 Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults.
 
-Combat V1 adds basic melee player attacks in `src/runtime/combat.ts` and `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
+Combat V1 adds basic melee player attacks through `src/runtime/combat.ts` and `src/runtime/runtimeCombat.ts`, with Phaser presentation in `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
 
 ## Rule Engine
 

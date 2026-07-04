@@ -84,6 +84,15 @@ export function syncRuntimeQuestProgress(
 	emitQuestsChanged(session, emit);
 }
 
+export function markRuntimeAreaEntered(
+	session: RuntimeSessionState,
+	areaId: string,
+	emit: RuntimeProgressionEventEmitter,
+): void {
+	markAreaEntered(session.runtimeQuestState, areaId);
+	syncRuntimeQuestProgress(session, emit);
+}
+
 export function transitionRuntimeArea(
 	session: RuntimeSessionState,
 	areaId: string,
@@ -117,8 +126,7 @@ export function transitionRuntimeArea(
 		y: eventBlock.y,
 	});
 
-	markAreaEntered(session.runtimeQuestState, nextArea.id);
-	syncRuntimeQuestProgress(session, emit);
+	markRuntimeAreaEntered(session, nextArea.id, emit);
 	emit({
 		type: "status",
 		message: `${session.project.player.name} entered ${nextArea.name}.`,
