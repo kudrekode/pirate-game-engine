@@ -22,13 +22,7 @@ import type {
 	PixelAsset,
 	RuleTrigger,
 } from "../types/game";
-import {
-	canAttack,
-	damageNpc,
-	findAttackTarget,
-	type RuntimeCombatHudState,
-	removeDefeatedNpc,
-} from "./combat";
+import type { RuntimeCombatHudState } from "./combat";
 import {
 	advanceDialogue,
 	createRuntimeDialogueState,
@@ -59,6 +53,10 @@ import {
 	updateQuestProgress,
 } from "./questEngine";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
+import {
+	attemptRuntimeCombatAttack,
+	type RuntimeCombatEvent,
+} from "./runtimeCombat";
 import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "./runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
@@ -277,20 +275,8 @@ export class AdventureScene extends Phaser.Scene {
 		this.session.runtimePlayerHealth = health;
 	}
 
-	private get nextAttackAt() {
-		return this.session.nextAttackAt;
-	}
-
-	private set nextAttackAt(time: number) {
-		this.session.nextAttackAt = time;
-	}
-
 	private get recentEnemyHud() {
 		return this.session.recentEnemy;
-	}
-
-	private set recentEnemyHud(enemy: RuntimeSessionState["recentEnemy"]) {
-		this.session.recentEnemy = enemy;
 	}
 
 	openShop(shopId: string) {
@@ -1803,58 +1789,44 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private tryAttack(time: number): boolean {
-		if (!canAttack(time, this.nextAttackAt)) {
-			this.setStatus("Attack cooling down.");
-			return false;
-		}
-
-		this.nextAttackAt = time + this.playerCombat.attackCooldownMs;
-		const target = findAttackTarget(
-			this.currentArea.npcs,
-			this.runtimeState.npcs,
-			this.defeatedNpcIds,
-			this.playerPosition,
-			this.playerFacing,
-			this.playerCombat.attackRangeTiles,
+		return attemptRuntimeCombatAttack(
+			this.session,
+			this.currentArea,
+			time,
+			(event) => this.handleRuntimeCombatEvent(event),
 		);
-
-		if (!target) {
-			this.setStatus("Attack missed.");
-			return false;
-		}
-
-		const attributes = this.runtimeState.npcs[target.id] ?? target.attributes;
-		const result = damageNpc(attributes, this.playerCombat.attackDamage);
-		const enemyName = this.getNpcName(target);
-		this.recentEnemyHud = {
-			id: target.id,
-			name: enemyName,
-			health: result.health,
-			maxHealth: attributes.maxHealth,
-		};
-
-		if (result.defeated) {
-			this.defeatNpc(target, enemyName);
-		} else {
-			this.setStatus(`Hit ${enemyName} for ${this.playerCombat.attackDamage}.`);
-		}
-
-		this.updateDebugPanel();
-		this.notifyCombatChanged();
-		return true;
 	}
 
-	private defeatNpc(npc: NPCInstance, enemyName = this.getNpcName(npc)) {
-		this.defeatedNpcIds.add(npc.id);
-		this.runtimeState.flags[`npc_defeated_${npc.id}`] = true;
-		this.currentArea.npcs = removeDefeatedNpc(this.currentArea.npcs, npc.id);
-		this.npcMarkers.get(npc.id)?.destroy();
-		this.npcMarkers.delete(npc.id);
-		this.npcMovementStates.delete(npc.id);
-		this.enemyContactCooldowns.delete(npc.id);
-		this.setStatus(`${enemyName} defeated.`);
-		this.syncQuestProgress();
-		// TODO: Add on_npc_defeated rule trigger and combat rule actions when Logic Builder scope expands.
+	private handleRuntimeCombatEvent(event: RuntimeCombatEvent) {
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
+
+		if (event.type === "npcRemoved") {
+			this.npcMarkers.get(event.npcId)?.destroy();
+			this.npcMarkers.delete(event.npcId);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "combatChanged") {
+			this.notifyCombatChanged();
+			return;
+		}
+
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
+
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+		}
 	}
 
 	private addVehicleVisual(behaviour: VehicleMovementConfig) {
@@ -2026,10 +1998,6 @@ export class AdventureScene extends Phaser.Scene {
 
 	private getObjectDefinition(object: ObjectInstance) {
 		return findObjectDefinition(this.project, object);
-	}
-
-	private getNpcName(npc: NPCInstance): string {
-		return this.getResolvedNpc(npc).name;
 	}
 
 	private getResolvedNpc(npc: NPCInstance) {
