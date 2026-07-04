@@ -82,7 +82,7 @@ Terrain remains grid-based. Runtime camera settings live at the project level in
 
 `GameProject` remains the source of truth for authored map data. The 2D Map view and Three.js 3D view both edit the same areas, terrain, overlays, entities, selection, palette choices, and inspector state through `src/store/useProjectStore.ts`.
 
-Phaser remains the active gameplay runtime. Three.js is currently editor/preview only and must not become a second runtime or a parallel map schema. Pressing Play clones the current project and runs the existing 2D Phaser runtime.
+Phaser remains the default/reference gameplay runtime. Three.js also has an experimental Play mode, but it must stay an adapter over the shared runtime session and must not become a second rules engine or a parallel map schema. Pressing Play clones the current project and starts either the default 2D Phaser runtime or the experimental Three.js runtime adapter.
 
 The Map Workspace should stay one shared editor with multiple views. Do not create a second parallel map editor for 3D. New 3D placement or movement behavior should reuse existing store placement/update methods so entities are identical to 2D placements and inspector selection stays synced.
 
@@ -111,15 +111,32 @@ Runtime-owned copies currently include:
 
 Map entity positions used by Phaser are read from the cloned play snapshot, not the live editor project.
 
-## Shared Runtime Direction
+## Dual Runtime Architecture
 
-`GameProject` is authoring/source data. `RuntimeSession` is the renderer-independent play snapshot/state used by runtime adapters.
+`GameProject` is editor/authored data. It remains the schema shared by the editor, migrations, default project data, and runtime startup.
 
-Phaser and any future Three.js runtime adapter must consume the same runtime session semantics. `RuntimeSession` must not depend on Phaser, Three.js, React, or editor state.
+`RuntimeSession` is shared play-session state. It owns runtime copies of flags, variables, inventory quantities, NPC attributes, quest state, shop stock, player health, combat state, area/progression state, vehicle state, collected pickups, opened objects, defeated NPCs, and movement timing.
 
-Existing helper modules remain the gameplay engine. Do not duplicate movement, rules, quests, inventory, shops, NPC, combat, object behaviour, or dialogue logic in renderer adapters.
+Phaser and Three.js runtimes should behave as adapters. Adapters translate input, rendering, camera, animation/tweening, audio/visual effects, and UI/cutscene/dialogue presentation. They should not own gameplay semantics that belong in `RuntimeSessionState` or shared helpers.
 
-`src/runtime/AdventureScene.ts` is the Phaser adapter. It should translate Phaser input, tweens, cameras, rendering, and UI/cutscene/dialogue presentation into calls to shared runtime helpers such as interaction discovery, player movement transactions, rule action dispatch, progression, object/pickup/shop/vehicle interactions, NPC ticks, and combat attacks. New gameplay state belongs in `RuntimeSessionState` or renderer-independent helpers, not in AdventureScene fields.
+Runtime helpers are the source of gameplay semantics. Do not duplicate movement, collision, interaction discovery, rule/action dispatch, quests, inventory, shops, object behaviours, pickup collection, vehicle state, NPC movement, enemy contact, or combat logic inside runtime adapters.
+
+`src/runtime/AdventureScene.ts` is the Phaser adapter. It should translate Phaser input, tweens, cameras, rendering, and UI/cutscene/dialogue presentation into calls to shared runtime helpers.
+
+`src/runtime/three/ThreeRuntimePanel.tsx` is the experimental Three.js adapter. It must not import editor store/live editor state for gameplay. It may reuse rendering helpers, but runtime decisions must come from `RuntimeSession` and shared runtime helpers.
+
+Phaser remains the reference runtime until runtime contract tests and manual parity checks prove that the Three.js adapter matches Phaser gameplay semantics.
+
+Key shared runtime helpers:
+
+- `src/runtime/runtimeSession.ts`
+- `src/runtime/interactionDiscovery.ts`
+- `src/runtime/playerMovementTransaction.ts`
+- `src/runtime/runtimeRuleActionDispatcher.ts`
+- `src/runtime/runtimeProgression.ts`
+- `src/runtime/runtimeObjectInteractions.ts`
+- `src/runtime/runtimeNpcTick.ts`
+- `src/runtime/runtimeCombat.ts`
 
 ## Items And Pickups
 

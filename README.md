@@ -1,6 +1,6 @@
 ﻿# Adventure Game Builder
 
-Adventure Game Builder is a browser-based 2D adventure game editor and runtime built with Vite, React, TypeScript, Phaser 3, Three.js, and Zustand. It is designed as a small game-building tool rather than a full engine: authors edit one schema-driven `GameProject`, then press Play to test that project in a Phaser runtime.
+Adventure Game Builder is a browser-based adventure game editor and runtime built with Vite, React, TypeScript, Phaser 3, Three.js, and Zustand. It is designed as a small game-building tool rather than a full engine: authors edit one schema-driven `GameProject`, then press Play to test that project in the default Phaser 2D runtime or the experimental Three.js 3D runtime.
 
 Current status: active prototype / V1-style editor-runtime loop with several playable systems implemented. The project is intentionally pragmatic and keeps features simple, data-driven, and testable.
 
@@ -11,6 +11,7 @@ Long-term goal: become a lightweight builder for classic 2D adventure/RPG-style 
 - Areas: projects can contain multiple linked maps/areas such as outdoor, indoor, cave, ship, dungeon, or custom areas.
 - Map Workspace: shared 2D/3D map editing workspace with grid terrain editing, overlays, structures, event blocks, pickups, objects, NPC placement, pan/zoom, brush tools, palette resizing, area selection, and shared inspector state.
 - 3D Preview / Editor View: Three.js view of the active area's terrain and placeholder entity markers, with orbit/pan/zoom controls, camera presets, event-block debug markers, click-to-select sync, 3D entity movement/placement, and terrain height editing.
+- Three.js Experimental Play: an early 3D play mode that renders a blocky runtime view from the shared play session and shared gameplay helpers.
 - Terrain Height: optional per-tile height/elevation data for Minecraft-like 3D block presentation and simple editor sculpting tools. The 2D Phaser runtime currently treats terrain height as editor/visual data.
 - Objects: reusable object definitions and placed instances with behaviours for containers, doors, signs, and vehicles.
 - NPCs: reusable NPC definitions with defaults plus placed instances with overrides.
@@ -28,15 +29,19 @@ Long-term goal: become a lightweight builder for classic 2D adventure/RPG-style 
 
 ## Architecture Overview
 
-The central schema is `GameProject` in `src/types/game.ts`. Editor sections modify this object. The Phaser runtime reads a cloned snapshot of the object when Play starts.
+The central schema is `GameProject` in `src/types/game.ts`. Editor sections modify this object. Play mode creates a cloned runtime snapshot and then a shared `RuntimeSession` for play-session state.
 
 Editor state is kept separate from project data where possible. UI-only concerns such as selection, map pan/zoom, and palette sizing should not become gameplay schema unless they affect the authored game.
 
 The Map Workspace has shared 2D and 3D view modes. Both views edit the same `GameProject` map data and share palette, tool, selection, and inspector state.
 
-The Three.js 3D view is editor-only. It renders the active area's terrain tiles, per-tile height/elevation, and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select, move, and place existing editor entities and sculpt terrain height, but it does not replace Phaser or affect runtime gameplay.
+The Three.js 3D view in the Map Workspace is an editor view. It renders the active area's terrain tiles, per-tile height/elevation, and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select, move, and place existing editor entities and sculpt terrain height.
 
-The Phaser runtime remains the primary playable runtime. Pressing Play clones the current project and runs that snapshot through the existing 2D Phaser systems.
+The Phaser runtime remains the default and reference 2D playable runtime. Pressing Play defaults to Phaser, with a `Play 3D Experimental` option available for the Three.js runtime adapter.
+
+Both runtime adapters use shared runtime helpers and `RuntimeSession` state for gameplay semantics. Movement, interaction discovery, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, and progression should stay in shared runtime code rather than being reimplemented inside Phaser or Three.js render adapters.
+
+The Three.js runtime is experimental. It currently renders block placeholder graphics and basic runtime overlays, has limited animation and movement smoothness, needs camera follow/polish work, and still needs parity testing against Phaser before it can be considered production-quality.
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
@@ -104,7 +109,9 @@ GitHub Actions is configured for pull requests to `release/staging` and `main`. 
 - `src/editor/`: React editor sections, inspectors, and editor helpers.
 - `src/editor/sections/MapEditor.tsx`: Map Workspace with shared 2D/3D map tools, palette, selection, and inspector.
 - `src/editor/sections/ThreeDPreview.tsx`: Three.js editor view for active-area terrain, height sculpting, placeholder entities, selection, movement, and placement.
-- `src/runtime/`: Phaser runtime, rule engine, movement, inventory, quests, shops, objects, vehicles, NPC movement, combat, and focused runtime tests.
+- `src/runtime/`: shared runtime helpers, Phaser runtime adapter, experimental Three.js runtime adapter, rule engine, movement, inventory, quests, shops, objects, vehicles, NPC movement, combat, and focused runtime tests.
+- `docs/RUNTIME_ARCHITECTURE.md`: shared runtime/session architecture and adapter responsibilities.
+- `docs/THREE_RUNTIME_STATUS.md`: current experimental Three.js runtime status, limitations, and manual parity checklist.
 - `src/test/`: shared test utilities and editor smoke tests.
 - `.github/workflows/`: GitHub Actions CI workflow.
 - `AGENTS.md`: source of truth for AI coding agents.
