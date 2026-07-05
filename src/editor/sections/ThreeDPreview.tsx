@@ -48,7 +48,6 @@ import {
 	movePreviewSelectionInProject,
 	type PreviewGridPosition,
 	previewGridPositionToThreePoint,
-	threePointToPreviewGridPosition,
 } from "./previewMove";
 import {
 	getPreviewPlacementInfo,
@@ -63,6 +62,11 @@ import {
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import { terrainTilesToBlocks } from "./terrainBlocks";
+import {
+	getCanvasPointerNdc,
+	resolveSelectionMetadataFromIntersection,
+	terrainIntersectionToPreviewGridPosition,
+} from "./threeDPreviewPicking";
 import {
 	getWalkPreviewDirectionFromKey,
 	getWalkPreviewStart,
@@ -317,6 +321,7 @@ export function ThreeDPreview({
 			camera.lookAt(
 				new THREE.Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
 			);
+			camera.updateMatrixWorld(true);
 		};
 		applyCameraFromState();
 
@@ -415,8 +420,6 @@ export function ThreeDPreview({
 
 		const raycaster = new THREE.Raycaster();
 		const pointer = new THREE.Vector2();
-		const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-		const groundPoint = new THREE.Vector3();
 		let dragGhost: THREE.Mesh | null = null;
 		let placementGhost: THREE.Mesh | null = null;
 		let terrainPaintGhost: THREE.Mesh | null = null;
@@ -443,24 +446,34 @@ export function ThreeDPreview({
 		};
 
 		const setPointerFromEvent = (event: PointerEvent) => {
-			const rect = renderer.domElement.getBoundingClientRect();
-			if (rect.width <= 0 || rect.height <= 0) {
+			const ndc = getCanvasPointerNdc(
+				{ clientX: event.clientX, clientY: event.clientY },
+				renderer.domElement.getBoundingClientRect(),
+			);
+			if (!ndc) {
 				return false;
 			}
-			pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-			pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+			pointer.x = ndc.x;
+			pointer.y = ndc.y;
+			return true;
+		};
+
+		const updateRaycasterFromPointer = (event: PointerEvent) => {
+			if (!setPointerFromEvent(event)) {
+				return false;
+			}
+			applyCameraFromState();
+			scene.updateMatrixWorld(true);
+			raycaster.setFromCamera(pointer, camera);
 			return true;
 		};
 
 		const getPointerHit = (event: PointerEvent) => {
-			if (!setPointerFromEvent(event)) {
+			if (!updateRaycasterFromPointer(event)) {
 				return undefined;
 			}
-			raycaster.setFromCamera(pointer, camera);
 			const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
-			return hit?.object.userData.selectionMetadata as
-				| PreviewSelectionMetadata
-				| undefined;
+			return resolveSelectionMetadataFromIntersection(hit);
 		};
 
 		const selectFromPointer = (event: PointerEvent) => {
@@ -523,22 +536,34 @@ export function ThreeDPreview({
 		const metadataIsMovable = (metadata: PreviewSelectionMetadata) =>
 			isMovablePreviewSelection(metadataToEditorSelection(metadata));
 
+		const getTerrainPositionFromPointer = (
+			event: PointerEvent,
+			footprint = { height: 1, width: 1 },
+		) => {
+			if (!activeArea || !updateRaycasterFromPointer(event)) {
+				return undefined;
+			}
+			const hit = raycaster.intersectObjects(meshes, false)[0];
+			if (!hit) {
+				return undefined;
+			}
+			return terrainIntersectionToPreviewGridPosition(
+				activeArea,
+				hit,
+				footprint,
+			);
+		};
+
 		const getGridPositionFromPointer = (
 			event: PointerEvent,
 			metadata: PreviewSelectionMetadata,
 		) => {
-			if (!activeArea || !setPointerFromEvent(event)) {
-				return undefined;
-			}
-			raycaster.setFromCamera(pointer, camera);
-			const point = raycaster.ray.intersectPlane(groundPlane, groundPoint);
-			if (!point) {
-				return undefined;
-			}
 			const selection = metadataToEditorSelection(metadata);
-			return threePointToPreviewGridPosition(
-				activeArea,
-				{ x: point.x, z: point.z },
+			if (!activeArea) {
+				return undefined;
+			}
+			return getTerrainPositionFromPointer(
+				event,
 				getPreviewSelectionFootprint(activeArea, selection),
 			);
 		};
@@ -546,24 +571,14 @@ export function ThreeDPreview({
 		const getPlacementPositionFromPointer = (event: PointerEvent) => {
 			if (
 				!activeArea ||
-				(!placementInfo.active && !terrainHeightTool && !terrainPaintTileId) ||
-				!setPointerFromEvent(event)
+				(!placementInfo.active && !terrainHeightTool && !terrainPaintTileId)
 			) {
 				return undefined;
 			}
-			raycaster.setFromCamera(pointer, camera);
-			const point = raycaster.ray.intersectPlane(groundPlane, groundPoint);
-			if (!point) {
-				return undefined;
-			}
-			return threePointToPreviewGridPosition(
-				activeArea,
-				{ x: point.x, z: point.z },
-				{
-					height: Math.max(1, Math.round(placementInfo.depth)),
-					width: Math.max(1, Math.round(placementInfo.width)),
-				},
-			);
+			return getTerrainPositionFromPointer(event, {
+				height: Math.max(1, Math.round(placementInfo.depth)),
+				width: Math.max(1, Math.round(placementInfo.width)),
+			});
 		};
 
 		const getBrushPositions = (position: PreviewGridPosition) => {
@@ -1015,6 +1030,7 @@ export function ThreeDPreview({
 			const { height, width } = getPreviewSize(host);
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
+			camera.updateMatrixWorld(true);
 			renderer.setSize(width, height, false);
 		};
 

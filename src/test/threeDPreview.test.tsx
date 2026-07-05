@@ -77,13 +77,18 @@ vi.mock("three", () => {
 	class Object3D {
 		castShadow = false;
 		children: Object3D[] = [];
+		parent: Object3D | null = null;
 		position = { set: vi.fn(), y: 0 };
 		receiveShadow = false;
 		rotation = { y: 0 };
 		scale = { setScalar: vi.fn() };
 		userData: Record<string, unknown> = {};
+		updateMatrixWorld = vi.fn();
 
 		add = vi.fn((...children: Object3D[]) => {
+			children.forEach((child) => {
+				child.parent = this;
+			});
 			this.children.push(...children);
 		});
 
@@ -133,12 +138,14 @@ vi.mock("three", () => {
 			aspect = 1;
 			position = { set: vi.fn() };
 			lookAt = vi.fn();
+			updateMatrixWorld = vi.fn();
 			updateProjectionMatrix = vi.fn();
 		},
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
 			remove = vi.fn();
+			updateMatrixWorld = vi.fn();
 		},
 		Raycaster: class {
 			ray = {
@@ -161,7 +168,20 @@ vi.mock("three", () => {
 									| undefined
 							)?.entityType === "npc",
 					);
-					return npc ? [{ object: npc }] : [];
+					if (npc) {
+						return [{ object: npc, point: { x: 0, y: 1, z: 0 } }];
+					}
+					const terrain = objects.find(
+						(object) =>
+							(
+								object.userData.selectionMetadata as
+									| { entityType?: string }
+									| undefined
+							)?.entityType === "terrain",
+					);
+					return terrain
+						? [{ object: terrain, point: { x: 0, y: 1, z: 0 } }]
+						: [];
 				},
 			);
 		},
