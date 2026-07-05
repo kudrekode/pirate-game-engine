@@ -159,8 +159,14 @@ export function ThreeDPreview({
 		[activeArea],
 	);
 	const entityMarkers = useMemo(
-		() => areaEntitiesToMarkers(activeArea, project.objects, overlayFilters),
-		[activeArea, overlayFilters, project.objects],
+		() =>
+			areaEntitiesToMarkers(
+				activeArea,
+				project.objects,
+				project.npcs,
+				overlayFilters,
+			),
+		[activeArea, overlayFilters, project.npcs, project.objects],
 	);
 	const selectionDetails = useMemo(
 		() => getPreviewSelectionDetails(project, editorSelection),

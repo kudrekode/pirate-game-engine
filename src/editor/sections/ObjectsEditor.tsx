@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { resolveThreeVisual } from "../../runtime/three/threeVisuals";
+import { useProjectStore } from "../../store/useProjectStore";
+import type { ObjectDefinition } from "../../types/game";
 import {
 	makeDefaultObjectBehaviour,
 	ObjectBehaviourEditor,
 } from "../ObjectBehaviourEditor";
-import { useProjectStore } from "../../store/useProjectStore";
-import type { ObjectDefinition } from "../../types/game";
+import { ThreeVisualControls } from "./ThreeVisualControls";
 
 const categories: ObjectDefinition["category"][] = [
 	"prop",
@@ -45,6 +47,15 @@ export function ObjectsEditor() {
 	const selectedObject = project.objects.find(
 		(object) => object.id === selectedObjectId,
 	);
+	const inferredVisual = selectedObject
+		? resolveThreeVisual({
+				behaviour: selectedObject.defaultBehaviour,
+				category: selectedObject.category,
+				interaction: selectedObject.defaultInteraction,
+				kind: "object",
+				name: selectedObject.name,
+			})
+		: undefined;
 
 	useEffect(() => {
 		if (!selectedObject) {
@@ -294,6 +305,13 @@ export function ObjectsEditor() {
 									))}
 								</select>
 							</label>
+						) : null}
+						{inferredVisual ? (
+							<ThreeVisualControls
+								inferredPlaceholderType={inferredVisual.placeholderType}
+								onChange={(threeVisual) => updateObject({ threeVisual })}
+								value={selectedObject.threeVisual}
+							/>
 						) : null}
 						<button
 							className="danger-button"

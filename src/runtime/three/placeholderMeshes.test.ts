@@ -135,6 +135,51 @@ describe("placeholder mesh helpers", () => {
 		).toBe(true);
 	});
 
+	it("applies authored visual transforms without dropping selection metadata", () => {
+		const metadata = {
+			areaId: "area",
+			entityId: "rock",
+			entityType: "object",
+			x: 1,
+			y: 2,
+		};
+		const group = createPlaceholderMeshGroup(
+			{
+				color: 0x64748b,
+				depth: 0.7,
+				height: 0.35,
+				opacity: 1,
+				threeX: 1,
+				threeY: 0.2,
+				threeZ: 2,
+				visual: {
+					heightOffset: 0.5,
+					mode: "placeholder",
+					placeholderType: "rock",
+					requestedMode: "placeholder",
+					rotationOffset: 45,
+					scale: 1.25,
+					source: "authored",
+				},
+				visualType: "rock",
+				width: 1.1,
+			},
+			{ metadata },
+		);
+
+		expect(group.position.y).toBeCloseTo(0.525);
+		expect(group.rotation.y).toBeCloseTo(Math.PI / 4);
+		expect(group.scale.x).toBeCloseTo(1.25);
+		expect(group.scale.y).toBeCloseTo(1.25);
+		expect(group.scale.z).toBeCloseTo(1.25);
+		expect(group.userData.selectionMetadata).toEqual(metadata);
+		expect(
+			getPlaceholderSelectableObjects(group).every(
+				(child) => child.userData.selectionMetadata === metadata,
+			),
+		).toBe(true);
+	});
+
 	it("applies metadata to arbitrary object hierarchies", () => {
 		const group = new THREE.Group();
 		const child = new THREE.Mesh(

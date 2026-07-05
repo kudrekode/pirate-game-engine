@@ -80,6 +80,7 @@ vi.mock("three", () => {
 		position = { set: vi.fn(), y: 0 };
 		receiveShadow = false;
 		rotation = { y: 0 };
+		scale = { setScalar: vi.fn() };
 		userData: Record<string, unknown> = {};
 
 		add = vi.fn((...children: Object3D[]) => {

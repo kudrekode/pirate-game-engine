@@ -44,10 +44,13 @@ import type {
 	RuleTrigger,
 	ShopDefinition,
 	SingleCondition,
+	ThreePlaceholderVisualType,
 	ThreeRuntimeCameraConfig,
+	ThreeVisualConfig,
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
+import { THREE_PLACEHOLDER_VISUAL_TYPES } from "../types/game";
 import { defaultProject } from "./defaultProject";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
@@ -58,6 +61,9 @@ import {
 import { migrateTerrainHeights } from "./terrainHeight";
 
 type UnknownRecord = Record<string, unknown>;
+const THREE_PLACEHOLDER_VISUAL_TYPE_SET = new Set<string>(
+	THREE_PLACEHOLDER_VISUAL_TYPES,
+);
 
 function isRecord(value: unknown): value is UnknownRecord {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -1254,6 +1260,43 @@ function migrateShops(value: unknown): ShopDefinition[] {
 	});
 }
 
+function migrateThreeVisualConfig(
+	value: unknown,
+): ThreeVisualConfig | undefined {
+	if (!isRecord(value)) {
+		return undefined;
+	}
+
+	const config: ThreeVisualConfig = {};
+	if (value.mode === "placeholder" || value.mode === "asset") {
+		config.mode = value.mode;
+	}
+	if (
+		typeof value.placeholderType === "string" &&
+		THREE_PLACEHOLDER_VISUAL_TYPE_SET.has(value.placeholderType)
+	) {
+		config.placeholderType =
+			value.placeholderType as ThreePlaceholderVisualType;
+	}
+	if (typeof value.scale === "number" && Number.isFinite(value.scale)) {
+		config.scale = readNumber(value.scale, 1, 0.1, 5);
+	}
+	if (
+		typeof value.heightOffset === "number" &&
+		Number.isFinite(value.heightOffset)
+	) {
+		config.heightOffset = readNumber(value.heightOffset, 0, -5, 5);
+	}
+	if (
+		typeof value.rotationOffset === "number" &&
+		Number.isFinite(value.rotationOffset)
+	) {
+		config.rotationOffset = readNumber(value.rotationOffset, 0, -360, 360);
+	}
+
+	return Object.keys(config).length > 0 ? config : undefined;
+}
+
 function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
 	if (!Array.isArray(value)) {
 		return [];
@@ -1276,6 +1319,7 @@ function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
 				: "misc";
 		const description = readString(item.description, "");
 		const iconId = readString(item.iconId, "");
+		const threeVisual = migrateThreeVisualConfig(item.threeVisual);
 
 		return [
 			{
@@ -1292,6 +1336,7 @@ function migrateObjectDefinitions(value: unknown): ObjectDefinition[] {
 					"on_interact",
 				),
 				defaultBehaviour: migrateObjectBehaviour(item.defaultBehaviour),
+				...(threeVisual ? { threeVisual } : {}),
 			},
 		];
 	});
@@ -1318,6 +1363,7 @@ function migrateNpcDefinitions(value: unknown): NPCDefinition[] {
 			item.defaultInteraction,
 			"on_interact",
 		);
+		const threeVisual = migrateThreeVisualConfig(item.threeVisual);
 
 		return [
 			{
@@ -1330,6 +1376,7 @@ function migrateNpcDefinitions(value: unknown): NPCDefinition[] {
 				...(defaultMovement ? { defaultMovement } : {}),
 				...(defaultEnemyBehaviour ? { defaultEnemyBehaviour } : {}),
 				...(defaultInteraction ? { defaultInteraction } : {}),
+				...(threeVisual ? { threeVisual } : {}),
 			},
 		];
 	});

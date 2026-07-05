@@ -80,6 +80,10 @@ import {
 	disposePlaceholderObject,
 } from "./placeholderMeshes";
 import {
+	composeThreeVisualYaw,
+	type ResolvedThreeVisual,
+} from "./threeVisuals";
+import {
 	advanceCameraFollowRig,
 	type CameraFollowRig,
 	facingToYawRadians,
@@ -216,16 +220,18 @@ function setObjectBasePosition(
 	object: THREE.Object3D,
 	area: GameArea,
 	position: VisualGridPosition,
+	visual?: ResolvedThreeVisual,
 ): void {
 	const base = getVisualWorldBase(area, position);
-	object.position.set(base.x, base.y, base.z);
+	object.position.set(base.x, base.y + (visual?.heightOffset ?? 0), base.z);
 }
 
 function setObjectFacing(
 	object: THREE.Object3D,
 	facing: VisualGridPosition,
+	visual?: ResolvedThreeVisual,
 ): void {
-	object.rotation.y = facingToYawRadians(facing);
+	object.rotation.y = composeThreeVisualYaw(facingToYawRadians(facing), visual);
 }
 
 function createFacingMarker(color: number, y: number, z: number): THREE.Mesh {
@@ -1291,31 +1297,37 @@ export function ThreeRuntimePanel({
 			),
 		};
 		const npcRenderGroups = new Map<string, THREE.Group>();
-		areaEntitiesToMarkers(runtimeArea, session.project.objects, true).forEach(
-			(marker) => {
-				const group = createPlaceholderMeshGroup(marker);
-				if (marker.kind === "npc") {
-					const npcVisual = npcVisualsRef.current.get(marker.id);
-					if (npcVisual) {
-						group.add(
-							createFacingMarker(getWorldMaterialColor("sand"), 0.58, -0.34),
-						);
-						setObjectBasePosition(
-							group,
-							area,
-							getVisualGridPosition(npcVisual, performance.now()).position,
-						);
-						setObjectFacing(group, npcVisual.facing);
-						npcRenderGroups.set(marker.id, group);
-					}
+		const npcRenderVisuals = new Map<string, ResolvedThreeVisual | undefined>();
+		areaEntitiesToMarkers(
+			runtimeArea,
+			session.project.objects,
+			session.project.npcs,
+			true,
+		).forEach((marker) => {
+			const group = createPlaceholderMeshGroup(marker);
+			if (marker.kind === "npc") {
+				const npcVisual = npcVisualsRef.current.get(marker.id);
+				if (npcVisual) {
+					group.add(
+						createFacingMarker(getWorldMaterialColor("sand"), 0.58, -0.34),
+					);
+					setObjectBasePosition(
+						group,
+						area,
+						getVisualGridPosition(npcVisual, performance.now()).position,
+						marker.visual,
+					);
+					setObjectFacing(group, npcVisual.facing, marker.visual);
+					npcRenderGroups.set(marker.id, group);
+					npcRenderVisuals.set(marker.id, marker.visual);
 				}
-				applyShadowRole(group, {
-					cast: true,
-					receive: marker.kind !== "event",
-				});
-				addRenderObject(group);
-			},
-		);
+			}
+			applyShadowRole(group, {
+				cast: true,
+				receive: marker.kind !== "event",
+			});
+			addRenderObject(group);
+		});
 
 		const playerMesh = createRuntimePlayerMesh();
 		applyShadowRole(playerMesh, { cast: true });
@@ -1510,8 +1522,9 @@ export function ThreeRuntimePanel({
 					return;
 				}
 				const npcPosition = getVisualGridPosition(npcVisual, now).position;
-				setObjectBasePosition(group, area, npcPosition);
-				setObjectFacing(group, npcVisual.facing);
+				const visual = npcRenderVisuals.get(npcId);
+				setObjectBasePosition(group, area, npcPosition, visual);
+				setObjectFacing(group, npcVisual.facing, visual);
 				npcVisualsRef.current.set(
 					npcId,
 					settleVisualEntityState(npcVisual, now),

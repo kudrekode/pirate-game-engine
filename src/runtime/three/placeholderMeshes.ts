@@ -1,51 +1,20 @@
 import * as THREE from "three";
-import type {
-	Interaction,
-	NPCAttributes,
-	ObjectBehaviour,
-	ObjectDefinition,
-} from "../../types/game";
+import type { ThreePlaceholderVisualType } from "../../types/game";
+import {
+	type PlaceholderVisualEntity,
+	type ResolvedThreeVisual,
+	resolveInferredPlaceholderVisualType,
+	threeVisualRotationOffsetToRadians,
+} from "./threeVisuals";
 import {
 	createWorldMaterial,
 	getWorldMaterialColor,
 } from "./worldPresentation";
 
-export type PlaceholderVisualType =
-	| "tree"
-	| "house"
-	| "marketStall"
-	| "boat"
-	| "chest"
-	| "sign"
-	| "door"
-	| "rock"
-	| "pickup"
-	| "npc"
-	| "hostileNpc"
-	| "genericObject"
-	| "event";
-
-export type PlaceholderVisualEntity =
-	| {
-			kind: "object";
-			name?: string;
-			category?: ObjectDefinition["category"];
-			behaviour?: ObjectBehaviour;
-			interaction?: Interaction;
-	  }
-	| {
-			kind: "structure";
-			name?: string;
-			structureId?: string;
-	  }
-	| {
-			kind: "npc";
-			name?: string;
-			attributes?: Pick<NPCAttributes, "alignment">;
-			enemyEnabled?: boolean;
-	  }
-	| { kind: "pickup"; name?: string }
-	| { kind: "event"; name?: string };
+export type PlaceholderVisualType = ThreePlaceholderVisualType;
+export type { PlaceholderVisualEntity };
+export const resolvePlaceholderVisualType =
+	resolveInferredPlaceholderVisualType;
 
 export type PlaceholderSelectionMetadata = {
 	entityType: string;
@@ -57,6 +26,7 @@ export type PlaceholderSelectionMetadata = {
 
 export type PlaceholderMarkerInput = {
 	visualType: PlaceholderVisualType;
+	visual?: ResolvedThreeVisual;
 	color: number;
 	depth: number;
 	height: number;
@@ -86,82 +56,6 @@ export const PLACEHOLDER_MATERIAL_COLORS = {
 	waterAccent: getWorldMaterialColor("waterAccent"),
 	wood: getWorldMaterialColor("wood"),
 } as const;
-
-function textIncludes(text: string | undefined, fragments: string[]): boolean {
-	const value = text?.toLowerCase() ?? "";
-	return fragments.some((fragment) => value.includes(fragment));
-}
-
-function isShopInteraction(interaction: Interaction | undefined): boolean {
-	return interaction?.type === "open_shop";
-}
-
-export function resolvePlaceholderVisualType(
-	entity: PlaceholderVisualEntity,
-): PlaceholderVisualType {
-	if (entity.kind === "pickup") {
-		return "pickup";
-	}
-	if (entity.kind === "event") {
-		return "event";
-	}
-	if (entity.kind === "npc") {
-		return entity.attributes?.alignment === "hostile" || entity.enemyEnabled
-			? "hostileNpc"
-			: "npc";
-	}
-	if (entity.kind === "structure") {
-		if (
-			textIncludes(`${entity.name ?? ""} ${entity.structureId ?? ""}`, ["tree"])
-		) {
-			return "tree";
-		}
-		if (
-			textIncludes(`${entity.name ?? ""} ${entity.structureId ?? ""}`, [
-				"rock",
-				"stone",
-				"boulder",
-			])
-		) {
-			return "rock";
-		}
-		return "house";
-	}
-
-	const label = entity.name ?? "";
-	if (
-		entity.category === "vehicle" ||
-		entity.behaviour?.type === "vehicle" ||
-		textIncludes(label, ["boat"])
-	) {
-		return "boat";
-	}
-	if (
-		entity.category === "container" ||
-		entity.behaviour?.type === "container"
-	) {
-		return "chest";
-	}
-	if (entity.category === "sign" || entity.behaviour?.type === "sign") {
-		return "sign";
-	}
-	if (entity.category === "door" || entity.behaviour?.type === "door") {
-		return "door";
-	}
-	if (
-		isShopInteraction(entity.interaction) ||
-		textIncludes(label, ["market", "shop", "stall"])
-	) {
-		return "marketStall";
-	}
-	if (textIncludes(label, ["tree", "oak", "pine"])) {
-		return "tree";
-	}
-	if (textIncludes(label, ["rock", "stone", "boulder"])) {
-		return "rock";
-	}
-	return "genericObject";
-}
 
 function makeMaterial(
 	color: number,
@@ -249,6 +143,20 @@ function addPart(
 
 function getBaseY(marker: PlaceholderMarkerInput): number {
 	return Math.max(0, marker.threeY - marker.height / 2);
+}
+
+function getVisualHeightOffset(
+	visual: ResolvedThreeVisual | undefined,
+): number {
+	return visual?.heightOffset ?? 0;
+}
+
+function getVisualScale(visual: ResolvedThreeVisual | undefined): number {
+	return visual?.scale ?? 1;
+}
+
+function getVisualYawOffset(visual: ResolvedThreeVisual | undefined): number {
+	return visual ? threeVisualRotationOffsetToRadians(visual) : 0;
 }
 
 function buildTree(
@@ -586,7 +494,13 @@ export function createPlaceholderMeshGroup(
 ): THREE.Group {
 	const group = new THREE.Group();
 	const selected = options.selected ?? false;
-	group.position.set(marker.threeX, getBaseY(marker), marker.threeZ);
+	group.position.set(
+		marker.threeX,
+		getBaseY(marker) + getVisualHeightOffset(marker.visual),
+		marker.threeZ,
+	);
+	group.rotation.y = getVisualYawOffset(marker.visual);
+	group.scale.setScalar(getVisualScale(marker.visual));
 
 	if (marker.visualType === "tree") {
 		buildTree(group, marker, selected);

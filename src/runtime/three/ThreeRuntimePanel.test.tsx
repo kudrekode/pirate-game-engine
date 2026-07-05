@@ -127,6 +127,7 @@ vi.mock("three", () => {
 		position = { set: vi.fn() };
 		receiveShadow = false;
 		rotation = { y: 0 };
+		scale = { setScalar: vi.fn() };
 		userData: Record<string, unknown> = {};
 
 		add = vi.fn((...children: Object3D[]) => {
@@ -148,6 +149,7 @@ vi.mock("three", () => {
 		position = { set: vi.fn() };
 		receiveShadow = false;
 		rotation = { y: 0 };
+		scale = { setScalar: vi.fn() };
 		userData: Record<string, unknown> = {};
 
 		constructor(geometry: Disposable, material: Disposable | Disposable[]) {

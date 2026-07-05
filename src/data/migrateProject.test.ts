@@ -382,6 +382,51 @@ describe("migrateProject", () => {
 		});
 	});
 
+	it("migrates optional 3D visual config on object and NPC definitions", () => {
+		const project = migrateProject({
+			npcs: [
+				{
+					id: "captain",
+					mapAvatarId: "ranger",
+					name: "Captain",
+					threeVisual: {
+						heightOffset: Number.NaN,
+						mode: "placeholder",
+						placeholderType: "missing",
+						scale: "large",
+					},
+				},
+			],
+			objects: [
+				{
+					category: "vehicle",
+					heightTiles: 1,
+					id: "boat",
+					name: "Boat",
+					threeVisual: {
+						heightOffset: -99,
+						mode: "asset",
+						placeholderType: "boat",
+						rotationOffset: 999,
+						scale: 99,
+					},
+					widthTiles: 2,
+				},
+			],
+		});
+
+		expect(project.objects[0].threeVisual).toEqual({
+			heightOffset: -5,
+			mode: "asset",
+			placeholderType: "boat",
+			rotationOffset: 360,
+			scale: 5,
+		});
+		expect(project.npcs[0].threeVisual).toEqual({
+			mode: "placeholder",
+		});
+	});
+
 	it("migrates inventory rules and pickups", () => {
 		const project = migrateProject({
 			areas: [

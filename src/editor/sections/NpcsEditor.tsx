@@ -6,6 +6,7 @@ import {
 	defaultNPCMovement,
 	resolveNPCInstance,
 } from "../../runtime/npcResolver";
+import { resolveThreeVisual } from "../../runtime/three/threeVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	EnemyBehaviour,
@@ -13,6 +14,7 @@ import type {
 	NPCDefinition,
 	NPCMovementConfig,
 } from "../../types/game";
+import { ThreeVisualControls } from "./ThreeVisualControls";
 
 export function isNpcDefinitionPlaced(
 	areas: { npcs: { npcDefinitionId: string }[] }[],
@@ -189,6 +191,12 @@ export function NpcsEditor() {
 								...defaultEnemyBehaviour,
 								...selectedNpc.defaultEnemyBehaviour,
 							};
+							const inferredVisual = resolveThreeVisual({
+								attributes,
+								enemyEnabled: enemy.enabled,
+								kind: "npc",
+								name: selectedNpc.name,
+							});
 
 							return (
 								<>
@@ -465,6 +473,11 @@ export function NpcsEditor() {
 										TODO: Reuse the Map inspector interaction editor for default
 										NPC interactions.
 									</p>
+									<ThreeVisualControls
+										inferredPlaceholderType={inferredVisual.placeholderType}
+										onChange={(threeVisual) => updateNpc({ threeVisual })}
+										value={selectedNpc.threeVisual}
+									/>
 									<button
 										className="danger-button"
 										onClick={deleteNpc}
