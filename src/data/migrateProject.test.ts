@@ -132,6 +132,10 @@ describe("migrateProject", () => {
 			version: "0.1.0",
 		});
 		expect(project.camera.viewportWidthTiles).toBeGreaterThan(0);
+		expect(project.camera.three).toMatchObject({
+			style: "fixedIsometric",
+			allowRuntimeOrbit: true,
+		});
 		expect(project.player.mapAvatarId).toBeTruthy();
 		expect(project.player.combat).toMatchObject({
 			maxHealth: 100,
@@ -147,6 +151,79 @@ describe("migrateProject", () => {
 		expect(project.quests).toEqual([]);
 		expect(project.npcs).toEqual([]);
 		expect(project.objects).toEqual([]);
+	});
+
+	it("migrates Three runtime camera settings without affecting Phaser camera fields", () => {
+		const project = migrateProject({
+			camera: {
+				viewportWidthTiles: 12,
+				viewportHeightTiles: 9,
+				followPlayer: false,
+				followSmoothing: 0.4,
+				three: {
+					style: "thirdPerson",
+					distance: 9,
+					height: 2.5,
+					pitchDegrees: 28,
+					yawOffsetDegrees: 15,
+					lookAtHeight: 0.5,
+					followSmoothing: 12,
+					lookSmoothing: 8,
+					allowRuntimeOrbit: false,
+				},
+			},
+		});
+
+		expect(project.camera).toMatchObject({
+			viewportWidthTiles: 12,
+			viewportHeightTiles: 9,
+			followPlayer: false,
+			followSmoothing: 0.4,
+		});
+		expect(project.camera.three).toEqual({
+			style: "thirdPerson",
+			distance: 9,
+			height: 2.5,
+			pitchDegrees: 28,
+			yawOffsetDegrees: 15,
+			lookAtHeight: 0.5,
+			followSmoothing: 12,
+			lookSmoothing: 8,
+			allowRuntimeOrbit: false,
+		});
+	});
+
+	it("migrates optional terrain heights without requiring existing projects to define them", () => {
+		const project = migrateProject({
+			areas: [
+				{
+					height: 2,
+					id: "height-area",
+					terrainHeights: [
+						{ x: 0, y: 0, height: 2 },
+						{ x: 1, y: 0, height: 99 },
+						{ x: 0, y: 1, height: 0 },
+					],
+					terrainTiles: [
+						{ x: 0, y: 0, tileId: "grass" },
+						{ x: 1, y: 0, tileId: "grass" },
+					],
+					width: 2,
+				},
+				{
+					height: 1,
+					id: "flat-area",
+					terrainTiles: [{ x: 0, y: 0, tileId: "grass" }],
+					width: 1,
+				},
+			],
+		});
+
+		expect(project.areas[0].terrainHeights).toEqual([
+			{ x: 0, y: 0, height: 2 },
+			{ x: 1, y: 0, height: 8 },
+		]);
+		expect(project.areas[1].terrainHeights).toBeUndefined();
 	});
 
 	it("migrates legacy NPC instance data as explicit overrides", () => {
@@ -428,6 +505,91 @@ describe("migrateProject", () => {
 				{ type: "give_item", itemId: "boat_pass", quantity: 1 },
 			],
 			rewards: [],
+		});
+	});
+
+	it("migrates dialogue definitions and direct dialogue interactions", () => {
+		const project = migrateProject({
+			dialogues: [
+				{
+					id: "captain_dialogue",
+					name: "Captain Dialogue",
+					startNodeId: "start",
+					nodes: [
+						{
+							id: "start",
+							type: "choice",
+							text: "Need work?",
+							choices: [
+								{
+									id: "accept",
+									text: "Yes",
+									targetNodeId: "accepted",
+									conditions: [
+										{
+											type: "quest_status",
+											questId: "quest_test",
+											status: "inactive",
+										},
+									],
+								},
+							],
+							actions: [{ type: "set_flag", flag: "talked", value: true }],
+						},
+						{ id: "accepted", type: "end", text: "Good." },
+					],
+				},
+			],
+			areas: [
+				{
+					id: "area_main",
+					width: 2,
+					height: 2,
+					npcs: [
+						{
+							id: "captain-instance",
+							npcDefinitionId: "captain",
+							x: 1,
+							y: 1,
+							interaction: {
+								type: "start_dialogue",
+								activationMode: "on_interact",
+								dialogueId: "captain_dialogue",
+							},
+						},
+					],
+				},
+			],
+		});
+
+		expect(project.dialogues[0]).toMatchObject({
+			id: "captain_dialogue",
+			startNodeId: "start",
+			nodes: [
+				{
+					id: "start",
+					type: "choice",
+					actions: [{ type: "set_flag", flag: "talked", value: true }],
+					choices: [
+						{
+							id: "accept",
+							conditions: [
+								{
+									type: "quest_status",
+									questId: "quest_test",
+									status: "inactive",
+								},
+							],
+						},
+					],
+				},
+				{ id: "accepted", type: "end" },
+			],
+		});
+		expect(project.areas[0].npcs[0].interaction).toEqual({
+			type: "start_dialogue",
+			activationMode: "on_interact",
+			dialogueId: "captain_dialogue",
 		});
 	});
 

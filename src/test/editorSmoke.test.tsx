@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
+import { DialogueEditor } from "../editor/sections/DialogueEditor";
 import { GameStateEditor } from "../editor/sections/GameStateEditor";
 import { ItemsEditor } from "../editor/sections/ItemsEditor";
 import { MapEditor } from "../editor/sections/MapEditor";
@@ -231,7 +232,22 @@ describe("editor smoke tests", () => {
 		render(<MapEditor />);
 
 		expect(screen.getByText("Map size")).toBeInTheDocument();
-		expect(getButtonByText("Reset Zoom")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "2D View" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "3D View" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Reset Zoom" }),
+		).toBeInTheDocument();
+	}, 15000);
+
+	it("keeps Play mode on the Phaser runtime path", () => {
+		render(<App />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+		expect(screen.getByText("Runtime mock")).toBeInTheDocument();
+		expect(
+			screen.queryByLabelText("3D preview viewport"),
+		).not.toBeInTheDocument();
 	}, 15000);
 
 	it("edits selected NPC attributes in the Map inspector", () => {
@@ -667,6 +683,15 @@ describe("editor smoke tests", () => {
 		expect(screen.getByDisplayValue("Gold Coin")).toBeInTheDocument();
 		expect(
 			screen.getByText(/Currency items are physical inventory items/),
+		).toBeInTheDocument();
+	});
+
+	it("renders Dialogue Editor", () => {
+		render(<DialogueEditor />);
+
+		expect(screen.getByText("Dialogues")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Add dialogue" }),
 		).toBeInTheDocument();
 	});
 

@@ -16,20 +16,20 @@ import {
 	terrainPresets,
 } from "../../data/mapVisuals";
 import { cloneProject } from "../../data/migrateProject";
+import { getTerrainHeight } from "../../data/terrainHeight";
 import {
 	defaultEnemyBehaviour,
 	resolveNPCInstance,
 } from "../../runtime/npcResolver";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
-	EditorSelection,
 	EnemyBehaviour,
 	EventBlock,
+	GameArea,
 	GameAreaKind,
 	GameProject,
 	Interaction,
 	InteractionActivationMode,
-	MapOverlayFilter,
 	MovementRule,
 	NPCAttributes,
 	NPCInstance,
@@ -43,14 +43,32 @@ import {
 	makeDefaultObjectBehaviour,
 	ObjectBehaviourEditor,
 } from "../ObjectBehaviourEditor";
+import {
+	GAMEPLAY_OVERLAY_FILTERS,
+	HIDE_ALL_OVERLAY_FILTERS,
+	OVERLAY_FILTER_OPTIONS,
+	readStoredMapOverlayFilters,
+	SHOW_ALL_OVERLAY_FILTERS,
+	toggleMapOverlayFilter,
+	writeStoredMapOverlayFilters,
+} from "./overlayFilters";
+import { ThreeDPreview } from "./ThreeDPreview";
 
-type MapEditorTool = "select" | "paint" | "erase" | "pan";
+type MapEditorTool =
+	| "select"
+	| "paint"
+	| "erase"
+	| "pan"
+	| "raise-height"
+	| "lower-height"
+	| "flatten-height"
+	| "set-height";
 type DraggableEntityType =
 	| "npc"
 	| "object"
+	| "structure"
 	| "pickup"
-	| "eventBlock"
-	| "structure";
+	| "eventBlock";
 type BrushSize = 1 | 3 | 5;
 type PaintTarget =
 	| "terrain"
@@ -65,6 +83,7 @@ type MapEditHistoryEntry = {
 	before: GameProject;
 	after: GameProject;
 };
+type MapWorkspaceView = "2d" | "3d";
 
 const AUTO_EXPAND_BUFFER_TILES = 12;
 const MAX_MAP_SIZE = 200;
@@ -87,6 +106,8 @@ const interactionTypes = [
 	"area_link",
 	"teleport",
 	"play_cutscene",
+	"start_dialogue",
+	"open_shop",
 	"set_flag",
 	"change_movement_mode",
 ] as const;
@@ -101,6 +122,23 @@ const activationModes: InteractionActivationMode[] = [
 
 function cellKey(x: number, y: number): string {
 	return `${x}:${y}`;
+}
+
+function pixelCellKey(assetId: string, x: number, y: number): string {
+	return `${assetId}:${x}:${y}`;
+}
+
+function getEditorActiveArea(project: {
+	areas: GameArea[];
+	activeAreaId: string;
+}): GameArea {
+	const activeArea =
+		project.areas.find((area) => area.id === project.activeAreaId) ??
+		project.areas[0];
+	if (!activeArea) {
+		throw new Error("Project has no editable areas.");
+	}
+	return activeArea;
 }
 
 function clampMapSize(value: number): number {
@@ -161,16 +199,6 @@ function isTypingTarget(target: EventTarget | null) {
 	);
 }
 
-function getActiveArea(project: GameProject) {
-	const area =
-		project.areas.find((candidate) => candidate.id === project.activeAreaId) ??
-		project.areas[0];
-	if (!area) {
-		throw new Error("Map Editor requires at least one area.");
-	}
-	return area;
-}
-
 function pixelAssetToDataUrl(asset?: PixelAsset): string | undefined {
 	if (!asset) {
 		return undefined;
@@ -204,6 +232,10 @@ export function MapEditor() {
 	const setProject = useProjectStore((state) => state.setProject);
 	const updateProject = useProjectStore((state) => state.updateProject);
 	const setTiles = useProjectStore((state) => state.setTiles);
+	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
+	const adjustTerrainHeights = useProjectStore(
+		(state) => state.adjustTerrainHeights,
+	);
 	const setOverlayTiles = useProjectStore((state) => state.setOverlayTiles);
 	const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
 	const resizeMap = useProjectStore((state) => state.resizeMap);
@@ -229,6 +261,11 @@ export function MapEditor() {
 	const addEventBlock = useProjectStore((state) => state.addEventBlock);
 	const updateEventBlock = useProjectStore((state) => state.updateEventBlock);
 	const deleteEventBlock = useProjectStore((state) => state.deleteEventBlock);
+	const selection = useProjectStore((state) => state.editorSelection);
+	const setSelection = useProjectStore((state) => state.setEditorSelection);
+	const setMapPaletteSelection = useProjectStore(
+		(state) => state.setMapPaletteSelection,
+	);
 
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
@@ -243,13 +280,14 @@ export function MapEditor() {
 		undo: MapEditHistoryEntry[];
 		redo: MapEditHistoryEntry[];
 	}>({ undo: [], redo: [] });
-	const panHoldPreviousToolRef = useRef<MapEditorTool | null>(null);
 	const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
-	const activeArea = getActiveArea(project);
+	const activeArea = getEditorActiveArea(project);
 
 	const [activeTool, setActiveTool] = useState<MapEditorTool>("select");
+	const [mapView, setMapView] = useState<MapWorkspaceView>("2d");
 	const [paintTarget, setPaintTarget] = useState<PaintTarget>("terrain");
 	const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
+	const [isTerrainPaintArmed, setIsTerrainPaintArmed] = useState(false);
 	const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
 	const [selectedStructureId, setSelectedStructureId] = useState("small_house");
 	const [selectedObjectDefinitionId, setSelectedObjectDefinitionId] = useState(
@@ -258,17 +296,15 @@ export function MapEditor() {
 	const [selectedNpcDefinitionId, setSelectedNpcDefinitionId] = useState(
 		project.npcs[0]?.id ?? "",
 	);
-	const [selection, setSelection] = useState<EditorSelection>({
-		type: "area",
-		areaId: activeArea.id,
-	});
 	const [isPainting, setIsPainting] = useState(false);
 	const [isPanning, setIsPanning] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const [brushSize, setBrushSize] = useState<BrushSize>(1);
+	const [heightToolValue, setHeightToolValue] = useState(0);
 	const [showGrid, setShowGrid] = useState(true);
-	const [overlayFilter, setOverlayFilter] =
-		useState<MapOverlayFilter>("npc_paths");
+	const [overlayFilters, setOverlayFilters] = useState(
+		readStoredMapOverlayFilters,
+	);
 	const [paletteWidth, setPaletteWidth] = useState(readStoredPaletteWidth);
 	const [isResizingPalette, setIsResizingPalette] = useState(false);
 	const [inspectorWidth, setInspectorWidth] = useState(
@@ -290,145 +326,115 @@ export function MapEditor() {
 
 	useEffect(() => {
 		setDraftMapSize({ width: activeArea.width, height: activeArea.height });
-		setSelection((currentSelection) => {
-			if (!currentSelection || currentSelection.areaId !== activeArea.id) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (!selection || selection.areaId !== activeArea.id) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "eventBlock" &&
-				!activeArea.eventBlocks.some(
-					(eventBlock) => eventBlock.id === currentSelection.id,
-				)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "eventBlock" &&
+			!activeArea.eventBlocks.some(
+				(eventBlock) => eventBlock.id === selection.id,
+			)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "structure" &&
-				!activeArea.structures.some(
-					(structure) => structure.id === currentSelection.id,
-				)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "structure" &&
+			!activeArea.structures.some((structure) => structure.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "object" &&
-				!activeArea.objects.some((object) => object.id === currentSelection.id)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "object" &&
+			!activeArea.objects.some((object) => object.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "pickup" &&
-				!activeArea.pickups.some((pickup) => pickup.id === currentSelection.id)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "pickup" &&
+			!activeArea.pickups.some((pickup) => pickup.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "npc" &&
-				!activeArea.npcs.some((npc) => npc.id === currentSelection.id)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			selection.type === "npc" &&
+			!activeArea.npcs.some((npc) => npc.id === selection.id)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				(currentSelection.type === "overlay" ||
-					currentSelection.type === "terrain") &&
-				!isInBounds(
-					currentSelection.x,
-					currentSelection.y,
-					activeArea.width,
-					activeArea.height,
-				)
-			) {
-				return { type: "area", areaId: activeArea.id };
-			}
+		if (
+			(selection.type === "overlay" || selection.type === "terrain") &&
+			!isInBounds(selection.x, selection.y, activeArea.width, activeArea.height)
+		) {
+			setSelection({ type: "area", areaId: activeArea.id });
+			return;
+		}
 
-			if (
-				currentSelection.type === "overlay" &&
-				!activeArea.overlayTiles.some(
-					(tile) =>
-						tile.x === currentSelection.x && tile.y === currentSelection.y,
-				)
-			) {
-				return {
-					type: "terrain",
-					areaId: activeArea.id,
-					x: currentSelection.x,
-					y: currentSelection.y,
-				};
-			}
+		if (
+			selection.type === "overlay" &&
+			!activeArea.overlayTiles.some(
+				(tile) => tile.x === selection.x && tile.y === selection.y,
+			)
+		) {
+			setSelection({
+				type: "terrain",
+				areaId: activeArea.id,
+				x: selection.x,
+				y: selection.y,
+			});
+		}
+	}, [activeArea, selection, setSelection]);
 
-			return currentSelection;
-		});
-	}, [activeArea]);
+	useEffect(() => {
+		writeStoredMapOverlayFilters(overlayFilters);
+	}, [overlayFilters]);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: history handlers read current refs/store state; only the active tool changes the shortcut behavior.
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
-			if (isTypingTarget(event.target)) {
-				return;
-			}
-
-			const key = event.key.toLowerCase();
-			if ((event.ctrlKey || event.metaKey) && key === "z") {
-				event.preventDefault();
-				if (event.shiftKey) {
-					redoMapEdit();
-				} else {
-					undoMapEdit();
-				}
-				return;
-			}
-
-			if ((event.ctrlKey || event.metaKey) && key === "y") {
-				event.preventDefault();
-				redoMapEdit();
+			if (
+				event.defaultPrevented ||
+				event.altKey ||
+				event.ctrlKey ||
+				event.metaKey ||
+				isTypingTarget(event.target)
+			) {
 				return;
 			}
 
 			if (event.key === "1") {
 				setActiveTool("select");
+				setIsTerrainPaintArmed(false);
+				setMapPaletteSelection({ type: "none" });
 				return;
 			}
 
 			if (event.key === "2") {
 				setActiveTool("paint");
+				setIsTerrainPaintArmed(false);
 				return;
 			}
 
 			if (event.key === "3") {
 				setActiveTool("erase");
-				return;
+				setIsTerrainPaintArmed(false);
+				setMapPaletteSelection({ type: "none" });
 			}
-
-			if (event.code === "Space" && !event.repeat) {
-				event.preventDefault();
-				panHoldPreviousToolRef.current = activeTool;
-				setActiveTool("pan");
-			}
-		}
-
-		function handleKeyUp(event: KeyboardEvent) {
-			if (event.code !== "Space" || !panHoldPreviousToolRef.current) {
-				return;
-			}
-
-			event.preventDefault();
-			setActiveTool(panHoldPreviousToolRef.current);
-			panHoldPreviousToolRef.current = null;
 		}
 
 		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
-		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
-		};
-	}, [activeTool]);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [setMapPaletteSelection]);
 
 	const terrainLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
@@ -526,6 +532,7 @@ export function MapEditor() {
 	const selectedTerrainTile =
 		selection?.type === "terrain" && selection.areaId === activeArea.id
 			? {
+					height: getTerrainHeight(activeArea, selection.x, selection.y),
 					x: selection.x,
 					y: selection.y,
 					tileId:
@@ -536,6 +543,37 @@ export function MapEditor() {
 	const selectedObjectDefinition = project.objects.find(
 		(object) => object.id === selectedObjectDefinitionId,
 	);
+	const selectedNpcDefinitionForPalette = project.npcs.find(
+		(npc) => npc.id === selectedNpcDefinitionId,
+	);
+	const mapWorkspaceStatus =
+		activeTool === "select"
+			? "Tool: Select"
+			: activeTool === "erase"
+				? "Tool: Erase"
+				: activeTool === "pan"
+					? "Tool: Pan"
+					: activeTool === "raise-height"
+						? "Tool: Raise Height"
+						: activeTool === "lower-height"
+							? "Tool: Lower Height"
+							: activeTool === "flatten-height"
+								? "Tool: Flatten Height"
+								: activeTool === "set-height"
+									? `Tool: Set Height = ${heightToolValue}`
+									: paintTarget === "structure"
+										? `Tool: Place Structure - ${selectedStructure.label}`
+										: paintTarget === "object"
+											? `Tool: Place Object - ${selectedObjectDefinition?.name ?? "Object"}`
+											: paintTarget === "npc"
+												? `Tool: Place NPC - ${selectedNpcDefinitionForPalette?.name ?? "NPC"}`
+												: paintTarget === "pickup"
+													? `Tool: Place Pickup - ${project.items[0]?.name ?? "Item"} x1`
+													: paintTarget === "eventBlock"
+														? "Tool: Place Event Block"
+														: paintTarget === "overlay"
+															? `Tool: Paint Overlay - ${selectedOverlayId}`
+															: `Tool: Paint Terrain - ${selectedTerrainId}`;
 	const cellSize = Math.round(activeArea.tileSize * zoom);
 	const renderWidth = Math.min(
 		MAX_MAP_SIZE,
@@ -636,8 +674,21 @@ export function MapEditor() {
 		return cells;
 	}
 
+	function isHeightTool(tool: MapEditorTool) {
+		return (
+			tool === "raise-height" ||
+			tool === "lower-height" ||
+			tool === "flatten-height" ||
+			tool === "set-height"
+		);
+	}
+
 	function applyBrush(centerX: number, centerY: number) {
-		if (activeTool !== "paint" && activeTool !== "erase") {
+		if (
+			activeTool !== "paint" &&
+			activeTool !== "erase" &&
+			!isHeightTool(activeTool)
+		) {
 			return;
 		}
 
@@ -672,6 +723,28 @@ export function MapEditor() {
 		}
 
 		if (paintTarget !== "terrain") {
+			return;
+		}
+
+		if (activeTool === "raise-height") {
+			adjustTerrainHeights(cells.map((cell) => ({ ...cell, delta: 1 })));
+			return;
+		}
+
+		if (activeTool === "lower-height") {
+			adjustTerrainHeights(cells.map((cell) => ({ ...cell, delta: -1 })));
+			return;
+		}
+
+		if (activeTool === "flatten-height") {
+			setTerrainHeights(cells.map((cell) => ({ ...cell, height: 0 })));
+			return;
+		}
+
+		if (activeTool === "set-height") {
+			setTerrainHeights(
+				cells.map((cell) => ({ ...cell, height: heightToolValue })),
+			);
 			return;
 		}
 
@@ -1127,7 +1200,12 @@ export function MapEditor() {
 			moveDraggedEntity(x, y);
 			return;
 		}
-		if (!isPainting || (activeTool !== "paint" && activeTool !== "erase")) {
+		if (
+			!isPainting ||
+			(activeTool !== "paint" &&
+				activeTool !== "erase" &&
+				!isHeightTool(activeTool))
+		) {
 			return;
 		}
 
@@ -1532,6 +1610,14 @@ export function MapEditor() {
 			return mode === "sail" ? "Press E to board" : "Press E to ride";
 		}
 
+		if (type === "start_dialogue") {
+			return "Press E to talk";
+		}
+
+		if (type === "open_shop") {
+			return "Press E to shop";
+		}
+
 		return "Press E to inspect";
 	}
 
@@ -1556,6 +1642,24 @@ export function MapEditor() {
 				prompt: getDefaultPrompt(type),
 				flag: "flag_1",
 				value: true,
+			};
+		}
+
+		if (type === "start_dialogue") {
+			return {
+				type,
+				activationMode,
+				prompt: getDefaultPrompt(type),
+				dialogueId: project.dialogues[0]?.id ?? "",
+			};
+		}
+
+		if (type === "open_shop") {
+			return {
+				type,
+				activationMode,
+				prompt: getDefaultPrompt(type),
+				shopId: project.shops[0]?.id ?? "",
 			};
 		}
 
@@ -1665,6 +1769,8 @@ export function MapEditor() {
 						<option value="area_link">Area link</option>
 						<option value="teleport">Teleport</option>
 						<option value="play_cutscene">Play cutscene</option>
+						<option value="start_dialogue">Start dialogue</option>
+						<option value="open_shop">Open shop</option>
 						<option value="set_flag">Set flag</option>
 						<option value="change_movement_mode">Change movement mode</option>
 					</select>
@@ -1779,6 +1885,50 @@ export function MapEditor() {
 							{project.cutscenes.map((cutscene) => (
 								<option key={cutscene.id} value={cutscene.id}>
 									{cutscene.name}
+								</option>
+							))}
+						</select>
+					</label>
+				) : null}
+
+				{interaction?.type === "start_dialogue" ? (
+					<label>
+						Dialogue
+						<select
+							onChange={(event) =>
+								updateSelectedInteraction({
+									...interaction,
+									dialogueId: event.target.value,
+								})
+							}
+							value={interaction.dialogueId ?? ""}
+						>
+							<option value="">Select dialogue</option>
+							{project.dialogues.map((dialogue) => (
+								<option key={dialogue.id} value={dialogue.id}>
+									{dialogue.name}
+								</option>
+							))}
+						</select>
+					</label>
+				) : null}
+
+				{interaction?.type === "open_shop" ? (
+					<label>
+						Shop
+						<select
+							onChange={(event) =>
+								updateSelectedInteraction({
+									...interaction,
+									shopId: event.target.value,
+								})
+							}
+							value={interaction.shopId ?? ""}
+						>
+							<option value="">Select shop</option>
+							{project.shops.map((shop) => (
+								<option key={shop.id} value={shop.id}>
+									{shop.name}
 								</option>
 							))}
 						</select>
@@ -1919,18 +2069,24 @@ export function MapEditor() {
 		setSelectedTerrainId(id);
 		setPaintTarget("terrain");
 		setActiveTool("paint");
+		setIsTerrainPaintArmed(true);
+		setMapPaletteSelection({ type: "none" });
 	}
 
 	function selectOverlay(id: string) {
 		setSelectedOverlayId(id);
 		setPaintTarget("overlay");
 		setActiveTool("paint");
+		setIsTerrainPaintArmed(false);
+		setMapPaletteSelection({ type: "none" });
 	}
 
 	function selectStructure(id: string) {
 		setSelectedStructureId(id);
 		setPaintTarget("structure");
 		setActiveTool("paint");
+		setIsTerrainPaintArmed(false);
+		setMapPaletteSelection({ structureId: id, type: "structure" });
 	}
 
 	function movementRuleSummary(
@@ -2052,6 +2208,24 @@ export function MapEditor() {
 					<div className="coordinate-readout">
 						{movementRuleSummary(terrain.movementRule)}
 					</div>
+					<label>
+						Height
+						<input
+							max="8"
+							min="-2"
+							onChange={(event) =>
+								setTerrainHeights([
+									{
+										height: Number(event.target.value),
+										x: selectedTerrainTile.x,
+										y: selectedTerrainTile.y,
+									},
+								])
+							}
+							type="number"
+							value={selectedTerrainTile.height}
+						/>
+					</label>
 					<button
 						onClick={() =>
 							setTiles([
@@ -2864,7 +3038,7 @@ export function MapEditor() {
 									<div
 										className="patrol-point-row"
 										// biome-ignore lint/suspicious/noArrayIndexKey: patrol paths may intentionally revisit the same coordinate, so sequence position is part of identity.
-										key={`${selectedNpc.id}_${index}`}
+										key={`${selectedNpc.id}_${point.x}_${point.y}_${index}`}
 									>
 										<span>{index + 1}</span>
 										<input
@@ -3458,9 +3632,15 @@ export function MapEditor() {
 						<label>
 							Object definition
 							<select
-								onChange={(event) =>
-									setSelectedObjectDefinitionId(event.target.value)
-								}
+								onChange={(event) => {
+									setSelectedObjectDefinitionId(event.target.value);
+									if (paintTarget === "object") {
+										setMapPaletteSelection({
+											objectDefinitionId: event.target.value,
+											type: "object",
+										});
+									}
+								}}
 								value={selectedObjectDefinitionId}
 							>
 								{project.objects.map((object) => (
@@ -3476,6 +3656,11 @@ export function MapEditor() {
 							onClick={() => {
 								setActiveTool("paint");
 								setPaintTarget("object");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({
+									objectDefinitionId: selectedObjectDefinitionId,
+									type: "object",
+								});
 							}}
 							type="button"
 						>
@@ -3491,6 +3676,8 @@ export function MapEditor() {
 							onClick={() => {
 								setActiveTool("paint");
 								setPaintTarget("eventBlock");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "eventBlock" });
 							}}
 							type="button"
 						>
@@ -3502,6 +3689,11 @@ export function MapEditor() {
 							onClick={() => {
 								setActiveTool("paint");
 								setPaintTarget("pickup");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({
+									itemId: project.items[0]?.id,
+									type: "pickup",
+								});
 							}}
 							type="button"
 						>
@@ -3511,9 +3703,15 @@ export function MapEditor() {
 						<label>
 							NPC definition
 							<select
-								onChange={(event) =>
-									setSelectedNpcDefinitionId(event.target.value)
-								}
+								onChange={(event) => {
+									setSelectedNpcDefinitionId(event.target.value);
+									if (paintTarget === "npc") {
+										setMapPaletteSelection({
+											npcDefinitionId: event.target.value,
+											type: "npc",
+										});
+									}
+								}}
 								value={selectedNpcDefinitionId}
 							>
 								{project.npcs.map((npc) => (
@@ -3529,6 +3727,11 @@ export function MapEditor() {
 							onClick={() => {
 								setActiveTool("paint");
 								setPaintTarget("npc");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({
+									npcDefinitionId: selectedNpcDefinitionId,
+									type: "npc",
+								});
 							}}
 							type="button"
 						>
@@ -3541,33 +3744,112 @@ export function MapEditor() {
 					<div className="tool-button-grid">
 						<button
 							className={activeTool === "select" ? "selected" : ""}
-							onClick={() => setActiveTool("select")}
+							onClick={() => {
+								setActiveTool("select");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
 							type="button"
 						>
 							Select
 						</button>
 						<button
 							className={activeTool === "paint" ? "selected" : ""}
-							onClick={() => setActiveTool("paint")}
+							onClick={() => {
+								setActiveTool("paint");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
 							type="button"
 						>
 							Paint
 						</button>
 						<button
 							className={activeTool === "erase" ? "selected" : ""}
-							onClick={() => setActiveTool("erase")}
+							onClick={() => {
+								setActiveTool("erase");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
 							type="button"
 						>
 							Erase
 						</button>
 						<button
 							className={activeTool === "pan" ? "selected" : ""}
-							onClick={() => setActiveTool("pan")}
+							onClick={() => {
+								setActiveTool("pan");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
 							type="button"
 						>
 							Pan
 						</button>
 					</div>
+					<div className="panel-title secondary">Height</div>
+					<div className="tool-button-grid">
+						<button
+							className={activeTool === "raise-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("raise-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Raise
+						</button>
+						<button
+							className={activeTool === "lower-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("lower-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Lower
+						</button>
+						<button
+							className={activeTool === "flatten-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("flatten-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Flatten
+						</button>
+						<button
+							className={activeTool === "set-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("set-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Set Height
+						</button>
+					</div>
+					<label>
+						Height value
+						<input
+							max="8"
+							min="-2"
+							onChange={(event) =>
+								setHeightToolValue(Number(event.target.value))
+							}
+							type="number"
+							value={heightToolValue}
+						/>
+					</label>
 					<p className="tool-note">
 						Hotkeys: 1 Select, 2 Paint, 3 Erase. Erase removes entities, then
 						overlays, then resets terrain to grass.
@@ -3634,23 +3916,43 @@ export function MapEditor() {
 						/>
 						Show grid
 					</label>
-					<label>
-						Overlay
-						<select
-							onChange={(event) =>
-								setOverlayFilter(event.target.value as MapOverlayFilter)
-							}
-							value={overlayFilter}
+					<div className="panel-title">Filters</div>
+					<div className="filter-button-row">
+						<button
+							onClick={() => setOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)}
+							type="button"
 						>
-							<option value="npc_paths">NPC paths</option>
-							<option value="enemy_ranges">Enemy ranges</option>
-							<option value="none">None</option>
-						</select>
-					</label>
-					<p className="tool-note">
-						TODO: Add event block, collision, quest marker, and enemy territory
-						overlays.
-					</p>
+							Show All
+						</button>
+						<button
+							onClick={() => setOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)}
+							type="button"
+						>
+							Hide All
+						</button>
+						<button
+							onClick={() => setOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)}
+							type="button"
+						>
+							Gameplay View
+						</button>
+					</div>
+					<div className="filter-grid">
+						{OVERLAY_FILTER_OPTIONS.map((option) => (
+							<label className="checkbox-row compact" key={option.key}>
+								<input
+									checked={overlayFilters[option.key]}
+									onChange={() =>
+										setOverlayFilters((filters) =>
+											toggleMapOverlayFilter(filters, option.key),
+										)
+									}
+									type="checkbox"
+								/>
+								{option.label}
+							</label>
+						))}
+					</div>
 
 					<button
 						className="primary-button full-width"
@@ -3692,347 +3994,427 @@ export function MapEditor() {
 				/>
 			</aside>
 
-			<div
-				className={`map-stage ${activeTool === "pan" || isPanning ? "pan-ready" : ""}`}
-				onContextMenu={(event) => {
-					if (activeTool === "pan" || isPanning) {
-						event.preventDefault();
-					}
-				}}
-				onPointerDown={startPanning}
-				onPointerMove={panStage}
-				onPointerUp={(event) => {
-					stopPainting();
-					stopPanning(event);
-				}}
-				ref={mapStageRef}
-				role="application"
-			>
-				<div
-					aria-label="Map editor status"
-					className="map-status-bar"
-					role="status"
-				>
-					<span>
-						Tool: <strong>{getToolLabel()}</strong>
-					</span>
-					<span>
-						Palette: <strong>{getPaletteLabel()}</strong>
-					</span>
-					<span>
-						Selected: <strong>{statusSelectedLabel}</strong>
-					</span>
-					<span>
-						Area: <strong>{activeArea.name}</strong>
-					</span>
-				</div>
-				<div className="active-area-banner">
-					Editing: <strong>{activeArea.name}</strong>
-					<span>
-						{activeArea.width} x {activeArea.height} tiles
-					</span>
-				</div>
-				<div
-					className={`tile-grid ${showGrid ? "show-grid" : "hide-grid"}`}
-					onPointerLeave={stopPainting}
-					onPointerUp={stopPainting}
-					style={{
-						gridTemplateColumns: `repeat(${renderWidth}, ${cellSize}px)`,
-					}}
-				>
-					{Array.from({ length: renderHeight }).map((_, y) =>
-						Array.from({ length: renderWidth }).map((__, x) => {
-							const key = cellKey(x, y);
-							const terrainId = terrainLookup.get(key) ?? "grass";
-							const terrain = getTerrainPreset(terrainId);
-							const tileStyle = project.tileStyles[terrainId] ?? {
-								color: terrain.color,
-								label: terrain.label,
-							};
-							const overlayId = overlayLookup.get(key);
-							const eventBlock = eventLookup.get(key);
-							const object = objectLookup.get(key);
-							const pickup = pickupLookup.get(key);
-							const pickupItem = project.items.find(
-								(item) => item.id === pickup?.itemId,
-							);
-							const npc = npcLookup.get(key);
-							const npcDefinition = project.npcs.find(
-								(definition) => definition.id === npc?.npcDefinitionId,
-							);
-							const resolvedNpc = npc
-								? resolveNPCInstance(npcDefinition, npc)
-								: undefined;
-							const eventLabel = eventBlock?.tag || eventBlock?.name;
-							const isOutsideMap =
-								x >= activeArea.width || y >= activeArea.height;
-							const isSelectedTerrain =
-								selection?.type === "terrain" &&
-								selection.areaId === activeArea.id &&
-								selection.x === x &&
-								selection.y === y;
-							const isSelectedOverlay =
-								selection?.type === "overlay" &&
-								selection.areaId === activeArea.id &&
-								selection.x === x &&
-								selection.y === y;
-
-							return (
-								<button
-									aria-label={`Tile ${x}, ${y}`}
-									className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""} ${
-										isSelectedTerrain || isSelectedOverlay
-											? "selected-cell"
-											: ""
-									} ${isSelectedOverlay ? "selected-overlay-cell" : ""}`}
-									key={key}
-									onPointerDown={(event) => handleCellPointerDown(event, x, y)}
-									onPointerEnter={() => handleCellPointerEnter(x, y)}
-									style={{
-										width: cellSize,
-										height: cellSize,
-										background: tileStyle.color,
-										color: terrain.textColor,
-									}}
-									type="button"
-								>
-									<span
-										className="tile-pixel-layer"
-										style={{ backgroundImage: pixelAssetUrls[terrainId] }}
-									/>
-									{overlayId ? (
-										<span
-											className="overlay-pixel-layer"
-											style={{ backgroundImage: pixelAssetUrls[overlayId] }}
-										/>
-									) : null}
-									{eventBlock ? (
-										<span
-											className={`event-marker ${eventBlock.kind} ${
-												selection?.type === "eventBlock" &&
-												selection.id === eventBlock.id
-													? "selected-event"
-													: ""
-											}`}
-										>
-											<span className="event-marker-kind">
-												{eventBlock.kind === "spawn"
-													? "S"
-													: eventBlock.kind === "area_link"
-														? "->"
-														: "T"}
-											</span>
-											<span className="event-marker-label">{eventLabel}</span>
-										</span>
-									) : null}
-									{object ? (
-										<span
-											className={`object-marker ${
-												selection?.type === "object" &&
-												selection.id === object.id
-													? "selected-object"
-													: ""
-											}`}
-										>
-											<span className="object-marker-icon">
-												{(
-													object.nameOverride ??
-													project.objects.find(
-														(definition) =>
-															definition.id === object.objectDefinitionId,
-													)?.name ??
-													"Object"
-												)
-													.slice(0, 1)
-													.toUpperCase()}
-											</span>
-										</span>
-									) : null}
-									{pickup ? (
-										<span
-											className={`pickup-marker ${
-												selection?.type === "pickup" &&
-												selection.id === pickup.id
-													? "selected-pickup"
-													: ""
-											}`}
-										>
-											<span className="pickup-marker-icon">
-												{pickupItem?.name.slice(0, 1).toUpperCase() ?? "?"}
-											</span>
-											<span className="pickup-marker-label">
-												{pickupItem?.name ?? "Pickup"} x{pickup.quantity}
-											</span>
-										</span>
-									) : null}
-									{npc ? (
-										<span
-											className={`npc-marker alignment-${resolvedNpc?.attributes.alignment ?? "friendly"} ${
-												selection?.type === "npc" && selection.id === npc.id
-													? "selected-npc"
-													: ""
-											}`}
-										>
-											<span className="npc-marker-icon">
-												{resolvedNpc?.name.slice(0, 1).toUpperCase() ?? "?"}
-											</span>
-											<span className="npc-marker-label">
-												{resolvedNpc?.name ?? "NPC"}
-											</span>
-										</span>
-									) : null}
-								</button>
-							);
-						}),
-					)}
-					{overlayFilter === "npc_paths" &&
-					selectedResolvedNpc?.movementMode === "patrol" &&
-					selectedResolvedNpc.patrolPath ? (
-						<svg
-							className="map-npc-path-overlay"
-							height={renderHeight * cellSize}
-							width={renderWidth * cellSize}
+			<div className="map-workspace-main">
+				<div className="map-workspace-toolbar">
+					<div className="segmented-control map-view-toggle">
+						<button
+							className={mapView === "2d" ? "selected" : ""}
+							onClick={() => setMapView("2d")}
+							type="button"
 						>
-							<title>Selected NPC patrol path</title>
-							<polyline
-								points={selectedResolvedNpc.patrolPath.points
-									.map(
-										(point) =>
-											`${point.x * cellSize + cellSize / 2},${point.y * cellSize + cellSize / 2}`,
-									)
-									.join(" ")}
-							/>
-							{selectedResolvedNpc.patrolPath.points.map((point, index) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: patrol paths may intentionally revisit the same coordinate, so sequence position is part of identity.
-								<g key={`${point.x}_${point.y}_${index}`}>
-									<circle
-										cx={point.x * cellSize + cellSize / 2}
-										cy={point.y * cellSize + cellSize / 2}
-										r={Math.max(5, cellSize * 0.18)}
-									/>
-									<text
-										x={point.x * cellSize + cellSize / 2}
-										y={point.y * cellSize + cellSize / 2}
-									>
-										{index + 1}
-									</text>
-								</g>
-							))}
-						</svg>
-					) : null}
-					{overlayFilter === "npc_paths" &&
-					selectedResolvedNpc?.movementMode === "wander" &&
-					selectedResolvedNpc.wanderZone ? (
+							2D View
+						</button>
+						<button
+							className={mapView === "3d" ? "selected" : ""}
+							onClick={() => setMapView("3d")}
+							type="button"
+						>
+							3D View
+						</button>
+					</div>
+					<div className="map-workspace-status">
+						<span>{mapWorkspaceStatus}</span>
+						<span>View: {mapView === "3d" ? "3D" : "2D"}</span>
+					</div>
+				</div>
+				{mapView === "2d" ? (
+					<div
+						aria-label="Map editing canvas"
+						className={`map-stage ${activeTool === "pan" || isPanning ? "pan-ready" : ""}`}
+						onContextMenu={(event) => {
+							if (activeTool === "pan" || isPanning) {
+								event.preventDefault();
+							}
+						}}
+						onPointerDown={startPanning}
+						onPointerMove={panStage}
+						onPointerUp={(event) => {
+							stopPainting();
+							stopPanning(event);
+						}}
+						ref={mapStageRef}
+						role="application"
+					>
 						<div
-							className="map-npc-wander-zone"
+							aria-label="Map editor status"
+							className="map-status-bar"
+							role="status"
+						>
+							<span>
+								Tool: <strong>{getToolLabel()}</strong>
+							</span>
+							<span>
+								Palette: <strong>{getPaletteLabel()}</strong>
+							</span>
+							<span>
+								Selected: <strong>{statusSelectedLabel}</strong>
+							</span>
+							<span>
+								Area: <strong>{activeArea.name}</strong>
+							</span>
+						</div>
+						<div className="active-area-banner">
+							Editing: <strong>{activeArea.name}</strong>
+							<span>
+								{activeArea.width} x {activeArea.height} tiles
+							</span>
+						</div>
+						<div
+							className={`tile-grid ${showGrid ? "show-grid" : "hide-grid"}`}
+							onPointerLeave={stopPainting}
+							onPointerUp={stopPainting}
 							style={{
-								left: selectedResolvedNpc.wanderZone.x * cellSize,
-								top: selectedResolvedNpc.wanderZone.y * cellSize,
-								width: selectedResolvedNpc.wanderZone.width * cellSize,
-								height: selectedResolvedNpc.wanderZone.height * cellSize,
+								gridTemplateColumns: `repeat(${renderWidth}, ${cellSize}px)`,
 							}}
 						>
-							Wander
+							{Array.from({ length: renderHeight }).map((_, y) =>
+								Array.from({ length: renderWidth }).map((__, x) => {
+									const key = cellKey(x, y);
+									const terrainId = terrainLookup.get(key) ?? "grass";
+									const terrain = getTerrainPreset(terrainId);
+									const tileStyle = project.tileStyles[terrainId] ?? {
+										color: terrain.color,
+										label: terrain.label,
+									};
+									const overlayId = overlayLookup.get(key);
+									const rawEventBlock = eventLookup.get(key);
+									const eventBlock =
+										rawEventBlock &&
+										(rawEventBlock.kind === "spawn"
+											? overlayFilters.spawnPoints || overlayFilters.eventBlocks
+											: overlayFilters.eventBlocks)
+											? rawEventBlock
+											: undefined;
+									const object = overlayFilters.objects
+										? objectLookup.get(key)
+										: undefined;
+									const pickup = overlayFilters.pickups
+										? pickupLookup.get(key)
+										: undefined;
+									const pickupItem = project.items.find(
+										(item) => item.id === pickup?.itemId,
+									);
+									const npc = overlayFilters.npcs
+										? npcLookup.get(key)
+										: undefined;
+									const npcDefinition = project.npcs.find(
+										(definition) => definition.id === npc?.npcDefinitionId,
+									);
+									const resolvedNpc = npc
+										? resolveNPCInstance(npcDefinition, npc)
+										: undefined;
+									const eventLabel = eventBlock?.tag || eventBlock?.name;
+									const isOutsideMap =
+										x >= activeArea.width || y >= activeArea.height;
+									const isSelectedTerrain =
+										selection?.type === "terrain" &&
+										selection.areaId === activeArea.id &&
+										selection.x === x &&
+										selection.y === y;
+									const isSelectedOverlay =
+										selection?.type === "overlay" &&
+										selection.areaId === activeArea.id &&
+										selection.x === x &&
+										selection.y === y;
+
+									return (
+										<button
+											aria-label={`Tile ${x}, ${y}`}
+											className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""} ${
+												isSelectedTerrain || isSelectedOverlay
+													? "selected-cell"
+													: ""
+											} ${isSelectedOverlay ? "selected-overlay-cell" : ""}`}
+											key={key}
+											onPointerDown={(event) =>
+												handleCellPointerDown(event, x, y)
+											}
+											onPointerEnter={() => handleCellPointerEnter(x, y)}
+											style={{
+												width: cellSize,
+												height: cellSize,
+												background: tileStyle.color,
+												color: terrain.textColor,
+											}}
+											type="button"
+										>
+											<span
+												className="tile-pixel-layer"
+												style={{ backgroundImage: pixelAssetUrls[terrainId] }}
+											/>
+											{overlayId ? (
+												<span
+													className="overlay-pixel-layer"
+													style={{ backgroundImage: pixelAssetUrls[overlayId] }}
+												/>
+											) : null}
+											{eventBlock ? (
+												<span
+													className={`event-marker ${eventBlock.kind} ${
+														selection?.type === "eventBlock" &&
+														selection.id === eventBlock.id
+															? "selected-event"
+															: ""
+													}`}
+												>
+													<span className="event-marker-kind">
+														{eventBlock.kind === "spawn"
+															? "S"
+															: eventBlock.kind === "area_link"
+																? "->"
+																: "T"}
+													</span>
+													<span className="event-marker-label">
+														{eventLabel}
+													</span>
+												</span>
+											) : null}
+											{object ? (
+												<span
+													className={`object-marker ${
+														selection?.type === "object" &&
+														selection.id === object.id
+															? "selected-object"
+															: ""
+													}`}
+												>
+													<span className="object-marker-icon">
+														{(
+															object.nameOverride ??
+															project.objects.find(
+																(definition) =>
+																	definition.id === object.objectDefinitionId,
+															)?.name ??
+															"Object"
+														)
+															.slice(0, 1)
+															.toUpperCase()}
+													</span>
+												</span>
+											) : null}
+											{pickup ? (
+												<span
+													className={`pickup-marker ${
+														selection?.type === "pickup" &&
+														selection.id === pickup.id
+															? "selected-pickup"
+															: ""
+													}`}
+												>
+													<span className="pickup-marker-icon">
+														{pickupItem?.name.slice(0, 1).toUpperCase() ?? "?"}
+													</span>
+													<span className="pickup-marker-label">
+														{pickupItem?.name ?? "Pickup"} x{pickup.quantity}
+													</span>
+												</span>
+											) : null}
+											{npc ? (
+												<span
+													className={`npc-marker alignment-${resolvedNpc?.attributes.alignment ?? "friendly"} ${
+														selection?.type === "npc" && selection.id === npc.id
+															? "selected-npc"
+															: ""
+													}`}
+												>
+													<span className="npc-marker-icon">
+														{resolvedNpc?.name.slice(0, 1).toUpperCase() ?? "?"}
+													</span>
+													<span className="npc-marker-label">
+														{resolvedNpc?.name ?? "NPC"}
+													</span>
+												</span>
+											) : null}
+										</button>
+									);
+								}),
+							)}
+							{overlayFilters.npcPaths &&
+							selectedResolvedNpc?.movementMode === "patrol" &&
+							selectedResolvedNpc.patrolPath ? (
+								<svg
+									aria-label="NPC patrol path"
+									className="map-npc-path-overlay"
+									height={renderHeight * cellSize}
+									role="img"
+									width={renderWidth * cellSize}
+								>
+									<title>Selected NPC patrol path</title>
+									<polyline
+										points={selectedResolvedNpc.patrolPath.points
+											.map(
+												(point) =>
+													`${point.x * cellSize + cellSize / 2},${point.y * cellSize + cellSize / 2}`,
+											)
+											.join(" ")}
+									/>
+									{selectedResolvedNpc.patrolPath.points.map((point, index) => (
+										// biome-ignore lint/suspicious/noArrayIndexKey: patrol paths may intentionally revisit the same coordinate, so sequence position is part of identity.
+										<g key={`${point.x}_${point.y}_${index}`}>
+											<circle
+												cx={point.x * cellSize + cellSize / 2}
+												cy={point.y * cellSize + cellSize / 2}
+												r={Math.max(5, cellSize * 0.18)}
+											/>
+											<text
+												x={point.x * cellSize + cellSize / 2}
+												y={point.y * cellSize + cellSize / 2}
+											>
+												{index + 1}
+											</text>
+										</g>
+									))}
+								</svg>
+							) : null}
+							{overlayFilters.npcPaths &&
+							selectedResolvedNpc?.movementMode === "wander" &&
+							selectedResolvedNpc.wanderZone ? (
+								<div
+									className="map-npc-wander-zone"
+									style={{
+										left: selectedResolvedNpc.wanderZone.x * cellSize,
+										top: selectedResolvedNpc.wanderZone.y * cellSize,
+										width: selectedResolvedNpc.wanderZone.width * cellSize,
+										height: selectedResolvedNpc.wanderZone.height * cellSize,
+									}}
+								>
+									Wander
+								</div>
+							) : null}
+							{overlayFilters.collision &&
+							selectedResolvedNpc?.attributes.alignment === "hostile" &&
+							selectedResolvedNpc.enemyBehaviour?.enabled ? (
+								<>
+									<div
+										className="map-enemy-range detection"
+										style={{
+											left:
+												(selectedResolvedNpc.x +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour
+														.detectionRadiusTiles) *
+												cellSize,
+											top:
+												(selectedResolvedNpc.y +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour
+														.detectionRadiusTiles) *
+												cellSize,
+											width:
+												selectedResolvedNpc.enemyBehaviour
+													.detectionRadiusTiles *
+												2 *
+												cellSize,
+											height:
+												selectedResolvedNpc.enemyBehaviour
+													.detectionRadiusTiles *
+												2 *
+												cellSize,
+										}}
+									>
+										Detect
+									</div>
+									<div
+										className="map-enemy-range chase"
+										style={{
+											left:
+												(selectedResolvedNpc.x +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
+												cellSize,
+											top:
+												(selectedResolvedNpc.y +
+													0.5 -
+													selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
+												cellSize,
+											width:
+												selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
+												2 *
+												cellSize,
+											height:
+												selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
+												2 *
+												cellSize,
+										}}
+									>
+										Chase
+									</div>
+								</>
+							) : null}
+							{overlayFilters.structures
+								? activeArea.structures.map((structure) => {
+										const preset = getStructurePreset(structure.structureId);
+										return (
+											<button
+												className={`map-structure ${
+													selection?.type === "structure" &&
+													selection.id === structure.id
+														? "selected"
+														: ""
+												}`}
+												key={structure.id}
+												onClick={(event) => {
+													event.preventDefault();
+													setSelection({
+														type: "structure",
+														areaId: activeArea.id,
+														id: structure.id,
+													});
+												}}
+												onPointerDown={(event) => {
+													event.stopPropagation();
+												}}
+												style={
+													{
+														left: structure.x * cellSize,
+														top: structure.y * cellSize,
+														width: structure.widthTiles * cellSize,
+														height: structure.heightTiles * cellSize,
+														"--structure-roof": preset.roofColor,
+														"--structure-wall": preset.wallColor,
+														"--structure-shadow": preset.shadowColor,
+													} as CSSProperties
+												}
+												type="button"
+											>
+												<span className="structure-roof" />
+												<span className="structure-wall" />
+												<span className="structure-label">
+													{structure.name}
+												</span>
+											</button>
+										);
+									})
+								: null}
 						</div>
-					) : null}
-					{overlayFilter === "enemy_ranges" &&
-					selectedResolvedNpc?.attributes.alignment === "hostile" &&
-					selectedResolvedNpc.enemyBehaviour?.enabled ? (
-						<>
-							<div
-								className="map-enemy-range detection"
-								style={{
-									left:
-										(selectedResolvedNpc.x +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles) *
-										cellSize,
-									top:
-										(selectedResolvedNpc.y +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles) *
-										cellSize,
-									width:
-										selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles *
-										2 *
-										cellSize,
-									height:
-										selectedResolvedNpc.enemyBehaviour.detectionRadiusTiles *
-										2 *
-										cellSize,
-								}}
-							>
-								Detect
-							</div>
-							<div
-								className="map-enemy-range chase"
-								style={{
-									left:
-										(selectedResolvedNpc.x +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
-										cellSize,
-									top:
-										(selectedResolvedNpc.y +
-											0.5 -
-											selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles) *
-										cellSize,
-									width:
-										selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
-										2 *
-										cellSize,
-									height:
-										selectedResolvedNpc.enemyBehaviour.chaseRadiusTiles *
-										2 *
-										cellSize,
-								}}
-							>
-								Chase
-							</div>
-						</>
-					) : null}
-					{activeArea.structures.map((structure) => {
-						const preset = getStructurePreset(structure.structureId);
-						return (
-							<button
-								className={`map-structure ${
-									selection?.type === "structure" &&
-									selection.id === structure.id
-										? "selected"
-										: ""
-								}`}
-								key={structure.id}
-								onClick={(event) => {
-									event.preventDefault();
-									setSelection({
-										type: "structure",
-										areaId: activeArea.id,
-										id: structure.id,
-									});
-								}}
-								onPointerDown={(event) => {
-									event.stopPropagation();
-								}}
-								style={
-									{
-										left: structure.x * cellSize,
-										top: structure.y * cellSize,
-										width: structure.widthTiles * cellSize,
-										height: structure.heightTiles * cellSize,
-										"--structure-roof": preset.roofColor,
-										"--structure-wall": preset.wallColor,
-										"--structure-shadow": preset.shadowColor,
-									} as CSSProperties
-								}
-								type="button"
-							>
-								<span className="structure-roof" />
-								<span className="structure-wall" />
-								<span className="structure-label">{structure.name}</span>
-							</button>
-						);
-					})}
-				</div>
+					</div>
+				) : (
+					<ThreeDPreview
+						brushSize={brushSize}
+						embedded
+						heightToolValue={heightToolValue}
+						hideDetails
+						overlayFilters={overlayFilters}
+						terrainPaintTileId={
+							isTerrainPaintArmed &&
+							activeTool === "paint" &&
+							paintTarget === "terrain"
+								? selectedTerrainId
+								: undefined
+						}
+						terrainHeightTool={
+							activeTool === "raise-height"
+								? "raise"
+								: activeTool === "lower-height"
+									? "lower"
+									: activeTool === "flatten-height"
+										? "flatten"
+										: activeTool === "set-height"
+											? "set"
+											: undefined
+						}
+					/>
+				)}
 			</div>
 
 			<aside className="inspector-panel map-inspector-panel">
@@ -4102,8 +4484,7 @@ export function MapEditor() {
 									<button
 										aria-label={`Pixel ${x}, ${y}`}
 										className="pixel-cell"
-										// biome-ignore lint/suspicious/noArrayIndexKey: pixel coordinates are stable identities in the fixed-size asset grid.
-										key={`${x}:${y}`}
+										key={pixelCellKey(editingPixelAsset.id, x, y)}
 										onPointerDown={() => {
 											setIsPaintingPixel(true);
 											paintPixel(x, y);

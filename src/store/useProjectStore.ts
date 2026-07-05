@@ -7,10 +7,13 @@ import { defaultProject } from "../data/defaultProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
 import { cloneProject, migrateProject } from "../data/migrateProject";
 import { backgroundPresets, portraitPresets } from "../data/presets";
+import { adjustTerrainHeight, setTerrainHeight } from "../data/terrainHeight";
 import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
 	CameraConfig,
 	Cutscene,
+	DialogueDefinition,
+	EditorSelection,
 	EventBlock,
 	GameAction,
 	GameArea,
@@ -34,11 +37,23 @@ const AUTOSAVE_DRAFT_STORAGE_KEY = "adventure-builder-project-draft-v1";
 
 type ProgressionType = ProgressionAction["type"];
 
+export type MapPaletteSelection =
+	| { type: "none" }
+	| { type: "npc"; npcDefinitionId: string }
+	| { type: "object"; objectDefinitionId: string }
+	| { type: "pickup"; itemId?: string }
+	| { type: "eventBlock" }
+	| { type: "structure"; structureId: string };
+
 type ProjectStore = {
 	project: GameProject;
+	editorSelection: EditorSelection;
+	mapPaletteSelection: MapPaletteSelection;
 	setProject: (project: GameProject) => void;
 	updateProject: (updater: (project: GameProject) => void) => void;
 	resetProject: () => void;
+	setEditorSelection: (selection: EditorSelection) => void;
+	setMapPaletteSelection: (selection: MapPaletteSelection) => void;
 	saveToLocalStorage: () => void;
 	loadFromLocalStorage: () => boolean;
 	updateMetadata: (metadata: Partial<GameProject["metadata"]>) => void;
@@ -54,6 +69,12 @@ type ProjectStore = {
 	resizeMap: (width: number, height: number) => number;
 	setTile: (x: number, y: number, tileId: string) => void;
 	setTiles: (tiles: { x: number; y: number; tileId: string }[]) => void;
+	setTerrainHeights: (
+		tiles: { x: number; y: number; height: number }[],
+	) => void;
+	adjustTerrainHeights: (
+		tiles: { x: number; y: number; delta: number }[],
+	) => void;
 	setOverlayTiles: (
 		tiles: { x: number; y: number; overlayId: string }[],
 	) => void;
@@ -79,6 +100,9 @@ type ProjectStore = {
 	addCutscene: () => string;
 	updateCutscene: (id: string, patch: Partial<Cutscene>) => void;
 	deleteCutscene: (id: string) => void;
+	addDialogue: () => string;
+	updateDialogue: (id: string, patch: Partial<DialogueDefinition>) => void;
+	deleteDialogue: (id: string) => void;
 	addProgressionStep: (type: ProgressionType) => string;
 	updateProgressionStep: (id: string, step: ProgressionStep) => void;
 	deleteProgressionStep: (id: string) => void;
@@ -406,6 +430,49 @@ function cleanRuleCutsceneReferences(project: GameProject, cutsceneId: string) {
 		}));
 }
 
+function clearDialogueReferences(project: GameProject, dialogueId: string) {
+	project.areas = project.areas.map((area) => ({
+		...area,
+		eventBlocks: area.eventBlocks.map((eventBlock) =>
+			eventBlock.interaction?.type === "start_dialogue" &&
+			eventBlock.interaction.dialogueId === dialogueId
+				? { ...eventBlock, interaction: undefined }
+				: eventBlock,
+		),
+		structures: area.structures.map((structure) =>
+			structure.interaction?.type === "start_dialogue" &&
+			structure.interaction.dialogueId === dialogueId
+				? { ...structure, interaction: undefined }
+				: structure,
+		),
+		objects: area.objects.map((object) =>
+			object.interaction?.type === "start_dialogue" &&
+			object.interaction.dialogueId === dialogueId
+				? { ...object, interaction: undefined }
+				: object,
+		),
+		npcs: area.npcs.map((npc) =>
+			npc.interaction?.type === "start_dialogue" &&
+			npc.interaction.dialogueId === dialogueId
+				? { ...npc, interaction: undefined, interactionOverride: undefined }
+				: npc,
+		),
+	}));
+
+	project.npcs = project.npcs.map((npc) =>
+		npc.defaultInteraction?.type === "start_dialogue" &&
+		npc.defaultInteraction.dialogueId === dialogueId
+			? { ...npc, defaultInteraction: undefined }
+			: npc,
+	);
+	project.objects = project.objects.map((object) =>
+		object.defaultInteraction?.type === "start_dialogue" &&
+		object.defaultInteraction.dialogueId === dialogueId
+			? { ...object, defaultInteraction: undefined }
+			: object,
+	);
+}
+
 function makeProgressionStep(
 	type: ProgressionType,
 	project: GameProject,
@@ -461,10 +528,27 @@ function makeProgressionStep(
 	};
 }
 
-export const useProjectStore = create<ProjectStore>((set, get) => ({
-	project: migrateProject(defaultProject),
+function areaSelection(project: GameProject): EditorSelection {
+	return {
+		type: "area",
+		areaId: project.activeAreaId || project.areas[0]?.id || "",
+	};
+}
 
-	setProject: (project) => set({ project: migrateProject(project) }),
+const initialProject = migrateProject(defaultProject);
+
+export const useProjectStore = create<ProjectStore>((set, get) => ({
+	project: initialProject,
+	editorSelection: areaSelection(initialProject),
+	mapPaletteSelection: { type: "none" },
+
+	setProject: (project) => {
+		const migratedProject = migrateProject(project);
+		set({
+			editorSelection: areaSelection(migratedProject),
+			project: migratedProject,
+		});
+	},
 
 	updateProject: (updater) =>
 		set((state) => {
@@ -473,7 +557,14 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 			return { project: migrateProject(project) };
 		}),
 
-	resetProject: () => set({ project: migrateProject(defaultProject) }),
+	resetProject: () => {
+		const project = migrateProject(defaultProject);
+		set({ editorSelection: areaSelection(project), project });
+	},
+
+	setEditorSelection: (selection) => set({ editorSelection: selection }),
+	setMapPaletteSelection: (selection) =>
+		set({ mapPaletteSelection: selection }),
 
 	saveToLocalStorage: () => {
 		localStorage.setItem(
@@ -489,7 +580,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		}
 
 		const project = migrateProject(JSON.parse(raw));
-		set({ project });
+		set({ editorSelection: areaSelection(project), project });
 		return true;
 	},
 
@@ -533,6 +624,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		set((state) =>
 			state.project.areas.some((area) => area.id === areaId)
 				? {
+						editorSelection: { type: "area", areaId },
 						project: {
 							...state.project,
 							activeAreaId: areaId,
@@ -547,6 +639,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		const area = createAreaFromTemplate(templateId, id, `Area ${index}`);
 
 		set((state) => ({
+			editorSelection: { type: "area", areaId: id },
 			project: {
 				...state.project,
 				areas: [...state.project.areas, area],
@@ -582,7 +675,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 				project.activeAreaId = project.areas[0]?.id ?? "";
 			}
 
-			return { project };
+			return { editorSelection: areaSelection(project), project };
 		}),
 
 	resizeMap: (width, height) => {
@@ -615,6 +708,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 				width: nextWidth,
 				height: nextHeight,
 				terrainTiles,
+				terrainHeights: area.terrainHeights?.filter(
+					(tile) =>
+						tile.x >= 0 &&
+						tile.y >= 0 &&
+						tile.x < nextWidth &&
+						tile.y < nextHeight,
+				),
 				overlayTiles: area.overlayTiles.filter(
 					(tile) =>
 						tile.x >= 0 &&
@@ -725,6 +825,40 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 					height: nextHeight,
 					terrainTiles,
 				})),
+			};
+		}),
+
+	setTerrainHeights: (heightUpdates) =>
+		set((state) => {
+			if (heightUpdates.length === 0) {
+				return state;
+			}
+
+			return {
+				project: updateActiveArea(state.project, (area) =>
+					heightUpdates.reduce(
+						(nextArea, tile) =>
+							setTerrainHeight(nextArea, tile.x, tile.y, tile.height),
+						area,
+					),
+				),
+			};
+		}),
+
+	adjustTerrainHeights: (heightUpdates) =>
+		set((state) => {
+			if (heightUpdates.length === 0) {
+				return state;
+			}
+
+			return {
+				project: updateActiveArea(state.project, (area) =>
+					heightUpdates.reduce(
+						(nextArea, tile) =>
+							adjustTerrainHeight(nextArea, tile.x, tile.y, tile.delta),
+						area,
+					),
+				),
 			};
 		}),
 
@@ -1218,6 +1352,56 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 					step.action.type !== "play_cutscene" || step.action.cutsceneId !== id,
 			);
 			cleanRuleCutsceneReferences(project, id);
+			return { project };
+		}),
+
+	addDialogue: () => {
+		const index = get().project.dialogues.length + 1;
+		const id = makeId("dialogue");
+		const startNodeId = `${id}_start`;
+
+		set((state) => ({
+			project: {
+				...state.project,
+				dialogues: [
+					...state.project.dialogues,
+					{
+						id,
+						name: `Dialogue ${index}`,
+						startNodeId,
+						nodes: [
+							{
+								id: startNodeId,
+								type: "text",
+								speaker: state.project.player.name,
+								text: "New dialogue line.",
+							},
+						],
+					},
+				],
+			},
+		}));
+
+		return id;
+	},
+
+	updateDialogue: (id, patch) =>
+		set((state) => ({
+			project: {
+				...state.project,
+				dialogues: state.project.dialogues.map((dialogue) =>
+					dialogue.id === id ? { ...dialogue, ...patch } : dialogue,
+				),
+			},
+		})),
+
+	deleteDialogue: (id) =>
+		set((state) => {
+			const project = cloneProject(state.project);
+			project.dialogues = project.dialogues.filter(
+				(dialogue) => dialogue.id !== id,
+			);
+			clearDialogueReferences(project, id);
 			return { project };
 		}),
 

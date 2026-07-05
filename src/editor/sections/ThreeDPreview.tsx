@@ -1,0 +1,1264 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import {
+	clampOrbitCameraState,
+	createOrbitCameraState,
+	getOrbitCameraBounds,
+	getOrbitCameraLookTarget,
+	getOrbitCameraPosition,
+	type OrbitCameraDimensions,
+	type OrbitCameraPreset,
+	type OrbitCameraState,
+	panOrbitCamera,
+	resetOrbitCameraState,
+	rotateOrbitCamera,
+	zoomOrbitCamera,
+} from "../../runtime/three/cameraControls";
+import {
+	createPlaceholderMeshGroup,
+	disposePlaceholderObject,
+	getPlaceholderSelectableObjects,
+} from "../../runtime/three/placeholderMeshes";
+import {
+	addThreeWorldLighting,
+	applyShadowRole,
+	configureThreeRenderer,
+	configureThreeWorldScene,
+	createTerrainMaterial,
+	createWorldMaterial,
+	getWorldMaterialColor,
+	resolveTerrainMaterialKey,
+} from "../../runtime/three/worldPresentation";
+import { useProjectStore } from "../../store/useProjectStore";
+import { areaEntitiesToMarkers } from "./entityMarkers";
+import {
+	GAMEPLAY_OVERLAY_FILTERS,
+	HIDE_ALL_OVERLAY_FILTERS,
+	type MapOverlayFilters,
+	OVERLAY_FILTER_OPTIONS,
+	readStoredMapOverlayFilters,
+	SHOW_ALL_OVERLAY_FILTERS,
+	toggleMapOverlayFilter,
+	writeStoredMapOverlayFilters,
+} from "./overlayFilters";
+import {
+	getPreviewSelectionFootprint,
+	isMovablePreviewSelection,
+	movePreviewSelectionInProject,
+	type PreviewGridPosition,
+	previewGridPositionToThreePoint,
+	threePointToPreviewGridPosition,
+} from "./previewMove";
+import {
+	getPreviewPlacementInfo,
+	placePreviewEntity,
+} from "./previewPlacement";
+import {
+	entityMarkerToSelectionMetadata,
+	metadataToEditorSelection,
+	type PreviewSelectionMetadata,
+	selectionMatchesMetadata,
+	terrainBlockToSelectionMetadata,
+} from "./previewSelection";
+import { getPreviewSelectionDetails } from "./previewSelectionDetails";
+import { terrainTilesToBlocks } from "./terrainBlocks";
+import {
+	getWalkPreviewDirectionFromKey,
+	getWalkPreviewStart,
+	moveWalkPreview,
+} from "./threeDWalkPreview";
+
+type PreviewCameraMode = OrbitCameraPreset | "custom";
+export type TerrainHeightTool = "raise" | "lower" | "flatten" | "set";
+
+type ThreeDPreviewProps = {
+	brushSize?: 1 | 3 | 5;
+	embedded?: boolean;
+	heightToolValue?: number;
+	hideDetails?: boolean;
+	onOpenInMapEditor?: () => void;
+	overlayFilters?: MapOverlayFilters;
+	terrainPaintTileId?: string;
+	terrainHeightTool?: TerrainHeightTool;
+};
+
+function getPreviewSize(element: HTMLElement) {
+	const rect = element.getBoundingClientRect();
+	return {
+		height: Math.max(240, Math.floor(rect.height || 360)),
+		width: Math.max(320, Math.floor(rect.width || 640)),
+	};
+}
+
+function getPreviewCameraDimensions(
+	height: number | undefined,
+	width: number | undefined,
+): OrbitCameraDimensions {
+	return {
+		height: Math.max(height ?? 8, 8),
+		width: Math.max(width ?? 8, 8),
+	};
+}
+
+export function ThreeDPreview({
+	brushSize = 1,
+	embedded = false,
+	heightToolValue = 0,
+	hideDetails = false,
+	onOpenInMapEditor,
+	overlayFilters: controlledOverlayFilters,
+	terrainPaintTileId,
+	terrainHeightTool,
+}: ThreeDPreviewProps) {
+	const hostRef = useRef<HTMLDivElement>(null);
+	const cameraStateRef = useRef<OrbitCameraState>(
+		resetOrbitCameraState({ height: 8, width: 8 }),
+	);
+	const [mountError, setMountError] = useState("");
+	const [localOverlayFilters, setLocalOverlayFilters] = useState(
+		readStoredMapOverlayFilters,
+	);
+	const [cameraPreset, setCameraPreset] =
+		useState<PreviewCameraMode>("isometric");
+	const [walkPreviewPosition, setWalkPreviewPosition] =
+		useState<PreviewGridPosition>();
+	const [walkPreviewMessage, setWalkPreviewMessage] = useState("");
+	const overlayFilters = controlledOverlayFilters ?? localOverlayFilters;
+	const project = useProjectStore((state) => state.project);
+	const editorSelection = useProjectStore((state) => state.editorSelection);
+	const setEditorSelection = useProjectStore(
+		(state) => state.setEditorSelection,
+	);
+	const updateProject = useProjectStore((state) => state.updateProject);
+	const setTiles = useProjectStore((state) => state.setTiles);
+	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
+	const adjustTerrainHeights = useProjectStore(
+		(state) => state.adjustTerrainHeights,
+	);
+	const mapPaletteSelection = useProjectStore(
+		(state) => state.mapPaletteSelection,
+	);
+	const setMapPaletteSelection = useProjectStore(
+		(state) => state.setMapPaletteSelection,
+	);
+	const addStructure = useProjectStore((state) => state.addStructure);
+	const addObject = useProjectStore((state) => state.addObject);
+	const addPickup = useProjectStore((state) => state.addPickup);
+	const updatePickup = useProjectStore((state) => state.updatePickup);
+	const addNpc = useProjectStore((state) => state.addNpc);
+	const addEventBlock = useProjectStore((state) => state.addEventBlock);
+	const activeArea = useMemo(
+		() =>
+			project.areas.find((area) => area.id === project.activeAreaId) ??
+			project.areas[0],
+		[project.activeAreaId, project.areas],
+	);
+	const terrainBlocks = useMemo(
+		() => terrainTilesToBlocks(activeArea),
+		[activeArea],
+	);
+	const entityMarkers = useMemo(
+		() => areaEntitiesToMarkers(activeArea, project.objects, overlayFilters),
+		[activeArea, overlayFilters, project.objects],
+	);
+	const selectionDetails = useMemo(
+		() => getPreviewSelectionDetails(project, editorSelection),
+		[editorSelection, project],
+	);
+	const placementInfo = useMemo(
+		() => getPreviewPlacementInfo(project, mapPaletteSelection),
+		[mapPaletteSelection, project],
+	);
+	const canMoveSelection =
+		isMovablePreviewSelection(editorSelection) &&
+		editorSelection.areaId === activeArea?.id;
+	const isWalkPreviewActive = Boolean(walkPreviewPosition);
+	const activeAreaId = activeArea?.id;
+	const cameraDimensions = useMemo(
+		() => getPreviewCameraDimensions(activeArea?.height, activeArea?.width),
+		[activeArea?.height, activeArea?.width],
+	);
+
+	const applyCameraPreset = useCallback(
+		(preset: OrbitCameraPreset) => {
+			cameraStateRef.current = createOrbitCameraState(preset, cameraDimensions);
+			setCameraPreset(preset);
+		},
+		[cameraDimensions],
+	);
+
+	const resetCamera = useCallback(() => {
+		cameraStateRef.current = resetOrbitCameraState(cameraDimensions);
+		setCameraPreset("isometric");
+	}, [cameraDimensions]);
+
+	useEffect(() => {
+		if (!activeAreaId) {
+			resetCamera();
+			return;
+		}
+		resetCamera();
+	}, [activeAreaId, resetCamera]);
+
+	const startWalkPreview = () => {
+		const start = getWalkPreviewStart(activeArea);
+		if (!start) {
+			setWalkPreviewMessage("No active area for 3D walk preview.");
+			return;
+		}
+		setWalkPreviewPosition(start);
+		setWalkPreviewMessage(
+			"Experimental 3D walk preview — game logic disabled.",
+		);
+	};
+
+	const stopWalkPreview = useCallback(() => {
+		setWalkPreviewPosition(undefined);
+		setWalkPreviewMessage("");
+	}, []);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				if (walkPreviewPosition) {
+					event.preventDefault();
+					stopWalkPreview();
+				} else {
+					setMapPaletteSelection({ type: "none" });
+				}
+				return;
+			}
+			const direction = getWalkPreviewDirectionFromKey(event.key);
+			if (!direction || !activeArea || !walkPreviewPosition) {
+				return;
+			}
+			event.preventDefault();
+			setWalkPreviewPosition((position) => {
+				if (!position) {
+					return position;
+				}
+				const result = moveWalkPreview(
+					activeArea,
+					project.player,
+					position,
+					direction,
+				);
+				setWalkPreviewMessage(
+					result.blockedReason
+						? `Blocked: ${result.blockedReason}`
+						: "Experimental 3D walk preview — game logic disabled.",
+				);
+				return result.position;
+			});
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [
+		activeArea,
+		project.player,
+		setMapPaletteSelection,
+		stopWalkPreview,
+		walkPreviewPosition,
+	]);
+
+	useEffect(() => {
+		if (!controlledOverlayFilters) {
+			writeStoredMapOverlayFilters(localOverlayFilters);
+		}
+	}, [controlledOverlayFilters, localOverlayFilters]);
+
+	const updateLocalOverlayFilters = (filters: MapOverlayFilters) => {
+		setLocalOverlayFilters(filters);
+	};
+
+	useEffect(() => {
+		const host = hostRef.current;
+		if (!host) {
+			return;
+		}
+
+		const scene = new THREE.Scene();
+		configureThreeWorldScene(scene);
+
+		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
+		const areaHeight = Math.max(activeArea?.height ?? 8, 8);
+		const cameraBounds = getOrbitCameraBounds({
+			height: areaHeight,
+			width: areaWidth,
+		});
+		const camera = new THREE.PerspectiveCamera(
+			50,
+			1,
+			0.1,
+			Math.max(100, cameraBounds.maxDistance * 2),
+		);
+		const walkPreviewPoint =
+			activeArea && walkPreviewPosition
+				? previewGridPositionToThreePoint(activeArea, walkPreviewPosition, {
+						height: 1,
+						width: 1,
+					})
+				: undefined;
+		const applyCameraFromState = () => {
+			cameraStateRef.current = clampOrbitCameraState(
+				cameraStateRef.current,
+				cameraBounds,
+			);
+			const cameraPosition = getOrbitCameraPosition(cameraStateRef.current);
+			const cameraTarget = getOrbitCameraLookTarget(cameraStateRef.current);
+			camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+			camera.lookAt(
+				new THREE.Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
+			);
+		};
+		applyCameraFromState();
+
+		addThreeWorldLighting(scene, { enableShadows: true });
+
+		const gridSize = Math.max(areaWidth, areaHeight, 8);
+		const grid = new THREE.GridHelper(
+			gridSize,
+			gridSize,
+			getWorldMaterialColor("stone"),
+			getWorldMaterialColor("default"),
+		);
+		scene.add(grid);
+
+		const meshes = terrainBlocks.map((block) => {
+			const selectionMetadata = terrainBlockToSelectionMetadata(
+				block,
+				activeArea?.id ?? "",
+			);
+			const isSelected = selectionMatchesMetadata(
+				editorSelection,
+				selectionMetadata,
+			);
+			const mesh = new THREE.Mesh(
+				new THREE.BoxGeometry(0.96, block.height, 0.96),
+				createTerrainMaterial(block.kind, { selected: isSelected }),
+			);
+			applyShadowRole(mesh, { receive: block.kind !== "water" });
+			mesh.userData.selectionMetadata = selectionMetadata;
+			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+			scene.add(mesh);
+			return mesh;
+		});
+		const markerMeshes = entityMarkers.map((marker) => {
+			const selectionMetadata = entityMarkerToSelectionMetadata(
+				marker,
+				activeArea?.id ?? "",
+			);
+			const isSelected = selectionMatchesMetadata(
+				editorSelection,
+				selectionMetadata,
+			);
+			const group = createPlaceholderMeshGroup(marker, {
+				metadata: selectionMetadata,
+				selected: isSelected,
+			});
+			applyShadowRole(group, { cast: true, receive: marker.kind !== "event" });
+			scene.add(group);
+			return group;
+		});
+		const walkPreviewMesh =
+			activeArea && walkPreviewPosition
+				? new THREE.Mesh(
+						new THREE.CylinderGeometry(0.28, 0.36, 1.25, 16),
+						createWorldMaterial("friendly", { selected: true }),
+					)
+				: undefined;
+		if (
+			walkPreviewMesh &&
+			activeArea &&
+			walkPreviewPosition &&
+			walkPreviewPoint
+		) {
+			applyShadowRole(walkPreviewMesh, { cast: true });
+			walkPreviewMesh.position.set(
+				walkPreviewPoint.x,
+				getTerrainSurfaceY(
+					activeArea,
+					walkPreviewPosition.x,
+					walkPreviewPosition.y,
+				) + 0.625,
+				walkPreviewPoint.z,
+			);
+			scene.add(walkPreviewMesh);
+		}
+		const selectableMeshes = [
+			...meshes,
+			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
+		];
+
+		let renderer: THREE.WebGLRenderer;
+		try {
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+		} catch (error) {
+			setMountError(
+				error instanceof Error
+					? error.message
+					: "Three.js renderer could not be created.",
+			);
+			return;
+		}
+
+		configureThreeRenderer(renderer, { enableShadows: true });
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+		host.appendChild(renderer.domElement);
+
+		const raycaster = new THREE.Raycaster();
+		const pointer = new THREE.Vector2();
+		const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+		const groundPoint = new THREE.Vector3();
+		let dragGhost: THREE.Mesh | null = null;
+		let placementGhost: THREE.Mesh | null = null;
+		let terrainPaintGhost: THREE.Mesh | null = null;
+		let latestPlacementPosition: PreviewGridPosition | undefined;
+		let pointerStart: {
+			x: number;
+			y: number;
+			metadata?: PreviewSelectionMetadata;
+			didDrag: boolean;
+			heightEditing?: boolean;
+			terrainPainting?: boolean;
+			latestPosition?: PreviewGridPosition;
+		} | null = null;
+		let cameraDrag: {
+			mode: "orbit" | "pan";
+			x: number;
+			y: number;
+		} | null = null;
+		const editedHeightCells = new Set<string>();
+		const paintedTerrainCells = new Set<string>();
+
+		const markCustomCamera = () => {
+			setCameraPreset((current) => (current === "custom" ? current : "custom"));
+		};
+
+		const setPointerFromEvent = (event: PointerEvent) => {
+			const rect = renderer.domElement.getBoundingClientRect();
+			if (rect.width <= 0 || rect.height <= 0) {
+				return false;
+			}
+			pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+			pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+			return true;
+		};
+
+		const getPointerHit = (event: PointerEvent) => {
+			if (!setPointerFromEvent(event)) {
+				return undefined;
+			}
+			raycaster.setFromCamera(pointer, camera);
+			const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
+			return hit?.object.userData.selectionMetadata as
+				| PreviewSelectionMetadata
+				| undefined;
+		};
+
+		const selectFromPointer = (event: PointerEvent) => {
+			const metadata = getPointerHit(event);
+			if (!metadata) {
+				return;
+			}
+			setEditorSelection(metadataToEditorSelection(metadata));
+		};
+
+		const cleanupDragGhost = () => {
+			if (!dragGhost) {
+				return;
+			}
+			scene.remove(dragGhost);
+			dragGhost.geometry.dispose();
+			if (Array.isArray(dragGhost.material)) {
+				dragGhost.material.forEach((material) => {
+					material.dispose();
+				});
+			} else {
+				dragGhost.material.dispose();
+			}
+			dragGhost = null;
+		};
+
+		const cleanupPlacementGhost = () => {
+			if (!placementGhost) {
+				return;
+			}
+			scene.remove(placementGhost);
+			placementGhost.geometry.dispose();
+			if (Array.isArray(placementGhost.material)) {
+				placementGhost.material.forEach((material) => {
+					material.dispose();
+				});
+			} else {
+				placementGhost.material.dispose();
+			}
+			placementGhost = null;
+			latestPlacementPosition = undefined;
+		};
+
+		const cleanupTerrainPaintGhost = () => {
+			if (!terrainPaintGhost) {
+				return;
+			}
+			scene.remove(terrainPaintGhost);
+			terrainPaintGhost.geometry.dispose();
+			if (Array.isArray(terrainPaintGhost.material)) {
+				terrainPaintGhost.material.forEach((material) => {
+					material.dispose();
+				});
+			} else {
+				terrainPaintGhost.material.dispose();
+			}
+			terrainPaintGhost = null;
+		};
+
+		const metadataIsMovable = (metadata: PreviewSelectionMetadata) =>
+			isMovablePreviewSelection(metadataToEditorSelection(metadata));
+
+		const getGridPositionFromPointer = (
+			event: PointerEvent,
+			metadata: PreviewSelectionMetadata,
+		) => {
+			if (!activeArea || !setPointerFromEvent(event)) {
+				return undefined;
+			}
+			raycaster.setFromCamera(pointer, camera);
+			const point = raycaster.ray.intersectPlane(groundPlane, groundPoint);
+			if (!point) {
+				return undefined;
+			}
+			const selection = metadataToEditorSelection(metadata);
+			return threePointToPreviewGridPosition(
+				activeArea,
+				{ x: point.x, z: point.z },
+				getPreviewSelectionFootprint(activeArea, selection),
+			);
+		};
+
+		const getPlacementPositionFromPointer = (event: PointerEvent) => {
+			if (
+				!activeArea ||
+				(!placementInfo.active && !terrainHeightTool && !terrainPaintTileId) ||
+				!setPointerFromEvent(event)
+			) {
+				return undefined;
+			}
+			raycaster.setFromCamera(pointer, camera);
+			const point = raycaster.ray.intersectPlane(groundPlane, groundPoint);
+			if (!point) {
+				return undefined;
+			}
+			return threePointToPreviewGridPosition(
+				activeArea,
+				{ x: point.x, z: point.z },
+				{
+					height: Math.max(1, Math.round(placementInfo.depth)),
+					width: Math.max(1, Math.round(placementInfo.width)),
+				},
+			);
+		};
+
+		const getBrushPositions = (position: PreviewGridPosition) => {
+			if (!activeArea) {
+				return [];
+			}
+			const radius = Math.floor(brushSize / 2);
+			const positions: PreviewGridPosition[] = [];
+			for (let y = position.y - radius; y <= position.y + radius; y += 1) {
+				for (let x = position.x - radius; x <= position.x + radius; x += 1) {
+					if (
+						x >= 0 &&
+						y >= 0 &&
+						x < activeArea.width &&
+						y < activeArea.height
+					) {
+						positions.push({ x, y });
+					}
+				}
+			}
+			return positions;
+		};
+
+		const applyHeightToolFromPointer = (event: PointerEvent) => {
+			if (!activeArea || !terrainHeightTool) {
+				return false;
+			}
+			const position = getPlacementPositionFromPointer(event);
+			if (!position) {
+				return false;
+			}
+			const positions = getBrushPositions(position).filter((cell) => {
+				const key = `${cell.x}:${cell.y}`;
+				if (editedHeightCells.has(key)) {
+					return false;
+				}
+				editedHeightCells.add(key);
+				return true;
+			});
+			if (positions.length === 0) {
+				return true;
+			}
+			if (terrainHeightTool === "raise") {
+				adjustTerrainHeights(positions.map((cell) => ({ ...cell, delta: 1 })));
+			} else if (terrainHeightTool === "lower") {
+				adjustTerrainHeights(positions.map((cell) => ({ ...cell, delta: -1 })));
+			} else {
+				setTerrainHeights(
+					positions.map((cell) => ({
+						...cell,
+						height: terrainHeightTool === "flatten" ? 0 : heightToolValue,
+					})),
+				);
+			}
+			setEditorSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: position.x,
+				y: position.y,
+			});
+			return true;
+		};
+
+		const applyTerrainPaintFromPointer = (event: PointerEvent) => {
+			if (!activeArea || !terrainPaintTileId) {
+				return false;
+			}
+			const position = getPlacementPositionFromPointer(event);
+			if (!position) {
+				return false;
+			}
+			const positions = getBrushPositions(position).filter((cell) => {
+				const key = `${cell.x}:${cell.y}`;
+				if (paintedTerrainCells.has(key)) {
+					return false;
+				}
+				paintedTerrainCells.add(key);
+				return true;
+			});
+			if (positions.length === 0) {
+				return true;
+			}
+			setTiles(
+				positions.map((cell) => ({
+					...cell,
+					tileId: terrainPaintTileId,
+				})),
+			);
+			setEditorSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: position.x,
+				y: position.y,
+			});
+			return true;
+		};
+
+		const updateDragGhost = (
+			metadata: PreviewSelectionMetadata,
+			position: PreviewGridPosition,
+		) => {
+			if (!activeArea) {
+				return;
+			}
+			const selection = metadataToEditorSelection(metadata);
+			const footprint = getPreviewSelectionFootprint(activeArea, selection);
+			const threePoint = previewGridPositionToThreePoint(
+				activeArea,
+				position,
+				footprint,
+			);
+			if (!dragGhost) {
+				dragGhost = new THREE.Mesh(
+					new THREE.BoxGeometry(footprint.width, 0.12, footprint.height),
+					createWorldMaterial("itemAccent", { opacity: 0.42 }),
+				);
+				scene.add(dragGhost);
+			}
+			dragGhost.position.set(
+				threePoint.x,
+				getTerrainSurfaceY(activeArea, position.x, position.y) + 0.06,
+				threePoint.z,
+			);
+		};
+
+		const updatePlacementGhost = (position: PreviewGridPosition) => {
+			if (!activeArea || !placementInfo.active) {
+				cleanupPlacementGhost();
+				return;
+			}
+			const footprint = {
+				height: Math.max(1, Math.round(placementInfo.depth)),
+				width: Math.max(1, Math.round(placementInfo.width)),
+			};
+			const threePoint = previewGridPositionToThreePoint(
+				activeArea,
+				position,
+				footprint,
+			);
+			if (!placementGhost) {
+				const geometry =
+					placementInfo.shape === "cylinder"
+						? new THREE.CylinderGeometry(
+								placementInfo.width / 2,
+								placementInfo.depth / 2,
+								placementInfo.height,
+								12,
+							)
+						: new THREE.BoxGeometry(
+								placementInfo.width,
+								placementInfo.height,
+								placementInfo.depth,
+							);
+				placementGhost = new THREE.Mesh(
+					geometry,
+					createWorldMaterial("default", {
+						color: placementInfo.color,
+						opacity: 0.42,
+					}),
+				);
+				scene.add(placementGhost);
+			}
+			placementGhost.position.set(
+				threePoint.x,
+				getTerrainSurfaceY(activeArea, position.x, position.y) +
+					placementInfo.height / 2,
+				threePoint.z,
+			);
+			latestPlacementPosition = position;
+		};
+
+		const updateTerrainPaintGhost = (position: PreviewGridPosition) => {
+			if (!activeArea || !terrainPaintTileId) {
+				cleanupTerrainPaintGhost();
+				return;
+			}
+			const positions = getBrushPositions(position);
+			if (positions.length === 0) {
+				cleanupTerrainPaintGhost();
+				return;
+			}
+			const minX = Math.min(...positions.map((cell) => cell.x));
+			const maxX = Math.max(...positions.map((cell) => cell.x));
+			const minY = Math.min(...positions.map((cell) => cell.y));
+			const maxY = Math.max(...positions.map((cell) => cell.y));
+			const footprint = {
+				height: maxY - minY + 1,
+				width: maxX - minX + 1,
+			};
+			const threePoint = previewGridPositionToThreePoint(
+				activeArea,
+				{ x: minX, y: minY },
+				footprint,
+			);
+			const surfaceY = Math.max(
+				...positions.map((cell) =>
+					getTerrainSurfaceY(activeArea, cell.x, cell.y),
+				),
+			);
+			if (!terrainPaintGhost) {
+				terrainPaintGhost = new THREE.Mesh(
+					new THREE.BoxGeometry(
+						footprint.width * 0.96,
+						0.08,
+						footprint.height * 0.96,
+					),
+					createWorldMaterial(resolveTerrainMaterialKey(terrainPaintTileId), {
+						opacity: 0.48,
+					}),
+				);
+				scene.add(terrainPaintGhost);
+			}
+			terrainPaintGhost.position.set(
+				threePoint.x,
+				surfaceY + 0.06,
+				threePoint.z,
+			);
+		};
+
+		const handlePointerDown = (event: PointerEvent) => {
+			// Alt-modified drags are reserved for camera control so unmodified
+			// pointer input remains owned by paint, sculpt, placement, and selection.
+			if (event.altKey && (event.button === 0 || event.button === 1)) {
+				event.preventDefault();
+				cameraDrag = {
+					mode: event.shiftKey || event.button === 1 ? "pan" : "orbit",
+					x: event.clientX,
+					y: event.clientY,
+				};
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+				return;
+			}
+			if (terrainPaintTileId) {
+				paintedTerrainCells.clear();
+				pointerStart = {
+					didDrag: false,
+					terrainPainting: true,
+					x: event.clientX,
+					y: event.clientY,
+				};
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+				applyTerrainPaintFromPointer(event);
+				return;
+			}
+			if (terrainHeightTool) {
+				editedHeightCells.clear();
+				pointerStart = {
+					didDrag: false,
+					heightEditing: true,
+					x: event.clientX,
+					y: event.clientY,
+				};
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+				applyHeightToolFromPointer(event);
+				return;
+			}
+			if (placementInfo.active) {
+				pointerStart = {
+					didDrag: false,
+					x: event.clientX,
+					y: event.clientY,
+				};
+				return;
+			}
+			const metadata = getPointerHit(event);
+			const startsSelectedMove =
+				metadata &&
+				metadataIsMovable(metadata) &&
+				selectionMatchesMetadata(editorSelection, metadata);
+			pointerStart = {
+				didDrag: false,
+				metadata: startsSelectedMove ? metadata : undefined,
+				x: event.clientX,
+				y: event.clientY,
+			};
+			if (startsSelectedMove) {
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+			}
+		};
+
+		const handlePointerMove = (event: PointerEvent) => {
+			if (cameraDrag) {
+				event.preventDefault();
+				const deltaX = event.clientX - cameraDrag.x;
+				const deltaY = event.clientY - cameraDrag.y;
+				if (deltaX !== 0 || deltaY !== 0) {
+					cameraStateRef.current =
+						cameraDrag.mode === "pan"
+							? panOrbitCamera(cameraStateRef.current, deltaX, deltaY)
+							: rotateOrbitCamera(
+									cameraStateRef.current,
+									deltaX,
+									deltaY,
+									cameraBounds,
+								);
+					markCustomCamera();
+					applyCameraFromState();
+					cameraDrag = {
+						...cameraDrag,
+						x: event.clientX,
+						y: event.clientY,
+					};
+				}
+				return;
+			}
+			if (pointerStart?.terrainPainting) {
+				pointerStart.didDrag = true;
+				applyTerrainPaintFromPointer(event);
+				const nextPosition = getPlacementPositionFromPointer(event);
+				if (nextPosition) {
+					updateTerrainPaintGhost(nextPosition);
+				}
+				return;
+			}
+			if (pointerStart?.heightEditing) {
+				pointerStart.didDrag = true;
+				applyHeightToolFromPointer(event);
+				return;
+			}
+			if (placementInfo.active && !pointerStart?.metadata) {
+				const nextPosition = getPlacementPositionFromPointer(event);
+				if (nextPosition) {
+					updatePlacementGhost(nextPosition);
+				} else {
+					cleanupPlacementGhost();
+				}
+				return;
+			}
+			if (terrainPaintTileId && !pointerStart?.metadata) {
+				const nextPosition = getPlacementPositionFromPointer(event);
+				if (nextPosition) {
+					updateTerrainPaintGhost(nextPosition);
+				} else {
+					cleanupTerrainPaintGhost();
+				}
+				return;
+			}
+			if (!pointerStart?.metadata) {
+				return;
+			}
+			const deltaX = Math.abs(event.clientX - pointerStart.x);
+			const deltaY = Math.abs(event.clientY - pointerStart.y);
+			if (deltaX <= 4 && deltaY <= 4) {
+				return;
+			}
+			const nextPosition = getGridPositionFromPointer(
+				event,
+				pointerStart.metadata,
+			);
+			if (!nextPosition) {
+				return;
+			}
+			pointerStart.didDrag = true;
+			pointerStart.latestPosition = nextPosition;
+			updateDragGhost(pointerStart.metadata, nextPosition);
+		};
+
+		const handlePointerUp = (event: PointerEvent) => {
+			if (cameraDrag) {
+				event.preventDefault();
+				cameraDrag = null;
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				return;
+			}
+			if (!pointerStart) {
+				return;
+			}
+			if (pointerStart.heightEditing) {
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				editedHeightCells.clear();
+				pointerStart = null;
+				return;
+			}
+			if (pointerStart.terrainPainting) {
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				paintedTerrainCells.clear();
+				pointerStart = null;
+				return;
+			}
+			if (placementInfo.active) {
+				const deltaX = Math.abs(event.clientX - pointerStart.x);
+				const deltaY = Math.abs(event.clientY - pointerStart.y);
+				const nextPosition =
+					latestPlacementPosition ?? getPlacementPositionFromPointer(event);
+				if (deltaX <= 4 && deltaY <= 4 && activeArea && nextPosition) {
+					const nextSelection = placePreviewEntity(
+						mapPaletteSelection,
+						nextPosition,
+						{
+							addEventBlock,
+							addNpc,
+							addObject,
+							addPickup,
+							addStructure,
+							areaId: activeArea.id,
+							updatePickup,
+						},
+					);
+					setEditorSelection(nextSelection);
+				}
+				pointerStart = null;
+				return;
+			}
+			if (pointerStart.didDrag && pointerStart.metadata) {
+				const selection = metadataToEditorSelection(pointerStart.metadata);
+				const nextPosition = pointerStart.latestPosition;
+				if (nextPosition) {
+					updateProject((draft) => {
+						movePreviewSelectionInProject(draft, selection, nextPosition);
+					});
+				}
+				cleanupDragGhost();
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				pointerStart = null;
+				return;
+			}
+			const deltaX = Math.abs(event.clientX - pointerStart.x);
+			const deltaY = Math.abs(event.clientY - pointerStart.y);
+			cleanupDragGhost();
+			cleanupTerrainPaintGhost();
+			renderer.domElement.releasePointerCapture?.(event.pointerId);
+			pointerStart = null;
+			if (deltaX <= 4 && deltaY <= 4) {
+				selectFromPointer(event);
+			}
+		};
+
+		const handleWheel = (event: WheelEvent) => {
+			event.preventDefault();
+			cameraStateRef.current = zoomOrbitCamera(
+				cameraStateRef.current,
+				event.deltaY,
+				cameraBounds,
+			);
+			markCustomCamera();
+			applyCameraFromState();
+		};
+
+		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
+		renderer.domElement.addEventListener("pointermove", handlePointerMove);
+		renderer.domElement.addEventListener("pointerup", handlePointerUp);
+		renderer.domElement.addEventListener("wheel", handleWheel, {
+			passive: false,
+		});
+
+		let animationFrame = 0;
+
+		const resize = () => {
+			const { height, width } = getPreviewSize(host);
+			camera.aspect = width / height;
+			camera.updateProjectionMatrix();
+			renderer.setSize(width, height, false);
+		};
+
+		const render = () => {
+			applyCameraFromState();
+			renderer.render(scene, camera);
+			animationFrame = window.requestAnimationFrame(render);
+		};
+
+		const resizeObserver =
+			"ResizeObserver" in window ? new ResizeObserver(resize) : undefined;
+		resizeObserver?.observe(host);
+		window.addEventListener("resize", resize);
+
+		resize();
+		render();
+
+		return () => {
+			window.cancelAnimationFrame(animationFrame);
+			window.removeEventListener("resize", resize);
+			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
+			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
+			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
+			renderer.domElement.removeEventListener("wheel", handleWheel);
+			resizeObserver?.disconnect();
+			cleanupDragGhost();
+			cleanupPlacementGhost();
+			cleanupTerrainPaintGhost();
+			renderer.dispose();
+			meshes.forEach((mesh) => {
+				mesh.geometry.dispose();
+				if (Array.isArray(mesh.material)) {
+					mesh.material.forEach((material) => {
+						material.dispose();
+					});
+				} else {
+					mesh.material.dispose();
+				}
+			});
+			markerMeshes.forEach(disposePlaceholderObject);
+			if (walkPreviewMesh) {
+				scene.remove(walkPreviewMesh);
+				walkPreviewMesh.geometry.dispose();
+				if (Array.isArray(walkPreviewMesh.material)) {
+					walkPreviewMesh.material.forEach((material) => {
+						material.dispose();
+					});
+				} else {
+					walkPreviewMesh.material.dispose();
+				}
+			}
+			if (host.contains(renderer.domElement)) {
+				host.removeChild(renderer.domElement);
+			}
+		};
+	}, [
+		activeArea,
+		addEventBlock,
+		addNpc,
+		addObject,
+		addPickup,
+		addStructure,
+		adjustTerrainHeights,
+		brushSize,
+		editorSelection,
+		entityMarkers,
+		heightToolValue,
+		mapPaletteSelection,
+		placementInfo,
+		setEditorSelection,
+		setTiles,
+		setTerrainHeights,
+		terrainBlocks,
+		terrainPaintTileId,
+		terrainHeightTool,
+		updatePickup,
+		updateProject,
+		walkPreviewPosition,
+	]);
+
+	return (
+		<section
+			className={
+				embedded ? "three-d-preview-workspace" : "editor-panel three-d-preview"
+			}
+		>
+			<div className="content-panel three-d-preview-panel">
+				<div className="panel-title">3D Preview</div>
+				<p className="helper-text">
+					3D Preview is experimental. Entity movement edits the current project;
+					height tools sculpt the current area.
+				</p>
+				<p className="helper-text">
+					Showing terrain and entity placeholders for{" "}
+					{activeArea?.name ?? "No active area"}.
+				</p>
+				<p className="helper-text">
+					Click objects in 3D to inspect them. Drag a selected entity to move it
+					on the grid.
+				</p>
+				{isWalkPreviewActive ? (
+					<p className="helper-text">
+						Experimental 3D walk preview — game logic disabled.
+					</p>
+				) : null}
+				<p className="helper-text">
+					{terrainHeightTool
+						? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
+						: terrainPaintTileId
+							? `Click terrain to paint selected terrain type: ${terrainPaintTileId}.`
+							: placementInfo.active
+								? `${placementInfo.label}. Click terrain to place.`
+								: "No placeable selected."}
+				</p>
+				<div className="three-d-preview-controls">
+					<button
+						className={cameraPreset === "top" ? "active" : ""}
+						onClick={() => applyCameraPreset("top")}
+						type="button"
+					>
+						Top
+					</button>
+					<button
+						className={cameraPreset === "isometric" ? "active" : ""}
+						onClick={() => applyCameraPreset("isometric")}
+						type="button"
+					>
+						Isometric
+					</button>
+					<button
+						className={cameraPreset === "low" ? "active" : ""}
+						onClick={() => applyCameraPreset("low")}
+						type="button"
+					>
+						Low angle
+					</button>
+					<button onClick={resetCamera} type="button">
+						Reset camera
+					</button>
+					{isWalkPreviewActive ? (
+						<button onClick={stopWalkPreview} type="button">
+							Stop 3D Walk Preview
+						</button>
+					) : (
+						<button onClick={startWalkPreview} type="button">
+							Start 3D Walk Preview
+						</button>
+					)}
+				</div>
+				{walkPreviewPosition ? (
+					<p className="helper-text">
+						Walk preview at x {walkPreviewPosition.x}, y {walkPreviewPosition.y}
+						. Use WASD or arrow keys. Press Escape to stop.
+					</p>
+				) : null}
+				{walkPreviewMessage ? (
+					<p className="helper-text">{walkPreviewMessage}</p>
+				) : null}
+				{controlledOverlayFilters ? null : (
+					<div className="preview-filter-panel">
+						<div className="filter-button-row">
+							<button
+								onClick={() =>
+									updateLocalOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)
+								}
+								type="button"
+							>
+								Show All
+							</button>
+							<button
+								onClick={() =>
+									updateLocalOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)
+								}
+								type="button"
+							>
+								Hide All
+							</button>
+							<button
+								onClick={() =>
+									updateLocalOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)
+								}
+								type="button"
+							>
+								Gameplay View
+							</button>
+						</div>
+						<div className="filter-grid">
+							{OVERLAY_FILTER_OPTIONS.map((option) => (
+								<label className="checkbox-row compact" key={option.key}>
+									<input
+										checked={overlayFilters[option.key]}
+										onChange={() =>
+											updateLocalOverlayFilters(
+												toggleMapOverlayFilter(overlayFilters, option.key),
+											)
+										}
+										type="checkbox"
+									/>
+									{option.label}
+								</label>
+							))}
+						</div>
+					</div>
+				)}
+				<div
+					aria-label="3D preview viewport"
+					className="three-d-preview-host"
+					ref={hostRef}
+					role="img"
+				/>
+				{hideDetails ? null : (
+					<aside className="three-d-selection-details">
+						<div className="panel-title">Selected</div>
+						{selectionDetails ? (
+							<>
+								<h3>{selectionDetails.title}</h3>
+								<dl>
+									{selectionDetails.rows.map((row) => (
+										<div
+											className="three-d-selection-detail-row"
+											key={`${row.label}:${row.value}`}
+										>
+											<dt>{row.label}</dt>
+											<dd>{row.value}</dd>
+										</div>
+									))}
+								</dl>
+								{selectionDetails.canOpenInMap && onOpenInMapEditor ? (
+									<button onClick={onOpenInMapEditor} type="button">
+										Open in Map Editor
+									</button>
+								) : null}
+								{canMoveSelection ? (
+									<p className="helper-text three-d-move-hint">
+										Move mode: drag the selected marker to another tile.
+									</p>
+								) : null}
+							</>
+						) : (
+							<p className="helper-text">
+								Click a tile, NPC, object, or marker in the 3D preview to
+								inspect it.
+							</p>
+						)}
+					</aside>
+				)}
+				{mountError ? (
+					<div className="validation-message">{mountError}</div>
+				) : null}
+			</div>
+		</section>
+	);
+}

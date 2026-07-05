@@ -13,6 +13,7 @@ import {
 } from "./data/projectPresets";
 import { validateProject } from "./data/validateProject";
 import { type EditorSectionId, editorSections } from "./editor/sections";
+import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import {
 	AUTOSAVE_DRAFT_STORAGE_KEY,
@@ -415,7 +416,13 @@ export default function App() {
 			) : (
 				<>
 					<main className="editor-shell" ref={editorShellRef}>
-						<ActiveSectionComponent />
+						{activeSectionId === "three-d-preview" ? (
+							<ThreeDPreview
+								onOpenInMapEditor={() => setActiveSectionId("map")}
+							/>
+						) : (
+							<ActiveSectionComponent />
+						)}
 					</main>
 					<nav className="bottom-tabs" aria-label="Editor sections">
 						{editorSections.map((section) => (

@@ -58,6 +58,7 @@ export const blankProject: GameProject = {
 		],
 	},
 	cutscenes: [],
+	dialogues: [],
 	progression: [
 		{
 			id: "step_spawn_player",
