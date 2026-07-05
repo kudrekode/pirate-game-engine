@@ -327,6 +327,40 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
 	});
 
+	it("keeps camera controls as presentation-only editor state", () => {
+		render(<ThreeDPreview />);
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+
+		fireEvent.wheel(canvas as HTMLCanvasElement, { deltaY: -300 });
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			altKey: true,
+			button: 0,
+			clientX: 120,
+			clientY: 120,
+		});
+		fireEvent.pointerMove(canvas as HTMLCanvasElement, {
+			altKey: true,
+			buttons: 1,
+			clientX: 180,
+			clientY: 80,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			altKey: true,
+			button: 0,
+			clientX: 180,
+			clientY: 80,
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
+
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
+	});
+
 	it("renders the empty details state when nothing is selected", () => {
 		useProjectStore.getState().setEditorSelection(null);
 

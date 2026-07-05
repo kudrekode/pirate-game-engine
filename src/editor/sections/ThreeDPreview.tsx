@@ -1,7 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import {
+	clampOrbitCameraState,
+	createOrbitCameraState,
+	getOrbitCameraBounds,
+	getOrbitCameraLookTarget,
+	getOrbitCameraPosition,
+	type OrbitCameraDimensions,
+	type OrbitCameraPreset,
+	type OrbitCameraState,
+	panOrbitCamera,
+	resetOrbitCameraState,
+	rotateOrbitCamera,
+	zoomOrbitCamera,
+} from "../../runtime/three/cameraControls";
 import {
 	createPlaceholderMeshGroup,
 	disposePlaceholderObject,
@@ -56,7 +69,7 @@ import {
 	moveWalkPreview,
 } from "./threeDWalkPreview";
 
-type PreviewCameraPreset = "top" | "isometric" | "low";
+type PreviewCameraMode = OrbitCameraPreset | "custom";
 export type TerrainHeightTool = "raise" | "lower" | "flatten" | "set";
 
 type ThreeDPreviewProps = {
@@ -78,17 +91,14 @@ function getPreviewSize(element: HTMLElement) {
 	};
 }
 
-function getCameraPosition(
-	preset: PreviewCameraPreset,
-	cameraDistance: number,
-): [number, number, number] {
-	if (preset === "top") {
-		return [0, cameraDistance * 1.35, 0.01];
-	}
-	if (preset === "low") {
-		return [cameraDistance * 1.1, cameraDistance * 0.38, cameraDistance * 1.1];
-	}
-	return [cameraDistance, cameraDistance * 0.85, cameraDistance];
+function getPreviewCameraDimensions(
+	height: number | undefined,
+	width: number | undefined,
+): OrbitCameraDimensions {
+	return {
+		height: Math.max(height ?? 8, 8),
+		width: Math.max(width ?? 8, 8),
+	};
 }
 
 export function ThreeDPreview({
@@ -102,12 +112,15 @@ export function ThreeDPreview({
 	terrainHeightTool,
 }: ThreeDPreviewProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const cameraStateRef = useRef<OrbitCameraState>(
+		resetOrbitCameraState({ height: 8, width: 8 }),
+	);
 	const [mountError, setMountError] = useState("");
 	const [localOverlayFilters, setLocalOverlayFilters] = useState(
 		readStoredMapOverlayFilters,
 	);
 	const [cameraPreset, setCameraPreset] =
-		useState<PreviewCameraPreset>("isometric");
+		useState<PreviewCameraMode>("isometric");
 	const [walkPreviewPosition, setWalkPreviewPosition] =
 		useState<PreviewGridPosition>();
 	const [walkPreviewMessage, setWalkPreviewMessage] = useState("");
@@ -161,6 +174,32 @@ export function ThreeDPreview({
 		isMovablePreviewSelection(editorSelection) &&
 		editorSelection.areaId === activeArea?.id;
 	const isWalkPreviewActive = Boolean(walkPreviewPosition);
+	const activeAreaId = activeArea?.id;
+	const cameraDimensions = useMemo(
+		() => getPreviewCameraDimensions(activeArea?.height, activeArea?.width),
+		[activeArea?.height, activeArea?.width],
+	);
+
+	const applyCameraPreset = useCallback(
+		(preset: OrbitCameraPreset) => {
+			cameraStateRef.current = createOrbitCameraState(preset, cameraDimensions);
+			setCameraPreset(preset);
+		},
+		[cameraDimensions],
+	);
+
+	const resetCamera = useCallback(() => {
+		cameraStateRef.current = resetOrbitCameraState(cameraDimensions);
+		setCameraPreset("isometric");
+	}, [cameraDimensions]);
+
+	useEffect(() => {
+		if (!activeAreaId) {
+			resetCamera();
+			return;
+		}
+		resetCamera();
+	}, [activeAreaId, resetCamera]);
 
 	const startWalkPreview = () => {
 		const start = getWalkPreviewStart(activeArea);
@@ -242,10 +281,18 @@ export function ThreeDPreview({
 		const scene = new THREE.Scene();
 		configureThreeWorldScene(scene);
 
-		const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
 		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
 		const areaHeight = Math.max(activeArea?.height ?? 8, 8);
-		const cameraDistance = Math.max(areaWidth, areaHeight) * 0.9;
+		const cameraBounds = getOrbitCameraBounds({
+			height: areaHeight,
+			width: areaWidth,
+		});
+		const camera = new THREE.PerspectiveCamera(
+			50,
+			1,
+			0.1,
+			Math.max(100, cameraBounds.maxDistance * 2),
+		);
 		const walkPreviewPoint =
 			activeArea && walkPreviewPosition
 				? previewGridPositionToThreePoint(activeArea, walkPreviewPosition, {
@@ -253,23 +300,19 @@ export function ThreeDPreview({
 						width: 1,
 					})
 				: undefined;
-		const cameraFocusX = walkPreviewPoint?.x ?? 0;
-		const cameraFocusY =
-			activeArea && walkPreviewPosition
-				? getTerrainSurfaceY(
-						activeArea,
-						walkPreviewPosition.x,
-						walkPreviewPosition.y,
-					)
-				: 0;
-		const cameraFocusZ = walkPreviewPoint?.z ?? 0;
-		const cameraPosition = getCameraPosition(cameraPreset, cameraDistance);
-		camera.position.set(
-			cameraPosition[0] + cameraFocusX,
-			cameraPosition[1] + cameraFocusY,
-			cameraPosition[2] + cameraFocusZ,
-		);
-		camera.lookAt(new THREE.Vector3(cameraFocusX, cameraFocusY, cameraFocusZ));
+		const applyCameraFromState = () => {
+			cameraStateRef.current = clampOrbitCameraState(
+				cameraStateRef.current,
+				cameraBounds,
+			);
+			const cameraPosition = getOrbitCameraPosition(cameraStateRef.current);
+			const cameraTarget = getOrbitCameraLookTarget(cameraStateRef.current);
+			camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+			camera.lookAt(
+				new THREE.Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
+			);
+		};
+		applyCameraFromState();
 
 		addThreeWorldLighting(scene, { enableShadows: true });
 
@@ -364,15 +407,6 @@ export function ThreeDPreview({
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		host.appendChild(renderer.domElement);
 
-		const controls = new OrbitControls(camera, renderer.domElement);
-		controls.enableDamping = true;
-		controls.enablePan = true;
-		controls.enableZoom = true;
-		controls.maxDistance = cameraDistance * 3;
-		controls.minDistance = 3;
-		controls.target.set(cameraFocusX, cameraFocusY, cameraFocusZ);
-		controls.update();
-
 		const raycaster = new THREE.Raycaster();
 		const pointer = new THREE.Vector2();
 		const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -390,8 +424,17 @@ export function ThreeDPreview({
 			terrainPainting?: boolean;
 			latestPosition?: PreviewGridPosition;
 		} | null = null;
+		let cameraDrag: {
+			mode: "orbit" | "pan";
+			x: number;
+			y: number;
+		} | null = null;
 		const editedHeightCells = new Set<string>();
 		const paintedTerrainCells = new Set<string>();
+
+		const markCustomCamera = () => {
+			setCameraPreset((current) => (current === "custom" ? current : "custom"));
+		};
 
 		const setPointerFromEvent = (event: PointerEvent) => {
 			const rect = renderer.domElement.getBoundingClientRect();
@@ -735,6 +778,18 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerDown = (event: PointerEvent) => {
+			// Alt-modified drags are reserved for camera control so unmodified
+			// pointer input remains owned by paint, sculpt, placement, and selection.
+			if (event.altKey && (event.button === 0 || event.button === 1)) {
+				event.preventDefault();
+				cameraDrag = {
+					mode: event.shiftKey || event.button === 1 ? "pan" : "orbit",
+					x: event.clientX,
+					y: event.clientY,
+				};
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+				return;
+			}
 			if (terrainPaintTileId) {
 				paintedTerrainCells.clear();
 				pointerStart = {
@@ -743,7 +798,6 @@ export function ThreeDPreview({
 					x: event.clientX,
 					y: event.clientY,
 				};
-				controls.enabled = false;
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 				applyTerrainPaintFromPointer(event);
 				return;
@@ -756,7 +810,6 @@ export function ThreeDPreview({
 					x: event.clientX,
 					y: event.clientY,
 				};
-				controls.enabled = false;
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 				applyHeightToolFromPointer(event);
 				return;
@@ -781,12 +834,35 @@ export function ThreeDPreview({
 				y: event.clientY,
 			};
 			if (startsSelectedMove) {
-				controls.enabled = false;
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 			}
 		};
 
 		const handlePointerMove = (event: PointerEvent) => {
+			if (cameraDrag) {
+				event.preventDefault();
+				const deltaX = event.clientX - cameraDrag.x;
+				const deltaY = event.clientY - cameraDrag.y;
+				if (deltaX !== 0 || deltaY !== 0) {
+					cameraStateRef.current =
+						cameraDrag.mode === "pan"
+							? panOrbitCamera(cameraStateRef.current, deltaX, deltaY)
+							: rotateOrbitCamera(
+									cameraStateRef.current,
+									deltaX,
+									deltaY,
+									cameraBounds,
+								);
+					markCustomCamera();
+					applyCameraFromState();
+					cameraDrag = {
+						...cameraDrag,
+						x: event.clientX,
+						y: event.clientY,
+					};
+				}
+				return;
+			}
 			if (pointerStart?.terrainPainting) {
 				pointerStart.didDrag = true;
 				applyTerrainPaintFromPointer(event);
@@ -840,18 +916,22 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerUp = (event: PointerEvent) => {
+			if (cameraDrag) {
+				event.preventDefault();
+				cameraDrag = null;
+				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				return;
+			}
 			if (!pointerStart) {
 				return;
 			}
 			if (pointerStart.heightEditing) {
-				controls.enabled = true;
 				renderer.domElement.releasePointerCapture?.(event.pointerId);
 				editedHeightCells.clear();
 				pointerStart = null;
 				return;
 			}
 			if (pointerStart.terrainPainting) {
-				controls.enabled = true;
 				renderer.domElement.releasePointerCapture?.(event.pointerId);
 				paintedTerrainCells.clear();
 				pointerStart = null;
@@ -890,7 +970,6 @@ export function ThreeDPreview({
 					});
 				}
 				cleanupDragGhost();
-				controls.enabled = true;
 				renderer.domElement.releasePointerCapture?.(event.pointerId);
 				pointerStart = null;
 				return;
@@ -899,7 +978,6 @@ export function ThreeDPreview({
 			const deltaY = Math.abs(event.clientY - pointerStart.y);
 			cleanupDragGhost();
 			cleanupTerrainPaintGhost();
-			controls.enabled = true;
 			renderer.domElement.releasePointerCapture?.(event.pointerId);
 			pointerStart = null;
 			if (deltaX <= 4 && deltaY <= 4) {
@@ -907,9 +985,23 @@ export function ThreeDPreview({
 			}
 		};
 
+		const handleWheel = (event: WheelEvent) => {
+			event.preventDefault();
+			cameraStateRef.current = zoomOrbitCamera(
+				cameraStateRef.current,
+				event.deltaY,
+				cameraBounds,
+			);
+			markCustomCamera();
+			applyCameraFromState();
+		};
+
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
 		renderer.domElement.addEventListener("pointermove", handlePointerMove);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
+		renderer.domElement.addEventListener("wheel", handleWheel, {
+			passive: false,
+		});
 
 		let animationFrame = 0;
 
@@ -921,7 +1013,7 @@ export function ThreeDPreview({
 		};
 
 		const render = () => {
-			controls.update();
+			applyCameraFromState();
 			renderer.render(scene, camera);
 			animationFrame = window.requestAnimationFrame(render);
 		};
@@ -940,8 +1032,8 @@ export function ThreeDPreview({
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
+			renderer.domElement.removeEventListener("wheel", handleWheel);
 			resizeObserver?.disconnect();
-			controls.dispose();
 			cleanupDragGhost();
 			cleanupPlacementGhost();
 			cleanupTerrainPaintGhost();
@@ -981,7 +1073,6 @@ export function ThreeDPreview({
 		addStructure,
 		adjustTerrainHeights,
 		brushSize,
-		cameraPreset,
 		editorSelection,
 		entityMarkers,
 		heightToolValue,
@@ -1035,26 +1126,26 @@ export function ThreeDPreview({
 				<div className="three-d-preview-controls">
 					<button
 						className={cameraPreset === "top" ? "active" : ""}
-						onClick={() => setCameraPreset("top")}
+						onClick={() => applyCameraPreset("top")}
 						type="button"
 					>
 						Top
 					</button>
 					<button
 						className={cameraPreset === "isometric" ? "active" : ""}
-						onClick={() => setCameraPreset("isometric")}
+						onClick={() => applyCameraPreset("isometric")}
 						type="button"
 					>
 						Isometric
 					</button>
 					<button
 						className={cameraPreset === "low" ? "active" : ""}
-						onClick={() => setCameraPreset("low")}
+						onClick={() => applyCameraPreset("low")}
 						type="button"
 					>
 						Low angle
 					</button>
-					<button onClick={() => setCameraPreset("isometric")} type="button">
+					<button onClick={resetCamera} type="button">
 						Reset camera
 					</button>
 					{isWalkPreviewActive ? (
