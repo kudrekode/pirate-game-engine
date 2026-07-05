@@ -53,6 +53,10 @@ import {
 	writeStoredMapOverlayFilters,
 } from "./overlayFilters";
 import { ThreeDPreview } from "./ThreeDPreview";
+import {
+	resolveTerrainBrushFootprint,
+	type TerrainBrushShape,
+} from "./terrainBrush";
 
 type MapEditorTool =
 	| "select"
@@ -69,7 +73,7 @@ type DraggableEntityType =
 	| "structure"
 	| "pickup"
 	| "eventBlock";
-type BrushSize = 1 | 3 | 5;
+type BrushSize = 1 | 2 | 3 | 5;
 type PaintTarget =
 	| "terrain"
 	| "overlay"
@@ -84,6 +88,12 @@ type MapEditHistoryEntry = {
 	after: GameProject;
 };
 type MapWorkspaceView = "2d" | "3d";
+type TerrainBrushMode =
+	| "paint"
+	| "raise-height"
+	| "lower-height"
+	| "flatten-height"
+	| "set-height";
 
 const AUTO_EXPAND_BUFFER_TILES = 12;
 const MAX_MAP_SIZE = 200;
@@ -300,6 +310,7 @@ export function MapEditor() {
 	const [isPanning, setIsPanning] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const [brushSize, setBrushSize] = useState<BrushSize>(1);
+	const [brushShape, setBrushShape] = useState<TerrainBrushShape>("square");
 	const [heightToolValue, setHeightToolValue] = useState(0);
 	const [showGrid, setShowGrid] = useState(true);
 	const [overlayFilters, setOverlayFilters] = useState(
@@ -660,18 +671,12 @@ export function MapEditor() {
 	}
 
 	function getBrushCells(centerX: number, centerY: number) {
-		const radius = Math.floor(brushSize / 2);
-		const cells: { x: number; y: number }[] = [];
-
-		for (let y = centerY - radius; y <= centerY + radius; y += 1) {
-			for (let x = centerX - radius; x <= centerX + radius; x += 1) {
-				if (isInBounds(x, y, renderWidth, renderHeight)) {
-					cells.push({ x, y });
-				}
-			}
-		}
-
-		return cells;
+		return resolveTerrainBrushFootprint({
+			bounds: { height: renderHeight, width: renderWidth },
+			center: { x: centerX, y: centerY },
+			shape: brushShape,
+			size: brushSize,
+		});
 	}
 
 	function isHeightTool(tool: MapEditorTool) {
@@ -2063,6 +2068,34 @@ export function MapEditor() {
 			...editingPixelAsset,
 			pixels: emptyPixels(editingPixelAsset.width, editingPixelAsset.height),
 		});
+	}
+
+	function getTerrainBrushMode(): TerrainBrushMode {
+		if (activeTool === "raise-height") {
+			return "raise-height";
+		}
+		if (activeTool === "lower-height") {
+			return "lower-height";
+		}
+		if (activeTool === "flatten-height") {
+			return "flatten-height";
+		}
+		if (activeTool === "set-height") {
+			return "set-height";
+		}
+		return "paint";
+	}
+
+	function selectTerrainBrushMode(mode: TerrainBrushMode) {
+		setPaintTarget("terrain");
+		setMapPaletteSelection({ type: "none" });
+		if (mode === "paint") {
+			setActiveTool("paint");
+			setIsTerrainPaintArmed(true);
+			return;
+		}
+		setActiveTool(mode);
+		setIsTerrainPaintArmed(false);
 	}
 
 	function selectTerrain(id: string) {
@@ -3864,8 +3897,23 @@ export function MapEditor() {
 					</div>
 
 					<div className="panel-title">Brush</div>
+					<label>
+						Mode
+						<select
+							onChange={(event) =>
+								selectTerrainBrushMode(event.target.value as TerrainBrushMode)
+							}
+							value={getTerrainBrushMode()}
+						>
+							<option value="paint">Paint terrain</option>
+							<option value="raise-height">Raise height</option>
+							<option value="lower-height">Lower height</option>
+							<option value="flatten-height">Flatten height</option>
+							<option value="set-height">Set height</option>
+						</select>
+					</label>
 					<div className="segmented-control">
-						{([1, 3, 5] as BrushSize[]).map((size) => (
+						{([1, 2, 3, 5] as BrushSize[]).map((size) => (
 							<button
 								className={brushSize === size ? "selected" : ""}
 								key={size}
@@ -3873,6 +3921,18 @@ export function MapEditor() {
 								type="button"
 							>
 								{size}x{size}
+							</button>
+						))}
+					</div>
+					<div className="segmented-control">
+						{(["square", "circle"] as TerrainBrushShape[]).map((shape) => (
+							<button
+								className={brushShape === shape ? "selected" : ""}
+								key={shape}
+								onClick={() => setBrushShape(shape)}
+								type="button"
+							>
+								{shape === "square" ? "Square" : "Circle"}
 							</button>
 						))}
 					</div>
@@ -4390,6 +4450,7 @@ export function MapEditor() {
 					</div>
 				) : (
 					<ThreeDPreview
+						brushShape={brushShape}
 						brushSize={brushSize}
 						embedded
 						heightToolValue={heightToolValue}

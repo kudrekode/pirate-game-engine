@@ -2,8 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
+import { getTerrainHeight } from "../data/terrainHeight";
 import { editorSections } from "../editor/sections";
 import { MapEditor } from "../editor/sections/MapEditor";
+import { resolveTerrainBrushFootprint } from "../editor/sections/terrainBrush";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -299,6 +301,15 @@ function readActiveTileId(x: number, y: number) {
 		) ?? state.project.areas[0];
 	return area?.terrainTiles.find((tile) => tile.x === x && tile.y === y)
 		?.tileId;
+}
+
+function readActiveTerrainHeight(x: number, y: number) {
+	const state = useProjectStore.getState();
+	const area =
+		state.project.areas.find(
+			(candidate) => candidate.id === state.project.activeAreaId,
+		) ?? state.project.areas[0];
+	return area ? getTerrainHeight(area, x, y) : 0;
 }
 
 function spyOnSetTiles() {
@@ -651,6 +662,182 @@ describe("ThreeDPreview", () => {
 			[{ tileId: "sand", x: 1, y: 1 }],
 			[{ tileId: "sand", x: 2, y: 1 }],
 		]);
+	});
+
+	it("applies the selected 3D paint brush footprint", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+		const expectedCells = resolveTerrainBrushFootprint({
+			bounds: { height: 3, width: 3 },
+			center: { x: 1, y: 1 },
+			shape: "circle",
+			size: 3,
+		});
+
+		render(
+			<ThreeDPreview
+				brushShape="circle"
+				brushSize={3}
+				embedded
+				terrainPaintTileId="sand"
+			/>,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 17,
+		});
+
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTileId(cell.x, cell.y)).toBe("sand");
+			});
+		});
+		expect(readActiveTileId(0, 0)).toBe("grass");
+		expect(readActiveTileId(2, 2)).toBe("grass");
+		expect(setTilesSpy).toHaveBeenCalledWith(
+			expectedCells.map((cell) => ({ ...cell, tileId: "sand" })),
+		);
+	});
+
+	it("applies 3D height brushes to the resolved footprint", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const expectedCells = resolveTerrainBrushFootprint({
+			bounds: { height: 3, width: 3 },
+			center: { x: 1, y: 1 },
+			shape: "circle",
+			size: 3,
+		});
+
+		const { rerender } = render(
+			<ThreeDPreview
+				brushShape="circle"
+				brushSize={3}
+				embedded
+				terrainHeightTool="raise"
+			/>,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 18,
+		});
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTerrainHeight(cell.x, cell.y)).toBe(1);
+			});
+		});
+		expect(readActiveTerrainHeight(0, 0)).toBe(0);
+
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 18,
+		});
+		rerender(
+			<ThreeDPreview
+				brushShape="circle"
+				brushSize={3}
+				embedded
+				terrainHeightTool="lower"
+			/>,
+		);
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 19,
+		});
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTerrainHeight(cell.x, cell.y)).toBe(0);
+			});
+		});
+
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 19,
+		});
+		rerender(
+			<ThreeDPreview
+				brushShape="circle"
+				brushSize={3}
+				embedded
+				terrainHeightTool="set"
+				heightToolValue={2}
+			/>,
+		);
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 20,
+		});
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTerrainHeight(cell.x, cell.y)).toBe(2);
+			});
+		});
+
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 20,
+		});
+		rerender(
+			<ThreeDPreview
+				brushShape="circle"
+				brushSize={3}
+				embedded
+				terrainHeightTool="flatten"
+			/>,
+		);
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 21,
+		});
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTerrainHeight(cell.x, cell.y)).toBe(0);
+			});
+		});
+	});
+
+	it("shows terrain brush preview without mutating project data", () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+
+		render(
+			<ThreeDPreview
+				brushShape="circle"
+				brushSize={3}
+				embedded
+				terrainPaintTileId="sand"
+			/>,
+		);
+
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			clientX: 160,
+			clientY: 120,
+			pointerId: 22,
+		});
+
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
 	});
 
 	it.each([
