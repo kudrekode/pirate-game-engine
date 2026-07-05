@@ -43,11 +43,29 @@ export type GridDirection = {
 	y: number;
 };
 
+export type ThirdPersonMouseLookState = {
+	currentPitchOffsetDegrees: number;
+	currentYawOffsetDegrees: number;
+	targetPitchOffsetDegrees: number;
+	targetYawOffsetDegrees: number;
+};
+
+export type ThirdPersonMouseLookOptions = {
+	maxPitchDegrees?: number;
+	minPitchDegrees?: number;
+	pitchSensitivityDegrees?: number;
+	yawSensitivityDegrees?: number;
+};
+
 const DEFAULT_FOCUS: CameraVector3 = { x: 0, y: 0, z: 0 };
 const DEFAULT_CAMERA_BASE_DISTANCE_SCALE = 0.9;
 const DEFAULT_MIN_DISTANCE = 3;
 const DEFAULT_MIN_PITCH = (10 * Math.PI) / 180;
 const DEFAULT_MAX_PITCH = (82 * Math.PI) / 180;
+const DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES = -10;
+const DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES = 75;
+const DEFAULT_THIRD_PERSON_YAW_SENSITIVITY_DEGREES = 0.22;
+const DEFAULT_THIRD_PERSON_PITCH_SENSITIVITY_DEGREES = 0.18;
 const ORBIT_SENSITIVITY = 0.005;
 const PAN_SENSITIVITY = 0.0016;
 const ZOOM_SENSITIVITY = 0.0015;
@@ -63,6 +81,11 @@ function clamp(value: number, min: number, max: number): number {
 
 function degreesToRadians(degrees: number): number {
 	return (degrees * Math.PI) / 180;
+}
+
+function lerp(start: number, end: number, alpha: number): number {
+	const clampedAlpha = clamp(alpha, 0, 1);
+	return start + (end - start) * clampedAlpha;
 }
 
 function snapVectorToCardinalDirection(x: number, y: number): GridDirection {
@@ -225,6 +248,82 @@ export function resolveCameraRelativeGridDirection(
 		y: right.y * inputDirection.x + forward.y * -inputDirection.y,
 	};
 	return snapVectorToCardinalDirection(intended.x, intended.y);
+}
+
+export function createThirdPersonMouseLookState(
+	overrides: Partial<ThirdPersonMouseLookState> = {},
+): ThirdPersonMouseLookState {
+	return {
+		currentPitchOffsetDegrees: 0,
+		currentYawOffsetDegrees: 0,
+		targetPitchOffsetDegrees: 0,
+		targetYawOffsetDegrees: 0,
+		...overrides,
+	};
+}
+
+export function getThirdPersonMouseLookPitchDegrees(
+	basePitchDegrees: number,
+	state: ThirdPersonMouseLookState,
+): number {
+	return basePitchDegrees + state.currentPitchOffsetDegrees;
+}
+
+export function getThirdPersonMouseLookYawOffsetDegrees(
+	state: ThirdPersonMouseLookState,
+): number {
+	return state.currentYawOffsetDegrees;
+}
+
+export function updateThirdPersonMouseLookTarget(
+	state: ThirdPersonMouseLookState,
+	deltaX: number,
+	deltaY: number,
+	basePitchDegrees: number,
+	options: ThirdPersonMouseLookOptions = {},
+): ThirdPersonMouseLookState {
+	const yawSensitivity =
+		options.yawSensitivityDegrees ??
+		DEFAULT_THIRD_PERSON_YAW_SENSITIVITY_DEGREES;
+	const pitchSensitivity =
+		options.pitchSensitivityDegrees ??
+		DEFAULT_THIRD_PERSON_PITCH_SENSITIVITY_DEGREES;
+	const minPitch =
+		options.minPitchDegrees ?? DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES;
+	const maxPitch =
+		options.maxPitchDegrees ?? DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES;
+	const targetPitch = clamp(
+		basePitchDegrees +
+			state.targetPitchOffsetDegrees -
+			deltaY * pitchSensitivity,
+		minPitch,
+		maxPitch,
+	);
+	return {
+		...state,
+		targetPitchOffsetDegrees: targetPitch - basePitchDegrees,
+		targetYawOffsetDegrees:
+			state.targetYawOffsetDegrees + deltaX * yawSensitivity,
+	};
+}
+
+export function advanceThirdPersonMouseLook(
+	state: ThirdPersonMouseLookState,
+	alpha: number,
+): ThirdPersonMouseLookState {
+	return {
+		...state,
+		currentPitchOffsetDegrees: lerp(
+			state.currentPitchOffsetDegrees,
+			state.targetPitchOffsetDegrees,
+			alpha,
+		),
+		currentYawOffsetDegrees: lerp(
+			state.currentYawOffsetDegrees,
+			state.targetYawOffsetDegrees,
+			alpha,
+		),
+	};
 }
 
 export function rotateOrbitCamera(

@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+	advanceThirdPersonMouseLook,
 	clampOrbitCameraState,
 	createOrbitCameraState,
 	createOrbitCameraStateFromView,
+	createThirdPersonMouseLookState,
 	getOrbitCameraBounds,
 	getOrbitCameraLookTarget,
 	getOrbitCameraPosition,
 	getThirdPersonCameraRig,
+	getThirdPersonMouseLookPitchDegrees,
+	getThirdPersonMouseLookYawOffsetDegrees,
 	panOrbitCamera,
 	resetOrbitCameraState,
 	resolveCameraRelativeGridDirection,
 	rotateOrbitCamera,
+	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
 
@@ -182,6 +187,56 @@ describe("Three orbit camera helpers", () => {
 			x: 1,
 			y: 0,
 		});
+	});
+
+	it("updates third-person mouse look yaw and pitch targets from pointer movement", () => {
+		const look = updateThirdPersonMouseLookTarget(
+			createThirdPersonMouseLookState(),
+			100,
+			-50,
+			20,
+			{
+				pitchSensitivityDegrees: 0.2,
+				yawSensitivityDegrees: 0.25,
+			},
+		);
+
+		expect(look.targetYawOffsetDegrees).toBeCloseTo(25);
+		expect(look.targetPitchOffsetDegrees).toBeCloseTo(10);
+		expect(getThirdPersonMouseLookYawOffsetDegrees(look)).toBe(0);
+		expect(getThirdPersonMouseLookPitchDegrees(20, look)).toBe(20);
+	});
+
+	it("clamps third-person mouse look pitch targets safely", () => {
+		const high = updateThirdPersonMouseLookTarget(
+			createThirdPersonMouseLookState(),
+			0,
+			-1000,
+			18,
+		);
+		const low = updateThirdPersonMouseLookTarget(
+			createThirdPersonMouseLookState(),
+			0,
+			1000,
+			18,
+		);
+
+		expect(high.targetPitchOffsetDegrees).toBe(57);
+		expect(low.targetPitchOffsetDegrees).toBe(-28);
+	});
+
+	it("smoothly advances third-person mouse look toward target offsets", () => {
+		const look = createThirdPersonMouseLookState({
+			targetPitchOffsetDegrees: 20,
+			targetYawOffsetDegrees: 90,
+		});
+		const halfway = advanceThirdPersonMouseLook(look, 0.5);
+		const complete = advanceThirdPersonMouseLook(look, 1);
+
+		expect(halfway.currentPitchOffsetDegrees).toBe(10);
+		expect(halfway.currentYawOffsetDegrees).toBe(45);
+		expect(complete.currentPitchOffsetDegrees).toBe(20);
+		expect(complete.currentYawOffsetDegrees).toBe(90);
 	});
 
 	it("clamps arbitrary camera states safely", () => {

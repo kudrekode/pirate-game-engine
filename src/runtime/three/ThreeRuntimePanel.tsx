@@ -57,16 +57,22 @@ import {
 	type RuntimeSessionState,
 } from "../runtimeSession";
 import {
+	advanceThirdPersonMouseLook,
 	clampOrbitCameraState,
 	createOrbitCameraStateFromView,
+	createThirdPersonMouseLookState,
 	getOrbitCameraBounds,
 	getOrbitCameraLookTarget,
 	getOrbitCameraPosition,
 	getThirdPersonCameraRig,
+	getThirdPersonMouseLookPitchDegrees,
+	getThirdPersonMouseLookYawOffsetDegrees,
 	type OrbitCameraState,
 	panOrbitCamera,
 	resolveCameraRelativeGridDirection,
 	rotateOrbitCamera,
+	type ThirdPersonMouseLookState,
+	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
 import {
@@ -112,10 +118,7 @@ type ThreeRuntimePanelProps = {
 };
 
 type RuntimeCameraMode = "follow" | "inspect";
-type ThirdPersonRuntimeOrbit = {
-	distance?: number;
-	yawOffsetDegrees: number;
-};
+type ThirdPersonRuntimeLook = ThirdPersonMouseLookState;
 
 function getArea(session: RuntimeSessionState): GameArea | undefined {
 	return (
@@ -244,10 +247,6 @@ function getRuntimeCameraDimensions(area: GameArea): {
 	};
 }
 
-function clampNumber(value: number, min: number, max: number): number {
-	return Math.min(max, Math.max(min, value));
-}
-
 function radiansToDegrees(radians: number): number {
 	return (radians * 180) / Math.PI;
 }
@@ -255,12 +254,12 @@ function radiansToDegrees(radians: number): number {
 function getThirdPersonYawDegrees(
 	playerFacing: VisualGridPosition,
 	config: ThreeRuntimeCameraConfig,
-	runtimeOrbit: ThirdPersonRuntimeOrbit,
+	runtimeLook: ThirdPersonRuntimeLook,
 ): number {
 	return (
 		radiansToDegrees(facingToYawRadians(playerFacing)) +
 		config.yawOffsetDegrees +
-		runtimeOrbit.yawOffsetDegrees
+		getThirdPersonMouseLookYawOffsetDegrees(runtimeLook)
 	);
 }
 
@@ -268,14 +267,17 @@ function getThirdPersonFollowTarget(
 	playerPosition: VisualWorldPosition,
 	playerFacing: VisualGridPosition,
 	config: ThreeRuntimeCameraConfig,
-	runtimeOrbit: ThirdPersonRuntimeOrbit,
+	runtimeLook: ThirdPersonRuntimeLook,
 ): CameraFollowRig {
 	return getThirdPersonCameraRig(playerPosition, {
-		distance: runtimeOrbit.distance ?? config.distance,
+		distance: config.distance,
 		height: config.height,
 		lookAtHeight: config.lookAtHeight,
-		pitchDegrees: config.pitchDegrees,
-		yawDegrees: getThirdPersonYawDegrees(playerFacing, config, runtimeOrbit),
+		pitchDegrees: getThirdPersonMouseLookPitchDegrees(
+			config.pitchDegrees,
+			runtimeLook,
+		),
+		yawDegrees: getThirdPersonYawDegrees(playerFacing, config, runtimeLook),
 	});
 }
 
@@ -283,14 +285,14 @@ function getFollowCameraTarget(
 	playerPosition: VisualWorldPosition,
 	playerFacing: VisualGridPosition,
 	config: ThreeRuntimeCameraConfig,
-	runtimeOrbit: ThirdPersonRuntimeOrbit,
+	runtimeLook: ThirdPersonRuntimeLook,
 ): CameraFollowRig {
 	return config.style === "thirdPerson"
 		? getThirdPersonFollowTarget(
 				playerPosition,
 				playerFacing,
 				config,
-				runtimeOrbit,
+				runtimeLook,
 			)
 		: getCameraFollowTarget(playerPosition);
 }
@@ -319,12 +321,16 @@ export function ThreeRuntimePanel({
 	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
 	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
 	const inspectCameraRef = useRef<OrbitCameraState | null>(null);
-	const thirdPersonRuntimeOrbitRef = useRef<ThirdPersonRuntimeOrbit>({
-		yawOffsetDegrees: 0,
-	});
+	const thirdPersonRuntimeLookRef = useRef<ThirdPersonRuntimeLook>(
+		createThirdPersonMouseLookState(),
+	);
+	const mouseLookActiveRef = useRef(false);
+	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
+	const gameOverRef = useRef(false);
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
+	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
 	const [inventory, setInventory] = useState<Record<string, number>>({});
@@ -350,8 +356,16 @@ export function ThreeRuntimePanel({
 	}
 
 	function setRuntimeCameraMode(mode: RuntimeCameraMode): void {
+		if (mode !== "follow") {
+			setMouseLookActive(false);
+		}
 		cameraModeRef.current = mode;
 		setCameraModeState(mode);
+	}
+
+	function setMouseLookActive(active: boolean): void {
+		mouseLookActiveRef.current = active;
+		setMouseLookActiveState(active);
 	}
 
 	function resetCameraPresentation({
@@ -362,14 +376,15 @@ export function ThreeRuntimePanel({
 		cameraRigRef.current = null;
 		visibleCameraRigRef.current = null;
 		inspectCameraRef.current = null;
-		thirdPersonRuntimeOrbitRef.current = { yawOffsetDegrees: 0 };
+		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState();
+		setMouseLookActive(false);
 		if (resetMode) {
 			setRuntimeCameraMode("follow");
 		}
 	}
 
 	function recenterThirdPersonCamera(): void {
-		thirdPersonRuntimeOrbitRef.current = { yawOffsetDegrees: 0 };
+		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState();
 		if (visibleCameraRigRef.current) {
 			cameraRigRef.current = {
 				lookAt: { ...visibleCameraRigRef.current.lookAt },
@@ -396,8 +411,28 @@ export function ThreeRuntimePanel({
 			getThirdPersonYawDegrees(
 				session.playerFacing,
 				threeCameraConfig,
-				thirdPersonRuntimeOrbitRef.current,
+				thirdPersonRuntimeLookRef.current,
 			),
+		);
+	}
+
+	function hasPointerBlockingOverlay(): boolean {
+		const session = getSession();
+		return Boolean(
+			pendingCutsceneRef.current ||
+				gameOverRef.current ||
+				session?.activeShopId,
+		);
+	}
+
+	function canUseThirdPersonMouseLook(
+		config: ThreeRuntimeCameraConfig,
+	): boolean {
+		return (
+			cameraModeRef.current === "follow" &&
+			config.style === "thirdPerson" &&
+			config.allowRuntimeOrbit &&
+			!hasPointerBlockingOverlay()
 		);
 	}
 
@@ -559,6 +594,7 @@ export function ThreeRuntimePanel({
 				completeRuntimeProgressionCutscene(session, handleProgressionEvent);
 				return;
 			}
+			setMouseLookActive(false);
 			setPendingCutscene({
 				continueLabel: "Continue",
 				cutscene,
@@ -582,6 +618,7 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "endGame") {
 			setStatus("Game complete.");
+			setMouseLookActive(false);
 			setGameOver(true);
 		}
 	}
@@ -613,6 +650,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "shopOpened") {
+			setMouseLookActive(false);
 			setShopMessage(event.message);
 			forceRender();
 			return;
@@ -634,6 +672,7 @@ export function ThreeRuntimePanel({
 				event.onDone();
 				return;
 			}
+			setMouseLookActive(false);
 			setPendingCutscene({
 				continueLabel: "Continue",
 				cutscene,
@@ -654,6 +693,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
+			setMouseLookActive(false);
 			setGameOver(true);
 		}
 	}
@@ -700,6 +740,7 @@ export function ThreeRuntimePanel({
 					)
 				: event.cutscene;
 			if (cutscene) {
+				setMouseLookActive(false);
 				setPendingCutscene({
 					continueLabel: "Close",
 					cutscene,
@@ -709,6 +750,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "shopChanged") {
+			setMouseLookActive(false);
 			setShopMessage(event.message);
 			forceRender();
 			return;
@@ -1043,6 +1085,22 @@ export function ThreeRuntimePanel({
 		);
 	}
 
+	useEffect(() => {
+		pendingCutsceneRef.current = pendingCutscene;
+		if (pendingCutscene) {
+			mouseLookActiveRef.current = false;
+			setMouseLookActiveState(false);
+		}
+	}, [pendingCutscene]);
+
+	useEffect(() => {
+		gameOverRef.current = gameOver;
+		if (gameOver) {
+			mouseLookActiveRef.current = false;
+			setMouseLookActiveState(false);
+		}
+	}, [gameOver]);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: session startup owns fresh runtime state; callbacks read sessionRef.
 	useEffect(() => {
 		try {
@@ -1081,6 +1139,12 @@ export function ThreeRuntimePanel({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && mouseLookActiveRef.current) {
+				event.preventDefault();
+				setMouseLookActive(false);
+				return;
+			}
+
 			const direction = keyToDirection(event);
 			if (direction) {
 				event.preventDefault();
@@ -1165,7 +1229,7 @@ export function ThreeRuntimePanel({
 				getVisualPlayerCenter(area, initialPlayerPosition),
 				initialPlayerVisual.facing,
 				threeCameraConfig,
-				thirdPersonRuntimeOrbitRef.current,
+				thirdPersonRuntimeLookRef.current,
 			);
 		const applyCameraRig = (rig: CameraFollowRig) => {
 			camera.position.set(rig.position.x, rig.position.y, rig.position.z);
@@ -1271,20 +1335,18 @@ export function ThreeRuntimePanel({
 			return undefined;
 		}
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
+		renderer.domElement.tabIndex = 0;
 		configureThreeRenderer(renderer, { enableShadows: true });
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
 
 		let cameraDrag: {
-			mode: "followOrbit" | "inspectOrbit" | "inspectPan";
+			mode: "inspectOrbit" | "inspectPan";
 			x: number;
 			y: number;
 		} | null = null;
-		const isThirdPersonRuntimeOrbitEnabled = () =>
-			cameraModeRef.current === "follow" &&
-			threeCameraConfig.style === "thirdPerson" &&
-			threeCameraConfig.allowRuntimeOrbit;
+		let lastMouseLookPointer: { x: number; y: number } | null = null;
 		const updateInspectCamera = (
 			updater: (state: OrbitCameraState) => OrbitCameraState,
 		) => {
@@ -1307,10 +1369,10 @@ export function ThreeRuntimePanel({
 			);
 		};
 		const handlePointerDown = (event: PointerEvent) => {
-			if (!event.altKey || (event.button !== 0 && event.button !== 1)) {
-				return;
-			}
 			if (cameraModeRef.current === "inspect") {
+				if (!event.altKey || (event.button !== 0 && event.button !== 1)) {
+					return;
+				}
 				event.preventDefault();
 				cameraDrag = {
 					mode:
@@ -1323,33 +1385,25 @@ export function ThreeRuntimePanel({
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 				return;
 			}
-			if (!isThirdPersonRuntimeOrbitEnabled() || event.button !== 0) {
+
+			if (
+				event.altKey ||
+				event.button !== 0 ||
+				!canUseThirdPersonMouseLook(threeCameraConfig)
+			) {
 				return;
 			}
 			event.preventDefault();
-			cameraDrag = {
-				mode: "followOrbit",
-				x: event.clientX,
-				y: event.clientY,
-			};
-			renderer.domElement.setPointerCapture?.(event.pointerId);
+			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
+			setMouseLookActive(true);
+			renderer.domElement.focus();
 		};
 		const handlePointerMove = (event: PointerEvent) => {
-			if (!cameraDrag) {
-				return;
-			}
-			event.preventDefault();
-			const deltaX = event.clientX - cameraDrag.x;
-			const deltaY = event.clientY - cameraDrag.y;
-			if (deltaX !== 0 || deltaY !== 0) {
-				if (cameraDrag.mode === "followOrbit") {
-					thirdPersonRuntimeOrbitRef.current = {
-						...thirdPersonRuntimeOrbitRef.current,
-						yawOffsetDegrees:
-							thirdPersonRuntimeOrbitRef.current.yawOffsetDegrees +
-							radiansToDegrees(deltaX * 0.005),
-					};
-				} else {
+			if (cameraDrag) {
+				event.preventDefault();
+				const deltaX = event.clientX - cameraDrag.x;
+				const deltaY = event.clientY - cameraDrag.y;
+				if (deltaX !== 0 || deltaY !== 0) {
 					updateInspectCamera((state) =>
 						cameraDrag?.mode === "inspectPan"
 							? panOrbitCamera(state, deltaX, deltaY)
@@ -1360,8 +1414,44 @@ export function ThreeRuntimePanel({
 									getOrbitCameraBounds(getRuntimeCameraDimensions(area)),
 								),
 					);
+					cameraDrag = { ...cameraDrag, x: event.clientX, y: event.clientY };
 				}
-				cameraDrag = { ...cameraDrag, x: event.clientX, y: event.clientY };
+				return;
+			}
+
+			if (!mouseLookActiveRef.current) {
+				return;
+			}
+			if (!canUseThirdPersonMouseLook(threeCameraConfig)) {
+				setMouseLookActive(false);
+				lastMouseLookPointer = null;
+				return;
+			}
+
+			const movementEvent = event as PointerEvent & {
+				movementX?: number;
+				movementY?: number;
+			};
+			const rawMovementX = movementEvent.movementX ?? 0;
+			const rawMovementY = movementEvent.movementY ?? 0;
+			const hasRawMovementDelta = rawMovementX !== 0 || rawMovementY !== 0;
+			const fallbackDelta = lastMouseLookPointer
+				? {
+						x: event.clientX - lastMouseLookPointer.x,
+						y: event.clientY - lastMouseLookPointer.y,
+					}
+				: { x: 0, y: 0 };
+			const deltaX = hasRawMovementDelta ? rawMovementX : fallbackDelta.x;
+			const deltaY = hasRawMovementDelta ? rawMovementY : fallbackDelta.y;
+			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
+			if (deltaX !== 0 || deltaY !== 0) {
+				event.preventDefault();
+				thirdPersonRuntimeLookRef.current = updateThirdPersonMouseLookTarget(
+					thirdPersonRuntimeLookRef.current,
+					deltaX,
+					deltaY,
+					threeCameraConfig.pitchDegrees,
+				);
 			}
 		};
 		const handlePointerUp = (event: PointerEvent) => {
@@ -1373,27 +1463,10 @@ export function ThreeRuntimePanel({
 			renderer.domElement.releasePointerCapture?.(event.pointerId);
 		};
 		const handleWheel = (event: WheelEvent) => {
-			if (
-				cameraModeRef.current !== "inspect" &&
-				!isThirdPersonRuntimeOrbitEnabled()
-			) {
+			if (cameraModeRef.current !== "inspect") {
 				return;
 			}
 			event.preventDefault();
-			if (isThirdPersonRuntimeOrbitEnabled()) {
-				const currentDistance =
-					thirdPersonRuntimeOrbitRef.current.distance ??
-					threeCameraConfig.distance;
-				thirdPersonRuntimeOrbitRef.current = {
-					...thirdPersonRuntimeOrbitRef.current,
-					distance: clampNumber(
-						currentDistance * Math.max(0.1, 1 + event.deltaY * 0.0015),
-						2,
-						24,
-					),
-				};
-				return;
-			}
 			updateInspectCamera((state) =>
 				zoomOrbitCamera(
 					state,
@@ -1445,11 +1518,21 @@ export function ThreeRuntimePanel({
 				);
 			});
 
+			if (
+				cameraModeRef.current === "follow" &&
+				threeCameraConfig.style === "thirdPerson"
+			) {
+				thirdPersonRuntimeLookRef.current = advanceThirdPersonMouseLook(
+					thirdPersonRuntimeLookRef.current,
+					getFrameLerpAlpha(deltaMs, 22),
+				);
+			}
+
 			const nextCameraTarget = getFollowCameraTarget(
 				getVisualPlayerCenter(area, playerVisualPosition),
 				playerVisual.facing,
 				threeCameraConfig,
-				thirdPersonRuntimeOrbitRef.current,
+				thirdPersonRuntimeLookRef.current,
 			);
 			if (cameraModeRef.current === "inspect") {
 				applyInspectCamera();
@@ -1560,7 +1643,10 @@ export function ThreeRuntimePanel({
 					</small>
 				) : runtimeThreeCamera?.style === "thirdPerson" &&
 					runtimeThreeCamera.allowRuntimeOrbit ? (
-					<small>Third-person: Alt-drag orbits. Wheel adjusts distance.</small>
+					<small>
+						Third-person: click the viewport to look. Move mouse to rotate. Esc
+						releases. {mouseLookActive ? "Mouse look active." : ""}
+					</small>
 				) : null}
 			</div>
 			{flowLog.length > 0 ? (

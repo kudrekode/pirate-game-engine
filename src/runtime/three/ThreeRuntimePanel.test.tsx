@@ -332,6 +332,12 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
+function runLatestAnimationFrame(): void {
+	const calls = vi.mocked(window.requestAnimationFrame).mock.calls;
+	const callback = calls[calls.length - 1]?.[0];
+	callback?.(performance.now());
+}
+
 describe("ThreeRuntimePanel", () => {
 	it("renders the 3D runtime shell and creates a runtime session", () => {
 		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
@@ -392,7 +398,9 @@ describe("ThreeRuntimePanel", () => {
 		});
 	});
 
-	it("uses transient third-person orbit when resolving movement input", async () => {
+	it("uses activated third-person mouse look when resolving movement input", async () => {
+		let now = 1000;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
 		const project = makeProject();
 		project.camera.three = {
 			...project.camera.three,
@@ -406,24 +414,13 @@ describe("ThreeRuntimePanel", () => {
 			).toBeInTheDocument(),
 		);
 		const canvas = screen.getByLabelText("Three runtime viewport");
-		fireEvent.pointerDown(canvas, {
-			altKey: true,
-			button: 0,
-			clientX: 0,
-			clientY: 120,
-		});
+		fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 120 });
 		fireEvent.pointerMove(canvas, {
-			altKey: true,
-			buttons: 1,
-			clientX: Math.PI / 0.01,
+			clientX: 90 / 0.22,
 			clientY: 120,
 		});
-		fireEvent.pointerUp(canvas, {
-			altKey: true,
-			button: 0,
-			clientX: Math.PI / 0.01,
-			clientY: 120,
-		});
+		now += 1000;
+		runLatestAnimationFrame();
 		fireEvent.keyDown(window, { key: "w" });
 
 		await waitFor(() => {
@@ -433,6 +430,35 @@ describe("ThreeRuntimePanel", () => {
 		expect(runtimeSpies.attemptPlayerMove.mock.calls[0]?.[1]).toEqual({
 			x: 1,
 			y: 0,
+		});
+	});
+
+	it("does not use mouse look in fixed follow mode", async () => {
+		let now = 1000;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const canvas = screen.getByLabelText("Three runtime viewport");
+		fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 120 });
+		fireEvent.pointerMove(canvas, {
+			clientX: 90 / 0.22,
+			clientY: 120,
+		});
+		now += 1000;
+		runLatestAnimationFrame();
+		fireEvent.keyDown(window, { key: "w" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+		});
+		expect(runtimeSpies.attemptPlayerMove.mock.calls[0]?.[1]).toEqual({
+			x: 0,
+			y: -1,
 		});
 	});
 
@@ -551,7 +577,7 @@ describe("ThreeRuntimePanel", () => {
 		);
 	});
 
-	it("uses third-person follow settings with transient runtime orbit only", async () => {
+	it("uses third-person follow mouse look as transient presentation state only", async () => {
 		const project = makeProject();
 		project.camera.three = {
 			...project.camera.three,
@@ -575,25 +601,13 @@ describe("ThreeRuntimePanel", () => {
 		expect(
 			screen.getByRole("button", { name: "Recenter" }),
 		).toBeInTheDocument();
-		fireEvent.pointerDown(canvas, {
-			altKey: true,
-			button: 0,
-			clientX: 120,
-			clientY: 120,
-		});
+		fireEvent.pointerDown(canvas, { button: 0, clientX: 120, clientY: 120 });
 		fireEvent.pointerMove(canvas, {
-			altKey: true,
-			buttons: 1,
 			clientX: 180,
-			clientY: 120,
-		});
-		fireEvent.pointerUp(canvas, {
-			altKey: true,
-			button: 0,
-			clientX: 180,
-			clientY: 120,
+			clientY: 80,
 		});
 		fireEvent.wheel(canvas, { deltaY: -220 });
+		fireEvent.keyDown(window, { key: "Escape" });
 		fireEvent.click(screen.getByRole("button", { name: "Recenter" }));
 
 		expect(JSON.stringify(project)).toBe(projectBefore);
