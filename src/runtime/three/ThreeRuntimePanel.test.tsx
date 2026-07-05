@@ -339,6 +339,10 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByText("3D Runtime Experimental")).toBeInTheDocument();
 		expect(screen.getByText("Test Area")).toBeInTheDocument();
 		expect(screen.getByLabelText("Three runtime viewport")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Follow Player" })).toHaveClass(
+			"active",
+		);
+		expect(screen.getByRole("button", { name: "Inspect" })).toBeInTheDocument();
 		expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
 	});
 
@@ -371,6 +375,79 @@ describe("ThreeRuntimePanel", () => {
 			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
 			expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
 		});
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+	});
+
+	it("switches to inspect camera without rebuilding the Three scene or blocking gameplay", async () => {
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const canvas = screen.getByLabelText("Three runtime viewport");
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
+		expect(screen.getByRole("button", { name: "Inspect" })).toHaveClass(
+			"active",
+		);
+		fireEvent.pointerDown(canvas, {
+			altKey: true,
+			button: 0,
+			clientX: 120,
+			clientY: 120,
+		});
+		fireEvent.pointerMove(canvas, {
+			altKey: true,
+			buttons: 1,
+			clientX: 170,
+			clientY: 90,
+		});
+		fireEvent.pointerUp(canvas, {
+			altKey: true,
+			button: 0,
+			clientX: 170,
+			clientY: 90,
+		});
+		fireEvent.wheel(canvas, { deltaY: -160 });
+
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+			expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+		});
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+	});
+
+	it("returns from inspect to follow without rebuilding the Three scene", async () => {
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
+		fireEvent.click(screen.getByRole("button", { name: "Follow Player" }));
+
+		expect(screen.getByRole("button", { name: "Follow Player" })).toHaveClass(
+			"active",
+		);
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
 		);

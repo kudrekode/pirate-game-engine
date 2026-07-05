@@ -56,6 +56,17 @@ import {
 	type RuntimeSessionState,
 } from "../runtimeSession";
 import {
+	clampOrbitCameraState,
+	createOrbitCameraStateFromView,
+	getOrbitCameraBounds,
+	getOrbitCameraLookTarget,
+	getOrbitCameraPosition,
+	type OrbitCameraState,
+	panOrbitCamera,
+	rotateOrbitCamera,
+	zoomOrbitCamera,
+} from "./cameraControls";
+import {
 	createPlaceholderMeshGroup,
 	disposePlaceholderObject,
 } from "./placeholderMeshes";
@@ -95,6 +106,8 @@ type ThreeRuntimePanelProps = {
 	project: GameProject;
 	onRestart: () => void;
 };
+
+type RuntimeCameraMode = "follow" | "inspect";
 
 function getArea(session: RuntimeSessionState): GameArea | undefined {
 	return (
@@ -213,6 +226,16 @@ function createFacingMarker(color: number, y: number, z: number): THREE.Mesh {
 	return marker;
 }
 
+function getRuntimeCameraDimensions(area: GameArea): {
+	height: number;
+	width: number;
+} {
+	return {
+		height: Math.max(area.height, 8),
+		width: Math.max(area.width, 8),
+	};
+}
+
 function createRuntimePlayerMesh(): THREE.Group {
 	const group = new THREE.Group();
 	const body = new THREE.Mesh(
@@ -234,7 +257,12 @@ export function ThreeRuntimePanel({
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
 	const cameraRigRef = useRef<CameraFollowRig | null>(null);
+	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
+	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
+	const inspectCameraRef = useRef<OrbitCameraState | null>(null);
 	const [renderVersion, setRenderVersion] = useState(0);
+	const [cameraMode, setCameraModeState] =
+		useState<RuntimeCameraMode>("follow");
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
 	const [inventory, setInventory] = useState<Record<string, number>>({});
@@ -259,9 +287,30 @@ export function ThreeRuntimePanel({
 		return sessionRef.current;
 	}
 
+	function setRuntimeCameraMode(mode: RuntimeCameraMode): void {
+		cameraModeRef.current = mode;
+		setCameraModeState(mode);
+	}
+
+	function resetCameraPresentation({
+		resetMode = false,
+	}: {
+		resetMode?: boolean;
+	} = {}): void {
+		cameraRigRef.current = null;
+		visibleCameraRigRef.current = null;
+		inspectCameraRef.current = null;
+		if (resetMode) {
+			setRuntimeCameraMode("follow");
+		}
+	}
+
 	function resetPlayerVisual(
 		session: RuntimeSessionState | null = getSession(),
-		{ resetCamera = false }: { resetCamera?: boolean } = {},
+		{
+			resetCamera = false,
+			resetCameraMode = false,
+		}: { resetCamera?: boolean; resetCameraMode?: boolean } = {},
 	) {
 		playerVisualRef.current = session
 			? resetVisualEntityState(
@@ -271,15 +320,44 @@ export function ThreeRuntimePanel({
 				)
 			: null;
 		if (resetCamera) {
-			cameraRigRef.current = null;
+			resetCameraPresentation({ resetMode: resetCameraMode });
 		}
 	}
 
 	function resetPresentationVisuals(
 		session: RuntimeSessionState | null = getSession(),
+		options: { resetCameraMode?: boolean } = {},
 	) {
-		resetPlayerVisual(session, { resetCamera: true });
+		resetPlayerVisual(session, {
+			resetCamera: true,
+			resetCameraMode: options.resetCameraMode,
+		});
 		npcVisualsRef.current = new Map();
+	}
+
+	function enterInspectCameraMode(): void {
+		const session = getSession();
+		const area = session ? getArea(session) : undefined;
+		const visibleRig = visibleCameraRigRef.current ?? cameraRigRef.current;
+		if (!area || !visibleRig) {
+			return;
+		}
+		inspectCameraRef.current = createOrbitCameraStateFromView(
+			visibleRig.position,
+			visibleRig.lookAt,
+			getOrbitCameraBounds(getRuntimeCameraDimensions(area)),
+		);
+		setRuntimeCameraMode("inspect");
+	}
+
+	function enterFollowCameraMode(): void {
+		if (visibleCameraRigRef.current) {
+			cameraRigRef.current = {
+				lookAt: { ...visibleCameraRigRef.current.lookAt },
+				position: { ...visibleCameraRigRef.current.position },
+			};
+		}
+		setRuntimeCameraMode("follow");
 	}
 
 	function syncPlayerVisual(session: RuntimeSessionState): void {
@@ -359,12 +437,12 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "spawnPlayer") {
-			resetPlayerVisual(session, { resetCamera: true });
+			resetPlayerVisual(session, { resetCamera: true, resetCameraMode: true });
 			forceRender();
 			return;
 		}
 		if (event.type === "areaChanged") {
-			resetPresentationVisuals(session);
+			resetPresentationVisuals(session, { resetCameraMode: true });
 			forceRender();
 			return;
 		}
@@ -874,7 +952,7 @@ export function ThreeRuntimePanel({
 		try {
 			const session = createRuntimeSession(project);
 			sessionRef.current = session;
-			resetPresentationVisuals(session);
+			resetPresentationVisuals(session, { resetCameraMode: true });
 			setMountError(null);
 			setGameOver(false);
 			setPendingCutscene(null);
@@ -987,12 +1065,35 @@ export function ThreeRuntimePanel({
 		let cameraRig: CameraFollowRig =
 			cameraRigRef.current ??
 			getCameraFollowTarget(getVisualPlayerCenter(area, initialPlayerPosition));
-		camera.position.set(
-			cameraRig.position.x,
-			cameraRig.position.y,
-			cameraRig.position.z,
-		);
-		camera.lookAt(cameraRig.lookAt.x, cameraRig.lookAt.y, cameraRig.lookAt.z);
+		const applyCameraRig = (rig: CameraFollowRig) => {
+			camera.position.set(rig.position.x, rig.position.y, rig.position.z);
+			camera.lookAt(rig.lookAt.x, rig.lookAt.y, rig.lookAt.z);
+			visibleCameraRigRef.current = {
+				lookAt: { ...rig.lookAt },
+				position: { ...rig.position },
+			};
+		};
+		const applyInspectCamera = () => {
+			const cameraBounds = getOrbitCameraBounds(
+				getRuntimeCameraDimensions(area),
+			);
+			const inspectCamera =
+				inspectCameraRef.current ??
+				createOrbitCameraStateFromView(
+					cameraRig.position,
+					cameraRig.lookAt,
+					cameraBounds,
+				);
+			inspectCameraRef.current = clampOrbitCameraState(
+				inspectCamera,
+				cameraBounds,
+			);
+			applyCameraRig({
+				lookAt: getOrbitCameraLookTarget(inspectCameraRef.current),
+				position: getOrbitCameraPosition(inspectCameraRef.current),
+			});
+		};
+		applyCameraRig(cameraRig);
 		addThreeWorldLighting(scene, { enableShadows: true });
 
 		const renderObjects: THREE.Object3D[] = [];
@@ -1073,6 +1174,97 @@ export function ThreeRuntimePanel({
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
 
+		let cameraDrag: {
+			mode: "orbit" | "pan";
+			x: number;
+			y: number;
+		} | null = null;
+		const updateInspectCamera = (
+			updater: (state: OrbitCameraState) => OrbitCameraState,
+		) => {
+			if (cameraModeRef.current !== "inspect") {
+				return;
+			}
+			const cameraBounds = getOrbitCameraBounds(
+				getRuntimeCameraDimensions(area),
+			);
+			const current =
+				inspectCameraRef.current ??
+				createOrbitCameraStateFromView(
+					visibleCameraRigRef.current?.position ?? cameraRig.position,
+					visibleCameraRigRef.current?.lookAt ?? cameraRig.lookAt,
+					cameraBounds,
+				);
+			inspectCameraRef.current = clampOrbitCameraState(
+				updater(current),
+				cameraBounds,
+			);
+		};
+		const handlePointerDown = (event: PointerEvent) => {
+			if (
+				cameraModeRef.current !== "inspect" ||
+				!event.altKey ||
+				(event.button !== 0 && event.button !== 1)
+			) {
+				return;
+			}
+			event.preventDefault();
+			cameraDrag = {
+				mode: event.shiftKey || event.button === 1 ? "pan" : "orbit",
+				x: event.clientX,
+				y: event.clientY,
+			};
+			renderer.domElement.setPointerCapture?.(event.pointerId);
+		};
+		const handlePointerMove = (event: PointerEvent) => {
+			if (!cameraDrag) {
+				return;
+			}
+			event.preventDefault();
+			const deltaX = event.clientX - cameraDrag.x;
+			const deltaY = event.clientY - cameraDrag.y;
+			if (deltaX !== 0 || deltaY !== 0) {
+				updateInspectCamera((state) =>
+					cameraDrag?.mode === "pan"
+						? panOrbitCamera(state, deltaX, deltaY)
+						: rotateOrbitCamera(
+								state,
+								deltaX,
+								deltaY,
+								getOrbitCameraBounds(getRuntimeCameraDimensions(area)),
+							),
+				);
+				cameraDrag = { ...cameraDrag, x: event.clientX, y: event.clientY };
+			}
+		};
+		const handlePointerUp = (event: PointerEvent) => {
+			if (!cameraDrag) {
+				return;
+			}
+			event.preventDefault();
+			cameraDrag = null;
+			renderer.domElement.releasePointerCapture?.(event.pointerId);
+		};
+		const handleWheel = (event: WheelEvent) => {
+			if (cameraModeRef.current !== "inspect") {
+				return;
+			}
+			event.preventDefault();
+			updateInspectCamera((state) =>
+				zoomOrbitCamera(
+					state,
+					event.deltaY,
+					getOrbitCameraBounds(getRuntimeCameraDimensions(area)),
+				),
+			);
+		};
+		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
+		renderer.domElement.addEventListener("pointermove", handlePointerMove);
+		renderer.domElement.addEventListener("pointerup", handlePointerUp);
+		renderer.domElement.addEventListener("wheel", handleWheel, {
+			passive: false,
+		});
+
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
 		const render = () => {
@@ -1112,18 +1304,17 @@ export function ThreeRuntimePanel({
 			const nextCameraTarget = getCameraFollowTarget(
 				getVisualPlayerCenter(area, playerVisualPosition),
 			);
-			cameraRig = advanceCameraFollowRig(
-				cameraRig,
-				nextCameraTarget,
-				getFrameLerpAlpha(deltaMs),
-			);
-			cameraRigRef.current = cameraRig;
-			camera.position.set(
-				cameraRig.position.x,
-				cameraRig.position.y,
-				cameraRig.position.z,
-			);
-			camera.lookAt(cameraRig.lookAt.x, cameraRig.lookAt.y, cameraRig.lookAt.z);
+			if (cameraModeRef.current === "inspect") {
+				applyInspectCamera();
+			} else {
+				cameraRig = advanceCameraFollowRig(
+					cameraRigRef.current ?? cameraRig,
+					nextCameraTarget,
+					getFrameLerpAlpha(deltaMs),
+				);
+				cameraRigRef.current = cameraRig;
+				applyCameraRig(cameraRig);
+			}
 			renderer.render(scene, camera);
 			animationFrame = window.requestAnimationFrame(render);
 		};
@@ -1131,6 +1322,10 @@ export function ThreeRuntimePanel({
 
 		return () => {
 			window.cancelAnimationFrame(animationFrame);
+			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
+			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
+			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
+			renderer.domElement.removeEventListener("wheel", handleWheel);
 			renderer.dispose();
 			renderObjects.forEach(disposePlaceholderObject);
 			if (renderer.domElement.parentElement === host) {
@@ -1167,7 +1362,29 @@ export function ThreeRuntimePanel({
 				</span>
 				<span>Gold: {goldCount}</span>
 				<span>{status}</span>
+				<div className="three-runtime-camera-controls">
+					<span>Camera</span>
+					<button
+						className={cameraMode === "follow" ? "active" : ""}
+						onClick={enterFollowCameraMode}
+						type="button"
+					>
+						Follow Player
+					</button>
+					<button
+						className={cameraMode === "inspect" ? "active" : ""}
+						onClick={enterInspectCameraMode}
+						type="button"
+					>
+						Inspect
+					</button>
+				</div>
 				<small>WASD/arrows move. E interacts. Space attacks.</small>
+				{cameraMode === "inspect" ? (
+					<small>
+						Inspect: Alt-drag orbits. Alt-Shift-drag pans. Wheel zooms.
+					</small>
+				) : null}
 			</div>
 			{flowLog.length > 0 ? (
 				<div className="three-runtime-log">

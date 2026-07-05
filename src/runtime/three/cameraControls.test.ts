@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	clampOrbitCameraState,
 	createOrbitCameraState,
+	createOrbitCameraStateFromView,
 	getOrbitCameraBounds,
 	getOrbitCameraLookTarget,
 	getOrbitCameraPosition,
@@ -57,6 +58,32 @@ describe("Three orbit camera helpers", () => {
 		const explicit = createOrbitCameraState("isometric", dimensions);
 
 		expect(initial).toEqual(explicit);
+	});
+
+	it("derives orbit state from an existing camera view", () => {
+		const bounds = getOrbitCameraBounds(dimensions);
+		const original = createOrbitCameraState("isometric", dimensions, {
+			x: -1,
+			y: 0.5,
+			z: 2,
+		});
+		const derived = createOrbitCameraStateFromView(
+			getOrbitCameraPosition(original),
+			getOrbitCameraLookTarget(original),
+			bounds,
+		);
+
+		expect(derived.focus).toEqual(original.focus);
+		expect(derived.distance).toBeCloseTo(original.distance);
+		expect(derived.pitch).toBeCloseTo(original.pitch);
+		expect(derived.yaw).toBeCloseTo(original.yaw);
+		expect(getOrbitCameraPosition(derived)).toEqual(
+			expect.objectContaining({
+				x: expect.closeTo(getOrbitCameraPosition(original).x),
+				y: expect.closeTo(getOrbitCameraPosition(original).y),
+				z: expect.closeTo(getOrbitCameraPosition(original).z),
+			}),
+		);
 	});
 
 	it("moves focus without changing orbit orientation", () => {

@@ -105,6 +105,22 @@ export function createOrbitCameraState(
 	return stateFromOffset(getPresetOffset(preset, dimensions), focus, bounds);
 }
 
+export function createOrbitCameraStateFromView(
+	position: CameraVector3,
+	focus: CameraVector3,
+	bounds: OrbitCameraBounds,
+): OrbitCameraState {
+	return stateFromOffset(
+		{
+			x: position.x - focus.x,
+			y: position.y - focus.y,
+			z: position.z - focus.z,
+		},
+		focus,
+		bounds,
+	);
+}
+
 export function resetOrbitCameraState(
 	dimensions: OrbitCameraDimensions,
 	focus: CameraVector3 = DEFAULT_FOCUS,

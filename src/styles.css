@@ -1918,6 +1918,32 @@ label {
 	color: #cbd5e1;
 }
 
+.three-runtime-camera-controls {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 2px;
+}
+
+.three-runtime-camera-controls span {
+	width: 100%;
+	font-size: 12px;
+}
+
+.three-runtime-camera-controls button {
+	padding: 4px 7px;
+	border-color: rgba(255, 255, 255, 0.24);
+	background: rgba(15, 23, 42, 0.72);
+	color: #f8fafc;
+	font-size: 12px;
+}
+
+.three-runtime-camera-controls button.active {
+	border-color: #93c5fd;
+	background: rgba(37, 99, 235, 0.62);
+}
+
 .three-runtime-log,
 .three-runtime-quests {
 	right: 12px;
