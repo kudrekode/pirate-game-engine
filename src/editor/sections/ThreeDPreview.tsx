@@ -87,6 +87,11 @@ type ThreeDPreviewProps = {
 	terrainHeightTool?: TerrainHeightTool;
 };
 
+type TerrainPaintStroke = {
+	pointerId: number;
+	paintedCells: Set<string>;
+};
+
 function getPreviewSize(element: HTMLElement) {
 	const rect = element.getBoundingClientRect();
 	return {
@@ -119,6 +124,7 @@ export function ThreeDPreview({
 	const cameraStateRef = useRef<OrbitCameraState>(
 		resetOrbitCameraState({ height: 8, width: 8 }),
 	);
+	const terrainPaintStrokeRef = useRef<TerrainPaintStroke | null>(null);
 	const [mountError, setMountError] = useState("");
 	const [localOverlayFilters, setLocalOverlayFilters] = useState(
 		readStoredMapOverlayFilters,
@@ -210,6 +216,12 @@ export function ThreeDPreview({
 		}
 		resetCamera();
 	}, [activeAreaId, resetCamera]);
+
+	useEffect(() => {
+		return () => {
+			terrainPaintStrokeRef.current = null;
+		};
+	}, []);
 
 	const startWalkPreview = () => {
 		const start = getWalkPreviewStart(activeArea);
@@ -425,6 +437,7 @@ export function ThreeDPreview({
 		let terrainPaintGhost: THREE.Mesh | null = null;
 		let latestPlacementPosition: PreviewGridPosition | undefined;
 		let pointerStart: {
+			pointerId: number;
 			x: number;
 			y: number;
 			metadata?: PreviewSelectionMetadata;
@@ -434,23 +447,37 @@ export function ThreeDPreview({
 			latestPosition?: PreviewGridPosition;
 		} | null = null;
 		let cameraDrag: {
+			pointerId: number;
 			mode: "orbit" | "pan";
 			x: number;
 			y: number;
 		} | null = null;
 		const editedHeightCells = new Set<string>();
-		const paintedTerrainCells = new Set<string>();
 
 		const markCustomCamera = () => {
 			setCameraPreset((current) => (current === "custom" ? current : "custom"));
 		};
 
+		const isPrimaryEditorPointer = (event: PointerEvent) =>
+			event.button === 0 && !event.altKey;
+
+		const releasePointerCapture = (event: PointerEvent) => {
+			renderer.domElement.releasePointerCapture?.(event.pointerId);
+		};
+
 		const setPointerFromEvent = (event: PointerEvent) => {
+			const bounds = renderer.domElement.getBoundingClientRect();
 			const ndc = getCanvasPointerNdc(
 				{ clientX: event.clientX, clientY: event.clientY },
-				renderer.domElement.getBoundingClientRect(),
+				bounds,
 			);
-			if (!ndc) {
+			if (
+				!ndc ||
+				ndc.localX < 0 ||
+				ndc.localY < 0 ||
+				ndc.localX > bounds.width ||
+				ndc.localY > bounds.height
+			) {
 				return false;
 			}
 			pointer.x = ndc.x;
@@ -581,6 +608,18 @@ export function ThreeDPreview({
 			});
 		};
 
+		const getTerrainPaintPositionFromPointer = (event: PointerEvent) => {
+			if (
+				!activeArea ||
+				!terrainPaintTileId ||
+				terrainHeightTool ||
+				placementInfo.active
+			) {
+				return undefined;
+			}
+			return getTerrainPositionFromPointer(event, { height: 1, width: 1 });
+		};
+
 		const getBrushPositions = (position: PreviewGridPosition) => {
 			if (!activeArea) {
 				return [];
@@ -642,20 +681,17 @@ export function ThreeDPreview({
 			return true;
 		};
 
-		const applyTerrainPaintFromPointer = (event: PointerEvent) => {
-			if (!activeArea || !terrainPaintTileId) {
-				return false;
-			}
-			const position = getPlacementPositionFromPointer(event);
-			if (!position) {
+		const applyTerrainPaintAtPosition = (position: PreviewGridPosition) => {
+			const terrainPaintStroke = terrainPaintStrokeRef.current;
+			if (!activeArea || !terrainPaintTileId || !terrainPaintStroke) {
 				return false;
 			}
 			const positions = getBrushPositions(position).filter((cell) => {
 				const key = `${cell.x}:${cell.y}`;
-				if (paintedTerrainCells.has(key)) {
+				if (terrainPaintStroke.paintedCells.has(key)) {
 					return false;
 				}
-				paintedTerrainCells.add(key);
+				terrainPaintStroke.paintedCells.add(key);
 				return true;
 			});
 			if (positions.length === 0) {
@@ -804,6 +840,7 @@ export function ThreeDPreview({
 			if (event.altKey && (event.button === 0 || event.button === 1)) {
 				event.preventDefault();
 				cameraDrag = {
+					pointerId: event.pointerId,
 					mode: event.shiftKey || event.button === 1 ? "pan" : "orbit",
 					x: event.clientX,
 					y: event.clientY,
@@ -811,23 +848,39 @@ export function ThreeDPreview({
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 				return;
 			}
-			if (terrainPaintTileId) {
-				paintedTerrainCells.clear();
+			if (!isPrimaryEditorPointer(event)) {
+				return;
+			}
+			if (terrainPaintTileId && !terrainHeightTool && !placementInfo.active) {
+				const paintPosition = getTerrainPaintPositionFromPointer(event);
+				if (!paintPosition) {
+					cleanupTerrainPaintGhost();
+					return;
+				}
+				event.preventDefault();
+				terrainPaintStrokeRef.current = {
+					paintedCells: new Set(),
+					pointerId: event.pointerId,
+				};
 				pointerStart = {
 					didDrag: false,
+					pointerId: event.pointerId,
 					terrainPainting: true,
 					x: event.clientX,
 					y: event.clientY,
 				};
 				renderer.domElement.setPointerCapture?.(event.pointerId);
-				applyTerrainPaintFromPointer(event);
+				applyTerrainPaintAtPosition(paintPosition);
+				updateTerrainPaintGhost(paintPosition);
 				return;
 			}
 			if (terrainHeightTool) {
+				event.preventDefault();
 				editedHeightCells.clear();
 				pointerStart = {
 					didDrag: false,
 					heightEditing: true,
+					pointerId: event.pointerId,
 					x: event.clientX,
 					y: event.clientY,
 				};
@@ -838,6 +891,7 @@ export function ThreeDPreview({
 			if (placementInfo.active) {
 				pointerStart = {
 					didDrag: false,
+					pointerId: event.pointerId,
 					x: event.clientX,
 					y: event.clientY,
 				};
@@ -851,6 +905,7 @@ export function ThreeDPreview({
 			pointerStart = {
 				didDrag: false,
 				metadata: startsSelectedMove ? metadata : undefined,
+				pointerId: event.pointerId,
 				x: event.clientX,
 				y: event.clientY,
 			};
@@ -861,6 +916,9 @@ export function ThreeDPreview({
 
 		const handlePointerMove = (event: PointerEvent) => {
 			if (cameraDrag) {
+				if (cameraDrag.pointerId !== event.pointerId) {
+					return;
+				}
 				event.preventDefault();
 				const deltaX = event.clientX - cameraDrag.x;
 				const deltaY = event.clientY - cameraDrag.y;
@@ -884,16 +942,27 @@ export function ThreeDPreview({
 				}
 				return;
 			}
-			if (pointerStart?.terrainPainting) {
-				pointerStart.didDrag = true;
-				applyTerrainPaintFromPointer(event);
-				const nextPosition = getPlacementPositionFromPointer(event);
-				if (nextPosition) {
-					updateTerrainPaintGhost(nextPosition);
+			const terrainPaintStroke = terrainPaintStrokeRef.current;
+			if (terrainPaintStroke) {
+				if (terrainPaintStroke.pointerId !== event.pointerId) {
+					return;
 				}
+				if (pointerStart?.terrainPainting) {
+					pointerStart.didDrag = true;
+				}
+				const nextPosition = getTerrainPaintPositionFromPointer(event);
+				if (!nextPosition) {
+					cleanupTerrainPaintGhost();
+					return;
+				}
+				applyTerrainPaintAtPosition(nextPosition);
+				updateTerrainPaintGhost(nextPosition);
 				return;
 			}
 			if (pointerStart?.heightEditing) {
+				if (pointerStart.pointerId !== event.pointerId) {
+					return;
+				}
 				pointerStart.didDrag = true;
 				applyHeightToolFromPointer(event);
 				return;
@@ -907,8 +976,13 @@ export function ThreeDPreview({
 				}
 				return;
 			}
-			if (terrainPaintTileId && !pointerStart?.metadata) {
-				const nextPosition = getPlacementPositionFromPointer(event);
+			if (
+				terrainPaintTileId &&
+				!terrainHeightTool &&
+				!placementInfo.active &&
+				!pointerStart?.metadata
+			) {
+				const nextPosition = getTerrainPaintPositionFromPointer(event);
 				if (nextPosition) {
 					updateTerrainPaintGhost(nextPosition);
 				} else {
@@ -917,6 +991,9 @@ export function ThreeDPreview({
 				return;
 			}
 			if (!pointerStart?.metadata) {
+				return;
+			}
+			if (pointerStart.pointerId !== event.pointerId) {
 				return;
 			}
 			const deltaX = Math.abs(event.clientX - pointerStart.x);
@@ -938,23 +1015,35 @@ export function ThreeDPreview({
 
 		const handlePointerUp = (event: PointerEvent) => {
 			if (cameraDrag) {
+				if (cameraDrag.pointerId !== event.pointerId) {
+					return;
+				}
 				event.preventDefault();
 				cameraDrag = null;
-				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				releasePointerCapture(event);
+				return;
+			}
+			const terrainPaintStroke = terrainPaintStrokeRef.current;
+			if (terrainPaintStroke) {
+				if (terrainPaintStroke.pointerId !== event.pointerId) {
+					return;
+				}
+				releasePointerCapture(event);
+				terrainPaintStrokeRef.current = null;
+				if (pointerStart?.terrainPainting) {
+					pointerStart = null;
+				}
 				return;
 			}
 			if (!pointerStart) {
 				return;
 			}
-			if (pointerStart.heightEditing) {
-				renderer.domElement.releasePointerCapture?.(event.pointerId);
-				editedHeightCells.clear();
-				pointerStart = null;
+			if (pointerStart.pointerId !== event.pointerId) {
 				return;
 			}
-			if (pointerStart.terrainPainting) {
-				renderer.domElement.releasePointerCapture?.(event.pointerId);
-				paintedTerrainCells.clear();
+			if (pointerStart.heightEditing) {
+				releasePointerCapture(event);
+				editedHeightCells.clear();
 				pointerStart = null;
 				return;
 			}
@@ -991,7 +1080,7 @@ export function ThreeDPreview({
 					});
 				}
 				cleanupDragGhost();
-				renderer.domElement.releasePointerCapture?.(event.pointerId);
+				releasePointerCapture(event);
 				pointerStart = null;
 				return;
 			}
@@ -999,11 +1088,38 @@ export function ThreeDPreview({
 			const deltaY = Math.abs(event.clientY - pointerStart.y);
 			cleanupDragGhost();
 			cleanupTerrainPaintGhost();
-			renderer.domElement.releasePointerCapture?.(event.pointerId);
+			releasePointerCapture(event);
 			pointerStart = null;
 			if (deltaX <= 4 && deltaY <= 4) {
 				selectFromPointer(event);
 			}
+		};
+
+		const cancelPointerInteraction = (event: PointerEvent) => {
+			if (cameraDrag?.pointerId === event.pointerId) {
+				cameraDrag = null;
+				releasePointerCapture(event);
+				return;
+			}
+			if (terrainPaintStrokeRef.current?.pointerId === event.pointerId) {
+				terrainPaintStrokeRef.current = null;
+				cleanupTerrainPaintGhost();
+				releasePointerCapture(event);
+				if (pointerStart?.terrainPainting) {
+					pointerStart = null;
+				}
+				return;
+			}
+			if (!pointerStart || pointerStart.pointerId !== event.pointerId) {
+				cleanupPlacementGhost();
+				cleanupTerrainPaintGhost();
+				return;
+			}
+			editedHeightCells.clear();
+			cleanupDragGhost();
+			cleanupTerrainPaintGhost();
+			releasePointerCapture(event);
+			pointerStart = null;
 		};
 
 		const handleWheel = (event: WheelEvent) => {
@@ -1017,9 +1133,34 @@ export function ThreeDPreview({
 			applyCameraFromState();
 		};
 
+		const handleWindowTerrainPaintMove = (event: PointerEvent) => {
+			if (terrainPaintStrokeRef.current?.pointerId !== event.pointerId) {
+				return;
+			}
+			handlePointerMove(event);
+		};
+
+		const handleWindowTerrainPaintUp = (event: PointerEvent) => {
+			if (terrainPaintStrokeRef.current?.pointerId !== event.pointerId) {
+				return;
+			}
+			handlePointerUp(event);
+		};
+
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
 		renderer.domElement.addEventListener("pointermove", handlePointerMove);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
+		renderer.domElement.addEventListener(
+			"pointercancel",
+			cancelPointerInteraction,
+		);
+		renderer.domElement.addEventListener(
+			"pointerleave",
+			cancelPointerInteraction,
+		);
+		window.addEventListener("pointermove", handleWindowTerrainPaintMove);
+		window.addEventListener("pointerup", handleWindowTerrainPaintUp);
+		window.addEventListener("pointercancel", cancelPointerInteraction);
 		renderer.domElement.addEventListener("wheel", handleWheel, {
 			passive: false,
 		});
@@ -1054,6 +1195,17 @@ export function ThreeDPreview({
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
+			renderer.domElement.removeEventListener(
+				"pointercancel",
+				cancelPointerInteraction,
+			);
+			renderer.domElement.removeEventListener(
+				"pointerleave",
+				cancelPointerInteraction,
+			);
+			window.removeEventListener("pointermove", handleWindowTerrainPaintMove);
+			window.removeEventListener("pointerup", handleWindowTerrainPaintUp);
+			window.removeEventListener("pointercancel", cancelPointerInteraction);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			resizeObserver?.disconnect();
 			cleanupDragGhost();

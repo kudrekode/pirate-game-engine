@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import { editorSections } from "../editor/sections";
@@ -148,6 +148,7 @@ vi.mock("three", () => {
 			updateMatrixWorld = vi.fn();
 		},
 		Raycaster: class {
+			pointer = { x: 0, y: 0 };
 			ray = {
 				intersectPlane: vi.fn(
 					(_plane: unknown, target: { x: number; z: number }) => {
@@ -157,9 +158,16 @@ vi.mock("three", () => {
 					},
 				),
 			};
-			setFromCamera = vi.fn();
+			setFromCamera = vi.fn((pointer: { x: number; y: number }) => {
+				this.pointer = { x: pointer.x, y: pointer.y };
+			});
 			intersectObjects = vi.fn(
 				(objects: { userData: Record<string, unknown> }[]) => {
+					const point = {
+						x: Math.round(this.pointer.x),
+						y: 1,
+						z: Math.round(-this.pointer.y),
+					};
 					const npc = objects.find(
 						(object) =>
 							(
@@ -169,7 +177,7 @@ vi.mock("three", () => {
 							)?.entityType === "npc",
 					);
 					if (npc) {
-						return [{ object: npc, point: { x: 0, y: 1, z: 0 } }];
+						return [{ object: npc, point }];
 					}
 					const terrain = objects.find(
 						(object) =>
@@ -179,9 +187,7 @@ vi.mock("three", () => {
 									| undefined
 							)?.entityType === "terrain",
 					);
-					return terrain
-						? [{ object: terrain, point: { x: 0, y: 1, z: 0 } }]
-						: [];
+					return terrain ? [{ object: terrain, point }] : [];
 				},
 			);
 		},
@@ -229,10 +235,87 @@ function getButtonByText(container: HTMLElement, label: string) {
 	return button as HTMLButtonElement;
 }
 
+function mockPreviewCanvasRect() {
+	return vi
+		.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+		.mockReturnValue({
+			bottom: 240,
+			height: 240,
+			left: 0,
+			right: 320,
+			toJSON: () => ({}),
+			top: 0,
+			width: 320,
+			x: 0,
+			y: 0,
+		});
+}
+
+function getPreviewCanvas() {
+	const canvas = screen
+		.getByLabelText("3D preview viewport")
+		.querySelector("canvas");
+	expect(canvas).not.toBeNull();
+	return canvas as HTMLCanvasElement;
+}
+
+function makeThreeTileProject({ withTerrain = true } = {}) {
+	const project = cloneProject(defaultProject);
+	const area = project.areas[0];
+	const width = 3;
+	const height = 3;
+	project.activeAreaId = area.id;
+	project.areas = [
+		{
+			...area,
+			eventBlocks: [],
+			height,
+			npcs: [],
+			objects: [],
+			overlayTiles: [],
+			pickups: [],
+			structures: [],
+			terrainHeights: [],
+			terrainTiles: withTerrain
+				? Array.from({ length: height }).flatMap((_, y) =>
+						Array.from({ length: width }).map((__, x) => ({
+							tileId: "grass",
+							x,
+							y,
+						})),
+					)
+				: [],
+			width,
+		},
+	];
+	return project;
+}
+
+function readActiveTileId(x: number, y: number) {
+	const state = useProjectStore.getState();
+	const area =
+		state.project.areas.find(
+			(candidate) => candidate.id === state.project.activeAreaId,
+		) ?? state.project.areas[0];
+	return area?.terrainTiles.find((tile) => tile.x === x && tile.y === y)
+		?.tileId;
+}
+
+function spyOnSetTiles() {
+	const setTilesSpy = vi.spyOn(useProjectStore.getState(), "setTiles");
+	setTilesSpy.mockClear();
+	return setTilesSpy;
+}
+
 beforeEach(() => {
 	useProjectStore.getState().setProject(cloneProject(defaultProject));
+	useProjectStore.getState().setMapPaletteSelection({ type: "none" });
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
 	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+	vi.restoreAllMocks();
 });
 
 describe("ThreeDPreview", () => {
@@ -512,6 +595,252 @@ describe("ThreeDPreview", () => {
 		});
 
 		rectSpy.mockRestore();
+	});
+
+	it("drag-paints newly entered 3D terrain tiles without duplicate tile updates", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 7,
+		});
+		await waitFor(() => expect(readActiveTileId(1, 1)).toBe("sand"));
+
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 7,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 7,
+		});
+		await waitFor(() => expect(readActiveTileId(2, 1)).toBe("sand"));
+
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 7,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 7,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 0,
+			clientY: 120,
+			pointerId: 7,
+		});
+
+		expect(readActiveTileId(0, 1)).toBe("grass");
+		expect(setTilesSpy).toHaveBeenCalledTimes(2);
+		expect(setTilesSpy.mock.calls.map(([tiles]) => tiles)).toEqual([
+			[{ tileId: "sand", x: 1, y: 1 }],
+			[{ tileId: "sand", x: 2, y: 1 }],
+		]);
+	});
+
+	it.each([
+		[
+			"pointer leave",
+			(canvas: HTMLCanvasElement) => {
+				fireEvent.pointerLeave(canvas, {
+					clientX: 160,
+					clientY: 120,
+					pointerId: 9,
+				});
+			},
+		],
+		[
+			"pointer cancel",
+			(canvas: HTMLCanvasElement) => {
+				fireEvent.pointerCancel(canvas, {
+					clientX: 160,
+					clientY: 120,
+					pointerId: 9,
+				});
+			},
+		],
+	] as const)("ends a 3D terrain paint stroke on %s", async (_label, endStroke) => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 9,
+		});
+		await waitFor(() => expect(readActiveTileId(1, 1)).toBe("sand"));
+
+		endStroke(getPreviewCanvas());
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 9,
+		});
+
+		expect(readActiveTileId(2, 1)).toBe("grass");
+		expect(setTilesSpy).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not paint terrain for camera or non-primary pointer drags", () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			altKey: true,
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 3,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			altKey: true,
+			buttons: 1,
+			clientX: 240,
+			clientY: 80,
+			pointerId: 3,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			altKey: true,
+			button: 0,
+			clientX: 240,
+			clientY: 80,
+			pointerId: 3,
+		});
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 1,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 4,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 4,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 4,
+		});
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 2,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 5,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 2,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 5,
+		});
+
+		expect(setTilesSpy).not.toHaveBeenCalled();
+		expect(readActiveTileId(1, 1)).toBe("grass");
+		expect(readActiveTileId(2, 1)).toBe("grass");
+	});
+
+	it("does not start terrain drag painting in selection mode", () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+
+		render(<ThreeDPreview embedded />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 12,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 12,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 12,
+		});
+
+		expect(setTilesSpy).not.toHaveBeenCalled();
+		expect(readActiveTileId(2, 1)).toBe("grass");
+	});
+
+	it("does not let terrain drag painting take over entity placement mode", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		useProjectStore.getState().setMapPaletteSelection({ type: "eventBlock" });
+		const setTilesSpy = spyOnSetTiles();
+
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 14,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 14,
+		});
+
+		await waitFor(() => {
+			const area = useProjectStore.getState().project.areas[0];
+			expect(area.eventBlocks).toHaveLength(1);
+		});
+		expect(setTilesSpy).not.toHaveBeenCalled();
+		expect(readActiveTileId(1, 1)).toBe("grass");
+	});
+
+	it("does not paint when terrain picking has no valid target", () => {
+		mockPreviewCanvasRect();
+		useProjectStore
+			.getState()
+			.setProject(makeThreeTileProject({ withTerrain: false }));
+		const setTilesSpy = spyOnSetTiles();
+
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 13,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 13,
+		});
+
+		expect(setTilesSpy).not.toHaveBeenCalled();
 	});
 
 	it("mounts against a blank project without crashing", () => {
