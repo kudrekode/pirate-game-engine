@@ -9,76 +9,77 @@ import {
 } from "../data/presets";
 import type {
 	Cutscene,
+	DialogueDefinition,
+	DialogueNode,
 	EventBlock,
 	GameArea,
 	GameProject,
 	Interaction,
 	MapStructure,
-	MovementMode,
 	NPCInstance,
 	ObjectInstance,
 	PickupObject,
 	PixelAsset,
-	PlayerVehicleState,
-	Quest,
 	RuleTrigger,
 } from "../types/game";
-import {
-	canAttack,
-	damageNpc,
-	damagePlayer,
-	findAttackTarget,
-	getPlayerCombatStats,
-	type RuntimeCombatHudState,
-	removeDefeatedNpc,
-} from "./combat";
+import type { RuntimeCombatHudState } from "./combat";
 import { appendRuntimeDebugEvent, type RuntimeDebugEvent } from "./debugLog";
-import { collectPickup } from "./inventory";
 import {
-	findDismountTile,
-	resolveMovementAt,
-	type VehicleMovementConfig,
-} from "./movement";
+	advanceDialogue,
+	createRuntimeDialogueState,
+	enterDialogueNode,
+	getAvailableDialogueChoices,
+	getDialogueNode,
+	type RuntimeDialogueState,
+} from "./dialogueEngine";
 import {
-	isEnemyTouchingPlayer,
-	isNpcTileWalkable,
-	type NPCMovementState,
-	updateEnemyNPC,
-	updatePatrolNPC,
-	updateStationaryNPC,
-	updateWanderNPC,
-} from "./npcMovement";
+	canInteractActivate,
+	canTouchActivate,
+	findNearestInteractableTarget,
+	findTouchInteractableTarget,
+	type InteractableTarget,
+	isPickupCollected,
+	resolveObjectBehaviour,
+	type TouchInteractableTarget,
+} from "./interactionDiscovery";
+import type { VehicleMovementConfig } from "./movement";
 import { resolveNPCInstance } from "./npcResolver";
+import { attemptPlayerMove } from "./playerMovementTransaction";
+import type { QuestView } from "./questEngine";
+import { fireTrigger, type RuleActionContext } from "./ruleEngine";
 import {
-	type ObjectBehaviourResult,
-	runObjectBehaviour,
-} from "./objectBehaviour";
+	attemptRuntimeCombatAttack,
+	type RuntimeCombatEvent,
+} from "./runtimeCombat";
+import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "./runtimeNpcTick";
 import {
-	activateQuest,
-	completeQuest as completeRuntimeQuest,
-	createRuntimeQuestState,
-	failQuest,
-	getQuestSyncDiagnosticMessages,
-	getQuestViews,
-	markAreaEntered,
-	type QuestView,
-	type RuntimeQuestState,
-	runQuestCompletionActionsOnce,
-	updateQuestProgress,
-} from "./questEngine";
+	buyRuntimeShopEntry,
+	closeRuntimeShop,
+	collectRuntimePickup,
+	dismountRuntimeVehicle,
+	openRuntimeShop,
+	type RuntimeObjectInteractionEvent,
+	runRuntimeObjectBehaviour,
+} from "./runtimeObjectInteractions";
 import {
-	createRuntimeState,
-	fireTrigger,
-	type RuleActionContext,
-	type RuntimeGameState,
-} from "./ruleEngine";
+	checkRuntimeWaitingTrigger,
+	completeRuntimeProgressionCutscene,
+	markRuntimeAreaEntered,
+	processRuntimeProgression,
+	type RuntimeProgressionEvent,
+	syncRuntimeQuestProgress,
+	transitionRuntimeArea,
+} from "./runtimeProgression";
 import {
-	buyShopEntry,
-	createRuntimeShopStocks,
-	type RuntimeShopPanelState,
-	type RuntimeShopStocks,
-} from "./shopRuntime";
-import { createBoardedVehicleState } from "./vehicleRuntime";
+	createRuntimeRuleContext,
+	type RuntimeRuleEvent,
+} from "./runtimeRuleActionDispatcher";
+import {
+	createRuntimeSession,
+	getInitialRuntimeArea,
+	type RuntimeSessionState,
+} from "./runtimeSession";
+import type { RuntimeShopPanelState } from "./shopRuntime";
 
 type WasdKeys = {
 	W: Phaser.Input.Keyboard.Key;
@@ -96,37 +97,6 @@ type CombatKeys = {
 	SPACE: Phaser.Input.Keyboard.Key;
 };
 
-type Interactable =
-	| {
-			kind: "event";
-			label: string;
-			interaction?: Interaction;
-			eventBlock: EventBlock;
-			distance: number;
-	  }
-	| {
-			kind: "structure";
-			label: string;
-			interaction?: Interaction;
-			structure: MapStructure;
-			distance: number;
-	  }
-	| {
-			kind: "object";
-			label: string;
-			interaction?: Interaction;
-			object: ObjectInstance;
-			distance: number;
-	  }
-	| { kind: "pickup"; label: string; pickup: PickupObject; distance: number }
-	| {
-			kind: "npc";
-			label: string;
-			interaction?: Interaction;
-			npc: NPCInstance;
-			distance: number;
-	  };
-
 function hexToNumber(hex: string): number {
 	return Phaser.Display.Color.HexStringToColor(hex).color;
 }
@@ -139,67 +109,38 @@ function tileKey(x: number, y: number): string {
 	return `${x}:${y}`;
 }
 
-function getInitialArea(project: GameProject): GameArea {
-	const firstArea = project.areas[0];
-	if (!firstArea) {
-		throw new Error("Project has no areas.");
-	}
-
-	return (
-		project.areas.find((area) => area.id === project.activeAreaId) ?? firstArea
-	);
-}
-
-function canTouchActivate(interaction: Interaction): boolean {
-	return (
-		interaction.activationMode === "on_touch" ||
-		interaction.activationMode === "both"
-	);
-}
-
-function canInteractActivate(interaction: Interaction): boolean {
-	return (
-		interaction.activationMode === "on_interact" ||
-		interaction.activationMode === "both"
-	);
-}
-
 export class AdventureScene extends Phaser.Scene {
+	// Shared runtime session state. Phaser reads from this instead of owning gameplay state.
 	private readonly project: GameProject;
+	private readonly session: RuntimeSessionState;
 	private currentArea: GameArea;
 	private tileSize: number;
+
+	// Phaser rendering cache.
 	private readonly pixelTextureKeys = new Map<string, string>();
 	private worldLayer?: Phaser.GameObjects.Container;
 	private uiLayer?: Phaser.GameObjects.Container;
 	private uiCamera?: Phaser.Cameras.Scene2D.Camera;
-	private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-	private wasd?: WasdKeys;
-	private interactKeys?: InteractKeys;
-	private combatKeys?: CombatKeys;
 	private playerMarker?: Phaser.GameObjects.Container;
-	private playerPosition = { x: 0, y: 0 };
-	private progressionIndex = 0;
-	private waitingForTrigger: { areaId?: string; eventBlockId: string } | null =
-		null;
-	private nextMoveAt = 0;
 	private statusText?: Phaser.GameObjects.Text;
 	private promptText?: Phaser.GameObjects.Text;
 	private debugText?: Phaser.GameObjects.Text;
-	private readonly runtimeState: RuntimeGameState;
-	private readonly runtimeQuestState: RuntimeQuestState;
-	private readonly collectedPickupIds = new Set<string>();
-	private readonly openedObjectIds = new Set<string>();
 	private readonly npcMarkers = new Map<string, Phaser.GameObjects.Container>();
 	private readonly objectMarkers = new Map<
 		string,
 		Phaser.GameObjects.Container
 	>();
-	private readonly npcMovementStates = new Map<
-		string,
-		{ movement: NPCMovementState; nextMoveAt: number }
-	>();
-	private readonly enemyOrigins = new Map<string, { x: number; y: number }>();
-	private readonly enemyContactCooldowns = new Map<string, number>();
+	private vehicleVisual?: Phaser.GameObjects.GameObject;
+
+	// Phaser input and animation gating.
+	private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+	private wasd?: WasdKeys;
+	private interactKeys?: InteractKeys;
+	private combatKeys?: CombatKeys;
+	private nextMoveAt = 0;
+	private isMoving = false;
+
+	// React/Phaser overlay callbacks and presentation-only modal state.
 	private readonly onInventoryChanged?: (
 		inventory: Record<string, number>,
 	) => void;
@@ -207,21 +148,14 @@ export class AdventureScene extends Phaser.Scene {
 	private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
 	private readonly onCombatChanged?: (combat: RuntimeCombatHudState) => void;
 	private readonly onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void;
-	private readonly runtimeShopStocks: RuntimeShopStocks;
-	private readonly defeatedNpcIds = new Set<string>();
-	private readonly completedQuestActionIds = new Set<string>();
-	private activeShopId?: string;
-	private currentMovementMode: Exclude<MovementMode, "swim"> = "walk";
-	private playerFacing = { x: 0, y: 1 };
-	private playerVehicleState: PlayerVehicleState = { active: false };
-	private readonly playerCombat: ReturnType<typeof getPlayerCombatStats>;
-	private runtimePlayerHealth: number;
-	private nextAttackAt = 0;
-	private recentEnemyHud?: RuntimeCombatHudState["recentEnemy"];
-	private vehicleVisual?: Phaser.GameObjects.GameObject;
 	private isCutsceneOpen = false;
+	private isDialogueOpen = false;
+	private activeDialogue?: {
+		container?: Phaser.GameObjects.Container;
+		definition: DialogueDefinition;
+		state: RuntimeDialogueState;
+	};
 	private isFinished = false;
-	private isMoving = false;
 	private runtimeDebugEvents: RuntimeDebugEvent[] = [];
 	private nextDebugEventId = 1;
 
@@ -234,18 +168,10 @@ export class AdventureScene extends Phaser.Scene {
 		onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void,
 	) {
 		super("AdventureScene");
-		this.project = project;
-		this.currentArea = getInitialArea(project);
+		this.session = createRuntimeSession(project);
+		this.project = this.session.project;
+		this.currentArea = getInitialRuntimeArea(this.project);
 		this.tileSize = this.currentArea.tileSize;
-		this.playerCombat = getPlayerCombatStats(project.player);
-		this.runtimePlayerHealth = this.playerCombat.health;
-		this.runtimeState = createRuntimeState(
-			project.gameState,
-			project.areas.flatMap((area) => area.npcs),
-			project.npcs,
-		);
-		this.runtimeQuestState = createRuntimeQuestState(project.quests);
-		this.runtimeShopStocks = createRuntimeShopStocks(project.shops);
 		this.onInventoryChanged = onInventoryChanged;
 		this.onQuestsChanged = onQuestsChanged;
 		this.onShopChanged = onShopChanged;
@@ -253,57 +179,134 @@ export class AdventureScene extends Phaser.Scene {
 		this.onDebugEventsChanged = onDebugEventsChanged;
 	}
 
-	openShop(shopId: string) {
-		const shop = this.project.shops.find(
-			(candidate) => candidate.id === shopId,
-		);
-		if (!shop) {
-			this.setStatus(`Shop missing: ${shopId}.`);
-			return;
-		}
+	private get playerPosition() {
+		return this.session.playerPosition;
+	}
 
-		this.activeShopId = shopId;
-		this.notifyShopChanged();
-		this.setStatus(`Opened ${shop.name}.`);
+	private set playerPosition(position: RuntimeSessionState["playerPosition"]) {
+		this.session.playerPosition = position;
+	}
+
+	private get progressionIndex() {
+		return this.session.progressionIndex;
+	}
+
+	private set progressionIndex(index: number) {
+		this.session.progressionIndex = index;
+	}
+
+	private get waitingForTrigger() {
+		return this.session.waitingForTrigger;
+	}
+
+	private set waitingForTrigger(trigger: RuntimeSessionState["waitingForTrigger"],) {
+		this.session.waitingForTrigger = trigger;
+	}
+
+	private get runtimeState() {
+		return this.session.runtimeState;
+	}
+
+	private get runtimeQuestState() {
+		return this.session.runtimeQuestState;
+	}
+
+	private get collectedPickupIds() {
+		return this.session.collectedPickupIds;
+	}
+
+	private get openedObjectIds() {
+		return this.session.openedObjectIds;
+	}
+
+	private get npcMovementStates() {
+		return this.session.npcMovementStates;
+	}
+
+	private get enemyOrigins() {
+		return this.session.enemyOrigins;
+	}
+
+	private get enemyContactCooldowns() {
+		return this.session.enemyContactCooldowns;
+	}
+
+	private get runtimeShopStocks() {
+		return this.session.runtimeShopStocks;
+	}
+
+	private get defeatedNpcIds() {
+		return this.session.defeatedNpcIds;
+	}
+
+	private get activeShopId() {
+		return this.session.activeShopId;
+	}
+
+	private set activeShopId(shopId: RuntimeSessionState["activeShopId"]) {
+		this.session.activeShopId = shopId;
+	}
+
+	private get currentMovementMode() {
+		return this.session.currentMovementMode;
+	}
+
+	private set currentMovementMode(mode: RuntimeSessionState["currentMovementMode"],) {
+		this.session.currentMovementMode = mode;
+	}
+
+	private get playerFacing() {
+		return this.session.playerFacing;
+	}
+
+	private set playerFacing(facing: RuntimeSessionState["playerFacing"]) {
+		this.session.playerFacing = facing;
+	}
+
+	private get playerVehicleState() {
+		return this.session.playerVehicleState;
+	}
+
+	private set playerVehicleState(vehicleState: RuntimeSessionState["playerVehicleState"],) {
+		this.session.playerVehicleState = vehicleState;
+	}
+
+	private get playerCombat() {
+		return this.session.playerCombat;
+	}
+
+	private get runtimePlayerHealth() {
+		return this.session.runtimePlayerHealth;
+	}
+
+	private set runtimePlayerHealth(health: number) {
+		this.session.runtimePlayerHealth = health;
+	}
+
+	private get recentEnemyHud() {
+		return this.session.recentEnemy;
+	}
+
+	// Runtime-facing entry points used by React overlays.
+	openShop(shopId: string) {
+		openRuntimeShop(this.session, shopId, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
+		);
 	}
 
 	closeShop() {
-		this.activeShopId = undefined;
-		this.onShopChanged?.(null);
+		closeRuntimeShop(this.session, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
+		);
 	}
 
 	buyShopEntry(entryId: string) {
-		if (!this.activeShopId) {
-			return;
-		}
-
-		const shop = this.project.shops.find(
-			(candidate) => candidate.id === this.activeShopId,
+		buyRuntimeShopEntry(this.session, entryId, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
 		);
-		if (!shop) {
-			this.closeShop();
-			return;
-		}
-
-		const stock = this.runtimeShopStocks[shop.id] ?? {};
-		this.runtimeShopStocks[shop.id] = stock;
-		const result = buyShopEntry(
-			shop,
-			entryId,
-			this.runtimeState.inventory,
-			this.project.items,
-			stock,
-		);
-		this.setStatus(result.message);
-		this.logEvent(
-			result.success ? `Shop purchase: ${result.message}` : result.message,
-		);
-		this.notifyInventoryChanged();
-		this.syncQuestProgress();
-		this.updateDebugPanel();
-		this.notifyShopChanged(result.message);
 	}
 
+	// Phaser scene lifecycle.
 	create() {
 		this.logEvent("Game started.");
 		this.worldLayer = this.add.container(0, 0);
@@ -351,6 +354,9 @@ export class AdventureScene extends Phaser.Scene {
 		this.updateDebugPanel();
 		this.notifyInventoryChanged();
 		this.notifyCombatChanged();
+		markRuntimeAreaEntered(this.session, this.currentArea.id, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
 
 		this.fireRuleTrigger({ type: "on_game_start" }, () => {
 			this.processProgression();
@@ -359,14 +365,16 @@ export class AdventureScene extends Phaser.Scene {
 		});
 	}
 
+	// Input translation into shared runtime transactions.
 	update(time: number) {
-		if (!this.isCutsceneOpen && !this.isFinished) {
+		if (!this.isCutsceneOpen && !this.isDialogueOpen && !this.isFinished) {
 			this.updateNpcMovement(time);
 		}
 
 		if (
 			!this.playerMarker ||
 			this.isCutsceneOpen ||
+			this.isDialogueOpen ||
 			this.isFinished ||
 			this.isMoving ||
 			time < this.nextMoveAt
@@ -392,22 +400,22 @@ export class AdventureScene extends Phaser.Scene {
 		if (interactPressed && interactable) {
 			this.logEvent(`Interacted with ${interactable.label}.`);
 			const targetId =
-				interactable.kind === "event"
+				interactable.type === "eventBlock"
 					? interactable.eventBlock.id
-					: interactable.kind === "structure"
+					: interactable.type === "structure"
 						? interactable.structure.id
-						: interactable.kind === "object"
+						: interactable.type === "object"
 							? interactable.object.id
-							: interactable.kind === "npc"
+							: interactable.type === "npc"
 								? interactable.npc.id
 								: "";
-			if (interactable.kind === "pickup") {
+			if (interactable.type === "pickup") {
 				this.collectPickupObject(interactable.pickup);
 				return;
 			}
 			this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
 				if (
-					interactable.kind === "object" &&
+					interactable.type === "object" &&
 					this.runObjectBehaviour(interactable.object)
 				) {
 					if (
@@ -442,6 +450,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.tryMove(direction.x, direction.y, time);
 	}
 
+	// Phaser input setup.
 	private createInput() {
 		const keyboard = this.input.keyboard;
 		if (!keyboard) {
@@ -464,6 +473,7 @@ export class AdventureScene extends Phaser.Scene {
 		};
 	}
 
+	// Phaser camera configuration.
 	private configureCameras() {
 		const screenWidth = this.scale.width;
 		const screenHeight = this.scale.height;
@@ -556,6 +566,7 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
+	// Phaser world rendering.
 	private renderMap() {
 		this.worldLayer?.removeAll(true);
 		this.playerMarker = undefined;
@@ -668,7 +679,14 @@ export class AdventureScene extends Phaser.Scene {
 			this.renderObject(object);
 		});
 		this.currentArea.pickups
-			.filter((pickup) => !this.isPickupCollected(pickup))
+			.filter(
+				(pickup) =>
+					!isPickupCollected(
+						pickup,
+						this.runtimeState,
+						this.collectedPickupIds,
+					),
+			)
 			.forEach((pickup) => {
 				this.renderPickup(pickup);
 			});
@@ -833,103 +851,190 @@ export class AdventureScene extends Phaser.Scene {
 		this.worldLayer?.add(container);
 	}
 
+	// Shared runtime progression event translation.
 	private processProgression() {
-		while (this.progressionIndex < this.project.progression.length) {
-			const step = this.project.progression[this.progressionIndex];
-			const action = step.action;
-
-			if (action.type === "play_cutscene") {
-				const cutscene = this.project.cutscenes.find(
-					(candidate) => candidate.id === action.cutsceneId,
-				);
-
-				if (!cutscene) {
-					this.progressionIndex += 1;
-					continue;
-				}
-
-				this.showCutscene(cutscene, () => {
-					this.fireRuleTrigger(
-						{ type: "on_cutscene_end", cutsceneId: cutscene.id },
-						() => {
-							this.progressionIndex += 1;
-							this.processProgression();
-						},
-					);
-				});
-				return;
-			}
-
-			if (action.type === "spawn_player") {
-				const eventBlock = this.findEventBlock(
-					action.eventBlockId,
-					action.areaId,
-				);
-				if (eventBlock) {
-					this.movePlayerToArea(action.areaId, eventBlock);
-				}
-				this.progressionIndex += 1;
-				continue;
-			}
-
-			if (action.type === "teleport_player") {
-				const eventBlock = this.findEventBlock(
-					action.eventBlockId,
-					action.areaId,
-				);
-				if (eventBlock) {
-					this.movePlayerToArea(action.areaId, eventBlock);
-				}
-				this.progressionIndex += 1;
-				continue;
-			}
-
-			if (action.type === "wait_for_trigger") {
-				const eventBlock = this.findEventBlock(
-					action.eventBlockId,
-					action.areaId,
-				);
-				this.waitingForTrigger = {
-					areaId: action.areaId,
-					eventBlockId: action.eventBlockId,
-				};
-				this.setStatus(
-					eventBlock ? `Find trigger: ${eventBlock.name}` : "Find the trigger.",
-				);
-				return;
-			}
-
-			this.showEndMessage();
-			this.progressionIndex = this.project.progression.length;
-			return;
-		}
-
-		this.setStatus("Progression complete.");
+		processRuntimeProgression(this.session, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
 	}
 
 	private movePlayerToArea(areaId: string, eventBlock: EventBlock) {
-		const nextArea = this.findArea(areaId);
-		if (!nextArea) {
-			return;
-		}
+		transitionRuntimeArea(this.session, areaId, eventBlock.id, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
+	}
 
-		this.leaveVehicle(false);
-		const enteredNewArea = nextArea.id !== this.currentArea.id;
-		if (enteredNewArea) {
+	private handleRuntimeProgressionEvent(event: RuntimeProgressionEvent) {
+		if (event.type === "areaChanged") {
+			const nextArea = this.findArea(event.areaId);
+			if (!nextArea) {
+				return;
+			}
+
 			this.currentArea = nextArea;
 			this.tileSize = nextArea.tileSize;
 			this.isMoving = false;
 			this.renderMap();
 			this.configureCameras();
+			return;
 		}
 
-		this.spawnPlayer(eventBlock);
-		this.markRuntimeAreaEntered(nextArea);
-		this.syncQuestProgress();
-		this.setStatus(`${this.project.player.name} entered ${nextArea.name}.`);
-		this.updateDebugPanel();
-		if (enteredNewArea) {
-			this.fireRuleTrigger({ type: "on_area_enter", areaId: nextArea.id });
+		if (event.type === "vehicleLeft") {
+			this.vehicleVisual?.destroy();
+			this.vehicleVisual = undefined;
+			return;
+		}
+
+		if (event.type === "spawnPlayer") {
+			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
+			if (eventBlock) {
+				this.spawnPlayer(eventBlock);
+			}
+			return;
+		}
+
+		if (event.type === "cutsceneRequested") {
+			const cutscene = this.project.cutscenes.find(
+				(candidate) => candidate.id === event.cutsceneId,
+			);
+			if (!cutscene) {
+				completeRuntimeProgressionCutscene(this.session, (nextEvent) =>
+					this.handleRuntimeProgressionEvent(nextEvent),
+				);
+				return;
+			}
+
+			this.showCutscene(cutscene, () => {
+				this.fireRuleTrigger(
+					{ type: "on_cutscene_end", cutsceneId: cutscene.id },
+					() =>
+						completeRuntimeProgressionCutscene(this.session, (nextEvent) =>
+							this.handleRuntimeProgressionEvent(nextEvent),
+						),
+				);
+			});
+			return;
+		}
+
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
+
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+			return;
+		}
+
+		if (event.type === "areaEnterTriggerRequested") {
+			this.fireRuleTrigger({ type: "on_area_enter", areaId: event.areaId });
+			return;
+		}
+
+		if (event.type === "endGame") {
+			this.showEndMessage();
+		}
+	}
+
+	// Shared runtime object/shop/vehicle event translation.
+	private handleRuntimeObjectInteractionEvent(
+		event: RuntimeObjectInteractionEvent,
+	) {
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
+
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+			return;
+		}
+
+		if (event.type === "cutsceneRequested") {
+			const cutscene = event.cutsceneId
+				? this.project.cutscenes.find(
+						(candidate) => candidate.id === event.cutsceneId,
+					)
+				: event.cutscene;
+			if (cutscene) {
+				this.showCutscene(cutscene, () => undefined);
+			}
+			return;
+		}
+
+		if (event.type === "teleportRequested") {
+			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
+			if (eventBlock) {
+				this.movePlayerToArea(event.areaId, eventBlock);
+			}
+			return;
+		}
+
+		if (event.type === "shopChanged") {
+			this.notifyShopChanged(event.message);
+			return;
+		}
+
+		if (event.type === "shopClosed") {
+			this.onShopChanged?.(null);
+			return;
+		}
+
+		if (event.type === "pickupCollected") {
+			if (event.once) {
+				this.worldLayer?.getByName(`pickup:${event.pickupId}`)?.destroy();
+			}
+			return;
+		}
+
+		if (event.type === "vehicleBoarded") {
+			this.addVehicleVisual(event.behaviour);
+			return;
+		}
+
+		if (event.type === "vehicleDismounted") {
+			this.vehicleVisual?.destroy();
+			this.vehicleVisual = undefined;
+			return;
+		}
+
+		if (event.type === "movementModeChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "objectMoved") {
+			this.objectMarkers
+				.get(event.objectId)
+				?.setPosition(event.x * this.tileSize, event.y * this.tileSize);
+			return;
+		}
+
+		if (event.type === "playerMoved") {
+			this.playerMarker?.setPosition(
+				event.x * this.tileSize + this.tileSize / 2,
+				event.y * this.tileSize + this.tileSize / 2,
+			);
 		}
 	}
 
@@ -1044,102 +1149,43 @@ export class AdventureScene extends Phaser.Scene {
 		this.worldLayer?.add(marker);
 	}
 
+	// Shared runtime NPC tick event translation.
 	private updateNpcMovement(time: number) {
-		this.currentArea.npcs.forEach((npc) => {
-			if (this.defeatedNpcIds.has(npc.id)) {
-				return;
-			}
-
-			const runtime = this.npcMovementStates.get(npc.id) ?? {
-				movement: { patrolIndex: 0 },
-				nextMoveAt: time + 450,
-			};
-			if (time < runtime.nextMoveAt) {
-				this.npcMovementStates.set(npc.id, runtime);
-				return;
-			}
-
-			const canMove = (x: number, y: number) =>
-				!(this.playerPosition.x === x && this.playerPosition.y === y) &&
-				isNpcTileWalkable(this.currentArea, npc.id, x, y);
-			const origin = this.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
-			this.enemyOrigins.set(npc.id, origin);
-			const resolved = this.getResolvedNpc(npc);
-			const canUseEnemyMovement =
-				resolved.attributes.alignment === "hostile" &&
-				resolved.enemyBehaviour?.enabled === true;
-			const update = canUseEnemyMovement
-				? updateEnemyNPC(
-						resolved,
-						this.playerPosition,
-						origin,
-						runtime.movement,
-						canMove,
-					)
-				: resolved.movementMode === "patrol"
-					? updatePatrolNPC(resolved, runtime.movement, canMove)
-					: resolved.movementMode === "wander"
-						? updateWanderNPC(
-								resolved,
-								this.currentArea,
-								runtime.movement,
-								canMove,
-							)
-						: updateStationaryNPC(resolved, runtime.movement);
-			const speed = clamp(
-				this.runtimeState.npcs[npc.id]?.movementSpeed ?? resolved.movementSpeed,
-				0.1,
-				10,
-			);
-			const duration = Math.max(80, 360 / speed);
-			const wait = update.moved ? 320 : 560;
-
-			npc.x = update.x;
-			npc.y = update.y;
-			npc.facing = update.facing;
-			this.npcMovementStates.set(npc.id, {
-				movement: update.state,
-				nextMoveAt: time + duration + wait,
-			});
-
-			if (update.moved) {
-				this.tweens.add({
-					targets: this.npcMarkers.get(npc.id),
-					x: npc.x * this.tileSize + this.tileSize / 2,
-					y: npc.y * this.tileSize + this.tileSize / 2,
-					duration,
-					ease: "Sine.easeInOut",
-				});
-			}
-
-			if (isEnemyTouchingPlayer(resolved, this.playerPosition)) {
-				this.handleEnemyContact(resolved, time);
-			}
-		});
+		tickRuntimeNpcs(this.session, this.currentArea, time, (event) =>
+			this.handleRuntimeNpcTickEvent(event),
+		);
 	}
 
-	private handleEnemyContact(npc: NPCInstance, time: number) {
-		const nextAllowedAt = this.enemyContactCooldowns.get(npc.id) ?? 0;
-		if (time < nextAllowedAt) {
+	private handleRuntimeNpcTickEvent(event: RuntimeNpcTickEvent) {
+		if (event.type === "npcMoved") {
+			this.tweens.add({
+				targets: this.npcMarkers.get(event.npcId),
+				x: event.to.x * this.tileSize + this.tileSize / 2,
+				y: event.to.y * this.tileSize + this.tileSize / 2,
+				duration: event.durationMs,
+				ease: "Sine.easeInOut",
+			});
 			return;
 		}
 
-		const damage = npc.enemyBehaviour?.contactDamage ?? 0;
-		if (damage > 0) {
-			const result = damagePlayer(this.runtimePlayerHealth, damage);
-			this.runtimePlayerHealth = result.health;
-			this.setStatus(
-				`Enemy touched player. Health ${this.runtimePlayerHealth}/${this.playerCombat.maxHealth}.`,
-			);
-			if (result.defeated) {
-				this.showGameOverMessage();
-			}
-		} else {
-			this.setStatus("Enemy touched player.");
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
 		}
-		this.enemyContactCooldowns.set(npc.id, time + 1200);
-		this.updateDebugPanel();
-		this.notifyCombatChanged();
+
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "combatChanged") {
+			this.notifyCombatChanged();
+			return;
+		}
+
+		if (event.type === "gameOver") {
+			this.showGameOverMessage();
+		}
 	}
 
 	private spawnPlayer(eventBlock: EventBlock) {
@@ -1175,6 +1221,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.setStatus(`${this.project.player.name} spawned.`);
 	}
 
+	// UI/cutscene/dialogue presentation.
 	private showCutscene(cutscene: Cutscene, onDone: () => void) {
 		this.promptText?.setText("");
 		const width = this.scale.width;
@@ -1286,6 +1333,176 @@ export class AdventureScene extends Phaser.Scene {
 
 		this.input.once(Phaser.Input.Events.POINTER_DOWN, close);
 		this.input.keyboard?.once(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, close);
+	}
+
+	private showDialogue(dialogue: DialogueDefinition) {
+		this.promptText?.setText("");
+		this.closeShop();
+		this.isDialogueOpen = true;
+		this.activeDialogue = {
+			definition: dialogue,
+			state: createRuntimeDialogueState(dialogue),
+		};
+		this.renderActiveDialogueNode();
+	}
+
+	private closeDialogue() {
+		this.activeDialogue?.container?.destroy(true);
+		this.activeDialogue = undefined;
+		this.isDialogueOpen = false;
+		this.updatePrompt(this.findNearestInteractable());
+	}
+
+	private renderActiveDialogueNode() {
+		const active = this.activeDialogue;
+		if (!active) {
+			return;
+		}
+
+		active.container?.destroy(true);
+		active.container = undefined;
+
+		const node = getDialogueNode(active.definition, active.state.nodeId);
+		if (!node) {
+			this.closeDialogue();
+			return;
+		}
+
+		enterDialogueNode(active.state, node, this.getRuleContext(), () =>
+			this.renderDialogueNodeContent(node),
+		);
+	}
+
+	private renderDialogueNodeContent(node: DialogueNode) {
+		const active = this.activeDialogue;
+		if (!active) {
+			return;
+		}
+
+		const width = this.scale.width;
+		const height = this.scale.height;
+		const panelY = height - 112;
+		const panelWidth = Math.max(220, width - 32);
+		const portrait = node.portraitId
+			? getVisualPreset(node.portraitId, portraitPresets)
+			: undefined;
+		const showPortrait = Boolean(portrait && width >= 320);
+		const textX = showPortrait ? 126 : 32;
+		const container = this.add.container(0, 0).setDepth(520).setScrollFactor(0);
+		this.uiLayer?.add(container);
+		active.container = container;
+
+		container.add(
+			this.add.rectangle(0, 0, width, height, 0x000000, 0.2).setOrigin(0),
+		);
+		container.add(
+			this.add
+				.rectangle(width / 2, panelY, panelWidth, 184, 0x18181b, 0.94)
+				.setStrokeStyle(2, 0xffffff, 0.18),
+		);
+
+		if (portrait) {
+			container.add(
+				this.add
+					.rectangle(70, panelY - 18, 72, 72, hexToNumber(portrait.color), 1)
+					.setStrokeStyle(2, hexToNumber(portrait.accent), 0.9),
+			);
+			container.add(
+				this.add
+					.text(70, panelY - 18, (node.speaker ?? "NPC").slice(0, 1), {
+						color: portrait.accent,
+						fontFamily: "Arial, sans-serif",
+						fontSize: "28px",
+						fontStyle: "700",
+					})
+					.setOrigin(0.5),
+			);
+		}
+
+		container.add(
+			this.add.text(
+				textX,
+				panelY - 78,
+				node.speaker ?? active.definition.name,
+				{
+					color: "#f8fafc",
+					fontFamily: "Arial, sans-serif",
+					fontSize: "15px",
+					fontStyle: "700",
+				},
+			),
+		);
+		container.add(
+			this.add.text(textX, panelY - 52, node.text ?? "", {
+				color: "#ffffff",
+				fontFamily: "Arial, sans-serif",
+				fontSize: "16px",
+				lineSpacing: 4,
+				wordWrap: { width: Math.max(120, width - textX - 34) },
+			}),
+		);
+
+		if (node.type === "choice") {
+			const choices = getAvailableDialogueChoices(
+				node,
+				this.runtimeState,
+				this.runtimeQuestState,
+			);
+			choices.forEach((choice, index) => {
+				const choiceText = this.add
+					.text(
+						textX,
+						panelY + 4 + index * 28,
+						`${index + 1}. ${choice.text}`,
+						{
+							backgroundColor: "#263244",
+							color: "#f8fafc",
+							fontFamily: "Arial, sans-serif",
+							fontSize: "14px",
+							padding: { x: 8, y: 5 },
+						},
+					)
+					.setInteractive({ useHandCursor: true });
+				choiceText.on(Phaser.Input.Events.POINTER_DOWN, () => {
+					advanceDialogue(active.definition, active.state, choice.id);
+					this.renderActiveDialogueNode();
+				});
+				container.add(choiceText);
+			});
+			if (choices.length === 0) {
+				container.add(
+					this.add.text(textX, panelY + 8, "No available choices.", {
+						color: "#cbd5e1",
+						fontFamily: "Arial, sans-serif",
+						fontSize: "14px",
+					}),
+				);
+			}
+			return;
+		}
+
+		const buttonLabel =
+			node.type === "text" && node.nextNodeId ? "Next" : "End conversation";
+		const nextButton = this.add
+			.text(width - 42, height - 36, buttonLabel, {
+				backgroundColor: "#f8fafc",
+				color: "#111827",
+				fontFamily: "Arial, sans-serif",
+				fontSize: "14px",
+				fontStyle: "700",
+				padding: { x: 10, y: 6 },
+			})
+			.setOrigin(1, 0.5)
+			.setInteractive({ useHandCursor: true });
+		nextButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			const nextNode = advanceDialogue(active.definition, active.state);
+			if (!nextNode) {
+				this.closeDialogue();
+				return;
+			}
+			this.renderActiveDialogueNode();
+		});
+		container.add(nextButton);
 	}
 
 	private showEndMessage() {
@@ -1406,215 +1623,29 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
-	private findNearestInteractable(): Interactable | null {
-		const candidates: Interactable[] = [];
-
-		this.currentArea.eventBlocks.forEach((eventBlock) => {
-			const interaction = this.getEventInteraction(eventBlock);
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: eventBlock.id,
-			});
-
-			if ((!interaction || !canInteractActivate(interaction)) && !hasRule) {
-				return;
-			}
-
-			const distance =
-				Math.abs(eventBlock.x - this.playerPosition.x) +
-				Math.abs(eventBlock.y - this.playerPosition.y);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "event",
-					label: eventBlock.name,
-					interaction,
-					eventBlock,
-					distance,
-				});
-			}
+	private findNearestInteractable(): InteractableTarget | null {
+		return findNearestInteractableTarget({
+			project: this.project,
+			area: this.currentArea,
+			playerPosition: this.playerPosition,
+			runtimeState: this.runtimeState,
+			collectedPickupIds: this.collectedPickupIds,
+			defeatedNpcIds: this.defeatedNpcIds,
 		});
-
-		this.currentArea.structures.forEach((structure) => {
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: structure.id,
-			});
-			if (
-				(!structure.interaction ||
-					!canInteractActivate(structure.interaction)) &&
-				!hasRule
-			) {
-				return;
-			}
-
-			const distance = this.distanceToStructure(structure);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "structure",
-					label: structure.name,
-					interaction: structure.interaction,
-					structure,
-					distance,
-				});
-			}
-		});
-
-		this.currentArea.objects.forEach((object) => {
-			const definition = this.getObjectDefinition(object);
-			const interaction = object.interaction ?? definition?.defaultInteraction;
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: object.id,
-			});
-			const behaviour = this.getObjectBehaviour(object);
-			const hasBehaviour = behaviour.type !== "none";
-			if (
-				(!interaction || !canInteractActivate(interaction)) &&
-				!hasRule &&
-				!hasBehaviour
-			) {
-				return;
-			}
-
-			const distance = this.distanceToObject(object);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "object",
-					label:
-						object.nameOverride ??
-						this.getObjectDefinition(object)?.name ??
-						"Object",
-					interaction,
-					object,
-					distance,
-				});
-			}
-		});
-
-		this.currentArea.pickups.forEach((pickup) => {
-			if (
-				pickup.pickupMode !== "on_interact" ||
-				this.isPickupCollected(pickup)
-			) {
-				return;
-			}
-
-			const distance =
-				Math.abs(pickup.x - this.playerPosition.x) +
-				Math.abs(pickup.y - this.playerPosition.y);
-			if (distance <= 1) {
-				const item = this.project.items.find(
-					(candidate) => candidate.id === pickup.itemId,
-				);
-				candidates.push({
-					kind: "pickup",
-					label: item?.name ?? "item",
-					pickup,
-					distance,
-				});
-			}
-		});
-
-		this.currentArea.npcs.forEach((npc) => {
-			const resolved = this.getResolvedNpc(npc);
-			const attributes = this.runtimeState.npcs[npc.id] ?? resolved.attributes;
-			if (!attributes.canInteract) {
-				return;
-			}
-
-			const hasRule = this.hasRuleTrigger({
-				type: "on_interact",
-				targetId: npc.id,
-			});
-			if (
-				(!resolved.interaction || !canInteractActivate(resolved.interaction)) &&
-				!hasRule
-			) {
-				return;
-			}
-
-			const distance =
-				Math.abs(npc.x - this.playerPosition.x) +
-				Math.abs(npc.y - this.playerPosition.y);
-			if (distance <= 1) {
-				candidates.push({
-					kind: "npc",
-					label: resolved.name,
-					interaction: resolved.interaction,
-					npc,
-					distance,
-				});
-			}
-		});
-
-		return (
-			candidates.sort((a, b) => {
-				if (a.distance !== b.distance) {
-					return a.distance - b.distance;
-				}
-
-				return a.kind === "event" ? -1 : 1;
-			})[0] ?? null
-		);
 	}
 
-	private distanceToStructure(structure: MapStructure): number {
-		const minX = structure.x;
-		const maxX = structure.x + structure.widthTiles - 1;
-		const minY = structure.y;
-		const maxY = structure.y + structure.heightTiles - 1;
-		const deltaX =
-			this.playerPosition.x < minX
-				? minX - this.playerPosition.x
-				: this.playerPosition.x > maxX
-					? this.playerPosition.x - maxX
-					: 0;
-		const deltaY =
-			this.playerPosition.y < minY
-				? minY - this.playerPosition.y
-				: this.playerPosition.y > maxY
-					? this.playerPosition.y - maxY
-					: 0;
-
-		return deltaX + deltaY;
-	}
-
-	private distanceToObject(object: ObjectInstance): number {
-		const definition = this.getObjectDefinition(object);
-		const minX = object.x;
-		const maxX =
-			object.x + (object.widthTiles ?? definition?.widthTiles ?? 1) - 1;
-		const minY = object.y;
-		const maxY =
-			object.y + (object.heightTiles ?? definition?.heightTiles ?? 1) - 1;
-		const deltaX =
-			this.playerPosition.x < minX
-				? minX - this.playerPosition.x
-				: this.playerPosition.x > maxX
-					? this.playerPosition.x - maxX
-					: 0;
-		const deltaY =
-			this.playerPosition.y < minY
-				? minY - this.playerPosition.y
-				: this.playerPosition.y > maxY
-					? this.playerPosition.y - maxY
-					: 0;
-
-		return deltaX + deltaY;
-	}
-
-	private updatePrompt(interactable: Interactable | null) {
+	private updatePrompt(interactable: InteractableTarget | null) {
 		if (!this.promptText) {
 			return;
 		}
 
 		this.promptText.setText(
 			interactable
-				? interactable.kind === "pickup"
+				? interactable.type === "pickup"
 					? `Press E to pick up ${interactable.label}`
-					: interactable.kind === "npc"
+					: interactable.type === "npc"
 						? `Press E to talk to ${interactable.label}`
-						: interactable.kind === "object"
+						: interactable.type === "object"
 							? this.promptForObject(interactable)
 							: this.promptForInteraction(interactable.interaction)
 				: "",
@@ -1622,7 +1653,7 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private promptForObject(
-		interactable: Extract<Interactable, { kind: "object" }>,
+		interactable: Extract<InteractableTarget, { type: "object" }>,
 	): string {
 		const behaviour = this.getObjectBehaviour(interactable.object);
 		if (behaviour.type === "vehicle" && behaviour.vehicleType === "boat") {
@@ -1659,9 +1690,18 @@ export class AdventureScene extends Phaser.Scene {
 				: "Press E to ride";
 		}
 
+		if (interaction.type === "start_dialogue") {
+			return "Press E to talk";
+		}
+
+		if (interaction.type === "open_shop") {
+			return "Press E to shop";
+		}
+
 		return "Press E to inspect";
 	}
 
+	// Legacy direct interaction presentation and compatibility handling.
 	private runInteraction(interaction: Interaction, label: string) {
 		if (interaction.activationMode === "disabled") {
 			return;
@@ -1716,6 +1756,34 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		if (interaction.type === "start_dialogue") {
+			if (!interaction.dialogueId) {
+				this.setStatus(`Dialogue missing: ${label}.`);
+				return;
+			}
+
+			const dialogue = this.project.dialogues.find(
+				(candidate) => candidate.id === interaction.dialogueId,
+			);
+			if (!dialogue) {
+				this.setStatus(`Dialogue missing: ${label}.`);
+				return;
+			}
+
+			this.showDialogue(dialogue);
+			return;
+		}
+
+		if (interaction.type === "open_shop") {
+			if (!interaction.shopId) {
+				this.setStatus(`Shop missing: ${label}.`);
+				return;
+			}
+
+			this.openShop(interaction.shopId);
+			return;
+		}
+
 		if (interaction.type === "set_flag") {
 			if (!interaction.flag) {
 				this.setStatus(`Flag missing: ${label}.`);
@@ -1741,164 +1809,51 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private runObjectBehaviour(object: ObjectInstance): boolean {
-		const result = runObjectBehaviour(this.getObjectBehaviour(object), {
-			itemDefinitions: this.project.items,
-			objectId: object.id,
-			openedObjectIds: this.openedObjectIds,
-			state: this.runtimeState,
-		});
-
-		return this.applyObjectBehaviourResult(object, result);
+		return runRuntimeObjectBehaviour(this.session, object, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
+		);
 	}
 
 	private tryAttack(time: number): boolean {
-		if (!canAttack(time, this.nextAttackAt)) {
-			this.setStatus("Attack cooling down.");
-			return false;
-		}
-
-		this.nextAttackAt = time + this.playerCombat.attackCooldownMs;
-		const target = findAttackTarget(
-			this.currentArea.npcs,
-			this.runtimeState.npcs,
-			this.defeatedNpcIds,
-			this.playerPosition,
-			this.playerFacing,
-			this.playerCombat.attackRangeTiles,
+		return attemptRuntimeCombatAttack(
+			this.session,
+			this.currentArea,
+			time,
+			(event) => this.handleRuntimeCombatEvent(event),
 		);
-
-		if (!target) {
-			this.setStatus("Attack missed.");
-			return false;
-		}
-
-		const attributes = this.runtimeState.npcs[target.id] ?? target.attributes;
-		const result = damageNpc(attributes, this.playerCombat.attackDamage);
-		const enemyName = this.getNpcName(target);
-		this.recentEnemyHud = {
-			id: target.id,
-			name: enemyName,
-			health: result.health,
-			maxHealth: attributes.maxHealth,
-		};
-
-		if (result.defeated) {
-			this.defeatNpc(target, enemyName);
-		} else {
-			this.setStatus(`Hit ${enemyName} for ${this.playerCombat.attackDamage}.`);
-			this.logEvent(`Combat hit: ${enemyName}.`);
-		}
-
-		this.updateDebugPanel();
-		this.notifyCombatChanged();
-		return true;
 	}
 
-	private defeatNpc(npc: NPCInstance, enemyName = this.getNpcName(npc)) {
-		this.defeatedNpcIds.add(npc.id);
-		this.runtimeState.flags[`npc_defeated_${npc.id}`] = true;
-		this.currentArea.npcs = removeDefeatedNpc(this.currentArea.npcs, npc.id);
-		this.npcMarkers.get(npc.id)?.destroy();
-		this.npcMarkers.delete(npc.id);
-		this.npcMovementStates.delete(npc.id);
-		this.enemyContactCooldowns.delete(npc.id);
-		this.setStatus(`${enemyName} defeated.`);
-		this.logEvent(`Combat defeated: ${enemyName}.`);
-		this.syncQuestProgress();
-		// TODO: Add on_npc_defeated rule trigger and combat rule actions when Logic Builder scope expands.
-	}
-
-	private applyObjectBehaviourResult(
-		object: ObjectInstance,
-		result: ObjectBehaviourResult,
-	): boolean {
-		if (!result.handled) {
-			return false;
+	// Shared runtime combat event translation.
+	private handleRuntimeCombatEvent(event: RuntimeCombatEvent) {
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
 		}
 
-		if (result.type === "container") {
-			this.onInventoryChanged?.({ ...this.runtimeState.inventory.items });
-			this.syncQuestProgress();
+		if (event.type === "npcRemoved") {
+			this.npcMarkers.get(event.npcId)?.destroy();
+			this.npcMarkers.delete(event.npcId);
+			return;
+		}
+
+		if (event.type === "stateChanged") {
 			this.updateDebugPanel();
-			this.setStatus(result.message);
-			return true;
+			return;
 		}
 
-		if (result.type === "door") {
-			if (!result.allowed) {
-				if (result.lockedCutsceneId) {
-					const cutscene = this.project.cutscenes.find(
-						(candidate) => candidate.id === result.lockedCutsceneId,
-					);
-					if (cutscene) {
-						this.showCutscene(cutscene, () => undefined);
-						return true;
-					}
-				}
-				this.setStatus(result.message);
-				return true;
-			}
-
-			if (result.targetAreaId && result.targetEventBlockId) {
-				const eventBlock = this.findEventBlock(
-					result.targetEventBlockId,
-					result.targetAreaId,
-				);
-				if (eventBlock) {
-					this.movePlayerToArea(result.targetAreaId, eventBlock);
-				} else {
-					this.setStatus(`Door target missing: ${object.id}.`);
-				}
-				return true;
-			}
-
-			this.setStatus(result.message);
-			return true;
+		if (event.type === "combatChanged") {
+			this.notifyCombatChanged();
+			return;
 		}
 
-		if (result.type === "sign") {
-			this.showCutscene(
-				{
-					id: `object_sign_${object.id}`,
-					name:
-						object.nameOverride ??
-						this.getObjectDefinition(object)?.name ??
-						"Sign",
-					backgroundImageId: "forest_path",
-					speakerName:
-						object.nameOverride ??
-						this.getObjectDefinition(object)?.name ??
-						"Sign",
-					text: result.text,
-				},
-				() => undefined,
-			);
-			return true;
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
 		}
 
-		if (result.type === "vehicle") {
-			return this.boardVehicle(object, result.behaviour, result.message);
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
 		}
-
-		return false;
-	}
-
-	private boardVehicle(
-		object: ObjectInstance,
-		behaviour: VehicleMovementConfig,
-		message: string,
-	): boolean {
-		if (behaviour.vehicleType !== "boat") {
-			this.setStatus(message);
-			return true;
-		}
-
-		this.playerVehicleState = createBoardedVehicleState(object.id, behaviour);
-		this.currentMovementMode = behaviour.movementMode;
-		this.addVehicleVisual(behaviour);
-		this.updateDebugPanel();
-		this.setStatus("Boarded boat.");
-		return true;
 	}
 
 	private addVehicleVisual(behaviour: VehicleMovementConfig) {
@@ -1922,79 +1877,17 @@ export class AdventureScene extends Phaser.Scene {
 		this.playerMarker.addAt(hull, 0);
 	}
 
-	private leaveVehicle(showMessage: boolean) {
-		if (!this.playerVehicleState.active) {
-			return;
-		}
-
-		this.playerVehicleState = { active: false };
-		this.currentMovementMode = "walk";
-		this.vehicleVisual?.destroy();
-		this.vehicleVisual = undefined;
-		this.updateDebugPanel();
-		if (showMessage) {
-			this.setStatus("Dismounted.");
-		}
-	}
-
-	private getActiveVehicleBehaviour(): VehicleMovementConfig | undefined {
-		if (
-			!this.playerVehicleState.active ||
-			!this.playerVehicleState.vehicleObjectInstanceId
-		) {
-			return undefined;
-		}
-
-		const object = this.currentArea.objects.find(
-			(candidate) =>
-				candidate.id === this.playerVehicleState.vehicleObjectInstanceId,
-		);
-		const behaviour = object ? this.getObjectBehaviour(object) : undefined;
-		return behaviour?.type === "vehicle" ? behaviour : undefined;
-	}
-
 	private tryDismountVehicle(): boolean {
-		const behaviour = this.getActiveVehicleBehaviour();
-		const vehicleObjectId = this.playerVehicleState.vehicleObjectInstanceId;
-		const vehicleObject = vehicleObjectId
-			? this.currentArea.objects.find(
-					(candidate) => candidate.id === vehicleObjectId,
-				)
-			: undefined;
-
-		if (!behaviour || !vehicleObject) {
-			this.leaveVehicle(false);
-			this.setStatus("Vehicle missing.");
+		if (
+			!dismountRuntimeVehicle(
+				this.session,
+				(event) => this.handleRuntimeObjectInteractionEvent(event),
+				this.currentArea,
+			)
+		) {
 			return false;
 		}
 
-		const waterTile = { ...this.playerPosition };
-		const target = findDismountTile(
-			this.currentArea,
-			this.playerPosition,
-			this.playerFacing,
-			behaviour,
-		);
-		if (!target.canDismount) {
-			this.setStatus(target.reason);
-			return false;
-		}
-
-		vehicleObject.x = waterTile.x;
-		vehicleObject.y = waterTile.y;
-		this.objectMarkers
-			.get(vehicleObject.id)
-			?.setPosition(
-				vehicleObject.x * this.tileSize,
-				vehicleObject.y * this.tileSize,
-			);
-
-		this.playerPosition = { x: target.x, y: target.y };
-		this.playerMarker?.setPosition(
-			target.x * this.tileSize + this.tileSize / 2,
-			target.y * this.tileSize + this.tileSize / 2,
-		);
-		this.leaveVehicle(true);
 		if (this.checkTouchInteractions(() => this.checkTrigger())) {
 			return true;
 		}
@@ -2003,183 +1896,93 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private collectPickupObject(pickup: PickupObject): boolean {
-		if (this.isPickupCollected(pickup)) {
-			return false;
-		}
-
-		const collected = collectPickup(
-			pickup,
-			this.runtimeState.inventory,
-			this.project.items,
-			this.collectedPickupIds,
-		);
-		if (!collected) {
-			return false;
-		}
-
-		if (pickup.collectedFlag) {
-			this.runtimeState.flags[pickup.collectedFlag] = true;
-		}
-
-		const item = this.project.items.find(
-			(candidate) => candidate.id === pickup.itemId,
-		);
-		if (pickup.once) {
-			this.worldLayer?.getByName(`pickup:${pickup.id}`)?.destroy();
-		}
-		this.notifyInventoryChanged();
-		this.syncQuestProgress();
-		this.updateDebugPanel();
-		this.setStatus(
-			`Picked up ${item?.name ?? pickup.itemId} x${pickup.quantity}.`,
-		);
-		return true;
-	}
-
-	private isPickupCollected(pickup: PickupObject): boolean {
-		return Boolean(
-			pickup.once &&
-				(this.collectedPickupIds.has(pickup.id) ||
-					(pickup.collectedFlag &&
-						this.runtimeState.flags[pickup.collectedFlag])),
+		return collectRuntimePickup(this.session, pickup, (event) =>
+			this.handleRuntimeObjectInteractionEvent(event),
 		);
 	}
 
+	// Runtime movement transaction plus Phaser tween/animation.
 	private tryMove(deltaX: number, deltaY: number, time: number) {
-		this.playerFacing = { x: deltaX, y: deltaY };
-		const nextX = this.playerPosition.x + deltaX;
-		const nextY = this.playerPosition.y + deltaY;
-
-		if (
-			nextX < 0 ||
-			nextY < 0 ||
-			nextX >= this.currentArea.width ||
-			nextY >= this.currentArea.height
-		) {
+		const move = attemptPlayerMove(this.session, { x: deltaX, y: deltaY });
+		if (move.type === "blocked") {
+			if (move.reason) {
+				this.setStatus(move.reason);
+			}
 			return;
 		}
 
-		const activeVehicle = this.getActiveVehicleBehaviour();
-		const movement = resolveMovementAt(
-			this.currentArea,
-			nextX,
-			nextY,
-			this.project.player,
-			{
-				activeVehicle: activeVehicle
-					? {
-							...activeVehicle,
-							vehicleObjectInstanceId:
-								this.playerVehicleState.vehicleObjectInstanceId,
-						}
-					: undefined,
-			},
-		);
-		if (!movement.canMove) {
-			this.setStatus(movement.reason ?? "Blocked.");
-			return;
-		}
-
-		const duration = this.getMoveDuration(movement.speedMultiplier);
-		const destinationX = nextX * this.tileSize + this.tileSize / 2;
-		const destinationY = nextY * this.tileSize + this.tileSize / 2;
+		const destinationX = move.to.x * this.tileSize + this.tileSize / 2;
+		const destinationY = move.to.y * this.tileSize + this.tileSize / 2;
 
 		this.isMoving = true;
-		this.nextMoveAt = time + duration;
-		this.playerPosition = { x: nextX, y: nextY };
+		this.nextMoveAt = time + move.moveDurationMs;
 		this.tweens.add({
 			targets: this.playerMarker,
 			x: destinationX,
 			y: destinationY,
-			duration,
+			duration: move.moveDurationMs,
 			ease: "Sine.easeInOut",
 			onComplete: () => {
 				this.isMoving = false;
-				if (this.checkTouchInteractions(() => this.checkTrigger())) {
+				if (
+					this.checkTouchInteractions(
+						() => this.checkTrigger(),
+						move.touchTargets,
+					)
+				) {
 					return;
 				}
-				this.checkTrigger();
+				this.checkTrigger(move.triggerTargets);
 			},
 		});
 	}
 
-	private getMoveDuration(speedMultiplier = 1): number {
-		const baseDuration = 360 - clamp(this.project.player.speed, 1, 20) * 24;
-		return Math.max(50, baseDuration / clamp(speedMultiplier, 0.1, 4));
-	}
+	private checkTouchInteractions(
+		onDone: () => void,
+		touchTargets?: TouchInteractableTarget[],
+	): boolean {
+		const target =
+			touchTargets?.[0] ??
+			findTouchInteractableTarget({
+				project: this.project,
+				area: this.currentArea,
+				playerPosition: this.playerPosition,
+				runtimeState: this.runtimeState,
+				collectedPickupIds: this.collectedPickupIds,
+			});
 
-	private checkTouchInteractions(onDone: () => void): boolean {
-		const pickup = this.currentArea.pickups.find(
-			(candidate) =>
-				candidate.pickupMode === "on_touch" &&
-				candidate.x === this.playerPosition.x &&
-				candidate.y === this.playerPosition.y,
-		);
-		if (pickup && this.collectPickupObject(pickup)) {
-			onDone();
-			return true;
+		if (!target) {
+			return false;
 		}
 
-		const object = this.currentArea.objects.find(
-			(candidate) =>
-				candidate.x === this.playerPosition.x &&
-				candidate.y === this.playerPosition.y,
-		);
-		const objectInteraction = object
-			? (object.interaction ??
-				this.getObjectDefinition(object)?.defaultInteraction)
-			: undefined;
-		const objectBehaviour = object
-			? this.getObjectBehaviour(object)
-			: { type: "none" as const };
-		const objectHasRule = object
-			? this.hasRuleTrigger({ type: "on_touch", targetId: object.id })
-			: false;
+		if (target.type === "pickup") {
+			if (this.collectPickupObject(target.pickup)) {
+				onDone();
+				return true;
+			}
+			return false;
+		}
 
-		const objectBehaviourCanTouch =
-			objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
-		if (
-			object &&
-			((objectInteraction && canTouchActivate(objectInteraction)) ||
-				objectHasRule ||
-				objectBehaviourCanTouch)
-		) {
+		if (target.type === "object") {
+			const object = target.object;
+			const objectInteraction = target.interaction;
+			const objectBehaviour = this.getObjectBehaviour(object);
+			const objectBehaviourCanTouch =
+				objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
 			this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
 				if (objectBehaviourCanTouch) {
 					this.runObjectBehaviour(object);
 				}
 				if (objectInteraction && canTouchActivate(objectInteraction)) {
-					this.runInteraction(
-						objectInteraction,
-						object.nameOverride ??
-							this.getObjectDefinition(object)?.name ??
-							"Object",
-					);
+					this.runInteraction(objectInteraction, target.label);
 				}
 				onDone();
 			});
 			return true;
 		}
 
-		const eventBlock = this.currentArea.eventBlocks.find(
-			(candidate) =>
-				candidate.x === this.playerPosition.x &&
-				candidate.y === this.playerPosition.y,
-		);
-		const interaction = eventBlock
-			? this.getEventInteraction(eventBlock)
-			: undefined;
-		const hasRule = eventBlock
-			? this.hasRuleTrigger({ type: "on_touch", targetId: eventBlock.id })
-			: false;
-
-		if (
-			!eventBlock ||
-			((!interaction || !canTouchActivate(interaction)) && !hasRule)
-		) {
-			return false;
-		}
-
+		const eventBlock = target.eventBlock;
+		const interaction = target.interaction;
 		this.fireRuleTrigger({ type: "on_touch", targetId: eventBlock.id }, () => {
 			if (interaction && canTouchActivate(interaction)) {
 				this.runInteraction(interaction, eventBlock.name);
@@ -2189,34 +1992,12 @@ export class AdventureScene extends Phaser.Scene {
 		return true;
 	}
 
-	private checkTrigger() {
-		if (!this.waitingForTrigger) {
-			return;
-		}
-
-		const eventBlock = this.findEventBlock(
-			this.waitingForTrigger.eventBlockId,
-			this.waitingForTrigger.areaId,
+	private checkTrigger(triggerTargets?: InteractableTarget[]) {
+		checkRuntimeWaitingTrigger(
+			this.session,
+			(event) => this.handleRuntimeProgressionEvent(event),
+			triggerTargets,
 		);
-		if (!eventBlock) {
-			this.waitingForTrigger = null;
-			this.progressionIndex += 1;
-			this.processProgression();
-			return;
-		}
-
-		const isInTargetArea =
-			!this.waitingForTrigger.areaId ||
-			this.waitingForTrigger.areaId === this.currentArea.id;
-		if (
-			isInTargetArea &&
-			eventBlock.x === this.playerPosition.x &&
-			eventBlock.y === this.playerPosition.y
-		) {
-			this.waitingForTrigger = null;
-			this.progressionIndex += 1;
-			this.processProgression();
-		}
 	}
 
 	private tileIdAt(x: number, y: number): string {
@@ -2239,33 +2020,6 @@ export class AdventureScene extends Phaser.Scene {
 		);
 	}
 
-	private getEventInteraction(eventBlock: EventBlock): Interaction | undefined {
-		// TODO: Migrate legacy direct interactions into friendly rules once the rule editor covers every use case.
-		if (eventBlock.interaction) {
-			return eventBlock.interaction;
-		}
-
-		if (eventBlock.kind === "area_link" && eventBlock.link) {
-			return {
-				type: "area_link",
-				activationMode: "on_touch",
-				...eventBlock.link,
-			};
-		}
-
-		return undefined;
-	}
-
-	private getObjectDefinition(object: ObjectInstance) {
-		return this.project.objects.find(
-			(definition) => definition.id === object.objectDefinitionId,
-		);
-	}
-
-	private getNpcName(npc: NPCInstance): string {
-		return this.getResolvedNpc(npc).name;
-	}
-
 	private getResolvedNpc(npc: NPCInstance) {
 		const resolved = resolveNPCInstance(
 			this.project.npcs.find(
@@ -2285,134 +2039,80 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private getObjectBehaviour(object: ObjectInstance) {
-		return (
-			object.behaviourOverride ??
-			this.getObjectDefinition(object)?.defaultBehaviour ?? {
-				type: "none" as const,
-			}
+		return resolveObjectBehaviour(this.project, object);
+	}
+
+	// Shared runtime rule action event translation.
+	private getRuleContext(): RuleActionContext {
+		return createRuntimeRuleContext(this.session, (event) =>
+			this.handleRuntimeRuleEvent(event),
 		);
 	}
 
-	private hasRuleTrigger(trigger: RuleTrigger): boolean {
-		return this.project.rules.some((rule) => {
-			if (!rule.enabled || rule.trigger.type !== trigger.type) {
-				return false;
-			}
+	private handleRuntimeRuleEvent(event: RuntimeRuleEvent) {
+		if (event.type === "status") {
+			this.setStatus(event.message);
+			return;
+		}
 
-			if (
-				rule.trigger.type === "on_interact" &&
-				trigger.type === "on_interact"
-			) {
-				return rule.trigger.targetId === trigger.targetId;
-			}
+		if (event.type === "stateChanged") {
+			this.updateDebugPanel();
+			return;
+		}
 
-			if (rule.trigger.type === "on_touch" && trigger.type === "on_touch") {
-				return rule.trigger.targetId === trigger.targetId;
-			}
+		if (event.type === "inventoryChanged") {
+			this.onInventoryChanged?.(event.inventory);
+			return;
+		}
 
-			if (
-				rule.trigger.type === "on_area_enter" &&
-				trigger.type === "on_area_enter"
-			) {
-				return rule.trigger.areaId === trigger.areaId;
-			}
+		if (event.type === "questsChanged") {
+			this.onQuestsChanged?.(event.quests);
+			return;
+		}
 
-			if (
-				rule.trigger.type === "on_cutscene_end" &&
-				trigger.type === "on_cutscene_end"
-			) {
-				return rule.trigger.cutsceneId === trigger.cutsceneId;
-			}
+		if (event.type === "shopOpened") {
+			this.notifyShopChanged(event.message);
+			return;
+		}
 
-			return (
-				rule.trigger.type === "on_game_start" &&
-				trigger.type === "on_game_start"
+		if (event.type === "cutsceneRequested") {
+			const cutscene = this.project.cutscenes.find(
+				(candidate) => candidate.id === event.cutsceneId,
 			);
-		});
-	}
+			if (!cutscene) {
+				event.onDone();
+				return;
+			}
 
-	private getRuleContext(): RuleActionContext {
-		return {
-			state: this.runtimeState,
-			playCutscene: (cutsceneId, onDone) => {
-				const cutscene = this.project.cutscenes.find(
-					(candidate) => candidate.id === cutsceneId,
+			this.promptText?.setText("");
+			this.showCutscene(cutscene, () => {
+				this.fireRuleTrigger(
+					{ type: "on_cutscene_end", cutsceneId: event.cutsceneId },
+					event.onDone,
 				);
-				if (!cutscene) {
-					this.setStatus(`Rule cutscene missing: ${cutsceneId}.`);
-					onDone();
-					return;
-				}
+			});
+			return;
+		}
 
-				this.promptText?.setText("");
-				this.showCutscene(cutscene, () => {
-					this.fireRuleTrigger({ type: "on_cutscene_end", cutsceneId }, onDone);
-				});
-			},
-			teleport: (areaId, eventBlockId) => {
-				const eventBlock = this.findEventBlock(eventBlockId, areaId);
-				if (!eventBlock) {
-					this.setStatus(`Rule teleport target missing: ${eventBlockId}.`);
-					return;
-				}
+		if (event.type === "teleportRequested") {
+			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
+			if (!eventBlock) {
+				this.setStatus(`Rule teleport target missing: ${event.eventBlockId}.`);
+				return;
+			}
 
-				this.movePlayerToArea(areaId, eventBlock);
-			},
-			changeMovementMode: (mode) => {
-				this.currentMovementMode = mode;
-				this.setStatus(`Movement mode: ${mode}.`);
-				this.updateDebugPanel();
-			},
-			endGame: () => this.showEndMessage(),
-			activateQuest: (questId) => {
-				activateQuest(this.runtimeQuestState, questId);
-				this.syncQuestProgress();
-			},
-			completeQuest: (questId) => {
-				const quest = this.runtimeQuestState.quests.find(
-					(candidate) => candidate.id === questId,
-				);
-				const wasCompleted = quest?.status === "completed";
-				const wasRewarded =
-					this.runtimeQuestState.rewardedQuestIds.has(questId);
-				if (
-					completeRuntimeQuest(
-						this.runtimeQuestState,
-						questId,
-						this.runtimeState,
-						this.project.items,
-					)
-				) {
-					this.notifyInventoryChanged();
-					this.updateDebugPanel();
-				}
-				if (!wasCompleted && quest?.status === "completed") {
-					this.logEvent(`Quest completed: ${quest.name}.`);
-					this.runQuestCompletionActions(quest);
-				}
-				if (
-					!wasRewarded &&
-					this.runtimeQuestState.rewardedQuestIds.has(questId) &&
-					quest
-				) {
-					this.logEvent(`Quest reward granted: ${quest.name}.`);
-				}
-				this.syncQuestProgress();
-			},
-			failQuest: (questId) => {
-				failQuest(this.runtimeQuestState, questId);
-				this.syncQuestProgress();
-			},
-			openShop: (shopId) => this.openShop(shopId),
-			itemDefinitions: this.project.items,
-			shopDefinitions: this.project.shops,
-			logEvent: (message) => this.logEvent(message),
-			stateChanged: () => {
-				this.updateDebugPanel();
-				this.notifyInventoryChanged();
-				this.syncQuestProgress();
-			},
-		};
+			this.movePlayerToArea(event.areaId, eventBlock);
+			return;
+		}
+
+		if (event.type === "movementModeChanged") {
+			this.updateDebugPanel();
+			return;
+		}
+
+		if (event.type === "gameEnded") {
+			this.showEndMessage();
+		}
 	}
 
 	private fireRuleTrigger(
@@ -2484,73 +2184,17 @@ export class AdventureScene extends Phaser.Scene {
 
 	private markRuntimeAreaEntered(area: GameArea) {
 		const alreadyEntered = this.runtimeQuestState.enteredAreaIds.has(area.id);
-		markAreaEntered(this.runtimeQuestState, area.id);
+		markRuntimeAreaEntered(this.session, area.id, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
 		if (!alreadyEntered) {
 			this.logEvent(`Area entered: ${area.name}.`);
 		}
 	}
 
-	private runQuestCompletionActions(quest: Quest) {
-		if (
-			this.completedQuestActionIds.has(quest.id) ||
-			!quest.completionActions?.length
-		) {
-			return;
-		}
-		this.logEvent(`Quest completion actions: ${quest.name}.`);
-		runQuestCompletionActionsOnce(
-			quest,
-			this.completedQuestActionIds,
-			this.getRuleContext(),
-		);
-	}
-
 	private syncQuestProgress() {
-		this.logEvent("Quest sync running.");
-		for (const message of getQuestSyncDiagnosticMessages(
-			this.runtimeQuestState,
-			this.runtimeState,
-		)) {
-			this.logEvent(message);
-		}
-		const completedObjectiveIds = new Set(
-			this.runtimeQuestState.completedObjectiveIds,
-		);
-		const rewardedQuestIds = new Set(this.runtimeQuestState.rewardedQuestIds);
-		const questStatuses = new Map(
-			this.runtimeQuestState.quests.map((quest) => [quest.id, quest.status]),
-		);
-		const stateChanged = updateQuestProgress(
-			this.runtimeQuestState,
-			this.runtimeState,
-			this.project.items,
-		);
-		for (const objectiveId of this.runtimeQuestState.completedObjectiveIds) {
-			if (!completedObjectiveIds.has(objectiveId)) {
-				this.logEvent(`Quest objective completed: ${objectiveId}.`);
-			}
-		}
-		for (const quest of this.runtimeQuestState.quests) {
-			if (
-				questStatuses.get(quest.id) !== "completed" &&
-				quest.status === "completed"
-			) {
-				this.logEvent(`Quest completed: ${quest.name}.`);
-				this.runQuestCompletionActions(quest);
-			}
-			if (
-				!rewardedQuestIds.has(quest.id) &&
-				this.runtimeQuestState.rewardedQuestIds.has(quest.id)
-			) {
-				this.logEvent(`Quest reward granted: ${quest.name}.`);
-			}
-		}
-		if (stateChanged) {
-			this.notifyInventoryChanged();
-			this.updateDebugPanel();
-		}
-		this.onQuestsChanged?.(
-			getQuestViews(this.runtimeQuestState, this.runtimeState),
+		syncRuntimeQuestProgress(this.session, (event) =>
+			this.handleRuntimeProgressionEvent(event),
 		);
 	}
 

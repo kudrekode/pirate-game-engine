@@ -78,6 +78,16 @@ Each area owns:
 
 Terrain remains grid-based. Runtime camera settings live at the project level in `camera`; editor zoom and pan are separate UI concerns.
 
+## Map Workspace and 3D View
+
+`GameProject` remains the source of truth for authored map data. The 2D Map view and Three.js 3D view both edit the same areas, terrain, overlays, entities, selection, palette choices, and inspector state through `src/store/useProjectStore.ts`.
+
+Phaser remains the default/reference gameplay runtime. Three.js also has an experimental Play mode, but it must stay an adapter over the shared runtime session and must not become a second rules engine or a parallel map schema. Pressing Play clones the current project and starts either the default 2D Phaser runtime or the experimental Three.js runtime adapter.
+
+The Map Workspace should stay one shared editor with multiple views. Do not create a second parallel map editor for 3D. New 3D placement or movement behavior should reuse existing store placement/update methods so entities are identical to 2D placements and inspector selection stays synced.
+
+Terrain height/elevation is optional per-tile editor data used for 3D presentation and height sculpting. Missing height means `0`. Runtime movement currently ignores height; future height-aware rules such as cliffs, stairs, ramps, and water depth should be added deliberately in movement helpers, not hidden inside the Three.js view.
+
 ## Game State
 
 `GameProject.gameState` contains runtime defaults:
@@ -102,6 +112,33 @@ Runtime-owned copies currently include:
 - Quest status, objective progress, entered areas, and granted rewards in `RuntimeQuestState`
 
 Map entity positions used by Phaser are read from the cloned play snapshot, not the live editor project.
+
+## Dual Runtime Architecture
+
+`GameProject` is editor/authored data. It remains the schema shared by the editor, migrations, default project data, and runtime startup.
+
+`RuntimeSession` is shared play-session state. It owns runtime copies of flags, variables, inventory quantities, NPC attributes, quest state, shop stock, player health, combat state, area/progression state, vehicle state, collected pickups, opened objects, defeated NPCs, and movement timing.
+
+Phaser and Three.js runtimes should behave as adapters. Adapters translate input, rendering, camera, animation/tweening, audio/visual effects, and UI/cutscene/dialogue presentation. They should not own gameplay semantics that belong in `RuntimeSessionState` or shared helpers.
+
+Runtime helpers are the source of gameplay semantics. Do not duplicate movement, collision, interaction discovery, rule/action dispatch, quests, inventory, shops, object behaviours, pickup collection, vehicle state, NPC movement, enemy contact, or combat logic inside runtime adapters.
+
+`src/runtime/AdventureScene.ts` is the Phaser adapter. It should translate Phaser input, tweens, cameras, rendering, and UI/cutscene/dialogue presentation into calls to shared runtime helpers.
+
+`src/runtime/three/ThreeRuntimePanel.tsx` is the experimental Three.js adapter. It must not import editor store/live editor state for gameplay. It may reuse rendering helpers, but runtime decisions must come from `RuntimeSession` and shared runtime helpers.
+
+Phaser remains the reference runtime until runtime contract tests and manual parity checks prove that the Three.js adapter matches Phaser gameplay semantics.
+
+Key shared runtime helpers:
+
+- `src/runtime/runtimeSession.ts`
+- `src/runtime/interactionDiscovery.ts`
+- `src/runtime/playerMovementTransaction.ts`
+- `src/runtime/runtimeRuleActionDispatcher.ts`
+- `src/runtime/runtimeProgression.ts`
+- `src/runtime/runtimeObjectInteractions.ts`
+- `src/runtime/runtimeNpcTick.ts`
+- `src/runtime/runtimeCombat.ts`
 
 ## Items And Pickups
 
@@ -180,7 +217,7 @@ Enemies are hostile `NPCInstance` records with optional `enemyBehaviour.enabled`
 
 Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults.
 
-Combat V1 adds basic melee player attacks in `src/runtime/combat.ts` and `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
+Combat V1 adds basic melee player attacks through `src/runtime/combat.ts` and `src/runtime/runtimeCombat.ts`, with Phaser presentation in `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
 
 ## Rule Engine
 

@@ -4,6 +4,10 @@ import type {
 	ConditionExpression,
 	ConditionGroup,
 	Cutscene,
+	DialogueChoice,
+	DialogueCondition,
+	DialogueDefinition,
+	DialogueNode,
 	EnemyBehaviour,
 	EventBlock,
 	GameAction,
@@ -40,13 +44,18 @@ import type {
 	RuleTrigger,
 	ShopDefinition,
 	SingleCondition,
+	ThreeRuntimeCameraConfig,
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
 import { defaultProject } from "./defaultProject";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
-import { defaultCameraConfig } from "./projectDefaults";
+import {
+	defaultCameraConfig,
+	defaultThreeRuntimeCameraConfig,
+} from "./projectDefaults";
+import { migrateTerrainHeights } from "./terrainHeight";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -234,6 +243,26 @@ function migrateInteraction(
 			? withInteractionBase(value, fallbackActivationMode, {
 					type: "play_cutscene",
 					cutsceneId,
+				})
+			: undefined;
+	}
+
+	if (value.type === "start_dialogue") {
+		const dialogueId = readString(value.dialogueId, "");
+		return dialogueId
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: "start_dialogue",
+					dialogueId,
+				})
+			: undefined;
+	}
+
+	if (value.type === "open_shop") {
+		const shopId = readString(value.shopId, "");
+		return shopId
+			? withInteractionBase(value, fallbackActivationMode, {
+					type: "open_shop",
+					shopId,
 				})
 			: undefined;
 	}
@@ -732,6 +761,7 @@ function migrateArea(
 		source.terrainTiles ?? source.tiles,
 		fallback.terrainTiles,
 	);
+	const terrainHeights = migrateTerrainHeights(source.terrainHeights);
 
 	return {
 		id,
@@ -746,6 +776,7 @@ function migrateArea(
 			readNumber(source.tileSize, fallback.tileSize, 8, 128),
 		),
 		terrainTiles,
+		...(terrainHeights.length > 0 ? { terrainHeights } : {}),
 		overlayTiles: migrateOverlayTiles(source.overlayTiles),
 		structures: migrateStructures(source.structures),
 		objects: migrateObjectInstances(source.objects, id),
@@ -893,6 +924,65 @@ function migrateCamera(value: unknown): CameraConfig {
 				0,
 				100,
 			),
+		),
+		three: migrateThreeRuntimeCamera(source.three),
+	};
+}
+
+function migrateThreeRuntimeCamera(value: unknown): ThreeRuntimeCameraConfig {
+	const source = isRecord(value) ? value : {};
+	const style =
+		source.style === "thirdPerson" || source.style === "fixedIsometric"
+			? source.style
+			: defaultThreeRuntimeCameraConfig.style;
+
+	return {
+		style,
+		distance: readNumber(
+			source.distance,
+			defaultThreeRuntimeCameraConfig.distance,
+			2,
+			24,
+		),
+		height: readNumber(
+			source.height,
+			defaultThreeRuntimeCameraConfig.height,
+			0,
+			12,
+		),
+		pitchDegrees: readNumber(
+			source.pitchDegrees,
+			defaultThreeRuntimeCameraConfig.pitchDegrees,
+			-10,
+			75,
+		),
+		yawOffsetDegrees: readNumber(
+			source.yawOffsetDegrees,
+			defaultThreeRuntimeCameraConfig.yawOffsetDegrees,
+			-180,
+			180,
+		),
+		lookAtHeight: readNumber(
+			source.lookAtHeight,
+			defaultThreeRuntimeCameraConfig.lookAtHeight,
+			-1,
+			4,
+		),
+		followSmoothing: readNumber(
+			source.followSmoothing,
+			defaultThreeRuntimeCameraConfig.followSmoothing,
+			1,
+			30,
+		),
+		lookSmoothing: readNumber(
+			source.lookSmoothing,
+			defaultThreeRuntimeCameraConfig.lookSmoothing,
+			1,
+			30,
+		),
+		allowRuntimeOrbit: readBoolean(
+			source.allowRuntimeOrbit,
+			defaultThreeRuntimeCameraConfig.allowRuntimeOrbit,
 		),
 	};
 }
@@ -1348,30 +1438,6 @@ function migrateQuestRewards(value: unknown): QuestReward[] {
 	});
 }
 
-function questRewardsToActions(rewards: QuestReward[]): GameAction[] {
-	return rewards.map((reward) => {
-		if (reward.type === "item") {
-			return {
-				type: "give_item" as const,
-				itemId: reward.itemId,
-				quantity: reward.quantity,
-			};
-		}
-		if (reward.type === "flag") {
-			return {
-				type: "set_flag" as const,
-				flag: reward.flag,
-				value: reward.value,
-			};
-		}
-		return {
-			type: "change_variable" as const,
-			variable: reward.variable,
-			amount: reward.amount,
-		};
-	});
-}
-
 function migrateQuests(value: unknown): Quest[] {
 	if (!Array.isArray(value)) {
 		return [];
@@ -1408,6 +1474,159 @@ function migrateQuests(value: unknown): Quest[] {
 	});
 }
 
+function migrateDialogueCondition(value: unknown): DialogueCondition | null {
+	if (!isRecord(value)) {
+		return null;
+	}
+
+	if (value.type === "flag_is") {
+		return {
+			type: "flag_is",
+			flag: readString(value.flag, ""),
+			value: readBoolean(value.value, true),
+		};
+	}
+
+	if (value.type === "variable_compare") {
+		return {
+			type: "variable_compare",
+			variable: readString(value.variable, ""),
+			operator: readComparisonOperator(value.operator),
+			value: readStateValue(value.value, 0),
+		};
+	}
+
+	if (value.type === "has_item" || value.type === "not_has_item") {
+		return {
+			type: value.type,
+			itemId: readString(value.itemId, ""),
+			quantity: Math.round(readNumber(value.quantity, 1, 1, 9999)),
+		};
+	}
+
+	if (value.type === "quest_status") {
+		const status =
+			value.status === "active" ||
+			value.status === "completed" ||
+			value.status === "failed"
+				? value.status
+				: "inactive";
+		return {
+			type: "quest_status",
+			questId: readString(value.questId, ""),
+			status,
+		};
+	}
+
+	return null;
+}
+
+function migrateDialogueChoices(value: unknown): DialogueChoice[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((choice, index): DialogueChoice[] => {
+		if (!isRecord(choice)) {
+			return [];
+		}
+
+		return [
+			{
+				id: readString(choice.id, `choice_${index + 1}`),
+				text: readString(choice.text, `Choice ${index + 1}`),
+				targetNodeId: readString(choice.targetNodeId, ""),
+				conditions: Array.isArray(choice.conditions)
+					? choice.conditions.flatMap((condition) => {
+							const migrated = migrateDialogueCondition(condition);
+							return migrated ? [migrated] : [];
+						})
+					: [],
+			},
+		];
+	});
+}
+
+function migrateDialogueNodes(value: unknown): DialogueNode[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((node, index): DialogueNode[] => {
+		if (!isRecord(node)) {
+			return [];
+		}
+
+		const id = readString(node.id, `node_${index + 1}`);
+		const speaker = readString(node.speaker, "");
+		const portraitId = readString(node.portraitId, "");
+		const actions = migrateActions(node.actions);
+		const base = {
+			id,
+			...(speaker ? { speaker } : {}),
+			...(portraitId ? { portraitId } : {}),
+			...(actions.length > 0 ? { actions } : {}),
+		};
+
+		if (node.type === "choice") {
+			const text = readString(node.text, "");
+			return [
+				{
+					...base,
+					type: "choice",
+					...(text ? { text } : {}),
+					choices: migrateDialogueChoices(node.choices),
+				},
+			];
+		}
+
+		if (node.type === "end") {
+			const text = readString(node.text, "");
+			return [
+				{
+					...base,
+					type: "end",
+					...(text ? { text } : {}),
+				},
+			];
+		}
+
+		return [
+			{
+				...base,
+				type: "text",
+				text: readString(node.text, ""),
+				...(readString(node.nextNodeId, "")
+					? { nextNodeId: readString(node.nextNodeId, "") }
+					: {}),
+			},
+		];
+	});
+}
+
+function migrateDialogues(value: unknown): DialogueDefinition[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((dialogue, index): DialogueDefinition[] => {
+		if (!isRecord(dialogue)) {
+			return [];
+		}
+
+		const nodes = migrateDialogueNodes(dialogue.nodes);
+		const fallbackStartNodeId = nodes[0]?.id ?? "";
+		return [
+			{
+				id: readString(dialogue.id, `dialogue_${index + 1}`),
+				name: readString(dialogue.name, `Dialogue ${index + 1}`),
+				startNodeId: readString(dialogue.startNodeId, fallbackStartNodeId),
+				nodes,
+			},
+		];
+	});
+}
+
 function readComparisonOperator(value: unknown): VariableComparisonOperator {
 	return value === "==" ||
 		value === "!=" ||
@@ -1417,6 +1636,30 @@ function readComparisonOperator(value: unknown): VariableComparisonOperator {
 		value === "<="
 		? value
 		: "==";
+}
+
+function questRewardsToActions(rewards: QuestReward[]): GameAction[] {
+	return rewards.map((reward) => {
+		if (reward.type === "item") {
+			return {
+				type: "give_item" as const,
+				itemId: reward.itemId,
+				quantity: reward.quantity,
+			};
+		}
+		if (reward.type === "flag") {
+			return {
+				type: "set_flag" as const,
+				flag: reward.flag,
+				value: reward.value,
+			};
+		}
+		return {
+			type: "change_variable" as const,
+			variable: reward.variable,
+			amount: reward.amount,
+		};
+	});
 }
 
 function readStateValue(
@@ -1756,6 +1999,7 @@ export function migrateProject(value: unknown): GameProject {
 		cutscenes: Array.isArray(source.cutscenes)
 			? (source.cutscenes as Cutscene[])
 			: cloneProject(defaultProject).cutscenes,
+		dialogues: migrateDialogues(source.dialogues),
 		progression: migrateProgression(source.progression, activeAreaId),
 		gameState: migrateGameState(source.gameState),
 		items: migrateItems(source.items),

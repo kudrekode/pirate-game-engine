@@ -7,6 +7,7 @@ import type { RuntimeDebugEvent } from "./debugLog";
 import type { QuestView } from "./questEngine";
 import { getCurrencyHudEntries, getQuestTrackerState } from "./runtimeHud";
 import type { RuntimeShopPanelState } from "./shopRuntime";
+import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
 
 const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
@@ -19,6 +20,7 @@ type RuntimePanelProps = {
 export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sceneRef = useRef<AdventureScene | null>(null);
+	const [playMode, setPlayMode] = useState<"2d" | "3d">("2d");
 	const [inventory, setInventory] = useState<Record<string, number>>({});
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const [quests, setQuests] = useState<QuestView[]>([]);
@@ -50,7 +52,9 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 	}, []);
 
 	useEffect(() => {
-		if (!containerRef.current) {
+		// Restart signal for Phaser sessions.
+		void runtimeKey;
+		if (!containerRef.current || playMode !== "2d") {
 			return undefined;
 		}
 		void runtimeKey;
@@ -91,7 +95,13 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 			game.destroy(true);
 			sceneRef.current = null;
 		};
-	}, [initialCombat.health, initialCombat.maxHealth, project, runtimeKey]);
+	}, [
+		initialCombat.health,
+		initialCombat.maxHealth,
+		playMode,
+		project,
+		runtimeKey,
+	]);
 
 	const inventoryItems = Object.entries(inventory)
 		.filter(([, quantity]) => quantity > 0)
@@ -136,168 +146,196 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 					<strong>Play Test</strong>
 					<span>{project.metadata.name}</span>
 				</div>
+				<div className="runtime-mode-selector">
+					<button
+						className={playMode === "2d" ? "selected" : ""}
+						onClick={() => setPlayMode("2d")}
+						type="button"
+					>
+						Play 2D
+					</button>
+					<button
+						className={playMode === "3d" ? "selected" : ""}
+						onClick={() => setPlayMode("3d")}
+						type="button"
+					>
+						Play 3D Experimental
+					</button>
+				</div>
 				<button onClick={onClose} type="button">
 					Back to editor
 				</button>
 			</div>
 			<div className="runtime-stage">
-				<div className="phaser-host" ref={containerRef} />
-				<div className="inventory-hud">
-					{currencyHudEntries.length > 0 ? (
-						currencyHudEntries.map((entry) => (
-							<span key={entry.id}>
-								{entry.name}: {entry.quantity}
-							</span>
-						))
-					) : (
-						<span>Currency: none</span>
-					)}
-				</div>
-				<div className="combat-hud">
-					<strong>
-						Health {combat.playerHealth}/{combat.playerMaxHealth}
-					</strong>
-					{combat.recentEnemy ? (
-						<span>
-							{combat.recentEnemy.name} {combat.recentEnemy.health}/
-							{combat.recentEnemy.maxHealth}
-						</span>
-					) : (
-						<span>Space: attack</span>
-					)}
-				</div>
-				{combat.gameOver ? (
-					<button
-						className="runtime-restart-button"
-						onClick={() => setRuntimeKey((key) => key + 1)}
-						type="button"
-					>
-						Restart
-					</button>
-				) : null}
-				<details className="runtime-debug-log">
-					<summary>Flow Log ({debugEvents.length})</summary>
-					<div className="runtime-debug-events">
-						{debugEvents.length > 0 ? (
-							debugEvents.map((event) => (
-								<div className="runtime-debug-event" key={event.id}>
-									{event.message}
-								</div>
-							))
-						) : (
-							<p>No events yet.</p>
-						)}
-					</div>
-				</details>
-				{questTracker.kind === "quest" ? (
-					<aside className="quest-tracker">
-						<span>{questTracker.label}</span>
-						{renderQuest(questTracker.quest)}
-					</aside>
+				{playMode === "3d" ? (
+					<ThreeRuntimePanel
+						key={runtimeKey}
+						onRestart={() => setRuntimeKey((key) => key + 1)}
+						project={project}
+					/>
 				) : (
-					<aside className="quest-tracker empty">
-						<span>{questTracker.label}</span>
-						<strong>{questTracker.title}</strong>
-						<p>{questTracker.message}</p>
-					</aside>
-				)}
-				{isInventoryOpen ? (
-					<aside className="inventory-panel">
-						<div className="inventory-heading">
-							<strong>Inventory</strong>
-							<span>Press I to close</span>
-						</div>
-						{inventoryItems.length > 0 ? (
-							<div className="inventory-list">
-								{inventoryItems.map(({ item, itemId, quantity }) => (
-									<div className="inventory-row" key={itemId}>
-										<span>{item?.name ?? itemId}</span>
-										<strong>x{quantity}</strong>
-									</div>
-								))}
-							</div>
-						) : (
-							<p className="inventory-empty">No items collected.</p>
-						)}
-					</aside>
-				) : null}
-				{isQuestPanelOpen ? (
-					<aside className="quest-panel">
-						<div className="inventory-heading">
-							<strong>Quests</strong>
-							<span>Press J to close</span>
-						</div>
-						<div className="quest-runtime-section">
-							<strong>Active Quests</strong>
-							{activeQuests.length > 0 ? (
-								activeQuests.map(renderQuest)
+					<>
+						<div className="phaser-host" ref={containerRef} />
+						<div className="inventory-hud">
+							{currencyHudEntries.length > 0 ? (
+								currencyHudEntries.map((entry) => (
+									<span key={entry.id}>
+										{entry.name}: {entry.quantity}
+									</span>
+								))
 							) : (
-								<p>No active quests.</p>
+								<span>Currency: none</span>
 							)}
 						</div>
-						<div className="quest-runtime-section">
-							<strong>Completed Quests</strong>
-							{completedQuests.length > 0 ? (
-								completedQuests.map(renderQuest)
+						<div className="combat-hud">
+							<strong>
+								Health {combat.playerHealth}/{combat.playerMaxHealth}
+							</strong>
+							{combat.recentEnemy ? (
+								<span>
+									{combat.recentEnemy.name} {combat.recentEnemy.health}/
+									{combat.recentEnemy.maxHealth}
+								</span>
 							) : (
-								<p>No completed quests.</p>
+								<span>Space: attack</span>
 							)}
 						</div>
-					</aside>
-				) : null}
-				{activeShop && shopState ? (
-					<aside className="shop-panel">
-						<div className="inventory-heading">
-							<strong>{activeShop.name}</strong>
+						{combat.gameOver ? (
 							<button
-								onClick={() => sceneRef.current?.closeShop()}
+								className="runtime-restart-button"
+								onClick={() => setRuntimeKey((key) => key + 1)}
 								type="button"
 							>
-								Close
+								Restart
 							</button>
-						</div>
-						<p className="shop-currency">
-							{shopCurrency?.name ?? activeShop.currencyItemId}:{" "}
-							{inventory[activeShop.currencyItemId] ?? 0}
-						</p>
-						{shopState.message ? (
-							<p className="validation-message">{shopState.message}</p>
 						) : null}
-						<div className="inventory-list">
-							{activeShop.entries.map((entry) => {
-								const item = project.items.find(
-									(candidate) => candidate.id === entry.itemId,
-								);
-								const stock =
-									entry.stock === undefined
-										? undefined
-										: (shopState.stockByEntryId[entry.id] ?? 0);
-								const disabled = stock !== undefined && stock <= 0;
-								return (
-									<div className="shop-row" key={entry.id}>
-										<span>
-											<strong>{item?.name ?? entry.itemId}</strong>
-											<small>
-												Price: {entry.buyPrice}
-												{stock !== undefined ? ` | Stock: ${stock}` : ""}
-											</small>
-										</span>
-										<button
-											disabled={disabled}
-											onClick={() => sceneRef.current?.buyShopEntry(entry.id)}
-											type="button"
-										>
-											Buy
-										</button>
+						<details className="runtime-debug-log">
+							<summary>Flow Log ({debugEvents.length})</summary>
+							<div className="runtime-debug-events">
+								{debugEvents.length > 0 ? (
+									debugEvents.map((event) => (
+										<div className="runtime-debug-event" key={event.id}>
+											{event.message}
+										</div>
+									))
+								) : (
+									<p>No events yet.</p>
+								)}
+							</div>
+						</details>
+						{questTracker.kind === "quest" ? (
+							<aside className="quest-tracker">
+								<span>{questTracker.label}</span>
+								{renderQuest(questTracker.quest)}
+							</aside>
+						) : (
+							<aside className="quest-tracker empty">
+								<span>{questTracker.label}</span>
+								<strong>{questTracker.title}</strong>
+								<p>{questTracker.message}</p>
+							</aside>
+						)}
+						{isInventoryOpen ? (
+							<aside className="inventory-panel">
+								<div className="inventory-heading">
+									<strong>Inventory</strong>
+									<span>Press I to close</span>
+								</div>
+								{inventoryItems.length > 0 ? (
+									<div className="inventory-list">
+										{inventoryItems.map(({ item, itemId, quantity }) => (
+											<div className="inventory-row" key={itemId}>
+												<span>{item?.name ?? itemId}</span>
+												<strong>x{quantity}</strong>
+											</div>
+										))}
 									</div>
-								);
-							})}
-							{activeShop.entries.length === 0 ? (
-								<p className="inventory-empty">No shop entries.</p>
-							) : null}
-						</div>
-					</aside>
-				) : null}
+								) : (
+									<p className="inventory-empty">No items collected.</p>
+								)}
+							</aside>
+						) : null}
+						{isQuestPanelOpen ? (
+							<aside className="quest-panel">
+								<div className="inventory-heading">
+									<strong>Quests</strong>
+									<span>Press J to close</span>
+								</div>
+								<div className="quest-runtime-section">
+									<strong>Active Quests</strong>
+									{activeQuests.length > 0 ? (
+										activeQuests.map(renderQuest)
+									) : (
+										<p>No active quests.</p>
+									)}
+								</div>
+								<div className="quest-runtime-section">
+									<strong>Completed Quests</strong>
+									{completedQuests.length > 0 ? (
+										completedQuests.map(renderQuest)
+									) : (
+										<p>No completed quests.</p>
+									)}
+								</div>
+							</aside>
+						) : null}
+						{activeShop && shopState ? (
+							<aside className="shop-panel">
+								<div className="inventory-heading">
+									<strong>{activeShop.name}</strong>
+									<button
+										onClick={() => sceneRef.current?.closeShop()}
+										type="button"
+									>
+										Close
+									</button>
+								</div>
+								<p className="shop-currency">
+									{shopCurrency?.name ?? activeShop.currencyItemId}:{" "}
+									{inventory[activeShop.currencyItemId] ?? 0}
+								</p>
+								{shopState.message ? (
+									<p className="validation-message">{shopState.message}</p>
+								) : null}
+								<div className="inventory-list">
+									{activeShop.entries.map((entry) => {
+										const item = project.items.find(
+											(candidate) => candidate.id === entry.itemId,
+										);
+										const stock =
+											entry.stock === undefined
+												? undefined
+												: (shopState.stockByEntryId[entry.id] ?? 0);
+										const disabled = stock !== undefined && stock <= 0;
+										return (
+											<div className="shop-row" key={entry.id}>
+												<span>
+													<strong>{item?.name ?? entry.itemId}</strong>
+													<small>
+														Price: {entry.buyPrice}
+														{stock !== undefined ? ` | Stock: ${stock}` : ""}
+													</small>
+												</span>
+												<button
+													disabled={disabled}
+													onClick={() =>
+														sceneRef.current?.buyShopEntry(entry.id)
+													}
+													type="button"
+												>
+													Buy
+												</button>
+											</div>
+										);
+									})}
+									{activeShop.entries.length === 0 ? (
+										<p className="inventory-empty">No shop entries.</p>
+									) : null}
+								</div>
+							</aside>
+						) : null}
+					</>
+				)}
 			</div>
 		</section>
 	);

@@ -1,0 +1,564 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { defaultProject } from "../data/defaultProject";
+import { cloneProject } from "../data/migrateProject";
+import { editorSections } from "../editor/sections";
+import { MapEditor } from "../editor/sections/MapEditor";
+import { useProjectStore } from "../store/useProjectStore";
+
+vi.mock("../runtime/RuntimePanel", () => ({
+	RuntimePanel: () => <div>Runtime mock</div>,
+}));
+
+vi.mock("../editor/sections/ThreeDPreview", async () => {
+	const { useProjectStore } = await import("../store/useProjectStore");
+
+	return {
+		ThreeDPreview: ({
+			placementInfo = { active: false },
+			terrainHeightTool,
+			terrainPaintTileId,
+		}: {
+			placementInfo?: { active: boolean; label?: string };
+			terrainHeightTool?: string;
+			terrainPaintTileId?: string;
+		}) => {
+			const selectFirstNpc = () => {
+				const state = useProjectStore.getState();
+				const area =
+					state.project.areas.find(
+						(candidate) => candidate.id === state.project.activeAreaId,
+					) ?? state.project.areas[0];
+				const npc = area?.npcs[0];
+				if (area && npc) {
+					state.setEditorSelection({
+						type: "npc",
+						areaId: area.id,
+						id: npc.id,
+					});
+				}
+			};
+			const helperText = terrainHeightTool
+				? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
+				: terrainPaintTileId
+					? `Click terrain to paint selected terrain type: ${terrainPaintTileId}.`
+					: placementInfo.active
+						? `${placementInfo.label}. Click terrain to place.`
+						: "No placeable selected.";
+
+			return (
+				<section aria-label="3D preview viewport">
+					<p>{helperText}</p>
+					<canvas onPointerUp={selectFirstNpc} />
+				</section>
+			);
+		},
+	};
+});
+
+vi.mock("three/examples/jsm/controls/OrbitControls.js", () => ({
+	OrbitControls: class {
+		enableDamping = false;
+		enablePan = false;
+		enableZoom = false;
+		maxDistance = 0;
+		minDistance = 0;
+		target = { set: vi.fn() };
+		dispose = vi.fn();
+		update = vi.fn();
+	},
+}));
+
+vi.mock("three", () => {
+	class Disposable {
+		dispose = vi.fn();
+	}
+
+	class Object3D {
+		castShadow = false;
+		children: Object3D[] = [];
+		position = { set: vi.fn(), y: 0 };
+		receiveShadow = false;
+		rotation = { y: 0 };
+		userData: Record<string, unknown> = {};
+
+		add = vi.fn((...children: Object3D[]) => {
+			this.children.push(...children);
+		});
+
+		traverse(callback: (child: Object3D) => void) {
+			callback(this);
+			this.children.forEach((child) => {
+				child.traverse(callback);
+			});
+		}
+	}
+
+	class Mesh extends Object3D {
+		geometry: Disposable;
+		material: Disposable;
+
+		constructor(geometry: Disposable, material: Disposable) {
+			super();
+			this.geometry = geometry;
+			this.material = material;
+		}
+	}
+
+	return {
+		ACESFilmicToneMapping: "ACESFilmicToneMapping",
+		AmbientLight: class {},
+		BoxGeometry: Disposable,
+		Color: class {},
+		ConeGeometry: Disposable,
+		CylinderGeometry: Disposable,
+		DirectionalLight: class {
+			castShadow = false;
+			position = { set: vi.fn() };
+			shadow = {
+				camera: { far: 0, near: 0 },
+				mapSize: { height: 0, width: 0 },
+			};
+		},
+		Fog: class {},
+		GridHelper: class {},
+		Group: Object3D,
+		HemisphereLight: class {},
+		Mesh,
+		MeshStandardMaterial: Disposable,
+		PCFSoftShadowMap: "PCFSoftShadowMap",
+		Plane: class {},
+		PerspectiveCamera: class {
+			aspect = 1;
+			position = { set: vi.fn() };
+			lookAt = vi.fn();
+			updateProjectionMatrix = vi.fn();
+		},
+		Scene: class {
+			background: unknown;
+			add = vi.fn();
+			remove = vi.fn();
+		},
+		Raycaster: class {
+			ray = {
+				intersectPlane: vi.fn(
+					(_plane: unknown, target: { x: number; z: number }) => {
+						target.x = 0;
+						target.z = 0;
+						return target;
+					},
+				),
+			};
+			setFromCamera = vi.fn();
+			intersectObjects = vi.fn(
+				(objects: { userData: Record<string, unknown> }[]) => {
+					const npc = objects.find(
+						(object) =>
+							(
+								object.userData.selectionMetadata as
+									| { entityType?: string }
+									| undefined
+							)?.entityType === "npc",
+					);
+					return npc ? [{ object: npc }] : [];
+				},
+			);
+		},
+		Vector2: class {
+			x = 0;
+			y = 0;
+		},
+		Vector3: class {
+			x = 0;
+			y = 0;
+			z = 0;
+
+			constructor(x = 0, y = 0, z = 0) {
+				this.x = x;
+				this.y = y;
+				this.z = z;
+			}
+		},
+		SphereGeometry: Disposable,
+		WebGLRenderer: class {
+			domElement = document.createElement("canvas");
+			outputColorSpace: unknown;
+			dispose = vi.fn();
+			render = vi.fn();
+			setClearColor = vi.fn();
+			setPixelRatio = vi.fn();
+			setSize = vi.fn();
+			shadowMap = { enabled: false, type: undefined as unknown };
+			toneMapping: unknown;
+			toneMappingExposure = 1;
+		},
+		SRGBColorSpace: "SRGBColorSpace",
+	};
+});
+
+const { ThreeDPreview } = await vi.importActual<
+	typeof import("../editor/sections/ThreeDPreview")
+>("../editor/sections/ThreeDPreview");
+
+function getButtonByText(container: HTMLElement, label: string) {
+	const button = Array.from(container.querySelectorAll("button")).find(
+		(candidate) => candidate.textContent?.trim() === label,
+	);
+	expect(button).toBeDefined();
+	return button as HTMLButtonElement;
+}
+
+beforeEach(() => {
+	useProjectStore.getState().setProject(cloneProject(defaultProject));
+	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
+	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+});
+
+describe("ThreeDPreview", () => {
+	it("renders the Map workspace with a 2D/3D view toggle", () => {
+		const { container } = render(<MapEditor />);
+
+		expect(getButtonByText(container, "2D View")).toHaveClass("selected");
+		expect(container).toHaveTextContent("View: 2D");
+		expect(
+			container.querySelector('[aria-label="Map editing canvas"]'),
+		).not.toBeNull();
+
+		fireEvent.click(getButtonByText(container, "3D View"));
+
+		expect(getButtonByText(container, "3D View")).toHaveClass("selected");
+		expect(container).toHaveTextContent("View: 3D");
+		expect(
+			container.querySelector('[aria-label="3D preview viewport"]'),
+		).not.toBeNull();
+	}, 15000);
+
+	it("keeps entity placement status visible when switching to 3D view", () => {
+		const { container } = render(<MapEditor />);
+
+		const npcButton = screen.getByText("NPC").closest("button");
+		expect(npcButton).not.toBeNull();
+		fireEvent.click(npcButton as HTMLButtonElement);
+		fireEvent.click(getButtonByText(container, "3D View"));
+
+		expect(
+			screen.getByText("Tool: Place NPC - Captain Mira"),
+		).toBeInTheDocument();
+		expect(npcButton).toHaveClass("selected");
+
+		fireEvent.click(getButtonByText(container, "2D View"));
+		expect(
+			screen.getByText("Tool: Place NPC - Captain Mira"),
+		).toBeInTheDocument();
+		expect(npcButton).toHaveClass("selected");
+	}, 15000);
+
+	it("selecting in embedded 3D updates the shared inspector without leaving 3D view", async () => {
+		const rectSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+			.mockReturnValue({
+				bottom: 240,
+				height: 240,
+				left: 0,
+				right: 320,
+				toJSON: () => ({}),
+				top: 0,
+				width: 320,
+				x: 0,
+				y: 0,
+			});
+		const { container } = render(<MapEditor />);
+		fireEvent.click(getButtonByText(container, "3D View"));
+
+		const canvas = container
+			.querySelector('[aria-label="3D preview viewport"]')
+			?.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+
+		await waitFor(() =>
+			expect(useProjectStore.getState().editorSelection).toMatchObject({
+				type: "npc",
+			}),
+		);
+		expect(getButtonByText(container, "3D View")).toHaveClass("selected");
+		expect(screen.getByLabelText("Faction")).toBeInTheDocument();
+
+		rectSpy.mockRestore();
+	}, 15000);
+
+	it("is registered as an editor tab and renders preview controls", () => {
+		expect(editorSections).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "three-d-preview",
+					label: "3D Preview",
+				}),
+			]),
+		);
+
+		render(<ThreeDPreview />);
+
+		expect(
+			screen.getByText(
+				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
+			),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Top" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Low angle" }));
+		expect(screen.getByRole("button", { name: "Low angle" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
+		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
+			"active",
+		);
+		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
+		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("keeps camera controls as presentation-only editor state", () => {
+		render(<ThreeDPreview />);
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+
+		fireEvent.wheel(canvas as HTMLCanvasElement, { deltaY: -300 });
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			altKey: true,
+			button: 0,
+			clientX: 120,
+			clientY: 120,
+		});
+		fireEvent.pointerMove(canvas as HTMLCanvasElement, {
+			altKey: true,
+			buttons: 1,
+			clientX: 180,
+			clientY: 80,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			altKey: true,
+			button: 0,
+			clientX: 180,
+			clientY: 80,
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
+
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
+	});
+
+	it("renders the empty details state when nothing is selected", () => {
+		useProjectStore.getState().setEditorSelection(null);
+
+		render(<ThreeDPreview />);
+
+		expect(
+			screen.getByText(
+				"Click a tile, NPC, object, or marker in the 3D preview to inspect it.",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("starts and stops the experimental 3D walk preview", () => {
+		render(<ThreeDPreview />);
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Start 3D Walk Preview" }),
+		);
+
+		expect(
+			screen.getAllByText("Experimental 3D walk preview — game logic disabled.")
+				.length,
+		).toBeGreaterThan(0);
+		expect(
+			screen.getByRole("button", { name: "Stop 3D Walk Preview" }),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Walk preview at x/)).toBeInTheDocument();
+
+		fireEvent.keyDown(window, { key: "Escape" });
+
+		expect(
+			screen.getByRole("button", { name: "Start 3D Walk Preview" }),
+		).toBeInTheDocument();
+	});
+
+	it("renders terrain details from shared selection", () => {
+		useProjectStore.getState().setEditorSelection({
+			areaId: "area_main",
+			type: "terrain",
+			x: 0,
+			y: 0,
+		});
+
+		render(<ThreeDPreview />);
+
+		expect(screen.getByText("Terrain 0, 0")).toBeInTheDocument();
+		expect(screen.getByText("Tile ID")).toBeInTheDocument();
+		expect(screen.getByText("grass")).toBeInTheDocument();
+		expect(screen.getByText("Height")).toBeInTheDocument();
+	});
+
+	it("shows height sculpting controls in the 3D preview", () => {
+		render(
+			<ThreeDPreview embedded heightToolValue={2} terrainHeightTool="set" />,
+		);
+
+		expect(
+			screen.getByText("Height tool: set. Click or drag terrain to sculpt."),
+		).toBeInTheDocument();
+		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("paints selected terrain in 3D without resetting height", async () => {
+		const rectSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+			.mockReturnValue({
+				bottom: 240,
+				height: 240,
+				left: 0,
+				right: 320,
+				toJSON: () => ({}),
+				top: 0,
+				width: 320,
+				x: 0,
+				y: 0,
+			});
+		const project = cloneProject(defaultProject);
+		const area =
+			project.areas.find(
+				(candidate) => candidate.id === project.activeAreaId,
+			) ?? project.areas[0];
+		const target = {
+			x: Math.round((area.width - 1) / 2),
+			y: Math.round((area.height - 1) / 2),
+		};
+		area.terrainHeights = [{ ...target, height: 3 }];
+		useProjectStore.getState().setProject(project);
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+
+		expect(
+			screen.getByText("Click terrain to paint selected terrain type: sand."),
+		).toBeInTheDocument();
+
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		fireEvent.pointerMove(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+
+		await waitFor(() => {
+			const nextArea =
+				useProjectStore
+					.getState()
+					.project.areas.find(
+						(candidate) => candidate.id === project.activeAreaId,
+					) ?? useProjectStore.getState().project.areas[0];
+			expect(
+				nextArea.terrainTiles.find(
+					(tile) => tile.x === target.x && tile.y === target.y,
+				)?.tileId,
+			).toBe("sand");
+			expect(
+				nextArea.terrainHeights?.find(
+					(tile) => tile.x === target.x && tile.y === target.y,
+				)?.height,
+			).toBe(3);
+		});
+
+		rectSpy.mockRestore();
+	});
+
+	it("mounts against a blank project without crashing", () => {
+		const blankProject = cloneProject(defaultProject);
+		blankProject.areas = [];
+		blankProject.npcs = [];
+		blankProject.objects = [];
+		blankProject.items = [];
+		blankProject.shops = [];
+		blankProject.quests = [];
+		blankProject.rules = [];
+		useProjectStore.getState().setProject(blankProject);
+
+		render(<ThreeDPreview />);
+
+		expect(
+			screen.getByText(
+				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
+			),
+		).toBeInTheDocument();
+		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
+		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("clicking a 3D NPC marker selects it without navigating", async () => {
+		const onOpenInMapEditor = vi.fn();
+		const rectSpy = vi
+			.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+			.mockReturnValue({
+				bottom: 240,
+				height: 240,
+				left: 0,
+				right: 320,
+				toJSON: () => ({}),
+				top: 0,
+				width: 320,
+				x: 0,
+				y: 0,
+			});
+		render(<ThreeDPreview onOpenInMapEditor={onOpenInMapEditor} />);
+
+		const canvas = screen
+			.getByLabelText("3D preview viewport")
+			.querySelector("canvas");
+		expect(canvas).not.toBeNull();
+		fireEvent.pointerDown(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas as HTMLCanvasElement, {
+			clientX: 160,
+			clientY: 120,
+		});
+
+		await waitFor(() =>
+			expect(useProjectStore.getState().editorSelection).toMatchObject({
+				type: "npc",
+			}),
+		);
+		expect(onOpenInMapEditor).not.toHaveBeenCalled();
+		expect(screen.getAllByText("Captain Mira").length).toBeGreaterThan(0);
+		expect(
+			screen.getByText("Move mode: drag the selected marker to another tile."),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Open in Map Editor" }));
+		expect(onOpenInMapEditor).toHaveBeenCalledTimes(1);
+
+		rectSpy.mockRestore();
+	});
+});
