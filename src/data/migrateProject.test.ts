@@ -101,6 +101,10 @@ describe("migrateProject", () => {
 			version: "0.1.0",
 		});
 		expect(project.camera.viewportWidthTiles).toBeGreaterThan(0);
+		expect(project.camera.three).toMatchObject({
+			style: "fixedIsometric",
+			allowRuntimeOrbit: true,
+		});
 		expect(project.player.mapAvatarId).toBeTruthy();
 		expect(project.player.combat).toMatchObject({
 			maxHealth: 100,
@@ -116,6 +120,46 @@ describe("migrateProject", () => {
 		expect(project.quests).toEqual([]);
 		expect(project.npcs).toEqual([]);
 		expect(project.objects).toEqual([]);
+	});
+
+	it("migrates Three runtime camera settings without affecting Phaser camera fields", () => {
+		const project = migrateProject({
+			camera: {
+				viewportWidthTiles: 12,
+				viewportHeightTiles: 9,
+				followPlayer: false,
+				followSmoothing: 0.4,
+				three: {
+					style: "thirdPerson",
+					distance: 9,
+					height: 2.5,
+					pitchDegrees: 28,
+					yawOffsetDegrees: 15,
+					lookAtHeight: 0.5,
+					followSmoothing: 12,
+					lookSmoothing: 8,
+					allowRuntimeOrbit: false,
+				},
+			},
+		});
+
+		expect(project.camera).toMatchObject({
+			viewportWidthTiles: 12,
+			viewportHeightTiles: 9,
+			followPlayer: false,
+			followSmoothing: 0.4,
+		});
+		expect(project.camera.three).toEqual({
+			style: "thirdPerson",
+			distance: 9,
+			height: 2.5,
+			pitchDegrees: 28,
+			yawOffsetDegrees: 15,
+			lookAtHeight: 0.5,
+			followSmoothing: 12,
+			lookSmoothing: 8,
+			allowRuntimeOrbit: false,
+		});
 	});
 
 	it("migrates optional terrain heights without requiring existing projects to define them", () => {

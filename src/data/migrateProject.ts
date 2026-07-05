@@ -44,13 +44,17 @@ import type {
 	RuleTrigger,
 	ShopDefinition,
 	SingleCondition,
+	ThreeRuntimeCameraConfig,
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
 import { defaultProject } from "./defaultProject";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
-import { defaultCameraConfig } from "./projectDefaults";
+import {
+	defaultCameraConfig,
+	defaultThreeRuntimeCameraConfig,
+} from "./projectDefaults";
 import { migrateTerrainHeights } from "./terrainHeight";
 
 type UnknownRecord = Record<string, unknown>;
@@ -920,6 +924,65 @@ function migrateCamera(value: unknown): CameraConfig {
 				0,
 				100,
 			),
+		),
+		three: migrateThreeRuntimeCamera(source.three),
+	};
+}
+
+function migrateThreeRuntimeCamera(value: unknown): ThreeRuntimeCameraConfig {
+	const source = isRecord(value) ? value : {};
+	const style =
+		source.style === "thirdPerson" || source.style === "fixedIsometric"
+			? source.style
+			: defaultThreeRuntimeCameraConfig.style;
+
+	return {
+		style,
+		distance: readNumber(
+			source.distance,
+			defaultThreeRuntimeCameraConfig.distance,
+			2,
+			24,
+		),
+		height: readNumber(
+			source.height,
+			defaultThreeRuntimeCameraConfig.height,
+			0,
+			12,
+		),
+		pitchDegrees: readNumber(
+			source.pitchDegrees,
+			defaultThreeRuntimeCameraConfig.pitchDegrees,
+			-10,
+			75,
+		),
+		yawOffsetDegrees: readNumber(
+			source.yawOffsetDegrees,
+			defaultThreeRuntimeCameraConfig.yawOffsetDegrees,
+			-180,
+			180,
+		),
+		lookAtHeight: readNumber(
+			source.lookAtHeight,
+			defaultThreeRuntimeCameraConfig.lookAtHeight,
+			-1,
+			4,
+		),
+		followSmoothing: readNumber(
+			source.followSmoothing,
+			defaultThreeRuntimeCameraConfig.followSmoothing,
+			1,
+			30,
+		),
+		lookSmoothing: readNumber(
+			source.lookSmoothing,
+			defaultThreeRuntimeCameraConfig.lookSmoothing,
+			1,
+			30,
+		),
+		allowRuntimeOrbit: readBoolean(
+			source.allowRuntimeOrbit,
+			defaultThreeRuntimeCameraConfig.allowRuntimeOrbit,
 		),
 	};
 }

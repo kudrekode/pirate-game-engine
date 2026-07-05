@@ -25,6 +25,24 @@ export type OrbitCameraDimensions = {
 	width: number;
 };
 
+export type ThirdPersonCameraOptions = {
+	distance: number;
+	height: number;
+	lookAtHeight: number;
+	pitchDegrees: number;
+	yawDegrees: number;
+};
+
+export type CameraRig = {
+	lookAt: CameraVector3;
+	position: CameraVector3;
+};
+
+export type GridDirection = {
+	x: number;
+	y: number;
+};
+
 const DEFAULT_FOCUS: CameraVector3 = { x: 0, y: 0, z: 0 };
 const DEFAULT_CAMERA_BASE_DISTANCE_SCALE = 0.9;
 const DEFAULT_MIN_DISTANCE = 3;
@@ -33,6 +51,7 @@ const DEFAULT_MAX_PITCH = (82 * Math.PI) / 180;
 const ORBIT_SENSITIVITY = 0.005;
 const PAN_SENSITIVITY = 0.0016;
 const ZOOM_SENSITIVITY = 0.0015;
+const CARDINAL_SNAP_EPSILON = 0.000001;
 
 function cloneFocus(focus: CameraVector3 = DEFAULT_FOCUS): CameraVector3 {
 	return { x: focus.x, y: focus.y, z: focus.z };
@@ -40,6 +59,17 @@ function cloneFocus(focus: CameraVector3 = DEFAULT_FOCUS): CameraVector3 {
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
+}
+
+function degreesToRadians(degrees: number): number {
+	return (degrees * Math.PI) / 180;
+}
+
+function snapVectorToCardinalDirection(x: number, y: number): GridDirection {
+	if (Math.abs(x) + CARDINAL_SNAP_EPSILON >= Math.abs(y)) {
+		return { x: x >= 0 ? 1 : -1, y: 0 };
+	}
+	return { x: 0, y: y >= 0 ? 1 : -1 };
 }
 
 function getBaseCameraDistance(dimensions: OrbitCameraDimensions): number {
@@ -153,6 +183,48 @@ export function getOrbitCameraLookTarget(
 	state: OrbitCameraState,
 ): CameraVector3 {
 	return cloneFocus(state.focus);
+}
+
+export function getThirdPersonCameraRig(
+	playerPosition: CameraVector3,
+	options: ThirdPersonCameraOptions,
+): CameraRig {
+	const distance = Math.max(0.1, options.distance);
+	const pitch = degreesToRadians(clamp(options.pitchDegrees, -89, 89));
+	const yaw = degreesToRadians(options.yawDegrees);
+	const horizontalDistance = Math.cos(pitch) * distance;
+	return {
+		lookAt: {
+			x: playerPosition.x,
+			y: playerPosition.y + options.lookAtHeight,
+			z: playerPosition.z,
+		},
+		position: {
+			x: playerPosition.x + Math.sin(yaw) * horizontalDistance,
+			y: playerPosition.y + options.height + Math.sin(pitch) * distance,
+			z: playerPosition.z + Math.cos(yaw) * horizontalDistance,
+		},
+	};
+}
+
+export function resolveCameraRelativeGridDirection(
+	inputDirection: GridDirection,
+	cameraYawDegrees: number,
+): GridDirection {
+	const yaw = degreesToRadians(cameraYawDegrees);
+	const forward = {
+		x: -Math.sin(yaw),
+		y: -Math.cos(yaw),
+	};
+	const right = {
+		x: Math.cos(yaw),
+		y: -Math.sin(yaw),
+	};
+	const intended = {
+		x: right.x * inputDirection.x + forward.x * -inputDirection.y,
+		y: right.y * inputDirection.x + forward.y * -inputDirection.y,
+	};
+	return snapVectorToCardinalDirection(intended.x, intended.y);
 }
 
 export function rotateOrbitCamera(

@@ -358,6 +358,104 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
 	});
 
+	it("keeps fixed follow movement grid-relative", async () => {
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		fireEvent.keyDown(window, { key: "w" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+		});
+		expect(runtimeSpies.attemptPlayerMove.mock.calls[0]?.[1]).toEqual({
+			x: 0,
+			y: -1,
+		});
+	});
+
+	it("uses camera-relative movement in third-person follow mode", async () => {
+		const project = makeProject();
+		project.camera.three = {
+			...project.camera.three,
+			style: "thirdPerson",
+		};
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+		fireEvent.keyDown(window, { key: "w" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+			expect(screen.getByText("Moved to 0, 1.")).toBeInTheDocument();
+		});
+		expect(runtimeSpies.attemptPlayerMove.mock.calls[0]?.[1]).toEqual({
+			x: 0,
+			y: 1,
+		});
+	});
+
+	it("uses transient third-person orbit when resolving movement input", async () => {
+		const project = makeProject();
+		project.camera.three = {
+			...project.camera.three,
+			style: "thirdPerson",
+		};
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const canvas = screen.getByLabelText("Three runtime viewport");
+		fireEvent.pointerDown(canvas, {
+			altKey: true,
+			button: 0,
+			clientX: 0,
+			clientY: 120,
+		});
+		fireEvent.pointerMove(canvas, {
+			altKey: true,
+			buttons: 1,
+			clientX: Math.PI / 0.01,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas, {
+			altKey: true,
+			button: 0,
+			clientX: Math.PI / 0.01,
+			clientY: 120,
+		});
+		fireEvent.keyDown(window, { key: "w" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+			expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+		});
+		expect(runtimeSpies.attemptPlayerMove.mock.calls[0]?.[1]).toEqual({
+			x: 1,
+			y: 0,
+		});
+	});
+
+	it("keeps inspect mode movement grid-relative even with a third-person follow config", async () => {
+		const project = makeProject();
+		project.camera.three = {
+			...project.camera.three,
+			style: "thirdPerson",
+		};
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
+		fireEvent.keyDown(window, { key: "w" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
+		});
+		expect(runtimeSpies.attemptPlayerMove.mock.calls[0]?.[1]).toEqual({
+			x: 0,
+			y: -1,
+		});
+	});
+
 	it("does not rebuild the Three scene for plain player movement", async () => {
 		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
 
@@ -448,6 +546,57 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByRole("button", { name: "Follow Player" })).toHaveClass(
 			"active",
 		);
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+	});
+
+	it("uses third-person follow settings with transient runtime orbit only", async () => {
+		const project = makeProject();
+		project.camera.three = {
+			...project.camera.three,
+			style: "thirdPerson",
+			distance: 8,
+			pitchDegrees: 24,
+		};
+		const projectBefore = JSON.stringify(project);
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const canvas = screen.getByLabelText("Three runtime viewport");
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		expect(screen.getByText("Camera - Third-person")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Recenter" }),
+		).toBeInTheDocument();
+		fireEvent.pointerDown(canvas, {
+			altKey: true,
+			button: 0,
+			clientX: 120,
+			clientY: 120,
+		});
+		fireEvent.pointerMove(canvas, {
+			altKey: true,
+			buttons: 1,
+			clientX: 180,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas, {
+			altKey: true,
+			button: 0,
+			clientX: 180,
+			clientY: 120,
+		});
+		fireEvent.wheel(canvas, { deltaY: -220 });
+		fireEvent.click(screen.getByRole("button", { name: "Recenter" }));
+
+		expect(JSON.stringify(project)).toBe(projectBefore);
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
 		);

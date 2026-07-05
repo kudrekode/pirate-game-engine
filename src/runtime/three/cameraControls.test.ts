@@ -6,8 +6,10 @@ import {
 	getOrbitCameraBounds,
 	getOrbitCameraLookTarget,
 	getOrbitCameraPosition,
+	getThirdPersonCameraRig,
 	panOrbitCamera,
 	resetOrbitCameraState,
+	resolveCameraRelativeGridDirection,
 	rotateOrbitCamera,
 	zoomOrbitCamera,
 } from "./cameraControls";
@@ -94,6 +96,92 @@ describe("Three orbit camera helpers", () => {
 		expect(panned.yaw).toBe(initial.yaw);
 		expect(panned.pitch).toBe(initial.pitch);
 		expect(panned.distance).toBe(initial.distance);
+	});
+
+	it("derives a third-person camera rig from a player-centered target", () => {
+		const rig = getThirdPersonCameraRig(
+			{ x: 2, y: 1, z: -4 },
+			{
+				distance: 6,
+				height: 1.5,
+				lookAtHeight: 0.25,
+				pitchDegrees: 0,
+				yawDegrees: 0,
+			},
+		);
+
+		expect(rig.lookAt).toEqual({ x: 2, y: 1.25, z: -4 });
+		expect(rig.position).toEqual({ x: 2, y: 2.5, z: 2 });
+	});
+
+	it("applies third-person yaw and pitch to the follow position", () => {
+		const rig = getThirdPersonCameraRig(
+			{ x: 0, y: 0, z: 0 },
+			{
+				distance: 4,
+				height: 1,
+				lookAtHeight: 0,
+				pitchDegrees: 30,
+				yawDegrees: 90,
+			},
+		);
+
+		expect(rig.position.x).toBeCloseTo(Math.cos(Math.PI / 6) * 4);
+		expect(rig.position.y).toBeCloseTo(3);
+		expect(rig.position.z).toBeCloseTo(0);
+	});
+
+	it("maps camera-relative input to grid directions at the default yaw", () => {
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: -1 }, 0)).toEqual({
+			x: 0,
+			y: -1,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: 1 }, 0)).toEqual({
+			x: 0,
+			y: 1,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: -1, y: 0 }, 0)).toEqual({
+			x: -1,
+			y: 0,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: 1, y: 0 }, 0)).toEqual({
+			x: 1,
+			y: 0,
+		});
+	});
+
+	it("maps camera-relative input after a 90 degree orbit", () => {
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: -1 }, 90)).toEqual({
+			x: -1,
+			y: 0,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: 1 }, 90)).toEqual({
+			x: 1,
+			y: 0,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: -1, y: 0 }, 90)).toEqual({
+			x: 0,
+			y: 1,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: 1, y: 0 }, 90)).toEqual({
+			x: 0,
+			y: -1,
+		});
+	});
+
+	it("snaps yaw boundaries deterministically using the grid convention", () => {
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: -1 }, 44)).toEqual({
+			x: 0,
+			y: -1,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: -1 }, 45)).toEqual({
+			x: -1,
+			y: 0,
+		});
+		expect(resolveCameraRelativeGridDirection({ x: 0, y: -1 }, -90)).toEqual({
+			x: 1,
+			y: 0,
+		});
 	});
 
 	it("clamps arbitrary camera states safely", () => {

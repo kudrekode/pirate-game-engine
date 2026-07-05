@@ -363,6 +363,19 @@ export type CameraConfig = {
 	followSmoothing: number;
 	deadzoneWidthTiles?: number;
 	deadzoneHeightTiles?: number;
+	three: ThreeRuntimeCameraConfig;
+};
+
+export type ThreeRuntimeCameraConfig = {
+	style: "fixedIsometric" | "thirdPerson";
+	distance: number;
+	height: number;
+	pitchDegrees: number;
+	yawOffsetDegrees: number;
+	lookAtHeight: number;
+	followSmoothing: number;
+	lookSmoothing: number;
+	allowRuntimeOrbit: boolean;
 };
 
 export type PlayerConfig = {
