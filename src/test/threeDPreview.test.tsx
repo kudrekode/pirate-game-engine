@@ -5,7 +5,11 @@ import { cloneProject } from "../data/migrateProject";
 import { getTerrainHeight } from "../data/terrainHeight";
 import { editorSections } from "../editor/sections";
 import { MapEditor } from "../editor/sections/MapEditor";
-import { resolveTerrainBrushFootprint } from "../editor/sections/terrainBrush";
+import {
+	resolveTerrainBrushFootprint,
+	resolveTerrainLine,
+	resolveTerrainRectangle,
+} from "../editor/sections/terrainBrush";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -316,6 +320,15 @@ function spyOnSetTiles() {
 	const setTilesSpy = vi.spyOn(useProjectStore.getState(), "setTiles");
 	setTilesSpy.mockClear();
 	return setTilesSpy;
+}
+
+function spyOnSetTerrainHeights() {
+	const setTerrainHeightsSpy = vi.spyOn(
+		useProjectStore.getState(),
+		"setTerrainHeights",
+	);
+	setTerrainHeightsSpy.mockClear();
+	return setTerrainHeightsSpy;
 }
 
 beforeEach(() => {
@@ -838,6 +851,216 @@ describe("ThreeDPreview", () => {
 		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
 			projectBefore,
 		);
+	});
+
+	it("previews a 3D line without mutation and commits the same cells once", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+		const expectedCells = resolveTerrainLine({
+			bounds: { height: 3, width: 3 },
+			end: { x: 2, y: 1 },
+			start: { x: 1, y: 1 },
+		});
+
+		render(
+			<ThreeDPreview
+				embedded
+				terrainGesture="line"
+				terrainPaintTileId="sand"
+			/>,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 23,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 23,
+		});
+
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
+
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 23,
+		});
+
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTileId(cell.x, cell.y)).toBe("sand");
+			});
+		});
+		expect(setTilesSpy).toHaveBeenCalledTimes(1);
+		expect(setTilesSpy).toHaveBeenCalledWith(
+			expectedCells.map((cell) => ({ ...cell, tileId: "sand" })),
+		);
+	});
+
+	it("commits a 3D rectangle as one batched terrain operation", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+		const expectedCells = resolveTerrainRectangle({
+			bounds: { height: 3, width: 3 },
+			end: { x: 2, y: 1 },
+			start: { x: 1, y: 1 },
+		});
+
+		render(
+			<ThreeDPreview
+				embedded
+				terrainGesture="rectangle"
+				terrainPaintTileId="sand"
+			/>,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 24,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 24,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 24,
+		});
+
+		await waitFor(() => {
+			expectedCells.forEach((cell) => {
+				expect(readActiveTileId(cell.x, cell.y)).toBe("sand");
+			});
+		});
+		expect(setTilesSpy).toHaveBeenCalledTimes(1);
+		expect(setTilesSpy).toHaveBeenCalledWith(
+			expectedCells.map((cell) => ({ ...cell, tileId: "sand" })),
+		);
+	});
+
+	it("previews and applies 3D fill from the same connected region", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+
+		render(
+			<ThreeDPreview
+				embedded
+				terrainGesture="fill"
+				terrainPaintTileId="sand"
+			/>,
+		);
+
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			clientX: 160,
+			clientY: 120,
+			pointerId: 25,
+		});
+
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 25,
+		});
+
+		await waitFor(() => {
+			expect(setTilesSpy).toHaveBeenCalledTimes(1);
+		});
+		const appliedCells = setTilesSpy.mock.calls[0][0];
+		expect(appliedCells).toHaveLength(9);
+		appliedCells.forEach((cell) => {
+			expect(readActiveTileId(cell.x, cell.y)).toBe("sand");
+		});
+	});
+
+	it("routes 3D smooth height brushes through batched height updates", async () => {
+		mockPreviewCanvasRect();
+		const project = makeThreeTileProject();
+		project.areas[0].terrainHeights = [{ height: 4, x: 1, y: 1 }];
+		useProjectStore.getState().setProject(project);
+		const setTerrainHeightsSpy = spyOnSetTerrainHeights();
+
+		render(<ThreeDPreview embedded terrainHeightTool="smooth" />);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 26,
+		});
+
+		await waitFor(() => {
+			expect(readActiveTerrainHeight(1, 1)).toBe(3);
+		});
+		expect(setTerrainHeightsSpy).toHaveBeenCalledTimes(1);
+		expect(setTerrainHeightsSpy).toHaveBeenCalledWith([
+			{ height: 3, x: 1, y: 1 },
+		]);
+	});
+
+	it("cancels a 3D shape gesture without applying terrain", () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTilesSpy = spyOnSetTiles();
+
+		render(
+			<ThreeDPreview
+				embedded
+				terrainGesture="line"
+				terrainPaintTileId="sand"
+			/>,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 27,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 27,
+		});
+		fireEvent.pointerCancel(getPreviewCanvas(), {
+			clientX: 320,
+			clientY: 120,
+			pointerId: 27,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 27,
+		});
+
+		expect(setTilesSpy).not.toHaveBeenCalled();
+		expect(readActiveTileId(1, 1)).toBe("grass");
+		expect(readActiveTileId(2, 1)).toBe("grass");
 	});
 
 	it.each([

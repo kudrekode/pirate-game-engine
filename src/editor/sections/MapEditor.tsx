@@ -54,8 +54,18 @@ import {
 } from "./overlayFilters";
 import { ThreeDPreview } from "./ThreeDPreview";
 import {
-	resolveTerrainBrushFootprint,
+	resolveTerrainBrushSamples,
+	resolveTerrainFloodFill,
+	resolveTerrainHeightUpdates,
+	resolveTerrainLine,
+	resolveTerrainPaintUpdates,
+	resolveTerrainRectangle,
+	type TerrainBrushCell,
+	type TerrainBrushFalloff,
+	type TerrainBrushSample,
 	type TerrainBrushShape,
+	type TerrainHeightOperation,
+	terrainBrushCellKey,
 } from "./terrainBrush";
 
 type MapEditorTool =
@@ -66,7 +76,9 @@ type MapEditorTool =
 	| "raise-height"
 	| "lower-height"
 	| "flatten-height"
-	| "set-height";
+	| "set-height"
+	| "smooth-height"
+	| "roughen-height";
 type DraggableEntityType =
 	| "npc"
 	| "object"
@@ -88,12 +100,21 @@ type MapEditHistoryEntry = {
 	after: GameProject;
 };
 type MapWorkspaceView = "2d" | "3d";
+type TerrainGesture = "brush" | "line" | "rectangle" | "fill";
 type TerrainBrushMode =
 	| "paint"
 	| "raise-height"
 	| "lower-height"
 	| "flatten-height"
-	| "set-height";
+	| "set-height"
+	| "smooth-height"
+	| "roughen-height";
+
+type TerrainShapeGestureState = {
+	gesture: Extract<TerrainGesture, "line" | "rectangle">;
+	start: TerrainBrushCell;
+	before: GameProject;
+};
 
 const AUTO_EXPAND_BUFFER_TILES = 12;
 const MAX_MAP_SIZE = 200;
@@ -243,9 +264,6 @@ export function MapEditor() {
 	const updateProject = useProjectStore((state) => state.updateProject);
 	const setTiles = useProjectStore((state) => state.setTiles);
 	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
-	const adjustTerrainHeights = useProjectStore(
-		(state) => state.adjustTerrainHeights,
-	);
 	const setOverlayTiles = useProjectStore((state) => state.setOverlayTiles);
 	const eraseOverlayTiles = useProjectStore((state) => state.eraseOverlayTiles);
 	const resizeMap = useProjectStore((state) => state.resizeMap);
@@ -280,6 +298,7 @@ export function MapEditor() {
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
 	const paintSessionBeforeRef = useRef<GameProject | null>(null);
+	const terrainShapeGestureRef = useRef<TerrainShapeGestureState | null>(null);
 	const dragEntityRef = useRef<{
 		type: DraggableEntityType;
 		id: string;
@@ -311,7 +330,13 @@ export function MapEditor() {
 	const [zoom, setZoom] = useState(1);
 	const [brushSize, setBrushSize] = useState<BrushSize>(1);
 	const [brushShape, setBrushShape] = useState<TerrainBrushShape>("square");
+	const [terrainGesture, setTerrainGesture] = useState<TerrainGesture>("brush");
+	const [brushFalloff, setBrushFalloff] = useState<TerrainBrushFalloff>("hard");
+	const [brushStrength, setBrushStrength] = useState(1);
 	const [heightToolValue, setHeightToolValue] = useState(0);
+	const [terrainPreviewCells, setTerrainPreviewCells] = useState<
+		TerrainBrushCell[]
+	>([]);
 	const [showGrid, setShowGrid] = useState(true);
 	const [overlayFilters, setOverlayFilters] = useState(
 		readStoredMapOverlayFilters,
@@ -455,6 +480,11 @@ export function MapEditor() {
 		return lookup;
 	}, [activeArea.terrainTiles]);
 
+	const terrainPreviewCellKeys = useMemo(
+		() => new Set(terrainPreviewCells.map((cell) => terrainBrushCellKey(cell))),
+		[terrainPreviewCells],
+	);
+
 	const overlayLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
 		activeArea.overlayTiles.forEach((tile) => {
@@ -570,21 +600,25 @@ export function MapEditor() {
 							? "Tool: Lower Height"
 							: activeTool === "flatten-height"
 								? "Tool: Flatten Height"
-								: activeTool === "set-height"
-									? `Tool: Set Height = ${heightToolValue}`
-									: paintTarget === "structure"
-										? `Tool: Place Structure - ${selectedStructure.label}`
-										: paintTarget === "object"
-											? `Tool: Place Object - ${selectedObjectDefinition?.name ?? "Object"}`
-											: paintTarget === "npc"
-												? `Tool: Place NPC - ${selectedNpcDefinitionForPalette?.name ?? "NPC"}`
-												: paintTarget === "pickup"
-													? `Tool: Place Pickup - ${project.items[0]?.name ?? "Item"} x1`
-													: paintTarget === "eventBlock"
-														? "Tool: Place Event Block"
-														: paintTarget === "overlay"
-															? `Tool: Paint Overlay - ${selectedOverlayId}`
-															: `Tool: Paint Terrain - ${selectedTerrainId}`;
+								: activeTool === "smooth-height"
+									? "Tool: Smooth Height"
+									: activeTool === "roughen-height"
+										? "Tool: Roughen Height"
+										: activeTool === "set-height"
+											? `Tool: Set Height = ${heightToolValue}`
+											: paintTarget === "structure"
+												? `Tool: Place Structure - ${selectedStructure.label}`
+												: paintTarget === "object"
+													? `Tool: Place Object - ${selectedObjectDefinition?.name ?? "Object"}`
+													: paintTarget === "npc"
+														? `Tool: Place NPC - ${selectedNpcDefinitionForPalette?.name ?? "NPC"}`
+														: paintTarget === "pickup"
+															? `Tool: Place Pickup - ${project.items[0]?.name ?? "Item"} x1`
+															: paintTarget === "eventBlock"
+																? "Tool: Place Event Block"
+																: paintTarget === "overlay"
+																	? `Tool: Paint Overlay - ${selectedOverlayId}`
+																	: `Tool: Paint Terrain - ${selectedTerrainId}`;
 	const cellSize = Math.round(activeArea.tileSize * zoom);
 	const renderWidth = Math.min(
 		MAX_MAP_SIZE,
@@ -670,10 +704,22 @@ export function MapEditor() {
 		setHistoryRevision((revision) => revision + 1);
 	}
 
-	function getBrushCells(centerX: number, centerY: number) {
-		return resolveTerrainBrushFootprint({
-			bounds: { height: renderHeight, width: renderWidth },
+	function getBrushSamples(centerX: number, centerY: number) {
+		const operation = getTerrainHeightOperation();
+		const bounds = operation
+			? { height: activeArea.height, width: activeArea.width }
+			: { height: renderHeight, width: renderWidth };
+		const falloff =
+			operation === "raise" ||
+			operation === "lower" ||
+			operation === "smooth" ||
+			operation === "roughen"
+				? brushFalloff
+				: "hard";
+		return resolveTerrainBrushSamples({
+			bounds,
 			center: { x: centerX, y: centerY },
+			falloff,
 			shape: brushShape,
 			size: brushSize,
 		});
@@ -684,8 +730,109 @@ export function MapEditor() {
 			tool === "raise-height" ||
 			tool === "lower-height" ||
 			tool === "flatten-height" ||
-			tool === "set-height"
+			tool === "set-height" ||
+			tool === "smooth-height" ||
+			tool === "roughen-height"
 		);
+	}
+
+	function getTerrainHeightOperation(): TerrainHeightOperation | undefined {
+		if (activeTool === "raise-height") {
+			return "raise";
+		}
+		if (activeTool === "lower-height") {
+			return "lower";
+		}
+		if (activeTool === "flatten-height") {
+			return "flatten";
+		}
+		if (activeTool === "set-height") {
+			return "set";
+		}
+		if (activeTool === "smooth-height") {
+			return "smooth";
+		}
+		if (activeTool === "roughen-height") {
+			return "roughen";
+		}
+		return undefined;
+	}
+
+	function getLatestActiveArea() {
+		return getEditorActiveArea(useProjectStore.getState().project);
+	}
+
+	function makeTerrainTileReader(area: GameArea) {
+		const lookup = new Map(
+			area.terrainTiles.map((tile) => [cellKey(tile.x, tile.y), tile.tileId]),
+		);
+		return (cell: TerrainBrushCell) =>
+			lookup.get(cellKey(cell.x, cell.y)) ?? "grass";
+	}
+
+	function applyTerrainOperationToCells(
+		cells: TerrainBrushCell[],
+		selectionPosition: TerrainBrushCell,
+		samples: TerrainBrushSample[] = cells.map((cell) => ({
+			...cell,
+			influence: 1,
+		})),
+	) {
+		if (paintTarget !== "terrain") {
+			return false;
+		}
+
+		const heightOperation = getTerrainHeightOperation();
+		if (heightOperation) {
+			const areaSnapshot = getLatestActiveArea();
+			const updates = resolveTerrainHeightUpdates({
+				area: areaSnapshot,
+				operation: heightOperation,
+				samples: samples.filter((sample) =>
+					isInBounds(
+						sample.x,
+						sample.y,
+						areaSnapshot.width,
+						areaSnapshot.height,
+					),
+				),
+				strength: brushStrength,
+				targetHeight:
+					heightOperation === "flatten" ? 0 : Number(heightToolValue),
+			});
+			if (updates.length > 0) {
+				setTerrainHeights(updates);
+			}
+			setSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: selectionPosition.x,
+				y: selectionPosition.y,
+			});
+			return true;
+		}
+
+		if (activeTool !== "paint") {
+			return false;
+		}
+
+		const areaSnapshot = getLatestActiveArea();
+		const updates = resolveTerrainPaintUpdates({
+			cells,
+			getTileId: makeTerrainTileReader(areaSnapshot),
+			knownBounds: { height: activeArea.height, width: activeArea.width },
+			targetTileId: selectedTerrainId,
+		});
+		if (updates.length > 0) {
+			setTiles(updates);
+		}
+		setSelection({
+			areaId: activeArea.id,
+			type: "terrain",
+			x: selectionPosition.x,
+			y: selectionPosition.y,
+		});
+		return true;
 	}
 
 	function applyBrush(centerX: number, centerY: number) {
@@ -697,7 +844,7 @@ export function MapEditor() {
 			return;
 		}
 
-		const cells = getBrushCells(centerX, centerY).filter((cell) => {
+		const brushSamples = getBrushSamples(centerX, centerY).filter((cell) => {
 			const key = cellKey(cell.x, cell.y);
 			if (
 				paintedCellsRef.current.has(key) ||
@@ -712,6 +859,9 @@ export function MapEditor() {
 			paintedCellsRef.current.add(key);
 			return true;
 		});
+		const cells = brushSamples.map(
+			({ influence: _influence, ...cell }) => cell,
+		);
 
 		if (activeTool === "erase") {
 			cells.forEach((cell) => {
@@ -727,45 +877,84 @@ export function MapEditor() {
 			return;
 		}
 
-		if (paintTarget !== "terrain") {
+		applyTerrainOperationToCells(
+			cells,
+			{ x: centerX, y: centerY },
+			brushSamples,
+		);
+	}
+
+	function canUseTerrainGesture() {
+		return (
+			paintTarget === "terrain" &&
+			(activeTool === "paint" || isHeightTool(activeTool))
+		);
+	}
+
+	function getTerrainShapeCells(
+		gesture: Extract<TerrainGesture, "line" | "rectangle">,
+		start: TerrainBrushCell,
+		end: TerrainBrushCell,
+	) {
+		const bounds = getTerrainHeightOperation()
+			? { height: activeArea.height, width: activeArea.width }
+			: { height: renderHeight, width: renderWidth };
+		return gesture === "line"
+			? resolveTerrainLine({ bounds, end, start })
+			: resolveTerrainRectangle({ bounds, end, start });
+	}
+
+	function updateTerrainShapePreview(end: TerrainBrushCell) {
+		const gesture = terrainShapeGestureRef.current;
+		if (!gesture) {
 			return;
 		}
+		setTerrainPreviewCells(
+			getTerrainShapeCells(gesture.gesture, gesture.start, end),
+		);
+	}
 
-		if (activeTool === "raise-height") {
-			adjustTerrainHeights(cells.map((cell) => ({ ...cell, delta: 1 })));
+	function commitTerrainShapeGesture(end: TerrainBrushCell) {
+		const gesture = terrainShapeGestureRef.current;
+		if (!gesture) {
 			return;
 		}
+		const cells = getTerrainShapeCells(gesture.gesture, gesture.start, end);
+		applyTerrainOperationToCells(cells, end);
+		recordMapEdit(gesture.before);
+		terrainShapeGestureRef.current = null;
+		setTerrainPreviewCells([]);
+	}
 
-		if (activeTool === "lower-height") {
-			adjustTerrainHeights(cells.map((cell) => ({ ...cell, delta: -1 })));
+	function cancelTerrainShapeGesture() {
+		terrainShapeGestureRef.current = null;
+		setTerrainPreviewCells([]);
+	}
+
+	function applyTerrainFill(seed: TerrainBrushCell) {
+		if (paintTarget !== "terrain" || activeTool !== "paint") {
 			return;
 		}
-
-		if (activeTool === "flatten-height") {
-			setTerrainHeights(cells.map((cell) => ({ ...cell, height: 0 })));
-			return;
-		}
-
-		if (activeTool === "set-height") {
-			setTerrainHeights(
-				cells.map((cell) => ({ ...cell, height: heightToolValue })),
-			);
-			return;
-		}
-
-		const updates = cells.flatMap((cell) => {
-			const key = cellKey(cell.x, cell.y);
-			const currentTileId = terrainLookup.get(key) ?? "grass";
-			const isOutsideCurrentMap =
-				cell.x >= activeArea.width || cell.y >= activeArea.height;
-			return currentTileId === selectedTerrainId && !isOutsideCurrentMap
-				? []
-				: [{ ...cell, tileId: selectedTerrainId }];
+		const areaSnapshot = getLatestActiveArea();
+		const cells = resolveTerrainFloodFill({
+			bounds: { height: areaSnapshot.height, width: areaSnapshot.width },
+			getTileId: makeTerrainTileReader(areaSnapshot),
+			seed,
+			targetTileId: selectedTerrainId,
 		});
-
-		if (updates.length > 0) {
-			setTiles(updates);
+		if (cells.length === 0) {
+			setSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: seed.x,
+				y: seed.y,
+			});
+			return;
 		}
+
+		const before = cloneCurrentProject();
+		applyTerrainOperationToCells(cells, seed);
+		recordMapEdit(before);
 	}
 
 	function placeStructure(x: number, y: number) {
@@ -1071,6 +1260,24 @@ export function MapEditor() {
 			return;
 		}
 
+		if (canUseTerrainGesture() && terrainGesture === "fill") {
+			applyTerrainFill({ x, y });
+			return;
+		}
+
+		if (
+			canUseTerrainGesture() &&
+			(terrainGesture === "line" || terrainGesture === "rectangle")
+		) {
+			terrainShapeGestureRef.current = {
+				before: cloneCurrentProject(),
+				gesture: terrainGesture,
+				start: { x, y },
+			};
+			updateTerrainShapePreview({ x, y });
+			return;
+		}
+
 		if (paintTarget === "eventBlock") {
 			const eventBlock = eventLookup.get(cellKey(x, y));
 			if (eventBlock) {
@@ -1142,6 +1349,17 @@ export function MapEditor() {
 		selectPaintedCell(x, y);
 	}
 
+	function handleCellPointerUp(
+		event: PointerEvent<HTMLButtonElement>,
+		x: number,
+		y: number,
+	) {
+		if (event.button !== 0) {
+			return;
+		}
+		commitTerrainShapeGesture({ x, y });
+	}
+
 	function handlePaletteResizeStart(event: PointerEvent<HTMLDivElement>) {
 		event.preventDefault();
 		setIsResizingPalette(true);
@@ -1201,6 +1419,27 @@ export function MapEditor() {
 	}
 
 	function handleCellPointerEnter(x: number, y: number) {
+		if (terrainShapeGestureRef.current) {
+			updateTerrainShapePreview({ x, y });
+			return;
+		}
+		if (
+			!isPainting &&
+			terrainGesture === "fill" &&
+			paintTarget === "terrain" &&
+			activeTool === "paint" &&
+			isInBounds(x, y, activeArea.width, activeArea.height)
+		) {
+			const fillCells = resolveTerrainFloodFill({
+				bounds: { height: activeArea.height, width: activeArea.width },
+				getTileId: (cell) =>
+					terrainLookup.get(cellKey(cell.x, cell.y)) ?? "grass",
+				seed: { x, y },
+				targetTileId: selectedTerrainId,
+			});
+			setTerrainPreviewCells(fillCells.length > 0 ? fillCells : [{ x, y }]);
+			return;
+		}
 		if (activeTool === "select" && dragEntityRef.current) {
 			moveDraggedEntity(x, y);
 			return;
@@ -1228,6 +1467,7 @@ export function MapEditor() {
 			recordMapEdit(dragEntityRef.current.before);
 		}
 		dragEntityRef.current = null;
+		cancelTerrainShapeGesture();
 	}
 
 	function startPanning(event: PointerEvent<HTMLDivElement>) {
@@ -2082,6 +2322,12 @@ export function MapEditor() {
 		}
 		if (activeTool === "set-height") {
 			return "set-height";
+		}
+		if (activeTool === "smooth-height") {
+			return "smooth-height";
+		}
+		if (activeTool === "roughen-height") {
+			return "roughen-height";
 		}
 		return "paint";
 	}
@@ -3870,19 +4116,45 @@ export function MapEditor() {
 						>
 							Set Height
 						</button>
+						<button
+							className={activeTool === "smooth-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("smooth-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Smooth
+						</button>
+						<button
+							className={activeTool === "roughen-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("roughen-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Roughen
+						</button>
 					</div>
-					<label>
-						Height value
-						<input
-							max="8"
-							min="-2"
-							onChange={(event) =>
-								setHeightToolValue(Number(event.target.value))
-							}
-							type="number"
-							value={heightToolValue}
-						/>
-					</label>
+					{activeTool === "set-height" ? (
+						<label>
+							Height value
+							<input
+								max="8"
+								min="-2"
+								onChange={(event) =>
+									setHeightToolValue(Number(event.target.value))
+								}
+								type="number"
+								value={heightToolValue}
+							/>
+						</label>
+					) : null}
 					<p className="tool-note">
 						Hotkeys: 1 Select, 2 Paint, 3 Erase. Erase removes entities, then
 						overlays, then resets terrain to grass.
@@ -3897,45 +4169,117 @@ export function MapEditor() {
 					</div>
 
 					<div className="panel-title">Brush</div>
-					<label>
-						Mode
-						<select
-							onChange={(event) =>
-								selectTerrainBrushMode(event.target.value as TerrainBrushMode)
-							}
-							value={getTerrainBrushMode()}
-						>
-							<option value="paint">Paint terrain</option>
-							<option value="raise-height">Raise height</option>
-							<option value="lower-height">Lower height</option>
-							<option value="flatten-height">Flatten height</option>
-							<option value="set-height">Set height</option>
-						</select>
-					</label>
 					<div className="segmented-control">
-						{([1, 2, 3, 5] as BrushSize[]).map((size) => (
-							<button
-								className={brushSize === size ? "selected" : ""}
-								key={size}
-								onClick={() => setBrushSize(size)}
-								type="button"
-							>
-								{size}x{size}
-							</button>
-						))}
+						{(["brush", "line", "rectangle", "fill"] as TerrainGesture[]).map(
+							(gesture) => (
+								<button
+									className={terrainGesture === gesture ? "selected" : ""}
+									key={gesture}
+									onClick={() => {
+										cancelTerrainShapeGesture();
+										setTerrainGesture(gesture);
+										if (gesture === "fill") {
+											setActiveTool("paint");
+											setPaintTarget("terrain");
+											setIsTerrainPaintArmed(true);
+											setMapPaletteSelection({ type: "none" });
+										}
+									}}
+									type="button"
+								>
+									{gesture === "brush"
+										? "Brush"
+										: gesture === "line"
+											? "Line"
+											: gesture === "rectangle"
+												? "Rectangle"
+												: "Fill"}
+								</button>
+							),
+						)}
 					</div>
-					<div className="segmented-control">
-						{(["square", "circle"] as TerrainBrushShape[]).map((shape) => (
-							<button
-								className={brushShape === shape ? "selected" : ""}
-								key={shape}
-								onClick={() => setBrushShape(shape)}
-								type="button"
+					{terrainGesture !== "fill" ? (
+						<label>
+							Mode
+							<select
+								onChange={(event) =>
+									selectTerrainBrushMode(event.target.value as TerrainBrushMode)
+								}
+								value={getTerrainBrushMode()}
 							>
-								{shape === "square" ? "Square" : "Circle"}
-							</button>
-						))}
-					</div>
+								<option value="paint">Paint terrain</option>
+								<option value="raise-height">Raise height</option>
+								<option value="lower-height">Lower height</option>
+								<option value="flatten-height">Flatten height</option>
+								<option value="set-height">Set height</option>
+								<option value="smooth-height">Smooth height</option>
+								<option value="roughen-height">Roughen height</option>
+							</select>
+						</label>
+					) : null}
+					{terrainGesture === "brush" ? (
+						<>
+							<div className="segmented-control">
+								{([1, 2, 3, 5] as BrushSize[]).map((size) => (
+									<button
+										className={brushSize === size ? "selected" : ""}
+										key={size}
+										onClick={() => setBrushSize(size)}
+										type="button"
+									>
+										{size}x{size}
+									</button>
+								))}
+							</div>
+							<div className="segmented-control">
+								{(["square", "circle"] as TerrainBrushShape[]).map((shape) => (
+									<button
+										className={brushShape === shape ? "selected" : ""}
+										key={shape}
+										onClick={() => setBrushShape(shape)}
+										type="button"
+									>
+										{shape === "square" ? "Square" : "Circle"}
+									</button>
+								))}
+							</div>
+						</>
+					) : null}
+					{terrainGesture !== "fill" && isHeightTool(activeTool) ? (
+						<label>
+							Strength
+							<input
+								max="4"
+								min="1"
+								onChange={(event) =>
+									setBrushStrength(Number(event.target.value))
+								}
+								step="1"
+								type="range"
+								value={brushStrength}
+							/>
+							<span>{brushStrength}</span>
+						</label>
+					) : null}
+					{terrainGesture === "brush" &&
+					(activeTool === "raise-height" ||
+						activeTool === "lower-height" ||
+						activeTool === "smooth-height" ||
+						activeTool === "roughen-height") ? (
+						<label>
+							Falloff
+							<select
+								onChange={(event) =>
+									setBrushFalloff(event.target.value as TerrainBrushFalloff)
+								}
+								value={brushFalloff}
+							>
+								<option value="hard">Hard</option>
+								<option value="linear">Linear</option>
+								<option value="smooth">Smooth</option>
+							</select>
+						</label>
+					) : null}
 
 					<div className="panel-title secondary">View</div>
 					<div className="inline-actions">
@@ -4176,6 +4520,7 @@ export function MapEditor() {
 										selection.areaId === activeArea.id &&
 										selection.x === x &&
 										selection.y === y;
+									const isTerrainPreview = terrainPreviewCellKeys.has(key);
 
 									return (
 										<button
@@ -4184,12 +4529,15 @@ export function MapEditor() {
 												isSelectedTerrain || isSelectedOverlay
 													? "selected-cell"
 													: ""
-											} ${isSelectedOverlay ? "selected-overlay-cell" : ""}`}
+											} ${isSelectedOverlay ? "selected-overlay-cell" : ""} ${
+												isTerrainPreview ? "map-cell-preview" : ""
+											}`}
 											key={key}
 											onPointerDown={(event) =>
 												handleCellPointerDown(event, x, y)
 											}
 											onPointerEnter={() => handleCellPointerEnter(x, y)}
+											onPointerUp={(event) => handleCellPointerUp(event, x, y)}
 											style={{
 												width: cellSize,
 												height: cellSize,
@@ -4450,12 +4798,15 @@ export function MapEditor() {
 					</div>
 				) : (
 					<ThreeDPreview
+						brushFalloff={brushFalloff}
 						brushShape={brushShape}
 						brushSize={brushSize}
+						brushStrength={brushStrength}
 						embedded
 						heightToolValue={heightToolValue}
 						hideDetails
 						overlayFilters={overlayFilters}
+						terrainGesture={terrainGesture}
 						terrainPaintTileId={
 							isTerrainPaintArmed &&
 							activeTool === "paint" &&
@@ -4472,7 +4823,11 @@ export function MapEditor() {
 										? "flatten"
 										: activeTool === "set-height"
 											? "set"
-											: undefined
+											: activeTool === "smooth-height"
+												? "smooth"
+												: activeTool === "roughen-height"
+													? "roughen"
+													: undefined
 						}
 					/>
 				)}

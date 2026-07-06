@@ -64,7 +64,17 @@ import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import { terrainTilesToBlocks } from "./terrainBlocks";
 import {
 	resolveTerrainBrushFootprint,
+	resolveTerrainBrushSamples,
+	resolveTerrainFloodFill,
+	resolveTerrainHeightUpdates,
+	resolveTerrainLine,
+	resolveTerrainPaintUpdates,
+	resolveTerrainRectangle,
+	type TerrainBrushCell,
+	type TerrainBrushFalloff,
+	type TerrainBrushSample,
 	type TerrainBrushShape,
+	type TerrainHeightOperation,
 	terrainBrushCellKey,
 } from "./terrainBrush";
 import {
@@ -79,17 +89,27 @@ import {
 } from "./threeDWalkPreview";
 
 type PreviewCameraMode = OrbitCameraPreset | "custom";
-export type TerrainHeightTool = "raise" | "lower" | "flatten" | "set";
+export type TerrainHeightTool =
+	| "raise"
+	| "lower"
+	| "flatten"
+	| "set"
+	| "smooth"
+	| "roughen";
 type TerrainBrushSize = 1 | 2 | 3 | 5;
+type TerrainGesture = "brush" | "line" | "rectangle" | "fill";
 
 type ThreeDPreviewProps = {
+	brushFalloff?: TerrainBrushFalloff;
 	brushShape?: TerrainBrushShape;
 	brushSize?: TerrainBrushSize;
+	brushStrength?: number;
 	embedded?: boolean;
 	heightToolValue?: number;
 	hideDetails?: boolean;
 	onOpenInMapEditor?: () => void;
 	overlayFilters?: MapOverlayFilters;
+	terrainGesture?: TerrainGesture;
 	terrainPaintTileId?: string;
 	terrainHeightTool?: TerrainHeightTool;
 };
@@ -98,6 +118,12 @@ type TerrainBrushStroke = {
 	pointerId: number;
 	appliedCells: Set<string>;
 	tool: "paint" | "height";
+};
+
+type TerrainShapeGesture = {
+	gesture: Extract<TerrainGesture, "line" | "rectangle">;
+	pointerId: number;
+	start: PreviewGridPosition;
 };
 
 function getPreviewSize(element: HTMLElement) {
@@ -119,13 +145,16 @@ function getPreviewCameraDimensions(
 }
 
 export function ThreeDPreview({
+	brushFalloff = "hard",
 	brushShape = "square",
 	brushSize = 1,
+	brushStrength = 1,
 	embedded = false,
 	heightToolValue = 0,
 	hideDetails = false,
 	onOpenInMapEditor,
 	overlayFilters: controlledOverlayFilters,
+	terrainGesture = "brush",
 	terrainPaintTileId,
 	terrainHeightTool,
 }: ThreeDPreviewProps) {
@@ -152,9 +181,6 @@ export function ThreeDPreview({
 	const updateProject = useProjectStore((state) => state.updateProject);
 	const setTiles = useProjectStore((state) => state.setTiles);
 	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
-	const adjustTerrainHeights = useProjectStore(
-		(state) => state.adjustTerrainHeights,
-	);
 	const mapPaletteSelection = useProjectStore(
 		(state) => state.mapPaletteSelection,
 	);
@@ -444,6 +470,7 @@ export function ThreeDPreview({
 		let dragGhost: THREE.Mesh | null = null;
 		let placementGhost: THREE.Mesh | null = null;
 		let terrainBrushGhost: THREE.Group | null = null;
+		let terrainShapeGesture: TerrainShapeGesture | null = null;
 		let latestPlacementPosition: PreviewGridPosition | undefined;
 		let pointerStart: {
 			pointerId: number;
@@ -453,6 +480,7 @@ export function ThreeDPreview({
 			didDrag: boolean;
 			heightEditing?: boolean;
 			terrainPainting?: boolean;
+			terrainShape?: boolean;
 			latestPosition?: PreviewGridPosition;
 		} | null = null;
 		let cameraDrag: {
@@ -643,6 +671,17 @@ export function ThreeDPreview({
 			return getTerrainPositionFromPointer(event, { height: 1, width: 1 });
 		};
 
+		const getTerrainHeightOperation = (): TerrainHeightOperation | undefined =>
+			terrainHeightTool;
+
+		const getHeightBrushFalloff = () =>
+			terrainHeightTool === "raise" ||
+			terrainHeightTool === "lower" ||
+			terrainHeightTool === "smooth" ||
+			terrainHeightTool === "roughen"
+				? brushFalloff
+				: "hard";
+
 		const getBrushPositions = (position: PreviewGridPosition) => {
 			if (!activeArea) {
 				return [];
@@ -655,12 +694,108 @@ export function ThreeDPreview({
 			});
 		};
 
+		const getBrushSamples = (position: PreviewGridPosition) => {
+			if (!activeArea) {
+				return [];
+			}
+			return resolveTerrainBrushSamples({
+				bounds: { height: activeArea.height, width: activeArea.width },
+				center: position,
+				falloff: getHeightBrushFalloff(),
+				shape: brushShape,
+				size: brushSize,
+			});
+		};
+
+		const getShapePositions = (
+			gesture: Extract<TerrainGesture, "line" | "rectangle">,
+			start: PreviewGridPosition,
+			end: PreviewGridPosition,
+		) => {
+			if (!activeArea) {
+				return [];
+			}
+			const bounds = { height: activeArea.height, width: activeArea.width };
+			return gesture === "line"
+				? resolveTerrainLine({ bounds, end, start })
+				: resolveTerrainRectangle({ bounds, end, start });
+		};
+
+		const makeTerrainTileReader = () => {
+			const lookup = new Map(
+				activeArea?.terrainTiles.map((tile) => [
+					terrainBrushCellKey(tile),
+					tile.tileId,
+				]) ?? [],
+			);
+			return (cell: TerrainBrushCell) =>
+				lookup.get(terrainBrushCellKey(cell)) ?? "grass";
+		};
+
+		const getFillPositions = (position: PreviewGridPosition) => {
+			if (!activeArea || !terrainPaintTileId || terrainHeightTool) {
+				return [];
+			}
+			return resolveTerrainFloodFill({
+				bounds: { height: activeArea.height, width: activeArea.width },
+				getTileId: makeTerrainTileReader(),
+				seed: position,
+				targetTileId: terrainPaintTileId,
+			});
+		};
+
+		const applyTerrainOperationAtCells = (
+			positions: TerrainBrushCell[],
+			selectionPosition: PreviewGridPosition,
+			samples: TerrainBrushSample[] = positions.map((cell) => ({
+				...cell,
+				influence: 1,
+			})),
+		) => {
+			if (!activeArea || positions.length === 0) {
+				return false;
+			}
+			const heightOperation = getTerrainHeightOperation();
+			if (heightOperation) {
+				const updates = resolveTerrainHeightUpdates({
+					area: activeArea,
+					operation: heightOperation,
+					samples,
+					strength: brushStrength,
+					targetHeight: heightOperation === "flatten" ? 0 : heightToolValue,
+				});
+				if (updates.length > 0) {
+					setTerrainHeights(updates);
+				}
+			} else if (terrainPaintTileId) {
+				const updates = resolveTerrainPaintUpdates({
+					cells: positions,
+					getTileId: makeTerrainTileReader(),
+					knownBounds: { height: activeArea.height, width: activeArea.width },
+					targetTileId: terrainPaintTileId,
+				});
+				if (updates.length > 0) {
+					setTiles(updates);
+				}
+			} else {
+				return false;
+			}
+
+			setEditorSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: selectionPosition.x,
+				y: selectionPosition.y,
+			});
+			return true;
+		};
+
 		const applyHeightToolAtPosition = (position: PreviewGridPosition) => {
 			const terrainBrushStroke = terrainBrushStrokeRef.current;
 			if (!activeArea || !terrainHeightTool || !terrainBrushStroke) {
 				return false;
 			}
-			const positions = getBrushPositions(position).filter((cell) => {
+			const samples = getBrushSamples(position).filter((cell) => {
 				const key = terrainBrushCellKey(cell);
 				if (terrainBrushStroke.appliedCells.has(key)) {
 					return false;
@@ -668,28 +803,7 @@ export function ThreeDPreview({
 				terrainBrushStroke.appliedCells.add(key);
 				return true;
 			});
-			if (positions.length === 0) {
-				return true;
-			}
-			if (terrainHeightTool === "raise") {
-				adjustTerrainHeights(positions.map((cell) => ({ ...cell, delta: 1 })));
-			} else if (terrainHeightTool === "lower") {
-				adjustTerrainHeights(positions.map((cell) => ({ ...cell, delta: -1 })));
-			} else {
-				setTerrainHeights(
-					positions.map((cell) => ({
-						...cell,
-						height: terrainHeightTool === "flatten" ? 0 : heightToolValue,
-					})),
-				);
-			}
-			setEditorSelection({
-				areaId: activeArea.id,
-				type: "terrain",
-				x: position.x,
-				y: position.y,
-			});
-			return true;
+			return applyTerrainOperationAtCells(samples, position, samples);
 		};
 
 		const applyHeightToolFromPointer = (event: PointerEvent) => {
@@ -713,19 +827,7 @@ export function ThreeDPreview({
 			if (positions.length === 0) {
 				return true;
 			}
-			setTiles(
-				positions.map((cell) => ({
-					...cell,
-					tileId: terrainPaintTileId,
-				})),
-			);
-			setEditorSelection({
-				areaId: activeArea.id,
-				type: "terrain",
-				x: position.x,
-				y: position.y,
-			});
-			return true;
+			return applyTerrainOperationAtCells(positions, position);
 		};
 
 		const updateDragGhost = (
@@ -807,12 +909,11 @@ export function ThreeDPreview({
 				? resolveTerrainMaterialKey(terrainPaintTileId)
 				: "itemAccent";
 
-		const updateTerrainBrushGhost = (position: PreviewGridPosition) => {
+		const updateTerrainCellsGhost = (positions: TerrainBrushCell[]) => {
 			if (!activeArea || (!terrainPaintTileId && !terrainHeightTool)) {
 				cleanupTerrainBrushGhost();
 				return;
 			}
-			const positions = getBrushPositions(position);
 			if (positions.length === 0) {
 				cleanupTerrainBrushGhost();
 				return;
@@ -841,6 +942,10 @@ export function ThreeDPreview({
 			scene.add(terrainBrushGhost);
 		};
 
+		const updateTerrainBrushGhost = (position: PreviewGridPosition) => {
+			updateTerrainCellsGhost(getBrushPositions(position));
+		};
+
 		const handlePointerDown = (event: PointerEvent) => {
 			// Alt-modified drags are reserved for camera control so unmodified
 			// pointer input remains owned by paint, sculpt, placement, and selection.
@@ -858,7 +963,60 @@ export function ThreeDPreview({
 			if (!isPrimaryEditorPointer(event)) {
 				return;
 			}
-			if (terrainPaintTileId && !terrainHeightTool && !placementInfo.active) {
+			if (
+				terrainGesture === "fill" &&
+				terrainPaintTileId &&
+				!terrainHeightTool &&
+				!placementInfo.active
+			) {
+				const fillPosition = getTerrainPaintPositionFromPointer(event);
+				if (!fillPosition) {
+					cleanupTerrainBrushGhost();
+					return;
+				}
+				event.preventDefault();
+				const fillPositions = getFillPositions(fillPosition);
+				applyTerrainOperationAtCells(fillPositions, fillPosition);
+				updateTerrainCellsGhost(
+					fillPositions.length > 0 ? fillPositions : [fillPosition],
+				);
+				return;
+			}
+			if (
+				(terrainGesture === "line" || terrainGesture === "rectangle") &&
+				(terrainPaintTileId || terrainHeightTool) &&
+				!placementInfo.active
+			) {
+				const shapePosition = getTerrainBrushPositionFromPointer(event);
+				if (!shapePosition) {
+					cleanupTerrainBrushGhost();
+					return;
+				}
+				event.preventDefault();
+				terrainShapeGesture = {
+					gesture: terrainGesture,
+					pointerId: event.pointerId,
+					start: shapePosition,
+				};
+				pointerStart = {
+					didDrag: false,
+					pointerId: event.pointerId,
+					terrainShape: true,
+					x: event.clientX,
+					y: event.clientY,
+				};
+				renderer.domElement.setPointerCapture?.(event.pointerId);
+				updateTerrainCellsGhost(
+					getShapePositions(terrainGesture, shapePosition, shapePosition),
+				);
+				return;
+			}
+			if (
+				terrainGesture === "brush" &&
+				terrainPaintTileId &&
+				!terrainHeightTool &&
+				!placementInfo.active
+			) {
 				const paintPosition = getTerrainPaintPositionFromPointer(event);
 				if (!paintPosition) {
 					cleanupTerrainBrushGhost();
@@ -882,7 +1040,7 @@ export function ThreeDPreview({
 				updateTerrainBrushGhost(paintPosition);
 				return;
 			}
-			if (terrainHeightTool) {
+			if (terrainGesture === "brush" && terrainHeightTool) {
 				const heightPosition = getTerrainBrushPositionFromPointer(event);
 				if (!heightPosition) {
 					cleanupTerrainBrushGhost();
@@ -960,6 +1118,27 @@ export function ThreeDPreview({
 				}
 				return;
 			}
+			if (terrainShapeGesture) {
+				if (terrainShapeGesture.pointerId !== event.pointerId) {
+					return;
+				}
+				pointerStart = pointerStart
+					? { ...pointerStart, didDrag: true }
+					: pointerStart;
+				const nextPosition = getTerrainBrushPositionFromPointer(event);
+				if (!nextPosition) {
+					cleanupTerrainBrushGhost();
+					return;
+				}
+				updateTerrainCellsGhost(
+					getShapePositions(
+						terrainShapeGesture.gesture,
+						terrainShapeGesture.start,
+						nextPosition,
+					),
+				);
+				return;
+			}
 			const terrainBrushStroke = terrainBrushStrokeRef.current;
 			if (terrainBrushStroke) {
 				if (terrainBrushStroke.pointerId !== event.pointerId) {
@@ -1011,7 +1190,20 @@ export function ThreeDPreview({
 			) {
 				const nextPosition = getTerrainBrushPositionFromPointer(event);
 				if (nextPosition) {
-					updateTerrainBrushGhost(nextPosition);
+					if (
+						terrainGesture === "fill" &&
+						terrainPaintTileId &&
+						!terrainHeightTool
+					) {
+						const fillPositions = getFillPositions(nextPosition);
+						updateTerrainCellsGhost(
+							fillPositions.length > 0 ? fillPositions : [nextPosition],
+						);
+					} else if (terrainGesture === "brush") {
+						updateTerrainBrushGhost(nextPosition);
+					} else {
+						cleanupTerrainBrushGhost();
+					}
 				} else {
 					cleanupTerrainBrushGhost();
 				}
@@ -1048,6 +1240,30 @@ export function ThreeDPreview({
 				event.preventDefault();
 				cameraDrag = null;
 				releasePointerCapture(event);
+				return;
+			}
+			if (terrainShapeGesture) {
+				if (terrainShapeGesture.pointerId !== event.pointerId) {
+					return;
+				}
+				const shapeGesture = terrainShapeGesture;
+				const nextPosition = getTerrainBrushPositionFromPointer(event);
+				if (nextPosition) {
+					const positions = getShapePositions(
+						shapeGesture.gesture,
+						shapeGesture.start,
+						nextPosition,
+					);
+					applyTerrainOperationAtCells(positions, nextPosition);
+					updateTerrainCellsGhost(positions);
+				} else {
+					cleanupTerrainBrushGhost();
+				}
+				terrainShapeGesture = null;
+				releasePointerCapture(event);
+				if (pointerStart?.terrainShape) {
+					pointerStart = null;
+				}
 				return;
 			}
 			const terrainBrushStroke = terrainBrushStrokeRef.current;
@@ -1127,6 +1343,15 @@ export function ThreeDPreview({
 				releasePointerCapture(event);
 				return;
 			}
+			if (terrainShapeGesture?.pointerId === event.pointerId) {
+				terrainShapeGesture = null;
+				cleanupTerrainBrushGhost();
+				releasePointerCapture(event);
+				if (pointerStart?.terrainShape) {
+					pointerStart = null;
+				}
+				return;
+			}
 			if (terrainBrushStrokeRef.current?.pointerId === event.pointerId) {
 				terrainBrushStrokeRef.current = null;
 				cleanupTerrainBrushGhost();
@@ -1159,14 +1384,20 @@ export function ThreeDPreview({
 		};
 
 		const handleWindowTerrainPaintMove = (event: PointerEvent) => {
-			if (terrainBrushStrokeRef.current?.pointerId !== event.pointerId) {
+			if (
+				terrainBrushStrokeRef.current?.pointerId !== event.pointerId &&
+				terrainShapeGesture?.pointerId !== event.pointerId
+			) {
 				return;
 			}
 			handlePointerMove(event);
 		};
 
 		const handleWindowTerrainPaintUp = (event: PointerEvent) => {
-			if (terrainBrushStrokeRef.current?.pointerId !== event.pointerId) {
+			if (
+				terrainBrushStrokeRef.current?.pointerId !== event.pointerId &&
+				terrainShapeGesture?.pointerId !== event.pointerId
+			) {
 				return;
 			}
 			handlePointerUp(event);
@@ -1233,6 +1464,7 @@ export function ThreeDPreview({
 			window.removeEventListener("pointercancel", cancelPointerInteraction);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			resizeObserver?.disconnect();
+			terrainShapeGesture = null;
 			cleanupDragGhost();
 			cleanupPlacementGhost();
 			cleanupTerrainBrushGhost();
@@ -1270,9 +1502,10 @@ export function ThreeDPreview({
 		addObject,
 		addPickup,
 		addStructure,
-		adjustTerrainHeights,
+		brushFalloff,
 		brushShape,
 		brushSize,
+		brushStrength,
 		editorSelection,
 		entityMarkers,
 		heightToolValue,
@@ -1282,6 +1515,7 @@ export function ThreeDPreview({
 		setTiles,
 		setTerrainHeights,
 		terrainBlocks,
+		terrainGesture,
 		terrainPaintTileId,
 		terrainHeightTool,
 		updatePickup,
