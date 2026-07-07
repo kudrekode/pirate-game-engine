@@ -132,6 +132,56 @@ describe("three visual resolver", () => {
 		}
 	});
 
+	it("resolves built-in pirate asset assignments through asset mode", () => {
+		expect(
+			resolveThreeVisual({
+				category: "container",
+				kind: "object",
+				name: "Chest",
+				threeVisual: {
+					assetId: "pirate-chest",
+					mode: "asset",
+					placeholderType: "chest",
+				},
+			}),
+		).toMatchObject({
+			asset: {
+				id: "pirate-chest",
+				url: "/assets/pirate-demo/chest.glb",
+			},
+			assetId: "pirate-chest",
+			mode: "asset",
+			placeholderType: "chest",
+			requestedMode: "asset",
+			scale: 0.22,
+			source: "authored",
+		});
+		expect(
+			resolveThreeVisual({
+				behaviour: boatBehaviour,
+				category: "vehicle",
+				kind: "object",
+				name: "Boat",
+				threeVisual: {
+					assetId: "pirate-small-ship",
+					mode: "asset",
+					placeholderType: "boat",
+				},
+			}),
+		).toMatchObject({
+			asset: {
+				id: "pirate-small-ship",
+				url: "/assets/pirate-demo/ship-pirate-small.glb",
+			},
+			assetId: "pirate-small-ship",
+			mode: "asset",
+			placeholderType: "boat",
+			requestedMode: "asset",
+			scale: 0.12,
+			source: "authored",
+		});
+	});
+
 	it("falls back safely when an asset request has no usable asset id", () => {
 		expect(
 			resolveThreeVisual({

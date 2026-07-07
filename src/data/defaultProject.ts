@@ -726,7 +726,7 @@ export const defaultProject: GameProject = {
 				openedFlag: "demo_chest_opened",
 			},
 			threeVisual: {
-				assetId: "demo-box",
+				assetId: "pirate-chest",
 				mode: "asset",
 				placeholderType: "chest",
 			},
@@ -746,6 +746,11 @@ export const defaultProject: GameProject = {
 				allowedTerrainIds: ["water"],
 				dismountAllowedTerrainIds: ["grass", "dirt", "sand", "stone"],
 				speedMultiplier: 1,
+			},
+			threeVisual: {
+				assetId: "pirate-small-ship",
+				mode: "asset",
+				placeholderType: "boat",
 			},
 		},
 	],

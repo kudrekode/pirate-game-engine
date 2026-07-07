@@ -92,6 +92,33 @@ describe("ThreeVisualControls", () => {
 		});
 	});
 
+	it("lists curated pirate assets from the built-in registry", () => {
+		const onChange = renderControls({ mode: "asset" });
+
+		expect(screen.getByRole("option", { name: "Pirate Chest" })).toHaveValue(
+			"pirate-chest",
+		);
+		expect(
+			screen.getByRole("option", { name: "Pirate Small Ship" }),
+		).toHaveValue("pirate-small-ship");
+
+		fireEvent.change(screen.getByLabelText("Asset"), {
+			target: { value: "pirate-chest" },
+		});
+		expect(onChange).toHaveBeenLastCalledWith({
+			assetId: "pirate-chest",
+			mode: "asset",
+		});
+
+		fireEvent.change(screen.getByLabelText("Asset"), {
+			target: { value: "pirate-small-ship" },
+		});
+		expect(onChange).toHaveBeenLastCalledWith({
+			assetId: "pirate-small-ship",
+			mode: "asset",
+		});
+	});
+
 	it("updates source mode and preserves transform settings", () => {
 		setAssets([demoBoxAsset]);
 		const transformConfig: ThreeVisualConfig = {

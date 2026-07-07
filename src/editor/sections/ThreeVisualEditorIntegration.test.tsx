@@ -19,10 +19,21 @@ const demoBoxAsset: ThreeVisualAssetDefinition = {
 	url: "/assets/demo/Box.glb",
 };
 
+const pirateChestAsset: ThreeVisualAssetDefinition = {
+	category: "object",
+	id: "pirate-chest",
+	kind: "glb",
+	name: "Pirate Chest",
+	url: "/assets/pirate-demo/chest.glb",
+};
+
 let restoreRegistry: (() => void) | undefined;
 
 beforeEach(() => {
-	restoreRegistry = setThreeVisualAssetRegistryForTests([demoBoxAsset]);
+	restoreRegistry = setThreeVisualAssetRegistryForTests([
+		demoBoxAsset,
+		pirateChestAsset,
+	]);
 	useProjectStore.getState().setProject(cloneProject(defaultProject));
 });
 
@@ -93,9 +104,9 @@ describe("Three visual editor integration", () => {
 		fireEvent.click(chestButton);
 
 		expect(screen.getByLabelText("Visual source")).toHaveValue("asset");
-		expect(screen.getByLabelText("Asset")).toHaveValue("demo-box");
-		expect(screen.getByRole("option", { name: "Demo Box" })).toHaveValue(
-			"demo-box",
+		expect(screen.getByLabelText("Asset")).toHaveValue("pirate-chest");
+		expect(screen.getByRole("option", { name: "Pirate Chest" })).toHaveValue(
+			"pirate-chest",
 		);
 	});
 });
