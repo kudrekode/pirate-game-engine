@@ -722,6 +722,8 @@ describe("ThreeRuntimePanel", () => {
 	it("does not import editor store state", () => {
 		expect(threeRuntimeSource).not.toContain("useProjectStore");
 		expect(threeRuntimeSource).not.toMatch(/from\s+["'][^"']*store/);
+		expect(threeRuntimeSource).toContain("createThreeVisualMarkerGroup");
+		expect(threeRuntimeSource).not.toContain("GLTFLoader");
 	});
 
 	it("uses shared vehicle dismount instead of normal interaction while boarded", async () => {

@@ -725,6 +725,11 @@ export const defaultProject: GameProject = {
 				once: true,
 				openedFlag: "demo_chest_opened",
 			},
+			threeVisual: {
+				assetId: "demo-box",
+				mode: "asset",
+				placeholderType: "chest",
+			},
 		},
 		{
 			id: "object_dock_marker",

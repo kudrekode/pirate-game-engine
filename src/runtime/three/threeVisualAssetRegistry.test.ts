@@ -6,8 +6,20 @@ import {
 } from "./threeVisualAssetRegistry";
 
 describe("Three visual asset registry", () => {
-	it("starts with no built-in demo assets until a legal model is added", () => {
-		expect(listThreeVisualAssets()).toEqual([]);
+	it("exposes the built-in demo asset", () => {
+		expect(listThreeVisualAssets()).toContainEqual({
+			category: "object",
+			defaultHeightOffset: 0.45,
+			defaultScale: 0.45,
+			id: "demo-box",
+			kind: "glb",
+			name: "Demo Box",
+			url: "/assets/demo/Box.glb",
+		});
+		expect(getThreeVisualAssetDefinition("demo-box")).toMatchObject({
+			kind: "glb",
+			url: "/assets/demo/Box.glb",
+		});
 		expect(getThreeVisualAssetDefinition("missing")).toBeUndefined();
 	});
 

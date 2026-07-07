@@ -5,6 +5,8 @@ import { cloneProject } from "../data/migrateProject";
 import { getTerrainHeight } from "../data/terrainHeight";
 import { editorSections } from "../editor/sections";
 import { MapEditor } from "../editor/sections/MapEditor";
+// @ts-expect-error Vite raw import used for a source-boundary test.
+import threeDPreviewSource from "../editor/sections/ThreeDPreview.tsx?raw";
 import {
 	resolveTerrainBrushFootprint,
 	resolveTerrainLine,
@@ -490,6 +492,11 @@ describe("ThreeDPreview", () => {
 		);
 		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("uses the shared Three visual marker renderer", () => {
+		expect(threeDPreviewSource).toContain("createThreeVisualMarkerGroup");
+		expect(threeDPreviewSource).not.toContain("GLTFLoader");
 	});
 
 	it("keeps camera controls as presentation-only editor state", () => {

@@ -16,9 +16,19 @@ export type ThreeVisualAssetDefinition = {
 	defaultRotationOffset?: number;
 };
 
-// Built-in/demo registry only. This stays empty until a legal, repo-owned
-// GLTF/GLB file is added under the app's static asset conventions.
-export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [];
+// Built-in/demo registry only. These assets live under public/ so Vite serves
+// them from the same stable URLs in dev and production builds.
+export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
+	{
+		category: "object",
+		defaultHeightOffset: 0.45,
+		defaultScale: 0.45,
+		id: "demo-box",
+		kind: "glb",
+		name: "Demo Box",
+		url: "/assets/demo/Box.glb",
+	},
+];
 
 let activeRegistry = THREE_VISUAL_ASSET_REGISTRY;
 
