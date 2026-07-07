@@ -14,6 +14,8 @@ export type ThreeVisualAssetDefinition = {
 	defaultScale?: number;
 	defaultHeightOffset?: number;
 	defaultRotationOffset?: number;
+	castShadow?: boolean;
+	receiveShadow?: boolean;
 };
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves

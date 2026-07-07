@@ -1273,9 +1273,18 @@ export function ThreeRuntimePanel({
 		applyCameraRig(cameraRig);
 		addThreeWorldLighting(scene, { enableShadows: true });
 
-		const renderObjects: THREE.Object3D[] = [];
-		const addRenderObject = (object: THREE.Object3D) => {
-			renderObjects.push(object);
+		const renderObjects: Array<{
+			disposeResources: boolean;
+			object: THREE.Object3D;
+		}> = [];
+		const addRenderObject = (
+			object: THREE.Object3D,
+			options: { disposeResources?: boolean } = {},
+		) => {
+			renderObjects.push({
+				disposeResources: options.disposeResources ?? true,
+				object,
+			});
 			scene.add(object);
 		};
 
@@ -1316,15 +1325,24 @@ export function ThreeRuntimePanel({
 		};
 		const npcRenderGroups = new Map<string, THREE.Group>();
 		const npcRenderVisuals = new Map<string, ResolvedThreeVisual | undefined>();
+		let assetStateChangeQueued = false;
+		const handleAssetStateChange = () => {
+			if (assetStateChangeQueued) {
+				return;
+			}
+			assetStateChangeQueued = true;
+			setRenderVersion((version) => version + 1);
+		};
 		areaEntitiesToMarkers(
 			runtimeArea,
 			session.project.objects,
 			session.project.npcs,
 			true,
 		).forEach((marker) => {
-			const { group } = createThreeVisualMarkerGroup(marker, {
-				onAssetStateChange: () => setRenderVersion((version) => version + 1),
+			const renderResult = createThreeVisualMarkerGroup(marker, {
+				onAssetStateChange: handleAssetStateChange,
 			});
+			const { group } = renderResult;
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
 				if (npcVisual) {
@@ -1342,11 +1360,13 @@ export function ThreeRuntimePanel({
 					npcRenderVisuals.set(marker.id, marker.visual);
 				}
 			}
-			applyShadowRole(group, {
-				cast: true,
-				receive: marker.kind !== "event",
-			});
-			addRenderObject(group);
+			if (!renderResult.usedAsset) {
+				applyShadowRole(group, {
+					cast: true,
+					receive: marker.kind !== "event",
+				});
+			}
+			addRenderObject(group, { disposeResources: !renderResult.usedAsset });
 		});
 
 		const playerMesh = createRuntimePlayerMesh();
@@ -1605,7 +1625,11 @@ export function ThreeRuntimePanel({
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			renderer.dispose();
-			renderObjects.forEach(disposePlaceholderObject);
+			renderObjects.forEach((entry) => {
+				if (entry.disposeResources) {
+					disposePlaceholderObject(entry.object);
+				}
+			});
 			if (renderer.domElement.parentElement === host) {
 				host.removeChild(renderer.domElement);
 			}

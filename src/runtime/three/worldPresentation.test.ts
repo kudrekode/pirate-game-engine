@@ -44,6 +44,11 @@ describe("Three world presentation helpers", () => {
 		expect(material.depthWrite).toBe(false);
 	});
 
+	it("uses the supported PCF shadow map type", () => {
+		expect(worldPresentationSource).toContain("THREE.PCFShadowMap");
+		expect(worldPresentationSource).not.toContain("THREE.PCFSoftShadowMap");
+	});
+
 	it("keeps presentation helpers independent from gameplay runtime helpers", () => {
 		expect(worldPresentationSource).not.toMatch(/runtimeSession/);
 		expect(worldPresentationSource).not.toMatch(/playerMovementTransaction/);

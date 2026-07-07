@@ -449,7 +449,15 @@ export function ThreeDPreview({
 			scene.add(mesh);
 			return mesh;
 		});
-		const markerMeshes = entityMarkers.map((marker) => {
+		let assetStateChangeQueued = false;
+		const handleAssetStateChange = () => {
+			if (assetStateChangeQueued) {
+				return;
+			}
+			assetStateChangeQueued = true;
+			setAssetRenderVersion((version) => version + 1);
+		};
+		const markerRenderResults = entityMarkers.map((marker) => {
 			const selectionMetadata = entityMarkerToSelectionMetadata(
 				marker,
 				activeArea?.id ?? "",
@@ -458,16 +466,22 @@ export function ThreeDPreview({
 				editorSelection,
 				selectionMetadata,
 			);
-			const { group } = createThreeVisualMarkerGroup(marker, {
+			const renderResult = createThreeVisualMarkerGroup(marker, {
 				metadata: selectionMetadata,
-				onAssetStateChange: () =>
-					setAssetRenderVersion((version) => version + 1),
+				onAssetStateChange: handleAssetStateChange,
 				selected: isSelected,
 			});
-			applyShadowRole(group, { cast: true, receive: marker.kind !== "event" });
+			if (!renderResult.usedAsset) {
+				applyShadowRole(renderResult.group, {
+					cast: true,
+					receive: marker.kind !== "event",
+				});
+			}
+			const { group } = renderResult;
 			scene.add(group);
-			return group;
+			return renderResult;
 		});
+		const markerMeshes = markerRenderResults.map((result) => result.group);
 		const walkPreviewMesh =
 			activeArea && walkPreviewPosition
 				? new THREE.Mesh(
@@ -1520,7 +1534,11 @@ export function ThreeDPreview({
 			renderer.dispose();
 			terrainPickMeshes.forEach(disposeMesh);
 			smoothTerrainVisualMeshes.forEach(disposeMesh);
-			markerMeshes.forEach(disposePlaceholderObject);
+			markerRenderResults.forEach((result) => {
+				if (!result.usedAsset) {
+					disposePlaceholderObject(result.group);
+				}
+			});
 			if (walkPreviewMesh) {
 				scene.remove(walkPreviewMesh);
 				walkPreviewMesh.geometry.dispose();

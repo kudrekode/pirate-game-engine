@@ -10,6 +10,7 @@ import {
 	type ThreeVisualAssetRequest,
 } from "./threeVisualAssetLoader";
 import { threeVisualRotationOffsetToRadians } from "./threeVisuals";
+import { applyShadowRole } from "./worldPresentation";
 
 export type ThreeVisualRenderResult = {
 	group: THREE.Group;
@@ -44,6 +45,10 @@ function createAssetGroup(
 ): THREE.Group {
 	const group = new THREE.Group();
 	applyMarkerTransform(group, marker);
+	applyShadowRole(assetObject, {
+		cast: marker.visual?.asset?.castShadow ?? false,
+		receive: marker.visual?.asset?.receiveShadow ?? false,
+	});
 	group.add(assetObject);
 	if (options.metadata) {
 		applyPlaceholderMetadata(group, options.metadata);

@@ -83,6 +83,8 @@ describe("Three visual marker renderer", () => {
 			new THREE.BoxGeometry(1, 1, 1),
 			new THREE.MeshStandardMaterial(),
 		);
+		child.castShadow = true;
+		child.receiveShadow = true;
 		source.add(child);
 		const loadAsync = vi.fn(async () => ({ scene: source }));
 		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
@@ -122,6 +124,8 @@ describe("Three visual marker renderer", () => {
 				usedAsset: true,
 			});
 			expect(loaded.group.children[0]).not.toBe(source);
+			expect(loaded.group.children[0].castShadow).toBe(false);
+			expect(loaded.group.children[0].receiveShadow).toBe(false);
 			expect(loaded.group.userData.selectionMetadata).toBe(metadata);
 			expect(loaded.group.children[0].userData.selectionMetadata).toBe(
 				metadata,
@@ -130,6 +134,47 @@ describe("Three visual marker renderer", () => {
 			expect(loaded.group.rotation.y).toBeCloseTo(Math.PI / 2);
 			expect(loaded.group.scale.x).toBeCloseTo(1.5);
 			expect(loadAsync).toHaveBeenCalledTimes(1);
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("applies explicit imported asset shadow metadata when registered", async () => {
+		const source = new THREE.Group();
+		const child = new THREE.Mesh(
+			new THREE.BoxGeometry(1, 1, 1),
+			new THREE.MeshStandardMaterial(),
+		);
+		source.add(child);
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: vi.fn(async () => ({ scene: source })),
+		}));
+		const marker = makeMarker({
+			visual: {
+				asset: {
+					...assetDefinition,
+					castShadow: true,
+					receiveShadow: true,
+				},
+				assetId: assetDefinition.id,
+				heightOffset: 0,
+				mode: "asset",
+				placeholderType: "npc",
+				requestedMode: "asset",
+				rotationOffset: 0,
+				scale: 1,
+				source: "authored",
+			},
+		});
+
+		try {
+			createThreeVisualMarkerGroup(marker);
+			await flushAssetPromises();
+
+			const loaded = createThreeVisualMarkerGroup(marker);
+			expect(loaded.usedAsset).toBe(true);
+			expect(loaded.group.children[0].castShadow).toBe(true);
+			expect(loaded.group.children[0].receiveShadow).toBe(true);
 		} finally {
 			restoreLoader();
 		}

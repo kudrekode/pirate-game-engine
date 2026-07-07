@@ -70,10 +70,11 @@ describe("Three visual asset loader cache", () => {
 
 	it("records failed loads and keeps returning an error state", async () => {
 		const loadError = new Error("load failed");
+		const loadAsync = vi.fn(async () => {
+			throw loadError;
+		});
 		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
-			loadAsync: vi.fn(async () => {
-				throw loadError;
-			}),
+			loadAsync,
 		}));
 
 		try {
@@ -81,10 +82,13 @@ describe("Three visual asset loader cache", () => {
 			await flushAssetPromises();
 
 			const result = requestThreeVisualAsset(assetDefinition);
+			const repeatedResult = requestThreeVisualAsset(assetDefinition);
 			expect(result.status).toBe("error");
 			expect(result.status === "error" ? result.error : undefined).toBe(
 				loadError,
 			);
+			expect(repeatedResult.status).toBe("error");
+			expect(loadAsync).toHaveBeenCalledTimes(1);
 		} finally {
 			restoreLoader();
 		}

@@ -190,7 +190,7 @@ export function configureThreeRenderer(
 	renderer.setClearColor(DEFAULT_WORLD_BACKGROUND, 1);
 	renderer.shadowMap.enabled = options.enableShadows ?? false;
 	if (renderer.shadowMap.enabled) {
-		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		renderer.shadowMap.type = THREE.PCFShadowMap;
 	}
 }
 

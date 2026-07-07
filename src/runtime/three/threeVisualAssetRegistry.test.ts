@@ -88,6 +88,9 @@ describe("Three visual asset registry", () => {
 				kind: "glb",
 				url: expected.url,
 			});
+			const asset = getThreeVisualAssetDefinition(expected.id);
+			expect(asset?.castShadow).toBeUndefined();
+			expect(asset?.receiveShadow).toBeUndefined();
 		}
 	});
 

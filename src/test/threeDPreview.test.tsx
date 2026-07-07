@@ -166,6 +166,7 @@ vi.mock("three", () => {
 		HemisphereLight: class {},
 		Mesh,
 		MeshStandardMaterial: Disposable,
+		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
 		Plane: class {},
 		PerspectiveCamera: class {
@@ -497,6 +498,11 @@ describe("ThreeDPreview", () => {
 	it("uses the shared Three visual marker renderer", () => {
 		expect(threeDPreviewSource).toContain("createThreeVisualMarkerGroup");
 		expect(threeDPreviewSource).not.toContain("GLTFLoader");
+	});
+
+	it("coalesces asset-load rebuilds and preserves cached imported resources", () => {
+		expect(threeDPreviewSource).toContain("assetStateChangeQueued");
+		expect(threeDPreviewSource).toContain("if (!renderResult.usedAsset)");
 	});
 
 	it("keeps camera controls as presentation-only editor state", () => {

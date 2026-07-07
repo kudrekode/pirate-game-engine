@@ -208,6 +208,7 @@ vi.mock("three", () => {
 		HemisphereLight: class {},
 		Mesh,
 		MeshStandardMaterial: Disposable,
+		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
 		PerspectiveCamera: class {
 			lookAt = vi.fn();
@@ -724,6 +725,13 @@ describe("ThreeRuntimePanel", () => {
 		expect(threeRuntimeSource).not.toMatch(/from\s+["'][^"']*store/);
 		expect(threeRuntimeSource).toContain("createThreeVisualMarkerGroup");
 		expect(threeRuntimeSource).not.toContain("GLTFLoader");
+	});
+
+	it("coalesces asset-load rebuilds and preserves cached imported resources", () => {
+		expect(threeRuntimeSource).toContain("assetStateChangeQueued");
+		expect(threeRuntimeSource).toContain(
+			"disposeResources: !renderResult.usedAsset",
+		);
 	});
 
 	it("uses shared vehicle dismount instead of normal interaction while boarded", async () => {
