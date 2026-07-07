@@ -80,7 +80,12 @@ import {
 	zoomOrbitCamera,
 } from "./cameraControls";
 import { disposePlaceholderObject } from "./placeholderMeshes";
+import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
+import {
+	createThreePerformanceDiagnostics,
+	type ThreePerformanceDiagnostics,
+} from "./threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
 	composeThreeVisualYaw,
@@ -118,6 +123,31 @@ type PendingCutscene = {
 	continueLabel: string;
 	onContinue: () => void;
 };
+type ThreeRuntimeBuildInputs = {
+	areaId: string;
+	renderVersion: number;
+	terrainRenderMode: TerrainRenderMode;
+};
+
+function resolveThreeRuntimeBuildReason(
+	previous: ThreeRuntimeBuildInputs | null,
+	next: ThreeRuntimeBuildInputs,
+	requestedReason: string,
+): string {
+	if (!previous) {
+		return "initial runtime build";
+	}
+	if (previous.areaId !== next.areaId) {
+		return "area changed";
+	}
+	if (previous.terrainRenderMode !== next.terrainRenderMode) {
+		return "terrain mode changed";
+	}
+	if (previous.renderVersion !== next.renderVersion) {
+		return requestedReason;
+	}
+	return "runtime view changed";
+}
 
 type ThreeRuntimePanelProps = {
 	project: GameProject;
@@ -323,6 +353,13 @@ export function ThreeRuntimePanel({
 	onRestart,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
+	if (!diagnosticsRef.current) {
+		diagnosticsRef.current = createThreePerformanceDiagnostics({
+			label: "ThreeRuntimePanel",
+		});
+	}
+	const diagnostics = diagnosticsRef.current;
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
@@ -336,6 +373,8 @@ export function ThreeRuntimePanel({
 	const mouseLookActiveRef = useRef(false);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const gameOverRef = useRef(false);
+	const nextRebuildReasonRef = useRef("initial runtime start");
+	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
@@ -354,7 +393,10 @@ export function ThreeRuntimePanel({
 	const [gameOver, setGameOver] = useState(false);
 	const [mountError, setMountError] = useState<string | null>(null);
 
-	function forceRender() {
+	useEffect(() => () => diagnostics.dispose(), [diagnostics]);
+
+	function forceRender(reason = "runtime state changed") {
+		nextRebuildReasonRef.current = reason;
 		setRenderVersion((version) => version + 1);
 	}
 
@@ -575,22 +617,22 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender();
+			forceRender("progression state changed");
 			return;
 		}
 		if (event.type === "spawnPlayer") {
 			resetPlayerVisual(session, { resetCamera: true, resetCameraMode: true });
-			forceRender();
+			forceRender("spawn player");
 			return;
 		}
 		if (event.type === "areaChanged") {
 			resetPresentationVisuals(session, { resetCameraMode: true });
-			forceRender();
+			forceRender("area changed");
 			return;
 		}
 		if (event.type === "vehicleLeft") {
 			resetPlayerVisual(session, { resetCamera: true });
-			forceRender();
+			forceRender("vehicle left");
 			return;
 		}
 		if (event.type === "areaEnterTriggerRequested") {
@@ -649,7 +691,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender();
+			forceRender("rule state changed");
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -663,7 +705,7 @@ export function ThreeRuntimePanel({
 		if (event.type === "shopOpened") {
 			setMouseLookActive(false);
 			setShopMessage(event.message);
-			forceRender();
+			forceRender("shop opened");
 			return;
 		}
 		if (event.type === "teleportRequested") {
@@ -700,7 +742,7 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "movementModeChanged") {
 			setStatus(`Movement mode: ${event.mode}.`);
-			forceRender();
+			forceRender("movement mode changed");
 			return;
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
@@ -724,7 +766,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender();
+			forceRender("object state changed");
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -763,12 +805,12 @@ export function ThreeRuntimePanel({
 		if (event.type === "shopChanged") {
 			setMouseLookActive(false);
 			setShopMessage(event.message);
-			forceRender();
+			forceRender("shop changed");
 			return;
 		}
 		if (event.type === "shopClosed") {
 			setShopMessage(undefined);
-			forceRender();
+			forceRender("shop closed");
 			return;
 		}
 		if (
@@ -777,7 +819,7 @@ export function ThreeRuntimePanel({
 			event.type === "playerMoved"
 		) {
 			resetPlayerVisual(session, { resetCamera: true });
-			forceRender();
+			forceRender("player movement");
 			return;
 		}
 		if (
@@ -785,7 +827,7 @@ export function ThreeRuntimePanel({
 			event.type === "movementModeChanged" ||
 			event.type === "objectMoved"
 		) {
-			forceRender();
+			forceRender("object interaction changed");
 		}
 	}
 
@@ -838,7 +880,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged" || event.type === "combatChanged") {
-			forceRender();
+			forceRender("npc state changed");
 			return;
 		}
 		if (event.type === "gameOver") {
@@ -865,7 +907,7 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "npcRemoved") {
 			npcVisualsRef.current.delete(event.npcId);
-			forceRender();
+			forceRender("npc removed");
 			return;
 		}
 		if (
@@ -873,7 +915,7 @@ export function ThreeRuntimePanel({
 			event.type === "combatChanged" ||
 			event.type === "npcDamaged"
 		) {
-			forceRender();
+			forceRender("combat changed");
 		}
 	}
 
@@ -960,14 +1002,14 @@ export function ThreeRuntimePanel({
 			session.runtimeState.flags[interaction.flag] = value;
 			syncRuntimeQuestProgress(session, handleProgressionEvent);
 			setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
-			forceRender();
+			forceRender("direct interaction changed flag");
 			return;
 		}
 
 		if (interaction.mode) {
 			session.currentMovementMode = interaction.mode;
 			setStatus(`Movement mode: ${interaction.mode}.`);
-			forceRender();
+			forceRender("direct interaction changed movement mode");
 		}
 	}
 
@@ -1076,7 +1118,7 @@ export function ThreeRuntimePanel({
 
 		if (target.type === "pickup") {
 			collectRuntimePickup(session, target.pickup, handleObjectEvent);
-			forceRender();
+			forceRender("pickup collected");
 			return;
 		}
 
@@ -1091,7 +1133,7 @@ export function ThreeRuntimePanel({
 				} else {
 					setStatus(`Interacted with ${target.label}.`);
 				}
-				forceRender();
+				forceRender("interaction completed");
 			},
 		);
 	}
@@ -1117,6 +1159,7 @@ export function ThreeRuntimePanel({
 		try {
 			const session = createRuntimeSession(project);
 			sessionRef.current = session;
+			previousBuildInputsRef.current = null;
 			resetPresentationVisuals(session, { resetCameraMode: true });
 			setMountError(null);
 			setGameOver(false);
@@ -1133,7 +1176,7 @@ export function ThreeRuntimePanel({
 			fireRuntimeTrigger({ type: "on_game_start" }, () =>
 				processRuntimeProgression(session, handleProgressionEvent),
 			);
-			forceRender();
+			forceRender("initial runtime start");
 		} catch (error) {
 			sessionRef.current = null;
 			resetPresentationVisuals(null);
@@ -1198,7 +1241,9 @@ export function ThreeRuntimePanel({
 			const session = getSession();
 			const area = session ? getArea(session) : undefined;
 			if (session && area) {
+				const tickStartedAt = performance.now();
 				tickRuntimeNpcs(session, area, performance.now(), handleNpcEvent);
+				diagnostics.recordRuntimeTick(performance.now() - tickStartedAt);
 			}
 		}, 500);
 
@@ -1213,6 +1258,18 @@ export function ThreeRuntimePanel({
 		if (!host || !session || !area) {
 			return undefined;
 		}
+		const nextBuildInputs: ThreeRuntimeBuildInputs = {
+			areaId: area.id,
+			renderVersion,
+			terrainRenderMode,
+		};
+		const rebuildReason = resolveThreeRuntimeBuildReason(
+			previousBuildInputsRef.current,
+			nextBuildInputs,
+			nextRebuildReasonRef.current,
+		);
+		previousBuildInputsRef.current = nextBuildInputs;
+		const sceneBuildStartedAt = performance.now();
 
 		syncPlayerVisual(session);
 		syncNpcVisuals(session, area);
@@ -1288,8 +1345,12 @@ export function ThreeRuntimePanel({
 			scene.add(object);
 		};
 
+		const terrainRebuildStartedAt = performance.now();
+		let terrainMeshCount = 0;
 		if (terrainRenderMode === "smooth") {
-			terrainTilesToSmoothMeshes(area).forEach((smoothMesh) => {
+			const smoothMeshes = terrainTilesToSmoothMeshes(area);
+			terrainMeshCount = smoothMeshes.length;
+			smoothMeshes.forEach((smoothMesh) => {
 				const mesh = new THREE.Mesh(
 					createSmoothTerrainBufferGeometry(smoothMesh),
 					createWorldMaterial(smoothMesh.materialKey),
@@ -1300,7 +1361,9 @@ export function ThreeRuntimePanel({
 				addRenderObject(mesh);
 			});
 		} else {
-			terrainTilesToBlocks(area).forEach((block) => {
+			const terrainBlocks = terrainTilesToBlocks(area);
+			terrainMeshCount = terrainBlocks.length;
+			terrainBlocks.forEach((block) => {
 				const mesh = new THREE.Mesh(
 					new THREE.BoxGeometry(0.98, block.height, 0.98),
 					createTerrainMaterial(block.kind),
@@ -1310,6 +1373,12 @@ export function ThreeRuntimePanel({
 				addRenderObject(mesh);
 			});
 		}
+		diagnostics.recordTerrainRebuild({
+			durationMs: performance.now() - terrainRebuildStartedAt,
+			meshCount: terrainMeshCount,
+			mode: terrainRenderMode,
+			tileCount: area.terrainTiles.length,
+		});
 
 		const runtimeArea: GameArea = {
 			...area,
@@ -1331,15 +1400,18 @@ export function ThreeRuntimePanel({
 				return;
 			}
 			assetStateChangeQueued = true;
+			nextRebuildReasonRef.current = "asset state changed";
 			setRenderVersion((version) => version + 1);
 		};
-		areaEntitiesToMarkers(
+		const runtimeMarkers = areaEntitiesToMarkers(
 			runtimeArea,
 			session.project.objects,
 			session.project.npcs,
 			true,
-		).forEach((marker) => {
+		);
+		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
+				diagnostics,
 				onAssetStateChange: handleAssetStateChange,
 			});
 			const { group } = renderResult;
@@ -1367,6 +1439,7 @@ export function ThreeRuntimePanel({
 				});
 			}
 			addRenderObject(group, { disposeResources: !renderResult.usedAsset });
+			return renderResult;
 		});
 
 		const playerMesh = createRuntimePlayerMesh();
@@ -1374,6 +1447,15 @@ export function ThreeRuntimePanel({
 		setObjectBasePosition(playerMesh, area, initialPlayerPosition);
 		setObjectFacing(playerMesh, initialPlayerVisual.facing);
 		addRenderObject(playerMesh);
+		diagnostics.setSceneEntityCounts({
+			activeImportedAssetInstances: markerRenderResults.filter(
+				(result) => result.usedAsset,
+			).length,
+			entityCount: runtimeMarkers.length + 1,
+			fallbackPlaceholderCount: markerRenderResults.filter(
+				(result) => !result.usedAsset && result.assetStatus !== "not_requested",
+			).length,
+		});
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -1451,6 +1533,7 @@ export function ThreeRuntimePanel({
 			renderer.domElement.focus();
 		};
 		const handlePointerMove = (event: PointerEvent) => {
+			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				event.preventDefault();
 				const deltaX = event.clientX - cameraDrag.x;
@@ -1613,12 +1696,21 @@ export function ThreeRuntimePanel({
 				cameraRigRef.current = cameraRig;
 				applyCameraRig(cameraRig);
 			}
+			diagnostics.recordFrame(deltaMs);
+			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
+			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
+			diagnostics.recordRendererInfo(renderer.info);
 			animationFrame = window.requestAnimationFrame(render);
 		};
+		diagnostics.recordSceneBuild(
+			rebuildReason,
+			performance.now() - sceneBuildStartedAt,
+		);
 		render();
 
 		return () => {
+			diagnostics.recordSceneCleanup();
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
@@ -1652,6 +1744,10 @@ export function ThreeRuntimePanel({
 					<div className="three-runtime-error">{mountError}</div>
 				) : null}
 			</div>
+			<ThreePerformanceOverlay
+				diagnostics={diagnostics}
+				title="3D Runtime Perf"
+			/>
 			<div className="three-runtime-hud">
 				<strong>3D Runtime Experimental</strong>
 				<span>{area?.name ?? "No area"}</span>

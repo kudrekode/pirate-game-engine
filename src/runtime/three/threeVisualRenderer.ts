@@ -5,6 +5,7 @@ import {
 	createPlaceholderMeshGroup,
 	type PlaceholderSelectionMetadata,
 } from "./placeholderMeshes";
+import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
 import {
 	requestThreeVisualAsset,
 	type ThreeVisualAssetRequest,
@@ -19,6 +20,7 @@ export type ThreeVisualRenderResult = {
 };
 
 export type ThreeVisualRenderOptions = {
+	diagnostics?: ThreePerformanceDiagnostics;
 	metadata?: PlaceholderSelectionMetadata;
 	onAssetStateChange?: () => void;
 	selected?: boolean;
@@ -61,6 +63,9 @@ function createFallbackGroup(
 	options: ThreeVisualRenderOptions,
 	assetStatus: ThreeVisualRenderResult["assetStatus"],
 ): ThreeVisualRenderResult {
+	if (assetStatus !== "not_requested") {
+		options.diagnostics?.recordAssetFallback(assetStatus);
+	}
 	return {
 		assetStatus,
 		group: createPlaceholderMeshGroup(marker, {

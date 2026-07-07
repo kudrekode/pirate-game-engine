@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EntityMarker } from "../../editor/sections/entityMarkers";
 import { getPlaceholderSelectableObjects } from "./placeholderMeshes";
+import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
 	setThreeVisualAssetLoaderFactoryForTests,
@@ -75,6 +76,39 @@ describe("Three visual marker renderer", () => {
 		expect(
 			getPlaceholderSelectableObjects(result.group).length,
 		).toBeGreaterThan(0);
+	});
+
+	it("reports fallback placeholder status to diagnostics for requested assets", () => {
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const recordAssetFallback = vi.fn();
+		const diagnostics = {
+			recordAssetFallback,
+		} as unknown as ThreePerformanceDiagnostics;
+		const marker = makeMarker({
+			visual: {
+				asset: assetDefinition,
+				assetId: assetDefinition.id,
+				heightOffset: 0,
+				mode: "asset",
+				placeholderType: "npc",
+				requestedMode: "asset",
+				rotationOffset: 0,
+				scale: 1,
+				source: "authored",
+			},
+		});
+
+		try {
+			const result = createThreeVisualMarkerGroup(marker, { diagnostics });
+			expect(result.assetStatus).toBe("loading");
+			expect(result.usedAsset).toBe(false);
+			expect(recordAssetFallback).toHaveBeenCalledWith("loading");
+		} finally {
+			restoreLoader();
+		}
 	});
 
 	it("shows fallback while loading and swaps to a cloned asset when cached", async () => {

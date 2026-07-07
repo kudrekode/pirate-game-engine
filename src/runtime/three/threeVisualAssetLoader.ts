@@ -1,4 +1,5 @@
 import type * as THREE from "three";
+import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 
 type GltfLike = {
@@ -83,17 +84,27 @@ function startAssetLoad(
 		promise: Promise.resolve(),
 		status: "loading",
 	};
+	emitThreePerformanceDiagnosticsEvent({
+		definitionId: definition.id,
+		status: "load_start",
+		url: definition.url,
+	});
 	entry.promise = Promise.resolve(loaderFactory())
 		.then((loader) => loader.loadAsync(definition.url))
 		.then((gltf) => {
 			const root = getGltfRoot(gltf);
 			if (!root) {
+				const errorMessage = `Three visual asset "${definition.id}" has no scene.`;
 				cache.set(key, {
 					definition,
-					error: new Error(
-						`Three visual asset "${definition.id}" has no scene.`,
-					),
+					error: new Error(errorMessage),
 					status: "error",
+				});
+				emitThreePerformanceDiagnosticsEvent({
+					definitionId: definition.id,
+					message: errorMessage,
+					status: "load_failure",
+					url: definition.url,
 				});
 				return;
 			}
@@ -102,12 +113,23 @@ function startAssetLoad(
 				root,
 				status: "loaded",
 			});
+			emitThreePerformanceDiagnosticsEvent({
+				definitionId: definition.id,
+				status: "load_success",
+				url: definition.url,
+			});
 		})
 		.catch((error) => {
 			cache.set(key, {
 				definition,
 				error,
 				status: "error",
+			});
+			emitThreePerformanceDiagnosticsEvent({
+				definitionId: definition.id,
+				message: error instanceof Error ? error.message : String(error),
+				status: "load_failure",
+				url: definition.url,
 			});
 		})
 		.finally(() => notifyListeners(entry));
@@ -126,6 +148,11 @@ export function requestThreeVisualAsset(
 	const key = getCacheKey(definition);
 	const existing = cache.get(key);
 	if (existing?.status === "loaded") {
+		emitThreePerformanceDiagnosticsEvent({
+			definitionId: existing.definition.id,
+			status: "cache_hit",
+			url: existing.definition.url,
+		});
 		return {
 			definition: existing.definition,
 			object: cloneThreeVisualAssetRoot(existing.root),
@@ -133,6 +160,15 @@ export function requestThreeVisualAsset(
 		};
 	}
 	if (existing?.status === "error") {
+		emitThreePerformanceDiagnosticsEvent({
+			definitionId: existing.definition.id,
+			message:
+				existing.error instanceof Error
+					? existing.error.message
+					: String(existing.error),
+			status: "cache_hit",
+			url: existing.definition.url,
+		});
 		return {
 			definition: existing.definition,
 			error: existing.error,
@@ -140,6 +176,11 @@ export function requestThreeVisualAsset(
 		};
 	}
 	if (existing?.status === "loading") {
+		emitThreePerformanceDiagnosticsEvent({
+			definitionId: existing.definition.id,
+			status: "cache_hit",
+			url: existing.definition.url,
+		});
 		if (options.onStateChange) {
 			existing.listeners.add(options.onStateChange);
 		}
@@ -153,7 +194,11 @@ export function requestThreeVisualAsset(
 export function cloneThreeVisualAssetRoot(
 	root: THREE.Object3D,
 ): THREE.Object3D {
-	return root.clone(true);
+	const clone = root.clone(true);
+	emitThreePerformanceDiagnosticsEvent({
+		status: "clone",
+	});
+	return clone;
 }
 
 export function clearThreeVisualAssetCacheForTests(): void {

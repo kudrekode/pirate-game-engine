@@ -19,7 +19,12 @@ import {
 	disposePlaceholderObject,
 	getPlaceholderSelectableObjects,
 } from "../../runtime/three/placeholderMeshes";
+import { ThreePerformanceOverlay } from "../../runtime/three/ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "../../runtime/three/terrainMeshGeometry";
+import {
+	createThreePerformanceDiagnostics,
+	type ThreePerformanceDiagnostics,
+} from "../../runtime/three/threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
 import {
 	addThreeWorldLighting,
@@ -103,6 +108,16 @@ export type TerrainHeightTool =
 	| "roughen";
 type TerrainBrushSize = 1 | 2 | 3 | 5;
 type TerrainGesture = "brush" | "line" | "rectangle" | "fill";
+type ThreeDPreviewBuildInputs = {
+	activeAreaId: string;
+	assetRenderVersion: number;
+	entityMarkerCount: number;
+	selectionKey: string;
+	smoothTerrainMeshCount: number;
+	terrainBlockCount: number;
+	terrainRenderMode: TerrainRenderMode;
+	walkPreviewKey: string;
+};
 
 type ThreeDPreviewProps = {
 	brushFalloff?: TerrainBrushFalloff;
@@ -118,6 +133,44 @@ type ThreeDPreviewProps = {
 	terrainPaintTileId?: string;
 	terrainHeightTool?: TerrainHeightTool;
 };
+
+function createThreeDPreviewSelectionKey(selection: unknown): string {
+	return JSON.stringify(selection ?? null);
+}
+
+function resolveThreeDPreviewBuildReason(
+	previous: ThreeDPreviewBuildInputs | null,
+	next: ThreeDPreviewBuildInputs,
+): string {
+	if (!previous) {
+		return "initial preview build";
+	}
+	if (previous.assetRenderVersion !== next.assetRenderVersion) {
+		return "asset state changed";
+	}
+	if (previous.activeAreaId !== next.activeAreaId) {
+		return "active area changed";
+	}
+	if (previous.terrainRenderMode !== next.terrainRenderMode) {
+		return "terrain mode changed";
+	}
+	if (
+		previous.terrainBlockCount !== next.terrainBlockCount ||
+		previous.smoothTerrainMeshCount !== next.smoothTerrainMeshCount
+	) {
+		return "terrain changed";
+	}
+	if (previous.entityMarkerCount !== next.entityMarkerCount) {
+		return "entities changed";
+	}
+	if (previous.selectionKey !== next.selectionKey) {
+		return "selection changed";
+	}
+	if (previous.walkPreviewKey !== next.walkPreviewKey) {
+		return "walk preview changed";
+	}
+	return "preview state changed";
+}
 
 type TerrainBrushStroke = {
 	pointerId: number;
@@ -175,10 +228,18 @@ export function ThreeDPreview({
 	terrainHeightTool,
 }: ThreeDPreviewProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
+	if (!diagnosticsRef.current) {
+		diagnosticsRef.current = createThreePerformanceDiagnostics({
+			label: "ThreeDPreview",
+		});
+	}
+	const diagnostics = diagnosticsRef.current;
 	const cameraStateRef = useRef<OrbitCameraState>(
 		resetOrbitCameraState({ height: 8, width: 8 }),
 	);
 	const terrainBrushStrokeRef = useRef<TerrainBrushStroke | null>(null);
+	const previousBuildInputsRef = useRef<ThreeDPreviewBuildInputs | null>(null);
 	const [mountError, setMountError] = useState("");
 	const [localOverlayFilters, setLocalOverlayFilters] = useState(
 		readStoredMapOverlayFilters,
@@ -352,12 +413,37 @@ export function ThreeDPreview({
 		setLocalOverlayFilters(filters);
 	};
 
+	useEffect(() => () => diagnostics.dispose(), [diagnostics]);
+
+	const getSceneBuildReason = () => {
+		const nextBuildInputs: ThreeDPreviewBuildInputs = {
+			activeAreaId: activeArea?.id ?? "",
+			assetRenderVersion,
+			entityMarkerCount: entityMarkers.length,
+			selectionKey: createThreeDPreviewSelectionKey(editorSelection),
+			smoothTerrainMeshCount: smoothTerrainMeshes.length,
+			terrainBlockCount: terrainBlocks.length,
+			terrainRenderMode,
+			walkPreviewKey: walkPreviewPosition
+				? `${walkPreviewPosition.x},${walkPreviewPosition.y}`
+				: "none",
+		};
+		const reason = resolveThreeDPreviewBuildReason(
+			previousBuildInputsRef.current,
+			nextBuildInputs,
+		);
+		previousBuildInputsRef.current = nextBuildInputs;
+		return reason;
+	};
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: renderer rebuilds when async asset load state changes.
 	useEffect(() => {
 		const host = hostRef.current;
 		if (!host) {
 			return;
 		}
+		const sceneBuildStartedAt = performance.now();
+		const rebuildReason = getSceneBuildReason();
 
 		const scene = new THREE.Scene();
 		configureThreeWorldScene(scene);
@@ -407,6 +493,7 @@ export function ThreeDPreview({
 		);
 		scene.add(grid);
 
+		const terrainRebuildStartedAt = performance.now();
 		const smoothTerrainVisualMeshes =
 			terrainRenderMode === "smooth"
 				? smoothTerrainMeshes.map((smoothMesh) => {
@@ -449,6 +536,12 @@ export function ThreeDPreview({
 			scene.add(mesh);
 			return mesh;
 		});
+		diagnostics.recordTerrainRebuild({
+			durationMs: performance.now() - terrainRebuildStartedAt,
+			meshCount: smoothTerrainVisualMeshes.length + terrainPickMeshes.length,
+			mode: terrainRenderMode,
+			tileCount: terrainBlocks.length,
+		});
 		let assetStateChangeQueued = false;
 		const handleAssetStateChange = () => {
 			if (assetStateChangeQueued) {
@@ -467,6 +560,7 @@ export function ThreeDPreview({
 				selectionMetadata,
 			);
 			const renderResult = createThreeVisualMarkerGroup(marker, {
+				diagnostics,
 				metadata: selectionMetadata,
 				onAssetStateChange: handleAssetStateChange,
 				selected: isSelected,
@@ -507,6 +601,15 @@ export function ThreeDPreview({
 			);
 			scene.add(walkPreviewMesh);
 		}
+		diagnostics.setSceneEntityCounts({
+			activeImportedAssetInstances: markerRenderResults.filter(
+				(result) => result.usedAsset,
+			).length,
+			entityCount: entityMarkers.length + (walkPreviewMesh ? 1 : 0),
+			fallbackPlaceholderCount: markerRenderResults.filter(
+				(result) => !result.usedAsset && result.assetStatus !== "not_requested",
+			).length,
+		});
 		const selectableMeshes = [
 			...terrainPickMeshes,
 			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
@@ -594,10 +697,12 @@ export function ThreeDPreview({
 		};
 
 		const getPointerHit = (event: PointerEvent) => {
+			const pickStartedAt = performance.now();
 			if (!updateRaycasterFromPointer(event)) {
 				return undefined;
 			}
 			const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
+			diagnostics.recordPick(performance.now() - pickStartedAt);
 			return resolveSelectionMetadataFromIntersection(hit);
 		};
 
@@ -670,10 +775,12 @@ export function ThreeDPreview({
 			event: PointerEvent,
 			footprint = { height: 1, width: 1 },
 		) => {
+			const pickStartedAt = performance.now();
 			if (!activeArea || !updateRaycasterFromPointer(event)) {
 				return undefined;
 			}
 			const hit = raycaster.intersectObjects(terrainPickMeshes, false)[0];
+			diagnostics.recordPick(performance.now() - pickStartedAt);
 			if (!hit) {
 				return undefined;
 			}
@@ -1154,6 +1261,7 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerMove = (event: PointerEvent) => {
+			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				if (cameraDrag.pointerId !== event.pointerId) {
 					return;
@@ -1485,6 +1593,7 @@ export function ThreeDPreview({
 		});
 
 		let animationFrame = 0;
+		let lastFrameMs = performance.now();
 
 		const resize = () => {
 			const { height, width } = getPreviewSize(host);
@@ -1495,8 +1604,14 @@ export function ThreeDPreview({
 		};
 
 		const render = () => {
+			const now = performance.now();
+			diagnostics.recordFrame(now - lastFrameMs);
+			lastFrameMs = now;
 			applyCameraFromState();
+			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
+			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
+			diagnostics.recordRendererInfo(renderer.info);
 			animationFrame = window.requestAnimationFrame(render);
 		};
 
@@ -1506,9 +1621,14 @@ export function ThreeDPreview({
 		window.addEventListener("resize", resize);
 
 		resize();
+		diagnostics.recordSceneBuild(
+			rebuildReason,
+			performance.now() - sceneBuildStartedAt,
+		);
 		render();
 
 		return () => {
+			diagnostics.recordSceneCleanup();
 			window.cancelAnimationFrame(animationFrame);
 			window.removeEventListener("resize", resize);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
@@ -1728,6 +1848,10 @@ export function ThreeDPreview({
 					className="three-d-preview-host"
 					ref={hostRef}
 					role="img"
+				/>
+				<ThreePerformanceOverlay
+					diagnostics={diagnostics}
+					title="3D Preview Perf"
 				/>
 				{hideDetails ? null : (
 					<aside className="three-d-selection-details">
