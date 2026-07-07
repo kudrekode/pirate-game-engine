@@ -10,6 +10,11 @@ import {
 	resolveTerrainLine,
 	resolveTerrainRectangle,
 } from "../editor/sections/terrainBrush";
+import {
+	clearThreeVisualAssetCacheForTests,
+	setThreeVisualAssetLoaderFactoryForTests,
+} from "../runtime/three/threeVisualAssetLoader";
+import { setThreeVisualAssetRegistryForTests } from "../runtime/three/threeVisualAssetRegistry";
 import { useProjectStore } from "../store/useProjectStore";
 
 vi.mock("../runtime/RuntimePanel", () => ({
@@ -116,6 +121,12 @@ vi.mock("three", () => {
 			this.children.forEach((child) => {
 				child.traverse(callback);
 			});
+		}
+
+		clone() {
+			const clone = new Object3D();
+			clone.children = [...this.children];
+			return clone;
 		}
 	}
 
@@ -354,6 +365,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	clearThreeVisualAssetCacheForTests();
 	vi.restoreAllMocks();
 });
 
@@ -667,6 +679,62 @@ describe("ThreeDPreview", () => {
 
 		await waitFor(() => expect(readActiveTileId(1, 1)).toBe("sand"));
 		expect(readActiveTileId(0, 0)).toBe("grass");
+	});
+
+	it("requests imported asset rendering for assigned object visuals", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "object",
+				id: "demo_object",
+				kind: "glb",
+				name: "Demo Object",
+				url: "/assets/demo-object.glb",
+			},
+		]);
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const project = makeThreeTileProject();
+		const area = project.areas[0];
+		project.objects = [
+			{
+				blocksMovement: false,
+				category: "misc",
+				heightTiles: 1,
+				id: "asset_object_def",
+				name: "Asset Object",
+				threeVisual: {
+					assetId: "demo_object",
+					mode: "asset",
+					placeholderType: "genericObject",
+				},
+				widthTiles: 1,
+			},
+		];
+		area.objects = [
+			{
+				areaId: area.id,
+				id: "asset_object",
+				objectDefinitionId: "asset_object_def",
+				x: 1,
+				y: 1,
+			},
+		];
+		useProjectStore.getState().setProject(project);
+
+		try {
+			render(<ThreeDPreview embedded />);
+
+			await waitFor(() =>
+				expect(loadAsync).toHaveBeenCalledWith("/assets/demo-object.glb"),
+			);
+			expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+		} finally {
+			restoreLoader();
+			restoreRegistry();
+		}
 	});
 
 	it("drag-paints newly entered 3D terrain tiles without duplicate tile updates", async () => {

@@ -20,6 +20,7 @@ export type ThreePlaceholderVisualType =
 export type ThreeVisualConfig = {
 	mode?: "placeholder" | "asset";
 	placeholderType?: ThreePlaceholderVisualType;
+	assetId?: string;
 	scale?: number;
 	heightOffset?: number;
 	rotationOffset?: number;

@@ -79,11 +79,9 @@ import {
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
-import {
-	createPlaceholderMeshGroup,
-	disposePlaceholderObject,
-} from "./placeholderMeshes";
+import { disposePlaceholderObject } from "./placeholderMeshes";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
+import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
 	composeThreeVisualYaw,
 	type ResolvedThreeVisual,
@@ -1324,7 +1322,9 @@ export function ThreeRuntimePanel({
 			session.project.npcs,
 			true,
 		).forEach((marker) => {
-			const group = createPlaceholderMeshGroup(marker);
+			const { group } = createThreeVisualMarkerGroup(marker, {
+				onAssetStateChange: () => setRenderVersion((version) => version + 1),
+			});
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
 				if (npcVisual) {

@@ -12,6 +12,11 @@ import { RuntimePanel } from "../RuntimePanel";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 // @ts-expect-error Vite raw import used for a source-boundary test.
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import {
+	clearThreeVisualAssetCacheForTests,
+	setThreeVisualAssetLoaderFactoryForTests,
+} from "./threeVisualAssetLoader";
+import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
@@ -152,6 +157,12 @@ vi.mock("three", () => {
 			this.children.forEach((child) => {
 				child.traverse(callback);
 			});
+		}
+
+		clone() {
+			const clone = new Object3D();
+			clone.children = [...this.children];
+			return clone;
 		}
 	}
 
@@ -346,6 +357,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	clearThreeVisualAssetCacheForTests();
 	vi.restoreAllMocks();
 });
 
@@ -374,6 +386,60 @@ describe("ThreeRuntimePanel", () => {
 			"active",
 		);
 		expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
+	});
+
+	it("requests imported asset rendering for assigned object visuals", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "object",
+				id: "demo_object",
+				kind: "glb",
+				name: "Demo Object",
+				url: "/assets/demo-object.glb",
+			},
+		]);
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const project = makeProject({
+			areas: [
+				makeArea({
+					objects: [makeObject({ id: "asset_object", x: 1, y: 1 })],
+				}),
+			],
+			objects: [
+				{
+					blocksMovement: false,
+					category: "misc",
+					heightTiles: 1,
+					id: "boat_def",
+					name: "Asset Object",
+					threeVisual: {
+						assetId: "demo_object",
+						mode: "asset",
+						placeholderType: "genericObject",
+					},
+					widthTiles: 1,
+				},
+			],
+		});
+
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+			await waitFor(() =>
+				expect(loadAsync).toHaveBeenCalledWith("/assets/demo-object.glb"),
+			);
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument();
+			expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
+		} finally {
+			restoreLoader();
+			restoreRegistry();
+		}
 	});
 
 	it("moves with the shared player movement transaction", async () => {

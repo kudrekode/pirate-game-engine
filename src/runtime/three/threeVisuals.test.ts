@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ObjectBehaviour, ThreeVisualConfig } from "../../types/game";
+import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 import {
 	composeThreeVisualYaw,
 	resolveThreeVisual,
@@ -88,7 +89,50 @@ describe("three visual resolver", () => {
 		).toBe("hostileNpc");
 	});
 
-	it("keeps V1 asset requests on the placeholder fallback seam", () => {
+	it("resolves known asset visual assignments to asset mode", () => {
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				defaultHeightOffset: 0.2,
+				defaultRotationOffset: 15,
+				defaultScale: 1.5,
+				id: "demo_npc",
+				kind: "glb",
+				name: "Demo NPC",
+				url: "/assets/demo-npc.glb",
+			},
+		]);
+
+		try {
+			expect(
+				resolveThreeVisual({
+					kind: "npc",
+					name: "Captain Mira",
+					threeVisual: {
+						assetId: "demo_npc",
+						mode: "asset",
+						placeholderType: "npc",
+					},
+				}),
+			).toMatchObject({
+				asset: {
+					id: "demo_npc",
+					url: "/assets/demo-npc.glb",
+				},
+				assetId: "demo_npc",
+				heightOffset: 0.2,
+				mode: "asset",
+				placeholderType: "npc",
+				requestedMode: "asset",
+				rotationOffset: 15,
+				scale: 1.5,
+				source: "authored",
+			});
+		} finally {
+			restoreRegistry();
+		}
+	});
+
+	it("falls back safely when an asset request has no usable asset id", () => {
 		expect(
 			resolveThreeVisual({
 				kind: "npc",
@@ -101,6 +145,23 @@ describe("three visual resolver", () => {
 		).toMatchObject({
 			mode: "placeholder",
 			placeholderType: "npc",
+			requestedMode: "asset",
+			source: "authored",
+		});
+		expect(
+			resolveThreeVisual({
+				category: "misc",
+				kind: "object",
+				name: "Mystery",
+				threeVisual: {
+					assetId: "missing_asset",
+					mode: "asset",
+				},
+			}),
+		).toMatchObject({
+			assetId: "missing_asset",
+			mode: "placeholder",
+			placeholderType: "genericObject",
 			requestedMode: "asset",
 			source: "authored",
 		});

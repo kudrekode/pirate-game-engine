@@ -1278,6 +1278,9 @@ function migrateThreeVisualConfig(
 		config.placeholderType =
 			value.placeholderType as ThreePlaceholderVisualType;
 	}
+	if (typeof value.assetId === "string" && value.assetId.trim()) {
+		config.assetId = readString(value.assetId, "");
+	}
 	if (typeof value.scale === "number" && Number.isFinite(value.scale)) {
 		config.scale = readNumber(value.scale, 1, 0.1, 5);
 	}

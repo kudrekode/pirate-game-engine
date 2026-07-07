@@ -404,6 +404,7 @@ describe("migrateProject", () => {
 					id: "boat",
 					name: "Boat",
 					threeVisual: {
+						assetId: "demo_boat",
 						heightOffset: -99,
 						mode: "asset",
 						placeholderType: "boat",
@@ -416,6 +417,7 @@ describe("migrateProject", () => {
 		});
 
 		expect(project.objects[0].threeVisual).toEqual({
+			assetId: "demo_boat",
 			heightOffset: -5,
 			mode: "asset",
 			placeholderType: "boat",

@@ -16,11 +16,11 @@ import {
 	zoomOrbitCamera,
 } from "../../runtime/three/cameraControls";
 import {
-	createPlaceholderMeshGroup,
 	disposePlaceholderObject,
 	getPlaceholderSelectableObjects,
 } from "../../runtime/three/placeholderMeshes";
 import { createSmoothTerrainBufferGeometry } from "../../runtime/three/terrainMeshGeometry";
+import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
 import {
 	addThreeWorldLighting,
 	applyShadowRole,
@@ -185,6 +185,7 @@ export function ThreeDPreview({
 	);
 	const [cameraPreset, setCameraPreset] =
 		useState<PreviewCameraMode>("isometric");
+	const [assetRenderVersion, setAssetRenderVersion] = useState(0);
 	const [terrainRenderMode, setTerrainRenderMode] =
 		useState<TerrainRenderMode>("blocky");
 	const [walkPreviewPosition, setWalkPreviewPosition] =
@@ -351,6 +352,7 @@ export function ThreeDPreview({
 		setLocalOverlayFilters(filters);
 	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: renderer rebuilds when async asset load state changes.
 	useEffect(() => {
 		const host = hostRef.current;
 		if (!host) {
@@ -456,8 +458,10 @@ export function ThreeDPreview({
 				editorSelection,
 				selectionMetadata,
 			);
-			const group = createPlaceholderMeshGroup(marker, {
+			const { group } = createThreeVisualMarkerGroup(marker, {
 				metadata: selectionMetadata,
+				onAssetStateChange: () =>
+					setAssetRenderVersion((version) => version + 1),
 				selected: isSelected,
 			});
 			applyShadowRole(group, { cast: true, receive: marker.kind !== "event" });
@@ -1539,6 +1543,7 @@ export function ThreeDPreview({
 		addObject,
 		addPickup,
 		addStructure,
+		assetRenderVersion,
 		brushFalloff,
 		brushShape,
 		brushSize,

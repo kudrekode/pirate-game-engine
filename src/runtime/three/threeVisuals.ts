@@ -7,6 +7,10 @@ import {
 	type ThreePlaceholderVisualType,
 	type ThreeVisualConfig,
 } from "../../types/game";
+import {
+	getThreeVisualAssetDefinition,
+	type ThreeVisualAssetDefinition,
+} from "./threeVisualAssetRegistry";
 
 export type PlaceholderVisualEntity =
 	| {
@@ -32,8 +36,7 @@ export type PlaceholderVisualEntity =
 	| { kind: "pickup"; name?: string }
 	| { kind: "event"; name?: string };
 
-export type ResolvedThreeVisual = {
-	mode: "placeholder";
+type ResolvedThreeVisualBase = {
 	requestedMode: ThreeVisualConfig["mode"];
 	placeholderType: ThreePlaceholderVisualType;
 	scale: number;
@@ -41,6 +44,20 @@ export type ResolvedThreeVisual = {
 	rotationOffset: number;
 	source: "authored" | "inferred";
 };
+
+export type ResolvedThreeVisual =
+	| (ResolvedThreeVisualBase & {
+			mode: "placeholder";
+			assetId?: string;
+			asset?: undefined;
+	  })
+	| (ResolvedThreeVisualBase & {
+			mode: "asset";
+			assetId: string;
+			asset: ThreeVisualAssetDefinition;
+			requestedMode: "asset";
+			source: "authored";
+	  });
 
 export const THREE_PLACEHOLDER_VISUAL_OPTIONS: {
 	label: string;
@@ -189,27 +206,55 @@ export function resolveThreeVisual(
 		config?.mode === "asset" || config?.mode === "placeholder"
 			? config.mode
 			: "placeholder";
+	const requestedAssetId =
+		typeof config?.assetId === "string" && config.assetId.trim()
+			? config.assetId
+			: undefined;
+	const assetDefinition =
+		requestedMode === "asset"
+			? getThreeVisualAssetDefinition(requestedAssetId)
+			: undefined;
 	const hasAuthoredTransform =
 		(typeof config?.scale === "number" && Number.isFinite(config.scale)) ||
 		(typeof config?.heightOffset === "number" &&
 			Number.isFinite(config.heightOffset)) ||
 		(typeof config?.rotationOffset === "number" &&
 			Number.isFinite(config.rotationOffset));
-
-	return {
-		heightOffset: clampThreeVisualHeightOffset(config?.heightOffset),
-		mode: "placeholder",
+	const source: ResolvedThreeVisualBase["source"] =
+		authoredPlaceholderType ||
+		requestedMode !== "placeholder" ||
+		hasAuthoredTransform
+			? "authored"
+			: "inferred";
+	const resolved = {
+		heightOffset: clampThreeVisualHeightOffset(
+			config?.heightOffset ?? assetDefinition?.defaultHeightOffset,
+		),
 		placeholderType: authoredPlaceholderType ?? inferredPlaceholderType,
 		requestedMode,
-		rotationOffset: clampThreeVisualRotationOffset(config?.rotationOffset),
-		scale: clampThreeVisualScale(config?.scale),
-		source:
-			authoredPlaceholderType ||
-			requestedMode !== "placeholder" ||
-			hasAuthoredTransform
-				? "authored"
-				: "inferred",
+		rotationOffset: clampThreeVisualRotationOffset(
+			config?.rotationOffset ?? assetDefinition?.defaultRotationOffset,
+		),
+		scale: clampThreeVisualScale(
+			config?.scale ?? assetDefinition?.defaultScale,
+		),
+		source,
 	};
+
+	return assetDefinition && requestedMode === "asset"
+		? {
+				...resolved,
+				asset: assetDefinition,
+				assetId: assetDefinition.id,
+				mode: "asset",
+				requestedMode: "asset",
+				source: "authored",
+			}
+		: {
+				...resolved,
+				...(requestedAssetId ? { assetId: requestedAssetId } : {}),
+				mode: "placeholder",
+			};
 }
 
 export function threeVisualRotationOffsetToRadians(
