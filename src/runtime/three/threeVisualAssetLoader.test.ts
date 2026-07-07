@@ -94,7 +94,6 @@ describe("Three visual asset loader cache", () => {
 				"cache_hit",
 				"load_success",
 				"cache_hit",
-				"clone",
 			]);
 			expect(events[0]).toMatchObject({
 				definitionId: assetDefinition.id,

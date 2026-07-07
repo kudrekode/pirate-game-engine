@@ -705,7 +705,6 @@ export function ThreeRuntimePanel({
 		if (event.type === "shopOpened") {
 			setMouseLookActive(false);
 			setShopMessage(event.message);
-			forceRender("shop opened");
 			return;
 		}
 		if (event.type === "teleportRequested") {
@@ -766,7 +765,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender("object state changed");
+			diagnostics.recordObjectStateUpdate("object state changed");
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -805,12 +804,12 @@ export function ThreeRuntimePanel({
 		if (event.type === "shopChanged") {
 			setMouseLookActive(false);
 			setShopMessage(event.message);
-			forceRender("shop changed");
+			diagnostics.recordObjectStateUpdate("shop changed");
 			return;
 		}
 		if (event.type === "shopClosed") {
 			setShopMessage(undefined);
-			forceRender("shop closed");
+			diagnostics.recordObjectStateUpdate("shop closed");
 			return;
 		}
 		if (
@@ -822,11 +821,12 @@ export function ThreeRuntimePanel({
 			forceRender("player movement");
 			return;
 		}
-		if (
-			event.type === "pickupCollected" ||
-			event.type === "movementModeChanged" ||
-			event.type === "objectMoved"
-		) {
+		if (event.type === "movementModeChanged") {
+			setStatus(`Movement mode: ${event.mode}.`);
+			diagnostics.recordObjectStateUpdate("movement mode changed");
+			return;
+		}
+		if (event.type === "pickupCollected" || event.type === "objectMoved") {
 			forceRender("object interaction changed");
 		}
 	}
@@ -1133,7 +1133,7 @@ export function ThreeRuntimePanel({
 				} else {
 					setStatus(`Interacted with ${target.label}.`);
 				}
-				forceRender("interaction completed");
+				diagnostics.recordObjectStateUpdate("interaction completed");
 			},
 		);
 	}
@@ -1448,13 +1448,12 @@ export function ThreeRuntimePanel({
 		setObjectFacing(playerMesh, initialPlayerVisual.facing);
 		addRenderObject(playerMesh);
 		diagnostics.setSceneEntityCounts({
-			activeImportedAssetInstances: markerRenderResults.filter(
-				(result) => result.usedAsset,
-			).length,
+			assetStatuses: markerRenderResults.map((result) => ({
+				definitionId: result.assetDefinitionId,
+				status: result.assetStatus,
+				usedAsset: result.usedAsset,
+			})),
 			entityCount: runtimeMarkers.length + 1,
-			fallbackPlaceholderCount: markerRenderResults.filter(
-				(result) => !result.usedAsset && result.assetStatus !== "not_requested",
-			).length,
 		});
 
 		let renderer: THREE.WebGLRenderer;

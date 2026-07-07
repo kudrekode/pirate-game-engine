@@ -12,6 +12,7 @@ import { RuntimePanel } from "../RuntimePanel";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 // @ts-expect-error Vite raw import used for a source-boundary test.
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
 	setThreeVisualAssetLoaderFactoryForTests,
@@ -589,6 +590,81 @@ describe("ThreeRuntimePanel", () => {
 		await waitFor(() => {
 			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
 			expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+		});
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+	});
+
+	it("does not rebuild the Three scene for diagnostic-only asset events", async () => {
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		emitThreePerformanceDiagnosticsEvent({
+			definitionId: "cached_asset",
+			status: "cache_hit",
+		});
+
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+	});
+
+	it("does not rebuild the Three scene for non-visual object state changes", async () => {
+		const project = makeProject({
+			areas: [
+				makeArea({
+					objects: [
+						makeObject({ id: "chest", objectDefinitionId: "chest_def" }),
+					],
+				}),
+			],
+			items: [
+				{
+					category: "currency",
+					id: "gold_coin",
+					maxStack: 999,
+					name: "Gold Coin",
+					stackable: true,
+				},
+			],
+			objects: [
+				{
+					blocksMovement: true,
+					category: "container",
+					defaultBehaviour: {
+						contents: [{ itemId: "gold_coin", quantity: 1 }],
+						once: true,
+						type: "container",
+					},
+					heightTiles: 1,
+					id: "chest_def",
+					name: "Chest",
+					widthTiles: 1,
+				},
+			],
+		});
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		fireEvent.keyDown(window, { key: "e" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.runRuntimeObjectBehaviour).toHaveBeenCalledTimes(1);
 		});
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,

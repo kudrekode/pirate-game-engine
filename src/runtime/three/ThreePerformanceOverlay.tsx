@@ -20,6 +20,17 @@ function createInitialSnapshot(
 	return diagnostics.getSnapshot();
 }
 
+function formatReasonCounts(reasonCounts: Record<string, number>): string {
+	const entries = Object.entries(reasonCounts);
+	if (entries.length === 0) {
+		return "none";
+	}
+	return entries
+		.map(([reason, count]) => `${reason} ${count}`)
+		.slice(-3)
+		.join(", ");
+}
+
 export function ThreePerformanceOverlay({
 	diagnostics,
 	title,
@@ -97,6 +108,17 @@ export function ThreePerformanceOverlay({
 							{formatNumber(snapshot.frame.averageFrameMs)} /{" "}
 							{formatNumber(snapshot.frame.worstFrameMs)} ms
 						</strong>
+						<span>Hitches 50/100/500/1000</span>
+						<strong>
+							{snapshot.hitches.over50MsCount}/{snapshot.hitches.over100MsCount}
+							/{snapshot.hitches.over500MsCount}/
+							{snapshot.hitches.over1000MsCount}
+						</strong>
+						<span>Last hitch</span>
+						<strong>
+							{formatNumber(snapshot.hitches.lastDurationMs)} ms,{" "}
+							{snapshot.hitches.lastPhase}
+						</strong>
 						<span>RAF frames</span>
 						<strong>{snapshot.frame.frameCount}</strong>
 						<span>Render call</span>
@@ -116,6 +138,8 @@ export function ThreePerformanceOverlay({
 						</strong>
 						<span>Last rebuild</span>
 						<strong>{snapshot.scene.lastRebuildReason}</strong>
+						<span>Rebuild reasons</span>
+						<strong>{formatReasonCounts(snapshot.scene.reasonCounts)}</strong>
 						<span>Since rebuild</span>
 						<strong>
 							{formatNumber(snapshot.scene.timeSinceLastRebuildMs)} ms
@@ -129,10 +153,23 @@ export function ThreePerformanceOverlay({
 						<strong>
 							{snapshot.asset.cacheHitCount}/{snapshot.asset.cloneCount}
 						</strong>
-						<span>Active/fallback</span>
+						<span>Active clones/fallback</span>
 						<strong>
-							{snapshot.asset.activeImportedAssetInstances}/
+							{snapshot.asset.activeCloneInstances}/
 							{snapshot.asset.fallbackPlaceholderCount}
+						</strong>
+						<span>Asset statuses</span>
+						<strong>
+							L {snapshot.asset.statusCounts.loaded} / G{" "}
+							{snapshot.asset.statusCounts.loading} / E{" "}
+							{snapshot.asset.statusCounts.error} / M{" "}
+							{snapshot.asset.statusCounts.missing}
+						</strong>
+						<span>Stuck loading</span>
+						<strong>
+							{snapshot.asset.hasStuckLoadingAssets
+								? snapshot.asset.stuckLoadingCount
+								: "none"}
 						</strong>
 						<span>Terrain</span>
 						<strong>

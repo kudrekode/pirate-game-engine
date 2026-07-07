@@ -602,13 +602,12 @@ export function ThreeDPreview({
 			scene.add(walkPreviewMesh);
 		}
 		diagnostics.setSceneEntityCounts({
-			activeImportedAssetInstances: markerRenderResults.filter(
-				(result) => result.usedAsset,
-			).length,
+			assetStatuses: markerRenderResults.map((result) => ({
+				definitionId: result.assetDefinitionId,
+				status: result.assetStatus,
+				usedAsset: result.usedAsset,
+			})),
 			entityCount: entityMarkers.length + (walkPreviewMesh ? 1 : 0),
-			fallbackPlaceholderCount: markerRenderResults.filter(
-				(result) => !result.usedAsset && result.assetStatus !== "not_requested",
-			).length,
 		});
 		const selectableMeshes = [
 			...terrainPickMeshes,

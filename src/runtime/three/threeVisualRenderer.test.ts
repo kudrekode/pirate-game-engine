@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EntityMarker } from "../../editor/sections/entityMarkers";
 import { getPlaceholderSelectableObjects } from "./placeholderMeshes";
-import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
+import { createThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
 	setThreeVisualAssetLoaderFactoryForTests,
@@ -78,15 +78,12 @@ describe("Three visual marker renderer", () => {
 		).toBeGreaterThan(0);
 	});
 
-	it("reports fallback placeholder status to diagnostics for requested assets", () => {
+	it("reports current loading fallback status to diagnostics", () => {
 		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
 		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
 			loadAsync,
 		}));
-		const recordAssetFallback = vi.fn();
-		const diagnostics = {
-			recordAssetFallback,
-		} as unknown as ThreePerformanceDiagnostics;
+		const diagnostics = createThreePerformanceDiagnostics();
 		const marker = makeMarker({
 			visual: {
 				asset: assetDefinition,
@@ -105,8 +102,70 @@ describe("Three visual marker renderer", () => {
 			const result = createThreeVisualMarkerGroup(marker, { diagnostics });
 			expect(result.assetStatus).toBe("loading");
 			expect(result.usedAsset).toBe(false);
-			expect(recordAssetFallback).toHaveBeenCalledWith("loading");
+			diagnostics.setSceneEntityCounts({
+				assetStatuses: [
+					{
+						definitionId: result.assetDefinitionId,
+						status: result.assetStatus,
+						usedAsset: result.usedAsset,
+					},
+				],
+				entityCount: 1,
+			});
+			expect(diagnostics.getSnapshot().asset.statusCounts.loading).toBe(1);
+			expect(diagnostics.getSnapshot().asset.loadingFallbackCount).toBe(1);
 		} finally {
+			diagnostics.dispose();
+			restoreLoader();
+		}
+	});
+
+	it("reports loaded imported assets as active clones instead of perpetual loading fallback", async () => {
+		const source = new THREE.Group();
+		const loadAsync = vi.fn(async () => ({ scene: source }));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const diagnostics = createThreePerformanceDiagnostics();
+		const marker = makeMarker({
+			visual: {
+				asset: assetDefinition,
+				assetId: assetDefinition.id,
+				heightOffset: 0,
+				mode: "asset",
+				placeholderType: "npc",
+				requestedMode: "asset",
+				rotationOffset: 0,
+				scale: 1,
+				source: "authored",
+			},
+		});
+
+		try {
+			createThreeVisualMarkerGroup(marker, { diagnostics });
+			await flushAssetPromises();
+			const loaded = createThreeVisualMarkerGroup(marker, { diagnostics });
+			diagnostics.setSceneEntityCounts({
+				assetStatuses: [
+					{
+						definitionId: loaded.assetDefinitionId,
+						status: loaded.assetStatus,
+						usedAsset: loaded.usedAsset,
+					},
+				],
+				entityCount: 1,
+			});
+
+			const snapshot = diagnostics.getSnapshot();
+			expect(snapshot.asset.cloneCount).toBe(1);
+			expect(snapshot.asset.activeCloneInstances).toBe(1);
+			expect(snapshot.asset.statusCounts.loaded).toBe(1);
+			expect(snapshot.asset.statusCounts.loading).toBe(0);
+			expect(snapshot.asset.loadingFallbackCount).toBe(0);
+			expect(snapshot.asset.fallbackPlaceholderCount).toBe(0);
+			expect(snapshot.asset.lastMessage).toBe(`clone: ${assetDefinition.id}`);
+		} finally {
+			diagnostics.dispose();
 			restoreLoader();
 		}
 	});

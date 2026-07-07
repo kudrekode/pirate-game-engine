@@ -92,6 +92,7 @@ function startAssetLoad(
 	entry.promise = Promise.resolve(loaderFactory())
 		.then((loader) => loader.loadAsync(definition.url))
 		.then((gltf) => {
+			const callbackStartedAt = performance.now();
 			const root = getGltfRoot(gltf);
 			if (!root) {
 				const errorMessage = `Three visual asset "${definition.id}" has no scene.`;
@@ -102,6 +103,7 @@ function startAssetLoad(
 				});
 				emitThreePerformanceDiagnosticsEvent({
 					definitionId: definition.id,
+					durationMs: performance.now() - callbackStartedAt,
 					message: errorMessage,
 					status: "load_failure",
 					url: definition.url,
@@ -115,11 +117,13 @@ function startAssetLoad(
 			});
 			emitThreePerformanceDiagnosticsEvent({
 				definitionId: definition.id,
+				durationMs: performance.now() - callbackStartedAt,
 				status: "load_success",
 				url: definition.url,
 			});
 		})
 		.catch((error) => {
+			const callbackStartedAt = performance.now();
 			cache.set(key, {
 				definition,
 				error,
@@ -127,6 +131,7 @@ function startAssetLoad(
 			});
 			emitThreePerformanceDiagnosticsEvent({
 				definitionId: definition.id,
+				durationMs: performance.now() - callbackStartedAt,
 				message: error instanceof Error ? error.message : String(error),
 				status: "load_failure",
 				url: definition.url,
@@ -194,11 +199,7 @@ export function requestThreeVisualAsset(
 export function cloneThreeVisualAssetRoot(
 	root: THREE.Object3D,
 ): THREE.Object3D {
-	const clone = root.clone(true);
-	emitThreePerformanceDiagnosticsEvent({
-		status: "clone",
-	});
-	return clone;
+	return root.clone(true);
 }
 
 export function clearThreeVisualAssetCacheForTests(): void {

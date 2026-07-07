@@ -14,6 +14,7 @@ import { threeVisualRotationOffsetToRadians } from "./threeVisuals";
 import { applyShadowRole } from "./worldPresentation";
 
 export type ThreeVisualRenderResult = {
+	assetDefinitionId?: string;
 	group: THREE.Group;
 	assetStatus: ThreeVisualAssetRequest["status"] | "not_requested";
 	usedAsset: boolean;
@@ -62,11 +63,13 @@ function createFallbackGroup(
 	marker: EntityMarker,
 	options: ThreeVisualRenderOptions,
 	assetStatus: ThreeVisualRenderResult["assetStatus"],
+	assetDefinitionId?: string,
 ): ThreeVisualRenderResult {
-	if (assetStatus !== "not_requested") {
-		options.diagnostics?.recordAssetFallback(assetStatus);
+	if (assetStatus === "error" || assetStatus === "missing") {
+		options.diagnostics?.recordAssetFallback(assetStatus, assetDefinitionId);
 	}
 	return {
+		assetDefinitionId,
 		assetStatus,
 		group: createPlaceholderMeshGroup(marker, {
 			metadata: options.metadata,
@@ -88,10 +91,19 @@ export function createThreeVisualMarkerGroup(
 		onStateChange: options.onAssetStateChange,
 	});
 	if (assetRequest.status !== "loaded") {
-		return createFallbackGroup(marker, options, assetRequest.status);
+		return createFallbackGroup(
+			marker,
+			options,
+			assetRequest.status,
+			assetRequest.status === "missing"
+				? marker.visual.asset?.id
+				: assetRequest.definition.id,
+		);
 	}
 
+	options.diagnostics?.recordAssetClone(assetRequest.definition.id);
 	return {
+		assetDefinitionId: assetRequest.definition.id,
 		assetStatus: "loaded",
 		group: createAssetGroup(marker, assetRequest.object, options),
 		usedAsset: true,

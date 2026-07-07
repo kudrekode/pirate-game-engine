@@ -32,9 +32,12 @@ describe("three performance diagnostics", () => {
 			tileCount: 10,
 		});
 		diagnostics.setSceneEntityCounts({
-			activeImportedAssetInstances: 2,
+			assetStatuses: [
+				{ definitionId: "ship", status: "loaded", usedAsset: true },
+				{ definitionId: "crate", status: "loading", usedAsset: false },
+				{ status: "not_requested", usedAsset: false },
+			],
 			entityCount: 4,
-			fallbackPlaceholderCount: 1,
 		});
 		diagnostics.recordPointerMove();
 		now = 600;
@@ -58,7 +61,7 @@ describe("three performance diagnostics", () => {
 			definitionId: "ship",
 			status: "cache_hit",
 		});
-		emitThreePerformanceDiagnosticsEvent({ status: "clone" });
+		diagnostics.recordAssetClone("ship");
 
 		const snapshot = diagnostics.getSnapshot();
 		expect(snapshot.label).toBe("Diagnostics Test");
@@ -86,13 +89,22 @@ describe("three performance diagnostics", () => {
 			timeSinceLastRebuildMs: 300,
 		});
 		expect(snapshot.asset).toMatchObject({
-			activeImportedAssetInstances: 2,
+			activeImportedAssetInstances: 1,
+			activeCloneInstances: 1,
 			cacheHitCount: 1,
 			cloneCount: 1,
 			fallbackPlaceholderCount: 1,
+			loadingFallbackCount: 1,
 			loadFailureCount: 1,
 			loadStartedCount: 1,
 			loadSuccessCount: 1,
+			statusCounts: {
+				error: 0,
+				loaded: 1,
+				loading: 1,
+				missing: 0,
+				not_requested: 1,
+			},
 		});
 		expect(snapshot.terrain).toMatchObject({
 			lastDurationMs: 3.2,
@@ -118,5 +130,41 @@ describe("three performance diagnostics", () => {
 		diagnostics.dispose();
 		emitThreePerformanceDiagnosticsEvent({ status: "load_start" });
 		expect(diagnostics.getSnapshot().asset.loadStartedCount).toBe(1);
+	});
+
+	it("tracks rebuild reason counts and thresholded hitches", () => {
+		let now = 0;
+		const diagnostics = createThreePerformanceDiagnostics({
+			now: () => now,
+		});
+
+		diagnostics.recordSceneBuild("asset state changed", 75);
+		now = 100;
+		diagnostics.recordSceneBuild("asset state changed", 8);
+		now = 200;
+		diagnostics.recordSceneBuild("object state changed", 525);
+		now = 300;
+		diagnostics.recordFrame(1200);
+
+		const snapshot = diagnostics.getSnapshot();
+		expect(snapshot.scene.reasonCounts).toEqual({
+			"asset state changed": 2,
+			"object state changed": 1,
+		});
+		expect(snapshot.hitches).toMatchObject({
+			lastPhase: "scene rebuild",
+			over1000MsCount: 1,
+			over100MsCount: 2,
+			over500MsCount: 2,
+			over50MsCount: 3,
+		});
+		expect(
+			snapshot.hitches.recent[snapshot.hitches.recent.length - 1],
+		).toMatchObject({
+			phase: "scene rebuild",
+			thresholdMs: 1000,
+		});
+
+		diagnostics.dispose();
 	});
 });
