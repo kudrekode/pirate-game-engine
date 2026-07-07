@@ -20,6 +20,7 @@ import {
 	disposePlaceholderObject,
 	getPlaceholderSelectableObjects,
 } from "../../runtime/three/placeholderMeshes";
+import { createSmoothTerrainBufferGeometry } from "../../runtime/three/terrainMeshGeometry";
 import {
 	addThreeWorldLighting,
 	applyShadowRole,
@@ -61,7 +62,11 @@ import {
 	terrainBlockToSelectionMetadata,
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
-import { terrainTilesToBlocks } from "./terrainBlocks";
+import {
+	type TerrainRenderMode,
+	terrainTilesToBlocks,
+	terrainTilesToSmoothMeshes,
+} from "./terrainBlocks";
 import {
 	resolveTerrainBrushFootprint,
 	resolveTerrainBrushSamples,
@@ -144,6 +149,17 @@ function getPreviewCameraDimensions(
 	};
 }
 
+function disposeMesh(mesh: THREE.Mesh): void {
+	mesh.geometry.dispose();
+	if (Array.isArray(mesh.material)) {
+		mesh.material.forEach((material) => {
+			material.dispose();
+		});
+	} else {
+		mesh.material.dispose();
+	}
+}
+
 export function ThreeDPreview({
 	brushFalloff = "hard",
 	brushShape = "square",
@@ -169,6 +185,8 @@ export function ThreeDPreview({
 	);
 	const [cameraPreset, setCameraPreset] =
 		useState<PreviewCameraMode>("isometric");
+	const [terrainRenderMode, setTerrainRenderMode] =
+		useState<TerrainRenderMode>("blocky");
 	const [walkPreviewPosition, setWalkPreviewPosition] =
 		useState<PreviewGridPosition>();
 	const [walkPreviewMessage, setWalkPreviewMessage] = useState("");
@@ -201,6 +219,10 @@ export function ThreeDPreview({
 	);
 	const terrainBlocks = useMemo(
 		() => terrainTilesToBlocks(activeArea),
+		[activeArea],
+	);
+	const smoothTerrainMeshes = useMemo(
+		() => terrainTilesToSmoothMeshes(activeArea),
 		[activeArea],
 	);
 	const entityMarkers = useMemo(
@@ -383,7 +405,22 @@ export function ThreeDPreview({
 		);
 		scene.add(grid);
 
-		const meshes = terrainBlocks.map((block) => {
+		const smoothTerrainVisualMeshes =
+			terrainRenderMode === "smooth"
+				? smoothTerrainMeshes.map((smoothMesh) => {
+						const mesh = new THREE.Mesh(
+							createSmoothTerrainBufferGeometry(smoothMesh),
+							createWorldMaterial(smoothMesh.materialKey),
+						);
+						applyShadowRole(mesh, {
+							receive: smoothMesh.materialKey !== "water",
+						});
+						scene.add(mesh);
+						return mesh;
+					})
+				: [];
+
+		const terrainPickMeshes = terrainBlocks.map((block) => {
 			const selectionMetadata = terrainBlockToSelectionMetadata(
 				block,
 				activeArea?.id ?? "",
@@ -393,10 +430,18 @@ export function ThreeDPreview({
 				selectionMetadata,
 			);
 			const mesh = new THREE.Mesh(
-				new THREE.BoxGeometry(0.96, block.height, 0.96),
-				createTerrainMaterial(block.kind, { selected: isSelected }),
+				new THREE.BoxGeometry(
+					terrainRenderMode === "smooth" ? 0.98 : 0.96,
+					block.height,
+					terrainRenderMode === "smooth" ? 0.98 : 0.96,
+				),
+				terrainRenderMode === "smooth"
+					? createWorldMaterial("default", { opacity: 0 })
+					: createTerrainMaterial(block.kind, { selected: isSelected }),
 			);
-			applyShadowRole(mesh, { receive: block.kind !== "water" });
+			if (terrainRenderMode !== "smooth") {
+				applyShadowRole(mesh, { receive: block.kind !== "water" });
+			}
 			mesh.userData.selectionMetadata = selectionMetadata;
 			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
 			scene.add(mesh);
@@ -445,7 +490,7 @@ export function ThreeDPreview({
 			scene.add(walkPreviewMesh);
 		}
 		const selectableMeshes = [
-			...meshes,
+			...terrainPickMeshes,
 			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
 		];
 
@@ -610,7 +655,7 @@ export function ThreeDPreview({
 			if (!activeArea || !updateRaycasterFromPointer(event)) {
 				return undefined;
 			}
-			const hit = raycaster.intersectObjects(meshes, false)[0];
+			const hit = raycaster.intersectObjects(terrainPickMeshes, false)[0];
 			if (!hit) {
 				return undefined;
 			}
@@ -1469,16 +1514,8 @@ export function ThreeDPreview({
 			cleanupPlacementGhost();
 			cleanupTerrainBrushGhost();
 			renderer.dispose();
-			meshes.forEach((mesh) => {
-				mesh.geometry.dispose();
-				if (Array.isArray(mesh.material)) {
-					mesh.material.forEach((material) => {
-						material.dispose();
-					});
-				} else {
-					mesh.material.dispose();
-				}
-			});
+			terrainPickMeshes.forEach(disposeMesh);
+			smoothTerrainVisualMeshes.forEach(disposeMesh);
 			markerMeshes.forEach(disposePlaceholderObject);
 			if (walkPreviewMesh) {
 				scene.remove(walkPreviewMesh);
@@ -1514,10 +1551,12 @@ export function ThreeDPreview({
 		setEditorSelection,
 		setTiles,
 		setTerrainHeights,
+		smoothTerrainMeshes,
 		terrainBlocks,
 		terrainGesture,
 		terrainPaintTileId,
 		terrainHeightTool,
+		terrainRenderMode,
 		updatePickup,
 		updateProject,
 		walkPreviewPosition,
@@ -1581,6 +1620,20 @@ export function ThreeDPreview({
 					</button>
 					<button onClick={resetCamera} type="button">
 						Reset camera
+					</button>
+					<button
+						className={terrainRenderMode === "blocky" ? "active" : ""}
+						onClick={() => setTerrainRenderMode("blocky")}
+						type="button"
+					>
+						Blocky terrain
+					</button>
+					<button
+						className={terrainRenderMode === "smooth" ? "active" : ""}
+						onClick={() => setTerrainRenderMode("smooth")}
+						type="button"
+					>
+						Smooth terrain
 					</button>
 					{isWalkPreviewActive ? (
 						<button onClick={stopWalkPreview} type="button">

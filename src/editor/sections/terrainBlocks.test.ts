@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { GameArea } from "../../types/game";
-import { terrainTilesToBlocks } from "./terrainBlocks";
+import {
+	terrainTilesToBlocks,
+	terrainTilesToSmoothMeshes,
+} from "./terrainBlocks";
 
 function makeArea(overrides: Partial<GameArea> = {}): GameArea {
 	return {
@@ -129,5 +132,122 @@ describe("terrainTilesToBlocks", () => {
 				}),
 			),
 		).toHaveLength(1);
+	});
+});
+
+describe("terrainTilesToSmoothMeshes", () => {
+	function everyNumberIsFinite(values: number[]): boolean {
+		return values.every((value) => Number.isFinite(value));
+	}
+
+	function getVertexHeights(vertices: number[]): number[] {
+		const heights: number[] = [];
+		for (let index = 1; index < vertices.length; index += 3) {
+			heights.push(vertices[index]);
+		}
+		return heights;
+	}
+
+	it("generates a flat smooth mesh from flat terrain", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 2,
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "grass" },
+					{ x: 0, y: 1, tileId: "grass" },
+					{ x: 1, y: 1, tileId: "grass" },
+				],
+				width: 2,
+			}),
+		);
+
+		expect(mesh).toMatchObject({
+			materialKey: "grass",
+			tileCount: 4,
+		});
+		expect(mesh.vertices).toHaveLength(60);
+		expect(mesh.normals).toHaveLength(60);
+		expect(mesh.indices).toHaveLength(48);
+		expect(new Set(getVertexHeights(mesh.vertices))).toEqual(new Set([1]));
+		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
+		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
+		expect(everyNumberIsFinite(mesh.indices)).toBe(true);
+	});
+
+	it("averages varied heights at corners while preserving tile centers", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 3,
+				terrainHeights: [{ x: 1, y: 1, height: 4 }],
+				terrainTiles: Array.from({ length: 3 }).flatMap((_, y) =>
+					Array.from({ length: 3 }).map((__, x) => ({
+						tileId: "grass",
+						x,
+						y,
+					})),
+				),
+				width: 3,
+			}),
+		);
+		const heights = getVertexHeights(mesh.vertices);
+
+		expect(Math.max(...heights)).toBe(5);
+		expect(heights).toContain(2);
+		expect(heights).toContain(1);
+		expect(
+			mesh.normals.some((value, index) => index % 3 !== 1 && value !== 0),
+		).toBe(true);
+		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
+		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
+	});
+
+	it("handles map edges, missing tile data, and invalid heights safely", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 2,
+				terrainHeights: [{ x: 1, y: 1, height: Number.NaN }],
+				terrainTiles: [
+					{ x: -1, y: 0, tileId: "grass" },
+					{ x: 1, y: 1, tileId: "sand" },
+				],
+				width: 2,
+			}),
+		);
+
+		expect(mesh.materialKey).toBe("sand");
+		expect(mesh.tileCount).toBe(1);
+		expect(new Set(getVertexHeights(mesh.vertices))).toEqual(new Set([1]));
+		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
+		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
+		expect(everyNumberIsFinite(mesh.indices)).toBe(true);
+	});
+
+	it("groups smooth terrain by readable material category", () => {
+		const meshes = terrainTilesToSmoothMeshes(
+			makeArea({
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "sand" },
+					{ x: 2, y: 0, tileId: "water" },
+					{ x: 3, y: 0, tileId: "mystery" },
+				],
+			}),
+		);
+
+		expect(meshes.map((mesh) => mesh.materialKey)).toEqual([
+			"grass",
+			"sand",
+			"water",
+			"default",
+		]);
+		expect(
+			meshes.find((mesh) => mesh.materialKey === "water")?.vertices,
+		).toContain(0.18);
+	});
+
+	it("returns no smooth meshes for empty or missing terrain", () => {
+		expect(terrainTilesToSmoothMeshes(undefined)).toEqual([]);
+		expect(terrainTilesToSmoothMeshes(makeArea())).toEqual([]);
 	});
 });

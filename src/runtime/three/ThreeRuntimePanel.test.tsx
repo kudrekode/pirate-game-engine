@@ -121,6 +121,19 @@ vi.mock("three", () => {
 		dispose = vi.fn();
 	}
 
+	class BufferGeometry extends Disposable {
+		computeBoundingSphere = vi.fn();
+		setAttribute = vi.fn(() => this);
+		setIndex = vi.fn(() => this);
+	}
+
+	class Float32BufferAttribute {
+		constructor(
+			public values: number[],
+			public itemSize: number,
+		) {}
+	}
+
 	class Object3D {
 		children: Object3D[] = [];
 		castShadow = false;
@@ -166,6 +179,7 @@ vi.mock("three", () => {
 		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
 		BoxGeometry: Disposable,
+		BufferGeometry,
 		ConeGeometry: Disposable,
 		Color: class {},
 		CylinderGeometry: Disposable,
@@ -178,6 +192,7 @@ vi.mock("three", () => {
 			};
 		},
 		Fog: class {},
+		Float32BufferAttribute,
 		Group: Object3D,
 		HemisphereLight: class {},
 		Mesh,
@@ -351,6 +366,13 @@ describe("ThreeRuntimePanel", () => {
 			"active",
 		);
 		expect(screen.getByRole("button", { name: "Inspect" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
+			"active",
+		);
 		expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
 	});
 

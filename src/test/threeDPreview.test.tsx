@@ -80,6 +80,19 @@ vi.mock("three", () => {
 		dispose = vi.fn();
 	}
 
+	class BufferGeometry extends Disposable {
+		computeBoundingSphere = vi.fn();
+		setAttribute = vi.fn(() => this);
+		setIndex = vi.fn(() => this);
+	}
+
+	class Float32BufferAttribute {
+		constructor(
+			public values: number[],
+			public itemSize: number,
+		) {}
+	}
+
 	class Object3D {
 		castShadow = false;
 		children: Object3D[] = [];
@@ -121,6 +134,7 @@ vi.mock("three", () => {
 		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
 		BoxGeometry: Disposable,
+		BufferGeometry,
 		Color: class {},
 		ConeGeometry: Disposable,
 		CylinderGeometry: Disposable,
@@ -133,6 +147,7 @@ vi.mock("three", () => {
 			};
 		},
 		Fog: class {},
+		Float32BufferAttribute,
 		GridHelper: class {},
 		Group: Object3D,
 		HemisphereLight: class {},
@@ -443,12 +458,22 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
 			"active",
 		);
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+			"active",
+		);
+		expect(
+			screen.getByRole("button", { name: "Smooth terrain" }),
+		).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Low angle" }));
 		expect(screen.getByRole("button", { name: "Low angle" })).toHaveClass(
 			"active",
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
 		);
 		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
@@ -619,6 +644,29 @@ describe("ThreeDPreview", () => {
 		});
 
 		rectSpy.mockRestore();
+	});
+
+	it("keeps smooth terrain painting mapped to logical grid tiles", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+
+		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
+		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 27,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 27,
+		});
+
+		await waitFor(() => expect(readActiveTileId(1, 1)).toBe("sand"));
+		expect(readActiveTileId(0, 0)).toBe("grass");
 	});
 
 	it("drag-paints newly entered 3D terrain tiles without duplicate tile updates", async () => {

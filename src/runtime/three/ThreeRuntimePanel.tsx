@@ -3,7 +3,11 @@ import * as THREE from "three";
 import { getTerrainSurfaceY } from "../../data/terrainHeight";
 import { areaEntitiesToMarkers } from "../../editor/sections/entityMarkers";
 import { previewGridPositionToThreePoint } from "../../editor/sections/previewMove";
-import { terrainTilesToBlocks } from "../../editor/sections/terrainBlocks";
+import {
+	type TerrainRenderMode,
+	terrainTilesToBlocks,
+	terrainTilesToSmoothMeshes,
+} from "../../editor/sections/terrainBlocks";
 import type {
 	Cutscene,
 	GameArea,
@@ -79,6 +83,7 @@ import {
 	createPlaceholderMeshGroup,
 	disposePlaceholderObject,
 } from "./placeholderMeshes";
+import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import {
 	composeThreeVisualYaw,
 	type ResolvedThreeVisual,
@@ -336,6 +341,8 @@ export function ThreeRuntimePanel({
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
+	const [terrainRenderMode, setTerrainRenderMode] =
+		useState<TerrainRenderMode>("blocky");
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
@@ -1274,15 +1281,28 @@ export function ThreeRuntimePanel({
 			scene.add(object);
 		};
 
-		terrainTilesToBlocks(area).forEach((block) => {
-			const mesh = new THREE.Mesh(
-				new THREE.BoxGeometry(0.98, block.height, 0.98),
-				createTerrainMaterial(block.kind),
-			);
-			applyShadowRole(mesh, { receive: block.kind !== "water" });
-			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
-			addRenderObject(mesh);
-		});
+		if (terrainRenderMode === "smooth") {
+			terrainTilesToSmoothMeshes(area).forEach((smoothMesh) => {
+				const mesh = new THREE.Mesh(
+					createSmoothTerrainBufferGeometry(smoothMesh),
+					createWorldMaterial(smoothMesh.materialKey),
+				);
+				applyShadowRole(mesh, {
+					receive: smoothMesh.materialKey !== "water",
+				});
+				addRenderObject(mesh);
+			});
+		} else {
+			terrainTilesToBlocks(area).forEach((block) => {
+				const mesh = new THREE.Mesh(
+					new THREE.BoxGeometry(0.98, block.height, 0.98),
+					createTerrainMaterial(block.kind),
+				);
+				applyShadowRole(mesh, { receive: block.kind !== "water" });
+				mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+				addRenderObject(mesh);
+			});
+		}
 
 		const runtimeArea: GameArea = {
 			...area,
@@ -1590,7 +1610,7 @@ export function ThreeRuntimePanel({
 				host.removeChild(renderer.domElement);
 			}
 		};
-	}, [renderVersion]);
+	}, [renderVersion, terrainRenderMode]);
 
 	const session = getSession();
 	const area = session ? getArea(session) : undefined;
@@ -1641,6 +1661,20 @@ export function ThreeRuntimePanel({
 						type="button"
 					>
 						Inspect
+					</button>
+					<button
+						className={terrainRenderMode === "blocky" ? "active" : ""}
+						onClick={() => setTerrainRenderMode("blocky")}
+						type="button"
+					>
+						Blocky terrain
+					</button>
+					<button
+						className={terrainRenderMode === "smooth" ? "active" : ""}
+						onClick={() => setTerrainRenderMode("smooth")}
+						type="button"
+					>
+						Smooth terrain
 					</button>
 					{cameraMode === "follow" &&
 					runtimeThreeCamera?.style === "thirdPerson" ? (
