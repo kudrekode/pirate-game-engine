@@ -5,7 +5,6 @@ import { cloneProject } from "../data/migrateProject";
 import { getTerrainHeight } from "../data/terrainHeight";
 import { editorSections } from "../editor/sections";
 import { MapEditor } from "../editor/sections/MapEditor";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import threeDPreviewSource from "../editor/sections/ThreeDPreview.tsx?raw";
 import {
 	resolveTerrainBrushFootprint,

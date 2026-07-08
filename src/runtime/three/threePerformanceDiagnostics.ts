@@ -161,12 +161,65 @@ export type ThreePerformanceDiagnostics = {
 	}) => void;
 };
 
+export type ThreePerformanceDiagnosticsGlobal = {
+	getSnapshot: (label?: string) => ThreePerformanceSnapshot | null;
+	getSnapshots: () => Record<string, ThreePerformanceSnapshot>;
+	labels: () => string[];
+};
+
 type ThreeAssetDiagnosticsListener = (
 	event: ThreeAssetDiagnosticsEvent,
 ) => void;
 
 const assetDiagnosticsListeners = new Set<ThreeAssetDiagnosticsListener>();
 const STUCK_ASSET_LOADING_MS = 5000;
+const registeredDiagnostics = new Map<string, ThreePerformanceDiagnostics[]>();
+
+declare global {
+	interface Window {
+		__THREE_PERF_DIAGNOSTICS__?: ThreePerformanceDiagnosticsGlobal;
+	}
+}
+
+function canExposeDiagnosticsGlobal(): boolean {
+	return (
+		typeof window !== "undefined" &&
+		(import.meta.env.DEV || import.meta.env.MODE === "test")
+	);
+}
+
+function getLatestDiagnostics(
+	label?: string,
+): ThreePerformanceDiagnostics | undefined {
+	if (label) {
+		const entries = registeredDiagnostics.get(label);
+		return entries?.[entries.length - 1];
+	}
+
+	const entries = Array.from(registeredDiagnostics.values()).flat();
+	return entries[entries.length - 1];
+}
+
+function ensureDiagnosticsGlobal(): void {
+	if (!canExposeDiagnosticsGlobal() || window.__THREE_PERF_DIAGNOSTICS__) {
+		return;
+	}
+
+	window.__THREE_PERF_DIAGNOSTICS__ = {
+		getSnapshot: (label?: string) =>
+			getLatestDiagnostics(label)?.getSnapshot() ?? null,
+		getSnapshots: () =>
+			Object.fromEntries(
+				Array.from(registeredDiagnostics.entries()).flatMap(
+					([label, entries]) => {
+						const diagnostics = entries[entries.length - 1];
+						return diagnostics ? [[label, diagnostics.getSnapshot()]] : [];
+					},
+				),
+			),
+		labels: () => Array.from(registeredDiagnostics.keys()),
+	};
+}
 
 export function subscribeThreePerformanceDiagnosticsEvents(
 	listener: ThreeAssetDiagnosticsListener,
@@ -183,6 +236,25 @@ export function emitThreePerformanceDiagnosticsEvent(
 	for (const listener of assetDiagnosticsListeners) {
 		listener(event);
 	}
+}
+
+export function registerThreePerformanceDiagnostics(
+	diagnostics: ThreePerformanceDiagnostics,
+): () => void {
+	const label = diagnostics.getSnapshot().label;
+	const entries = registeredDiagnostics.get(label) ?? [];
+	registeredDiagnostics.set(label, [...entries, diagnostics]);
+	ensureDiagnosticsGlobal();
+
+	return () => {
+		const currentEntries = registeredDiagnostics.get(label) ?? [];
+		const nextEntries = currentEntries.filter((entry) => entry !== diagnostics);
+		if (nextEntries.length > 0) {
+			registeredDiagnostics.set(label, nextEntries);
+			return;
+		}
+		registeredDiagnostics.delete(label);
+	};
 }
 
 function getDefaultNow(): number {

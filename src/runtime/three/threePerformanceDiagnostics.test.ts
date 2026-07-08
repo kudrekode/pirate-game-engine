@@ -3,6 +3,7 @@ import {
 	createThreePerformanceDiagnostics,
 	emitThreePerformanceDiagnosticsEvent,
 	formatThreePerformanceSnapshot,
+	registerThreePerformanceDiagnostics,
 } from "./threePerformanceDiagnostics";
 
 describe("three performance diagnostics", () => {
@@ -166,5 +167,39 @@ describe("three performance diagnostics", () => {
 		});
 
 		diagnostics.dispose();
+	});
+
+	it("exposes registered snapshots through the dev/test diagnostics global", () => {
+		const diagnostics = createThreePerformanceDiagnostics({
+			label: "Global Diagnostics Test",
+		});
+		diagnostics.recordFrame(16);
+		const unregister = registerThreePerformanceDiagnostics(diagnostics);
+
+		try {
+			expect(window.__THREE_PERF_DIAGNOSTICS__?.labels()).toContain(
+				"Global Diagnostics Test",
+			);
+			expect(
+				window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot(
+					"Global Diagnostics Test",
+				)?.frame.frameCount,
+			).toBe(1);
+			expect(
+				window.__THREE_PERF_DIAGNOSTICS__?.getSnapshots()[
+					"Global Diagnostics Test"
+				]?.label,
+			).toBe("Global Diagnostics Test");
+
+			unregister();
+			expect(
+				window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot(
+					"Global Diagnostics Test",
+				),
+			).toBeNull();
+		} finally {
+			unregister();
+			diagnostics.dispose();
+		}
 	});
 });

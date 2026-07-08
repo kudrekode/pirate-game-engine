@@ -10,7 +10,6 @@ import type {
 } from "../../types/game";
 import { RuntimePanel } from "../RuntimePanel";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {

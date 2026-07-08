@@ -6,7 +6,6 @@ import {
 	THREE_WORLD_MATERIALS,
 	terrainBlockKindToMaterialKey,
 } from "./worldPresentation";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import worldPresentationSource from "./worldPresentation.ts?raw";
 
 describe("Three world presentation helpers", () => {

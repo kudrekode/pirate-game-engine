@@ -84,6 +84,7 @@ import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import {
 	createThreePerformanceDiagnostics,
+	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "./threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
@@ -393,7 +394,14 @@ export function ThreeRuntimePanel({
 	const [gameOver, setGameOver] = useState(false);
 	const [mountError, setMountError] = useState<string | null>(null);
 
-	useEffect(() => () => diagnostics.dispose(), [diagnostics]);
+	useEffect(() => {
+		const unregisterDiagnostics =
+			registerThreePerformanceDiagnostics(diagnostics);
+		return () => {
+			unregisterDiagnostics();
+			diagnostics.dispose();
+		};
+	}, [diagnostics]);
 
 	function forceRender(reason = "runtime state changed") {
 		nextRebuildReasonRef.current = reason;

@@ -23,6 +23,7 @@ import { ThreePerformanceOverlay } from "../../runtime/three/ThreePerformanceOve
 import { createSmoothTerrainBufferGeometry } from "../../runtime/three/terrainMeshGeometry";
 import {
 	createThreePerformanceDiagnostics,
+	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "../../runtime/three/threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
@@ -413,7 +414,14 @@ export function ThreeDPreview({
 		setLocalOverlayFilters(filters);
 	};
 
-	useEffect(() => () => diagnostics.dispose(), [diagnostics]);
+	useEffect(() => {
+		const unregisterDiagnostics =
+			registerThreePerformanceDiagnostics(diagnostics);
+		return () => {
+			unregisterDiagnostics();
+			diagnostics.dispose();
+		};
+	}, [diagnostics]);
 
 	const getSceneBuildReason = () => {
 		const nextBuildInputs: ThreeDPreviewBuildInputs = {
