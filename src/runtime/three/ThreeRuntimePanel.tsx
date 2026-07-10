@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import {
+	getTerrainPresentationSurfaceY,
+	type TerrainSurfaceMode,
+} from "../../data/terrainSurface";
 import { areaEntitiesToMarkers } from "../../editor/sections/entityMarkers";
 import { previewGridPositionToThreePoint } from "../../editor/sections/previewMove";
 import {
@@ -236,13 +239,18 @@ function clampGridCoordinate(value: number, max: number): number {
 function getVisualWorldBase(
 	area: GameArea,
 	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
 ): VisualWorldPosition {
 	const point = previewGridPositionToThreePoint(area, position);
 	const terrainX = clampGridCoordinate(position.x, area.width - 1);
 	const terrainY = clampGridCoordinate(position.y, area.height - 1);
 	return {
 		x: point.x,
-		y: getTerrainSurfaceY(area, terrainX, terrainY),
+		y: getTerrainPresentationSurfaceY(
+			area,
+			{ x: terrainX, y: terrainY },
+			terrainMode,
+		),
 		z: point.z,
 	};
 }
@@ -250,8 +258,9 @@ function getVisualWorldBase(
 function getVisualPlayerCenter(
 	area: GameArea,
 	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
 ): VisualWorldPosition {
-	const base = getVisualWorldBase(area, position);
+	const base = getVisualWorldBase(area, position, terrainMode);
 	return {
 		x: base.x,
 		y: base.y + 0.625,
@@ -263,9 +272,10 @@ function setObjectBasePosition(
 	object: THREE.Object3D,
 	area: GameArea,
 	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
 	visual?: ResolvedThreeVisual,
 ): void {
-	const base = getVisualWorldBase(area, position);
+	const base = getVisualWorldBase(area, position, terrainMode);
 	object.position.set(base.x, base.y + (visual?.heightOffset ?? 0), base.z);
 }
 
@@ -1318,7 +1328,7 @@ export function ThreeRuntimePanel({
 		let cameraRig: CameraFollowRig =
 			cameraRigRef.current ??
 			getFollowCameraTarget(
-				getVisualPlayerCenter(area, initialPlayerPosition),
+				getVisualPlayerCenter(area, initialPlayerPosition, terrainRenderMode),
 				initialPlayerVisual.facing,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
@@ -1372,10 +1382,20 @@ export function ThreeRuntimePanel({
 		const terrainRebuildStartedAt = performance.now();
 		const waterPresentation = createWaterPresentationState();
 		let terrainMeshCount = 0;
+		let terrainTriangleCount = 0;
+		let terrainVertexCount = 0;
 		let waterSurfaceMeshCount = 0;
 		if (terrainRenderMode === "smooth") {
 			const smoothMeshes = terrainTilesToSmoothMeshes(area);
 			terrainMeshCount = smoothMeshes.length;
+			terrainTriangleCount = smoothMeshes.reduce(
+				(total, mesh) => total + mesh.indices.length / 3,
+				0,
+			);
+			terrainVertexCount = smoothMeshes.reduce(
+				(total, mesh) => total + mesh.vertices.length / 3,
+				0,
+			);
 			smoothMeshes.forEach((smoothMesh) => {
 				const usesWaterPresentation = smoothMesh.materialKey === "water";
 				if (usesWaterPresentation) {
@@ -1398,6 +1418,8 @@ export function ThreeRuntimePanel({
 		} else {
 			const terrainBlocks = terrainTilesToBlocks(area);
 			terrainMeshCount = terrainBlocks.length;
+			terrainTriangleCount = terrainBlocks.length * 12;
+			terrainVertexCount = terrainBlocks.length * 24;
 			terrainBlocks.forEach((block) => {
 				const usesWaterPresentation = block.materialKey === "water";
 				if (usesWaterPresentation) {
@@ -1424,12 +1446,16 @@ export function ThreeRuntimePanel({
 		coastlinePresentation.meshes.forEach((mesh) => {
 			addRenderObject(mesh);
 		});
+		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
+		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
 		diagnostics.recordTerrainRebuild({
 			coastlineEdgeCount: coastlinePresentation.edges.length,
 			durationMs: performance.now() - terrainRebuildStartedAt,
 			meshCount: terrainMeshCount + coastlinePresentation.meshes.length,
 			mode: terrainRenderMode,
 			tileCount: area.terrainTiles.length,
+			triangleCount: terrainTriangleCount + coastlineTriangleCount,
+			vertexCount: terrainVertexCount + coastlineVertexCount,
 			waterMeshCount: waterSurfaceMeshCount,
 		});
 
@@ -1461,6 +1487,7 @@ export function ThreeRuntimePanel({
 			session.project.objects,
 			session.project.npcs,
 			true,
+			terrainRenderMode,
 		);
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
@@ -1478,6 +1505,7 @@ export function ThreeRuntimePanel({
 						group,
 						area,
 						getVisualGridPosition(npcVisual, performance.now()).position,
+						terrainRenderMode,
 						marker.visual,
 					);
 					setObjectFacing(group, npcVisual.facing, marker.visual);
@@ -1497,7 +1525,12 @@ export function ThreeRuntimePanel({
 
 		const playerMesh = createRuntimePlayerMesh();
 		applyShadowRole(playerMesh, { cast: true });
-		setObjectBasePosition(playerMesh, area, initialPlayerPosition);
+		setObjectBasePosition(
+			playerMesh,
+			area,
+			initialPlayerPosition,
+			terrainRenderMode,
+		);
 		setObjectFacing(playerMesh, initialPlayerVisual.facing);
 		addRenderObject(playerMesh);
 		diagnostics.setSceneEntityCounts({
@@ -1695,7 +1728,12 @@ export function ThreeRuntimePanel({
 				playerVisual,
 				now,
 			).position;
-			setObjectBasePosition(playerMesh, area, playerVisualPosition);
+			setObjectBasePosition(
+				playerMesh,
+				area,
+				playerVisualPosition,
+				terrainRenderMode,
+			);
 			setObjectFacing(playerMesh, playerVisual.facing);
 			playerVisualRef.current = settleVisualEntityState(playerVisual, now);
 
@@ -1706,7 +1744,13 @@ export function ThreeRuntimePanel({
 				}
 				const npcPosition = getVisualGridPosition(npcVisual, now).position;
 				const visual = npcRenderVisuals.get(npcId);
-				setObjectBasePosition(group, area, npcPosition, visual);
+				setObjectBasePosition(
+					group,
+					area,
+					npcPosition,
+					terrainRenderMode,
+					visual,
+				);
 				setObjectFacing(group, npcVisual.facing, visual);
 				npcVisualsRef.current.set(
 					npcId,
@@ -1727,7 +1771,7 @@ export function ThreeRuntimePanel({
 
 			const cameraUpdateStartedAt = performance.now();
 			const nextCameraTarget = getFollowCameraTarget(
-				getVisualPlayerCenter(area, playerVisualPosition),
+				getVisualPlayerCenter(area, playerVisualPosition, terrainRenderMode),
 				playerVisual.facing,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,

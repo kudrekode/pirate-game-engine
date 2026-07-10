@@ -9,6 +9,7 @@ export type TerrainHeightOperation =
 	| "flatten"
 	| "set"
 	| "smooth"
+	| "slope"
 	| "roughen";
 
 export type TerrainBrushBounds = {
@@ -62,10 +63,34 @@ export type TerrainLineOptions = {
 	bounds: TerrainBrushBounds;
 };
 
+export type TerrainBrushStrokeOptions = Omit<
+	TerrainBrushFootprintOptions,
+	"center"
+> & {
+	end: TerrainBrushCell;
+	falloff: TerrainBrushFalloff;
+	start: TerrainBrushCell;
+};
+
 export type TerrainRectangleOptions = {
 	start: TerrainBrushCell;
 	end: TerrainBrushCell;
 	bounds: TerrainBrushBounds;
+};
+
+export type TerrainSlopeOptions = {
+	bounds: TerrainBrushBounds;
+	end: TerrainBrushCell;
+	falloff?: TerrainBrushFalloff;
+	radius?: number;
+	start: TerrainBrushCell;
+};
+
+export type TerrainSlopeHeightUpdateOptions = TerrainSlopeOptions & {
+	area: Pick<GameArea, "height" | "terrainHeights" | "width">;
+	endHeight?: number;
+	startHeight?: number;
+	strength?: number;
 };
 
 export type TerrainFloodFillOptions = {
@@ -258,6 +283,120 @@ export function resolveTerrainLine({
 	return dedupeCells(cells);
 }
 
+export function resolveTerrainBrushStrokeSamples({
+	bounds,
+	end,
+	falloff,
+	shape,
+	size,
+	start,
+}: TerrainBrushStrokeOptions): TerrainBrushSample[] {
+	const samplesByCell = new Map<string, TerrainBrushSample>();
+	const centers = resolveTerrainLine({ bounds, end, start });
+
+	for (const center of centers) {
+		for (const sample of resolveTerrainBrushSamples({
+			bounds,
+			center,
+			falloff,
+			shape,
+			size,
+		})) {
+			const key = terrainBrushCellKey(sample);
+			const existing = samplesByCell.get(key);
+			if (!existing || sample.influence > existing.influence) {
+				samplesByCell.set(key, sample);
+			}
+		}
+	}
+
+	return Array.from(samplesByCell.values());
+}
+
+function getDistanceToLineSegment(
+	cell: TerrainBrushCell,
+	start: TerrainBrushCell,
+	end: TerrainBrushCell,
+): { distance: number; along: number } {
+	const dx = end.x - start.x;
+	const dy = end.y - start.y;
+	const lengthSquared = dx * dx + dy * dy;
+	if (lengthSquared <= 0) {
+		return {
+			along: 0,
+			distance: Math.hypot(cell.x - start.x, cell.y - start.y),
+		};
+	}
+
+	const along = clamp01(
+		((cell.x - start.x) * dx + (cell.y - start.y) * dy) / lengthSquared,
+	);
+	const projectedX = start.x + dx * along;
+	const projectedY = start.y + dy * along;
+	return {
+		along,
+		distance: Math.hypot(cell.x - projectedX, cell.y - projectedY),
+	};
+}
+
+function getDistanceFalloffInfluence({
+	distance,
+	falloff,
+	radius,
+}: {
+	distance: number;
+	falloff: TerrainBrushFalloff;
+	radius: number;
+}): number {
+	if (falloff === "hard" || radius <= 0) {
+		return 1;
+	}
+	const linear = clamp01(1 - distance / (radius + 1));
+	return falloff === "linear" ? linear : linear * linear * (3 - 2 * linear);
+}
+
+export function resolveTerrainSlopeCells({
+	bounds,
+	end,
+	radius = 0,
+	start,
+}: TerrainSlopeOptions): TerrainBrushCell[] {
+	if (bounds.width <= 0 || bounds.height <= 0) {
+		return [];
+	}
+
+	const startCell = { x: Math.round(start.x), y: Math.round(start.y) };
+	const endCell = { x: Math.round(end.x), y: Math.round(end.y) };
+	const slopeRadius = Math.max(0, Math.round(radius));
+	if (slopeRadius <= 0) {
+		return resolveTerrainLine({ bounds, end: endCell, start: startCell });
+	}
+
+	const minX = Math.max(0, Math.min(startCell.x, endCell.x) - slopeRadius);
+	const maxX = Math.min(
+		bounds.width - 1,
+		Math.max(startCell.x, endCell.x) + slopeRadius,
+	);
+	const minY = Math.max(0, Math.min(startCell.y, endCell.y) - slopeRadius);
+	const maxY = Math.min(
+		bounds.height - 1,
+		Math.max(startCell.y, endCell.y) + slopeRadius,
+	);
+	const cells: TerrainBrushCell[] = [];
+
+	for (let y = minY; y <= maxY; y += 1) {
+		for (let x = minX; x <= maxX; x += 1) {
+			const cell = { x, y };
+			const { distance } = getDistanceToLineSegment(cell, startCell, endCell);
+			if (distance <= slopeRadius + Number.EPSILON) {
+				cells.push(cell);
+			}
+		}
+	}
+
+	return dedupeCells(cells);
+}
+
 export function resolveTerrainRectangle({
 	bounds,
 	end,
@@ -431,16 +570,73 @@ export function resolveTerrainHeightUpdates({
 			const averageHeight = getNeighbourAverage(area, sample);
 			const blend = clamp01(clampedStrength * 0.35 * sample.influence);
 			nextHeight = currentHeight + (averageHeight - currentHeight) * blend;
-		} else {
+		} else if (operation === "roughen") {
 			const noise = Math.max(-1, Math.min(1, noiseSample(sample)));
 			nextHeight =
 				currentHeight +
 				sampleToHeightDelta(noise, sample.influence, clampedStrength);
+		} else {
+			continue;
 		}
 
 		const clampedHeight = clampTerrainHeight(nextHeight);
 		if (clampedHeight !== currentHeight) {
 			updates.push({ height: clampedHeight, x: sample.x, y: sample.y });
+		}
+	}
+
+	return updates;
+}
+
+export function resolveTerrainSlopeHeightUpdates({
+	area,
+	bounds,
+	end,
+	endHeight,
+	falloff = "hard",
+	radius = 0,
+	start,
+	startHeight,
+	strength = 1,
+}: TerrainSlopeHeightUpdateOptions): TerrainHeightUpdate[] {
+	const startCell = { x: Math.round(start.x), y: Math.round(start.y) };
+	const endCell = { x: Math.round(end.x), y: Math.round(end.y) };
+	const resolvedStartHeight =
+		typeof startHeight === "number"
+			? startHeight
+			: getTerrainHeight(area, startCell.x, startCell.y);
+	const resolvedEndHeight =
+		typeof endHeight === "number"
+			? endHeight
+			: getTerrainHeight(area, endCell.x, endCell.y);
+	const clampedStrength = Math.max(0, Math.min(4, Number(strength) || 0));
+	const slopeRadius = Math.max(0, Math.round(radius));
+	const updates: TerrainHeightUpdate[] = [];
+
+	for (const cell of resolveTerrainSlopeCells({
+		bounds,
+		end: endCell,
+		radius: slopeRadius,
+		start: startCell,
+	})) {
+		const currentHeight = getTerrainHeight(area, cell.x, cell.y);
+		const { along, distance } = getDistanceToLineSegment(
+			cell,
+			startCell,
+			endCell,
+		);
+		const influence = getDistanceFalloffInfluence({
+			distance,
+			falloff,
+			radius: slopeRadius,
+		});
+		const targetHeight =
+			resolvedStartHeight + (resolvedEndHeight - resolvedStartHeight) * along;
+		const blend = clamp01(clampedStrength * influence);
+		const nextHeight = currentHeight + (targetHeight - currentHeight) * blend;
+		const clampedHeight = clampTerrainHeight(nextHeight);
+		if (clampedHeight !== currentHeight) {
+			updates.push({ height: clampedHeight, x: cell.x, y: cell.y });
 		}
 	}
 

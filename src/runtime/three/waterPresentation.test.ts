@@ -67,7 +67,7 @@ describe("water presentation helpers", () => {
 		expect(isWaterTerrainId(undefined)).toBe(false);
 	});
 
-	it("creates shared coastline materials and marks presentation meshes as non-pickable", () => {
+	it("creates coastline and shallow-water gradient meshes as non-pickable presentation", () => {
 		const state = createWaterPresentationState();
 		const presentation = createCoastlinePresentation(
 			makeArea({
@@ -85,20 +85,66 @@ describe("water presentation helpers", () => {
 			"east",
 			"west",
 		]);
-		expect(presentation.meshes).toHaveLength(2);
+		expect(presentation.meshes).toHaveLength(4);
 		expect(presentation.meshes[0]?.material).toBe(state.coastlineMaterial);
-		expect(presentation.meshes[1]?.material).toBe(state.coastlineMaterial);
-		expect(presentation.meshes[0]?.geometry).toBe(
-			presentation.meshes[1]?.geometry,
-		);
+		expect(presentation.meshes[1]?.material).toBe(state.shallowWaterMaterial);
+		expect(presentation.meshes[2]?.material).toBe(state.coastlineMaterial);
+		expect(presentation.meshes[3]?.material).toBe(state.shallowWaterMaterial);
 		expect(presentation.meshes[0]?.userData).toMatchObject({
 			ignoreTerrainPicking: true,
 			presentationOnly: true,
 			waterPresentation: "coastline",
 		});
+		expect(presentation.meshes[1]?.userData).toMatchObject({
+			ignoreTerrainPicking: true,
+			presentationOnly: true,
+			waterPresentation: "shallowWater",
+		});
 
-		presentation.meshes[0]?.geometry.dispose();
+		presentation.meshes.forEach((mesh) => {
+			mesh.geometry.dispose();
+		});
 		state.coastlineMaterial.dispose();
+		state.shallowWaterMaterial.dispose();
+		state.waterMaterial.dispose();
+	});
+
+	it("slopes coastline geometry from sampled land height toward water height", () => {
+		const state = createWaterPresentationState();
+		const presentation = createCoastlinePresentation(
+			makeArea({
+				terrainHeights: [
+					{ height: 4, x: 0, y: 0 },
+					{ height: -1, x: 1, y: 0 },
+				],
+				terrainTiles: [
+					{ tileId: "grass", x: 0, y: 0 },
+					{ tileId: "water", x: 1, y: 0 },
+				],
+			}),
+			state,
+		);
+		const coastPositions =
+			presentation.meshes[0]?.geometry.getAttribute("position");
+		const shallowPositions =
+			presentation.meshes[1]?.geometry.getAttribute("position");
+		const coastY = Array.from({ length: coastPositions?.count ?? 0 }).map(
+			(_, index) => coastPositions?.getY(index) ?? 0,
+		);
+		const shallowY = Array.from({ length: shallowPositions?.count ?? 0 }).map(
+			(_, index) => shallowPositions?.getY(index) ?? 0,
+		);
+
+		expect(coastY.length).toBe(4);
+		expect(Math.max(...coastY)).toBeGreaterThan(Math.min(...coastY));
+		expect(Math.min(...coastY)).toBeCloseTo(-0.795);
+		expect(new Set(shallowY.map((value) => value.toFixed(3))).size).toBe(1);
+
+		presentation.meshes.forEach((mesh) => {
+			mesh.geometry.dispose();
+		});
+		state.coastlineMaterial.dispose();
+		state.shallowWaterMaterial.dispose();
 		state.waterMaterial.dispose();
 	});
 
@@ -107,6 +153,7 @@ describe("water presentation helpers", () => {
 		const geometry = new THREE.BoxGeometry(1, 0.18, 1);
 		const mesh = new THREE.Mesh(geometry, state.waterMaterial);
 		const initialOpacity = state.waterMaterial.opacity;
+		const initialShallowOpacity = state.shallowWaterMaterial.opacity;
 
 		markWaterPresentationMesh(mesh);
 		updateWaterPresentation(state, 1200);
@@ -114,6 +161,7 @@ describe("water presentation helpers", () => {
 		expect(mesh.material).toBe(state.waterMaterial);
 		expect(mesh.geometry).toBe(geometry);
 		expect(state.waterMaterial.opacity).not.toBe(initialOpacity);
+		expect(state.shallowWaterMaterial.opacity).not.toBe(initialShallowOpacity);
 		expect(state.waterMaterial.depthWrite).toBe(false);
 		expect(mesh.userData).toMatchObject({
 			ignoreTerrainPicking: true,
@@ -123,6 +171,7 @@ describe("water presentation helpers", () => {
 
 		geometry.dispose();
 		state.coastlineMaterial.dispose();
+		state.shallowWaterMaterial.dispose();
 		state.waterMaterial.dispose();
 	});
 

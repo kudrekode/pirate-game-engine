@@ -148,6 +148,20 @@ describe("terrainTilesToSmoothMeshes", () => {
 		return heights;
 	}
 
+	function getTriangleNormalY(vertices: number[], triangle: number[]): number {
+		const [aIndex, bIndex, cIndex] = triangle.map((index) => index * 3);
+		const ax = vertices[aIndex] ?? 0;
+		const ay = vertices[aIndex + 1] ?? 0;
+		const az = vertices[aIndex + 2] ?? 0;
+		const abx = (vertices[bIndex] ?? 0) - ax;
+		const aby = (vertices[bIndex + 1] ?? 0) - ay;
+		const abz = (vertices[bIndex + 2] ?? 0) - az;
+		const acx = (vertices[cIndex] ?? 0) - ax;
+		const acy = (vertices[cIndex + 1] ?? 0) - ay;
+		const acz = (vertices[cIndex + 2] ?? 0) - az;
+		return abz * acx - abx * acz;
+	}
+
 	it("generates a flat smooth mesh from flat terrain", () => {
 		const [mesh] = terrainTilesToSmoothMeshes(
 			makeArea({
@@ -166,16 +180,36 @@ describe("terrainTilesToSmoothMeshes", () => {
 			materialKey: "grass",
 			tileCount: 4,
 		});
-		expect(mesh.vertices).toHaveLength(60);
-		expect(mesh.normals).toHaveLength(60);
-		expect(mesh.indices).toHaveLength(48);
+		expect(mesh.vertices).toHaveLength(48);
+		expect(mesh.normals).toHaveLength(48);
+		expect(mesh.indices).toHaveLength(24);
 		expect(new Set(getVertexHeights(mesh.vertices))).toEqual(new Set([1]));
 		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
 		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
 		expect(everyNumberIsFinite(mesh.indices)).toBe(true);
 	});
 
-	it("averages varied heights at corners while preserving tile centers", () => {
+	it("orders smooth terrain triangles to face upward for front-side materials", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 1,
+				terrainTiles: [{ x: 0, y: 0, tileId: "grass" }],
+				width: 1,
+			}),
+		);
+
+		const triangleNormalYValues: number[] = [];
+		for (let index = 0; index < mesh.indices.length; index += 3) {
+			triangleNormalYValues.push(
+				getTriangleNormalY(mesh.vertices, mesh.indices.slice(index, index + 3)),
+			);
+		}
+
+		expect(triangleNormalYValues).toHaveLength(2);
+		expect(triangleNormalYValues.every((normalY) => normalY > 0)).toBe(true);
+	});
+
+	it("derives varied smooth mesh corner heights from neighboring cells", () => {
 		const [mesh] = terrainTilesToSmoothMeshes(
 			makeArea({
 				height: 3,
@@ -192,9 +226,10 @@ describe("terrainTilesToSmoothMeshes", () => {
 		);
 		const heights = getVertexHeights(mesh.vertices);
 
-		expect(Math.max(...heights)).toBe(5);
+		expect(Math.max(...heights)).toBe(2);
 		expect(heights).toContain(2);
 		expect(heights).toContain(1);
+		expect(heights).not.toContain(5);
 		expect(
 			mesh.normals.some((value, index) => index % 3 !== 1 && value !== 0),
 		).toBe(true);
@@ -244,6 +279,31 @@ describe("terrainTilesToSmoothMeshes", () => {
 		expect(
 			meshes.find((mesh) => mesh.materialKey === "water")?.vertices,
 		).toContain(0.18);
+	});
+
+	it("keeps smooth water tiles flat while neighboring land can slope toward water", () => {
+		const meshes = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 1,
+				terrainHeights: [{ height: 4, x: 0, y: 0 }],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "water" },
+				],
+				width: 2,
+			}),
+		);
+		const grassHeights = getVertexHeights(
+			meshes.find((mesh) => mesh.materialKey === "grass")?.vertices ?? [],
+		);
+		const waterHeights = getVertexHeights(
+			meshes.find((mesh) => mesh.materialKey === "water")?.vertices ?? [],
+		);
+
+		expect(Math.max(...grassHeights)).toBeGreaterThan(
+			Math.min(...grassHeights),
+		);
+		expect(new Set(waterHeights)).toEqual(new Set([0.18]));
 	});
 
 	it("returns no smooth meshes for empty or missing terrain", () => {

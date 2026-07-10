@@ -1,4 +1,7 @@
-import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import {
+	getTerrainPresentationSurfaceY,
+	type TerrainSurfaceMode,
+} from "../../data/terrainSurface";
 import { resolveNPCInstance } from "../../runtime/npcResolver";
 import type { PlaceholderVisualType } from "../../runtime/three/placeholderMeshes";
 import {
@@ -77,11 +80,15 @@ function getFootprintSurfaceY(
 	y: number,
 	widthTiles = 1,
 	heightTiles = 1,
+	mode: TerrainSurfaceMode = "blocky",
 ): number {
-	let surfaceY = getTerrainSurfaceY(area, x, y);
+	let surfaceY = getTerrainPresentationSurfaceY(area, { x, y }, mode);
 	for (let tileY = y; tileY < y + heightTiles; tileY += 1) {
 		for (let tileX = x; tileX < x + widthTiles; tileX += 1) {
-			surfaceY = Math.max(surfaceY, getTerrainSurfaceY(area, tileX, tileY));
+			surfaceY = Math.max(
+				surfaceY,
+				getTerrainPresentationSurfaceY(area, { x: tileX, y: tileY }, mode),
+			);
 		}
 	}
 	return surfaceY;
@@ -92,6 +99,7 @@ export function areaEntitiesToMarkers(
 	objectDefinitions: ObjectDefinition[],
 	npcDefinitionsOrFilters: NPCDefinition[] | boolean | MapOverlayFilters,
 	filtersMaybe?: boolean | MapOverlayFilters,
+	surfaceMode: TerrainSurfaceMode = "blocky",
 ): EntityMarker[] {
 	if (!area) {
 		return [];
@@ -137,6 +145,7 @@ export function areaEntitiesToMarkers(
 				structure.y,
 				structure.widthTiles,
 				structure.heightTiles,
+				surfaceMode,
 			);
 			const visual = resolveThreeVisual({
 				kind: "structure",
@@ -184,6 +193,7 @@ export function areaEntitiesToMarkers(
 				object.y,
 				widthTiles,
 				heightTiles,
+				surfaceMode,
 			);
 			const markerHeight = isVehicle ? 0.35 : 0.8;
 			const visual = resolveThreeVisual({
@@ -242,7 +252,13 @@ export function areaEntitiesToMarkers(
 				opacity: 1,
 				shape: "cylinder",
 				threeX,
-				threeY: getTerrainSurfaceY(area, npc.x, npc.y) + markerHeight / 2,
+				threeY:
+					getTerrainPresentationSurfaceY(
+						area,
+						{ x: npc.x, y: npc.y },
+						surfaceMode,
+					) +
+					markerHeight / 2,
 				threeZ,
 				visual,
 				visualType: visual.placeholderType,
@@ -267,7 +283,12 @@ export function areaEntitiesToMarkers(
 				opacity: 1,
 				shape: "box",
 				threeX,
-				threeY: getTerrainSurfaceY(area, pickup.x, pickup.y) + 0.75,
+				threeY:
+					getTerrainPresentationSurfaceY(
+						area,
+						{ x: pickup.x, y: pickup.y },
+						surfaceMode,
+					) + 0.75,
 				threeZ,
 				visual,
 				visualType: visual.placeholderType,
@@ -305,7 +326,12 @@ export function areaEntitiesToMarkers(
 				opacity: 0.72,
 				shape: "box",
 				threeX,
-				threeY: getTerrainSurfaceY(area, eventBlock.x, eventBlock.y) + 0.06,
+				threeY:
+					getTerrainPresentationSurfaceY(
+						area,
+						{ x: eventBlock.x, y: eventBlock.y },
+						surfaceMode,
+					) + 0.06,
 				threeZ,
 				visual,
 				visualType: visual.placeholderType,

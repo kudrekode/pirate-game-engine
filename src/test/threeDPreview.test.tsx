@@ -1149,6 +1149,51 @@ describe("ThreeDPreview", () => {
 		]);
 	});
 
+	it("starts a 3D slope gesture even when the terrain gesture is fill", async () => {
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const setTerrainHeightsSpy = spyOnSetTerrainHeights();
+
+		render(
+			<ThreeDPreview
+				embedded
+				heightToolValue={3}
+				terrainGesture="fill"
+				terrainHeightTool="slope"
+			/>,
+		);
+
+		fireEvent.pointerDown(getPreviewCanvas(), {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+			pointerId: 28,
+		});
+		fireEvent.pointerMove(getPreviewCanvas(), {
+			buttons: 1,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 28,
+		});
+		fireEvent.pointerUp(getPreviewCanvas(), {
+			button: 0,
+			clientX: 320,
+			clientY: 120,
+			pointerId: 28,
+		});
+
+		await waitFor(() => {
+			expect(readActiveTerrainHeight(2, 1)).toBe(3);
+		});
+		expect(readActiveTerrainHeight(1, 1)).toBe(0);
+		expect(setTerrainHeightsSpy).toHaveBeenCalledTimes(1);
+		expect(setTerrainHeightsSpy.mock.calls[0][0]).toContainEqual({
+			height: 3,
+			x: 2,
+			y: 1,
+		});
+	});
+
 	it("cancels a 3D shape gesture without applying terrain", () => {
 		mockPreviewCanvasRect();
 		useProjectStore.getState().setProject(makeThreeTileProject());

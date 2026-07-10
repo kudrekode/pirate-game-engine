@@ -37,6 +37,8 @@ describe("three performance diagnostics", () => {
 			meshCount: 11,
 			mode: "smooth",
 			tileCount: 10,
+			triangleCount: 22,
+			vertexCount: 44,
 			waterMeshCount: 2,
 		});
 		diagnostics.setSceneEntityCounts({
@@ -122,6 +124,8 @@ describe("three performance diagnostics", () => {
 			mode: "smooth",
 			rebuildCount: 1,
 			tileCount: 10,
+			triangleCount: 22,
+			vertexCount: 44,
 			waterMeshCount: 2,
 		});
 		expect(snapshot.pointer).toMatchObject({

@@ -185,6 +185,10 @@ export function ThreePerformanceOverlay({
 							{snapshot.terrain.mode}, {snapshot.terrain.tileCount} tiles,{" "}
 							{snapshot.terrain.meshCount} meshes
 						</strong>
+						<span>Terrain V/T</span>
+						<strong>
+							{snapshot.terrain.vertexCount}/{snapshot.terrain.triangleCount}
+						</strong>
 						<span>Water/coast</span>
 						<strong>
 							{snapshot.terrain.waterMeshCount}/

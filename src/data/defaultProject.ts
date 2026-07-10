@@ -1,4 +1,9 @@
-import type { GameArea, GameProject, MapTile } from "../types/game";
+import type {
+	GameArea,
+	GameProject,
+	MapTile,
+	TerrainHeightTile,
+} from "../types/game";
 import { createDefaultPixelAssets, defaultTileStyles } from "./mapVisuals";
 import { defaultCameraConfig } from "./projectDefaults";
 
@@ -28,6 +33,45 @@ function makeOutdoorTiles(width: number, height: number): MapTile[] {
 	return tiles;
 }
 
+function makeOutdoorTerrainHeights(): TerrainHeightTile[] {
+	const heights = new Map<string, TerrainHeightTile>();
+	const setHeight = (x: number, y: number, height: number) => {
+		if (height === 0) {
+			return;
+		}
+		heights.set(`${x}:${y}`, { height, x, y });
+	};
+
+	for (let y = 2; y <= 6; y += 1) {
+		for (let x = 5; x <= 12; x += 1) {
+			setHeight(x, y, 1);
+		}
+	}
+	for (let y = 3; y <= 5; y += 1) {
+		for (let x = 7; x <= 10; x += 1) {
+			setHeight(x, y, 2);
+		}
+	}
+	setHeight(8, 4, 3);
+	setHeight(9, 4, 3);
+
+	for (let x = 3; x <= 16; x += 1) {
+		setHeight(x, 6, -1);
+		setHeight(x, 7, -1);
+		setHeight(x, 8, -1);
+	}
+
+	for (let y = 9; y <= 13; y += 1) {
+		for (let x = 13; x <= 17; x += 1) {
+			setHeight(x, y, 1);
+		}
+	}
+	setHeight(15, 11, 2);
+	setHeight(16, 11, 2);
+
+	return Array.from(heights.values()).sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
 function makeIndoorTiles(width: number, height: number): MapTile[] {
 	const tiles: MapTile[] = [];
 
@@ -49,6 +93,7 @@ const mainArea: GameArea = {
 	height: 15,
 	tileSize: 32,
 	terrainTiles: makeOutdoorTiles(20, 15),
+	terrainHeights: makeOutdoorTerrainHeights(),
 	overlayTiles: [
 		{ x: 2, y: 3, overlayId: "dirt_path" },
 		{ x: 3, y: 3, overlayId: "dirt_path" },

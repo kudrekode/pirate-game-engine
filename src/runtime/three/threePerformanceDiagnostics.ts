@@ -166,6 +166,8 @@ export type ThreePerformanceSnapshot = {
 		mode: string;
 		rebuildCount: number;
 		tileCount: number;
+		triangleCount: number;
+		vertexCount: number;
 		waterMeshCount: number;
 	};
 };
@@ -199,6 +201,8 @@ export type ThreePerformanceDiagnostics = {
 		meshCount: number;
 		mode: string;
 		tileCount: number;
+		triangleCount?: number;
+		vertexCount?: number;
 		waterMeshCount?: number;
 	}) => void;
 	recordWaterUpdate: (durationMs: number) => void;
@@ -435,6 +439,8 @@ export function createThreePerformanceDiagnostics(
 	let terrainMeshCount = 0;
 	let terrainWaterMeshCount = 0;
 	let terrainCoastlineEdgeCount = 0;
+	let terrainTriangleCount = 0;
+	let terrainVertexCount = 0;
 	let lastTerrainDurationMs = 0;
 	let loadStartedCount = 0;
 	let loadSuccessCount = 0;
@@ -693,6 +699,8 @@ export function createThreePerformanceDiagnostics(
 					mode: terrainMode,
 					rebuildCount: terrainRebuildCount,
 					tileCount: terrainTileCount,
+					triangleCount: terrainTriangleCount,
+					vertexCount: terrainVertexCount,
 					waterMeshCount: terrainWaterMeshCount,
 				},
 			};
@@ -813,6 +821,8 @@ export function createThreePerformanceDiagnostics(
 			meshCount,
 			mode,
 			tileCount,
+			triangleCount = 0,
+			vertexCount = 0,
 			waterMeshCount = 0,
 		}) => {
 			terrainRebuildCount += 1;
@@ -821,6 +831,8 @@ export function createThreePerformanceDiagnostics(
 			terrainMeshCount = meshCount;
 			terrainWaterMeshCount = waterMeshCount;
 			terrainCoastlineEdgeCount = coastlineEdgeCount;
+			terrainTriangleCount = triangleCount;
+			terrainVertexCount = vertexCount;
 			lastTerrainDurationMs = durationMs;
 			recordPhase("terrain rebuild", mode, durationMs);
 		},
@@ -917,7 +929,7 @@ export function formatThreePerformanceSnapshot(
 		reasonCounts ? `scene reasons: ${reasonCounts}` : "",
 		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances} (${snapshot.asset.activeImportedAssetIds.join(", ") || "none"}), active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
 		`asset statuses: ${assetStatuses}, loading fallbacks ${snapshot.asset.loadingFallbackCount}, error fallbacks ${snapshot.asset.errorFallbackCount}, missing fallbacks ${snapshot.asset.missingFallbackCount}, stuck loading ${snapshot.asset.stuckLoadingCount}`,
-		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, water meshes ${snapshot.terrain.waterMeshCount}, coast edges ${snapshot.terrain.coastlineEdgeCount}, last ms ${snapshot.terrain.lastDurationMs}`,
+		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, vertices ${snapshot.terrain.vertexCount}, triangles ${snapshot.terrain.triangleCount}, water meshes ${snapshot.terrain.waterMeshCount}, coast edges ${snapshot.terrain.coastlineEdgeCount}, last ms ${snapshot.terrain.lastDurationMs}`,
 		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, water avg/worst ${snapshot.phases.waterUpdate.averageMs}/${snapshot.phases.waterUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
 		`raf loops: starts ${snapshot.raf.loopStartCount}, cancels ${snapshot.raf.loopCancelCount}, restarts ${snapshot.raf.loopRestartCount}, active ${snapshot.raf.activeLoopCount}, last start "${snapshot.raf.lastStartReason || "none"}", last cancel "${snapshot.raf.lastCancelReason || "none"}"`,
 		`input/runtime: pointer moves ${snapshot.pointer.pointerMoveCount}, pointer/s ${snapshot.pointer.pointerMovesPerSecond}, picks ${snapshot.pointer.pickCount}, last pick ms ${snapshot.pointer.lastPickMs}, ticks ${snapshot.runtime.tickCount}, last/avg/worst tick ms ${snapshot.runtime.lastTickMs}/${snapshot.runtime.averageTickMs}/${snapshot.runtime.worstTickMs}`,

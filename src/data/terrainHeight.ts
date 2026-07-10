@@ -2,6 +2,8 @@ import type { GameArea, TerrainHeightTile } from "../types/game";
 
 export const MIN_TERRAIN_HEIGHT = -2;
 export const MAX_TERRAIN_HEIGHT = 8;
+export const TERRAIN_LAND_SURFACE_OFFSET = 1;
+export const TERRAIN_WATER_SURFACE_OFFSET = 0.18;
 
 export type TerrainHeightIssue = {
 	id: string;
@@ -19,6 +21,14 @@ export function clampTerrainHeight(height: number): number {
 		MAX_TERRAIN_HEIGHT,
 		Math.max(MIN_TERRAIN_HEIGHT, Math.round(height)),
 	);
+}
+
+export function isTerrainWaterTileId(tileId: string | undefined): boolean {
+	if (!tileId) {
+		return false;
+	}
+	const value = tileId.toLowerCase();
+	return value === "water" || value.includes("water") || value.includes("sea");
 }
 
 export function getTerrainHeight(
@@ -45,7 +55,12 @@ export function getTerrainSurfaceY(
 		(candidate) => candidate.x === x && candidate.y === y,
 	);
 	const height = getTerrainHeight(area, x, y);
-	return height + (tile?.tileId === "water" ? 0.18 : 1);
+	return (
+		height +
+		(isTerrainWaterTileId(tile?.tileId)
+			? TERRAIN_WATER_SURFACE_OFFSET
+			: TERRAIN_LAND_SURFACE_OFFSET)
+	);
 }
 
 export function setTerrainHeight(

@@ -60,6 +60,8 @@ import {
 	resolveTerrainLine,
 	resolveTerrainPaintUpdates,
 	resolveTerrainRectangle,
+	resolveTerrainSlopeCells,
+	resolveTerrainSlopeHeightUpdates,
 	type TerrainBrushCell,
 	type TerrainBrushFalloff,
 	type TerrainBrushSample,
@@ -78,6 +80,7 @@ type MapEditorTool =
 	| "flatten-height"
 	| "set-height"
 	| "smooth-height"
+	| "slope-height"
 	| "roughen-height";
 type DraggableEntityType =
 	| "npc"
@@ -85,7 +88,7 @@ type DraggableEntityType =
 	| "structure"
 	| "pickup"
 	| "eventBlock";
-type BrushSize = 1 | 2 | 3 | 5;
+type BrushSize = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type PaintTarget =
 	| "terrain"
 	| "overlay"
@@ -108,10 +111,11 @@ type TerrainBrushMode =
 	| "flatten-height"
 	| "set-height"
 	| "smooth-height"
+	| "slope-height"
 	| "roughen-height";
 
 type TerrainShapeGestureState = {
-	gesture: Extract<TerrainGesture, "line" | "rectangle">;
+	gesture: Extract<TerrainGesture, "line" | "rectangle"> | "slope";
 	start: TerrainBrushCell;
 	before: GameProject;
 };
@@ -600,25 +604,27 @@ export function MapEditor() {
 							? "Tool: Lower Height"
 							: activeTool === "flatten-height"
 								? "Tool: Flatten Height"
-								: activeTool === "smooth-height"
-									? "Tool: Smooth Height"
-									: activeTool === "roughen-height"
-										? "Tool: Roughen Height"
-										: activeTool === "set-height"
-											? `Tool: Set Height = ${heightToolValue}`
-											: paintTarget === "structure"
-												? `Tool: Place Structure - ${selectedStructure.label}`
-												: paintTarget === "object"
-													? `Tool: Place Object - ${selectedObjectDefinition?.name ?? "Object"}`
-													: paintTarget === "npc"
-														? `Tool: Place NPC - ${selectedNpcDefinitionForPalette?.name ?? "NPC"}`
-														: paintTarget === "pickup"
-															? `Tool: Place Pickup - ${project.items[0]?.name ?? "Item"} x1`
-															: paintTarget === "eventBlock"
-																? "Tool: Place Event Block"
-																: paintTarget === "overlay"
-																	? `Tool: Paint Overlay - ${selectedOverlayId}`
-																	: `Tool: Paint Terrain - ${selectedTerrainId}`;
+								: activeTool === "slope-height"
+									? `Tool: Slope Height -> ${heightToolValue}`
+									: activeTool === "smooth-height"
+										? "Tool: Smooth Height"
+										: activeTool === "roughen-height"
+											? "Tool: Roughen Height"
+											: activeTool === "set-height"
+												? `Tool: Set Height = ${heightToolValue}`
+												: paintTarget === "structure"
+													? `Tool: Place Structure - ${selectedStructure.label}`
+													: paintTarget === "object"
+														? `Tool: Place Object - ${selectedObjectDefinition?.name ?? "Object"}`
+														: paintTarget === "npc"
+															? `Tool: Place NPC - ${selectedNpcDefinitionForPalette?.name ?? "NPC"}`
+															: paintTarget === "pickup"
+																? `Tool: Place Pickup - ${project.items[0]?.name ?? "Item"} x1`
+																: paintTarget === "eventBlock"
+																	? "Tool: Place Event Block"
+																	: paintTarget === "overlay"
+																		? `Tool: Paint Overlay - ${selectedOverlayId}`
+																		: `Tool: Paint Terrain - ${selectedTerrainId}`;
 	const cellSize = Math.round(activeArea.tileSize * zoom);
 	const renderWidth = Math.min(
 		MAX_MAP_SIZE,
@@ -713,6 +719,7 @@ export function MapEditor() {
 			operation === "raise" ||
 			operation === "lower" ||
 			operation === "smooth" ||
+			operation === "slope" ||
 			operation === "roughen"
 				? brushFalloff
 				: "hard";
@@ -732,6 +739,7 @@ export function MapEditor() {
 			tool === "flatten-height" ||
 			tool === "set-height" ||
 			tool === "smooth-height" ||
+			tool === "slope-height" ||
 			tool === "roughen-height"
 		);
 	}
@@ -751,6 +759,9 @@ export function MapEditor() {
 		}
 		if (activeTool === "smooth-height") {
 			return "smooth";
+		}
+		if (activeTool === "slope-height") {
+			return "slope";
 		}
 		if (activeTool === "roughen-height") {
 			return "roughen";
@@ -892,16 +903,54 @@ export function MapEditor() {
 	}
 
 	function getTerrainShapeCells(
-		gesture: Extract<TerrainGesture, "line" | "rectangle">,
+		gesture: Extract<TerrainGesture, "line" | "rectangle"> | "slope",
 		start: TerrainBrushCell,
 		end: TerrainBrushCell,
 	) {
 		const bounds = getTerrainHeightOperation()
 			? { height: activeArea.height, width: activeArea.width }
 			: { height: renderHeight, width: renderWidth };
+		if (gesture === "slope") {
+			return resolveTerrainSlopeCells({
+				bounds,
+				end,
+				radius: brushSize,
+				start,
+			});
+		}
 		return gesture === "line"
 			? resolveTerrainLine({ bounds, end, start })
 			: resolveTerrainRectangle({ bounds, end, start });
+	}
+
+	function applyTerrainSlopeGesture(
+		start: TerrainBrushCell,
+		end: TerrainBrushCell,
+	) {
+		if (paintTarget !== "terrain") {
+			return false;
+		}
+		const areaSnapshot = getLatestActiveArea();
+		const updates = resolveTerrainSlopeHeightUpdates({
+			area: areaSnapshot,
+			bounds: { height: areaSnapshot.height, width: areaSnapshot.width },
+			end,
+			endHeight: Number(heightToolValue),
+			falloff: brushFalloff,
+			radius: brushSize,
+			start,
+			strength: brushStrength,
+		});
+		if (updates.length > 0) {
+			setTerrainHeights(updates);
+		}
+		setSelection({
+			areaId: activeArea.id,
+			type: "terrain",
+			x: end.x,
+			y: end.y,
+		});
+		return true;
 	}
 
 	function updateTerrainShapePreview(end: TerrainBrushCell) {
@@ -920,7 +969,11 @@ export function MapEditor() {
 			return;
 		}
 		const cells = getTerrainShapeCells(gesture.gesture, gesture.start, end);
-		applyTerrainOperationToCells(cells, end);
+		if (gesture.gesture === "slope") {
+			applyTerrainSlopeGesture(gesture.start, end);
+		} else {
+			applyTerrainOperationToCells(cells, end);
+		}
 		recordMapEdit(gesture.before);
 		terrainShapeGestureRef.current = null;
 		setTerrainPreviewCells([]);
@@ -1260,18 +1313,30 @@ export function MapEditor() {
 			return;
 		}
 
-		if (canUseTerrainGesture() && terrainGesture === "fill") {
+		if (
+			canUseTerrainGesture() &&
+			terrainGesture === "fill" &&
+			activeTool === "paint"
+		) {
 			applyTerrainFill({ x, y });
 			return;
 		}
 
 		if (
 			canUseTerrainGesture() &&
-			(terrainGesture === "line" || terrainGesture === "rectangle")
+			(activeTool === "slope-height" ||
+				terrainGesture === "line" ||
+				terrainGesture === "rectangle")
 		) {
+			const shapeGesture: TerrainShapeGestureState["gesture"] =
+				activeTool === "slope-height"
+					? "slope"
+					: terrainGesture === "rectangle"
+						? "rectangle"
+						: "line";
 			terrainShapeGestureRef.current = {
 				before: cloneCurrentProject(),
-				gesture: terrainGesture,
+				gesture: shapeGesture,
 				start: { x, y },
 			};
 			updateTerrainShapePreview({ x, y });
@@ -2325,6 +2390,9 @@ export function MapEditor() {
 		}
 		if (activeTool === "smooth-height") {
 			return "smooth-height";
+		}
+		if (activeTool === "slope-height") {
+			return "slope-height";
 		}
 		if (activeTool === "roughen-height") {
 			return "roughen-height";
@@ -4105,6 +4173,18 @@ export function MapEditor() {
 							Flatten
 						</button>
 						<button
+							className={activeTool === "slope-height" ? "selected" : ""}
+							onClick={() => {
+								setActiveTool("slope-height");
+								setPaintTarget("terrain");
+								setIsTerrainPaintArmed(false);
+								setMapPaletteSelection({ type: "none" });
+							}}
+							type="button"
+						>
+							Slope
+						</button>
+						<button
 							className={activeTool === "set-height" ? "selected" : ""}
 							onClick={() => {
 								setActiveTool("set-height");
@@ -4141,9 +4221,11 @@ export function MapEditor() {
 							Roughen
 						</button>
 					</div>
-					{activeTool === "set-height" ? (
+					{activeTool === "set-height" || activeTool === "slope-height" ? (
 						<label>
-							Height value
+							{activeTool === "slope-height"
+								? "Slope end height"
+								: "Height value"}
 							<input
 								max="8"
 								min="-2"
@@ -4211,6 +4293,7 @@ export function MapEditor() {
 								<option value="raise-height">Raise height</option>
 								<option value="lower-height">Lower height</option>
 								<option value="flatten-height">Flatten height</option>
+								<option value="slope-height">Slope height</option>
 								<option value="set-height">Set height</option>
 								<option value="smooth-height">Smooth height</option>
 								<option value="roughen-height">Roughen height</option>
@@ -4220,14 +4303,14 @@ export function MapEditor() {
 					{terrainGesture === "brush" ? (
 						<>
 							<div className="segmented-control">
-								{([1, 2, 3, 5] as BrushSize[]).map((size) => (
+								{([1, 2, 3, 4, 5, 6, 7, 8] as BrushSize[]).map((size) => (
 									<button
 										className={brushSize === size ? "selected" : ""}
 										key={size}
 										onClick={() => setBrushSize(size)}
 										type="button"
 									>
-										{size}x{size}
+										{size}
 									</button>
 								))}
 							</div>
@@ -4265,6 +4348,7 @@ export function MapEditor() {
 					(activeTool === "raise-height" ||
 						activeTool === "lower-height" ||
 						activeTool === "smooth-height" ||
+						activeTool === "slope-height" ||
 						activeTool === "roughen-height") ? (
 						<label>
 							Falloff
@@ -4821,13 +4905,15 @@ export function MapEditor() {
 									? "lower"
 									: activeTool === "flatten-height"
 										? "flatten"
-										: activeTool === "set-height"
-											? "set"
-											: activeTool === "smooth-height"
-												? "smooth"
-												: activeTool === "roughen-height"
-													? "roughen"
-													: undefined
+										: activeTool === "slope-height"
+											? "slope"
+											: activeTool === "set-height"
+												? "set"
+												: activeTool === "smooth-height"
+													? "smooth"
+													: activeTool === "roughen-height"
+														? "roughen"
+														: undefined
 						}
 					/>
 				)}

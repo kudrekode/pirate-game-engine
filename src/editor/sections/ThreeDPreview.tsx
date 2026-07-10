@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { getTerrainSurfaceY } from "../../data/terrainHeight";
+import { getTerrainPresentationSurfaceY } from "../../data/terrainSurface";
 import {
 	clampOrbitCameraState,
 	createOrbitCameraState,
@@ -82,12 +82,14 @@ import {
 } from "./terrainBlocks";
 import {
 	resolveTerrainBrushFootprint,
-	resolveTerrainBrushSamples,
+	resolveTerrainBrushStrokeSamples,
 	resolveTerrainFloodFill,
 	resolveTerrainHeightUpdates,
 	resolveTerrainLine,
 	resolveTerrainPaintUpdates,
 	resolveTerrainRectangle,
+	resolveTerrainSlopeCells,
+	resolveTerrainSlopeHeightUpdates,
 	type TerrainBrushCell,
 	type TerrainBrushFalloff,
 	type TerrainBrushSample,
@@ -113,8 +115,9 @@ export type TerrainHeightTool =
 	| "flatten"
 	| "set"
 	| "smooth"
+	| "slope"
 	| "roughen";
-type TerrainBrushSize = 1 | 2 | 3 | 5;
+type TerrainBrushSize = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type TerrainGesture = "brush" | "line" | "rectangle" | "fill";
 type ThreeDPreviewBuildInputs = {
 	activeAreaId: string;
@@ -183,11 +186,12 @@ function resolveThreeDPreviewBuildReason(
 type TerrainBrushStroke = {
 	pointerId: number;
 	appliedCells: Set<string>;
+	lastPosition?: PreviewGridPosition;
 	tool: "paint" | "height";
 };
 
 type TerrainShapeGesture = {
-	gesture: Extract<TerrainGesture, "line" | "rectangle">;
+	gesture: Extract<TerrainGesture, "line" | "rectangle"> | "slope";
 	pointerId: number;
 	start: PreviewGridPosition;
 };
@@ -319,8 +323,15 @@ export function ThreeDPreview({
 				project.objects,
 				project.npcs,
 				overlayFilters,
+				terrainRenderMode,
 			),
-		[activeArea, overlayFilters, project.npcs, project.objects],
+		[
+			activeArea,
+			overlayFilters,
+			project.npcs,
+			project.objects,
+			terrainRenderMode,
+		],
 	);
 	const selectionDetails = useMemo(
 		() => getPreviewSelectionDetails(project, editorSelection),
@@ -595,6 +606,18 @@ export function ThreeDPreview({
 		coastlinePresentation.meshes.forEach((mesh) => {
 			scene.add(mesh);
 		});
+		const smoothTerrainVertexCount = smoothTerrainMeshes.reduce(
+			(total, mesh) => total + mesh.vertices.length / 3,
+			0,
+		);
+		const smoothTerrainTriangleCount = smoothTerrainMeshes.reduce(
+			(total, mesh) => total + mesh.indices.length / 3,
+			0,
+		);
+		const terrainPickVertexCount = terrainPickMeshes.length * 24;
+		const terrainPickTriangleCount = terrainPickMeshes.length * 12;
+		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
+		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
 		diagnostics.recordTerrainRebuild({
 			coastlineEdgeCount: coastlinePresentation.edges.length,
 			durationMs: performance.now() - terrainRebuildStartedAt,
@@ -604,6 +627,14 @@ export function ThreeDPreview({
 				coastlinePresentation.meshes.length,
 			mode: terrainRenderMode,
 			tileCount: terrainBlocks.length,
+			triangleCount:
+				smoothTerrainTriangleCount +
+				terrainPickTriangleCount +
+				coastlineTriangleCount,
+			vertexCount:
+				smoothTerrainVertexCount +
+				terrainPickVertexCount +
+				coastlineVertexCount,
 			waterMeshCount: waterSurfaceMeshCount,
 		});
 		let assetStateChangeQueued = false;
@@ -656,10 +687,13 @@ export function ThreeDPreview({
 			applyShadowRole(walkPreviewMesh, { cast: true });
 			walkPreviewMesh.position.set(
 				walkPreviewPoint.x,
-				getTerrainSurfaceY(
+				getTerrainPresentationSurfaceY(
 					activeArea,
-					walkPreviewPosition.x,
-					walkPreviewPosition.y,
+					{
+						x: walkPreviewPosition.x,
+						y: walkPreviewPosition.y,
+					},
+					terrainRenderMode,
 				) + 0.625,
 				walkPreviewPoint.z,
 			);
@@ -682,6 +716,10 @@ export function ThreeDPreview({
 			...terrainPickMeshes,
 			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
 		];
+		const terrainSurfacePickMeshes =
+			terrainRenderMode === "smooth" && smoothTerrainVisualMeshes.length > 0
+				? smoothTerrainVisualMeshes
+				: terrainPickMeshes;
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -847,7 +885,10 @@ export function ThreeDPreview({
 			if (!activeArea || !updateRaycasterFromPointer(event)) {
 				return undefined;
 			}
-			const hit = raycaster.intersectObjects(terrainPickMeshes, false)[0];
+			let hit = raycaster.intersectObjects(terrainSurfacePickMeshes, false)[0];
+			if (!hit && terrainSurfacePickMeshes !== terrainPickMeshes) {
+				hit = raycaster.intersectObjects(terrainPickMeshes, false)[0];
+			}
 			diagnostics.recordPick(performance.now() - pickStartedAt);
 			if (!hit) {
 				return undefined;
@@ -916,6 +957,7 @@ export function ThreeDPreview({
 			terrainHeightTool === "raise" ||
 			terrainHeightTool === "lower" ||
 			terrainHeightTool === "smooth" ||
+			terrainHeightTool === "slope" ||
 			terrainHeightTool === "roughen"
 				? brushFalloff
 				: "hard";
@@ -932,21 +974,26 @@ export function ThreeDPreview({
 			});
 		};
 
-		const getBrushSamples = (position: PreviewGridPosition) => {
+		const getBrushStrokeSamples = (
+			start: PreviewGridPosition,
+			end: PreviewGridPosition,
+			falloff = getHeightBrushFalloff(),
+		) => {
 			if (!activeArea) {
 				return [];
 			}
-			return resolveTerrainBrushSamples({
+			return resolveTerrainBrushStrokeSamples({
 				bounds: { height: activeArea.height, width: activeArea.width },
-				center: position,
-				falloff: getHeightBrushFalloff(),
+				end,
+				falloff,
 				shape: brushShape,
 				size: brushSize,
+				start,
 			});
 		};
 
 		const getShapePositions = (
-			gesture: Extract<TerrainGesture, "line" | "rectangle">,
+			gesture: Extract<TerrainGesture, "line" | "rectangle"> | "slope",
 			start: PreviewGridPosition,
 			end: PreviewGridPosition,
 		) => {
@@ -954,6 +1001,14 @@ export function ThreeDPreview({
 				return [];
 			}
 			const bounds = { height: activeArea.height, width: activeArea.width };
+			if (gesture === "slope") {
+				return resolveTerrainSlopeCells({
+					bounds,
+					end,
+					radius: brushSize,
+					start,
+				});
+			}
 			return gesture === "line"
 				? resolveTerrainLine({ bounds, end, start })
 				: resolveTerrainRectangle({ bounds, end, start });
@@ -1028,12 +1083,45 @@ export function ThreeDPreview({
 			return true;
 		};
 
+		const applySlopeGesture = (
+			start: PreviewGridPosition,
+			end: PreviewGridPosition,
+		) => {
+			if (!activeArea) {
+				return false;
+			}
+			const updates = resolveTerrainSlopeHeightUpdates({
+				area: activeArea,
+				bounds: { height: activeArea.height, width: activeArea.width },
+				end,
+				endHeight: heightToolValue,
+				falloff: brushFalloff,
+				radius: brushSize,
+				start,
+				strength: brushStrength,
+			});
+			if (updates.length > 0) {
+				setTerrainHeights(updates);
+			}
+			setEditorSelection({
+				areaId: activeArea.id,
+				type: "terrain",
+				x: end.x,
+				y: end.y,
+			});
+			return true;
+		};
+
 		const applyHeightToolAtPosition = (position: PreviewGridPosition) => {
 			const terrainBrushStroke = terrainBrushStrokeRef.current;
 			if (!activeArea || !terrainHeightTool || !terrainBrushStroke) {
 				return false;
 			}
-			const samples = getBrushSamples(position).filter((cell) => {
+			if (terrainHeightTool === "slope") {
+				return false;
+			}
+			const start = terrainBrushStroke.lastPosition ?? position;
+			const samples = getBrushStrokeSamples(start, position).filter((cell) => {
 				const key = terrainBrushCellKey(cell);
 				if (terrainBrushStroke.appliedCells.has(key)) {
 					return false;
@@ -1041,6 +1129,7 @@ export function ThreeDPreview({
 				terrainBrushStroke.appliedCells.add(key);
 				return true;
 			});
+			terrainBrushStroke.lastPosition = position;
 			return applyTerrainOperationAtCells(samples, position, samples);
 		};
 
@@ -1054,14 +1143,21 @@ export function ThreeDPreview({
 			if (!activeArea || !terrainPaintTileId || !terrainBrushStroke) {
 				return false;
 			}
-			const positions = getBrushPositions(position).filter((cell) => {
-				const key = terrainBrushCellKey(cell);
-				if (terrainBrushStroke.appliedCells.has(key)) {
-					return false;
-				}
-				terrainBrushStroke.appliedCells.add(key);
-				return true;
-			});
+			const start = terrainBrushStroke.lastPosition ?? position;
+			const samples = getBrushStrokeSamples(start, position, "hard").filter(
+				(cell) => {
+					const key = terrainBrushCellKey(cell);
+					if (terrainBrushStroke.appliedCells.has(key)) {
+						return false;
+					}
+					terrainBrushStroke.appliedCells.add(key);
+					return true;
+				},
+			);
+			terrainBrushStroke.lastPosition = position;
+			const positions = samples.map(
+				({ influence: _influence, ...cell }) => cell,
+			);
 			if (positions.length === 0) {
 				return true;
 			}
@@ -1091,7 +1187,11 @@ export function ThreeDPreview({
 			}
 			dragGhost.position.set(
 				threePoint.x,
-				getTerrainSurfaceY(activeArea, position.x, position.y) + 0.06,
+				getTerrainPresentationSurfaceY(
+					activeArea,
+					position,
+					terrainRenderMode,
+				) + 0.06,
 				threePoint.z,
 			);
 		};
@@ -1135,7 +1235,11 @@ export function ThreeDPreview({
 			}
 			placementGhost.position.set(
 				threePoint.x,
-				getTerrainSurfaceY(activeArea, position.x, position.y) +
+				getTerrainPresentationSurfaceY(
+					activeArea,
+					position,
+					terrainRenderMode,
+				) +
 					placementInfo.height / 2,
 				threePoint.z,
 			);
@@ -1172,7 +1276,8 @@ export function ThreeDPreview({
 				);
 				mesh.position.set(
 					threePoint.x,
-					getTerrainSurfaceY(activeArea, cell.x, cell.y) + 0.06,
+					getTerrainPresentationSurfaceY(activeArea, cell, terrainRenderMode) +
+						0.06,
 					threePoint.z,
 				);
 				terrainBrushGhost?.add(mesh);
@@ -1221,7 +1326,9 @@ export function ThreeDPreview({
 				return;
 			}
 			if (
-				(terrainGesture === "line" || terrainGesture === "rectangle") &&
+				(terrainHeightTool === "slope" ||
+					terrainGesture === "line" ||
+					terrainGesture === "rectangle") &&
 				(terrainPaintTileId || terrainHeightTool) &&
 				!placementInfo.active
 			) {
@@ -1231,8 +1338,14 @@ export function ThreeDPreview({
 					return;
 				}
 				event.preventDefault();
+				const shapeGesture: TerrainShapeGesture["gesture"] =
+					terrainHeightTool === "slope"
+						? "slope"
+						: terrainGesture === "rectangle"
+							? "rectangle"
+							: "line";
 				terrainShapeGesture = {
-					gesture: terrainGesture,
+					gesture: shapeGesture,
 					pointerId: event.pointerId,
 					start: shapePosition,
 				};
@@ -1245,7 +1358,7 @@ export function ThreeDPreview({
 				};
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 				updateTerrainCellsGhost(
-					getShapePositions(terrainGesture, shapePosition, shapePosition),
+					getShapePositions(shapeGesture, shapePosition, shapePosition),
 				);
 				return;
 			}
@@ -1263,6 +1376,7 @@ export function ThreeDPreview({
 				event.preventDefault();
 				terrainBrushStrokeRef.current = {
 					appliedCells: new Set(),
+					lastPosition: paintPosition,
 					pointerId: event.pointerId,
 					tool: "paint",
 				};
@@ -1287,6 +1401,7 @@ export function ThreeDPreview({
 				event.preventDefault();
 				terrainBrushStrokeRef.current = {
 					appliedCells: new Set(),
+					lastPosition: heightPosition,
 					pointerId: event.pointerId,
 					tool: "height",
 				};
@@ -1438,6 +1553,10 @@ export function ThreeDPreview({
 						updateTerrainCellsGhost(
 							fillPositions.length > 0 ? fillPositions : [nextPosition],
 						);
+					} else if (terrainHeightTool === "slope") {
+						updateTerrainCellsGhost(
+							getShapePositions("slope", nextPosition, nextPosition),
+						);
 					} else if (terrainGesture === "brush") {
 						updateTerrainBrushGhost(nextPosition);
 					} else {
@@ -1493,7 +1612,11 @@ export function ThreeDPreview({
 						shapeGesture.start,
 						nextPosition,
 					);
-					applyTerrainOperationAtCells(positions, nextPosition);
+					if (shapeGesture.gesture === "slope") {
+						applySlopeGesture(shapeGesture.start, nextPosition);
+					} else {
+						applyTerrainOperationAtCells(positions, nextPosition);
+					}
 					updateTerrainCellsGhost(positions);
 				} else {
 					cleanupTerrainBrushGhost();

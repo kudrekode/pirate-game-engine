@@ -155,6 +155,40 @@ async function waitForPirateBenchmarkSnapshot(
 	);
 }
 
+async function waitForTerrainModeSnapshot(
+	page: Page,
+	label: string,
+	minEntityCount: number,
+	mode: "blocky" | "smooth",
+): Promise<ThreePerformanceSnapshot> {
+	const startedAt = Date.now();
+	let snapshot: ThreePerformanceSnapshot | null = null;
+	while (Date.now() - startedAt < 30_000) {
+		snapshot = await readSnapshot(page, label);
+		if (
+			meetsPirateBenchmarkRequirements(snapshot, minEntityCount) &&
+			snapshot.terrain.mode === mode
+		) {
+			return snapshot;
+		}
+		await page.waitForTimeout(250);
+	}
+	throw new Error(
+		`Three benchmark scene did not switch ${label} to ${mode}. Last snapshot: ${describePirateBenchmarkSnapshot(
+			snapshot,
+		)}`,
+	);
+}
+
+async function selectTerrainMode(
+	page: Page,
+	mode: "Blocky terrain" | "Smooth terrain",
+): Promise<void> {
+	await page
+		.getByRole("button", { exact: true, name: mode })
+		.dispatchEvent("click");
+}
+
 function isLocalAssetUrl(url: string): boolean {
 	return (
 		url.includes("/assets/") ||
@@ -327,6 +361,13 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			EDITOR_SNAPSHOT_LABEL,
 			EDITOR_MIN_PIRATE_ENTITY_COUNT,
 		);
+		await selectTerrainMode(page, "Smooth terrain");
+		await waitForTerrainModeSnapshot(
+			page,
+			EDITOR_SNAPSHOT_LABEL,
+			EDITOR_MIN_PIRATE_ENTITY_COUNT,
+			"smooth",
+		);
 		await resetSampleWindow(page, EDITOR_SNAPSHOT_LABEL);
 		await page.waitForTimeout(1000);
 		await page.waitForTimeout(3000);
@@ -352,6 +393,13 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			page,
 			RUNTIME_SNAPSHOT_LABEL,
 			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+		);
+		await selectTerrainMode(page, "Smooth terrain");
+		await waitForTerrainModeSnapshot(
+			page,
+			RUNTIME_SNAPSHOT_LABEL,
+			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+			"smooth",
 		);
 		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
 		await page.waitForTimeout(1000);

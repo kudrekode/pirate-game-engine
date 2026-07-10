@@ -3,11 +3,14 @@ import {
 	getTerrainBrushInfluence,
 	resolveTerrainBrushFootprint,
 	resolveTerrainBrushSamples,
+	resolveTerrainBrushStrokeSamples,
 	resolveTerrainFloodFill,
 	resolveTerrainHeightUpdates,
 	resolveTerrainLine,
 	resolveTerrainPaintUpdates,
 	resolveTerrainRectangle,
+	resolveTerrainSlopeCells,
+	resolveTerrainSlopeHeightUpdates,
 	type TerrainBrushCell,
 	terrainBrushCellKey,
 } from "./terrainBrush";
@@ -320,6 +323,87 @@ describe("resolveTerrainHeightUpdates", () => {
 			{ height: 4, x: 0, y: 0 },
 			{ height: 1, x: 1, y: 0 },
 		]);
+	});
+});
+
+describe("resolveTerrainBrushStrokeSamples", () => {
+	it("fills skipped cells between fast drag samples", () => {
+		expect(
+			resolveTerrainBrushStrokeSamples({
+				bounds: { height: 1, width: 6 },
+				end: { x: 5, y: 0 },
+				falloff: "hard",
+				shape: "square",
+				size: 1,
+				start: { x: 0, y: 0 },
+			}),
+		).toEqual([
+			{ influence: 1, x: 0, y: 0 },
+			{ influence: 1, x: 1, y: 0 },
+			{ influence: 1, x: 2, y: 0 },
+			{ influence: 1, x: 3, y: 0 },
+			{ influence: 1, x: 4, y: 0 },
+			{ influence: 1, x: 5, y: 0 },
+		]);
+	});
+});
+
+describe("terrain slope helpers", () => {
+	it("expands slope cells by radius around the ramp line", () => {
+		expect(
+			resolveTerrainSlopeCells({
+				bounds: { height: 3, width: 5 },
+				end: { x: 4, y: 1 },
+				radius: 1,
+				start: { x: 0, y: 1 },
+			}),
+		).toHaveLength(15);
+	});
+
+	it("creates a ramp from the start height to the requested end height", () => {
+		expect(
+			resolveTerrainSlopeHeightUpdates({
+				area: makeHeightArea(5, 1),
+				bounds: { height: 1, width: 5 },
+				end: { x: 4, y: 0 },
+				endHeight: 4,
+				radius: 0,
+				start: { x: 0, y: 0 },
+				strength: 1,
+			}),
+		).toEqual([
+			{ height: 1, x: 1, y: 0 },
+			{ height: 2, x: 2, y: 0 },
+			{ height: 3, x: 3, y: 0 },
+			{ height: 4, x: 4, y: 0 },
+		]);
+	});
+
+	it("applies falloff across the ramp width", () => {
+		expect(
+			resolveTerrainSlopeHeightUpdates({
+				area: makeHeightArea(5, 3),
+				bounds: { height: 3, width: 5 },
+				end: { x: 4, y: 1 },
+				endHeight: 4,
+				falloff: "linear",
+				radius: 1,
+				start: { x: 0, y: 1 },
+				strength: 1,
+			}),
+		).toContainEqual({ height: 1, x: 2, y: 0 });
+		expect(
+			resolveTerrainSlopeHeightUpdates({
+				area: makeHeightArea(5, 3),
+				bounds: { height: 3, width: 5 },
+				end: { x: 4, y: 1 },
+				endHeight: 4,
+				falloff: "linear",
+				radius: 1,
+				start: { x: 0, y: 1 },
+				strength: 1,
+			}),
+		).toContainEqual({ height: 2, x: 2, y: 1 });
 	});
 });
 
