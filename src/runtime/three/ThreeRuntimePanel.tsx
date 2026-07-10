@@ -1462,6 +1462,11 @@ export function ThreeRuntimePanel({
 				usedAsset: result.usedAsset,
 			})),
 			entityCount: runtimeMarkers.length + 1,
+			sceneIdentity: {
+				areaId: area.id,
+				areaName: area.name,
+				projectName: session.project.metadata.name,
+			},
 		});
 
 		let renderer: THREE.WebGLRenderer;
@@ -1630,7 +1635,9 @@ export function ThreeRuntimePanel({
 			const now = performance.now();
 			const deltaMs = now - lastFrameMs;
 			lastFrameMs = now;
+			diagnostics.recordFrameInterval(deltaMs);
 
+			const visualUpdateStartedAt = performance.now();
 			const playerVisual =
 				playerVisualRef.current ??
 				resetVisualEntityState(
@@ -1670,7 +1677,9 @@ export function ThreeRuntimePanel({
 					getFrameLerpAlpha(deltaMs, 22),
 				);
 			}
+			diagnostics.recordVisualUpdate(performance.now() - visualUpdateStartedAt);
 
+			const cameraUpdateStartedAt = performance.now();
 			const nextCameraTarget = getFollowCameraTarget(
 				getVisualPlayerCenter(area, playerVisualPosition),
 				playerVisual.facing,
@@ -1703,7 +1712,7 @@ export function ThreeRuntimePanel({
 				cameraRigRef.current = cameraRig;
 				applyCameraRig(cameraRig);
 			}
-			diagnostics.recordFrame(deltaMs);
+			diagnostics.recordCameraUpdate(performance.now() - cameraUpdateStartedAt);
 			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);

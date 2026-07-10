@@ -616,6 +616,11 @@ export function ThreeDPreview({
 				usedAsset: result.usedAsset,
 			})),
 			entityCount: entityMarkers.length + (walkPreviewMesh ? 1 : 0),
+			sceneIdentity: {
+				areaId: activeArea?.id,
+				areaName: activeArea?.name,
+				projectName: project.metadata.name,
+			},
 		});
 		const selectableMeshes = [
 			...terrainPickMeshes,

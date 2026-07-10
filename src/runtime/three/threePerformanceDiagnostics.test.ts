@@ -91,6 +91,7 @@ describe("three performance diagnostics", () => {
 		});
 		expect(snapshot.asset).toMatchObject({
 			activeImportedAssetInstances: 1,
+			activeImportedAssetIds: ["ship"],
 			activeCloneInstances: 1,
 			cacheHitCount: 1,
 			cloneCount: 1,
@@ -121,8 +122,10 @@ describe("three performance diagnostics", () => {
 			pointerMovesPerSecond: 3.7,
 		});
 		expect(snapshot.runtime).toMatchObject({
+			averageTickMs: 2.7,
 			lastTickMs: 2.7,
 			tickCount: 1,
+			worstTickMs: 2.7,
 		});
 		expect(formatThreePerformanceSnapshot(snapshot)).toContain(
 			"Diagnostics Test performance snapshot",
@@ -133,7 +136,7 @@ describe("three performance diagnostics", () => {
 		expect(diagnostics.getSnapshot().asset.loadStartedCount).toBe(1);
 	});
 
-	it("tracks rebuild reason counts and thresholded hitches", () => {
+	it("tracks rebuild reason counts and thresholded hitches by phase", () => {
 		let now = 0;
 		const diagnostics = createThreePerformanceDiagnostics({
 			now: () => now,
@@ -145,7 +148,7 @@ describe("three performance diagnostics", () => {
 		now = 200;
 		diagnostics.recordSceneBuild("object state changed", 525);
 		now = 300;
-		diagnostics.recordFrame(1200);
+		diagnostics.recordFrameInterval(1200);
 
 		const snapshot = diagnostics.getSnapshot();
 		expect(snapshot.scene.reasonCounts).toEqual({
@@ -153,7 +156,7 @@ describe("three performance diagnostics", () => {
 			"object state changed": 1,
 		});
 		expect(snapshot.hitches).toMatchObject({
-			lastPhase: "scene rebuild",
+			lastPhase: "raf_interval",
 			over1000MsCount: 1,
 			over100MsCount: 2,
 			over500MsCount: 2,
@@ -162,8 +165,143 @@ describe("three performance diagnostics", () => {
 		expect(
 			snapshot.hitches.recent[snapshot.hitches.recent.length - 1],
 		).toMatchObject({
-			phase: "scene rebuild",
+			detail: "requestAnimationFrame interval",
+			phase: "raf_interval",
 			thresholdMs: 1000,
+		});
+
+		diagnostics.dispose();
+	});
+
+	it("does not attribute a long RAF interval to a prior short render", () => {
+		const diagnostics = createThreePerformanceDiagnostics();
+
+		diagnostics.recordRenderCall(1.2);
+		diagnostics.recordFrameInterval(68);
+
+		const snapshot = diagnostics.getSnapshot();
+		expect(snapshot.frame).toMatchObject({
+			averageFrameIntervalMs: 68,
+			lastFrameIntervalMs: 68,
+			worstFrameIntervalMs: 68,
+		});
+		expect(snapshot.phases.render).toMatchObject({
+			averageMs: 1.2,
+			lastMs: 1.2,
+			worstMs: 1.2,
+		});
+		expect(
+			snapshot.hitches.recent[snapshot.hitches.recent.length - 1],
+		).toMatchObject({
+			durationMs: 68,
+			phase: "raf_interval",
+		});
+
+		diagnostics.dispose();
+	});
+
+	it("attributes actual long render, runtime tick, visual, and camera durations to their phases", () => {
+		const diagnostics = createThreePerformanceDiagnostics();
+
+		diagnostics.recordRenderCall(72);
+		diagnostics.recordRuntimeTick(10);
+		diagnostics.recordRuntimeTick(30);
+		diagnostics.recordVisualUpdate(5);
+		diagnostics.recordVisualUpdate(15);
+		diagnostics.recordCameraUpdate(3);
+		diagnostics.recordCameraUpdate(9);
+
+		const snapshot = diagnostics.getSnapshot();
+		expect(
+			snapshot.hitches.recent[snapshot.hitches.recent.length - 1],
+		).toMatchObject({
+			durationMs: 72,
+			phase: "render",
+		});
+		expect(snapshot.phases.render).toMatchObject({
+			averageMs: 72,
+			count: 1,
+			lastMs: 72,
+			worstMs: 72,
+		});
+		expect(snapshot.phases.runtimeTick).toMatchObject({
+			averageMs: 20,
+			count: 2,
+			lastMs: 30,
+			worstMs: 30,
+		});
+		expect(snapshot.phases.visualUpdate).toMatchObject({
+			averageMs: 10,
+			count: 2,
+			lastMs: 15,
+			worstMs: 15,
+		});
+		expect(snapshot.phases.cameraUpdate).toMatchObject({
+			averageMs: 6,
+			count: 2,
+			lastMs: 9,
+			worstMs: 9,
+		});
+		expect(snapshot.runtime).toMatchObject({
+			averageTickMs: 20,
+			lastTickMs: 30,
+			tickCount: 2,
+			worstTickMs: 30,
+		});
+
+		diagnostics.dispose();
+	});
+
+	it("resets timing samples without clearing scene or active asset state", () => {
+		const diagnostics = createThreePerformanceDiagnostics({
+			label: "Reset Test",
+		});
+		diagnostics.setSceneEntityCounts({
+			assetStatuses: [
+				{ definitionId: "pirate-chest", status: "loaded", usedAsset: true },
+				{
+					definitionId: "pirate-small-ship",
+					status: "loaded",
+					usedAsset: true,
+				},
+			],
+			entityCount: 16,
+			sceneIdentity: {
+				areaId: "area_main",
+				areaName: "Main Area",
+				projectName: "Demo Adventure",
+			},
+		});
+		diagnostics.recordFrameInterval(90);
+		diagnostics.recordRenderCall(65);
+		diagnostics.recordRuntimeTick(12);
+
+		diagnostics.resetSampleWindow();
+
+		const snapshot = diagnostics.getSnapshot();
+		expect(snapshot.frame).toMatchObject({
+			frameCount: 0,
+			lastFrameIntervalMs: 0,
+			worstFrameIntervalMs: 0,
+		});
+		expect(snapshot.hitches).toMatchObject({
+			lastPhase: "unknown",
+			over50MsCount: 0,
+			recent: [],
+		});
+		expect(snapshot.phases.render).toMatchObject({ count: 0, worstMs: 0 });
+		expect(snapshot.runtime).toMatchObject({ tickCount: 0, worstTickMs: 0 });
+		expect(snapshot.scene).toMatchObject({
+			areaId: "area_main",
+			areaName: "Main Area",
+			entityCount: 16,
+			projectName: "Demo Adventure",
+		});
+		expect(snapshot.asset).toMatchObject({
+			activeImportedAssetIds: ["pirate-chest", "pirate-small-ship"],
+			activeImportedAssetInstances: 2,
+			activeCloneInstances: 2,
+			statusCounts: expect.objectContaining({ loaded: 2 }),
 		});
 
 		diagnostics.dispose();
@@ -190,6 +328,11 @@ describe("three performance diagnostics", () => {
 					"Global Diagnostics Test"
 				]?.label,
 			).toBe("Global Diagnostics Test");
+			expect(
+				window.__THREE_PERF_DIAGNOSTICS__?.resetSampleWindow(
+					"Global Diagnostics Test",
+				),
+			).toBe(true);
 
 			unregister();
 			expect(

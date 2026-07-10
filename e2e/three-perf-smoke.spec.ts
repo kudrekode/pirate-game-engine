@@ -25,6 +25,12 @@ type NetworkFailureEntry = {
 const ARTIFACT_DIR = path.resolve(process.cwd(), "test-results", "perf");
 const EDITOR_SNAPSHOT_LABEL = "ThreeDPreview";
 const RUNTIME_SNAPSHOT_LABEL = "ThreeRuntimePanel";
+const PIRATE_PROJECT_NAME = "Demo Adventure";
+const PIRATE_AREA_ID = "area_main";
+const PIRATE_AREA_NAME = "Main Area";
+const EXPECTED_PIRATE_ASSET_IDS = ["pirate-chest", "pirate-small-ship"];
+const EDITOR_MIN_PIRATE_ENTITY_COUNT = 13;
+const RUNTIME_MIN_PIRATE_ENTITY_COUNT = 16;
 
 async function resetArtifactDir(): Promise<void> {
 	const workspaceRoot = path.resolve(process.cwd());
@@ -63,33 +69,90 @@ async function readSnapshot(
 	}, label) as Promise<ThreePerformanceSnapshot | null>;
 }
 
-async function waitForSnapshot(
+async function resetSampleWindow(page: Page, label: string): Promise<void> {
+	const didReset = await page.evaluate((snapshotLabel) => {
+		const diagnostics = (
+			window as Window & {
+				__THREE_PERF_DIAGNOSTICS__?: {
+					resetSampleWindow: (label?: string) => boolean;
+				};
+			}
+		).__THREE_PERF_DIAGNOSTICS__;
+		return diagnostics?.resetSampleWindow(snapshotLabel) ?? false;
+	}, label);
+	if (!didReset) {
+		throw new Error(
+			`Could not reset Three diagnostics sample window for ${label}`,
+		);
+	}
+}
+
+function meetsPirateBenchmarkRequirements(
+	snapshot: ThreePerformanceSnapshot | null,
+	minEntityCount: number,
+): boolean {
+	if (!snapshot) {
+		return false;
+	}
+	return (
+		snapshot.label.length > 0 &&
+		snapshot.scene.projectName === PIRATE_PROJECT_NAME &&
+		snapshot.scene.areaId === PIRATE_AREA_ID &&
+		snapshot.scene.areaName === PIRATE_AREA_NAME &&
+		snapshot.scene.entityCount >= minEntityCount &&
+		snapshot.frame.frameCount > 0 &&
+		snapshot.asset.activeImportedAssetInstances >=
+			EXPECTED_PIRATE_ASSET_IDS.length &&
+		snapshot.asset.activeCloneInstances >= EXPECTED_PIRATE_ASSET_IDS.length &&
+		snapshot.asset.statusCounts.loaded >= EXPECTED_PIRATE_ASSET_IDS.length &&
+		snapshot.asset.statusCounts.loading === 0 &&
+		snapshot.asset.stuckLoadingCount === 0 &&
+		EXPECTED_PIRATE_ASSET_IDS.every((assetId) =>
+			snapshot.asset.activeImportedAssetIds.includes(assetId),
+		)
+	);
+}
+
+function describePirateBenchmarkSnapshot(
+	snapshot: ThreePerformanceSnapshot | null,
+): string {
+	if (!snapshot) {
+		return "snapshot missing";
+	}
+	return JSON.stringify({
+		activeCloneInstances: snapshot.asset.activeCloneInstances,
+		activeImportedAssetIds: snapshot.asset.activeImportedAssetIds,
+		activeImportedAssetInstances: snapshot.asset.activeImportedAssetInstances,
+		areaId: snapshot.scene.areaId,
+		areaName: snapshot.scene.areaName,
+		entityCount: snapshot.scene.entityCount,
+		frameCount: snapshot.frame.frameCount,
+		label: snapshot.label,
+		projectName: snapshot.scene.projectName,
+		statusCounts: snapshot.asset.statusCounts,
+		stuckLoadingCount: snapshot.asset.stuckLoadingCount,
+	});
+}
+
+async function waitForPirateBenchmarkSnapshot(
 	page: Page,
 	label: string,
+	minEntityCount: number,
 ): Promise<ThreePerformanceSnapshot> {
-	await page.waitForFunction(
-		(snapshotLabel) => {
-			const diagnostics = (
-				window as Window & {
-					__THREE_PERF_DIAGNOSTICS__?: {
-						getSnapshot: (label?: string) => {
-							frame?: { frameCount?: number };
-						} | null;
-					};
-				}
-			).__THREE_PERF_DIAGNOSTICS__;
-			const snapshot = diagnostics?.getSnapshot(snapshotLabel);
-			return Boolean(snapshot && (snapshot.frame?.frameCount ?? 0) > 0);
-		},
-		label,
-		{ timeout: 15_000 },
-	);
-
-	const snapshot = await readSnapshot(page, label);
-	if (!snapshot) {
-		throw new Error(`Missing Three performance snapshot for ${label}`);
+	const startedAt = Date.now();
+	let snapshot: ThreePerformanceSnapshot | null = null;
+	while (Date.now() - startedAt < 30_000) {
+		snapshot = await readSnapshot(page, label);
+		if (meetsPirateBenchmarkRequirements(snapshot, minEntityCount)) {
+			return snapshot;
+		}
+		await page.waitForTimeout(250);
 	}
-	return snapshot;
+	throw new Error(
+		`Three benchmark scene did not settle for ${label}. Last snapshot: ${describePirateBenchmarkSnapshot(
+			snapshot,
+		)}`,
+	);
 }
 
 function isLocalAssetUrl(url: string): boolean {
@@ -117,6 +180,61 @@ function validateSnapshot(
 	}
 	if (typeof snapshot.renderer.drawCalls !== "number") {
 		failures.push(`${label} renderer draw calls were unavailable.`);
+	}
+}
+
+function validatePirateBenchmarkSnapshot(
+	snapshot: ThreePerformanceSnapshot | null,
+	label: string,
+	minEntityCount: number,
+	failures: string[],
+): void {
+	if (!snapshot) {
+		failures.push(`${label} pirate benchmark snapshot was missing.`);
+		return;
+	}
+	if (snapshot.label !== label) {
+		failures.push(`${label} snapshot label was ${snapshot.label}.`);
+	}
+	if (snapshot.scene.projectName !== PIRATE_PROJECT_NAME) {
+		failures.push(`${label} measured project ${snapshot.scene.projectName}.`);
+	}
+	if (snapshot.scene.areaId !== PIRATE_AREA_ID) {
+		failures.push(`${label} measured area ${snapshot.scene.areaId}.`);
+	}
+	if (snapshot.scene.areaName !== PIRATE_AREA_NAME) {
+		failures.push(`${label} measured area name ${snapshot.scene.areaName}.`);
+	}
+	if (snapshot.scene.entityCount < minEntityCount) {
+		failures.push(
+			`${label} measured ${snapshot.scene.entityCount} entities, expected at least ${minEntityCount}.`,
+		);
+	}
+	for (const assetId of EXPECTED_PIRATE_ASSET_IDS) {
+		if (!snapshot.asset.activeImportedAssetIds.includes(assetId)) {
+			failures.push(`${label} missing active imported asset ${assetId}.`);
+		}
+	}
+	if (
+		snapshot.asset.activeImportedAssetInstances <
+		EXPECTED_PIRATE_ASSET_IDS.length
+	) {
+		failures.push(`${label} imported asset instances below benchmark minimum.`);
+	}
+	if (snapshot.asset.activeCloneInstances < EXPECTED_PIRATE_ASSET_IDS.length) {
+		failures.push(`${label} active asset clones below benchmark minimum.`);
+	}
+	if (snapshot.asset.statusCounts.loaded < EXPECTED_PIRATE_ASSET_IDS.length) {
+		failures.push(`${label} loaded asset count below benchmark minimum.`);
+	}
+	if (snapshot.asset.statusCounts.loading !== 0) {
+		failures.push(`${label} still has loading assets.`);
+	}
+	if (snapshot.asset.stuckLoadingCount !== 0) {
+		failures.push(`${label} has stuck loading assets.`);
+	}
+	if (snapshot.renderer.drawCalls <= 0 || snapshot.renderer.triangles <= 0) {
+		failures.push(`${label} renderer metrics were not populated.`);
 	}
 }
 
@@ -185,6 +303,9 @@ test("captures Three editor and runtime perf diagnostics", async ({
 		await expect(page.getByLabel("Choose a starter project")).toBeVisible();
 		await page.getByRole("button", { name: /Demo Project/ }).click();
 		await expect(page.getByLabel("Project")).toHaveValue("Demo Adventure");
+		const areaSelector = page.getByRole("combobox", { name: "Editing" });
+		await areaSelector.selectOption(PIRATE_AREA_ID);
+		await expect(areaSelector).toHaveValue(PIRATE_AREA_ID);
 
 		await page.getByRole("button", { name: "3D View" }).click();
 		const editorCanvas = page
@@ -194,15 +315,19 @@ test("captures Three editor and runtime perf diagnostics", async ({
 		await expect(editorCanvas).toBeVisible();
 		await page.getByRole("button", { name: "Perf" }).click();
 		await expect(page.getByLabel("3D Preview Perf diagnostics")).toBeVisible();
-		await page.waitForTimeout(3500);
-		editorSnapshot = await waitForSnapshot(page, EDITOR_SNAPSHOT_LABEL);
+		await waitForPirateBenchmarkSnapshot(
+			page,
+			EDITOR_SNAPSHOT_LABEL,
+			EDITOR_MIN_PIRATE_ENTITY_COUNT,
+		);
+		await resetSampleWindow(page, EDITOR_SNAPSHOT_LABEL);
+		await page.waitForTimeout(1000);
+		await page.waitForTimeout(3000);
+		editorSnapshot = await readSnapshot(page, EDITOR_SNAPSHOT_LABEL);
 		artifacts.editorSnapshot = await writeJson(
 			"three-editor-snapshot.json",
 			editorSnapshot,
 		);
-		await editorCanvas.hover();
-		await page.mouse.wheel(0, 160);
-		await page.waitForTimeout(250);
 		artifacts.editorScreenshot = path.join(ARTIFACT_DIR, "three-editor.png");
 		await page.screenshot({ fullPage: true, path: artifacts.editorScreenshot });
 
@@ -212,19 +337,31 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			.locator('canvas[aria-label="Three runtime viewport"]')
 			.first();
 		await expect(runtimeCanvas).toBeVisible();
+		const continueButton = page.getByRole("button", { name: "Continue" });
+		if (await continueButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+			await continueButton.click();
+		}
 		await page.getByRole("button", { name: "Perf" }).click();
 		await expect(page.getByLabel("3D Runtime Perf diagnostics")).toBeVisible();
-		await page.waitForTimeout(4000);
-		runtimeSnapshot = await waitForSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
+		await waitForPirateBenchmarkSnapshot(
+			page,
+			RUNTIME_SNAPSHOT_LABEL,
+			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+		);
+		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
+		await page.waitForTimeout(1000);
+		await page.waitForTimeout(5000);
+		runtimeSnapshot = await readSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
 		artifacts.runtimeSnapshot = await writeJson(
 			"three-runtime-snapshot.json",
 			runtimeSnapshot,
 		);
+		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
 		await runtimeCanvas.focus();
 		await page.keyboard.press("ArrowUp");
 		await page.waitForTimeout(250);
 		await page.keyboard.press("ArrowLeft");
-		await page.waitForTimeout(750);
+		await page.waitForTimeout(4000);
 		runtimeAfterMoveSnapshot = await readSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
 		artifacts.runtimeAfterMoveSnapshot = await writeJson(
 			"three-runtime-after-move-snapshot.json",
@@ -240,6 +377,24 @@ test("captures Three editor and runtime perf diagnostics", async ({
 	} finally {
 		validateSnapshot(editorSnapshot, EDITOR_SNAPSHOT_LABEL, failures);
 		validateSnapshot(runtimeSnapshot, RUNTIME_SNAPSHOT_LABEL, failures);
+		validatePirateBenchmarkSnapshot(
+			editorSnapshot,
+			EDITOR_SNAPSHOT_LABEL,
+			EDITOR_MIN_PIRATE_ENTITY_COUNT,
+			failures,
+		);
+		validatePirateBenchmarkSnapshot(
+			runtimeSnapshot,
+			RUNTIME_SNAPSHOT_LABEL,
+			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+			failures,
+		);
+		validatePirateBenchmarkSnapshot(
+			runtimeAfterMoveSnapshot,
+			RUNTIME_SNAPSHOT_LABEL,
+			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+			failures,
+		);
 		if (pageErrors.length > 0) {
 			failures.push(`${pageErrors.length} uncaught page error(s) occurred.`);
 		}

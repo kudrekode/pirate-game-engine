@@ -103,10 +103,10 @@ export function ThreePerformanceOverlay({
 					<div className="three-perf-grid">
 						<span>FPS</span>
 						<strong>{formatNumber(snapshot.frame.fps)}</strong>
-						<span>Frame avg/worst</span>
+						<span>RAF interval avg/worst</span>
 						<strong>
-							{formatNumber(snapshot.frame.averageFrameMs)} /{" "}
-							{formatNumber(snapshot.frame.worstFrameMs)} ms
+							{formatNumber(snapshot.frame.averageFrameIntervalMs)} /{" "}
+							{formatNumber(snapshot.frame.worstFrameIntervalMs)} ms
 						</strong>
 						<span>Hitches 50/100/500/1000</span>
 						<strong>

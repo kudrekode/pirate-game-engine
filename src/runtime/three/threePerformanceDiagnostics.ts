@@ -29,11 +29,14 @@ export type ThreePerformancePhase =
 	| "asset fallback"
 	| "asset load callback"
 	| "asset load start"
+	| "camera_update"
 	| "object state update"
+	| "raf_interval"
 	| "render"
 	| "runtime tick"
 	| "scene rebuild"
 	| "terrain rebuild"
+	| "visual_update"
 	| "unknown";
 
 export type ThreePerformanceHitch = {
@@ -57,9 +60,17 @@ export type ThreePerformanceRendererInfo = {
 	};
 };
 
+export type ThreePerformancePhaseStats = {
+	averageMs: number;
+	count: number;
+	lastMs: number;
+	worstMs: number;
+};
+
 export type ThreePerformanceSnapshot = {
 	asset: {
 		activeImportedAssetInstances: number;
+		activeImportedAssetIds: string[];
 		activeCloneInstances: number;
 		cacheHitCount: number;
 		cloneCount: number;
@@ -77,11 +88,14 @@ export type ThreePerformanceSnapshot = {
 	};
 	frame: {
 		averageFrameMs: number;
+		averageFrameIntervalMs: number;
 		frameCount: number;
 		fps: number;
 		lastFrameMs: number;
+		lastFrameIntervalMs: number;
 		lastRenderMs: number;
 		worstFrameMs: number;
+		worstFrameIntervalMs: number;
 	};
 	hitches: {
 		lastDurationMs: number;
@@ -93,6 +107,12 @@ export type ThreePerformanceSnapshot = {
 		recent: ThreePerformanceHitch[];
 	};
 	label: string;
+	phases: {
+		cameraUpdate: ThreePerformancePhaseStats;
+		render: ThreePerformancePhaseStats;
+		runtimeTick: ThreePerformancePhaseStats;
+		visualUpdate: ThreePerformancePhaseStats;
+	};
 	pointer: {
 		lastPickMs: number;
 		pickCount: number;
@@ -110,15 +130,20 @@ export type ThreePerformanceSnapshot = {
 		triangles: number;
 	};
 	runtime: {
+		averageTickMs: number;
 		lastTickMs: number;
 		tickCount: number;
+		worstTickMs: number;
 	};
 	scene: {
+		areaId?: string;
+		areaName?: string;
 		buildCount: number;
 		cleanupCount: number;
 		entityCount: number;
 		lastBuildMs: number;
 		lastRebuildReason: string;
+		projectName?: string;
 		reasonCounts: Record<string, number>;
 		timeSinceLastRebuildMs: number;
 	};
@@ -141,6 +166,9 @@ export type ThreePerformanceDiagnostics = {
 		definitionId?: string,
 	) => void;
 	recordFrame: (durationMs: number) => void;
+	recordFrameInterval: (durationMs: number) => void;
+	recordCameraUpdate: (durationMs: number) => void;
+	recordVisualUpdate: (durationMs: number) => void;
 	recordObjectStateUpdate: (detail: string) => void;
 	recordPointerMove: () => void;
 	recordRenderCall: (durationMs: number) => void;
@@ -155,9 +183,15 @@ export type ThreePerformanceDiagnostics = {
 		tileCount: number;
 	}) => void;
 	recordPick: (durationMs: number) => void;
+	resetSampleWindow: () => void;
 	setSceneEntityCounts: (counts: {
 		assetStatuses: ThreeAssetRenderStatusEntry[];
 		entityCount: number;
+		sceneIdentity?: {
+			areaId?: string;
+			areaName?: string;
+			projectName?: string;
+		};
 	}) => void;
 };
 
@@ -165,6 +199,7 @@ export type ThreePerformanceDiagnosticsGlobal = {
 	getSnapshot: (label?: string) => ThreePerformanceSnapshot | null;
 	getSnapshots: () => Record<string, ThreePerformanceSnapshot>;
 	labels: () => string[];
+	resetSampleWindow: (label?: string) => boolean;
 };
 
 type ThreeAssetDiagnosticsListener = (
@@ -218,6 +253,14 @@ function ensureDiagnosticsGlobal(): void {
 				),
 			),
 		labels: () => Array.from(registeredDiagnostics.keys()),
+		resetSampleWindow: (label?: string) => {
+			const diagnostics = getLatestDiagnostics(label);
+			if (!diagnostics) {
+				return false;
+			}
+			diagnostics.resetSampleWindow();
+			return true;
+		},
 	};
 }
 
@@ -288,6 +331,47 @@ function createEmptyAssetStatusCounts(): Record<
 	};
 }
 
+type PhaseStatsState = {
+	count: number;
+	lastMs: number;
+	totalMs: number;
+	worstMs: number;
+};
+
+function createPhaseStatsState(): PhaseStatsState {
+	return {
+		count: 0,
+		lastMs: 0,
+		totalMs: 0,
+		worstMs: 0,
+	};
+}
+
+function recordPhaseStats(stats: PhaseStatsState, durationMs: number): void {
+	stats.count += 1;
+	stats.lastMs = durationMs;
+	stats.totalMs += durationMs;
+	stats.worstMs = Math.max(stats.worstMs, durationMs);
+}
+
+function resetPhaseStats(stats: PhaseStatsState): void {
+	stats.count = 0;
+	stats.lastMs = 0;
+	stats.totalMs = 0;
+	stats.worstMs = 0;
+}
+
+function getPhaseStatsSnapshot(
+	stats: PhaseStatsState,
+): ThreePerformancePhaseStats {
+	return {
+		averageMs: stats.count > 0 ? roundMetric(stats.totalMs / stats.count) : 0,
+		count: stats.count,
+		lastMs: roundMetric(stats.lastMs),
+		worstMs: roundMetric(stats.worstMs),
+	};
+}
+
 function formatAssetEvent(event: ThreeAssetDiagnosticsEvent): string {
 	const label = event.definitionId ?? event.url ?? "asset";
 	if (event.message) {
@@ -336,6 +420,7 @@ export function createThreePerformanceDiagnostics(
 	let cacheHitCount = 0;
 	let cloneCount = 0;
 	let activeImportedAssetInstances = 0;
+	let activeImportedAssetIds: string[] = [];
 	let activeCloneInstances = 0;
 	let fallbackPlaceholderCount = 0;
 	let loadingFallbackCount = 0;
@@ -349,6 +434,10 @@ export function createThreePerformanceDiagnostics(
 	let lastPickMs = 0;
 	let tickCount = 0;
 	let lastTickMs = 0;
+	const renderStats = createPhaseStatsState();
+	const runtimeTickStats = createPhaseStatsState();
+	const visualUpdateStats = createPhaseStatsState();
+	const cameraUpdateStats = createPhaseStatsState();
 	let over50MsCount = 0;
 	let over100MsCount = 0;
 	let over500MsCount = 0;
@@ -357,19 +446,37 @@ export function createThreePerformanceDiagnostics(
 	let lastHitchPhase: ThreePerformancePhase = "unknown";
 	let recentHitches: ThreePerformanceHitch[] = [];
 	let recentEvents: string[] = [];
-	let lastPhase: {
-		detail: string;
-		phase: ThreePerformancePhase;
-		timestampMs: number;
-	} = {
-		detail: "",
-		phase: "unknown",
-		timestampMs: now(),
-	};
 	let sceneReasonCounts: Record<string, number> = {};
+	let sceneAreaId: string | undefined;
+	let sceneAreaName: string | undefined;
+	let sceneProjectName: string | undefined;
 
 	const pushEvent = (message: string) => {
 		recentEvents = trimRecentEvents([...recentEvents, message]);
+	};
+
+	const resetSampleWindow = () => {
+		frameCount = 0;
+		frameMsTotal = 0;
+		fps = 0;
+		lastFrameMs = 0;
+		worstFrameMs = 0;
+		fpsWindowStartMs = now();
+		fpsWindowFrameCount = 0;
+		tickCount = 0;
+		lastTickMs = 0;
+		resetPhaseStats(renderStats);
+		resetPhaseStats(runtimeTickStats);
+		resetPhaseStats(visualUpdateStats);
+		resetPhaseStats(cameraUpdateStats);
+		over50MsCount = 0;
+		over100MsCount = 0;
+		over500MsCount = 0;
+		over1000MsCount = 0;
+		lastHitchDurationMs = 0;
+		lastHitchPhase = "unknown";
+		recentHitches = [];
+		recentEvents = [];
 	};
 
 	const recordPhase = (
@@ -377,11 +484,6 @@ export function createThreePerformanceDiagnostics(
 		detail = "",
 		durationMs = 0,
 	) => {
-		lastPhase = {
-			detail,
-			phase,
-			timestampMs: now(),
-		};
 		if (durationMs > 50) {
 			const thresholdMs =
 				durationMs > 1000
@@ -413,17 +515,6 @@ export function createThreePerformanceDiagnostics(
 				},
 			]);
 		}
-	};
-
-	const getLikelyFramePhase = (): {
-		detail: string;
-		phase: ThreePerformancePhase;
-	} => {
-		const currentNow = now();
-		if (currentNow - lastPhase.timestampMs <= 5000) {
-			return lastPhase;
-		}
-		return { detail: "", phase: "unknown" };
 	};
 
 	const recordAssetEvent = (event: ThreeAssetDiagnosticsEvent) => {
@@ -475,6 +566,7 @@ export function createThreePerformanceDiagnostics(
 			return {
 				asset: {
 					activeImportedAssetInstances,
+					activeImportedAssetIds,
 					activeCloneInstances,
 					cacheHitCount,
 					cloneCount,
@@ -493,11 +585,15 @@ export function createThreePerformanceDiagnostics(
 				frame: {
 					averageFrameMs:
 						frameCount > 0 ? roundMetric(frameMsTotal / frameCount) : 0,
+					averageFrameIntervalMs:
+						frameCount > 0 ? roundMetric(frameMsTotal / frameCount) : 0,
 					frameCount,
 					fps: roundMetric(fps),
 					lastFrameMs: roundMetric(lastFrameMs),
+					lastFrameIntervalMs: roundMetric(lastFrameMs),
 					lastRenderMs: roundMetric(lastRenderMs),
 					worstFrameMs: roundMetric(worstFrameMs),
+					worstFrameIntervalMs: roundMetric(worstFrameMs),
 				},
 				hitches: {
 					lastDurationMs: roundMetric(lastHitchDurationMs),
@@ -509,6 +605,12 @@ export function createThreePerformanceDiagnostics(
 					recent: recentHitches,
 				},
 				label,
+				phases: {
+					cameraUpdate: getPhaseStatsSnapshot(cameraUpdateStats),
+					render: getPhaseStatsSnapshot(renderStats),
+					runtimeTick: getPhaseStatsSnapshot(runtimeTickStats),
+					visualUpdate: getPhaseStatsSnapshot(visualUpdateStats),
+				},
 				pointer: {
 					lastPickMs: roundMetric(lastPickMs),
 					pickCount,
@@ -526,15 +628,20 @@ export function createThreePerformanceDiagnostics(
 					triangles,
 				},
 				runtime: {
+					averageTickMs: getPhaseStatsSnapshot(runtimeTickStats).averageMs,
 					lastTickMs: roundMetric(lastTickMs),
 					tickCount,
+					worstTickMs: getPhaseStatsSnapshot(runtimeTickStats).worstMs,
 				},
 				scene: {
+					areaId: sceneAreaId,
+					areaName: sceneAreaName,
 					buildCount,
 					cleanupCount,
 					entityCount,
 					lastBuildMs: roundMetric(lastBuildMs),
 					lastRebuildReason,
+					projectName: sceneProjectName,
 					reasonCounts: { ...sceneReasonCounts },
 					timeSinceLastRebuildMs: roundMetric(currentNow - lastRebuildAtMs),
 				},
@@ -563,19 +670,15 @@ export function createThreePerformanceDiagnostics(
 			pushEvent(lastAssetMessage);
 		},
 		recordFrame: (durationMs: number) => {
+			diagnostics.recordFrameInterval(durationMs);
+		},
+		recordFrameInterval: (durationMs: number) => {
 			frameCount += 1;
 			fpsWindowFrameCount += 1;
 			lastFrameMs = durationMs;
 			frameMsTotal += durationMs;
 			worstFrameMs = Math.max(worstFrameMs, durationMs);
-			const likelyPhase = getLikelyFramePhase();
-			recordPhase(
-				likelyPhase.phase,
-				likelyPhase.detail
-					? `raf frame after ${likelyPhase.detail}`
-					: "raf frame",
-				durationMs,
-			);
+			recordPhase("raf_interval", "requestAnimationFrame interval", durationMs);
 			const currentNow = now();
 			const elapsedMs = currentNow - fpsWindowStartMs;
 			if (elapsedMs >= 250) {
@@ -583,6 +686,14 @@ export function createThreePerformanceDiagnostics(
 				fpsWindowFrameCount = 0;
 				fpsWindowStartMs = currentNow;
 			}
+		},
+		recordCameraUpdate: (durationMs: number) => {
+			recordPhaseStats(cameraUpdateStats, durationMs);
+			recordPhase("camera_update", "camera update", durationMs);
+		},
+		recordVisualUpdate: (durationMs: number) => {
+			recordPhaseStats(visualUpdateStats, durationMs);
+			recordPhase("visual_update", "visual update", durationMs);
 		},
 		recordPointerMove: () => {
 			pointerMoveCount += 1;
@@ -600,6 +711,7 @@ export function createThreePerformanceDiagnostics(
 		},
 		recordRenderCall: (durationMs: number) => {
 			lastRenderMs = durationMs;
+			recordPhaseStats(renderStats, durationMs);
 			recordPhase("render", "renderer.render", durationMs);
 		},
 		recordRendererInfo: (info: ThreePerformanceRendererInfo | undefined) => {
@@ -614,6 +726,7 @@ export function createThreePerformanceDiagnostics(
 		recordRuntimeTick: (durationMs: number) => {
 			tickCount += 1;
 			lastTickMs = durationMs;
+			recordPhaseStats(runtimeTickStats, durationMs);
 			recordPhase("runtime tick", "npc tick", durationMs);
 		},
 		recordSceneBuild: (reason: string, durationMs: number) => {
@@ -643,9 +756,15 @@ export function createThreePerformanceDiagnostics(
 			pickCount += 1;
 			lastPickMs = durationMs;
 		},
-		setSceneEntityCounts: ({ assetStatuses, entityCount: nextEntityCount }) => {
+		resetSampleWindow,
+		setSceneEntityCounts: ({
+			assetStatuses,
+			entityCount: nextEntityCount,
+			sceneIdentity,
+		}) => {
 			const nextStatusCounts = createEmptyAssetStatusCounts();
 			const currentLoadingKeys = new Set<string>();
+			const nextActiveImportedAssetIds = new Set<string>();
 			activeImportedAssetInstances = 0;
 			activeCloneInstances = 0;
 			fallbackPlaceholderCount = 0;
@@ -657,6 +776,9 @@ export function createThreePerformanceDiagnostics(
 				if (assetStatus.usedAsset) {
 					activeImportedAssetInstances += 1;
 					activeCloneInstances += 1;
+					if (assetStatus.definitionId) {
+						nextActiveImportedAssetIds.add(assetStatus.definitionId);
+					}
 				}
 				if (!assetStatus.usedAsset && assetStatus.status !== "not_requested") {
 					fallbackPlaceholderCount += 1;
@@ -684,7 +806,11 @@ export function createThreePerformanceDiagnostics(
 				}
 			}
 			assetStatusCounts = nextStatusCounts;
+			activeImportedAssetIds = Array.from(nextActiveImportedAssetIds).sort();
 			entityCount = nextEntityCount;
+			sceneAreaId = sceneIdentity?.areaId;
+			sceneAreaName = sceneIdentity?.areaName;
+			sceneProjectName = sceneIdentity?.projectName;
 		},
 	};
 	return diagnostics;
@@ -707,15 +833,17 @@ export function formatThreePerformanceSnapshot(
 		.join(" | ");
 	return [
 		`${snapshot.label} performance snapshot`,
-		`frames: ${snapshot.frame.frameCount}, fps: ${snapshot.frame.fps}, avg frame ms: ${snapshot.frame.averageFrameMs}, worst ms: ${snapshot.frame.worstFrameMs}, render ms: ${snapshot.frame.lastRenderMs}`,
+		`scene identity: project "${snapshot.scene.projectName ?? "unknown"}", area "${snapshot.scene.areaName ?? "unknown"}" (${snapshot.scene.areaId ?? "unknown"})`,
+		`frames: ${snapshot.frame.frameCount}, fps: ${snapshot.frame.fps}, avg raf interval ms: ${snapshot.frame.averageFrameIntervalMs}, worst interval ms: ${snapshot.frame.worstFrameIntervalMs}, render ms: ${snapshot.frame.lastRenderMs}`,
 		`hitches: >50ms ${snapshot.hitches.over50MsCount}, >100ms ${snapshot.hitches.over100MsCount}, >500ms ${snapshot.hitches.over500MsCount}, >1000ms ${snapshot.hitches.over1000MsCount}, last ${snapshot.hitches.lastDurationMs}ms (${snapshot.hitches.lastPhase})`,
 		`renderer: calls ${snapshot.renderer.drawCalls}, triangles ${snapshot.renderer.triangles}, points ${snapshot.renderer.points}, lines ${snapshot.renderer.lines}, geometries ${snapshot.renderer.geometries}, textures ${snapshot.renderer.textures}, programs ${snapshot.renderer.programs}`,
 		`scene: builds ${snapshot.scene.buildCount}, cleanups ${snapshot.scene.cleanupCount}, entities ${snapshot.scene.entityCount}, last reason "${snapshot.scene.lastRebuildReason}", last build ms ${snapshot.scene.lastBuildMs}, since rebuild ms ${snapshot.scene.timeSinceLastRebuildMs}`,
 		reasonCounts ? `scene reasons: ${reasonCounts}` : "",
-		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances}, active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
+		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances} (${snapshot.asset.activeImportedAssetIds.join(", ") || "none"}), active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
 		`asset statuses: ${assetStatuses}, loading fallbacks ${snapshot.asset.loadingFallbackCount}, error fallbacks ${snapshot.asset.errorFallbackCount}, missing fallbacks ${snapshot.asset.missingFallbackCount}, stuck loading ${snapshot.asset.stuckLoadingCount}`,
 		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, last ms ${snapshot.terrain.lastDurationMs}`,
-		`input/runtime: pointer moves ${snapshot.pointer.pointerMoveCount}, pointer/s ${snapshot.pointer.pointerMovesPerSecond}, picks ${snapshot.pointer.pickCount}, last pick ms ${snapshot.pointer.lastPickMs}, ticks ${snapshot.runtime.tickCount}, last tick ms ${snapshot.runtime.lastTickMs}`,
+		`phase stats: visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
+		`input/runtime: pointer moves ${snapshot.pointer.pointerMoveCount}, pointer/s ${snapshot.pointer.pointerMovesPerSecond}, picks ${snapshot.pointer.pickCount}, last pick ms ${snapshot.pointer.lastPickMs}, ticks ${snapshot.runtime.tickCount}, last/avg/worst tick ms ${snapshot.runtime.lastTickMs}/${snapshot.runtime.averageTickMs}/${snapshot.runtime.worstTickMs}`,
 		snapshot.asset.lastMessage
 			? `last asset: ${snapshot.asset.lastMessage}`
 			: "",
