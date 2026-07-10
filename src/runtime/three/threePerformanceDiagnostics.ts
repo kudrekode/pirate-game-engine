@@ -38,6 +38,7 @@ export type ThreePerformancePhase =
 	| "scene rebuild"
 	| "terrain rebuild"
 	| "visual_update"
+	| "water_update"
 	| "unknown";
 
 export type ThreePerformanceHitch = {
@@ -114,6 +115,7 @@ export type ThreePerformanceSnapshot = {
 		render: ThreePerformancePhaseStats;
 		runtimeTick: ThreePerformancePhaseStats;
 		visualUpdate: ThreePerformancePhaseStats;
+		waterUpdate: ThreePerformancePhaseStats;
 	};
 	pointer: {
 		lastPickMs: number;
@@ -158,11 +160,13 @@ export type ThreePerformanceSnapshot = {
 		timeSinceLastRebuildMs: number;
 	};
 	terrain: {
+		coastlineEdgeCount: number;
 		lastDurationMs: number;
 		meshCount: number;
 		mode: string;
 		rebuildCount: number;
 		tileCount: number;
+		waterMeshCount: number;
 	};
 };
 
@@ -190,11 +194,14 @@ export type ThreePerformanceDiagnostics = {
 	recordSceneBuild: (reason: string, durationMs: number) => void;
 	recordSceneCleanup: () => void;
 	recordTerrainRebuild: (details: {
+		coastlineEdgeCount?: number;
 		durationMs: number;
 		meshCount: number;
 		mode: string;
 		tileCount: number;
+		waterMeshCount?: number;
 	}) => void;
+	recordWaterUpdate: (durationMs: number) => void;
 	recordPick: (durationMs: number) => void;
 	resetSampleWindow: () => void;
 	setSceneEntityCounts: (counts: {
@@ -426,6 +433,8 @@ export function createThreePerformanceDiagnostics(
 	let terrainMode = "unknown";
 	let terrainTileCount = 0;
 	let terrainMeshCount = 0;
+	let terrainWaterMeshCount = 0;
+	let terrainCoastlineEdgeCount = 0;
 	let lastTerrainDurationMs = 0;
 	let loadStartedCount = 0;
 	let loadSuccessCount = 0;
@@ -452,6 +461,7 @@ export function createThreePerformanceDiagnostics(
 	const visualUpdateStats = createPhaseStatsState();
 	const cameraUpdateStats = createPhaseStatsState();
 	const frameCallbackStats = createPhaseStatsState();
+	const waterUpdateStats = createPhaseStatsState();
 	let rafLoopStartCount = 0;
 	let rafLoopCancelCount = 0;
 	let activeRafLoopCount = 0;
@@ -489,6 +499,7 @@ export function createThreePerformanceDiagnostics(
 		resetPhaseStats(visualUpdateStats);
 		resetPhaseStats(cameraUpdateStats);
 		resetPhaseStats(frameCallbackStats);
+		resetPhaseStats(waterUpdateStats);
 		over50MsCount = 0;
 		over100MsCount = 0;
 		over500MsCount = 0;
@@ -631,6 +642,7 @@ export function createThreePerformanceDiagnostics(
 					render: getPhaseStatsSnapshot(renderStats),
 					runtimeTick: getPhaseStatsSnapshot(runtimeTickStats),
 					visualUpdate: getPhaseStatsSnapshot(visualUpdateStats),
+					waterUpdate: getPhaseStatsSnapshot(waterUpdateStats),
 				},
 				pointer: {
 					lastPickMs: roundMetric(lastPickMs),
@@ -675,11 +687,13 @@ export function createThreePerformanceDiagnostics(
 					timeSinceLastRebuildMs: roundMetric(currentNow - lastRebuildAtMs),
 				},
 				terrain: {
+					coastlineEdgeCount: terrainCoastlineEdgeCount,
 					lastDurationMs: roundMetric(lastTerrainDurationMs),
 					meshCount: terrainMeshCount,
 					mode: terrainMode,
 					rebuildCount: terrainRebuildCount,
 					tileCount: terrainTileCount,
+					waterMeshCount: terrainWaterMeshCount,
 				},
 			};
 		},
@@ -793,13 +807,26 @@ export function createThreePerformanceDiagnostics(
 		recordSceneCleanup: () => {
 			cleanupCount += 1;
 		},
-		recordTerrainRebuild: ({ durationMs, meshCount, mode, tileCount }) => {
+		recordTerrainRebuild: ({
+			coastlineEdgeCount = 0,
+			durationMs,
+			meshCount,
+			mode,
+			tileCount,
+			waterMeshCount = 0,
+		}) => {
 			terrainRebuildCount += 1;
 			terrainMode = mode;
 			terrainTileCount = tileCount;
 			terrainMeshCount = meshCount;
+			terrainWaterMeshCount = waterMeshCount;
+			terrainCoastlineEdgeCount = coastlineEdgeCount;
 			lastTerrainDurationMs = durationMs;
 			recordPhase("terrain rebuild", mode, durationMs);
+		},
+		recordWaterUpdate: (durationMs: number) => {
+			recordPhaseStats(waterUpdateStats, durationMs);
+			recordPhase("water_update", "water material animation", durationMs);
 		},
 		recordPick: (durationMs: number) => {
 			pickCount += 1;
@@ -890,8 +917,8 @@ export function formatThreePerformanceSnapshot(
 		reasonCounts ? `scene reasons: ${reasonCounts}` : "",
 		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances} (${snapshot.asset.activeImportedAssetIds.join(", ") || "none"}), active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
 		`asset statuses: ${assetStatuses}, loading fallbacks ${snapshot.asset.loadingFallbackCount}, error fallbacks ${snapshot.asset.errorFallbackCount}, missing fallbacks ${snapshot.asset.missingFallbackCount}, stuck loading ${snapshot.asset.stuckLoadingCount}`,
-		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, last ms ${snapshot.terrain.lastDurationMs}`,
-		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
+		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, water meshes ${snapshot.terrain.waterMeshCount}, coast edges ${snapshot.terrain.coastlineEdgeCount}, last ms ${snapshot.terrain.lastDurationMs}`,
+		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, water avg/worst ${snapshot.phases.waterUpdate.averageMs}/${snapshot.phases.waterUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
 		`raf loops: starts ${snapshot.raf.loopStartCount}, cancels ${snapshot.raf.loopCancelCount}, restarts ${snapshot.raf.loopRestartCount}, active ${snapshot.raf.activeLoopCount}, last start "${snapshot.raf.lastStartReason || "none"}", last cancel "${snapshot.raf.lastCancelReason || "none"}"`,
 		`input/runtime: pointer moves ${snapshot.pointer.pointerMoveCount}, pointer/s ${snapshot.pointer.pointerMovesPerSecond}, picks ${snapshot.pointer.pickCount}, last pick ms ${snapshot.pointer.lastPickMs}, ticks ${snapshot.runtime.tickCount}, last/avg/worst tick ms ${snapshot.runtime.lastTickMs}/${snapshot.runtime.averageTickMs}/${snapshot.runtime.worstTickMs}`,
 		snapshot.asset.lastMessage

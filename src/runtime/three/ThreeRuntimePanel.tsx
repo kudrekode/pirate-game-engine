@@ -79,7 +79,10 @@ import {
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
-import { disposePlaceholderObject } from "./placeholderMeshes";
+import {
+	disposePlaceholderObject,
+	type ThreeResourceDisposeTracker,
+} from "./placeholderMeshes";
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import {
@@ -109,6 +112,12 @@ import {
 	type VisualGridPosition,
 	type VisualWorldPosition,
 } from "./visualSmoothing";
+import {
+	createCoastlinePresentation,
+	createWaterPresentationState,
+	markWaterPresentationMesh,
+	updateWaterPresentation,
+} from "./waterPresentation";
 import {
 	addThreeWorldLighting,
 	applyShadowRole,
@@ -1361,17 +1370,28 @@ export function ThreeRuntimePanel({
 		};
 
 		const terrainRebuildStartedAt = performance.now();
+		const waterPresentation = createWaterPresentationState();
 		let terrainMeshCount = 0;
+		let waterSurfaceMeshCount = 0;
 		if (terrainRenderMode === "smooth") {
 			const smoothMeshes = terrainTilesToSmoothMeshes(area);
 			terrainMeshCount = smoothMeshes.length;
 			smoothMeshes.forEach((smoothMesh) => {
+				const usesWaterPresentation = smoothMesh.materialKey === "water";
+				if (usesWaterPresentation) {
+					waterSurfaceMeshCount += 1;
+				}
 				const mesh = new THREE.Mesh(
 					createSmoothTerrainBufferGeometry(smoothMesh),
-					createWorldMaterial(smoothMesh.materialKey),
+					usesWaterPresentation
+						? waterPresentation.waterMaterial
+						: createWorldMaterial(smoothMesh.materialKey),
 				);
+				if (usesWaterPresentation) {
+					markWaterPresentationMesh(mesh);
+				}
 				applyShadowRole(mesh, {
-					receive: smoothMesh.materialKey !== "water",
+					receive: !usesWaterPresentation,
 				});
 				addRenderObject(mesh);
 			});
@@ -1379,20 +1399,38 @@ export function ThreeRuntimePanel({
 			const terrainBlocks = terrainTilesToBlocks(area);
 			terrainMeshCount = terrainBlocks.length;
 			terrainBlocks.forEach((block) => {
+				const usesWaterPresentation = block.materialKey === "water";
+				if (usesWaterPresentation) {
+					waterSurfaceMeshCount += 1;
+				}
 				const mesh = new THREE.Mesh(
 					new THREE.BoxGeometry(0.98, block.height, 0.98),
-					createTerrainMaterial(block.kind),
+					usesWaterPresentation
+						? waterPresentation.waterMaterial
+						: createTerrainMaterial(block.kind),
 				);
-				applyShadowRole(mesh, { receive: block.kind !== "water" });
+				if (usesWaterPresentation) {
+					markWaterPresentationMesh(mesh);
+				}
+				applyShadowRole(mesh, { receive: !usesWaterPresentation });
 				mesh.position.set(block.threeX, block.yOffset, block.threeZ);
 				addRenderObject(mesh);
 			});
 		}
+		const coastlinePresentation = createCoastlinePresentation(
+			area,
+			waterPresentation,
+		);
+		coastlinePresentation.meshes.forEach((mesh) => {
+			addRenderObject(mesh);
+		});
 		diagnostics.recordTerrainRebuild({
+			coastlineEdgeCount: coastlinePresentation.edges.length,
 			durationMs: performance.now() - terrainRebuildStartedAt,
-			meshCount: terrainMeshCount,
+			meshCount: terrainMeshCount + coastlinePresentation.meshes.length,
 			mode: terrainRenderMode,
 			tileCount: area.terrainTiles.length,
+			waterMeshCount: waterSurfaceMeshCount,
 		});
 
 		const runtimeArea: GameArea = {
@@ -1721,6 +1759,14 @@ export function ThreeRuntimePanel({
 				applyCameraRig(cameraRig);
 			}
 			diagnostics.recordCameraUpdate(performance.now() - cameraUpdateStartedAt);
+			if (
+				waterSurfaceMeshCount > 0 ||
+				coastlinePresentation.meshes.length > 0
+			) {
+				const waterUpdateStartedAt = performance.now();
+				updateWaterPresentation(waterPresentation, now);
+				diagnostics.recordWaterUpdate(performance.now() - waterUpdateStartedAt);
+			}
 			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
@@ -1746,9 +1792,13 @@ export function ThreeRuntimePanel({
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			renderer.dispose();
+			const disposeTracker: ThreeResourceDisposeTracker = {
+				geometries: new Set(),
+				materials: new Set(),
+			};
 			renderObjects.forEach((entry) => {
 				if (entry.disposeResources) {
-					disposePlaceholderObject(entry.object);
+					disposePlaceholderObject(entry.object, disposeTracker);
 				}
 			});
 			if (renderer.domElement.parentElement === host) {

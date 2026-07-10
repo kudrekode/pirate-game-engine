@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveThreeVisual } from "../runtime/three/threeVisuals";
+import { deriveCoastlineEdges } from "../runtime/three/waterPresentation";
 import type { ObjectBehaviour, ObjectDefinition } from "../types/game";
 import { defaultProject } from "./defaultProject";
 import { migrateProject } from "./migrateProject";
@@ -18,6 +19,23 @@ function findObjectDefinition(
 }
 
 describe("defaultProject pirate demo visuals", () => {
+	it("places the demo boat on authored river water with derivable coastline", () => {
+		const mainArea = defaultProject.areas.find(
+			(area) => area.id === "area_main",
+		);
+		expect(mainArea).toBeDefined();
+
+		const boat = mainArea?.objects.find(
+			(object) => object.id === "object_dock_marker",
+		);
+		const boatTerrain = mainArea?.terrainTiles.find(
+			(tile) => tile.x === boat?.x && tile.y === boat?.y,
+		);
+
+		expect(boatTerrain?.tileId).toBe("water");
+		expect(deriveCoastlineEdges(mainArea)).not.toHaveLength(0);
+	});
+
 	it("assigns Pirate Chest to the existing container definition without changing gameplay", () => {
 		const chest = findObjectDefinition(defaultProject, "object_chest");
 

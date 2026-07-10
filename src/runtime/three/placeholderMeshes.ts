@@ -536,18 +536,50 @@ export function createPlaceholderMeshGroup(
 	return group;
 }
 
-export function disposePlaceholderObject(object: THREE.Object3D): void {
+export type ThreeResourceDisposeTracker = {
+	geometries?: Set<THREE.BufferGeometry>;
+	materials?: Set<THREE.Material>;
+};
+
+function disposeTrackedGeometry(
+	geometry: THREE.BufferGeometry,
+	tracker: ThreeResourceDisposeTracker,
+): void {
+	const geometries = tracker.geometries;
+	if (geometries?.has(geometry)) {
+		return;
+	}
+	geometries?.add(geometry);
+	geometry.dispose();
+}
+
+function disposeTrackedMaterial(
+	material: THREE.Material,
+	tracker: ThreeResourceDisposeTracker,
+): void {
+	const materials = tracker.materials;
+	if (materials?.has(material)) {
+		return;
+	}
+	materials?.add(material);
+	material.dispose();
+}
+
+export function disposePlaceholderObject(
+	object: THREE.Object3D,
+	tracker: ThreeResourceDisposeTracker = {},
+): void {
 	object.traverse((child) => {
 		const mesh = child as THREE.Mesh;
 		if (mesh.geometry) {
-			mesh.geometry.dispose();
+			disposeTrackedGeometry(mesh.geometry, tracker);
 		}
 		if (Array.isArray(mesh.material)) {
 			mesh.material.forEach((material) => {
-				material.dispose();
+				disposeTrackedMaterial(material, tracker);
 			});
 		} else if (mesh.material) {
-			mesh.material.dispose();
+			disposeTrackedMaterial(mesh.material, tracker);
 		}
 	});
 }

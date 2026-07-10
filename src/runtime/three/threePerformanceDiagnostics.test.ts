@@ -19,6 +19,7 @@ describe("three performance diagnostics", () => {
 		diagnostics.recordFrame(20);
 		diagnostics.recordFrameCallback(6.4);
 		diagnostics.recordRenderCall(4.25);
+		diagnostics.recordWaterUpdate(0.7);
 		diagnostics.recordRafLoopStart("test start");
 		diagnostics.recordRafLoopCancel("test cancel");
 		diagnostics.recordRafLoopStart("test restart");
@@ -31,10 +32,12 @@ describe("three performance diagnostics", () => {
 		now = 330;
 		diagnostics.recordSceneCleanup();
 		diagnostics.recordTerrainRebuild({
+			coastlineEdgeCount: 8,
 			durationMs: 3.2,
 			meshCount: 11,
 			mode: "smooth",
 			tileCount: 10,
+			waterMeshCount: 2,
 		});
 		diagnostics.setSceneEntityCounts({
 			assetStatuses: [
@@ -113,11 +116,13 @@ describe("three performance diagnostics", () => {
 			},
 		});
 		expect(snapshot.terrain).toMatchObject({
+			coastlineEdgeCount: 8,
 			lastDurationMs: 3.2,
 			meshCount: 11,
 			mode: "smooth",
 			rebuildCount: 1,
 			tileCount: 10,
+			waterMeshCount: 2,
 		});
 		expect(snapshot.pointer).toMatchObject({
 			lastPickMs: 1.6,
@@ -130,6 +135,12 @@ describe("three performance diagnostics", () => {
 			count: 1,
 			lastMs: 6.4,
 			worstMs: 6.4,
+		});
+		expect(snapshot.phases.waterUpdate).toMatchObject({
+			averageMs: 0.7,
+			count: 1,
+			lastMs: 0.7,
+			worstMs: 0.7,
 		});
 		expect(snapshot.raf).toMatchObject({
 			activeLoopCount: 1,
@@ -301,6 +312,7 @@ describe("three performance diagnostics", () => {
 		diagnostics.recordRenderCall(65);
 		diagnostics.recordRafLoopStart("initial loop");
 		diagnostics.recordRuntimeTick(12);
+		diagnostics.recordWaterUpdate(4);
 
 		diagnostics.resetSampleWindow();
 
@@ -317,6 +329,10 @@ describe("three performance diagnostics", () => {
 		});
 		expect(snapshot.phases.render).toMatchObject({ count: 0, worstMs: 0 });
 		expect(snapshot.phases.frameCallback).toMatchObject({
+			count: 0,
+			worstMs: 0,
+		});
+		expect(snapshot.phases.waterUpdate).toMatchObject({
 			count: 0,
 			worstMs: 0,
 		});

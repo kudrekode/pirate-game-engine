@@ -185,10 +185,20 @@ export function ThreePerformanceOverlay({
 							{snapshot.terrain.mode}, {snapshot.terrain.tileCount} tiles,{" "}
 							{snapshot.terrain.meshCount} meshes
 						</strong>
+						<span>Water/coast</span>
+						<strong>
+							{snapshot.terrain.waterMeshCount}/
+							{snapshot.terrain.coastlineEdgeCount}
+						</strong>
 						<span>Terrain rebuild</span>
 						<strong>
 							{snapshot.terrain.rebuildCount}x,{" "}
 							{formatNumber(snapshot.terrain.lastDurationMs)} ms
+						</strong>
+						<span>Water update avg/worst</span>
+						<strong>
+							{formatNumber(snapshot.phases.waterUpdate.averageMs)} /{" "}
+							{formatNumber(snapshot.phases.waterUpdate.worstMs)} ms
 						</strong>
 						<span>Pointer/picks</span>
 						<strong>

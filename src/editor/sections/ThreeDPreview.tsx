@@ -18,6 +18,7 @@ import {
 import {
 	disposePlaceholderObject,
 	getPlaceholderSelectableObjects,
+	type ThreeResourceDisposeTracker,
 } from "../../runtime/three/placeholderMeshes";
 import { ThreePerformanceOverlay } from "../../runtime/three/ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "../../runtime/three/terrainMeshGeometry";
@@ -27,6 +28,12 @@ import {
 	type ThreePerformanceDiagnostics,
 } from "../../runtime/three/threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
+import {
+	createCoastlinePresentation,
+	createWaterPresentationState,
+	markWaterPresentationMesh,
+	updateWaterPresentation,
+} from "../../runtime/three/waterPresentation";
 import {
 	addThreeWorldLighting,
 	applyShadowRole,
@@ -203,14 +210,31 @@ function getPreviewCameraDimensions(
 	};
 }
 
-function disposeMesh(mesh: THREE.Mesh): void {
-	mesh.geometry.dispose();
+function disposeMaterial(
+	material: THREE.Material,
+	tracker: ThreeResourceDisposeTracker,
+): void {
+	if (tracker.materials?.has(material)) {
+		return;
+	}
+	tracker.materials?.add(material);
+	material.dispose();
+}
+
+function disposeMesh(
+	mesh: THREE.Mesh,
+	tracker: ThreeResourceDisposeTracker = {},
+): void {
+	if (!tracker.geometries?.has(mesh.geometry)) {
+		tracker.geometries?.add(mesh.geometry);
+		mesh.geometry.dispose();
+	}
 	if (Array.isArray(mesh.material)) {
 		mesh.material.forEach((material) => {
-			material.dispose();
+			disposeMaterial(material, tracker);
 		});
 	} else {
-		mesh.material.dispose();
+		disposeMaterial(mesh.material, tracker);
 	}
 }
 
@@ -501,16 +525,27 @@ export function ThreeDPreview({
 		);
 		scene.add(grid);
 
+		const waterPresentation = createWaterPresentationState();
+		let waterSurfaceMeshCount = 0;
 		const terrainRebuildStartedAt = performance.now();
 		const smoothTerrainVisualMeshes =
 			terrainRenderMode === "smooth"
 				? smoothTerrainMeshes.map((smoothMesh) => {
+						const usesWaterPresentation = smoothMesh.materialKey === "water";
+						if (usesWaterPresentation) {
+							waterSurfaceMeshCount += 1;
+						}
 						const mesh = new THREE.Mesh(
 							createSmoothTerrainBufferGeometry(smoothMesh),
-							createWorldMaterial(smoothMesh.materialKey),
+							usesWaterPresentation
+								? waterPresentation.waterMaterial
+								: createWorldMaterial(smoothMesh.materialKey),
 						);
+						if (usesWaterPresentation) {
+							markWaterPresentationMesh(mesh);
+						}
 						applyShadowRole(mesh, {
-							receive: smoothMesh.materialKey !== "water",
+							receive: !usesWaterPresentation,
 						});
 						scene.add(mesh);
 						return mesh;
@@ -526,6 +561,10 @@ export function ThreeDPreview({
 				editorSelection,
 				selectionMetadata,
 			);
+			const usesWaterPresentation = block.materialKey === "water";
+			if (terrainRenderMode !== "smooth" && usesWaterPresentation) {
+				waterSurfaceMeshCount += 1;
+			}
 			const mesh = new THREE.Mesh(
 				new THREE.BoxGeometry(
 					terrainRenderMode === "smooth" ? 0.98 : 0.96,
@@ -534,21 +573,38 @@ export function ThreeDPreview({
 				),
 				terrainRenderMode === "smooth"
 					? createWorldMaterial("default", { opacity: 0 })
-					: createTerrainMaterial(block.kind, { selected: isSelected }),
+					: usesWaterPresentation
+						? waterPresentation.waterMaterial
+						: createTerrainMaterial(block.kind, { selected: isSelected }),
 			);
+			if (terrainRenderMode !== "smooth" && usesWaterPresentation) {
+				markWaterPresentationMesh(mesh);
+			}
 			if (terrainRenderMode !== "smooth") {
-				applyShadowRole(mesh, { receive: block.kind !== "water" });
+				applyShadowRole(mesh, { receive: !usesWaterPresentation });
 			}
 			mesh.userData.selectionMetadata = selectionMetadata;
 			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
 			scene.add(mesh);
 			return mesh;
 		});
+		const coastlinePresentation = createCoastlinePresentation(
+			activeArea,
+			waterPresentation,
+		);
+		coastlinePresentation.meshes.forEach((mesh) => {
+			scene.add(mesh);
+		});
 		diagnostics.recordTerrainRebuild({
+			coastlineEdgeCount: coastlinePresentation.edges.length,
 			durationMs: performance.now() - terrainRebuildStartedAt,
-			meshCount: smoothTerrainVisualMeshes.length + terrainPickMeshes.length,
+			meshCount:
+				smoothTerrainVisualMeshes.length +
+				terrainPickMeshes.length +
+				coastlinePresentation.meshes.length,
 			mode: terrainRenderMode,
 			tileCount: terrainBlocks.length,
+			waterMeshCount: waterSurfaceMeshCount,
 		});
 		let assetStateChangeQueued = false;
 		const handleAssetStateChange = () => {
@@ -1620,6 +1676,14 @@ export function ThreeDPreview({
 			diagnostics.recordFrame(now - lastFrameMs);
 			lastFrameMs = now;
 			applyCameraFromState();
+			if (
+				waterSurfaceMeshCount > 0 ||
+				coastlinePresentation.meshes.length > 0
+			) {
+				const waterUpdateStartedAt = performance.now();
+				updateWaterPresentation(waterPresentation, now);
+				diagnostics.recordWaterUpdate(performance.now() - waterUpdateStartedAt);
+			}
 			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
@@ -1664,11 +1728,22 @@ export function ThreeDPreview({
 			cleanupPlacementGhost();
 			cleanupTerrainBrushGhost();
 			renderer.dispose();
-			terrainPickMeshes.forEach(disposeMesh);
-			smoothTerrainVisualMeshes.forEach(disposeMesh);
+			const disposeTracker: ThreeResourceDisposeTracker = {
+				geometries: new Set(),
+				materials: new Set(),
+			};
+			terrainPickMeshes.forEach((mesh) => {
+				disposeMesh(mesh, disposeTracker);
+			});
+			smoothTerrainVisualMeshes.forEach((mesh) => {
+				disposeMesh(mesh, disposeTracker);
+			});
+			coastlinePresentation.meshes.forEach((mesh) => {
+				disposeMesh(mesh, disposeTracker);
+			});
 			markerRenderResults.forEach((result) => {
 				if (!result.usedAsset) {
-					disposePlaceholderObject(result.group);
+					disposePlaceholderObject(result.group, disposeTracker);
 				}
 			});
 			if (walkPreviewMesh) {

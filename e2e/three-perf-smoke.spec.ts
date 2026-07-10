@@ -236,6 +236,12 @@ function validatePirateBenchmarkSnapshot(
 	if (snapshot.renderer.drawCalls <= 0 || snapshot.renderer.triangles <= 0) {
 		failures.push(`${label} renderer metrics were not populated.`);
 	}
+	if (snapshot.terrain.waterMeshCount <= 0) {
+		failures.push(`${label} did not report any water presentation meshes.`);
+	}
+	if (snapshot.terrain.coastlineEdgeCount <= 0) {
+		failures.push(`${label} did not report any coastline edges.`);
+	}
 }
 
 test("captures Three editor and runtime perf diagnostics", async ({
