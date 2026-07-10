@@ -1,68 +1,73 @@
 # Three Runtime Status
 
-## What Currently Works
+## Current Position
 
-- `Play 3D Experimental` starts from the play/runtime UI while `Play 2D` remains the default Phaser path.
-- The Three runtime creates a shared `RuntimeSession` from the cloned `GameProject`.
-- The current runtime area renders in Three.js using block terrain and placeholder entity markers.
-- Player spawn and area state come from shared runtime progression/session helpers.
-- WASD/arrow movement uses `playerMovementTransaction`.
-- Touch targets and trigger targets are processed through shared interaction/progression helpers.
-- E/Enter interaction uses shared interaction discovery, rule dispatch, object behaviour, pickup, shop, and transition helpers where available.
-- Runtime events update simple React overlays for status, flow log, inventory summary, quest summary, shop requests, cutscene requests, health, and session end.
-- Area transition/teleport requests update `RuntimeSession` and rebuild the Three scene.
-- NPC ticking and enemy contact damage use `runtimeNpcTick`.
-- Space attack uses `runtimeCombat`.
+`Play 3D Experimental` is still experimental, but it is no longer just a placeholder proof. It now exercises the shared runtime session through a real Three.js presentation path with asset loading, camera modes, visual interpolation, terrain tools, diagnostics, and a reproducible Playwright perf smoke.
 
-## What Is Experimental
+`Play 2D` remains the default and Phaser remains the reference runtime for production behavior. The Three runtime should continue to be treated as an adapter over shared runtime helpers, not as a second gameplay engine.
 
-- The 3D runtime is an adapter proof, not a production-quality runtime.
-- Phaser remains the reference runtime until parity is tested.
-- UI parity is intentionally limited.
-- Rendering uses simple block/marker placeholders.
-- Movement is grid based and visually immediate rather than smoothly animated.
-- NPC movement and combat presentation are functional but visually basic.
-- Camera follow/framing is basic and needs tuning.
+## Implemented Runtime Systems
 
-## Known Visual Limitations
+- `Play 3D Experimental` can be selected from Play mode while `Play 2D` remains the default.
+- Runtime startup creates a shared `RuntimeSession` from a cloned `GameProject`.
+- Movement, facing, touch targets, interactions, object behaviours, pickups, shops, vehicles, rules, progression, quests, NPC ticks, enemy contact, and combat route through shared runtime helpers.
+- Player and NPC visual positions interpolate between authoritative grid positions.
+- Runtime camera modes include follow and inspect; project camera config supports fixed-isometric and third-person follow.
+- Third-person mode supports mouse-look state, recentering, and camera-relative WASD input.
+- Movement remains discrete/cardinal/grid-based even in third-person camera mode.
+- Runtime UI uses React overlays for status, flow log, health, inventory, quests, shops, cutscene/dialogue requests, game over, and end game.
+- Three performance diagnostics track RAF interval, frame callback cost, render cost, visual update, camera update, runtime tick, terrain rebuilds, water/coast updates, asset status, hitches, scene rebuilds, renderer counts, and RAF loop lifecycle.
 
-- Terrain, structures, objects, NPCs, pickups, event blocks, vehicles, and the player use placeholder meshes.
-- There are no imported 3D character/object assets.
-- There are no skeletal animations or polished attack/contact effects.
-- Movement lacks interpolation/smoothing.
-- Camera follow needs smoothing, collision/framing polish, and better defaults across map sizes.
-- Cutscene, dialogue, shop, quest, inventory, and combat overlays are simple React panels.
+## Implemented Visual Systems
 
-## Known Gameplay Parity Risks
+- Placeholder meshes cover terrain, structures, objects, NPCs, pickups, vehicles, event blocks, and the player.
+- Object and NPC definitions can author 3D visual settings through `threeVisual`.
+- `resolveThreeVisual` selects authored placeholder/asset config, inferred fallback placeholders, and transform defaults.
+- `ThreeVisualControls` provides registry-backed asset selection in object/NPC editors.
+- Built-in registry entries include Demo Box and curated pirate demo GLB assets.
+- GLTF/GLB loading uses a loader cache; active instances are cloned from cached source scenes.
+- While assets load or fail, the renderer falls back to placeholder meshes and reports diagnostics.
+- The default demo assigns real pirate chest and pirate small ship assets.
+- The editor preview and runtime both use the shared visual renderer/cache/clone path.
+- Editor 3D view supports orbit, pan, zoom, camera presets, accurate terrain/entity picking, selection sync, entity dragging, and 3D placement.
+- Terrain tools include drag painting, brush/line/rectangle/fill gestures, height sculpting, brush falloff, and polished brush previews.
+- Terrain can render in blocky or smooth mode.
+- Water/coastline V1 presents authored water tiles with a shared animated material and derives simple coastline strips from land-water adjacency.
 
-- Phaser remains the tested reference for visible behavior.
-- Three runtime direct interaction presentation is simpler than Phaser presentation.
-- Cutscene/dialogue/shop UX is not at Phaser parity.
-- NPC movement ticks are timer based in the adapter and need parity checks against Phaser timing.
-- Combat/contact events need manual and contract test comparison against Phaser.
-- Boat boarding/dismounting should be tested carefully in both adapters.
-- Area transition order, area-enter rules, trigger waits, and quest sync need cross-adapter contract tests.
+## Playwright Perf Harness
 
-## Manual Test Checklist
+`npm run test:e2e:three-perf` opens the Demo Adventure benchmark, selects `area_main` / `Main Area`, captures editor/runtime diagnostics snapshots, screenshots, console entries, and network failures, and verifies the imported pirate chest/ship assets are active.
 
-- Spawn: start both Play 2D and Play 3D Experimental from the same project and confirm initial area/player position.
-- Movement: walk on allowed terrain, attempt blocked terrain, verify facing and status.
-- Interaction: interact with a simple NPC/object/event block and confirm rules/actions fire.
-- Quest: activate/progress/complete a quest and confirm reward-once behavior.
-- Inventory: collect a pickup and confirm inventory changes without mutating editor defaults.
-- Shop: open a shop, buy with enough currency, fail with insufficient currency, and verify stock.
-- Area transition: use a door/teleport/event link and confirm area/player position and area-enter effects.
-- NPC movement: confirm stationary, patrol, wander, and hostile chase behavior.
-- Combat: attack hostile NPCs, verify damage, cooldown, defeat, flags, and removed collision.
-- Boat: board, sail on allowed terrain, dismount on allowed terrain, and verify failure when no dismount is available.
+Use this harness for browser/performance-sensitive Three work. Do not infer performance regressions or fixes without comparing artifacts.
 
-## Next Recommended Commits
+## Current Limitations
 
-1. Add runtime contract tests for movement, interaction, progression, object/pickup/shop, NPC tick, combat, and vehicle semantics independent of adapters.
-2. Add parity-focused adapter tests that prove Phaser and Three invoke the same shared helper paths for key workflows.
-3. Improve Three camera follow/framing and add smoothing without changing movement semantics.
-4. Add visual interpolation for Three player/NPC movement while keeping grid state authoritative.
-5. Improve placeholder meshes for common terrain/entity types.
-6. Polish Three cutscene, dialogue, shop, inventory, quest, and combat overlays.
-7. Manually parity-test boat and combat workflows against Phaser and capture any helper gaps.
-8. Plan GLB/GLTF asset import and animation work only after runtime parity is stable.
+- No skeletal/model animation system yet.
+- No asset upload browser/library yet; registry entries are built in.
+- No model normalisation pipeline for consistent scale, origin, orientation, materials, or texture packaging.
+- Some pirate GLBs currently log missing `Textures/colormap.png` warnings in the browser console, even when assigned assets render and no fallback is used.
+- The barrel asset is present in the registry but is not part of the default benchmark assignment; validate it separately before using it as a required demo asset.
+- Terrain is still grid-authored; smooth terrain is a presentation mesh over authored tiles.
+- Terrain height remains editor/3D presentation data and does not affect runtime movement.
+- Water/coastline is V1/simple: no waves, reflections, depth, flow, shore gradients, foam simulation, or water gameplay/physics.
+- Third-person movement is camera-relative but still cardinal/grid-based, not diagonal/free movement.
+- No camera collision or obstacle avoidance.
+- Runtime cutscene/dialogue/shop UI is functional but not visually polished.
+- Imported model materials/textures are loaded as-is; there is no content pipeline validation beyond loader success/fallback diagnostics.
+
+## Current Parity View
+
+The manually tested pirate flow broadly uses shared gameplay semantics in both Phaser and Three. Remaining work is mostly visual/editor/runtime feel: camera polish, model presentation, animation, UI polish, and broader contract tests.
+
+Visual differences, imported asset styling, water/coast presentation, and camera feel should be tracked as presentation issues unless they change runtime state or shared helper behavior.
+
+## Next Recommended Work
+
+1. Add/expand runtime contract tests for shared movement, interaction, progression, object/pickup/shop, NPC tick, combat, and vehicle semantics.
+2. Terrain Sculpting / Shoreline Gradient V2 for more readable height and coast transitions.
+3. Sky / Atmosphere Presentation V1.
+4. Model Normalisation / Asset Transform Defaults V1.
+5. Pirate Vertical Slice Dressing V1 using current registry/visual-renderer paths.
+6. Character/NPC Model + Animation V1 after model normalisation.
+7. Asset Upload/Library V1 later, once built-in registry workflows are stable.
+8. Diagonal/free movement later, after visual, animation, and parity work clarify requirements.

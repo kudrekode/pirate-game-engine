@@ -4,15 +4,15 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
 
 ## Near-term
 
-- Three Runtime Parity Fixes V1:
-  - 3D camera follow and smoothing.
-  - 3D movement smoothing.
-  - 3D placeholder mesh improvements for terrain, objects, NPCs, pickups, structures, and vehicles.
-  - 3D runtime cutscene, dialogue, and shop UI polish.
-  - 3D runtime boat and combat parity testing.
+- Three Runtime / Editor Presentation V1 follow-ups:
+  - Terrain Sculpting / Shoreline Gradient V2.
+  - Sky / Atmosphere Presentation V1.
+  - Model Normalisation / Asset Transform Defaults V1.
+  - Pirate Vertical Slice Dressing V1.
+  - Character/NPC Model + Animation V1.
   - Runtime contract tests that prove Phaser and Three.js adapters use the same gameplay semantics.
+  - Keep using the Playwright Three perf harness for browser/performance-sensitive 3D work.
 - Expand map overlay filters for event blocks, collision, quest markers, and NPC movement.
-- Add 3D terrain painting that reuses existing terrain palette and map tools.
 - Add 3D overlay/path painting for overlays, collision review, and authoring guides.
 - Polish 3D placement with clearer previews, validity feedback, and inspector shortcuts.
 - Improve editor validation, deletion warnings, and reference navigation.
@@ -24,6 +24,7 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
 
 - Horses, carts, and richer vehicle handling.
 - Advanced boat steering, vehicle animations, and vehicle-specific interactions.
+- Diagonal/free movement later, after visual, animation, and parity work clarify requirements.
 - Economy and shops.
 - Equipment, armour, and clothes.
 - Enemy NPC behavior built on the shared NPC foundation.
@@ -39,11 +40,14 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
 - Height-aware map authoring tools for stairs, ramps, cliffs, and water-depth planning.
 - Height-aware movement rules once the 2D runtime is ready to use terrain elevation.
 - Better 3D placeholder meshes for common entity types before real asset imports.
+- Asset upload/library workflow after the built-in registry and transform defaults settle.
 
 ## Visual/asset pipeline
 
 - Asset imports.
 - GLB/GLTF support for editor previews and future runtime presentation.
+- Model normalisation for scale, origin, orientation, material/texture expectations, and reusable transform defaults.
+- Pirate demo dressing using current registry-backed visual assignments.
 - Asset generation workflows.
 - Better graphics and expanded pixel-art tools.
 - Sprite animation and visual preview improvements.

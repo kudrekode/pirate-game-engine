@@ -2,78 +2,82 @@
 
 ## Overview
 
-Adventure Game Builder uses one authored project schema and multiple runtime adapters. `GameProject` describes editor-authored game data. `RuntimeSession` owns play-session state. Phaser remains the default/reference 2D runtime, and the Three.js runtime is an experimental adapter that proves the same shared runtime helpers can drive a 3D presentation.
+Adventure Game Builder uses one authored project schema and multiple runtime adapters. `GameProject` is editor-authored data. `RuntimeSession` is isolated play-session state. Phaser remains the default/reference 2D runtime. The Three.js runtime is an experimental but increasingly capable adapter that presents the same shared runtime state in 3D.
 
-Runtime adapters should not become separate engines. They should call shared helpers for gameplay decisions and translate the resulting state/events into rendering, camera, input, animation, and UI.
+Adapters are not separate engines. They translate input, rendering, camera, animation, audio/visual effects, and UI into calls to shared runtime helpers. Gameplay decisions belong in shared helpers and `RuntimeSession`, not in Phaser or Three.js presentation code.
 
-## Editor Data vs Runtime State
+## GameProject Authored Data
 
-`GameProject` is editor data. It contains areas, terrain, overlays, structures, objects, pickups, NPCs, rules, quests, shops, items, cutscenes, dialogues, player defaults, and game-state defaults.
+`GameProject` contains durable authoring data:
 
-Runtime state is copied from `GameProject` when Play starts. A play session must not mutate editor defaults. Runtime-owned state includes inventory quantities, flags, variables, NPC health/alignment, quest progress, shop stock, player health, progression index, area entry state, collected pickups, opened objects, defeated NPCs, vehicle state, NPC movement timing, and combat cooldowns.
+- Areas, terrain, terrain heights, overlays, structures, objects, pickups, NPC instances, and event blocks.
+- Object/NPC/item/shop/quest/rule/cutscene/dialogue definitions.
+- Player defaults, camera defaults, and game-state defaults.
+- 3D visual config such as placeholder type, registry asset id, scale, height offset, and rotation offset.
 
-## RuntimeSession
+`GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 
-`src/runtime/runtimeSession.ts` creates the renderer-independent session used by runtime adapters.
+## RuntimeSession State
 
-`RuntimeSession` owns:
+Play mode starts from a cloned project snapshot and creates a `RuntimeSession` in `src/runtime/runtimeSession.ts`.
 
-- Cloned `GameProject` snapshot.
-- Current area id.
-- Player grid position and facing.
-- Runtime game state.
-- Runtime quest state.
-- Runtime shop stock.
-- Runtime player health and combat state.
-- Vehicle state and movement mode.
-- Progression and waiting-trigger state.
-- Collected/opened/defeated ids.
-- NPC movement/enemy contact timing.
+`RuntimeSession` owns runtime copies of:
 
-Adapters read and mutate this state through shared runtime helpers.
+- Current area id, player grid position, and facing.
+- Flags, variables, inventory quantities, NPC attributes, quest state, shop stock, player health, and combat state.
+- Progression/waiting-trigger state, entered areas, collected pickups, opened objects, defeated NPC ids, vehicle state, NPC movement timing, and enemy contact timing.
 
-## Shared Helpers
+Runtime helpers may mutate this state. Editor defaults must not be mutated by a play session.
 
-Shared helpers are the source of gameplay semantics:
+## Shared Runtime Helpers
+
+Shared helpers are renderer-independent and own gameplay semantics:
 
 - `runtimeSession`: create and hold play-session state.
-- `interactionDiscovery`: discover nearest/touch interactables with shared priority and eligibility.
-- `playerMovementTransaction`: resolve player movement, facing, movement duration, touch targets, and trigger targets.
-- `runtimeRuleActionDispatcher`: apply renderer-independent rule action effects and emit presentation requests.
-- `runtimeProgression`: process start progression, cutscene progression, trigger waits, area entry, and area transitions.
-- `runtimeObjectInteractions`: run object behaviours, pickups, shops, and vehicle transactions.
-- `runtimeNpcTick`: update NPC movement, enemy chase, and enemy contact damage.
-- `runtimeCombat`: resolve player attacks, NPC damage, defeat state, combat flags, and defeat trigger requests.
+- `interactionDiscovery`: nearest/touch interactables, priority, and eligibility.
+- `playerMovementTransaction`: grid movement, facing, movement duration, touch targets, and trigger targets.
+- `runtimeRuleActionDispatcher`: renderer-neutral rule effects and presentation requests.
+- `runtimeProgression`: start progression, cutscene progression, trigger waits, area entry, and area transitions.
+- `runtimeObjectInteractions`: object behaviours, pickups, shops, and vehicle transactions.
+- `runtimeNpcTick`: NPC movement, hostile chase, and contact damage.
+- `runtimeCombat`: player attacks, NPC damage, defeat state, combat flags, and defeat trigger requests.
 
-When adding gameplay, prefer adding or extending a shared helper before touching adapters.
+Shared gameplay helpers must not depend on Phaser, Three.js, React, WebGL, DOM state, or editor store state.
 
-## Phaser Adapter Responsibilities
+## Phaser Adapter
 
-`src/runtime/AdventureScene.ts` is the Phaser adapter. It owns Phaser-specific concerns:
+`src/runtime/AdventureScene.ts` is the Phaser adapter and remains the reference runtime path. It owns Phaser-specific concerns:
 
-- Phaser scene lifecycle.
-- Keyboard input translation.
-- Tile/world rendering.
-- Player, NPC, object, pickup, and vehicle sprites/markers.
-- Camera bounds/follow.
-- Tweens and animation timing.
-- Phaser status/debug text.
-- Cutscene/dialogue presentation that currently lives in Phaser.
-- Translating shared runtime events into existing React/Phaser overlay callbacks.
+- Phaser scene lifecycle, sprites, tile/world rendering, tweens, keyboard input, and cameras.
+- Translating shared runtime events into Phaser presentation and React overlay callbacks.
+- Existing 2D cutscene/dialogue/status/debug presentation.
 
-It should not own new gameplay state when that state belongs in `RuntimeSession`.
+It should call shared helpers for movement, interactions, rules, progression, objects, pickups, shops, vehicles, NPC ticks, and combat.
 
-## Three.js Adapter Responsibilities
+## Three.js Adapter
 
-`src/runtime/three/ThreeRuntimePanel.tsx` is the experimental Three.js adapter. It owns Three-specific concerns:
+`src/runtime/three/ThreeRuntimePanel.tsx` is the experimental Three.js runtime adapter. It now supports real 3D presentation features while keeping gameplay grid-authoritative:
 
-- Creating and disposing the Three scene, camera, renderer, geometries, materials, and RAF loop.
-- Rendering terrain/elevation and runtime-visible entities.
-- Translating keyboard input into shared movement/combat/interaction helper calls.
-- Rebuilding the scene after runtime state changes.
-- Showing simple React overlays for status, flow log, cutscene requests, shops, quests, health, and inventory summaries.
+- Runtime scene, camera, renderer, geometry/material, RAF, cleanup, and diagnostics lifecycle.
+- Blocky and smooth terrain presentation, authored terrain heights, water/coastline visuals, and runtime-visible entities.
+- Placeholder and registry-backed GLTF/GLB asset visuals through the shared visual resolver/renderer path.
+- Visual interpolation for player/NPC grid movement.
+- Follow, inspect, fixed-isometric, third-person follow, camera-relative WASD, and third-person mouse look.
+- React overlays for status, flow log, cutscene/dialogue/shop requests, quests, inventory, health, and session end.
 
-The Three runtime must not import editor store/live editor state for gameplay. It can reuse rendering helpers where practical, but gameplay decisions must come from `RuntimeSession` and shared helpers.
+The adapter must not import editor store/live editor state for gameplay. It may use Three-specific helpers for presentation, camera math, visual smoothing, GLTF loading/cache/clone, terrain mesh generation, water/coast rendering, and diagnostics.
+
+## Presentation-Only Systems
+
+These systems are visual/editor presentation and must not be mistaken for gameplay semantics:
+
+- Imported GLTF/GLB assets, cached source scenes, and cloned active instances.
+- 3D placeholder meshes and authored visual transform defaults.
+- Terrain height/elevation, smooth terrain mesh generation, water surface material animation, and coastline strips.
+- Camera follow/inspect/third-person state and mouse-look state.
+- Performance diagnostics overlays and Playwright perf snapshots.
+
+Runtime movement remains discrete/grid-based. Terrain height and water/coast visuals do not change collision or movement until shared movement helpers explicitly add height-aware or water-depth rules.
 
 ## Event Flow
 
@@ -81,51 +85,24 @@ Typical runtime flow:
 
 1. Play mode receives a cloned `GameProject`.
 2. Adapter creates `RuntimeSession`.
-3. Adapter marks the initial area entered.
-4. Adapter fires `on_game_start` rules.
-5. Adapter processes runtime progression.
-6. Shared helpers mutate session state and emit renderer-neutral events.
-7. Adapter translates events into UI, camera, rendering, or presentation requests.
-8. Player input calls shared movement, interaction, combat, and shop/object helpers.
-9. Runtime state changes trigger adapter re-rendering.
+3. Adapter fires startup/progression work through shared helpers.
+4. Shared helpers mutate session state and emit renderer-neutral events.
+5. Adapter translates events into UI, camera, rendering, or presentation requests.
+6. Player input calls shared movement, interaction, combat, and object/shop/vehicle helpers.
+7. Runtime state changes trigger adapter presentation updates or scene rebuilds.
 
-Presentation requests such as cutscenes, dialogue, shops, teleport requests, game over, and end game should stay renderer-neutral until the adapter displays them.
+Presentation requests such as cutscenes, dialogue, shops, teleports, game over, and end game should stay renderer-neutral until the adapter displays them.
 
-## Known Limitations
+## Testing Guidance
 
-- Phaser remains the reference runtime until parity is tested.
-- Three.js runtime visuals are blocky placeholders.
-- Three.js runtime movement and NPC motion are not yet polished or fully animated.
-- Three.js camera follow and framing need more work.
-- Dialogue/cutscene/shop overlays are intentionally simple in the Three adapter.
-- Contract tests do not yet compare Phaser and Three runtime behavior end to end.
-- Terrain height is visual/editor data; movement currently remains grid/terrain-rule based.
+Prefer focused runtime-helper tests for gameplay semantics. Adapter tests should verify input/event/render translation without relying on real WebGL where possible.
 
-## How to Add a New Gameplay Action Safely
+Use the Playwright Three perf smoke only for browser/performance work or when a task changes the Three editor/runtime browser surface. It captures reproducible diagnostics and screenshots, but it is not part of `npm run ci`.
 
-1. Define the authored data in `GameProject` only if schema changes are required.
-2. Add migration defaults for old projects if schema changes are required.
-3. Put runtime state in `RuntimeSessionState` or existing runtime state containers.
-4. Implement gameplay semantics in a shared runtime helper.
-5. Emit renderer-neutral events for presentation.
-6. Update Phaser adapter to translate events without duplicating logic.
-7. Update Three adapter only when the helper can support the same semantics.
-8. Add focused helper tests first.
-9. Add adapter tests only for input/event/render translation.
-
-## How to Test Runtime Behaviour
-
-Prefer headless runtime tests for shared helpers. They should create a small `GameProject`, create a `RuntimeSession`, call the helper, and assert session state plus emitted events.
-
-Useful test categories:
+Useful checks:
 
 - Runtime session cloning does not mutate editor defaults.
 - Movement/collision decisions are deterministic.
-- Interaction priority and eligibility match existing Phaser behavior.
-- Rule actions mutate state and emit expected events.
-- Quest sync and reward-once behavior hold.
-- Object, pickup, shop, and vehicle transactions update runtime state only.
-- NPC movement/contact timing respects cooldowns.
-- Combat attack/defeat flags and trigger requests match expectations.
-
-Adapter tests should mock Phaser or Three.js where possible and verify that UI/input paths call shared helper paths without relying on real WebGL or browser-heavy behavior.
+- Interaction priority and rule/object/quest/shop/pickup/vehicle transactions use shared helpers.
+- NPC tick/contact, combat defeat flags, and trigger requests match expected session state.
+- Three adapter tests prove it calls shared helper paths and does not import editor store state for gameplay.
