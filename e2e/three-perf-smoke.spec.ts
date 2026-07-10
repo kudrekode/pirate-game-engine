@@ -254,6 +254,7 @@ test("captures Three editor and runtime perf diagnostics", async ({
 	const failures: string[] = [];
 	const artifacts: Record<string, string> = {};
 	let editorSnapshot: ThreePerformanceSnapshot | null = null;
+	let runtimeCollapsedSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeAfterMoveSnapshot: ThreePerformanceSnapshot | null = null;
 	let fatalError: unknown;
@@ -341,13 +342,21 @@ test("captures Three editor and runtime perf diagnostics", async ({
 		if (await continueButton.isVisible({ timeout: 5000 }).catch(() => false)) {
 			await continueButton.click();
 		}
-		await page.getByRole("button", { name: "Perf" }).click();
-		await expect(page.getByLabel("3D Runtime Perf diagnostics")).toBeVisible();
 		await waitForPirateBenchmarkSnapshot(
 			page,
 			RUNTIME_SNAPSHOT_LABEL,
 			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
 		);
+		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
+		await page.waitForTimeout(1000);
+		await page.waitForTimeout(5000);
+		runtimeCollapsedSnapshot = await readSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
+		artifacts.runtimeCollapsedSnapshot = await writeJson(
+			"three-runtime-collapsed-snapshot.json",
+			runtimeCollapsedSnapshot,
+		);
+		await page.getByRole("button", { name: "Perf" }).click();
+		await expect(page.getByLabel("3D Runtime Perf diagnostics")).toBeVisible();
 		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
 		await page.waitForTimeout(1000);
 		await page.waitForTimeout(5000);
@@ -376,11 +385,22 @@ test("captures Three editor and runtime perf diagnostics", async ({
 		fatalError = error;
 	} finally {
 		validateSnapshot(editorSnapshot, EDITOR_SNAPSHOT_LABEL, failures);
+		validateSnapshot(
+			runtimeCollapsedSnapshot,
+			RUNTIME_SNAPSHOT_LABEL,
+			failures,
+		);
 		validateSnapshot(runtimeSnapshot, RUNTIME_SNAPSHOT_LABEL, failures);
 		validatePirateBenchmarkSnapshot(
 			editorSnapshot,
 			EDITOR_SNAPSHOT_LABEL,
 			EDITOR_MIN_PIRATE_ENTITY_COUNT,
+			failures,
+		);
+		validatePirateBenchmarkSnapshot(
+			runtimeCollapsedSnapshot,
+			RUNTIME_SNAPSHOT_LABEL,
+			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
 			failures,
 		);
 		validatePirateBenchmarkSnapshot(
@@ -424,6 +444,7 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			pageErrors,
 			snapshots: {
 				editor: editorSnapshot,
+				runtimeCollapsed: runtimeCollapsedSnapshot,
 				runtime: runtimeSnapshot,
 				runtimeAfterMove: runtimeAfterMoveSnapshot,
 			},

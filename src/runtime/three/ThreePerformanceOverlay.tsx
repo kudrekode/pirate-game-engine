@@ -123,6 +123,15 @@ export function ThreePerformanceOverlay({
 						<strong>{snapshot.frame.frameCount}</strong>
 						<span>Render call</span>
 						<strong>{formatNumber(snapshot.frame.lastRenderMs)} ms</strong>
+						<span>RAF callback avg/worst</span>
+						<strong>
+							{formatNumber(snapshot.phases.frameCallback.averageMs)} /{" "}
+							{formatNumber(snapshot.phases.frameCallback.worstMs)} ms
+						</strong>
+						<span>RAF loops start/cancel</span>
+						<strong>
+							{snapshot.raf.loopStartCount}/{snapshot.raf.loopCancelCount}
+						</strong>
 						<span>Draw calls</span>
 						<strong>{snapshot.renderer.drawCalls}</strong>
 						<span>Triangles</span>

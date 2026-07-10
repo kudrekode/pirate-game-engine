@@ -376,6 +376,7 @@ export function ThreeRuntimePanel({
 	const gameOverRef = useRef(false);
 	const nextRebuildReasonRef = useRef("initial runtime start");
 	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
+	const isStartingRuntimeRef = useRef(false);
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
@@ -405,6 +406,9 @@ export function ThreeRuntimePanel({
 
 	function forceRender(reason = "runtime state changed") {
 		nextRebuildReasonRef.current = reason;
+		if (isStartingRuntimeRef.current) {
+			return;
+		}
 		setRenderVersion((version) => version + 1);
 	}
 
@@ -1164,6 +1168,7 @@ export function ThreeRuntimePanel({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: session startup owns fresh runtime state; callbacks read sessionRef.
 	useEffect(() => {
+		isStartingRuntimeRef.current = true;
 		try {
 			const session = createRuntimeSession(project);
 			sessionRef.current = session;
@@ -1184,13 +1189,15 @@ export function ThreeRuntimePanel({
 			fireRuntimeTrigger({ type: "on_game_start" }, () =>
 				processRuntimeProgression(session, handleProgressionEvent),
 			);
-			forceRender("initial runtime start");
+			nextRebuildReasonRef.current = "initial runtime start";
 		} catch (error) {
 			sessionRef.current = null;
 			resetPresentationVisuals(null);
 			setMountError(
 				error instanceof Error ? error.message : "Could not start 3D runtime.",
 			);
+		} finally {
+			isStartingRuntimeRef.current = false;
 		}
 
 		return () => {
@@ -1632,6 +1639,7 @@ export function ThreeRuntimePanel({
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
 		const render = () => {
+			const frameCallbackStartedAt = performance.now();
 			const now = performance.now();
 			const deltaMs = now - lastFrameMs;
 			lastFrameMs = now;
@@ -1718,14 +1726,19 @@ export function ThreeRuntimePanel({
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
 			diagnostics.recordRendererInfo(renderer.info);
 			animationFrame = window.requestAnimationFrame(render);
+			diagnostics.recordFrameCallback(
+				performance.now() - frameCallbackStartedAt,
+			);
 		};
 		diagnostics.recordSceneBuild(
 			rebuildReason,
 			performance.now() - sceneBuildStartedAt,
 		);
+		diagnostics.recordRafLoopStart(rebuildReason);
 		render();
 
 		return () => {
+			diagnostics.recordRafLoopCancel(rebuildReason);
 			diagnostics.recordSceneCleanup();
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);

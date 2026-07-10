@@ -17,7 +17,11 @@ describe("three performance diagnostics", () => {
 		diagnostics.recordFrame(16);
 		now = 300;
 		diagnostics.recordFrame(20);
+		diagnostics.recordFrameCallback(6.4);
 		diagnostics.recordRenderCall(4.25);
+		diagnostics.recordRafLoopStart("test start");
+		diagnostics.recordRafLoopCancel("test cancel");
+		diagnostics.recordRafLoopStart("test restart");
 		diagnostics.recordRendererInfo({
 			memory: { geometries: 5, textures: 6 },
 			programs: [{}, {}],
@@ -121,6 +125,20 @@ describe("three performance diagnostics", () => {
 			pointerMoveCount: 2,
 			pointerMovesPerSecond: 3.7,
 		});
+		expect(snapshot.phases.frameCallback).toMatchObject({
+			averageMs: 6.4,
+			count: 1,
+			lastMs: 6.4,
+			worstMs: 6.4,
+		});
+		expect(snapshot.raf).toMatchObject({
+			activeLoopCount: 1,
+			lastCancelReason: "test cancel",
+			lastStartReason: "test restart",
+			loopCancelCount: 1,
+			loopRestartCount: 1,
+			loopStartCount: 2,
+		});
 		expect(snapshot.runtime).toMatchObject({
 			averageTickMs: 2.7,
 			lastTickMs: 2.7,
@@ -177,6 +195,7 @@ describe("three performance diagnostics", () => {
 		const diagnostics = createThreePerformanceDiagnostics();
 
 		diagnostics.recordRenderCall(1.2);
+		diagnostics.recordFrameCallback(2.4);
 		diagnostics.recordFrameInterval(68);
 
 		const snapshot = diagnostics.getSnapshot();
@@ -189,6 +208,11 @@ describe("three performance diagnostics", () => {
 			averageMs: 1.2,
 			lastMs: 1.2,
 			worstMs: 1.2,
+		});
+		expect(snapshot.phases.frameCallback).toMatchObject({
+			averageMs: 2.4,
+			lastMs: 2.4,
+			worstMs: 2.4,
 		});
 		expect(
 			snapshot.hitches.recent[snapshot.hitches.recent.length - 1],
@@ -273,7 +297,9 @@ describe("three performance diagnostics", () => {
 			},
 		});
 		diagnostics.recordFrameInterval(90);
+		diagnostics.recordFrameCallback(33);
 		diagnostics.recordRenderCall(65);
+		diagnostics.recordRafLoopStart("initial loop");
 		diagnostics.recordRuntimeTick(12);
 
 		diagnostics.resetSampleWindow();
@@ -290,6 +316,14 @@ describe("three performance diagnostics", () => {
 			recent: [],
 		});
 		expect(snapshot.phases.render).toMatchObject({ count: 0, worstMs: 0 });
+		expect(snapshot.phases.frameCallback).toMatchObject({
+			count: 0,
+			worstMs: 0,
+		});
+		expect(snapshot.raf).toMatchObject({
+			activeLoopCount: 1,
+			loopStartCount: 1,
+		});
 		expect(snapshot.runtime).toMatchObject({ tickCount: 0, worstTickMs: 0 });
 		expect(snapshot.scene).toMatchObject({
 			areaId: "area_main",

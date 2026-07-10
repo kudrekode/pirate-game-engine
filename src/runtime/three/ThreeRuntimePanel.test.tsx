@@ -368,6 +368,17 @@ function runLatestAnimationFrame(): void {
 	callback?.(performance.now());
 }
 
+function getRuntimeDiagnosticsSnapshot() {
+	const snapshot =
+		window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel");
+	if (!snapshot) {
+		throw new Error(
+			"ThreeRuntimePanel diagnostics snapshot was not registered.",
+		);
+	}
+	return snapshot;
+}
+
 describe("ThreeRuntimePanel", () => {
 	it("renders the 3D runtime shell and creates a runtime session", () => {
 		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
@@ -382,6 +393,12 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
 			"active",
 		);
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
+		expect(getRuntimeDiagnosticsSnapshot().raf).toMatchObject({
+			activeLoopCount: 1,
+			loopCancelCount: 0,
+			loopStartCount: 1,
+		});
 		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
 		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
@@ -583,6 +600,10 @@ describe("ThreeRuntimePanel", () => {
 		);
 		const rendererCountAfterStartup =
 			threeSpies.WebGLRenderer.mock.calls.length;
+		const rafStartCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopStartCount;
+		const rafCancelCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopCancelCount;
 
 		fireEvent.keyDown(window, { key: "ArrowRight" });
 
@@ -592,6 +613,12 @@ describe("ThreeRuntimePanel", () => {
 		});
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopStartCount).toBe(
+			rafStartCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopCancelCount).toBe(
+			rafCancelCountAfterStartup,
 		);
 	});
 
@@ -762,6 +789,10 @@ describe("ThreeRuntimePanel", () => {
 		const canvas = screen.getByLabelText("Three runtime viewport");
 		const rendererCountAfterStartup =
 			threeSpies.WebGLRenderer.mock.calls.length;
+		const rafStartCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopStartCount;
+		const rafCancelCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopCancelCount;
 
 		expect(screen.getByText("Camera - Third-person")).toBeInTheDocument();
 		expect(
@@ -779,6 +810,12 @@ describe("ThreeRuntimePanel", () => {
 		expect(JSON.stringify(project)).toBe(projectBefore);
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopStartCount).toBe(
+			rafStartCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopCancelCount).toBe(
+			rafCancelCountAfterStartup,
 		);
 	});
 

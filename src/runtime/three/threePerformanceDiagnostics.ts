@@ -30,6 +30,7 @@ export type ThreePerformancePhase =
 	| "asset load callback"
 	| "asset load start"
 	| "camera_update"
+	| "frame_callback"
 	| "object state update"
 	| "raf_interval"
 	| "render"
@@ -109,6 +110,7 @@ export type ThreePerformanceSnapshot = {
 	label: string;
 	phases: {
 		cameraUpdate: ThreePerformancePhaseStats;
+		frameCallback: ThreePerformancePhaseStats;
 		render: ThreePerformancePhaseStats;
 		runtimeTick: ThreePerformancePhaseStats;
 		visualUpdate: ThreePerformancePhaseStats;
@@ -128,6 +130,14 @@ export type ThreePerformanceSnapshot = {
 		programs: number;
 		textures: number;
 		triangles: number;
+	};
+	raf: {
+		activeLoopCount: number;
+		lastCancelReason: string;
+		lastStartReason: string;
+		loopCancelCount: number;
+		loopRestartCount: number;
+		loopStartCount: number;
 	};
 	runtime: {
 		averageTickMs: number;
@@ -166,6 +176,7 @@ export type ThreePerformanceDiagnostics = {
 		definitionId?: string,
 	) => void;
 	recordFrame: (durationMs: number) => void;
+	recordFrameCallback: (durationMs: number) => void;
 	recordFrameInterval: (durationMs: number) => void;
 	recordCameraUpdate: (durationMs: number) => void;
 	recordVisualUpdate: (durationMs: number) => void;
@@ -173,6 +184,8 @@ export type ThreePerformanceDiagnostics = {
 	recordPointerMove: () => void;
 	recordRenderCall: (durationMs: number) => void;
 	recordRendererInfo: (info: ThreePerformanceRendererInfo | undefined) => void;
+	recordRafLoopCancel: (reason: string) => void;
+	recordRafLoopStart: (reason: string) => void;
 	recordRuntimeTick: (durationMs: number) => void;
 	recordSceneBuild: (reason: string, durationMs: number) => void;
 	recordSceneCleanup: () => void;
@@ -438,6 +451,12 @@ export function createThreePerformanceDiagnostics(
 	const runtimeTickStats = createPhaseStatsState();
 	const visualUpdateStats = createPhaseStatsState();
 	const cameraUpdateStats = createPhaseStatsState();
+	const frameCallbackStats = createPhaseStatsState();
+	let rafLoopStartCount = 0;
+	let rafLoopCancelCount = 0;
+	let activeRafLoopCount = 0;
+	let lastRafLoopStartReason = "";
+	let lastRafLoopCancelReason = "";
 	let over50MsCount = 0;
 	let over100MsCount = 0;
 	let over500MsCount = 0;
@@ -469,6 +488,7 @@ export function createThreePerformanceDiagnostics(
 		resetPhaseStats(runtimeTickStats);
 		resetPhaseStats(visualUpdateStats);
 		resetPhaseStats(cameraUpdateStats);
+		resetPhaseStats(frameCallbackStats);
 		over50MsCount = 0;
 		over100MsCount = 0;
 		over500MsCount = 0;
@@ -607,6 +627,7 @@ export function createThreePerformanceDiagnostics(
 				label,
 				phases: {
 					cameraUpdate: getPhaseStatsSnapshot(cameraUpdateStats),
+					frameCallback: getPhaseStatsSnapshot(frameCallbackStats),
 					render: getPhaseStatsSnapshot(renderStats),
 					runtimeTick: getPhaseStatsSnapshot(runtimeTickStats),
 					visualUpdate: getPhaseStatsSnapshot(visualUpdateStats),
@@ -626,6 +647,14 @@ export function createThreePerformanceDiagnostics(
 					programs,
 					textures,
 					triangles,
+				},
+				raf: {
+					activeLoopCount: activeRafLoopCount,
+					lastCancelReason: lastRafLoopCancelReason,
+					lastStartReason: lastRafLoopStartReason,
+					loopCancelCount: rafLoopCancelCount,
+					loopRestartCount: Math.max(0, rafLoopStartCount - 1),
+					loopStartCount: rafLoopStartCount,
 				},
 				runtime: {
 					averageTickMs: getPhaseStatsSnapshot(runtimeTickStats).averageMs,
@@ -671,6 +700,14 @@ export function createThreePerformanceDiagnostics(
 		},
 		recordFrame: (durationMs: number) => {
 			diagnostics.recordFrameInterval(durationMs);
+		},
+		recordFrameCallback: (durationMs: number) => {
+			recordPhaseStats(frameCallbackStats, durationMs);
+			recordPhase(
+				"frame_callback",
+				"RAF callback synchronous work",
+				durationMs,
+			);
 		},
 		recordFrameInterval: (durationMs: number) => {
 			frameCount += 1;
@@ -722,6 +759,18 @@ export function createThreePerformanceDiagnostics(
 			geometries = info?.memory?.geometries ?? 0;
 			textures = info?.memory?.textures ?? 0;
 			programs = info?.programs?.length ?? 0;
+		},
+		recordRafLoopCancel: (reason: string) => {
+			rafLoopCancelCount += 1;
+			activeRafLoopCount = Math.max(0, activeRafLoopCount - 1);
+			lastRafLoopCancelReason = reason;
+			pushEvent(`raf cancel: ${reason}`);
+		},
+		recordRafLoopStart: (reason: string) => {
+			rafLoopStartCount += 1;
+			activeRafLoopCount += 1;
+			lastRafLoopStartReason = reason;
+			pushEvent(`raf start: ${reason}`);
 		},
 		recordRuntimeTick: (durationMs: number) => {
 			tickCount += 1;
@@ -842,7 +891,8 @@ export function formatThreePerformanceSnapshot(
 		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances} (${snapshot.asset.activeImportedAssetIds.join(", ") || "none"}), active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
 		`asset statuses: ${assetStatuses}, loading fallbacks ${snapshot.asset.loadingFallbackCount}, error fallbacks ${snapshot.asset.errorFallbackCount}, missing fallbacks ${snapshot.asset.missingFallbackCount}, stuck loading ${snapshot.asset.stuckLoadingCount}`,
 		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, last ms ${snapshot.terrain.lastDurationMs}`,
-		`phase stats: visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
+		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
+		`raf loops: starts ${snapshot.raf.loopStartCount}, cancels ${snapshot.raf.loopCancelCount}, restarts ${snapshot.raf.loopRestartCount}, active ${snapshot.raf.activeLoopCount}, last start "${snapshot.raf.lastStartReason || "none"}", last cancel "${snapshot.raf.lastCancelReason || "none"}"`,
 		`input/runtime: pointer moves ${snapshot.pointer.pointerMoveCount}, pointer/s ${snapshot.pointer.pointerMovesPerSecond}, picks ${snapshot.pointer.pickCount}, last pick ms ${snapshot.pointer.lastPickMs}, ticks ${snapshot.runtime.tickCount}, last/avg/worst tick ms ${snapshot.runtime.lastTickMs}/${snapshot.runtime.averageTickMs}/${snapshot.runtime.worstTickMs}`,
 		snapshot.asset.lastMessage
 			? `last asset: ${snapshot.asset.lastMessage}`
