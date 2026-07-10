@@ -138,7 +138,12 @@ type ThreeDPreviewProps = {
 	embedded?: boolean;
 	heightToolValue?: number;
 	hideDetails?: boolean;
+	onBrushFalloffChange?: (falloff: TerrainBrushFalloff) => void;
+	onBrushShapeChange?: (shape: TerrainBrushShape) => void;
+	onBrushSizeChange?: (size: TerrainBrushSize) => void;
+	onBrushStrengthChange?: (strength: number) => void;
 	onOpenInMapEditor?: () => void;
+	onTerrainGestureChange?: (gesture: TerrainGesture) => void;
 	overlayFilters?: MapOverlayFilters;
 	terrainGesture?: TerrainGesture;
 	terrainPaintTileId?: string;
@@ -181,6 +186,59 @@ function resolveThreeDPreviewBuildReason(
 		return "walk preview changed";
 	}
 	return "preview state changed";
+}
+
+function getTerrainHeightToolLabel(tool: TerrainHeightTool): string {
+	if (tool === "raise") {
+		return "Raise";
+	}
+	if (tool === "lower") {
+		return "Lower";
+	}
+	if (tool === "flatten") {
+		return "Flatten";
+	}
+	if (tool === "set") {
+		return "Set Height";
+	}
+	if (tool === "smooth") {
+		return "Smooth";
+	}
+	if (tool === "slope") {
+		return "Slope";
+	}
+	return "Roughen";
+}
+
+function getTerrainGestureLabel(gesture: TerrainGesture): string {
+	if (gesture === "brush") {
+		return "Brush";
+	}
+	if (gesture === "line") {
+		return "Line";
+	}
+	if (gesture === "rectangle") {
+		return "Rectangle";
+	}
+	return "Fill";
+}
+
+function getTerrainEditorModeLabel({
+	placementLabel,
+	terrainHeightTool,
+	terrainPaintTileId,
+}: {
+	placementLabel?: string;
+	terrainHeightTool?: TerrainHeightTool;
+	terrainPaintTileId?: string;
+}): string {
+	if (terrainHeightTool) {
+		return `${getTerrainHeightToolLabel(terrainHeightTool)} terrain`;
+	}
+	if (terrainPaintTileId) {
+		return `Paint ${terrainPaintTileId}`;
+	}
+	return placementLabel ?? "Select and move";
 }
 
 type TerrainBrushStroke = {
@@ -250,7 +308,12 @@ export function ThreeDPreview({
 	embedded = false,
 	heightToolValue = 0,
 	hideDetails = false,
+	onBrushFalloffChange,
+	onBrushShapeChange,
+	onBrushSizeChange,
+	onBrushStrengthChange,
 	onOpenInMapEditor,
+	onTerrainGestureChange,
 	overlayFilters: controlledOverlayFilters,
 	terrainGesture = "brush",
 	terrainPaintTileId,
@@ -345,6 +408,18 @@ export function ThreeDPreview({
 		isMovablePreviewSelection(editorSelection) &&
 		editorSelection.areaId === activeArea?.id;
 	const isWalkPreviewActive = Boolean(walkPreviewPosition);
+	const isTerrainEditing = Boolean(terrainPaintTileId || terrainHeightTool);
+	const canUseBrushShape = terrainGesture === "brush";
+	const canUseHeightBrushOptions = Boolean(
+		terrainHeightTool &&
+			terrainHeightTool !== "flatten" &&
+			terrainHeightTool !== "set",
+	);
+	const toolbarModeLabel = getTerrainEditorModeLabel({
+		placementLabel: placementInfo.active ? placementInfo.label : undefined,
+		terrainHeightTool,
+		terrainPaintTileId,
+	});
 	const activeAreaId = activeArea?.id;
 	const cameraDimensions = useMemo(
 		() => getPreviewCameraDimensions(activeArea?.height, activeArea?.width),
@@ -1271,7 +1346,8 @@ export function ThreeDPreview({
 				const mesh = new THREE.Mesh(
 					new THREE.BoxGeometry(0.92, 0.08, 0.92),
 					createWorldMaterial(getTerrainBrushPreviewMaterialKey(), {
-						opacity: 0.48,
+						opacity: 0.62,
+						selected: true,
 					}),
 				);
 				mesh.position.set(
@@ -1922,91 +1998,216 @@ export function ThreeDPreview({
 			}
 		>
 			<div className="content-panel three-d-preview-panel">
-				<div className="panel-title">3D Preview</div>
-				<p className="helper-text">
-					3D Preview is experimental. Entity movement edits the current project;
-					height tools sculpt the current area.
-				</p>
-				<p className="helper-text">
-					Showing terrain and entity placeholders for{" "}
-					{activeArea?.name ?? "No active area"}.
-				</p>
-				<p className="helper-text">
-					Click objects in 3D to inspect them. Drag a selected entity to move it
-					on the grid.
-				</p>
-				{isWalkPreviewActive ? (
-					<p className="helper-text">
-						Experimental 3D walk preview — game logic disabled.
-					</p>
-				) : null}
-				<p className="helper-text">
-					{terrainHeightTool
-						? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
-						: terrainPaintTileId
-							? `Click terrain to paint selected terrain type: ${terrainPaintTileId}.`
-							: placementInfo.active
-								? `${placementInfo.label}. Click terrain to place.`
-								: "No placeable selected."}
-				</p>
-				<div className="three-d-preview-controls">
-					<button
-						className={cameraPreset === "top" ? "active" : ""}
-						onClick={() => applyCameraPreset("top")}
-						type="button"
-					>
-						Top
-					</button>
-					<button
-						className={cameraPreset === "isometric" ? "active" : ""}
-						onClick={() => applyCameraPreset("isometric")}
-						type="button"
-					>
-						Isometric
-					</button>
-					<button
-						className={cameraPreset === "low" ? "active" : ""}
-						onClick={() => applyCameraPreset("low")}
-						type="button"
-					>
-						Low angle
-					</button>
-					<button onClick={resetCamera} type="button">
-						Reset camera
-					</button>
-					<button
-						className={terrainRenderMode === "blocky" ? "active" : ""}
-						onClick={() => setTerrainRenderMode("blocky")}
-						type="button"
-					>
-						Blocky terrain
-					</button>
-					<button
-						className={terrainRenderMode === "smooth" ? "active" : ""}
-						onClick={() => setTerrainRenderMode("smooth")}
-						type="button"
-					>
-						Smooth terrain
-					</button>
-					{isWalkPreviewActive ? (
-						<button onClick={stopWalkPreview} type="button">
-							Stop 3D Walk Preview
-						</button>
-					) : (
-						<button onClick={startWalkPreview} type="button">
-							Start 3D Walk Preview
-						</button>
-					)}
+				<div
+					aria-label="3D map editor toolbar"
+					className="three-d-editor-toolbar"
+					role="toolbar"
+				>
+					<div className="three-d-toolbar-row">
+						<div className="three-d-toolbar-title">
+							<strong>3D Map</strong>
+							<span>{activeArea?.name ?? "No active area"}</span>
+							<span>{toolbarModeLabel}</span>
+						</div>
+						<fieldset
+							aria-label="3D camera controls"
+							className="three-d-toolbar-group"
+						>
+							<button
+								className={cameraPreset === "top" ? "active" : ""}
+								onClick={() => applyCameraPreset("top")}
+								type="button"
+							>
+								Top
+							</button>
+							<button
+								className={cameraPreset === "isometric" ? "active" : ""}
+								onClick={() => applyCameraPreset("isometric")}
+								type="button"
+							>
+								Isometric
+							</button>
+							<button
+								className={cameraPreset === "low" ? "active" : ""}
+								onClick={() => applyCameraPreset("low")}
+								type="button"
+							>
+								Low angle
+							</button>
+							<button onClick={resetCamera} type="button">
+								Reset camera
+							</button>
+						</fieldset>
+						<fieldset
+							aria-label="3D terrain render mode"
+							className="three-d-toolbar-group"
+						>
+							<button
+								className={terrainRenderMode === "blocky" ? "active" : ""}
+								onClick={() => setTerrainRenderMode("blocky")}
+								type="button"
+							>
+								Blocky terrain
+							</button>
+							<button
+								className={terrainRenderMode === "smooth" ? "active" : ""}
+								onClick={() => setTerrainRenderMode("smooth")}
+								type="button"
+							>
+								Smooth terrain
+							</button>
+						</fieldset>
+						<div className="three-d-toolbar-group">
+							{isWalkPreviewActive ? (
+								<button onClick={stopWalkPreview} type="button">
+									Stop 3D Walk Preview
+								</button>
+							) : (
+								<button onClick={startWalkPreview} type="button">
+									Start 3D Walk Preview
+								</button>
+							)}
+						</div>
+					</div>
+					<div className="three-d-toolbar-row compact">
+						<div className="three-d-nav-hints">
+							<span>Alt + Drag: Orbit</span>
+							<span>Alt + Shift + Drag: Pan</span>
+							<span>Wheel: Zoom</span>
+						</div>
+						{isTerrainEditing ? (
+							<fieldset
+								aria-label="3D terrain brush controls"
+								className="three-d-toolbar-group terrain-brush"
+							>
+								<span className="three-d-toolbar-label">
+									{terrainHeightTool
+										? getTerrainHeightToolLabel(terrainHeightTool)
+										: "Paint"}
+								</span>
+								{onTerrainGestureChange ? (
+									<select
+										aria-label="3D terrain gesture"
+										onChange={(event) =>
+											onTerrainGestureChange(
+												event.target.value as TerrainGesture,
+											)
+										}
+										value={terrainGesture}
+									>
+										{(["brush", "line", "rectangle", "fill"] as const).map(
+											(gesture) => (
+												<option
+													disabled={Boolean(
+														terrainHeightTool && gesture === "fill",
+													)}
+													key={gesture}
+													value={gesture}
+												>
+													{getTerrainGestureLabel(gesture)}
+												</option>
+											),
+										)}
+									</select>
+								) : (
+									<span>{getTerrainGestureLabel(terrainGesture)}</span>
+								)}
+								{canUseBrushShape ? (
+									<>
+										{onBrushSizeChange ? (
+											<label>
+												Radius
+												<select
+													aria-label="3D brush radius"
+													onChange={(event) =>
+														onBrushSizeChange(
+															Number(event.target.value) as TerrainBrushSize,
+														)
+													}
+													value={brushSize}
+												>
+													{([1, 2, 3, 4, 5, 6, 7, 8] as const).map((size) => (
+														<option key={size} value={size}>
+															{size}
+														</option>
+													))}
+												</select>
+											</label>
+										) : (
+											<span>Radius {brushSize}</span>
+										)}
+										{onBrushShapeChange ? (
+											<select
+												aria-label="3D brush shape"
+												onChange={(event) =>
+													onBrushShapeChange(
+														event.target.value as TerrainBrushShape,
+													)
+												}
+												value={brushShape}
+											>
+												<option value="square">Square</option>
+												<option value="circle">Circle</option>
+											</select>
+										) : (
+											<span>
+												{brushShape === "square" ? "Square" : "Circle"}
+											</span>
+										)}
+									</>
+								) : null}
+								{terrainHeightTool && onBrushStrengthChange ? (
+									<label>
+										Strength
+										<input
+											aria-label="3D brush strength"
+											max="4"
+											min="1"
+											onChange={(event) =>
+												onBrushStrengthChange(Number(event.target.value))
+											}
+											step="1"
+											type="range"
+											value={brushStrength}
+										/>
+										<span>{brushStrength}</span>
+									</label>
+								) : null}
+								{canUseBrushShape &&
+								canUseHeightBrushOptions &&
+								onBrushFalloffChange ? (
+									<select
+										aria-label="3D brush falloff"
+										onChange={(event) =>
+											onBrushFalloffChange(
+												event.target.value as TerrainBrushFalloff,
+											)
+										}
+										value={brushFalloff}
+									>
+										<option value="hard">Hard falloff</option>
+										<option value="linear">Linear falloff</option>
+										<option value="smooth">Smooth falloff</option>
+									</select>
+								) : null}
+							</fieldset>
+						) : (
+							<div className="three-d-nav-hints">
+								<span>Click: Select</span>
+								<span>Drag selected marker: Move</span>
+							</div>
+						)}
+					</div>
+					{walkPreviewPosition || walkPreviewMessage ? (
+						<div className="three-d-toolbar-row compact">
+							<p className="three-d-toolbar-message">
+								{walkPreviewPosition
+									? `Walk preview at x ${walkPreviewPosition.x}, y ${walkPreviewPosition.y}. Use WASD or arrow keys. Press Escape to stop.`
+									: walkPreviewMessage}
+							</p>
+						</div>
+					) : null}
 				</div>
-				{walkPreviewPosition ? (
-					<p className="helper-text">
-						Walk preview at x {walkPreviewPosition.x}, y {walkPreviewPosition.y}
-						. Use WASD or arrow keys. Press Escape to stop.
-					</p>
-				) : null}
-				{walkPreviewMessage ? (
-					<p className="helper-text">{walkPreviewMessage}</p>
-				) : null}
 				{controlledOverlayFilters ? null : (
 					<div className="preview-filter-panel">
 						<div className="filter-button-row">
@@ -2093,8 +2294,8 @@ export function ThreeDPreview({
 							</>
 						) : (
 							<p className="helper-text">
-								Click a tile, NPC, object, or marker in the 3D preview to
-								inspect it.
+								Click a tile, NPC, object, or marker in the 3D map to inspect
+								it.
 							</p>
 						)}
 					</aside>

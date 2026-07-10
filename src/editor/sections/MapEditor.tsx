@@ -2412,6 +2412,17 @@ export function MapEditor() {
 		setIsTerrainPaintArmed(false);
 	}
 
+	function selectTerrainGesture(gesture: TerrainGesture) {
+		cancelTerrainShapeGesture();
+		setTerrainGesture(gesture);
+		if (gesture === "fill") {
+			setActiveTool("paint");
+			setPaintTarget("terrain");
+			setIsTerrainPaintArmed(true);
+			setMapPaletteSelection({ type: "none" });
+		}
+	}
+
 	function selectTerrain(id: string) {
 		setSelectedTerrainId(id);
 		setPaintTarget("terrain");
@@ -4257,16 +4268,7 @@ export function MapEditor() {
 								<button
 									className={terrainGesture === gesture ? "selected" : ""}
 									key={gesture}
-									onClick={() => {
-										cancelTerrainShapeGesture();
-										setTerrainGesture(gesture);
-										if (gesture === "fill") {
-											setActiveTool("paint");
-											setPaintTarget("terrain");
-											setIsTerrainPaintArmed(true);
-											setMapPaletteSelection({ type: "none" });
-										}
-									}}
+									onClick={() => selectTerrainGesture(gesture)}
 									type="button"
 								>
 									{gesture === "brush"
@@ -4889,6 +4891,11 @@ export function MapEditor() {
 						embedded
 						heightToolValue={heightToolValue}
 						hideDetails
+						onBrushFalloffChange={setBrushFalloff}
+						onBrushShapeChange={setBrushShape}
+						onBrushSizeChange={setBrushSize}
+						onBrushStrengthChange={setBrushStrength}
+						onTerrainGestureChange={selectTerrainGesture}
 						overlayFilters={overlayFilters}
 						terrainGesture={terrainGesture}
 						terrainPaintTileId={

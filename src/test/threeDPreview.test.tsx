@@ -50,17 +50,23 @@ vi.mock("../editor/sections/ThreeDPreview", async () => {
 					});
 				}
 			};
-			const helperText = terrainHeightTool
-				? `Height tool: ${terrainHeightTool}. Click or drag terrain to sculpt.`
+			const modeText = terrainHeightTool
+				? `${terrainHeightTool} terrain`
 				: terrainPaintTileId
-					? `Click terrain to paint selected terrain type: ${terrainPaintTileId}.`
+					? `Paint ${terrainPaintTileId}`
 					: placementInfo.active
-						? `${placementInfo.label}. Click terrain to place.`
-						: "No placeable selected.";
+						? (placementInfo.label ?? "Place")
+						: "Select and move";
 
 			return (
 				<section aria-label="3D preview viewport">
-					<p>{helperText}</p>
+					<div aria-label="3D map editor toolbar" role="toolbar">
+						<strong>3D Map</strong>
+						<span>{modeText}</span>
+						<span>Alt + Drag: Orbit</span>
+						<span>Alt + Shift + Drag: Pan</span>
+						<span>Wheel: Zoom</span>
+					</div>
 					<canvas onPointerUp={selectFirstNpc} />
 				</section>
 			);
@@ -463,11 +469,12 @@ describe("ThreeDPreview", () => {
 
 		render(<ThreeDPreview />);
 
-		expect(
-			screen.getByText(
-				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
-			),
-		).toBeInTheDocument();
+		expect(screen.getByLabelText("3D map editor toolbar")).toBeInTheDocument();
+		expect(screen.getByText("3D Map")).toBeInTheDocument();
+		expect(screen.queryByText(/3D Preview is experimental/)).toBeNull();
+		expect(screen.getByText("Alt + Drag: Orbit")).toBeInTheDocument();
+		expect(screen.getByText("Alt + Shift + Drag: Pan")).toBeInTheDocument();
+		expect(screen.getByText("Wheel: Zoom")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Top" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
 			"active",
@@ -545,7 +552,7 @@ describe("ThreeDPreview", () => {
 
 		expect(
 			screen.getByText(
-				"Click a tile, NPC, object, or marker in the 3D preview to inspect it.",
+				"Click a tile, NPC, object, or marker in the 3D map to inspect it.",
 			),
 		).toBeInTheDocument();
 	});
@@ -557,10 +564,6 @@ describe("ThreeDPreview", () => {
 			screen.getByRole("button", { name: "Start 3D Walk Preview" }),
 		);
 
-		expect(
-			screen.getAllByText("Experimental 3D walk preview — game logic disabled.")
-				.length,
-		).toBeGreaterThan(0);
 		expect(
 			screen.getByRole("button", { name: "Stop 3D Walk Preview" }),
 		).toBeInTheDocument();
@@ -595,9 +598,61 @@ describe("ThreeDPreview", () => {
 		);
 
 		expect(
-			screen.getByText("Height tool: set. Click or drag terrain to sculpt."),
+			screen.getByLabelText("3D terrain brush controls"),
 		).toBeInTheDocument();
+		expect(screen.getByText("Set Height terrain")).toBeInTheDocument();
+		expect(screen.getAllByText("Set Height").length).toBeGreaterThan(0);
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
+	});
+
+	it("updates toolbar brush controls without mutating the project", () => {
+		const onBrushFalloffChange = vi.fn();
+		const onBrushShapeChange = vi.fn();
+		const onBrushSizeChange = vi.fn();
+		const onBrushStrengthChange = vi.fn();
+		const onTerrainGestureChange = vi.fn();
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+
+		render(
+			<ThreeDPreview
+				brushFalloff="hard"
+				brushShape="square"
+				brushSize={2}
+				brushStrength={1}
+				embedded
+				onBrushFalloffChange={onBrushFalloffChange}
+				onBrushShapeChange={onBrushShapeChange}
+				onBrushSizeChange={onBrushSizeChange}
+				onBrushStrengthChange={onBrushStrengthChange}
+				onTerrainGestureChange={onTerrainGestureChange}
+				terrainHeightTool="raise"
+			/>,
+		);
+
+		fireEvent.change(screen.getByLabelText("3D terrain gesture"), {
+			target: { value: "line" },
+		});
+		fireEvent.change(screen.getByLabelText("3D brush radius"), {
+			target: { value: "4" },
+		});
+		fireEvent.change(screen.getByLabelText("3D brush shape"), {
+			target: { value: "circle" },
+		});
+		fireEvent.change(screen.getByLabelText("3D brush strength"), {
+			target: { value: "3" },
+		});
+		fireEvent.change(screen.getByLabelText("3D brush falloff"), {
+			target: { value: "smooth" },
+		});
+
+		expect(onTerrainGestureChange).toHaveBeenCalledWith("line");
+		expect(onBrushSizeChange).toHaveBeenCalledWith(4);
+		expect(onBrushShapeChange).toHaveBeenCalledWith("circle");
+		expect(onBrushStrengthChange).toHaveBeenCalledWith(3);
+		expect(onBrushFalloffChange).toHaveBeenCalledWith("smooth");
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
 	});
 
 	it("paints selected terrain in 3D without resetting height", async () => {
@@ -627,8 +682,9 @@ describe("ThreeDPreview", () => {
 		useProjectStore.getState().setProject(project);
 		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
 
+		expect(screen.getByText("Paint sand")).toBeInTheDocument();
 		expect(
-			screen.getByText("Click terrain to paint selected terrain type: sand."),
+			screen.getByLabelText("3D terrain brush controls"),
 		).toBeInTheDocument();
 
 		const canvas = screen
@@ -1439,11 +1495,7 @@ describe("ThreeDPreview", () => {
 
 		render(<ThreeDPreview />);
 
-		expect(
-			screen.getByText(
-				"3D Preview is experimental. Entity movement edits the current project; height tools sculpt the current area.",
-			),
-		).toBeInTheDocument();
+		expect(screen.getByLabelText("3D map editor toolbar")).toBeInTheDocument();
 		expect(screen.getByLabelText("Event Blocks")).toBeInTheDocument();
 		expect(screen.getByLabelText("3D preview viewport")).toBeInTheDocument();
 	});
