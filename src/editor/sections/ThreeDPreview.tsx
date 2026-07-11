@@ -33,6 +33,7 @@ import {
 	createWaterPresentationState,
 	markWaterPresentationMesh,
 	updateWaterPresentation,
+	type WaterPresentationState,
 } from "../../runtime/three/waterPresentation";
 import {
 	addThreeWorldLighting,
@@ -76,6 +77,7 @@ import {
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import {
+	type SmoothTerrainMesh,
 	type TerrainRenderMode,
 	terrainTilesToBlocks,
 	terrainTilesToSmoothMeshes,
@@ -186,6 +188,21 @@ function resolveThreeDPreviewBuildReason(
 		return "walk preview changed";
 	}
 	return "preview state changed";
+}
+
+function smoothTerrainMeshUsesWater(mesh: SmoothTerrainMesh): boolean {
+	return mesh.groups.some((group) => group.materialKey === "water");
+}
+
+function createSmoothTerrainMaterials(
+	mesh: SmoothTerrainMesh,
+	waterPresentation: WaterPresentationState,
+): THREE.Material[] {
+	return mesh.groups.map((group) =>
+		group.materialKey === "water"
+			? waterPresentation.waterMaterial
+			: createWorldMaterial(group.materialKey),
+	);
 }
 
 function getTerrainHeightToolLabel(tool: TerrainHeightTool): string {
@@ -340,7 +357,7 @@ export function ThreeDPreview({
 		useState<PreviewCameraMode>("isometric");
 	const [assetRenderVersion, setAssetRenderVersion] = useState(0);
 	const [terrainRenderMode, setTerrainRenderMode] =
-		useState<TerrainRenderMode>("blocky");
+		useState<TerrainRenderMode>("smooth");
 	const [walkPreviewPosition, setWalkPreviewPosition] =
 		useState<PreviewGridPosition>();
 	const [walkPreviewMessage, setWalkPreviewMessage] = useState("");
@@ -617,16 +634,16 @@ export function ThreeDPreview({
 		const smoothTerrainVisualMeshes =
 			terrainRenderMode === "smooth"
 				? smoothTerrainMeshes.map((smoothMesh) => {
-						const usesWaterPresentation = smoothMesh.materialKey === "water";
+						const usesWaterPresentation =
+							smoothTerrainMeshUsesWater(smoothMesh);
 						if (usesWaterPresentation) {
 							waterSurfaceMeshCount += 1;
 						}
 						const mesh = new THREE.Mesh(
 							createSmoothTerrainBufferGeometry(smoothMesh),
-							usesWaterPresentation
-								? waterPresentation.waterMaterial
-								: createWorldMaterial(smoothMesh.materialKey),
+							createSmoothTerrainMaterials(smoothMesh, waterPresentation),
 						);
+						mesh.userData.terrainSurface = true;
 						if (usesWaterPresentation) {
 							markWaterPresentationMesh(mesh);
 						}
@@ -638,42 +655,37 @@ export function ThreeDPreview({
 					})
 				: [];
 
-		const terrainPickMeshes = terrainBlocks.map((block) => {
-			const selectionMetadata = terrainBlockToSelectionMetadata(
-				block,
-				activeArea?.id ?? "",
-			);
-			const isSelected = selectionMatchesMetadata(
-				editorSelection,
-				selectionMetadata,
-			);
-			const usesWaterPresentation = block.materialKey === "water";
-			if (terrainRenderMode !== "smooth" && usesWaterPresentation) {
-				waterSurfaceMeshCount += 1;
-			}
-			const mesh = new THREE.Mesh(
-				new THREE.BoxGeometry(
-					terrainRenderMode === "smooth" ? 0.98 : 0.96,
-					block.height,
-					terrainRenderMode === "smooth" ? 0.98 : 0.96,
-				),
-				terrainRenderMode === "smooth"
-					? createWorldMaterial("default", { opacity: 0 })
-					: usesWaterPresentation
-						? waterPresentation.waterMaterial
-						: createTerrainMaterial(block.kind, { selected: isSelected }),
-			);
-			if (terrainRenderMode !== "smooth" && usesWaterPresentation) {
-				markWaterPresentationMesh(mesh);
-			}
-			if (terrainRenderMode !== "smooth") {
-				applyShadowRole(mesh, { receive: !usesWaterPresentation });
-			}
-			mesh.userData.selectionMetadata = selectionMetadata;
-			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
-			scene.add(mesh);
-			return mesh;
-		});
+		const terrainPickMeshes =
+			terrainRenderMode === "smooth"
+				? []
+				: terrainBlocks.map((block) => {
+						const selectionMetadata = terrainBlockToSelectionMetadata(
+							block,
+							activeArea?.id ?? "",
+						);
+						const isSelected = selectionMatchesMetadata(
+							editorSelection,
+							selectionMetadata,
+						);
+						const usesWaterPresentation = block.materialKey === "water";
+						if (usesWaterPresentation) {
+							waterSurfaceMeshCount += 1;
+						}
+						const mesh = new THREE.Mesh(
+							new THREE.BoxGeometry(0.96, block.height, 0.96),
+							usesWaterPresentation
+								? waterPresentation.waterMaterial
+								: createTerrainMaterial(block.kind, { selected: isSelected }),
+						);
+						if (usesWaterPresentation) {
+							markWaterPresentationMesh(mesh);
+						}
+						applyShadowRole(mesh, { receive: !usesWaterPresentation });
+						mesh.userData.selectionMetadata = selectionMetadata;
+						mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+						scene.add(mesh);
+						return mesh;
+					});
 		const coastlinePresentation = createCoastlinePresentation(
 			activeArea,
 			waterPresentation,
@@ -689,8 +701,10 @@ export function ThreeDPreview({
 			(total, mesh) => total + mesh.indices.length / 3,
 			0,
 		);
-		const terrainPickVertexCount = terrainPickMeshes.length * 24;
-		const terrainPickTriangleCount = terrainPickMeshes.length * 12;
+		const terrainPickVertexCount =
+			terrainRenderMode === "smooth" ? 0 : terrainPickMeshes.length * 24;
+		const terrainPickTriangleCount =
+			terrainRenderMode === "smooth" ? 0 : terrainPickMeshes.length * 12;
 		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
 		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
 		diagnostics.recordTerrainRebuild({
@@ -787,14 +801,14 @@ export function ThreeDPreview({
 				projectName: project.metadata.name,
 			},
 		});
-		const selectableMeshes = [
-			...terrainPickMeshes,
-			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
-		];
 		const terrainSurfacePickMeshes =
 			terrainRenderMode === "smooth" && smoothTerrainVisualMeshes.length > 0
 				? smoothTerrainVisualMeshes
 				: terrainPickMeshes;
+		const selectableMeshes = [
+			...terrainSurfacePickMeshes,
+			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
+		];
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -884,6 +898,20 @@ export function ThreeDPreview({
 			}
 			const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
 			diagnostics.recordPick(performance.now() - pickStartedAt);
+			if (hit?.object.userData.terrainSurface && activeArea) {
+				const position = terrainIntersectionToPreviewGridPosition(
+					activeArea,
+					hit,
+				);
+				if (position) {
+					return {
+						areaId: activeArea.id,
+						entityType: "terrain",
+						x: position.x,
+						y: position.y,
+					} satisfies PreviewSelectionMetadata;
+				}
+			}
 			return resolveSelectionMetadataFromIntersection(hit);
 		};
 

@@ -7,6 +7,7 @@ import {
 import { areaEntitiesToMarkers } from "../../editor/sections/entityMarkers";
 import { previewGridPositionToThreePoint } from "../../editor/sections/previewMove";
 import {
+	type SmoothTerrainMesh,
 	type TerrainRenderMode,
 	terrainTilesToBlocks,
 	terrainTilesToSmoothMeshes,
@@ -120,6 +121,7 @@ import {
 	createWaterPresentationState,
 	markWaterPresentationMesh,
 	updateWaterPresentation,
+	type WaterPresentationState,
 } from "./waterPresentation";
 import {
 	addThreeWorldLighting,
@@ -141,6 +143,21 @@ type ThreeRuntimeBuildInputs = {
 	renderVersion: number;
 	terrainRenderMode: TerrainRenderMode;
 };
+
+function smoothTerrainMeshUsesWater(mesh: SmoothTerrainMesh): boolean {
+	return mesh.groups.some((group) => group.materialKey === "water");
+}
+
+function createSmoothTerrainMaterials(
+	mesh: SmoothTerrainMesh,
+	waterPresentation: WaterPresentationState,
+): THREE.Material[] {
+	return mesh.groups.map((group) =>
+		group.materialKey === "water"
+			? waterPresentation.waterMaterial
+			: createWorldMaterial(group.materialKey),
+	);
+}
 
 function resolveThreeRuntimeBuildReason(
 	previous: ThreeRuntimeBuildInputs | null,
@@ -400,7 +417,7 @@ export function ThreeRuntimePanel({
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
 	const [terrainRenderMode, setTerrainRenderMode] =
-		useState<TerrainRenderMode>("blocky");
+		useState<TerrainRenderMode>("smooth");
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
@@ -1397,15 +1414,13 @@ export function ThreeRuntimePanel({
 				0,
 			);
 			smoothMeshes.forEach((smoothMesh) => {
-				const usesWaterPresentation = smoothMesh.materialKey === "water";
+				const usesWaterPresentation = smoothTerrainMeshUsesWater(smoothMesh);
 				if (usesWaterPresentation) {
 					waterSurfaceMeshCount += 1;
 				}
 				const mesh = new THREE.Mesh(
 					createSmoothTerrainBufferGeometry(smoothMesh),
-					usesWaterPresentation
-						? waterPresentation.waterMaterial
-						: createWorldMaterial(smoothMesh.materialKey),
+					createSmoothTerrainMaterials(smoothMesh, waterPresentation),
 				);
 				if (usesWaterPresentation) {
 					markWaterPresentationMesh(mesh);

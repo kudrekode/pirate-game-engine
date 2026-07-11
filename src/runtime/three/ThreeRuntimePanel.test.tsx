@@ -390,7 +390,7 @@ describe("ThreeRuntimePanel", () => {
 			"active",
 		);
 		expect(screen.getByRole("button", { name: "Inspect" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
 		);
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
@@ -399,6 +399,10 @@ describe("ThreeRuntimePanel", () => {
 			loopCancelCount: 0,
 			loopStartCount: 1,
 		});
+		fireEvent.click(screen.getByRole("button", { name: "Blocky terrain" }));
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+			"active",
+		);
 		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
 		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",

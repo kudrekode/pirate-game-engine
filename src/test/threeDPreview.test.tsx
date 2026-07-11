@@ -225,7 +225,7 @@ vi.mock("three", () => {
 								object.userData.selectionMetadata as
 									| { entityType?: string }
 									| undefined
-							)?.entityType === "terrain",
+							)?.entityType === "terrain" || object.userData.terrainSurface,
 					);
 					return terrain ? [{ object: terrain, point }] : [];
 				},
@@ -479,11 +479,11 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
 			"active",
 		);
-		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
 		);
 		expect(
-			screen.getByRole("button", { name: "Smooth terrain" }),
+			screen.getByRole("button", { name: "Blocky terrain" }),
 		).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Low angle" }));
 		expect(screen.getByRole("button", { name: "Low angle" })).toHaveClass(
@@ -491,6 +491,10 @@ describe("ThreeDPreview", () => {
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Blocky terrain" }));
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
 			"active",
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
