@@ -158,18 +158,20 @@ vi.mock("three", () => {
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			castShadow = false;
-			position = { set: vi.fn() };
+			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
 				camera: { far: 0, near: 0 },
-				mapSize: { height: 0, width: 0 },
+				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
 		},
+		BackSide: "BackSide",
 		Fog: class {},
 		Float32BufferAttribute,
 		GridHelper: class {},
 		Group: Object3D,
 		HemisphereLight: class {},
 		Mesh,
+		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		MeshStandardMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
@@ -187,6 +189,7 @@ vi.mock("three", () => {
 			remove = vi.fn();
 			updateMatrixWorld = vi.fn();
 		},
+		ShaderMaterial: Disposable,
 		Raycaster: class {
 			pointer = { x: 0, y: 0 };
 			ray = {

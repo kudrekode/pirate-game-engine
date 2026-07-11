@@ -189,6 +189,7 @@ vi.mock("three", () => {
 	return {
 		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
+		BackSide: "BackSide",
 		BoxGeometry: Disposable,
 		BufferGeometry,
 		ConeGeometry: Disposable,
@@ -196,16 +197,17 @@ vi.mock("three", () => {
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			castShadow = false;
-			position = { set: vi.fn() };
+			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
 				camera: { far: 0, near: 0 },
-				mapSize: { height: 0, width: 0 },
+				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
 		},
 		Fog: class {},
 		Float32BufferAttribute,
 		Group: Object3D,
 		HemisphereLight: class {},
+		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		Mesh,
 		MeshStandardMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
@@ -218,7 +220,9 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
+			remove = vi.fn();
 		},
+		ShaderMaterial: Disposable,
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
 			outputColorSpace: unknown;
@@ -236,6 +240,13 @@ vi.mock("three", () => {
 			}
 		},
 		SRGBColorSpace: "SRGBColorSpace",
+		Vector3: class {
+			constructor(
+				public x = 0,
+				public y = 0,
+				public z = 0,
+			) {}
+		},
 	};
 });
 

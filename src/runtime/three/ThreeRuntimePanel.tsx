@@ -124,10 +124,8 @@ import {
 	type WaterPresentationState,
 } from "./waterPresentation";
 import {
-	addThreeWorldLighting,
+	applyAtmosphere,
 	applyShadowRole,
-	configureThreeRenderer,
-	configureThreeWorldScene,
 	createTerrainMaterial,
 	createWorldMaterial,
 	getWorldMaterialColor,
@@ -1327,7 +1325,6 @@ export function ThreeRuntimePanel({
 
 		host.replaceChildren();
 		const scene = new THREE.Scene();
-		configureThreeWorldScene(scene, { fogFar: 52, fogNear: 20 });
 		const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
 		const initialPlayerVisual =
 			playerVisualRef.current ??
@@ -1379,8 +1376,6 @@ export function ThreeRuntimePanel({
 			});
 		};
 		applyCameraRig(cameraRig);
-		addThreeWorldLighting(scene, { enableShadows: true });
-
 		const renderObjects: Array<{
 			disposeResources: boolean;
 			object: THREE.Object3D;
@@ -1575,7 +1570,9 @@ export function ThreeRuntimePanel({
 		}
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
 		renderer.domElement.tabIndex = 0;
-		configureThreeRenderer(renderer, { enableShadows: true });
+		const atmosphere = applyAtmosphere(scene, renderer, {
+			enableShadows: true,
+		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
@@ -1851,6 +1848,7 @@ export function ThreeRuntimePanel({
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			renderer.dispose();
+			atmosphere.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),

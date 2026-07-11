@@ -36,10 +36,8 @@ import {
 	type WaterPresentationState,
 } from "../../runtime/three/waterPresentation";
 import {
-	addThreeWorldLighting,
+	applyAtmosphere,
 	applyShadowRole,
-	configureThreeRenderer,
-	configureThreeWorldScene,
 	createTerrainMaterial,
 	createWorldMaterial,
 	getWorldMaterialColor,
@@ -581,7 +579,6 @@ export function ThreeDPreview({
 		const rebuildReason = getSceneBuildReason();
 
 		const scene = new THREE.Scene();
-		configureThreeWorldScene(scene);
 
 		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
 		const areaHeight = Math.max(activeArea?.height ?? 8, 8);
@@ -616,8 +613,6 @@ export function ThreeDPreview({
 			camera.updateMatrixWorld(true);
 		};
 		applyCameraFromState();
-
-		addThreeWorldLighting(scene, { enableShadows: true });
 
 		const gridSize = Math.max(areaWidth, areaHeight, 8);
 		const grid = new THREE.GridHelper(
@@ -822,7 +817,9 @@ export function ThreeDPreview({
 			return;
 		}
 
-		configureThreeRenderer(renderer, { enableShadows: true });
+		const atmosphere = applyAtmosphere(scene, renderer, {
+			enableShadows: true,
+		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		host.appendChild(renderer.domElement);
 
@@ -1955,6 +1952,7 @@ export function ThreeDPreview({
 			cleanupPlacementGhost();
 			cleanupTerrainBrushGhost();
 			renderer.dispose();
+			atmosphere.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),
