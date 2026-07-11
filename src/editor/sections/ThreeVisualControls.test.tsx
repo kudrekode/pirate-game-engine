@@ -9,9 +9,13 @@ import { ThreeVisualControls } from "./ThreeVisualControls";
 
 const demoBoxAsset: ThreeVisualAssetDefinition = {
 	category: "object",
+	defaultHeightOffset: 0.2,
+	defaultRotationOffset: 15,
+	defaultScale: 1.5,
 	id: "demo-box",
 	kind: "glb",
 	name: "Demo Box",
+	tags: ["demo", "container"],
 	url: "/assets/demo/Box.glb",
 };
 
@@ -76,6 +80,12 @@ describe("ThreeVisualControls", () => {
 		expect(screen.getByLabelText("Scale")).toBeInTheDocument();
 		expect(screen.getByLabelText("Height offset")).toBeInTheDocument();
 		expect(screen.getByLabelText("Rotation offset")).toBeInTheDocument();
+		expect(screen.getByLabelText("Scale")).toHaveValue(1.5);
+		expect(screen.getByLabelText("Height offset")).toHaveValue(0.2);
+		expect(screen.getByLabelText("Rotation offset")).toHaveValue(15);
+		expect(
+			screen.getByText("Demo Box · object · demo, container"),
+		).toBeInTheDocument();
 	});
 
 	it("stores the selected registry asset id", () => {

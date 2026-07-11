@@ -72,6 +72,43 @@ describe("Three visual asset loader cache", () => {
 		}
 	});
 
+	it("analyses a loaded root once and reuses that cached analysis for clones", async () => {
+		const source = new THREE.Group();
+		const mesh = new THREE.Mesh(
+			new THREE.BoxGeometry(2, 4, 2),
+			new THREE.MeshStandardMaterial(),
+		);
+		mesh.position.y = 3;
+		source.add(mesh);
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: vi.fn(async () => ({ scene: source })),
+		}));
+
+		try {
+			expect(requestThreeVisualAsset(assetDefinition).status).toBe("loading");
+			await flushAssetPromises();
+
+			const first = requestThreeVisualAsset(assetDefinition);
+			const second = requestThreeVisualAsset(assetDefinition);
+			expect(first.status).toBe("loaded");
+			expect(second.status).toBe("loaded");
+			if (first.status !== "loaded" || second.status !== "loaded") {
+				throw new Error("Expected cached loaded asset requests.");
+			}
+			expect(first.analysis).toBe(second.analysis);
+			expect(first.analysis.bounds).toMatchObject({
+				dimensions: { x: 2, y: 4, z: 2 },
+				maxY: 5,
+				minY: 1,
+			});
+
+			mesh.geometry.dispose();
+			mesh.material.dispose();
+		} finally {
+			restoreLoader();
+		}
+	});
+
 	it("emits diagnostics events for load, cache, and clone lifecycle", async () => {
 		const source = new THREE.Group();
 		const loadAsync = vi.fn(async () => ({ scene: source }));

@@ -1,5 +1,9 @@
 import type * as THREE from "three";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
+import {
+	analyzeThreeVisualAssetRoot,
+	type ThreeVisualAssetAnalysis,
+} from "./threeVisualAssetAnalysis";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 
 type GltfLike = {
@@ -23,6 +27,7 @@ type AssetCacheEntry =
 			promise: Promise<void>;
 	  }
 	| {
+			analysis: ThreeVisualAssetAnalysis;
 			status: "loaded";
 			definition: ThreeVisualAssetDefinition;
 			root: THREE.Object3D;
@@ -38,6 +43,7 @@ export type ThreeVisualAssetRequest =
 	| { status: "loading"; definition: ThreeVisualAssetDefinition }
 	| { status: "error"; definition: ThreeVisualAssetDefinition; error: unknown }
 	| {
+			analysis: ThreeVisualAssetAnalysis;
 			status: "loaded";
 			definition: ThreeVisualAssetDefinition;
 			object: THREE.Object3D;
@@ -110,7 +116,9 @@ function startAssetLoad(
 				});
 				return;
 			}
+			const analysis = analyzeThreeVisualAssetRoot(root);
 			cache.set(key, {
+				analysis,
 				definition,
 				root,
 				status: "loaded",
@@ -159,6 +167,7 @@ export function requestThreeVisualAsset(
 			url: existing.definition.url,
 		});
 		return {
+			analysis: existing.analysis,
 			definition: existing.definition,
 			object: cloneThreeVisualAssetRoot(existing.root),
 			status: "loaded",

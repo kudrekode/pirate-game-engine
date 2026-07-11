@@ -32,6 +32,17 @@ export function ThreeVisualControls({
 			: "";
 	const resolvedAsset = getThreeVisualAssetDefinition(assetId);
 	const hasUnresolvedAsset = Boolean(assetId && !resolvedAsset);
+	const assetTransformDefaults = mode === "asset" ? resolvedAsset : undefined;
+	const scale =
+		value?.scale ?? clampThreeVisualScale(assetTransformDefaults?.defaultScale);
+	const heightOffset =
+		value?.heightOffset ??
+		clampThreeVisualHeightOffset(assetTransformDefaults?.defaultHeightOffset);
+	const rotationOffset =
+		value?.rotationOffset ??
+		clampThreeVisualRotationOffset(
+			assetTransformDefaults?.defaultRotationOffset,
+		);
 
 	const updateVisual = (patch: Partial<ThreeVisualConfig>) => {
 		onChange({
@@ -73,7 +84,7 @@ export function ThreeVisualControls({
 					}
 					step={0.1}
 					type="number"
-					value={value?.scale ?? 1}
+					value={scale}
 				/>
 			</label>
 			<label>
@@ -90,7 +101,7 @@ export function ThreeVisualControls({
 					}
 					step={0.1}
 					type="number"
-					value={value?.heightOffset ?? 0}
+					value={heightOffset}
 				/>
 			</label>
 			<label>
@@ -107,7 +118,7 @@ export function ThreeVisualControls({
 					}
 					step={1}
 					type="number"
-					value={value?.rotationOffset ?? 0}
+					value={rotationOffset}
 				/>
 			</label>
 		</>
@@ -192,6 +203,14 @@ export function ThreeVisualControls({
 				<p className="validation-message">
 					No asset selected. The 3D preview will use the placeholder fallback
 					until an asset is chosen.
+				</p>
+			) : null}
+			{mode === "asset" && resolvedAsset ? (
+				<p className="empty-state compact">
+					{resolvedAsset.name} · {resolvedAsset.category ?? "asset"}
+					{resolvedAsset.tags?.length
+						? ` · ${resolvedAsset.tags.join(", ")}`
+						: ""}
 				</p>
 			) : null}
 		</>

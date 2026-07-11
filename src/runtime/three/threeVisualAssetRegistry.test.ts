@@ -58,6 +58,7 @@ describe("Three visual asset registry", () => {
 			id: "demo-box",
 			kind: "glb",
 			name: "Demo Box",
+			tags: ["demo", "primitive"],
 			url: "/assets/demo/Box.glb",
 		});
 		expect(getThreeVisualAssetDefinition("demo-box")).toMatchObject({
@@ -76,6 +77,12 @@ describe("Three visual asset registry", () => {
 			expect.arrayContaining(["demo-box", "pirate-chest", "pirate-small-ship"]),
 		);
 
+		const shadowCastingAssetIds = new Set([
+			"pirate-chest",
+			"pirate-palm",
+			"pirate-rocks",
+			"pirate-small-ship",
+		]);
 		for (const expected of expectedPirateAssets) {
 			expect(assets).toContainEqual(
 				expect.objectContaining({
@@ -89,8 +96,12 @@ describe("Three visual asset registry", () => {
 				url: expected.url,
 			});
 			const asset = getThreeVisualAssetDefinition(expected.id);
-			expect(asset?.castShadow).toBeUndefined();
-			expect(asset?.receiveShadow).toBeUndefined();
+			expect(asset?.castShadow).toBe(
+				shadowCastingAssetIds.has(expected.id) ? true : undefined,
+			);
+			expect(asset?.receiveShadow).toBe(true);
+			expect(asset?.tags?.length).toBeGreaterThan(0);
+			expect(asset?.defaultScale).toBeGreaterThan(0);
 		}
 	});
 

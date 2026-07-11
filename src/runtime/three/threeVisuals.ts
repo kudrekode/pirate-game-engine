@@ -7,6 +7,7 @@ import {
 	type ThreePlaceholderVisualType,
 	type ThreeVisualConfig,
 } from "../../types/game";
+import type { ThreeVisualAssetAnalysis } from "./threeVisualAssetAnalysis";
 import {
 	getThreeVisualAssetDefinition,
 	type ThreeVisualAssetDefinition,
@@ -58,6 +59,13 @@ export type ResolvedThreeVisual =
 			requestedMode: "asset";
 			source: "authored";
 	  });
+
+export type ResolvedThreeVisualAssetTransform = {
+	heightOffset: number;
+	normalizationOffsetY: number;
+	rotationYRadians: number;
+	scale: number;
+};
 
 export const THREE_PLACEHOLDER_VISUAL_OPTIONS: {
 	label: string;
@@ -265,6 +273,23 @@ export function threeVisualRotationOffsetToRadians(
 			Math.PI) /
 		180
 	);
+}
+
+// Transform order is fixed for editor and runtime parity:
+// cached model bounds normalisation -> registry defaults -> authored overrides
+// -> marker placement -> terrain surface sampling (when the marker is created).
+export function resolveThreeVisualAssetTransform(
+	visual:
+		| Pick<ResolvedThreeVisual, "heightOffset" | "rotationOffset" | "scale">
+		| undefined,
+	analysis: Pick<ThreeVisualAssetAnalysis, "bounds"> | undefined,
+): ResolvedThreeVisualAssetTransform {
+	return {
+		heightOffset: visual?.heightOffset ?? DEFAULT_THREE_VISUAL_HEIGHT_OFFSET,
+		normalizationOffsetY: -(analysis?.bounds.minY ?? 0),
+		rotationYRadians: threeVisualRotationOffsetToRadians(visual),
+		scale: visual?.scale ?? DEFAULT_THREE_VISUAL_SCALE,
+	};
 }
 
 export function composeThreeVisualYaw(

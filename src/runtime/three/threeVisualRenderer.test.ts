@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EntityMarker } from "../../editor/sections/entityMarkers";
+import threeDPreviewSource from "../../editor/sections/ThreeDPreview.tsx?raw";
 import { getPlaceholderSelectableObjects } from "./placeholderMeshes";
+import threeRuntimePanelSource from "./ThreeRuntimePanel.tsx?raw";
 import { createThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
@@ -76,6 +78,11 @@ describe("Three visual marker renderer", () => {
 		expect(
 			getPlaceholderSelectableObjects(result.group).length,
 		).toBeGreaterThan(0);
+	});
+
+	it("keeps editor and runtime on the shared normalised marker renderer", () => {
+		expect(threeDPreviewSource).toContain("createThreeVisualMarkerGroup(");
+		expect(threeRuntimePanelSource).toContain("createThreeVisualMarkerGroup(");
 	});
 
 	it("reports current loading fallback status to diagnostics", () => {
@@ -223,10 +230,51 @@ describe("Three visual marker renderer", () => {
 			expect(loaded.group.children[0].userData.selectionMetadata).toBe(
 				metadata,
 			);
+			expect(loaded.group.children[0]?.position.y).toBeCloseTo(0.5);
 			expect(loaded.group.position.y).toBeCloseTo(1.125);
 			expect(loaded.group.rotation.y).toBeCloseTo(Math.PI / 2);
 			expect(loaded.group.scale.x).toBeCloseTo(1.5);
 			expect(loadAsync).toHaveBeenCalledTimes(1);
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("grounds an analysed asset before applying its resolved placement offset", async () => {
+		const source = new THREE.Group();
+		const child = new THREE.Mesh(
+			new THREE.BoxGeometry(1, 2, 1),
+			new THREE.MeshStandardMaterial(),
+		);
+		child.position.y = 2;
+		source.add(child);
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: vi.fn(async () => ({ scene: source })),
+		}));
+		const marker = makeMarker({
+			visual: {
+				asset: assetDefinition,
+				assetId: assetDefinition.id,
+				heightOffset: 0.25,
+				mode: "asset",
+				placeholderType: "npc",
+				requestedMode: "asset",
+				rotationOffset: 0,
+				scale: 2,
+				source: "authored",
+			},
+		});
+
+		try {
+			createThreeVisualMarkerGroup(marker);
+			await flushAssetPromises();
+			const loaded = createThreeVisualMarkerGroup(marker);
+			const assetRoot = loaded.group.children[0];
+
+			expect(loaded.usedAsset).toBe(true);
+			expect(assetRoot?.position.y).toBeCloseTo(-1);
+			expect(loaded.group.position.y).toBeCloseTo(0.875);
+			expect(loaded.group.scale.y).toBeCloseTo(2);
 		} finally {
 			restoreLoader();
 		}

@@ -16,6 +16,7 @@ export type ThreeVisualAssetDefinition = {
 	defaultRotationOffset?: number;
 	castShadow?: boolean;
 	receiveShadow?: boolean;
+	tags?: string[];
 };
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves
@@ -25,6 +26,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		category: "object",
 		defaultHeightOffset: 0.45,
 		defaultScale: 0.45,
+		tags: ["demo", "primitive"],
 		id: "demo-box",
 		kind: "glb",
 		name: "Demo Box",
@@ -32,10 +34,13 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		category: "object",
+		castShadow: true,
 		defaultScale: 0.22,
 		id: "pirate-chest",
 		kind: "glb",
 		name: "Pirate Chest",
+		receiveShadow: true,
+		tags: ["container", "treasure"],
 		url: "/assets/pirate-demo/chest.glb",
 	},
 	{
@@ -44,6 +49,8 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		id: "pirate-barrel",
 		kind: "glb",
 		name: "Pirate Barrel",
+		receiveShadow: true,
+		tags: ["prop", "storage"],
 		url: "/assets/pirate-demo/barrel.glb",
 	},
 	{
@@ -52,30 +59,41 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		id: "pirate-crate",
 		kind: "glb",
 		name: "Pirate Crate",
+		receiveShadow: true,
+		tags: ["prop", "storage"],
 		url: "/assets/pirate-demo/crate.glb",
 	},
 	{
 		category: "environment",
+		castShadow: true,
 		defaultScale: 0.24,
 		id: "pirate-palm",
 		kind: "glb",
 		name: "Pirate Palm",
+		receiveShadow: true,
+		tags: ["foliage", "land"],
 		url: "/assets/pirate-demo/palm-straight.glb",
 	},
 	{
 		category: "environment",
+		castShadow: true,
 		defaultScale: 0.35,
 		id: "pirate-rocks",
 		kind: "glb",
 		name: "Pirate Rocks",
+		receiveShadow: true,
+		tags: ["environment", "land", "shore"],
 		url: "/assets/pirate-demo/rocks-a.glb",
 	},
 	{
 		category: "vehicle",
+		castShadow: true,
 		defaultScale: 0.12,
 		id: "pirate-small-ship",
 		kind: "glb",
 		name: "Pirate Small Ship",
+		receiveShadow: true,
+		tags: ["boat", "pirate", "water"],
 		url: "/assets/pirate-demo/ship-pirate-small.glb",
 	},
 	{
@@ -84,6 +102,8 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		id: "pirate-dock",
 		kind: "glb",
 		name: "Pirate Dock",
+		receiveShadow: true,
+		tags: ["platform", "waterfront"],
 		url: "/assets/pirate-demo/structure-platform-dock.glb",
 	},
 	{
@@ -92,6 +112,8 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		id: "pirate-flag",
 		kind: "glb",
 		name: "Pirate Flag",
+		receiveShadow: true,
+		tags: ["decoration", "flag"],
 		url: "/assets/pirate-demo/flag-pirate.glb",
 	},
 ];

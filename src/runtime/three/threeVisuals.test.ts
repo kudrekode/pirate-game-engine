@@ -4,6 +4,7 @@ import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry"
 import {
 	composeThreeVisualYaw,
 	resolveThreeVisual,
+	resolveThreeVisualAssetTransform,
 	THREE_PLACEHOLDER_VISUAL_OPTIONS,
 } from "./threeVisuals";
 
@@ -244,5 +245,62 @@ describe("three visual resolver", () => {
 		expect(
 			composeThreeVisualYaw(Math.PI / 2, { rotationOffset: 90 }),
 		).toBeCloseTo(Math.PI);
+	});
+
+	it("normalises the model before applying resolved registry or author transforms", () => {
+		const analysis = {
+			bounds: {
+				center: { x: 0, y: 1, z: 0 },
+				dimensions: { x: 2, y: 4, z: 2 },
+				maxY: 3,
+				minY: -1,
+			},
+		};
+
+		expect(
+			resolveThreeVisualAssetTransform(
+				{ heightOffset: 0.25, rotationOffset: 90, scale: 1.5 },
+				analysis,
+			),
+		).toEqual({
+			heightOffset: 0.25,
+			normalizationOffsetY: 1,
+			rotationYRadians: Math.PI / 2,
+			scale: 1.5,
+		});
+	});
+
+	it("lets authored transforms override registry defaults before asset placement", () => {
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				defaultHeightOffset: 0.2,
+				defaultRotationOffset: 15,
+				defaultScale: 1.5,
+				id: "demo_npc",
+				kind: "glb",
+				name: "Demo NPC",
+				url: "/assets/demo-npc.glb",
+			},
+		]);
+
+		try {
+			const visual = resolveThreeVisual({
+				kind: "npc",
+				threeVisual: {
+					assetId: "demo_npc",
+					heightOffset: 0.8,
+					mode: "asset",
+					rotationOffset: 60,
+					scale: 2,
+				},
+			});
+			expect(visual).toMatchObject({
+				heightOffset: 0.8,
+				rotationOffset: 60,
+				scale: 2,
+			});
+		} finally {
+			restoreRegistry();
+		}
 	});
 });
