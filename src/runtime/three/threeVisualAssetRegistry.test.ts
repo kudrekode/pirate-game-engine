@@ -112,20 +112,22 @@ describe("Three visual asset registry", () => {
 		expect(base).toMatchObject({
 			category: "character",
 			defaultHeightOffset: 0,
-			defaultRotationOffset: 0,
+			defaultRotationOffset: 180,
 			defaultScale: 0.75,
 			kind: "glb",
-			receiveShadow: true,
+			materialProfile: "standard",
+			receiveShadow: false,
 			tags: expect.arrayContaining(["base", "skinned"]),
 			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Character_output.glb",
 		});
 		expect(walk).toMatchObject({
 			category: "character",
 			defaultHeightOffset: 0,
-			defaultRotationOffset: 0,
+			defaultRotationOffset: 180,
 			defaultScale: 0.75,
 			kind: "glb",
-			receiveShadow: true,
+			materialProfile: "standard",
+			receiveShadow: false,
 			tags: expect.arrayContaining(["skinned", "walk"]),
 			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
 		});

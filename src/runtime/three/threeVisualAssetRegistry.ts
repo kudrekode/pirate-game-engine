@@ -11,6 +11,11 @@ export type ThreeVisualAssetDefinition = {
 	kind: "gltf" | "glb";
 	url: string;
 	category?: ThreeVisualAssetCategory;
+	/**
+	 * Optional presentation-only material preparation for this cached source.
+	 * It never changes authored project data or gameplay state.
+	 */
+	materialProfile?: "preserve" | "standard";
 	defaultScale?: number;
 	defaultHeightOffset?: number;
 	defaultRotationOffset?: number;
@@ -119,24 +124,28 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	{
 		category: "character",
 		defaultHeightOffset: 0,
-		defaultRotationOffset: 0,
+		// Patchbeard's visible forward is native +Z; Three grid north is -Z.
+		defaultRotationOffset: 180,
 		defaultScale: 0.75,
 		id: "pirate-character-base",
 		kind: "glb",
+		materialProfile: "standard",
 		name: "Captain Patchbeard (Base)",
-		receiveShadow: true,
+		receiveShadow: false,
 		tags: ["base", "character", "pirate", "skinned"],
 		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Character_output.glb",
 	},
 	{
 		category: "character",
 		defaultHeightOffset: 0,
-		defaultRotationOffset: 0,
+		// Patchbeard's visible forward is native +Z; Three grid north is -Z.
+		defaultRotationOffset: 180,
 		defaultScale: 0.75,
 		id: "pirate-character-walk",
 		kind: "glb",
+		materialProfile: "standard",
 		name: "Captain Patchbeard (Walk)",
-		receiveShadow: true,
+		receiveShadow: false,
 		tags: ["animation", "character", "pirate", "skinned", "walk"],
 		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
 	},

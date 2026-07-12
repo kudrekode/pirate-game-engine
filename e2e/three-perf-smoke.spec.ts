@@ -125,6 +125,15 @@ function meetsPirateBenchmarkRequirements(
 			(clip) =>
 				clip.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
 				clip.name === EXPECTED_CHARACTER_CLIP_NAME,
+		) &&
+		snapshot.asset.character.assetMetrics.some(
+			(metrics) =>
+				metrics.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				metrics.skinnedMeshCount >= 1 &&
+				metrics.triangleCount > 0 &&
+				metrics.vertexCount > 0 &&
+				metrics.boneCount > 0 &&
+				metrics.materialTypes.includes("MeshStandardMaterial"),
 		)
 	);
 }
@@ -297,6 +306,19 @@ function validatePirateBenchmarkSnapshot(
 		)
 	) {
 		failures.push(`${label} did not discover the walking character clip.`);
+	}
+	if (
+		!snapshot.asset.character.assetMetrics.some(
+			(metrics) =>
+				metrics.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				metrics.skinnedMeshCount >= 1 &&
+				metrics.triangleCount > 0 &&
+				metrics.vertexCount > 0 &&
+				metrics.boneCount > 0 &&
+				metrics.materialTypes.includes("MeshStandardMaterial"),
+		)
+	) {
+		failures.push(`${label} did not report prepared character asset metrics.`);
 	}
 	if (
 		snapshot.asset.activeImportedAssetInstances <

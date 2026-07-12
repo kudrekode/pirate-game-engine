@@ -3,6 +3,7 @@ import type { ObjectBehaviour, ThreeVisualConfig } from "../../types/game";
 import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 import {
 	composeThreeVisualYaw,
+	resolveThreeCharacterFacingYaw,
 	resolveThreeCharacterVisual,
 	resolveThreeVisual,
 	resolveThreeVisualAssetTransform,
@@ -307,6 +308,41 @@ describe("three visual resolver", () => {
 		).toBeCloseTo(Math.PI);
 	});
 
+	it("uses the registry correction plus authored offset for every character facing", () => {
+		const playerVisual = resolveThreeCharacterVisual({
+			kind: "player",
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				rotationOffset: 30,
+			},
+		});
+		const npcVisual = resolveThreeCharacterVisual({
+			kind: "npc",
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				rotationOffset: 30,
+			},
+		});
+
+		expect(playerVisual).toMatchObject({ rotationOffset: 210 });
+		expect(npcVisual).toMatchObject({ rotationOffset: 210 });
+		for (const [facing, expectedYaw] of [
+			[{ x: 0, y: -1 }, (210 * Math.PI) / 180],
+			[{ x: 1, y: 0 }, (120 * Math.PI) / 180],
+			[{ x: 0, y: 1 }, (30 * Math.PI) / 180],
+			[{ x: -1, y: 0 }, (300 * Math.PI) / 180],
+		] as const) {
+			expect(resolveThreeCharacterFacingYaw(facing, playerVisual)).toBeCloseTo(
+				expectedYaw,
+			);
+			expect(resolveThreeCharacterFacingYaw(facing, npcVisual)).toBeCloseTo(
+				expectedYaw,
+			);
+		}
+	});
+
 	it("normalises the model before applying resolved registry or author transforms", () => {
 		const analysis = {
 			bounds: {
@@ -330,7 +366,7 @@ describe("three visual resolver", () => {
 		});
 	});
 
-	it("lets authored transforms override registry defaults before asset placement", () => {
+	it("adds authored rotation offsets after registry model corrections", () => {
 		const restoreRegistry = setThreeVisualAssetRegistryForTests([
 			{
 				defaultHeightOffset: 0.2,
@@ -356,7 +392,7 @@ describe("three visual resolver", () => {
 			});
 			expect(visual).toMatchObject({
 				heightOffset: 0.8,
-				rotationOffset: 60,
+				rotationOffset: 75,
 				scale: 2,
 			});
 		} finally {

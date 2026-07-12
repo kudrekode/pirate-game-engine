@@ -24,11 +24,15 @@ describe("Three visual asset analysis", () => {
 		expect(analysis.sphere.radius).toBeCloseTo(Math.sqrt(14));
 		expect(analysis).toMatchObject({
 			animationClips: [],
+			boneCount: 0,
 			materialCount: 1,
+			materialTypes: ["MeshStandardMaterial"],
 			meshCount: 1,
 			skeletonCount: 0,
 			skinnedMeshCount: 0,
 			textureCount: 0,
+			triangleCount: 12,
+			vertexCount: 24,
 		});
 
 		mesh.geometry.dispose();
@@ -46,10 +50,14 @@ describe("Three visual asset analysis", () => {
 			},
 			sphere: { center: { x: 0, y: 0, z: 0 }, radius: 0 },
 			materialCount: 0,
+			materialTypes: [],
 			meshCount: 0,
+			boneCount: 0,
 			skeletonCount: 0,
 			skinnedMeshCount: 0,
+			triangleCount: 0,
 			textureCount: 0,
+			vertexCount: 0,
 		});
 	});
 
@@ -87,11 +95,15 @@ describe("Three visual asset analysis", () => {
 
 		expect(analysis).toMatchObject({
 			animationClips: [{ duration: 1.25, name: "Walk", trackCount: 0 }],
+			boneCount: 1,
 			materialCount: 1,
+			materialTypes: ["MeshStandardMaterial"],
 			meshCount: 1,
 			skeletonCount: 1,
 			skinnedMeshCount: 1,
 			textureCount: 1,
+			triangleCount: 12,
+			vertexCount: 24,
 		});
 
 		mesh.geometry.dispose();

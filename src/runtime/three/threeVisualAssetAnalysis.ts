@@ -13,14 +13,18 @@ export type ThreeVisualAssetAnalysis = {
 		minY: number;
 	};
 	materialCount: number;
+	materialTypes: string[];
 	meshCount: number;
+	boneCount: number;
 	skeletonCount: number;
 	skinnedMeshCount: number;
+	triangleCount: number;
 	sphere: {
 		center: { x: number; y: number; z: number };
 		radius: number;
 	};
 	textureCount: number;
+	vertexCount: number;
 };
 
 function toPlainVector(vector: THREE.Vector3): {
@@ -41,11 +45,18 @@ export function analyzeThreeVisualAssetRoot(
 	const textures = new Set<THREE.Texture>();
 	let meshCount = 0;
 	let skinnedMeshCount = 0;
+	let triangleCount = 0;
+	let vertexCount = 0;
 	root.traverse((object) => {
 		if (!(object instanceof THREE.Mesh)) {
 			return;
 		}
 		meshCount += 1;
+		const position = object.geometry.getAttribute("position");
+		vertexCount += position?.count ?? 0;
+		triangleCount += object.geometry.index
+			? Math.floor(object.geometry.index.count / 3)
+			: Math.floor((position?.count ?? 0) / 3);
 		const objectMaterials = Array.isArray(object.material)
 			? object.material
 			: [object.material];
@@ -67,6 +78,14 @@ export function analyzeThreeVisualAssetRoot(
 		name: clip.name,
 		trackCount: clip.tracks.length,
 	}));
+	const materialTypes = Array.from(
+		materials,
+		(material) => material.type,
+	).sort();
+	const boneCount = Array.from(skeletons).reduce(
+		(count, skeleton) => count + skeleton.bones.length,
+		0,
+	);
 	if (bounds.isEmpty()) {
 		return {
 			animationClips: animationClipSummaries,
@@ -77,14 +96,18 @@ export function analyzeThreeVisualAssetRoot(
 				minY: 0,
 			},
 			materialCount: materials.size,
+			materialTypes,
 			meshCount,
+			boneCount,
 			skeletonCount: skeletons.size,
 			skinnedMeshCount,
+			triangleCount,
 			sphere: {
 				center: { x: 0, y: 0, z: 0 },
 				radius: 0,
 			},
 			textureCount: textures.size,
+			vertexCount,
 		};
 	}
 
@@ -100,13 +123,17 @@ export function analyzeThreeVisualAssetRoot(
 			minY: bounds.min.y,
 		},
 		materialCount: materials.size,
+		materialTypes,
 		meshCount,
+		boneCount,
 		skeletonCount: skeletons.size,
 		skinnedMeshCount,
+		triangleCount,
 		sphere: {
 			center: toPlainVector(sphere.center),
 			radius: sphere.radius,
 		},
 		textureCount: textures.size,
+		vertexCount,
 	};
 }

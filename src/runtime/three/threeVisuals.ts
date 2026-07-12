@@ -12,6 +12,7 @@ import {
 	getThreeVisualAssetDefinition,
 	type ThreeVisualAssetDefinition,
 } from "./threeVisualAssetRegistry";
+import { facingToYawRadians, type VisualGridPosition } from "./visualSmoothing";
 
 export type PlaceholderVisualEntity =
 	| {
@@ -256,7 +257,8 @@ export function resolveThreeVisual(
 		placeholderType: authoredPlaceholderType ?? inferredPlaceholderType,
 		requestedMode,
 		rotationOffset: clampThreeVisualRotationOffset(
-			config?.rotationOffset ?? assetDefinition?.defaultRotationOffset,
+			(assetDefinition?.defaultRotationOffset ?? 0) +
+				(config?.rotationOffset ?? 0),
 		),
 		scale: clampThreeVisualScale(
 			config?.scale ?? assetDefinition?.defaultScale,
@@ -309,8 +311,10 @@ export function threeVisualRotationOffsetToRadians(
 }
 
 // Transform order is fixed for editor and runtime parity:
-// cached model bounds normalisation -> registry defaults -> authored overrides
-// -> marker placement -> terrain surface sampling (when the marker is created).
+// cached model bounds normalisation -> registry defaults + authored rotation
+// offset -> marker placement -> terrain surface sampling (when the marker is
+// created). The registry owns model-native forward correction; authored
+// rotation remains an additional project-level adjustment.
 export function resolveThreeVisualAssetTransform(
 	visual:
 		| Pick<ResolvedThreeVisual, "heightOffset" | "rotationOffset" | "scale">
@@ -330,4 +334,13 @@ export function composeThreeVisualYaw(
 	visual: Pick<ResolvedThreeVisual, "rotationOffset"> | undefined,
 ): number {
 	return baseYawRadians + threeVisualRotationOffsetToRadians(visual);
+}
+
+// This is the canonical player/NPC wrapper yaw. It only changes the cloned
+// instance wrapper; cached source scenes stay unmodified for future clones.
+export function resolveThreeCharacterFacingYaw(
+	facing: VisualGridPosition,
+	visual: Pick<ResolvedThreeVisual, "rotationOffset"> | undefined,
+): number {
+	return composeThreeVisualYaw(facingToYawRadians(facing), visual);
 }

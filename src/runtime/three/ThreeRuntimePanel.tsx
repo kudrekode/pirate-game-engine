@@ -99,8 +99,8 @@ import {
 } from "./threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
-	composeThreeVisualYaw,
 	type ResolvedThreeVisual,
+	resolveThreeCharacterFacingYaw,
 	resolveThreeCharacterVisual,
 } from "./threeVisuals";
 import {
@@ -303,16 +303,7 @@ function setObjectFacing(
 	facing: VisualGridPosition,
 	visual?: ResolvedThreeVisual,
 ): void {
-	object.rotation.y = composeThreeVisualYaw(facingToYawRadians(facing), visual);
-}
-
-function createFacingMarker(color: number, y: number, z: number): THREE.Mesh {
-	const marker = new THREE.Mesh(
-		new THREE.BoxGeometry(0.16, 0.12, 0.3),
-		createWorldMaterial("default", { color }),
-	);
-	marker.position.set(0, y, z);
-	return marker;
+	object.rotation.y = resolveThreeCharacterFacingYaw(facing, visual);
 }
 
 function getRuntimeCameraDimensions(area: GameArea): {
@@ -1526,9 +1517,6 @@ export function ThreeRuntimePanel({
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
 				if (npcVisual) {
-					group.add(
-						createFacingMarker(getWorldMaterialColor("sand"), 0.58, -0.34),
-					);
 					setObjectBasePosition(
 						group,
 						area,

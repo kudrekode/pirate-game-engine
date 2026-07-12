@@ -40,6 +40,22 @@
 
 Use this harness for browser/performance-sensitive Three work. Do not infer performance regressions or fixes without comparing artifacts.
 
+## Character Presentation Budget (V1)
+
+The curated Patchbeard walking source is the reference budget sample: one skinned
+mesh, 11,116 vertices, 10,373 triangles, 24 bones, one material, and one shared
+texture image. Its registry entry uses a cached `standard` material profile and
+does not receive shadows; `SkeletonUtils.clone` keeps each active character's
+skeleton independent while sharing immutable geometry, material, and texture
+resources.
+
+For this current proof of concept, prefer character sources at or below roughly
+12,000 triangles, 32 bones, one material, and one to two textures. Treat 15,000
+triangles or more, more than 48 bones, or more than two materials as a diagnostic
+warning that needs a benchmark, not an automatic rejection. The deterministic
+benchmark currently supports three simultaneous skinned characters; larger
+crowds need a new measured budget before they become a target.
+
 ## Current Limitations
 
 - No skeletal/model animation system yet.

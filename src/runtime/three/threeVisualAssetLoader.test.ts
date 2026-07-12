@@ -65,9 +65,11 @@ describe("Three visual asset loader cache", () => {
 			expect(first.object).not.toBe(source);
 
 			first.object.position.set(3, 2, 1);
+			first.object.rotation.y = Math.PI / 2;
 			expect(source.position.x).toBe(0);
 			expect(source.position.y).toBe(0);
 			expect(source.position.z).toBe(0);
+			expect(source.rotation.y).toBe(0);
 		} finally {
 			restoreLoader();
 		}
@@ -199,6 +201,10 @@ describe("Three visual asset loader cache", () => {
 			expect(firstMesh.skeleton.bones[0]).not.toBe(
 				secondMesh.skeleton.bones[0],
 			);
+			expect(firstMesh.geometry).toBe(sourceMesh.geometry);
+			expect(secondMesh.geometry).toBe(sourceMesh.geometry);
+			expect(firstMesh.material).toBe(sourceMesh.material);
+			expect(secondMesh.material).toBe(sourceMesh.material);
 
 			firstMesh.skeleton.bones[0].position.x = 4;
 			expect(secondMesh.skeleton.bones[0].position.x).toBe(0);
@@ -206,6 +212,58 @@ describe("Three visual asset loader cache", () => {
 
 			sourceMesh.geometry.dispose();
 			sourceMesh.material.dispose();
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("prepares a standard material once on the cached source without cloning it", async () => {
+		const texture = new THREE.Texture();
+		const sourceMaterial = new THREE.MeshPhysicalMaterial({
+			emissive: 0x334455,
+			emissiveMap: texture,
+			map: texture,
+			metalness: 0.2,
+			roughness: 0.7,
+		});
+		const source = new THREE.Group();
+		source.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial));
+		const definition: ThreeVisualAssetDefinition = {
+			...assetDefinition,
+			id: "standard_model",
+			materialProfile: "standard",
+		};
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: vi.fn(async () => ({ scene: source })),
+		}));
+
+		try {
+			expect(requestThreeVisualAsset(definition).status).toBe("loading");
+			await flushAssetPromises();
+			const first = requestThreeVisualAsset(definition);
+			const second = requestThreeVisualAsset(definition);
+			expect(first.status).toBe("loaded");
+			expect(second.status).toBe("loaded");
+			if (first.status !== "loaded" || second.status !== "loaded") {
+				throw new Error("Expected cached standard material clones.");
+			}
+			const sourceMesh = source.getObjectByProperty(
+				"isMesh",
+				true,
+			) as THREE.Mesh;
+			const firstMesh = first.object.getObjectByProperty(
+				"isMesh",
+				true,
+			) as THREE.Mesh;
+			const secondMesh = second.object.getObjectByProperty(
+				"isMesh",
+				true,
+			) as THREE.Mesh;
+			expect(sourceMesh.material).toBeInstanceOf(THREE.MeshStandardMaterial);
+			expect(sourceMesh.material).not.toBe(sourceMaterial);
+			expect(firstMesh.material).toBe(sourceMesh.material);
+			expect(secondMesh.material).toBe(sourceMesh.material);
+			expect(first.analysis.materialTypes).toEqual(["MeshStandardMaterial"]);
 		} finally {
 			restoreLoader();
 		}

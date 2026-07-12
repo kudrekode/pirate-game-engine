@@ -5,6 +5,7 @@ import {
 	analyzeThreeVisualAssetRoot,
 	type ThreeVisualAssetAnalysis,
 } from "./threeVisualAssetAnalysis";
+import { prepareThreeVisualAssetMaterials } from "./threeVisualAssetMaterialProfile";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 
 type GltfLike = {
@@ -121,6 +122,7 @@ function startAssetLoad(
 				});
 				return;
 			}
+			prepareThreeVisualAssetMaterials(root, definition);
 			const analysis = analyzeThreeVisualAssetRoot(root, gltf.animations);
 			cache.set(key, {
 				analysis,

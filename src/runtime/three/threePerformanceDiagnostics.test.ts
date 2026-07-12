@@ -223,11 +223,15 @@ describe("three performance diagnostics", () => {
 				minY: 0,
 			},
 			materialCount: 1,
+			materialTypes: ["MeshStandardMaterial"],
 			meshCount: 1,
+			boneCount: 24,
 			skeletonCount: 1,
 			skinnedMeshCount: 1,
 			sphere: { center: { x: 0, y: 0.85, z: 0 }, radius: 1 },
 			textureCount: 1,
+			triangleCount: 10_373,
+			vertexCount: 11_116,
 		};
 		diagnostics.setSceneEntityCounts({
 			assetStatuses: [
@@ -255,6 +259,18 @@ describe("three performance diagnostics", () => {
 		expect(character).toEqual({
 			activeAssetIds: ["pirate-character-walk"],
 			activeCloneInstances: 2,
+			assetMetrics: [
+				{
+					boneCount: 24,
+					definitionId: "pirate-character-walk",
+					materialCount: 1,
+					materialTypes: ["MeshStandardMaterial"],
+					skinnedMeshCount: 1,
+					textureCount: 1,
+					triangleCount: 10_373,
+					vertexCount: 11_116,
+				},
+			],
 			animationClips: [
 				{
 					definitionId: "pirate-character-walk",
