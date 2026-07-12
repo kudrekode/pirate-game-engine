@@ -31,9 +31,10 @@ export function ThreeVisualControls({
 }: ThreeVisualControlsProps) {
 	const assets = listThreeVisualAssets().filter(
 		(asset) =>
-			!assetCategories ||
-			(asset.category !== undefined &&
-				assetCategories.includes(asset.category)),
+			asset.animationOnly !== true &&
+			(!assetCategories ||
+				(asset.category !== undefined &&
+					assetCategories.includes(asset.category))),
 	);
 	const mode = value?.mode === "asset" ? "asset" : "placeholder";
 	const assetId =

@@ -55,6 +55,10 @@ Key files:
 - `three-editor-snapshot.json`
 - `three-runtime-collapsed-snapshot.json`
 - `three-runtime-snapshot.json`
+- `three-runtime-walk-snapshot.json`
+- `three-runtime-idle-snapshot.json`
+- `three-runtime-attack-snapshot.json`
+- `three-runtime-after-attack-snapshot.json`
 - `three-runtime-after-move-snapshot.json`
 - `three-editor.png`
 - `three-runtime.png`
@@ -78,6 +82,7 @@ Snapshots include:
 - frame/FPS data
 - RAF interval timing, separated from `renderer.render` timing
 - frame callback, visual update, camera update, water update, runtime tick, and render phase stats
+- character animation state, mixer/action counts, source asset ids, clip issues, and animation-update timing
 - hitch counts and recent hitches
 - renderer draw calls, triangles, geometries, textures, and programs
 - terrain mode, tile count, mesh count, water mesh count, and coastline edge count
@@ -96,6 +101,7 @@ V1 intentionally keeps assertions conservative:
 - fail if required snapshots are missing or record no frames/FPS
 - fail if renderer draw calls or triangles are unavailable
 - fail if water/coast diagnostics are absent for the benchmark
+- in the Three runtime, wait for three character mixers with settled clip sources and verify player walk, idle/rest, attack, and post-attack idle states
 - fail on uncaught page errors
 
 Console warnings, console errors, and asset/network failures are captured in artifacts. They are not broad failure gates yet, except for explicit local asset response failures.

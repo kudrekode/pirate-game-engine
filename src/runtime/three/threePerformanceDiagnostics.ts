@@ -32,6 +32,7 @@ export type ThreePerformancePhase =
 	| "asset fallback"
 	| "asset load callback"
 	| "asset load start"
+	| "animation_update"
 	| "camera_update"
 	| "frame_callback"
 	| "object state update"
@@ -96,6 +97,16 @@ export type ThreePerformanceSnapshot = {
 				trackCount: number;
 			}[];
 			cloneTypes: ThreeVisualAssetCloneType[];
+			animation: {
+				activeLoopingActions: number;
+				activeMixers: number;
+				incompatibleClipCount: number;
+				loadingSourceCount: number;
+				missingClipCount: number;
+				oneShotActionsTriggered: number;
+				playerState: string;
+				sourceAssetIds: string[];
+			};
 			skinnedMeshCount: number;
 		};
 		activeCloneInstances: number;
@@ -136,6 +147,7 @@ export type ThreePerformanceSnapshot = {
 	label: string;
 	phases: {
 		cameraUpdate: ThreePerformancePhaseStats;
+		animationUpdate: ThreePerformancePhaseStats;
 		frameCallback: ThreePerformancePhaseStats;
 		render: ThreePerformancePhaseStats;
 		runtimeTick: ThreePerformancePhaseStats;
@@ -202,6 +214,7 @@ export type ThreePerformanceDiagnostics = {
 	formatSnapshot: () => string;
 	getSnapshot: () => ThreePerformanceSnapshot;
 	recordAssetClone: (definitionId?: string) => void;
+	recordCharacterAnimationUpdate: (durationMs: number) => void;
 	recordAssetFallback: (
 		assetStatus: ThreeAssetRenderStatus,
 		definitionId?: string,
@@ -241,6 +254,16 @@ export type ThreePerformanceDiagnostics = {
 			areaName?: string;
 			projectName?: string;
 		};
+	}) => void;
+	setCharacterAnimationMetrics: (metrics: {
+		activeLoopingActions: number;
+		activeMixers: number;
+		incompatibleClipCount: number;
+		loadingSourceCount: number;
+		missingClipCount: number;
+		oneShotActionsTriggered: number;
+		playerState: string;
+		sourceAssetIds: string[];
 	}) => void;
 };
 
@@ -483,6 +506,17 @@ export function createThreePerformanceDiagnostics(
 		[];
 	let characterCloneTypes: ThreeVisualAssetCloneType[] = [];
 	let characterSkinnedMeshCount = 0;
+	let characterAnimationMetrics: ThreePerformanceSnapshot["asset"]["character"]["animation"] =
+		{
+			activeLoopingActions: 0,
+			activeMixers: 0,
+			incompatibleClipCount: 0,
+			loadingSourceCount: 0,
+			missingClipCount: 0,
+			oneShotActionsTriggered: 0,
+			playerState: "idle",
+			sourceAssetIds: [],
+		};
 	let fallbackPlaceholderCount = 0;
 	let loadingFallbackCount = 0;
 	let errorFallbackCount = 0;
@@ -499,6 +533,7 @@ export function createThreePerformanceDiagnostics(
 	const runtimeTickStats = createPhaseStatsState();
 	const visualUpdateStats = createPhaseStatsState();
 	const cameraUpdateStats = createPhaseStatsState();
+	const animationUpdateStats = createPhaseStatsState();
 	const frameCallbackStats = createPhaseStatsState();
 	const waterUpdateStats = createPhaseStatsState();
 	let rafLoopStartCount = 0;
@@ -537,6 +572,7 @@ export function createThreePerformanceDiagnostics(
 		resetPhaseStats(runtimeTickStats);
 		resetPhaseStats(visualUpdateStats);
 		resetPhaseStats(cameraUpdateStats);
+		resetPhaseStats(animationUpdateStats);
 		resetPhaseStats(frameCallbackStats);
 		resetPhaseStats(waterUpdateStats);
 		over50MsCount = 0;
@@ -642,6 +678,7 @@ export function createThreePerformanceDiagnostics(
 						activeCloneInstances: activeCharacterCloneInstances,
 						assetMetrics: characterAssetMetrics,
 						animationClips: characterAnimationClips,
+						animation: characterAnimationMetrics,
 						cloneTypes: characterCloneTypes,
 						skinnedMeshCount: characterSkinnedMeshCount,
 					},
@@ -684,6 +721,7 @@ export function createThreePerformanceDiagnostics(
 				},
 				label,
 				phases: {
+					animationUpdate: getPhaseStatsSnapshot(animationUpdateStats),
 					cameraUpdate: getPhaseStatsSnapshot(cameraUpdateStats),
 					frameCallback: getPhaseStatsSnapshot(frameCallbackStats),
 					render: getPhaseStatsSnapshot(renderStats),
@@ -761,6 +799,10 @@ export function createThreePerformanceDiagnostics(
 			lastAssetMessage = `clone: ${definitionId ?? "asset"}`;
 			pushEvent(lastAssetMessage);
 		},
+		recordCharacterAnimationUpdate: (durationMs: number) => {
+			recordPhaseStats(animationUpdateStats, durationMs);
+			recordPhase("animation_update", "character animation update", durationMs);
+		},
 		recordFrame: (durationMs: number) => {
 			diagnostics.recordFrameInterval(durationMs);
 		},
@@ -790,6 +832,12 @@ export function createThreePerformanceDiagnostics(
 		recordCameraUpdate: (durationMs: number) => {
 			recordPhaseStats(cameraUpdateStats, durationMs);
 			recordPhase("camera_update", "camera update", durationMs);
+		},
+		setCharacterAnimationMetrics: (metrics) => {
+			characterAnimationMetrics = {
+				...metrics,
+				sourceAssetIds: [...metrics.sourceAssetIds].sort(),
+			};
 		},
 		recordVisualUpdate: (durationMs: number) => {
 			recordPhaseStats(visualUpdateStats, durationMs);
@@ -1026,10 +1074,11 @@ export function formatThreePerformanceSnapshot(
 		reasonCounts ? `scene reasons: ${reasonCounts}` : "",
 		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances} (${snapshot.asset.activeImportedAssetIds.join(", ") || "none"}), active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
 		`characters: assets ${snapshot.asset.character.activeAssetIds.join(", ") || "none"}, active clones ${snapshot.asset.character.activeCloneInstances}, skinned meshes ${snapshot.asset.character.skinnedMeshCount}, clone types ${snapshot.asset.character.cloneTypes.join(", ") || "none"}, clips ${snapshot.asset.character.animationClips.map((clip) => `${clip.definitionId}:${clip.name}`).join(", ") || "none"}`,
+		`character animation: state ${snapshot.asset.character.animation.playerState}, mixers ${snapshot.asset.character.animation.activeMixers}, looping actions ${snapshot.asset.character.animation.activeLoopingActions}, one-shots ${snapshot.asset.character.animation.oneShotActionsTriggered}, loading sources ${snapshot.asset.character.animation.loadingSourceCount}, missing clips ${snapshot.asset.character.animation.missingClipCount}, incompatible clips ${snapshot.asset.character.animation.incompatibleClipCount}, source assets ${snapshot.asset.character.animation.sourceAssetIds.join(", ") || "none"}`,
 		`character metrics: ${snapshot.asset.character.assetMetrics.map((metrics) => `${metrics.definitionId}: ${metrics.vertexCount} vertices, ${metrics.triangleCount} triangles, ${metrics.boneCount} bones, ${metrics.skinnedMeshCount} skinned meshes, ${metrics.materialCount} ${metrics.materialTypes.join("/")} material(s), ${metrics.textureCount} texture(s)`).join(" | ") || "none"}`,
 		`asset statuses: ${assetStatuses}, loading fallbacks ${snapshot.asset.loadingFallbackCount}, error fallbacks ${snapshot.asset.errorFallbackCount}, missing fallbacks ${snapshot.asset.missingFallbackCount}, stuck loading ${snapshot.asset.stuckLoadingCount}`,
 		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, vertices ${snapshot.terrain.vertexCount}, triangles ${snapshot.terrain.triangleCount}, water meshes ${snapshot.terrain.waterMeshCount}, coast edges ${snapshot.terrain.coastlineEdgeCount}, last ms ${snapshot.terrain.lastDurationMs}`,
-		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, water avg/worst ${snapshot.phases.waterUpdate.averageMs}/${snapshot.phases.waterUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
+		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, animation avg/worst ${snapshot.phases.animationUpdate.averageMs}/${snapshot.phases.animationUpdate.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, water avg/worst ${snapshot.phases.waterUpdate.averageMs}/${snapshot.phases.waterUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
 		`raf loops: starts ${snapshot.raf.loopStartCount}, cancels ${snapshot.raf.loopCancelCount}, restarts ${snapshot.raf.loopRestartCount}, active ${snapshot.raf.activeLoopCount}, last start "${snapshot.raf.lastStartReason || "none"}", last cancel "${snapshot.raf.lastCancelReason || "none"}"`,
 		`input/runtime: pointer moves ${snapshot.pointer.pointerMoveCount}, pointer/s ${snapshot.pointer.pointerMovesPerSecond}, picks ${snapshot.pointer.pickCount}, last pick ms ${snapshot.pointer.lastPickMs}, ticks ${snapshot.runtime.tickCount}, last/avg/worst tick ms ${snapshot.runtime.lastTickMs}/${snapshot.runtime.averageTickMs}/${snapshot.runtime.worstTickMs}`,
 		snapshot.asset.lastMessage

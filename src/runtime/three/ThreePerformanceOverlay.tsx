@@ -176,6 +176,24 @@ export function ThreePerformanceOverlay({
 						<strong>
 							{snapshot.asset.character.cloneTypes.join(", ") || "none"}
 						</strong>
+						<span>Character animation</span>
+						<strong>
+							{snapshot.asset.character.animation.playerState}, mixers{" "}
+							{snapshot.asset.character.animation.activeMixers}, loops{" "}
+							{snapshot.asset.character.animation.activeLoopingActions}
+						</strong>
+						<span>Animation sources/issues</span>
+						<strong>
+							loading {snapshot.asset.character.animation.loadingSourceCount},
+							missing {snapshot.asset.character.animation.missingClipCount},
+							incompatible{" "}
+							{snapshot.asset.character.animation.incompatibleClipCount}
+						</strong>
+						<span>Animation update avg/worst</span>
+						<strong>
+							{formatNumber(snapshot.phases.animationUpdate.averageMs)} /{" "}
+							{formatNumber(snapshot.phases.animationUpdate.worstMs)} ms
+						</strong>
 						<span>Asset statuses</span>
 						<strong>
 							L {snapshot.asset.statusCounts.loaded} / G{" "}

@@ -5,12 +5,28 @@ export type ThreeVisualAssetCategory =
 	| "environment"
 	| "item";
 
+export type ThreeCharacterAnimationState =
+	| "idle"
+	| "walk"
+	| "attack"
+	| "defeated";
+
+export type ThreeCharacterAnimationMapping = {
+	assetId?: string;
+	clipName: string;
+};
+
 export type ThreeVisualAssetDefinition = {
 	id: string;
 	name: string;
 	kind: "gltf" | "glb";
 	url: string;
 	category?: ThreeVisualAssetCategory;
+	/** Animation-only registry sources are never offered as character visuals. */
+	animationOnly?: boolean;
+	animations?: Partial<
+		Record<ThreeCharacterAnimationState, ThreeCharacterAnimationMapping>
+	>;
 	/**
 	 * Optional presentation-only material preparation for this cached source.
 	 * It never changes authored project data or gameplay state.
@@ -123,6 +139,20 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		category: "character",
+		animations: {
+			attack: {
+				assetId: "pirate-character-attack",
+				clipName: "Armature|Attack|baselayer",
+			},
+			defeated: {
+				assetId: "pirate-character-dead",
+				clipName: "Armature|Dead|baselayer",
+			},
+			walk: {
+				assetId: "pirate-character-walk",
+				clipName: "Armature|walking_man|baselayer",
+			},
+		},
 		defaultHeightOffset: 0,
 		// Patchbeard's visible forward is native +Z; Three grid north is -Z.
 		defaultRotationOffset: 180,
@@ -137,6 +167,20 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		category: "character",
+		animations: {
+			attack: {
+				assetId: "pirate-character-attack",
+				clipName: "Armature|Attack|baselayer",
+			},
+			defeated: {
+				assetId: "pirate-character-dead",
+				clipName: "Armature|Dead|baselayer",
+			},
+			walk: {
+				assetId: "pirate-character-walk",
+				clipName: "Armature|walking_man|baselayer",
+			},
+		},
 		defaultHeightOffset: 0,
 		// Patchbeard's visible forward is native +Z; Three grid north is -Z.
 		defaultRotationOffset: 180,
@@ -148,6 +192,28 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		receiveShadow: false,
 		tags: ["animation", "character", "pirate", "skinned", "walk"],
 		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
+	},
+	{
+		animationOnly: true,
+		category: "character",
+		id: "pirate-character-attack",
+		kind: "glb",
+		materialProfile: "standard",
+		name: "Captain Patchbeard Attack (Animation Source)",
+		receiveShadow: false,
+		tags: ["animation", "attack", "character", "pirate", "skinned"],
+		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Attack_withSkin.glb",
+	},
+	{
+		animationOnly: true,
+		category: "character",
+		id: "pirate-character-dead",
+		kind: "glb",
+		materialProfile: "standard",
+		name: "Captain Patchbeard Dead (Animation Source)",
+		receiveShadow: false,
+		tags: ["animation", "character", "dead", "pirate", "skinned"],
+		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Dead_withSkin.glb",
 	},
 ];
 

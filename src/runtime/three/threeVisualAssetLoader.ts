@@ -33,6 +33,7 @@ type AssetCacheEntry =
 	  }
 	| {
 			analysis: ThreeVisualAssetAnalysis;
+			animations: THREE.AnimationClip[];
 			status: "loaded";
 			definition: ThreeVisualAssetDefinition;
 			root: THREE.Object3D;
@@ -53,6 +54,20 @@ export type ThreeVisualAssetRequest =
 			definition: ThreeVisualAssetDefinition;
 			cloneType: ThreeVisualAssetCloneType;
 			object: THREE.Object3D;
+	  };
+
+export type ThreeVisualAssetAnimationRequest =
+	| { status: "missing" }
+	| { status: "loading"; definition: ThreeVisualAssetDefinition }
+	| { status: "error"; definition: ThreeVisualAssetDefinition; error: unknown }
+	| {
+			clip: THREE.AnimationClip;
+			definition: ThreeVisualAssetDefinition;
+			status: "loaded";
+	  }
+	| {
+			definition: ThreeVisualAssetDefinition;
+			status: "missing_clip";
 	  };
 
 const cache = new Map<string, AssetCacheEntry>();
@@ -126,6 +141,7 @@ function startAssetLoad(
 			const analysis = analyzeThreeVisualAssetRoot(root, gltf.animations);
 			cache.set(key, {
 				analysis,
+				animations: gltf.animations ?? [],
 				definition,
 				root,
 				status: "loaded",
@@ -204,6 +220,43 @@ export function requestThreeVisualAsset(
 			status: "cache_hit",
 			url: existing.definition.url,
 		});
+		if (options.onStateChange) {
+			existing.listeners.add(options.onStateChange);
+		}
+		return { definition: existing.definition, status: "loading" };
+	}
+
+	const entry = startAssetLoad(definition, key, options.onStateChange);
+	return { definition: entry.definition, status: "loading" };
+}
+
+export function requestThreeVisualAssetAnimationClip(
+	definition: ThreeVisualAssetDefinition | undefined,
+	clipName: string,
+	options: { onStateChange?: () => void } = {},
+): ThreeVisualAssetAnimationRequest {
+	if (!definition) {
+		return { status: "missing" };
+	}
+
+	const key = getCacheKey(definition);
+	const existing = cache.get(key);
+	if (existing?.status === "loaded") {
+		const clip = existing.animations.find(
+			(candidate) => candidate.name === clipName,
+		);
+		return clip
+			? { clip, definition: existing.definition, status: "loaded" }
+			: { definition: existing.definition, status: "missing_clip" };
+	}
+	if (existing?.status === "error") {
+		return {
+			definition: existing.definition,
+			error: existing.error,
+			status: "error",
+		};
+	}
+	if (existing?.status === "loading") {
 		if (options.onStateChange) {
 			existing.listeners.add(options.onStateChange);
 		}

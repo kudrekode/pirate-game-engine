@@ -129,6 +129,21 @@ describe("ThreeVisualControls", () => {
 		});
 	});
 
+	it("keeps animation-only source assets out of the visual selector", () => {
+		renderControls({ mode: "asset" });
+
+		expect(
+			screen.queryByRole("option", {
+				name: "Captain Patchbeard Attack (Animation Source)",
+			}),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("option", {
+				name: "Captain Patchbeard Dead (Animation Source)",
+			}),
+		).not.toBeInTheDocument();
+	});
+
 	it("updates source mode and preserves transform settings", () => {
 		setAssets([demoBoxAsset]);
 		const transformConfig: ThreeVisualConfig = {

@@ -18,6 +18,17 @@ describe("three performance diagnostics", () => {
 		now = 300;
 		diagnostics.recordFrame(20);
 		diagnostics.recordFrameCallback(6.4);
+		diagnostics.recordCharacterAnimationUpdate(0.5);
+		diagnostics.setCharacterAnimationMetrics({
+			activeLoopingActions: 2,
+			activeMixers: 3,
+			incompatibleClipCount: 1,
+			loadingSourceCount: 2,
+			missingClipCount: 1,
+			oneShotActionsTriggered: 4,
+			playerState: "walk",
+			sourceAssetIds: ["character-attack", "character-walk"],
+		});
 		diagnostics.recordRenderCall(4.25);
 		diagnostics.recordWaterUpdate(0.7);
 		diagnostics.recordRafLoopStart("test start");
@@ -139,6 +150,22 @@ describe("three performance diagnostics", () => {
 			count: 1,
 			lastMs: 6.4,
 			worstMs: 6.4,
+		});
+		expect(snapshot.phases.animationUpdate).toMatchObject({
+			averageMs: 0.5,
+			count: 1,
+			lastMs: 0.5,
+			worstMs: 0.5,
+		});
+		expect(snapshot.asset.character.animation).toEqual({
+			activeLoopingActions: 2,
+			activeMixers: 3,
+			incompatibleClipCount: 1,
+			loadingSourceCount: 2,
+			missingClipCount: 1,
+			oneShotActionsTriggered: 4,
+			playerState: "walk",
+			sourceAssetIds: ["character-attack", "character-walk"],
 		});
 		expect(snapshot.phases.waterUpdate).toMatchObject({
 			averageMs: 0.7,
@@ -279,6 +306,16 @@ describe("three performance diagnostics", () => {
 					trackCount: 72,
 				},
 			],
+			animation: {
+				activeLoopingActions: 0,
+				activeMixers: 0,
+				incompatibleClipCount: 0,
+				loadingSourceCount: 0,
+				missingClipCount: 0,
+				oneShotActionsTriggered: 0,
+				playerState: "idle",
+				sourceAssetIds: [],
+			},
 			cloneTypes: ["skeleton-utils"],
 			skinnedMeshCount: 2,
 		});
@@ -396,6 +433,7 @@ describe("three performance diagnostics", () => {
 		});
 		diagnostics.recordFrameInterval(90);
 		diagnostics.recordFrameCallback(33);
+		diagnostics.recordCharacterAnimationUpdate(2);
 		diagnostics.recordRenderCall(65);
 		diagnostics.recordRafLoopStart("initial loop");
 		diagnostics.recordRuntimeTick(12);
@@ -416,6 +454,10 @@ describe("three performance diagnostics", () => {
 		});
 		expect(snapshot.phases.render).toMatchObject({ count: 0, worstMs: 0 });
 		expect(snapshot.phases.frameCallback).toMatchObject({
+			count: 0,
+			worstMs: 0,
+		});
+		expect(snapshot.phases.animationUpdate).toMatchObject({
 			count: 0,
 			worstMs: 0,
 		});

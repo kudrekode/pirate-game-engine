@@ -8,6 +8,7 @@ import {
 	clearThreeVisualAssetCacheForTests,
 	getThreeVisualAssetCloneType,
 	requestThreeVisualAsset,
+	requestThreeVisualAssetAnimationClip,
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
@@ -133,6 +134,41 @@ describe("Three visual asset loader cache", () => {
 			expect(loaded.analysis.animationClips).toEqual([
 				{ duration: 1.25, name: "Walk", trackCount: 0 },
 			]);
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("returns cached animation clips without creating a rendered clone", async () => {
+		const source = new THREE.Group();
+		const clip = new THREE.AnimationClip("Walk", 1.25, []);
+		const loadAsync = vi.fn(async () => ({
+			animations: [clip],
+			scene: source,
+		}));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+
+		try {
+			expect(
+				requestThreeVisualAssetAnimationClip(assetDefinition, "Walk").status,
+			).toBe("loading");
+			await flushAssetPromises();
+
+			const animation = requestThreeVisualAssetAnimationClip(
+				assetDefinition,
+				"Walk",
+			);
+			expect(animation.status).toBe("loaded");
+			if (animation.status !== "loaded") {
+				throw new Error("Expected a loaded animation clip.");
+			}
+			expect(animation.clip).toBe(clip);
+			expect(loadAsync).toHaveBeenCalledTimes(1);
+			expect(
+				requestThreeVisualAssetAnimationClip(assetDefinition, "Missing"),
+			).toEqual({ definition: assetDefinition, status: "missing_clip" });
 		} finally {
 			restoreLoader();
 		}

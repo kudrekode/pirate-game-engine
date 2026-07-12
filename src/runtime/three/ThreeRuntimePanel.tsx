@@ -93,6 +93,10 @@ import {
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import {
+	createThreeCharacterAnimationController,
+	type ThreeCharacterAnimationController,
+} from "./threeCharacterAnimation";
+import {
 	createThreePerformanceDiagnostics,
 	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
@@ -407,6 +411,9 @@ export function ThreeRuntimePanel({
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
+	const characterAnimationControllersRef = useRef<
+		Map<string, ThreeCharacterAnimationController>
+	>(new Map());
 	const cameraRigRef = useRef<CameraFollowRig | null>(null);
 	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
 	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
@@ -727,6 +734,10 @@ export function ThreeRuntimePanel({
 		if (event.type === "endGame") {
 			setStatus("Game complete.");
 			setMouseLookActive(false);
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -801,6 +812,10 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
 			setMouseLookActive(false);
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -939,11 +954,29 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "gameOver") {
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
 
 	function handleCombatEvent(event: RuntimeCombatEvent): void {
+		if (event.type === "attackStarted") {
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.triggerAttack();
+			return;
+		}
+		if (event.type === "npcDefeated") {
+			// The shared runtime emits npcRemoved immediately after this event. Start
+			// the presentation state without changing that gameplay lifecycle.
+			characterAnimationControllersRef.current
+				.get(event.npcId)
+				?.sync({ defeated: true, moving: false });
+			return;
+		}
 		if (event.type === "status") {
 			setStatus(event.message);
 			return;
@@ -1218,6 +1251,7 @@ export function ThreeRuntimePanel({
 			previousBuildInputsRef.current = null;
 			resetPresentationVisuals(session, { resetCameraMode: true });
 			setMountError(null);
+			gameOverRef.current = false;
 			setGameOver(false);
 			setPendingCutscene(null);
 			setFlowLog([]);
@@ -1492,6 +1526,64 @@ export function ThreeRuntimePanel({
 		};
 		const npcRenderGroups = new Map<string, THREE.Group>();
 		const npcRenderVisuals = new Map<string, ResolvedThreeVisual | undefined>();
+		const characterAnimationControllers = new Map<
+			string,
+			ThreeCharacterAnimationController
+		>();
+		const updateCharacterAnimationDiagnostics = () => {
+			const sourceAssetIds = new Set<string>();
+			let activeLoopingActions = 0;
+			let incompatibleClipCount = 0;
+			let loadingSourceCount = 0;
+			let missingClipCount = 0;
+			let oneShotActionsTriggered = 0;
+			let playerState = "idle";
+			for (const [id, controller] of characterAnimationControllers) {
+				const stats = controller.getStats();
+				activeLoopingActions += stats.activeLoopingActions;
+				incompatibleClipCount += stats.incompatibleClipCount;
+				loadingSourceCount += stats.loadingSourceCount;
+				missingClipCount += stats.missingClipCount;
+				oneShotActionsTriggered += stats.oneShotActionsTriggered;
+				if (id === "runtime_player") {
+					playerState = stats.semanticState;
+				}
+				for (const assetId of stats.sourceAssetIds) {
+					sourceAssetIds.add(assetId);
+				}
+			}
+			diagnostics.setCharacterAnimationMetrics({
+				activeLoopingActions,
+				activeMixers: characterAnimationControllers.size,
+				incompatibleClipCount,
+				loadingSourceCount,
+				missingClipCount,
+				oneShotActionsTriggered,
+				playerState,
+				sourceAssetIds: Array.from(sourceAssetIds),
+			});
+		};
+		const addCharacterAnimationController = (
+			id: string,
+			group: THREE.Group,
+			visual: ResolvedThreeVisual | undefined,
+			usedAsset: boolean,
+		) => {
+			if (
+				!usedAsset ||
+				visual?.mode !== "asset" ||
+				visual.asset.category !== "character"
+			) {
+				return;
+			}
+			characterAnimationControllers.set(
+				id,
+				createThreeCharacterAnimationController({
+					asset: visual.asset,
+					root: group,
+				}),
+			);
+		};
 		let assetStateChangeQueued = false;
 		const handleAssetStateChange = () => {
 			if (assetStateChangeQueued) {
@@ -1527,6 +1619,12 @@ export function ThreeRuntimePanel({
 					setObjectFacing(group, npcVisual.facing, marker.visual);
 					npcRenderGroups.set(marker.id, group);
 					npcRenderVisuals.set(marker.id, marker.visual);
+					addCharacterAnimationController(
+						marker.id,
+						group,
+						marker.visual,
+						renderResult.usedAsset,
+					);
 				}
 			}
 			if (!renderResult.usedAsset) {
@@ -1568,6 +1666,14 @@ export function ThreeRuntimePanel({
 			playerRenderVisual,
 		);
 		setObjectFacing(playerMesh, initialPlayerVisual.facing, playerRenderVisual);
+		addCharacterAnimationController(
+			"runtime_player",
+			playerMesh,
+			playerRenderVisual,
+			playerRenderResult.usedAsset,
+		);
+		characterAnimationControllersRef.current = characterAnimationControllers;
+		updateCharacterAnimationDiagnostics();
 		addRenderObject(playerMesh, {
 			disposeResources: !playerRenderResult.usedAsset,
 		});
@@ -1594,6 +1700,15 @@ export function ThreeRuntimePanel({
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 		} catch (error) {
+			characterAnimationControllers.forEach((controller) => {
+				controller.dispose();
+			});
+			if (
+				characterAnimationControllersRef.current ===
+				characterAnimationControllers
+			) {
+				characterAnimationControllersRef.current = new Map();
+			}
 			setMountError(
 				error instanceof Error
 					? error.message
@@ -1769,10 +1884,8 @@ export function ThreeRuntimePanel({
 					session.playerPosition,
 					session.playerFacing,
 				);
-			const playerVisualPosition = getVisualGridPosition(
-				playerVisual,
-				now,
-			).position;
+			const playerVisualGridPosition = getVisualGridPosition(playerVisual, now);
+			const playerVisualPosition = playerVisualGridPosition.position;
 			setObjectBasePosition(
 				playerMesh,
 				area,
@@ -1788,7 +1901,8 @@ export function ThreeRuntimePanel({
 				if (!npcVisual || npcVisual.areaId !== area.id) {
 					return;
 				}
-				const npcPosition = getVisualGridPosition(npcVisual, now).position;
+				const npcVisualGridPosition = getVisualGridPosition(npcVisual, now);
+				const npcPosition = npcVisualGridPosition.position;
 				const visual = npcRenderVisuals.get(npcId);
 				setObjectBasePosition(
 					group,
@@ -1802,7 +1916,23 @@ export function ThreeRuntimePanel({
 					npcId,
 					settleVisualEntityState(npcVisual, now),
 				);
+				characterAnimationControllers.get(npcId)?.sync({
+					defeated: session.defeatedNpcIds.has(npcId),
+					moving: !npcVisualGridPosition.done,
+				});
 			});
+			const animationUpdateStartedAt = performance.now();
+			characterAnimationControllers.get("runtime_player")?.sync({
+				defeated: gameOverRef.current,
+				moving: !playerVisualGridPosition.done,
+			});
+			characterAnimationControllers.forEach((controller) => {
+				controller.update(deltaMs / 1000);
+			});
+			updateCharacterAnimationDiagnostics();
+			diagnostics.recordCharacterAnimationUpdate(
+				performance.now() - animationUpdateStartedAt,
+			);
 
 			if (
 				cameraModeRef.current === "follow" &&
@@ -1881,6 +2011,15 @@ export function ThreeRuntimePanel({
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
+			characterAnimationControllers.forEach((controller) => {
+				controller.dispose();
+			});
+			if (
+				characterAnimationControllersRef.current ===
+				characterAnimationControllers
+			) {
+				characterAnimationControllersRef.current = new Map();
+			}
 			renderer.dispose();
 			atmosphere.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
