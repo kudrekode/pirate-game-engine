@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getThreeVisualAssetDefinition } from "../runtime/three/threeVisualAssetRegistry";
-import { resolveThreeVisual } from "../runtime/three/threeVisuals";
+import {
+	resolveThreeCharacterVisual,
+	resolveThreeVisual,
+} from "../runtime/three/threeVisuals";
 import { deriveCoastlineEdges } from "../runtime/three/waterPresentation";
 import type { ObjectBehaviour, ObjectDefinition } from "../types/game";
 import { defaultProject } from "./defaultProject";
@@ -60,6 +63,42 @@ describe("defaultProject pirate demo visuals", () => {
 		expect(mainArea.structures).toContainEqual(
 			expect.objectContaining({ id: "structure_demo_house", x: 7, y: 9 }),
 		);
+	});
+
+	it("assigns the shared skinned pirate character visual without changing gameplay data", () => {
+		const captain = defaultProject.npcs.find(
+			(npc) => npc.id === "npc_captain_mira",
+		);
+		const bandit = defaultProject.npcs.find((npc) => npc.id === "npc_bandit");
+
+		expect(defaultProject.player.threeVisual).toEqual({
+			assetId: "pirate-character-walk",
+			mode: "asset",
+			placeholderType: "player",
+		});
+		expect(captain?.threeVisual).toEqual({
+			assetId: "pirate-character-walk",
+			mode: "asset",
+			placeholderType: "npc",
+		});
+		expect(bandit?.threeVisual).toEqual({
+			assetId: "pirate-character-walk",
+			mode: "asset",
+			placeholderType: "hostileNpc",
+		});
+		expect(captain?.defaultAttributes?.alignment).toBe("friendly");
+		expect(bandit?.defaultAttributes?.alignment).toBe("hostile");
+		expect(bandit?.defaultEnemyBehaviour?.enabled).toBe(true);
+		expect(
+			resolveThreeCharacterVisual({
+				kind: "player",
+				threeVisual: defaultProject.player.threeVisual,
+			}),
+		).toMatchObject({
+			assetId: "pirate-character-walk",
+			mode: "asset",
+			scale: 0.75,
+		});
 	});
 
 	it("adds presentation-only dressing with valid registry visuals and authored bounds", () => {

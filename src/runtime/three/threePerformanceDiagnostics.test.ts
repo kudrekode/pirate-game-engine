@@ -206,6 +206,73 @@ describe("three performance diagnostics", () => {
 		diagnostics.dispose();
 	});
 
+	it("summarises active skinned character assets without duplicating clip metadata", () => {
+		const diagnostics = createThreePerformanceDiagnostics();
+		const analysis = {
+			animationClips: [
+				{
+					duration: 1.067,
+					name: "Armature|walking_man|baselayer",
+					trackCount: 72,
+				},
+			],
+			bounds: {
+				center: { x: 0, y: 0.85, z: 0 },
+				dimensions: { x: 0.75, y: 1.7, z: 0.64 },
+				maxY: 1.7,
+				minY: 0,
+			},
+			materialCount: 1,
+			meshCount: 1,
+			skeletonCount: 1,
+			skinnedMeshCount: 1,
+			sphere: { center: { x: 0, y: 0.85, z: 0 }, radius: 1 },
+			textureCount: 1,
+		};
+		diagnostics.setSceneEntityCounts({
+			assetStatuses: [
+				{
+					analysis,
+					category: "character",
+					cloneType: "skeleton-utils",
+					definitionId: "pirate-character-walk",
+					status: "loaded",
+					usedAsset: true,
+				},
+				{
+					analysis,
+					category: "character",
+					cloneType: "skeleton-utils",
+					definitionId: "pirate-character-walk",
+					status: "loaded",
+					usedAsset: true,
+				},
+			],
+			entityCount: 2,
+		});
+
+		const character = diagnostics.getSnapshot().asset.character;
+		expect(character).toEqual({
+			activeAssetIds: ["pirate-character-walk"],
+			activeCloneInstances: 2,
+			animationClips: [
+				{
+					definitionId: "pirate-character-walk",
+					duration: 1.067,
+					name: "Armature|walking_man|baselayer",
+					trackCount: 72,
+				},
+			],
+			cloneTypes: ["skeleton-utils"],
+			skinnedMeshCount: 2,
+		});
+		expect(formatThreePerformanceSnapshot(diagnostics.getSnapshot())).toContain(
+			"clone types skeleton-utils",
+		);
+
+		diagnostics.dispose();
+	});
+
 	it("does not attribute a long RAF interval to a prior short render", () => {
 		const diagnostics = createThreePerformanceDiagnostics();
 

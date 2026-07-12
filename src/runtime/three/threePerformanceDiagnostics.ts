@@ -19,6 +19,9 @@ export type ThreeAssetRenderStatus =
 	| "not_requested";
 
 export type ThreeAssetRenderStatusEntry = {
+	analysis?: ThreeVisualAssetAnalysis;
+	category?: ThreeVisualAssetCategory;
+	cloneType?: ThreeVisualAssetCloneType;
 	definitionId?: string;
 	status: ThreeAssetRenderStatus;
 	usedAsset: boolean;
@@ -73,6 +76,18 @@ export type ThreePerformanceSnapshot = {
 	asset: {
 		activeImportedAssetInstances: number;
 		activeImportedAssetIds: string[];
+		character: {
+			activeAssetIds: string[];
+			activeCloneInstances: number;
+			animationClips: {
+				definitionId: string;
+				duration: number;
+				name: string;
+				trackCount: number;
+			}[];
+			cloneTypes: ThreeVisualAssetCloneType[];
+			skinnedMeshCount: number;
+		};
 		activeCloneInstances: number;
 		cacheHitCount: number;
 		cloneCount: number;
@@ -450,6 +465,12 @@ export function createThreePerformanceDiagnostics(
 	let activeImportedAssetInstances = 0;
 	let activeImportedAssetIds: string[] = [];
 	let activeCloneInstances = 0;
+	let activeCharacterAssetIds: string[] = [];
+	let activeCharacterCloneInstances = 0;
+	let characterAnimationClips: ThreePerformanceSnapshot["asset"]["character"]["animationClips"] =
+		[];
+	let characterCloneTypes: ThreeVisualAssetCloneType[] = [];
+	let characterSkinnedMeshCount = 0;
 	let fallbackPlaceholderCount = 0;
 	let loadingFallbackCount = 0;
 	let errorFallbackCount = 0;
@@ -604,6 +625,13 @@ export function createThreePerformanceDiagnostics(
 				asset: {
 					activeImportedAssetInstances,
 					activeImportedAssetIds,
+					character: {
+						activeAssetIds: activeCharacterAssetIds,
+						activeCloneInstances: activeCharacterCloneInstances,
+						animationClips: characterAnimationClips,
+						cloneTypes: characterCloneTypes,
+						skinnedMeshCount: characterSkinnedMeshCount,
+					},
 					activeCloneInstances,
 					cacheHitCount,
 					cloneCount,
@@ -853,8 +881,16 @@ export function createThreePerformanceDiagnostics(
 			const nextStatusCounts = createEmptyAssetStatusCounts();
 			const currentLoadingKeys = new Set<string>();
 			const nextActiveImportedAssetIds = new Set<string>();
+			const nextActiveCharacterAssetIds = new Set<string>();
+			const nextCharacterAnimationClips = new Map<
+				string,
+				ThreePerformanceSnapshot["asset"]["character"]["animationClips"][number]
+			>();
+			const nextCharacterCloneTypes = new Set<ThreeVisualAssetCloneType>();
 			activeImportedAssetInstances = 0;
 			activeCloneInstances = 0;
+			activeCharacterCloneInstances = 0;
+			characterSkinnedMeshCount = 0;
 			fallbackPlaceholderCount = 0;
 			loadingFallbackCount = 0;
 			errorFallbackCount = 0;
@@ -866,6 +902,24 @@ export function createThreePerformanceDiagnostics(
 					activeCloneInstances += 1;
 					if (assetStatus.definitionId) {
 						nextActiveImportedAssetIds.add(assetStatus.definitionId);
+					}
+					if (assetStatus.category === "character") {
+						activeCharacterCloneInstances += 1;
+						if (assetStatus.definitionId) {
+							nextActiveCharacterAssetIds.add(assetStatus.definitionId);
+						}
+						characterSkinnedMeshCount +=
+							assetStatus.analysis?.skinnedMeshCount ?? 0;
+						if (assetStatus.cloneType) {
+							nextCharacterCloneTypes.add(assetStatus.cloneType);
+						}
+						for (const clip of assetStatus.analysis?.animationClips ?? []) {
+							const definitionId = assetStatus.definitionId ?? "unknown";
+							nextCharacterAnimationClips.set(`${definitionId}:${clip.name}`, {
+								definitionId,
+								...clip,
+							});
+						}
 					}
 				}
 				if (!assetStatus.usedAsset && assetStatus.status !== "not_requested") {
@@ -895,6 +949,15 @@ export function createThreePerformanceDiagnostics(
 			}
 			assetStatusCounts = nextStatusCounts;
 			activeImportedAssetIds = Array.from(nextActiveImportedAssetIds).sort();
+			activeCharacterAssetIds = Array.from(nextActiveCharacterAssetIds).sort();
+			characterAnimationClips = Array.from(
+				nextCharacterAnimationClips.values(),
+			).sort((left, right) =>
+				left.definitionId === right.definitionId
+					? left.name.localeCompare(right.name)
+					: left.definitionId.localeCompare(right.definitionId),
+			);
+			characterCloneTypes = Array.from(nextCharacterCloneTypes).sort();
 			entityCount = nextEntityCount;
 			sceneAreaId = sceneIdentity?.areaId;
 			sceneAreaName = sceneIdentity?.areaName;
@@ -928,6 +991,7 @@ export function formatThreePerformanceSnapshot(
 		`scene: builds ${snapshot.scene.buildCount}, cleanups ${snapshot.scene.cleanupCount}, entities ${snapshot.scene.entityCount}, last reason "${snapshot.scene.lastRebuildReason}", last build ms ${snapshot.scene.lastBuildMs}, since rebuild ms ${snapshot.scene.timeSinceLastRebuildMs}`,
 		reasonCounts ? `scene reasons: ${reasonCounts}` : "",
 		`assets: starts ${snapshot.asset.loadStartedCount}, successes ${snapshot.asset.loadSuccessCount}, failures ${snapshot.asset.loadFailureCount}, cache hits ${snapshot.asset.cacheHitCount}, clones ${snapshot.asset.cloneCount}, active imported ${snapshot.asset.activeImportedAssetInstances} (${snapshot.asset.activeImportedAssetIds.join(", ") || "none"}), active clones ${snapshot.asset.activeCloneInstances}, fallbacks ${snapshot.asset.fallbackPlaceholderCount}`,
+		`characters: assets ${snapshot.asset.character.activeAssetIds.join(", ") || "none"}, active clones ${snapshot.asset.character.activeCloneInstances}, skinned meshes ${snapshot.asset.character.skinnedMeshCount}, clone types ${snapshot.asset.character.cloneTypes.join(", ") || "none"}, clips ${snapshot.asset.character.animationClips.map((clip) => `${clip.definitionId}:${clip.name}`).join(", ") || "none"}`,
 		`asset statuses: ${assetStatuses}, loading fallbacks ${snapshot.asset.loadingFallbackCount}, error fallbacks ${snapshot.asset.errorFallbackCount}, missing fallbacks ${snapshot.asset.missingFallbackCount}, stuck loading ${snapshot.asset.stuckLoadingCount}`,
 		`terrain: rebuilds ${snapshot.terrain.rebuildCount}, mode ${snapshot.terrain.mode}, tiles ${snapshot.terrain.tileCount}, meshes ${snapshot.terrain.meshCount}, vertices ${snapshot.terrain.vertexCount}, triangles ${snapshot.terrain.triangleCount}, water meshes ${snapshot.terrain.waterMeshCount}, coast edges ${snapshot.terrain.coastlineEdgeCount}, last ms ${snapshot.terrain.lastDurationMs}`,
 		`phase stats: callback avg/worst ${snapshot.phases.frameCallback.averageMs}/${snapshot.phases.frameCallback.worstMs} ms, visual avg/worst ${snapshot.phases.visualUpdate.averageMs}/${snapshot.phases.visualUpdate.worstMs} ms, water avg/worst ${snapshot.phases.waterUpdate.averageMs}/${snapshot.phases.waterUpdate.worstMs} ms, camera avg/worst ${snapshot.phases.cameraUpdate.averageMs}/${snapshot.phases.cameraUpdate.worstMs} ms, render avg/worst ${snapshot.phases.render.averageMs}/${snapshot.phases.render.worstMs} ms`,
@@ -944,3 +1008,7 @@ export function formatThreePerformanceSnapshot(
 		.filter(Boolean)
 		.join("\n");
 }
+
+import type { ThreeVisualAssetAnalysis } from "./threeVisualAssetAnalysis";
+import type { ThreeVisualAssetCloneType } from "./threeVisualAssetLoader";
+import type { ThreeVisualAssetCategory } from "./threeVisualAssetRegistry";

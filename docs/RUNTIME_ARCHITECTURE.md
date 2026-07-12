@@ -17,6 +17,14 @@ Adapters are not separate engines. They translate input, rendering, camera, anim
 
 `GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 
+### Dual Character Presentation
+
+Player and NPC gameplay data remains renderer-independent. `mapAvatarId` and
+portrait fields continue to serve the Phaser/2D presentation, while optional
+`threeVisual` config stores the Three presentation source, registry asset id,
+and transform overrides. Neither presentation choice changes movement,
+alignment, interactions, combat, or any `RuntimeSession` state.
+
 ## RuntimeSession State
 
 Play mode starts from a cloned project snapshot and creates a `RuntimeSession` in `src/runtime/runtimeSession.ts`.

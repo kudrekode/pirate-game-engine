@@ -3,6 +3,7 @@ import type { ObjectBehaviour, ThreeVisualConfig } from "../../types/game";
 import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 import {
 	composeThreeVisualYaw,
+	resolveThreeCharacterVisual,
 	resolveThreeVisual,
 	resolveThreeVisualAssetTransform,
 	THREE_PLACEHOLDER_VISUAL_OPTIONS,
@@ -30,6 +31,7 @@ describe("three visual resolver", () => {
 			"door",
 			"rock",
 			"pickup",
+			"player",
 			"npc",
 			"hostileNpc",
 			"genericObject",
@@ -128,6 +130,64 @@ describe("three visual resolver", () => {
 				scale: 1.5,
 				source: "authored",
 			});
+		} finally {
+			restoreRegistry();
+		}
+	});
+
+	it("resolves player and NPC character visuals through the shared fallback order", () => {
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "character",
+				defaultRotationOffset: 90,
+				id: "demo_player",
+				kind: "glb",
+				name: "Demo Player",
+				url: "/assets/demo-player.glb",
+			},
+			{
+				category: "object",
+				id: "demo_prop",
+				kind: "glb",
+				name: "Demo Prop",
+				url: "/assets/demo-prop.glb",
+			},
+		]);
+
+		try {
+			expect(
+				resolveThreeCharacterVisual({
+					kind: "player",
+					threeVisual: { assetId: "demo_player", mode: "asset" },
+				}),
+			).toMatchObject({
+				assetId: "demo_player",
+				mode: "asset",
+				placeholderType: "player",
+				rotationOffset: 90,
+			});
+			expect(
+				resolveThreeCharacterVisual({
+					kind: "player",
+					threeVisual: { assetId: "missing_player", mode: "asset" },
+				}),
+			).toMatchObject({ mode: "placeholder", placeholderType: "player" });
+			expect(
+				resolveThreeCharacterVisual({
+					kind: "player",
+					threeVisual: { assetId: "demo_prop", mode: "asset" },
+				}),
+			).toMatchObject({ mode: "placeholder", placeholderType: "player" });
+			expect(resolveThreeCharacterVisual({ kind: "npc" })).toMatchObject({
+				mode: "placeholder",
+				placeholderType: "npc",
+			});
+			expect(
+				resolveThreeCharacterVisual({
+					enemyEnabled: true,
+					kind: "npc",
+				}),
+			).toMatchObject({ mode: "placeholder", placeholderType: "hostileNpc" });
 		} finally {
 			restoreRegistry();
 		}

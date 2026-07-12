@@ -15,6 +15,11 @@ import {
 
 export type PlaceholderVisualEntity =
 	| {
+			kind: "player";
+			name?: string;
+			threeVisual?: ThreeVisualConfig;
+	  }
+	| {
 			kind: "object";
 			name?: string;
 			category?: ObjectDefinition["category"];
@@ -36,6 +41,11 @@ export type PlaceholderVisualEntity =
 	  }
 	| { kind: "pickup"; name?: string }
 	| { kind: "event"; name?: string };
+
+export type ThreeCharacterVisualEntity = Extract<
+	PlaceholderVisualEntity,
+	{ kind: "player" | "npc" }
+>;
 
 type ResolvedThreeVisualBase = {
 	requestedMode: ThreeVisualConfig["mode"];
@@ -133,6 +143,9 @@ function isShopInteraction(interaction: Interaction | undefined): boolean {
 export function resolveInferredPlaceholderVisualType(
 	entity: PlaceholderVisualEntity,
 ): ThreePlaceholderVisualType {
+	if (entity.kind === "player") {
+		return "player";
+	}
 	if (entity.kind === "pickup") {
 		return "pickup";
 	}
@@ -201,7 +214,9 @@ export function resolveThreeVisual(
 	entity: PlaceholderVisualEntity,
 ): ResolvedThreeVisual {
 	const config =
-		entity.kind === "object" || entity.kind === "npc"
+		entity.kind === "object" ||
+		entity.kind === "npc" ||
+		entity.kind === "player"
 			? entity.threeVisual
 			: undefined;
 	const inferredPlaceholderType = resolveInferredPlaceholderVisualType(entity);
@@ -263,6 +278,24 @@ export function resolveThreeVisual(
 				...(requestedAssetId ? { assetId: requestedAssetId } : {}),
 				mode: "placeholder",
 			};
+}
+
+// Characters share the object/NPC resolver, cache, transform, and fallback
+// rules. Keeping this seam distinct makes future animation presentation data
+// possible without introducing a second character transform schema.
+export function resolveThreeCharacterVisual(
+	entity: ThreeCharacterVisualEntity,
+): ResolvedThreeVisual {
+	const visual = resolveThreeVisual(entity);
+	if (
+		entity.kind !== "player" ||
+		visual.mode !== "asset" ||
+		visual.asset.category === "character"
+	) {
+		return visual;
+	}
+	const { asset: _asset, ...fallback } = visual;
+	return { ...fallback, mode: "placeholder" };
 }
 
 export function threeVisualRotationOffsetToRadians(

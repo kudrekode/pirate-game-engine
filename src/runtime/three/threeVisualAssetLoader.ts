@@ -1,4 +1,5 @@
-import type * as THREE from "three";
+import * as THREE from "three";
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {
 	analyzeThreeVisualAssetRoot,
@@ -7,9 +8,12 @@ import {
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 
 type GltfLike = {
+	animations?: THREE.AnimationClip[];
 	scene?: THREE.Object3D;
 	scenes?: THREE.Object3D[];
 };
+
+export type ThreeVisualAssetCloneType = "object3d" | "skeleton-utils";
 
 export type ThreeVisualAssetLoaderLike = {
 	loadAsync: (url: string) => Promise<GltfLike>;
@@ -46,6 +50,7 @@ export type ThreeVisualAssetRequest =
 			analysis: ThreeVisualAssetAnalysis;
 			status: "loaded";
 			definition: ThreeVisualAssetDefinition;
+			cloneType: ThreeVisualAssetCloneType;
 			object: THREE.Object3D;
 	  };
 
@@ -116,7 +121,7 @@ function startAssetLoad(
 				});
 				return;
 			}
-			const analysis = analyzeThreeVisualAssetRoot(root);
+			const analysis = analyzeThreeVisualAssetRoot(root, gltf.animations);
 			cache.set(key, {
 				analysis,
 				definition,
@@ -161,6 +166,7 @@ export function requestThreeVisualAsset(
 	const key = getCacheKey(definition);
 	const existing = cache.get(key);
 	if (existing?.status === "loaded") {
+		const cloneType = getThreeVisualAssetCloneType(existing.analysis);
 		emitThreePerformanceDiagnosticsEvent({
 			definitionId: existing.definition.id,
 			status: "cache_hit",
@@ -168,8 +174,9 @@ export function requestThreeVisualAsset(
 		});
 		return {
 			analysis: existing.analysis,
+			cloneType,
 			definition: existing.definition,
-			object: cloneThreeVisualAssetRoot(existing.root),
+			object: cloneThreeVisualAssetRoot(existing.root, cloneType),
 			status: "loaded",
 		};
 	}
@@ -207,8 +214,29 @@ export function requestThreeVisualAsset(
 
 export function cloneThreeVisualAssetRoot(
 	root: THREE.Object3D,
+	cloneType: ThreeVisualAssetCloneType = rootHasSkinnedMeshes(root)
+		? "skeleton-utils"
+		: "object3d",
 ): THREE.Object3D {
-	return root.clone(true);
+	return cloneType === "skeleton-utils"
+		? cloneSkeleton(root)
+		: root.clone(true);
+}
+
+export function getThreeVisualAssetCloneType(
+	analysis: Pick<ThreeVisualAssetAnalysis, "skinnedMeshCount">,
+): ThreeVisualAssetCloneType {
+	return analysis.skinnedMeshCount > 0 ? "skeleton-utils" : "object3d";
+}
+
+function rootHasSkinnedMeshes(root: THREE.Object3D): boolean {
+	let hasSkinnedMesh = false;
+	root.traverse((object) => {
+		if (object instanceof THREE.SkinnedMesh) {
+			hasSkinnedMesh = true;
+		}
+	});
+	return hasSkinnedMesh;
 }
 
 export function clearThreeVisualAssetCacheForTests(): void {

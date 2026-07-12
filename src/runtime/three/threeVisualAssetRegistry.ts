@@ -116,6 +116,30 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		tags: ["decoration", "flag"],
 		url: "/assets/pirate-demo/flag-pirate.glb",
 	},
+	{
+		category: "character",
+		defaultHeightOffset: 0,
+		defaultRotationOffset: 0,
+		defaultScale: 0.75,
+		id: "pirate-character-base",
+		kind: "glb",
+		name: "Captain Patchbeard (Base)",
+		receiveShadow: true,
+		tags: ["base", "character", "pirate", "skinned"],
+		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Character_output.glb",
+	},
+	{
+		category: "character",
+		defaultHeightOffset: 0,
+		defaultRotationOffset: 0,
+		defaultScale: 0.75,
+		id: "pirate-character-walk",
+		kind: "glb",
+		name: "Captain Patchbeard (Walk)",
+		receiveShadow: true,
+		tags: ["animation", "character", "pirate", "skinned", "walk"],
+		url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
+	},
 ];
 
 let activeRegistry = THREE_VISUAL_ASSET_REGISTRY;

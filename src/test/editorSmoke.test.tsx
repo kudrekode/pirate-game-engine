@@ -847,6 +847,9 @@ describe("editor smoke tests", () => {
 
 	it("updates NPC 3D visual config on the definition", () => {
 		render(<NpcsEditor />);
+		fireEvent.change(screen.getByLabelText("Visual source"), {
+			target: { value: "placeholder" },
+		});
 
 		fireEvent.change(screen.getByLabelText("Placeholder type"), {
 			target: { value: "hostileNpc" },

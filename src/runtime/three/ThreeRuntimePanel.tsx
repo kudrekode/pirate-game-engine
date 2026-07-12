@@ -4,7 +4,10 @@ import {
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
 } from "../../data/terrainSurface";
-import { areaEntitiesToMarkers } from "../../editor/sections/entityMarkers";
+import {
+	areaEntitiesToMarkers,
+	type EntityMarker,
+} from "../../editor/sections/entityMarkers";
 import { previewGridPositionToThreePoint } from "../../editor/sections/previewMove";
 import {
 	type SmoothTerrainMesh,
@@ -98,6 +101,7 @@ import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
 	composeThreeVisualYaw,
 	type ResolvedThreeVisual,
+	resolveThreeCharacterVisual,
 } from "./threeVisuals";
 import {
 	advanceCameraFollowRig,
@@ -371,16 +375,30 @@ function getFollowCameraTarget(
 		: getCameraFollowTarget(playerPosition);
 }
 
-function createRuntimePlayerMesh(): THREE.Group {
-	const group = new THREE.Group();
-	const body = new THREE.Mesh(
-		new THREE.CylinderGeometry(0.32, 0.32, 1.25, 16),
-		createWorldMaterial("friendly"),
-	);
-	body.position.set(0, 0.625, 0);
-	group.add(body);
-	group.add(createFacingMarker(getWorldMaterialColor("water"), 0.78, -0.36));
-	return group;
+function createRuntimePlayerMarker(
+	area: GameArea,
+	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
+	visual: ResolvedThreeVisual,
+): EntityMarker {
+	const base = getVisualWorldBase(area, position, terrainMode);
+	return {
+		color: getWorldMaterialColor("friendly"),
+		depth: 0.64,
+		gridX: position.x,
+		gridY: position.y,
+		height: 1.25,
+		id: "runtime_player",
+		kind: "npc",
+		opacity: 1,
+		shape: "cylinder",
+		threeX: base.x,
+		threeY: base.y + 0.625,
+		threeZ: base.z,
+		visual,
+		visualType: visual.placeholderType,
+		width: 0.64,
+	};
 }
 
 export function ThreeRuntimePanel({
@@ -1533,22 +1551,49 @@ export function ThreeRuntimePanel({
 			return renderResult;
 		});
 
-		const playerMesh = createRuntimePlayerMesh();
-		applyShadowRole(playerMesh, { cast: true });
+		const playerRenderVisual = resolveThreeCharacterVisual({
+			kind: "player",
+			name: session.project.player.name,
+			threeVisual: session.project.player.threeVisual,
+		});
+		const playerRenderResult = createThreeVisualMarkerGroup(
+			createRuntimePlayerMarker(
+				area,
+				initialPlayerPosition,
+				terrainRenderMode,
+				playerRenderVisual,
+			),
+			{
+				diagnostics,
+				onAssetStateChange: handleAssetStateChange,
+			},
+		);
+		const playerMesh = playerRenderResult.group;
+		if (!playerRenderResult.usedAsset) {
+			applyShadowRole(playerMesh, { cast: true });
+		}
 		setObjectBasePosition(
 			playerMesh,
 			area,
 			initialPlayerPosition,
 			terrainRenderMode,
+			playerRenderVisual,
 		);
-		setObjectFacing(playerMesh, initialPlayerVisual.facing);
-		addRenderObject(playerMesh);
+		setObjectFacing(playerMesh, initialPlayerVisual.facing, playerRenderVisual);
+		addRenderObject(playerMesh, {
+			disposeResources: !playerRenderResult.usedAsset,
+		});
 		diagnostics.setSceneEntityCounts({
-			assetStatuses: markerRenderResults.map((result) => ({
-				definitionId: result.assetDefinitionId,
-				status: result.assetStatus,
-				usedAsset: result.usedAsset,
-			})),
+			assetStatuses: [...markerRenderResults, playerRenderResult].map(
+				(result) => ({
+					analysis: result.assetAnalysis,
+					category: result.assetCategory,
+					cloneType: result.cloneType,
+					definitionId: result.assetDefinitionId,
+					status: result.assetStatus,
+					usedAsset: result.usedAsset,
+				}),
+			),
 			entityCount: runtimeMarkers.length + 1,
 			sceneIdentity: {
 				areaId: area.id,
@@ -1745,8 +1790,9 @@ export function ThreeRuntimePanel({
 				area,
 				playerVisualPosition,
 				terrainRenderMode,
+				playerRenderVisual,
 			);
-			setObjectFacing(playerMesh, playerVisual.facing);
+			setObjectFacing(playerMesh, playerVisual.facing, playerRenderVisual);
 			playerVisualRef.current = settleVisualEntityState(playerVisual, now);
 
 			npcRenderGroups.forEach((group, npcId) => {

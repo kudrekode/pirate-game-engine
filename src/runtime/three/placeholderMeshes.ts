@@ -449,6 +449,27 @@ function buildNpc(group: THREE.Group, selected: boolean, hostile: boolean) {
 	}
 }
 
+function buildPlayer(group: THREE.Group, selected: boolean) {
+	addPart(
+		group,
+		makeCylinder(0.32, 0.32, 1.25, PLACEHOLDER_MATERIAL_COLORS.friendly, {
+			selected,
+		}),
+		0,
+		0.625,
+		0,
+	);
+	addPart(
+		group,
+		makeBox(0.16, 0.12, 0.3, PLACEHOLDER_MATERIAL_COLORS.waterAccent, {
+			selected,
+		}),
+		0,
+		0.78,
+		-0.36,
+	);
+}
+
 function buildGeneric(
 	group: THREE.Group,
 	marker: PlaceholderMarkerInput,
@@ -520,6 +541,8 @@ export function createPlaceholderMeshGroup(
 		buildRock(group, marker, selected);
 	} else if (marker.visualType === "pickup") {
 		buildPickup(group, marker, selected);
+	} else if (marker.visualType === "player") {
+		buildPlayer(group, selected);
 	} else if (
 		marker.visualType === "npc" ||
 		marker.visualType === "hostileNpc"

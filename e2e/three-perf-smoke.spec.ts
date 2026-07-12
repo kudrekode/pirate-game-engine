@@ -29,6 +29,9 @@ const PIRATE_PROJECT_NAME = "Demo Adventure";
 const PIRATE_AREA_ID = "area_main";
 const PIRATE_AREA_NAME = "Main Area";
 const EXPECTED_PIRATE_ASSET_IDS = ["pirate-chest", "pirate-small-ship"];
+const EXPECTED_CHARACTER_ASSET_ID = "pirate-character-walk";
+const EXPECTED_CHARACTER_CLONE_COUNT = 3;
+const EXPECTED_CHARACTER_CLIP_NAME = "Armature|walking_man|baselayer";
 const EDITOR_MIN_PIRATE_ENTITY_COUNT = 13;
 const RUNTIME_MIN_PIRATE_ENTITY_COUNT = 16;
 
@@ -109,6 +112,19 @@ function meetsPirateBenchmarkRequirements(
 		snapshot.asset.stuckLoadingCount === 0 &&
 		EXPECTED_PIRATE_ASSET_IDS.every((assetId) =>
 			snapshot.asset.activeImportedAssetIds.includes(assetId),
+		) &&
+		snapshot.asset.character.activeAssetIds.includes(
+			EXPECTED_CHARACTER_ASSET_ID,
+		) &&
+		snapshot.asset.character.activeCloneInstances >=
+			EXPECTED_CHARACTER_CLONE_COUNT &&
+		snapshot.asset.character.skinnedMeshCount >=
+			EXPECTED_CHARACTER_CLONE_COUNT &&
+		snapshot.asset.character.cloneTypes.includes("skeleton-utils") &&
+		snapshot.asset.character.animationClips.some(
+			(clip) =>
+				clip.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				clip.name === EXPECTED_CHARACTER_CLIP_NAME,
 		)
 	);
 }
@@ -123,6 +139,7 @@ function describePirateBenchmarkSnapshot(
 		activeCloneInstances: snapshot.asset.activeCloneInstances,
 		activeImportedAssetIds: snapshot.asset.activeImportedAssetIds,
 		activeImportedAssetInstances: snapshot.asset.activeImportedAssetInstances,
+		character: snapshot.asset.character,
 		areaId: snapshot.scene.areaId,
 		areaName: snapshot.scene.areaName,
 		entityCount: snapshot.scene.entityCount,
@@ -248,6 +265,38 @@ function validatePirateBenchmarkSnapshot(
 		if (!snapshot.asset.activeImportedAssetIds.includes(assetId)) {
 			failures.push(`${label} missing active imported asset ${assetId}.`);
 		}
+	}
+	if (
+		!snapshot.asset.character.activeAssetIds.includes(
+			EXPECTED_CHARACTER_ASSET_ID,
+		)
+	) {
+		failures.push(`${label} missing active character asset.`);
+	}
+	if (
+		snapshot.asset.character.activeCloneInstances <
+		EXPECTED_CHARACTER_CLONE_COUNT
+	) {
+		failures.push(`${label} character clone count below benchmark minimum.`);
+	}
+	if (
+		snapshot.asset.character.skinnedMeshCount < EXPECTED_CHARACTER_CLONE_COUNT
+	) {
+		failures.push(
+			`${label} character skinned mesh count below benchmark minimum.`,
+		);
+	}
+	if (!snapshot.asset.character.cloneTypes.includes("skeleton-utils")) {
+		failures.push(`${label} did not use SkeletonUtils character clones.`);
+	}
+	if (
+		!snapshot.asset.character.animationClips.some(
+			(clip) =>
+				clip.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				clip.name === EXPECTED_CHARACTER_CLIP_NAME,
+		)
+	) {
+		failures.push(`${label} did not discover the walking character clip.`);
 	}
 	if (
 		snapshot.asset.activeImportedAssetInstances <

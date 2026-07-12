@@ -105,6 +105,32 @@ describe("Three visual asset registry", () => {
 		}
 	});
 
+	it("registers the curated skinned pirate character assets", () => {
+		const base = getThreeVisualAssetDefinition("pirate-character-base");
+		const walk = getThreeVisualAssetDefinition("pirate-character-walk");
+
+		expect(base).toMatchObject({
+			category: "character",
+			defaultHeightOffset: 0,
+			defaultRotationOffset: 0,
+			defaultScale: 0.75,
+			kind: "glb",
+			receiveShadow: true,
+			tags: expect.arrayContaining(["base", "skinned"]),
+			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Character_output.glb",
+		});
+		expect(walk).toMatchObject({
+			category: "character",
+			defaultHeightOffset: 0,
+			defaultRotationOffset: 0,
+			defaultScale: 0.75,
+			kind: "glb",
+			receiveShadow: true,
+			tags: expect.arrayContaining(["skinned", "walk"]),
+			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
+		});
+	});
+
 	it("looks up registered asset definitions by stable id", () => {
 		const restoreRegistry = setThreeVisualAssetRegistryForTests([
 			{

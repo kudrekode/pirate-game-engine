@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { getTerrainPresentationSurfaceY } from "../../data/terrainSurface";
+import {
+	getTerrainPresentationSurfaceY,
+	type TerrainSurfaceMode,
+} from "../../data/terrainSurface";
 import {
 	clampOrbitCameraState,
 	createOrbitCameraState,
@@ -28,6 +31,7 @@ import {
 	type ThreePerformanceDiagnostics,
 } from "../../runtime/three/threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
+import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
 import {
 	createCoastlinePresentation,
 	createWaterPresentationState,
@@ -44,7 +48,8 @@ import {
 	resolveTerrainMaterialKey,
 } from "../../runtime/three/worldPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
-import { areaEntitiesToMarkers } from "./entityMarkers";
+import type { GameArea, PlayerConfig } from "../../types/game";
+import { areaEntitiesToMarkers, type EntityMarker } from "./entityMarkers";
 import {
 	GAMEPLAY_OVERLAY_FILTERS,
 	HIDE_ALL_OVERLAY_FILTERS,
@@ -287,6 +292,53 @@ function getPreviewCameraDimensions(
 	};
 }
 
+export function createPlayerSpawnPreviewMarker(
+	area: GameArea | undefined,
+	player: PlayerConfig,
+	surfaceMode: TerrainSurfaceMode,
+): EntityMarker | undefined {
+	if (!area) {
+		return undefined;
+	}
+	const spawn = area.eventBlocks.find(
+		(eventBlock) => eventBlock.kind === "spawn",
+	);
+	if (!spawn) {
+		return undefined;
+	}
+	const point = previewGridPositionToThreePoint(area, spawn, {
+		height: 1,
+		width: 1,
+	});
+	const visual = resolveThreeCharacterVisual({
+		kind: "player",
+		name: player.name,
+		threeVisual: player.threeVisual,
+	});
+	return {
+		color: getWorldMaterialColor("friendly"),
+		depth: 0.64,
+		gridX: spawn.x,
+		gridY: spawn.y,
+		height: 1.25,
+		id: spawn.id,
+		kind: "event",
+		opacity: 1,
+		shape: "cylinder",
+		threeX: point.x,
+		threeY:
+			getTerrainPresentationSurfaceY(
+				area,
+				{ x: spawn.x, y: spawn.y },
+				surfaceMode,
+			) + 0.625,
+		threeZ: point.z,
+		visual,
+		visualType: visual.placeholderType,
+		width: 0.64,
+	};
+}
+
 function disposeMaterial(
 	material: THREE.Material,
 	tracker: ThreeResourceDisposeTracker,
@@ -410,6 +462,27 @@ export function ThreeDPreview({
 			project.objects,
 			terrainRenderMode,
 		],
+	);
+	const playerSpawnMarker = useMemo(
+		() =>
+			createPlayerSpawnPreviewMarker(
+				activeArea,
+				project.player,
+				terrainRenderMode,
+			),
+		[activeArea, project.player, terrainRenderMode],
+	);
+	const renderMarkers = useMemo(
+		() => [
+			...entityMarkers.filter(
+				(marker) =>
+					!playerSpawnMarker ||
+					marker.kind !== "event" ||
+					marker.id !== playerSpawnMarker.id,
+			),
+			...(playerSpawnMarker ? [playerSpawnMarker] : []),
+		],
+		[entityMarkers, playerSpawnMarker],
 	);
 	const selectionDetails = useMemo(
 		() => getPreviewSelectionDetails(project, editorSelection),
@@ -552,7 +625,7 @@ export function ThreeDPreview({
 		const nextBuildInputs: ThreeDPreviewBuildInputs = {
 			activeAreaId: activeArea?.id ?? "",
 			assetRenderVersion,
-			entityMarkerCount: entityMarkers.length,
+			entityMarkerCount: renderMarkers.length,
 			selectionKey: createThreeDPreviewSelectionKey(editorSelection),
 			smoothTerrainMeshCount: smoothTerrainMeshes.length,
 			terrainBlockCount: terrainBlocks.length,
@@ -729,7 +802,7 @@ export function ThreeDPreview({
 			assetStateChangeQueued = true;
 			setAssetRenderVersion((version) => version + 1);
 		};
-		const markerRenderResults = entityMarkers.map((marker) => {
+		const markerRenderResults = renderMarkers.map((marker) => {
 			const selectionMetadata = entityMarkerToSelectionMetadata(
 				marker,
 				activeArea?.id ?? "",
@@ -785,11 +858,14 @@ export function ThreeDPreview({
 		}
 		diagnostics.setSceneEntityCounts({
 			assetStatuses: markerRenderResults.map((result) => ({
+				analysis: result.assetAnalysis,
+				category: result.assetCategory,
+				cloneType: result.cloneType,
 				definitionId: result.assetDefinitionId,
 				status: result.assetStatus,
 				usedAsset: result.usedAsset,
 			})),
-			entityCount: entityMarkers.length + (walkPreviewMesh ? 1 : 0),
+			entityCount: renderMarkers.length + (walkPreviewMesh ? 1 : 0),
 			sceneIdentity: {
 				areaId: activeArea?.id,
 				areaName: activeArea?.name,
@@ -1999,7 +2075,7 @@ export function ThreeDPreview({
 		brushSize,
 		brushStrength,
 		editorSelection,
-		entityMarkers,
+		renderMarkers,
 		heightToolValue,
 		mapPaletteSelection,
 		placementInfo,

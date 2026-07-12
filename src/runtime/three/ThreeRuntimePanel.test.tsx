@@ -475,6 +475,42 @@ describe("ThreeRuntimePanel", () => {
 		}
 	});
 
+	it("requests player character assets through the shared renderer path", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "character",
+				id: "demo_player",
+				kind: "glb",
+				name: "Demo Player",
+				url: "/assets/demo-player.glb",
+			},
+		]);
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const project = makeProject();
+		project.player = {
+			...project.player,
+			threeVisual: { assetId: "demo_player", mode: "asset" },
+		};
+
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+			await waitFor(() =>
+				expect(loadAsync).toHaveBeenCalledWith("/assets/demo-player.glb"),
+			);
+			expect(threeRuntimeSource).toContain("resolveThreeCharacterVisual");
+			expect(threeRuntimeSource).toContain("createThreeVisualMarkerGroup(");
+			expect(threeRuntimeSource).not.toContain("GLTFLoader");
+		} finally {
+			restoreLoader();
+			restoreRegistry();
+		}
+	});
+
 	it("moves with the shared player movement transaction", async () => {
 		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
 

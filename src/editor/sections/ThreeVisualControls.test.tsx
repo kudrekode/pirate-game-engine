@@ -222,7 +222,7 @@ describe("ThreeVisualControls", () => {
 
 		expect(screen.getByLabelText("Asset")).toBeDisabled();
 		expect(
-			screen.getByText("No built-in 3D assets are registered."),
+			screen.getByText("No matching built-in 3D assets are registered."),
 		).toBeInTheDocument();
 		expect(onChange).not.toHaveBeenCalled();
 	});

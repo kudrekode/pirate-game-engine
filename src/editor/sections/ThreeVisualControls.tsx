@@ -1,6 +1,7 @@
 import {
 	getThreeVisualAssetDefinition,
 	listThreeVisualAssets,
+	type ThreeVisualAssetCategory,
 } from "../../runtime/three/threeVisualAssetRegistry";
 import {
 	clampThreeVisualHeightOffset,
@@ -14,23 +15,33 @@ import type {
 } from "../../types/game";
 
 type ThreeVisualControlsProps = {
+	assetCategories?: ThreeVisualAssetCategory[];
 	inferredPlaceholderType: ThreePlaceholderVisualType;
 	onChange: (visual: ThreeVisualConfig) => void;
+	title?: string;
 	value?: ThreeVisualConfig;
 };
 
 export function ThreeVisualControls({
+	assetCategories,
 	inferredPlaceholderType,
 	onChange,
+	title = "3D Visual",
 	value,
 }: ThreeVisualControlsProps) {
-	const assets = listThreeVisualAssets();
+	const assets = listThreeVisualAssets().filter(
+		(asset) =>
+			!assetCategories ||
+			(asset.category !== undefined &&
+				assetCategories.includes(asset.category)),
+	);
 	const mode = value?.mode === "asset" ? "asset" : "placeholder";
 	const assetId =
 		typeof value?.assetId === "string" && value.assetId.trim()
 			? value.assetId
 			: "";
-	const resolvedAsset = getThreeVisualAssetDefinition(assetId);
+	const registeredAsset = getThreeVisualAssetDefinition(assetId);
+	const resolvedAsset = assets.find((asset) => asset.id === assetId);
 	const hasUnresolvedAsset = Boolean(assetId && !resolvedAsset);
 	const assetTransformDefaults = mode === "asset" ? resolvedAsset : undefined;
 	const scale =
@@ -126,7 +137,7 @@ export function ThreeVisualControls({
 
 	return (
 		<>
-			<div className="panel-title secondary">3D Visual</div>
+			<div className="panel-title secondary">{title}</div>
 			<div className="form-grid compact">
 				<label>
 					Visual source
@@ -190,13 +201,15 @@ export function ThreeVisualControls({
 			</div>
 			{mode === "asset" && assets.length === 0 ? (
 				<p className="empty-state compact">
-					No built-in 3D assets are registered.
+					No matching built-in 3D assets are registered.
 				</p>
 			) : null}
 			{mode === "asset" && hasUnresolvedAsset ? (
 				<p className="validation-message">
-					Asset "{assetId}" is not registered. The 3D preview will use the
-					placeholder fallback until a valid asset is chosen.
+					Asset "{assetId}" is{" "}
+					{registeredAsset ? "not available for this visual" : "not registered"}
+					. The 3D preview will use the placeholder fallback until a valid asset
+					is chosen.
 				</p>
 			) : null}
 			{mode === "asset" && !assetId && assets.length > 0 ? (

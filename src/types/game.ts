@@ -8,6 +8,7 @@ export const THREE_PLACEHOLDER_VISUAL_TYPES = [
 	"door",
 	"rock",
 	"pickup",
+	"player",
 	"npc",
 	"hostileNpc",
 	"genericObject",
@@ -412,6 +413,7 @@ export type PlayerConfig = {
 	name: string;
 	mapAvatarId: string;
 	cutscenePortraitId: string;
+	threeVisual?: ThreeVisualConfig;
 	speed: number;
 	health: number;
 	combat?: PlayerCombatStats;

@@ -6,7 +6,7 @@ import {
 	defaultNPCMovement,
 	resolveNPCInstance,
 } from "../../runtime/npcResolver";
-import { resolveThreeVisual } from "../../runtime/three/threeVisuals";
+import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	EnemyBehaviour,
@@ -191,7 +191,7 @@ export function NpcsEditor() {
 								...defaultEnemyBehaviour,
 								...selectedNpc.defaultEnemyBehaviour,
 							};
-							const inferredVisual = resolveThreeVisual({
+							const inferredVisual = resolveThreeCharacterVisual({
 								attributes,
 								enemyEnabled: enemy.enabled,
 								kind: "npc",
@@ -476,6 +476,7 @@ export function NpcsEditor() {
 									<ThreeVisualControls
 										inferredPlaceholderType={inferredVisual.placeholderType}
 										onChange={(threeVisual) => updateNpc({ threeVisual })}
+										title="3D Character Visual"
 										value={selectedNpc.threeVisual}
 									/>
 									<button

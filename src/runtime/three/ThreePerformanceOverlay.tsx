@@ -167,6 +167,15 @@ export function ThreePerformanceOverlay({
 							{snapshot.asset.activeCloneInstances}/
 							{snapshot.asset.fallbackPlaceholderCount}
 						</strong>
+						<span>Character clones/skinned</span>
+						<strong>
+							{snapshot.asset.character.activeCloneInstances}/
+							{snapshot.asset.character.skinnedMeshCount}
+						</strong>
+						<span>Character clone type</span>
+						<strong>
+							{snapshot.asset.character.cloneTypes.join(", ") || "none"}
+						</strong>
 						<span>Asset statuses</span>
 						<strong>
 							L {snapshot.asset.statusCounts.loaded} / G{" "}

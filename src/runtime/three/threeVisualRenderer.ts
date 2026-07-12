@@ -6,16 +6,22 @@ import {
 	type PlaceholderSelectionMetadata,
 } from "./placeholderMeshes";
 import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
+import type { ThreeVisualAssetAnalysis } from "./threeVisualAssetAnalysis";
 import {
 	requestThreeVisualAsset,
+	type ThreeVisualAssetCloneType,
 	type ThreeVisualAssetRequest,
 } from "./threeVisualAssetLoader";
+import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 import { resolveThreeVisualAssetTransform } from "./threeVisuals";
 import { applyShadowRole } from "./worldPresentation";
 
 export type ThreeVisualRenderResult = {
+	assetAnalysis?: ThreeVisualAssetAnalysis;
+	assetCategory?: ThreeVisualAssetDefinition["category"];
 	assetDefinitionId?: string;
 	group: THREE.Group;
+	cloneType?: ThreeVisualAssetCloneType;
 	assetStatus: ThreeVisualAssetRequest["status"] | "not_requested";
 	usedAsset: boolean;
 };
@@ -110,8 +116,11 @@ export function createThreeVisualMarkerGroup(
 
 	options.diagnostics?.recordAssetClone(assetRequest.definition.id);
 	return {
+		assetAnalysis: assetRequest.analysis,
+		assetCategory: assetRequest.definition.category,
 		assetDefinitionId: assetRequest.definition.id,
 		assetStatus: "loaded",
+		cloneType: assetRequest.cloneType,
 		group: createAssetGroup(
 			marker,
 			assetRequest.object,

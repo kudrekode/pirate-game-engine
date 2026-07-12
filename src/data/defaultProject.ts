@@ -514,6 +514,11 @@ export const defaultProject: GameProject = {
 		name: "Ari",
 		mapAvatarId: "scout",
 		cutscenePortraitId: "portrait_scout",
+		threeVisual: {
+			assetId: "pirate-character-walk",
+			mode: "asset",
+			placeholderType: "player",
+		},
 		speed: 6,
 		health: 100,
 		combat: {
@@ -748,6 +753,11 @@ export const defaultProject: GameProject = {
 				movementSpeed: 1,
 			},
 			defaultMovement: { movementMode: "stationary", movementSpeed: 1 },
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				placeholderType: "npc",
+			},
 		},
 		{
 			id: "npc_village_guard",
@@ -835,6 +845,11 @@ export const defaultProject: GameProject = {
 				chaseRadiusTiles: 7,
 				returnToOrigin: true,
 				contactDamage: 10,
+			},
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				placeholderType: "hostileNpc",
 			},
 		},
 	],

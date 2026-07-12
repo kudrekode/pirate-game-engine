@@ -6,6 +6,7 @@ import {
 } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
+	getThreeVisualAssetCloneType,
 	requestThreeVisualAsset,
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
@@ -104,6 +105,107 @@ describe("Three visual asset loader cache", () => {
 
 			mesh.geometry.dispose();
 			mesh.material.dispose();
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("discovers animation clips in cached asset analysis", async () => {
+		const source = new THREE.Group();
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: vi.fn(async () => ({
+				animations: [new THREE.AnimationClip("Walk", 1.25, [])],
+				scene: source,
+			})),
+		}));
+
+		try {
+			expect(requestThreeVisualAsset(assetDefinition).status).toBe("loading");
+			await flushAssetPromises();
+
+			const loaded = requestThreeVisualAsset(assetDefinition);
+			expect(loaded.status).toBe("loaded");
+			if (loaded.status !== "loaded") {
+				throw new Error("Expected a loaded asset request.");
+			}
+			expect(loaded.analysis.animationClips).toEqual([
+				{ duration: 1.25, name: "Walk", trackCount: 0 },
+			]);
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("uses SkeletonUtils clones for skinned sources with independent skeletons", async () => {
+		const source = new THREE.Group();
+		const sourceBone = new THREE.Bone();
+		const geometry = new THREE.BoxGeometry(1, 2, 1);
+		const skinIndices = new Uint16Array(geometry.attributes.position.count * 4);
+		const skinWeights = new Float32Array(
+			geometry.attributes.position.count * 4,
+		);
+		for (
+			let index = 0;
+			index < geometry.attributes.position.count;
+			index += 1
+		) {
+			skinWeights[index * 4] = 1;
+		}
+		geometry.setAttribute(
+			"skinIndex",
+			new THREE.Uint16BufferAttribute(skinIndices, 4),
+		);
+		geometry.setAttribute(
+			"skinWeight",
+			new THREE.Float32BufferAttribute(skinWeights, 4),
+		);
+		const sourceMesh = new THREE.SkinnedMesh(
+			geometry,
+			new THREE.MeshStandardMaterial(),
+		);
+		source.add(sourceBone, sourceMesh);
+		sourceMesh.bind(new THREE.Skeleton([sourceBone]));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: vi.fn(async () => ({ scene: source })),
+		}));
+
+		try {
+			expect(requestThreeVisualAsset(assetDefinition).status).toBe("loading");
+			await flushAssetPromises();
+
+			const first = requestThreeVisualAsset(assetDefinition);
+			const second = requestThreeVisualAsset(assetDefinition);
+			expect(first.status).toBe("loaded");
+			expect(second.status).toBe("loaded");
+			if (first.status !== "loaded" || second.status !== "loaded") {
+				throw new Error("Expected cached skinned clones.");
+			}
+			expect(first.cloneType).toBe("skeleton-utils");
+			expect(getThreeVisualAssetCloneType(first.analysis)).toBe(
+				"skeleton-utils",
+			);
+
+			const firstMesh = first.object.getObjectByProperty(
+				"isSkinnedMesh",
+				true,
+			) as THREE.SkinnedMesh;
+			const secondMesh = second.object.getObjectByProperty(
+				"isSkinnedMesh",
+				true,
+			) as THREE.SkinnedMesh;
+			expect(firstMesh.skeleton).not.toBe(sourceMesh.skeleton);
+			expect(secondMesh.skeleton).not.toBe(sourceMesh.skeleton);
+			expect(firstMesh.skeleton).not.toBe(secondMesh.skeleton);
+			expect(firstMesh.skeleton.bones[0]).not.toBe(
+				secondMesh.skeleton.bones[0],
+			);
+
+			firstMesh.skeleton.bones[0].position.x = 4;
+			expect(secondMesh.skeleton.bones[0].position.x).toBe(0);
+			expect(sourceMesh.skeleton.bones[0].position.x).toBe(0);
+
+			sourceMesh.geometry.dispose();
+			sourceMesh.material.dispose();
 		} finally {
 			restoreLoader();
 		}

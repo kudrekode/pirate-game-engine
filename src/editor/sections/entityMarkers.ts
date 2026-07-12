@@ -6,6 +6,7 @@ import { resolveNPCInstance } from "../../runtime/npcResolver";
 import type { PlaceholderVisualType } from "../../runtime/three/placeholderMeshes";
 import {
 	type ResolvedThreeVisual,
+	resolveThreeCharacterVisual,
 	resolveThreeVisual,
 } from "../../runtime/three/threeVisuals";
 import type {
@@ -234,7 +235,7 @@ export function areaEntitiesToMarkers(
 			const resolvedNpc = resolveNPCInstance(definition, npc);
 			const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
 			const markerHeight = 1.25;
-			const visual = resolveThreeVisual({
+			const visual = resolveThreeCharacterVisual({
 				attributes: resolvedNpc.attributes,
 				enemyEnabled: resolvedNpc.enemyBehaviour?.enabled,
 				kind: "npc",
