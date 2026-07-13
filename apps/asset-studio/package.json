@@ -1,0 +1,32 @@
+{
+	"name": "@adventure-game-builder/asset-studio",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -p tsconfig.json && vite build",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"check": "tsc -p tsconfig.json && vitest run && vite build"
+	},
+	"dependencies": {
+		"@adventure-game-builder/asset-compiler-contract": "0.1.0",
+		"@adventure-game-builder/character-contract": "0.1.0",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"three": "^0.184.0"
+	},
+	"devDependencies": {
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"@types/react": "^19.2.15",
+		"@types/react-dom": "^19.2.3",
+		"@types/three": "^0.184.1",
+		"@vitejs/plugin-react": "^4.3.4",
+		"jsdom": "^28.1.0",
+		"typescript": "^5.7.2",
+		"vite": "^6.0.5",
+		"vitest": "^4.1.7"
+	}
+}
