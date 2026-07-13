@@ -189,6 +189,7 @@ vi.mock("three", () => {
 	return {
 		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
+		BackSide: "BackSide",
 		BoxGeometry: Disposable,
 		BufferGeometry,
 		ConeGeometry: Disposable,
@@ -196,16 +197,17 @@ vi.mock("three", () => {
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			castShadow = false;
-			position = { set: vi.fn() };
+			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
 				camera: { far: 0, near: 0 },
-				mapSize: { height: 0, width: 0 },
+				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
 		},
 		Fog: class {},
 		Float32BufferAttribute,
 		Group: Object3D,
 		HemisphereLight: class {},
+		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		Mesh,
 		MeshStandardMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
@@ -218,7 +220,9 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
+			remove = vi.fn();
 		},
+		ShaderMaterial: Disposable,
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
 			outputColorSpace: unknown;
@@ -236,6 +240,13 @@ vi.mock("three", () => {
 			}
 		},
 		SRGBColorSpace: "SRGBColorSpace",
+		Vector3: class {
+			constructor(
+				public x = 0,
+				public y = 0,
+				public z = 0,
+			) {}
+		},
 	};
 });
 
@@ -390,7 +401,7 @@ describe("ThreeRuntimePanel", () => {
 			"active",
 		);
 		expect(screen.getByRole("button", { name: "Inspect" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
 		);
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
@@ -399,6 +410,10 @@ describe("ThreeRuntimePanel", () => {
 			loopCancelCount: 0,
 			loopStartCount: 1,
 		});
+		fireEvent.click(screen.getByRole("button", { name: "Blocky terrain" }));
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+			"active",
+		);
 		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
 		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
@@ -454,6 +469,42 @@ describe("ThreeRuntimePanel", () => {
 				screen.getByLabelText("Three runtime viewport"),
 			).toBeInTheDocument();
 			expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
+		} finally {
+			restoreLoader();
+			restoreRegistry();
+		}
+	});
+
+	it("requests player character assets through the shared renderer path", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "character",
+				id: "demo_player",
+				kind: "glb",
+				name: "Demo Player",
+				url: "/assets/demo-player.glb",
+			},
+		]);
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const project = makeProject();
+		project.player = {
+			...project.player,
+			threeVisual: { assetId: "demo_player", mode: "asset" },
+		};
+
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+			await waitFor(() =>
+				expect(loadAsync).toHaveBeenCalledWith("/assets/demo-player.glb"),
+			);
+			expect(threeRuntimeSource).toContain("resolveThreeCharacterVisual");
+			expect(threeRuntimeSource).toContain("createThreeVisualMarkerGroup(");
+			expect(threeRuntimeSource).not.toContain("GLTFLoader");
 		} finally {
 			restoreLoader();
 			restoreRegistry();

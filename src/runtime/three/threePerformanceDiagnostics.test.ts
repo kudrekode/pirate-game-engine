@@ -18,6 +18,17 @@ describe("three performance diagnostics", () => {
 		now = 300;
 		diagnostics.recordFrame(20);
 		diagnostics.recordFrameCallback(6.4);
+		diagnostics.recordCharacterAnimationUpdate(0.5);
+		diagnostics.setCharacterAnimationMetrics({
+			activeLoopingActions: 2,
+			activeMixers: 3,
+			incompatibleClipCount: 1,
+			loadingSourceCount: 2,
+			missingClipCount: 1,
+			oneShotActionsTriggered: 4,
+			playerState: "walk",
+			sourceAssetIds: ["character-attack", "character-walk"],
+		});
 		diagnostics.recordRenderCall(4.25);
 		diagnostics.recordWaterUpdate(0.7);
 		diagnostics.recordRafLoopStart("test start");
@@ -140,6 +151,22 @@ describe("three performance diagnostics", () => {
 			lastMs: 6.4,
 			worstMs: 6.4,
 		});
+		expect(snapshot.phases.animationUpdate).toMatchObject({
+			averageMs: 0.5,
+			count: 1,
+			lastMs: 0.5,
+			worstMs: 0.5,
+		});
+		expect(snapshot.asset.character.animation).toEqual({
+			activeLoopingActions: 2,
+			activeMixers: 3,
+			incompatibleClipCount: 1,
+			loadingSourceCount: 2,
+			missingClipCount: 1,
+			oneShotActionsTriggered: 4,
+			playerState: "walk",
+			sourceAssetIds: ["character-attack", "character-walk"],
+		});
 		expect(snapshot.phases.waterUpdate).toMatchObject({
 			averageMs: 0.7,
 			count: 1,
@@ -202,6 +229,99 @@ describe("three performance diagnostics", () => {
 			phase: "raf_interval",
 			thresholdMs: 1000,
 		});
+
+		diagnostics.dispose();
+	});
+
+	it("summarises active skinned character assets without duplicating clip metadata", () => {
+		const diagnostics = createThreePerformanceDiagnostics();
+		const analysis = {
+			animationClips: [
+				{
+					duration: 1.067,
+					name: "Armature|walking_man|baselayer",
+					trackCount: 72,
+				},
+			],
+			bounds: {
+				center: { x: 0, y: 0.85, z: 0 },
+				dimensions: { x: 0.75, y: 1.7, z: 0.64 },
+				maxY: 1.7,
+				minY: 0,
+			},
+			materialCount: 1,
+			materialTypes: ["MeshStandardMaterial"],
+			meshCount: 1,
+			boneCount: 24,
+			skeletonCount: 1,
+			skinnedMeshCount: 1,
+			sphere: { center: { x: 0, y: 0.85, z: 0 }, radius: 1 },
+			textureCount: 1,
+			triangleCount: 10_373,
+			vertexCount: 11_116,
+		};
+		diagnostics.setSceneEntityCounts({
+			assetStatuses: [
+				{
+					analysis,
+					category: "character",
+					cloneType: "skeleton-utils",
+					definitionId: "pirate-character-walk",
+					status: "loaded",
+					usedAsset: true,
+				},
+				{
+					analysis,
+					category: "character",
+					cloneType: "skeleton-utils",
+					definitionId: "pirate-character-walk",
+					status: "loaded",
+					usedAsset: true,
+				},
+			],
+			entityCount: 2,
+		});
+
+		const character = diagnostics.getSnapshot().asset.character;
+		expect(character).toEqual({
+			activeAssetIds: ["pirate-character-walk"],
+			activeCloneInstances: 2,
+			assetMetrics: [
+				{
+					boneCount: 24,
+					definitionId: "pirate-character-walk",
+					materialCount: 1,
+					materialTypes: ["MeshStandardMaterial"],
+					skinnedMeshCount: 1,
+					textureCount: 1,
+					triangleCount: 10_373,
+					vertexCount: 11_116,
+				},
+			],
+			animationClips: [
+				{
+					definitionId: "pirate-character-walk",
+					duration: 1.067,
+					name: "Armature|walking_man|baselayer",
+					trackCount: 72,
+				},
+			],
+			animation: {
+				activeLoopingActions: 0,
+				activeMixers: 0,
+				incompatibleClipCount: 0,
+				loadingSourceCount: 0,
+				missingClipCount: 0,
+				oneShotActionsTriggered: 0,
+				playerState: "idle",
+				sourceAssetIds: [],
+			},
+			cloneTypes: ["skeleton-utils"],
+			skinnedMeshCount: 2,
+		});
+		expect(formatThreePerformanceSnapshot(diagnostics.getSnapshot())).toContain(
+			"clone types skeleton-utils",
+		);
 
 		diagnostics.dispose();
 	});
@@ -313,6 +433,7 @@ describe("three performance diagnostics", () => {
 		});
 		diagnostics.recordFrameInterval(90);
 		diagnostics.recordFrameCallback(33);
+		diagnostics.recordCharacterAnimationUpdate(2);
 		diagnostics.recordRenderCall(65);
 		diagnostics.recordRafLoopStart("initial loop");
 		diagnostics.recordRuntimeTick(12);
@@ -333,6 +454,10 @@ describe("three performance diagnostics", () => {
 		});
 		expect(snapshot.phases.render).toMatchObject({ count: 0, worstMs: 0 });
 		expect(snapshot.phases.frameCallback).toMatchObject({
+			count: 0,
+			worstMs: 0,
+		});
+		expect(snapshot.phases.animationUpdate).toMatchObject({
 			count: 0,
 			worstMs: 0,
 		});

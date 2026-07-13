@@ -158,18 +158,20 @@ vi.mock("three", () => {
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			castShadow = false;
-			position = { set: vi.fn() };
+			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
 				camera: { far: 0, near: 0 },
-				mapSize: { height: 0, width: 0 },
+				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
 		},
+		BackSide: "BackSide",
 		Fog: class {},
 		Float32BufferAttribute,
 		GridHelper: class {},
 		Group: Object3D,
 		HemisphereLight: class {},
 		Mesh,
+		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		MeshStandardMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
@@ -187,6 +189,7 @@ vi.mock("three", () => {
 			remove = vi.fn();
 			updateMatrixWorld = vi.fn();
 		},
+		ShaderMaterial: Disposable,
 		Raycaster: class {
 			pointer = { x: 0, y: 0 };
 			ray = {
@@ -225,7 +228,7 @@ vi.mock("three", () => {
 								object.userData.selectionMetadata as
 									| { entityType?: string }
 									| undefined
-							)?.entityType === "terrain",
+							)?.entityType === "terrain" || object.userData.terrainSurface,
 					);
 					return terrain ? [{ object: terrain, point }] : [];
 				},
@@ -479,11 +482,11 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
 			"active",
 		);
-		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
 			"active",
 		);
 		expect(
-			screen.getByRole("button", { name: "Smooth terrain" }),
+			screen.getByRole("button", { name: "Blocky terrain" }),
 		).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Low angle" }));
 		expect(screen.getByRole("button", { name: "Low angle" })).toHaveClass(
@@ -491,6 +494,10 @@ describe("ThreeDPreview", () => {
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Blocky terrain" }));
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
 			"active",
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));

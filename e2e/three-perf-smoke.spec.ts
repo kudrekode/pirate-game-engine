@@ -29,6 +29,14 @@ const PIRATE_PROJECT_NAME = "Demo Adventure";
 const PIRATE_AREA_ID = "area_main";
 const PIRATE_AREA_NAME = "Main Area";
 const EXPECTED_PIRATE_ASSET_IDS = ["pirate-chest", "pirate-small-ship"];
+const EXPECTED_CHARACTER_ASSET_ID = "pirate-character-walk";
+const EXPECTED_CHARACTER_CLONE_COUNT = 3;
+const EXPECTED_CHARACTER_CLIP_NAME = "Armature|walking_man|baselayer";
+const EXPECTED_CHARACTER_ANIMATION_SOURCE_IDS = [
+	"pirate-character-attack",
+	"pirate-character-dead",
+	"pirate-character-walk",
+];
 const EDITOR_MIN_PIRATE_ENTITY_COUNT = 13;
 const RUNTIME_MIN_PIRATE_ENTITY_COUNT = 16;
 
@@ -109,6 +117,28 @@ function meetsPirateBenchmarkRequirements(
 		snapshot.asset.stuckLoadingCount === 0 &&
 		EXPECTED_PIRATE_ASSET_IDS.every((assetId) =>
 			snapshot.asset.activeImportedAssetIds.includes(assetId),
+		) &&
+		snapshot.asset.character.activeAssetIds.includes(
+			EXPECTED_CHARACTER_ASSET_ID,
+		) &&
+		snapshot.asset.character.activeCloneInstances >=
+			EXPECTED_CHARACTER_CLONE_COUNT &&
+		snapshot.asset.character.skinnedMeshCount >=
+			EXPECTED_CHARACTER_CLONE_COUNT &&
+		snapshot.asset.character.cloneTypes.includes("skeleton-utils") &&
+		snapshot.asset.character.animationClips.some(
+			(clip) =>
+				clip.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				clip.name === EXPECTED_CHARACTER_CLIP_NAME,
+		) &&
+		snapshot.asset.character.assetMetrics.some(
+			(metrics) =>
+				metrics.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				metrics.skinnedMeshCount >= 1 &&
+				metrics.triangleCount > 0 &&
+				metrics.vertexCount > 0 &&
+				metrics.boneCount > 0 &&
+				metrics.materialTypes.includes("MeshStandardMaterial"),
 		)
 	);
 }
@@ -123,6 +153,7 @@ function describePirateBenchmarkSnapshot(
 		activeCloneInstances: snapshot.asset.activeCloneInstances,
 		activeImportedAssetIds: snapshot.asset.activeImportedAssetIds,
 		activeImportedAssetInstances: snapshot.asset.activeImportedAssetInstances,
+		character: snapshot.asset.character,
 		areaId: snapshot.scene.areaId,
 		areaName: snapshot.scene.areaName,
 		entityCount: snapshot.scene.entityCount,
@@ -132,6 +163,47 @@ function describePirateBenchmarkSnapshot(
 		statusCounts: snapshot.asset.statusCounts,
 		stuckLoadingCount: snapshot.asset.stuckLoadingCount,
 	});
+}
+
+function hasReadyRuntimeCharacterAnimation(
+	snapshot: ThreePerformanceSnapshot | null,
+): boolean {
+	if (!snapshot) {
+		return false;
+	}
+	const animation = snapshot.asset.character.animation;
+	return (
+		animation.activeMixers >= EXPECTED_CHARACTER_CLONE_COUNT &&
+		animation.loadingSourceCount === 0 &&
+		animation.missingClipCount === 0 &&
+		animation.incompatibleClipCount === 0 &&
+		EXPECTED_CHARACTER_ANIMATION_SOURCE_IDS.every((assetId) =>
+			animation.sourceAssetIds.includes(assetId),
+		)
+	);
+}
+
+async function waitForRuntimeCharacterAnimation(
+	page: Page,
+	state?: "attack" | "idle" | "walk",
+): Promise<ThreePerformanceSnapshot> {
+	const startedAt = Date.now();
+	let snapshot: ThreePerformanceSnapshot | null = null;
+	while (Date.now() - startedAt < 30_000) {
+		snapshot = await readSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
+		if (
+			hasReadyRuntimeCharacterAnimation(snapshot) &&
+			(!state || snapshot?.asset.character.animation.playerState === state)
+		) {
+			return snapshot;
+		}
+		await page.waitForTimeout(50);
+	}
+	throw new Error(
+		`Three runtime character animation did not settle${state ? ` to ${state}` : ""}. Last snapshot: ${describePirateBenchmarkSnapshot(
+			snapshot,
+		)}`,
+	);
 }
 
 async function waitForPirateBenchmarkSnapshot(
@@ -250,6 +322,51 @@ function validatePirateBenchmarkSnapshot(
 		}
 	}
 	if (
+		!snapshot.asset.character.activeAssetIds.includes(
+			EXPECTED_CHARACTER_ASSET_ID,
+		)
+	) {
+		failures.push(`${label} missing active character asset.`);
+	}
+	if (
+		snapshot.asset.character.activeCloneInstances <
+		EXPECTED_CHARACTER_CLONE_COUNT
+	) {
+		failures.push(`${label} character clone count below benchmark minimum.`);
+	}
+	if (
+		snapshot.asset.character.skinnedMeshCount < EXPECTED_CHARACTER_CLONE_COUNT
+	) {
+		failures.push(
+			`${label} character skinned mesh count below benchmark minimum.`,
+		);
+	}
+	if (!snapshot.asset.character.cloneTypes.includes("skeleton-utils")) {
+		failures.push(`${label} did not use SkeletonUtils character clones.`);
+	}
+	if (
+		!snapshot.asset.character.animationClips.some(
+			(clip) =>
+				clip.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				clip.name === EXPECTED_CHARACTER_CLIP_NAME,
+		)
+	) {
+		failures.push(`${label} did not discover the walking character clip.`);
+	}
+	if (
+		!snapshot.asset.character.assetMetrics.some(
+			(metrics) =>
+				metrics.definitionId === EXPECTED_CHARACTER_ASSET_ID &&
+				metrics.skinnedMeshCount >= 1 &&
+				metrics.triangleCount > 0 &&
+				metrics.vertexCount > 0 &&
+				metrics.boneCount > 0 &&
+				metrics.materialTypes.includes("MeshStandardMaterial"),
+		)
+	) {
+		failures.push(`${label} did not report prepared character asset metrics.`);
+	}
+	if (
 		snapshot.asset.activeImportedAssetInstances <
 		EXPECTED_PIRATE_ASSET_IDS.length
 	) {
@@ -278,6 +395,38 @@ function validatePirateBenchmarkSnapshot(
 	}
 }
 
+function validateRuntimeCharacterAnimation(
+	snapshot: ThreePerformanceSnapshot | null,
+	label: string,
+	failures: string[],
+): void {
+	if (!snapshot) {
+		failures.push(`${label} runtime animation snapshot was missing.`);
+		return;
+	}
+	const animation = snapshot.asset.character.animation;
+	if (animation.activeMixers < EXPECTED_CHARACTER_CLONE_COUNT) {
+		failures.push(`${label} active mixer count was below the character count.`);
+	}
+	if (animation.loadingSourceCount !== 0) {
+		failures.push(`${label} still had loading animation sources.`);
+	}
+	if (
+		animation.missingClipCount !== 0 ||
+		animation.incompatibleClipCount !== 0
+	) {
+		failures.push(`${label} reported character animation clip issues.`);
+	}
+	for (const assetId of EXPECTED_CHARACTER_ANIMATION_SOURCE_IDS) {
+		if (!animation.sourceAssetIds.includes(assetId)) {
+			failures.push(`${label} missing animation source ${assetId}.`);
+		}
+	}
+	if (snapshot.phases.animationUpdate.count <= 0) {
+		failures.push(`${label} did not record animation update timing.`);
+	}
+}
+
 test("captures Three editor and runtime perf diagnostics", async ({
 	context,
 	page,
@@ -296,6 +445,10 @@ test("captures Three editor and runtime perf diagnostics", async ({
 	let editorSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeCollapsedSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeSnapshot: ThreePerformanceSnapshot | null = null;
+	let runtimeWalkSnapshot: ThreePerformanceSnapshot | null = null;
+	let runtimeIdleSnapshot: ThreePerformanceSnapshot | null = null;
+	let runtimeAttackSnapshot: ThreePerformanceSnapshot | null = null;
+	let runtimeAfterAttackSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeAfterMoveSnapshot: ThreePerformanceSnapshot | null = null;
 	let fatalError: unknown;
 
@@ -401,6 +554,7 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
 			"smooth",
 		);
+		await waitForRuntimeCharacterAnimation(page);
 		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
 		await page.waitForTimeout(1000);
 		await page.waitForTimeout(5000);
@@ -422,7 +576,35 @@ test("captures Three editor and runtime perf diagnostics", async ({
 		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
 		await runtimeCanvas.focus();
 		await page.keyboard.press("ArrowUp");
-		await page.waitForTimeout(250);
+		runtimeWalkSnapshot = await waitForRuntimeCharacterAnimation(page, "walk");
+		artifacts.runtimeWalkSnapshot = await writeJson(
+			"three-runtime-walk-snapshot.json",
+			runtimeWalkSnapshot,
+		);
+		await page.waitForTimeout(500);
+		runtimeIdleSnapshot = await waitForRuntimeCharacterAnimation(page, "idle");
+		artifacts.runtimeIdleSnapshot = await writeJson(
+			"three-runtime-idle-snapshot.json",
+			runtimeIdleSnapshot,
+		);
+		await page.keyboard.press("Space");
+		runtimeAttackSnapshot = await waitForRuntimeCharacterAnimation(
+			page,
+			"attack",
+		);
+		artifacts.runtimeAttackSnapshot = await writeJson(
+			"three-runtime-attack-snapshot.json",
+			runtimeAttackSnapshot,
+		);
+		await page.waitForTimeout(3500);
+		runtimeAfterAttackSnapshot = await waitForRuntimeCharacterAnimation(
+			page,
+			"idle",
+		);
+		artifacts.runtimeAfterAttackSnapshot = await writeJson(
+			"three-runtime-after-attack-snapshot.json",
+			runtimeAfterAttackSnapshot,
+		);
 		await page.keyboard.press("ArrowLeft");
 		await page.waitForTimeout(4000);
 		runtimeAfterMoveSnapshot = await readSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
@@ -469,6 +651,49 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
 			failures,
 		);
+		validateRuntimeCharacterAnimation(runtimeSnapshot, "runtime", failures);
+		validateRuntimeCharacterAnimation(
+			runtimeWalkSnapshot,
+			"runtime walk",
+			failures,
+		);
+		validateRuntimeCharacterAnimation(
+			runtimeIdleSnapshot,
+			"runtime idle",
+			failures,
+		);
+		validateRuntimeCharacterAnimation(
+			runtimeAttackSnapshot,
+			"runtime attack",
+			failures,
+		);
+		validateRuntimeCharacterAnimation(
+			runtimeAfterAttackSnapshot,
+			"runtime after attack",
+			failures,
+		);
+		validateRuntimeCharacterAnimation(
+			runtimeAfterMoveSnapshot,
+			"runtime after move",
+			failures,
+		);
+		if (runtimeWalkSnapshot?.asset.character.animation.playerState !== "walk") {
+			failures.push("Runtime player did not enter the walk animation state.");
+		}
+		if (runtimeIdleSnapshot?.asset.character.animation.playerState !== "idle") {
+			failures.push("Runtime player did not return to idle after moving.");
+		}
+		if (
+			runtimeAttackSnapshot?.asset.character.animation.playerState !== "attack"
+		) {
+			failures.push("Runtime player did not enter the attack animation state.");
+		}
+		if (
+			runtimeAfterAttackSnapshot?.asset.character.animation.playerState !==
+			"idle"
+		) {
+			failures.push("Runtime player did not return to idle after attacking.");
+		}
 		if (pageErrors.length > 0) {
 			failures.push(`${pageErrors.length} uncaught page error(s) occurred.`);
 		}
@@ -498,9 +723,13 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			pageErrors,
 			snapshots: {
 				editor: editorSnapshot,
-				runtimeCollapsed: runtimeCollapsedSnapshot,
 				runtime: runtimeSnapshot,
+				runtimeAfterAttack: runtimeAfterAttackSnapshot,
 				runtimeAfterMove: runtimeAfterMoveSnapshot,
+				runtimeAttack: runtimeAttackSnapshot,
+				runtimeCollapsed: runtimeCollapsedSnapshot,
+				runtimeIdle: runtimeIdleSnapshot,
+				runtimeWalk: runtimeWalkSnapshot,
 			},
 		});
 	}

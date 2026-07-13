@@ -9,9 +9,13 @@ import { ThreeVisualControls } from "./ThreeVisualControls";
 
 const demoBoxAsset: ThreeVisualAssetDefinition = {
 	category: "object",
+	defaultHeightOffset: 0.2,
+	defaultRotationOffset: 15,
+	defaultScale: 1.5,
 	id: "demo-box",
 	kind: "glb",
 	name: "Demo Box",
+	tags: ["demo", "container"],
 	url: "/assets/demo/Box.glb",
 };
 
@@ -76,6 +80,12 @@ describe("ThreeVisualControls", () => {
 		expect(screen.getByLabelText("Scale")).toBeInTheDocument();
 		expect(screen.getByLabelText("Height offset")).toBeInTheDocument();
 		expect(screen.getByLabelText("Rotation offset")).toBeInTheDocument();
+		expect(screen.getByLabelText("Scale")).toHaveValue(1.5);
+		expect(screen.getByLabelText("Height offset")).toHaveValue(0.2);
+		expect(screen.getByLabelText("Rotation offset")).toHaveValue(15);
+		expect(
+			screen.getByText("Demo Box · object · demo, container"),
+		).toBeInTheDocument();
 	});
 
 	it("stores the selected registry asset id", () => {
@@ -117,6 +127,21 @@ describe("ThreeVisualControls", () => {
 			assetId: "pirate-small-ship",
 			mode: "asset",
 		});
+	});
+
+	it("keeps animation-only source assets out of the visual selector", () => {
+		renderControls({ mode: "asset" });
+
+		expect(
+			screen.queryByRole("option", {
+				name: "Captain Patchbeard Attack (Animation Source)",
+			}),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("option", {
+				name: "Captain Patchbeard Dead (Animation Source)",
+			}),
+		).not.toBeInTheDocument();
 	});
 
 	it("updates source mode and preserves transform settings", () => {
@@ -212,7 +237,7 @@ describe("ThreeVisualControls", () => {
 
 		expect(screen.getByLabelText("Asset")).toBeDisabled();
 		expect(
-			screen.getByText("No built-in 3D assets are registered."),
+			screen.getByText("No matching built-in 3D assets are registered."),
 		).toBeInTheDocument();
 		expect(onChange).not.toHaveBeenCalled();
 	});

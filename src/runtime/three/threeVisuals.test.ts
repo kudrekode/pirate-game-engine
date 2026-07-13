@@ -3,7 +3,10 @@ import type { ObjectBehaviour, ThreeVisualConfig } from "../../types/game";
 import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 import {
 	composeThreeVisualYaw,
+	resolveThreeCharacterFacingYaw,
+	resolveThreeCharacterVisual,
 	resolveThreeVisual,
+	resolveThreeVisualAssetTransform,
 	THREE_PLACEHOLDER_VISUAL_OPTIONS,
 } from "./threeVisuals";
 
@@ -29,6 +32,7 @@ describe("three visual resolver", () => {
 			"door",
 			"rock",
 			"pickup",
+			"player",
 			"npc",
 			"hostileNpc",
 			"genericObject",
@@ -127,6 +131,64 @@ describe("three visual resolver", () => {
 				scale: 1.5,
 				source: "authored",
 			});
+		} finally {
+			restoreRegistry();
+		}
+	});
+
+	it("resolves player and NPC character visuals through the shared fallback order", () => {
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "character",
+				defaultRotationOffset: 90,
+				id: "demo_player",
+				kind: "glb",
+				name: "Demo Player",
+				url: "/assets/demo-player.glb",
+			},
+			{
+				category: "object",
+				id: "demo_prop",
+				kind: "glb",
+				name: "Demo Prop",
+				url: "/assets/demo-prop.glb",
+			},
+		]);
+
+		try {
+			expect(
+				resolveThreeCharacterVisual({
+					kind: "player",
+					threeVisual: { assetId: "demo_player", mode: "asset" },
+				}),
+			).toMatchObject({
+				assetId: "demo_player",
+				mode: "asset",
+				placeholderType: "player",
+				rotationOffset: 90,
+			});
+			expect(
+				resolveThreeCharacterVisual({
+					kind: "player",
+					threeVisual: { assetId: "missing_player", mode: "asset" },
+				}),
+			).toMatchObject({ mode: "placeholder", placeholderType: "player" });
+			expect(
+				resolveThreeCharacterVisual({
+					kind: "player",
+					threeVisual: { assetId: "demo_prop", mode: "asset" },
+				}),
+			).toMatchObject({ mode: "placeholder", placeholderType: "player" });
+			expect(resolveThreeCharacterVisual({ kind: "npc" })).toMatchObject({
+				mode: "placeholder",
+				placeholderType: "npc",
+			});
+			expect(
+				resolveThreeCharacterVisual({
+					enemyEnabled: true,
+					kind: "npc",
+				}),
+			).toMatchObject({ mode: "placeholder", placeholderType: "hostileNpc" });
 		} finally {
 			restoreRegistry();
 		}
@@ -244,5 +306,97 @@ describe("three visual resolver", () => {
 		expect(
 			composeThreeVisualYaw(Math.PI / 2, { rotationOffset: 90 }),
 		).toBeCloseTo(Math.PI);
+	});
+
+	it("uses the registry correction plus authored offset for every character facing", () => {
+		const playerVisual = resolveThreeCharacterVisual({
+			kind: "player",
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				rotationOffset: 30,
+			},
+		});
+		const npcVisual = resolveThreeCharacterVisual({
+			kind: "npc",
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				rotationOffset: 30,
+			},
+		});
+
+		expect(playerVisual).toMatchObject({ rotationOffset: 210 });
+		expect(npcVisual).toMatchObject({ rotationOffset: 210 });
+		for (const [facing, expectedYaw] of [
+			[{ x: 0, y: -1 }, (210 * Math.PI) / 180],
+			[{ x: 1, y: 0 }, (120 * Math.PI) / 180],
+			[{ x: 0, y: 1 }, (30 * Math.PI) / 180],
+			[{ x: -1, y: 0 }, (300 * Math.PI) / 180],
+		] as const) {
+			expect(resolveThreeCharacterFacingYaw(facing, playerVisual)).toBeCloseTo(
+				expectedYaw,
+			);
+			expect(resolveThreeCharacterFacingYaw(facing, npcVisual)).toBeCloseTo(
+				expectedYaw,
+			);
+		}
+	});
+
+	it("normalises the model before applying resolved registry or author transforms", () => {
+		const analysis = {
+			bounds: {
+				center: { x: 0, y: 1, z: 0 },
+				dimensions: { x: 2, y: 4, z: 2 },
+				maxY: 3,
+				minY: -1,
+			},
+		};
+
+		expect(
+			resolveThreeVisualAssetTransform(
+				{ heightOffset: 0.25, rotationOffset: 90, scale: 1.5 },
+				analysis,
+			),
+		).toEqual({
+			heightOffset: 0.25,
+			normalizationOffsetY: 1,
+			rotationYRadians: Math.PI / 2,
+			scale: 1.5,
+		});
+	});
+
+	it("adds authored rotation offsets after registry model corrections", () => {
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				defaultHeightOffset: 0.2,
+				defaultRotationOffset: 15,
+				defaultScale: 1.5,
+				id: "demo_npc",
+				kind: "glb",
+				name: "Demo NPC",
+				url: "/assets/demo-npc.glb",
+			},
+		]);
+
+		try {
+			const visual = resolveThreeVisual({
+				kind: "npc",
+				threeVisual: {
+					assetId: "demo_npc",
+					heightOffset: 0.8,
+					mode: "asset",
+					rotationOffset: 60,
+					scale: 2,
+				},
+			});
+			expect(visual).toMatchObject({
+				heightOffset: 0.8,
+				rotationOffset: 75,
+				scale: 2,
+			});
+		} finally {
+			restoreRegistry();
+		}
 	});
 });

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { getTerrainPresentationSurfaceY } from "../../data/terrainSurface";
+import {
+	getTerrainPresentationSurfaceY,
+	type TerrainSurfaceMode,
+} from "../../data/terrainSurface";
 import {
 	clampOrbitCameraState,
 	createOrbitCameraState,
@@ -28,24 +31,25 @@ import {
 	type ThreePerformanceDiagnostics,
 } from "../../runtime/three/threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
+import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
 import {
 	createCoastlinePresentation,
 	createWaterPresentationState,
 	markWaterPresentationMesh,
 	updateWaterPresentation,
+	type WaterPresentationState,
 } from "../../runtime/three/waterPresentation";
 import {
-	addThreeWorldLighting,
+	applyAtmosphere,
 	applyShadowRole,
-	configureThreeRenderer,
-	configureThreeWorldScene,
 	createTerrainMaterial,
 	createWorldMaterial,
 	getWorldMaterialColor,
 	resolveTerrainMaterialKey,
 } from "../../runtime/three/worldPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
-import { areaEntitiesToMarkers } from "./entityMarkers";
+import type { GameArea, PlayerConfig } from "../../types/game";
+import { areaEntitiesToMarkers, type EntityMarker } from "./entityMarkers";
 import {
 	GAMEPLAY_OVERLAY_FILTERS,
 	HIDE_ALL_OVERLAY_FILTERS,
@@ -76,6 +80,7 @@ import {
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import {
+	type SmoothTerrainMesh,
 	type TerrainRenderMode,
 	terrainTilesToBlocks,
 	terrainTilesToSmoothMeshes,
@@ -188,6 +193,21 @@ function resolveThreeDPreviewBuildReason(
 	return "preview state changed";
 }
 
+function smoothTerrainMeshUsesWater(mesh: SmoothTerrainMesh): boolean {
+	return mesh.groups.some((group) => group.materialKey === "water");
+}
+
+function createSmoothTerrainMaterials(
+	mesh: SmoothTerrainMesh,
+	waterPresentation: WaterPresentationState,
+): THREE.Material[] {
+	return mesh.groups.map((group) =>
+		group.materialKey === "water"
+			? waterPresentation.waterMaterial
+			: createWorldMaterial(group.materialKey),
+	);
+}
+
 function getTerrainHeightToolLabel(tool: TerrainHeightTool): string {
 	if (tool === "raise") {
 		return "Raise";
@@ -272,6 +292,53 @@ function getPreviewCameraDimensions(
 	};
 }
 
+export function createPlayerSpawnPreviewMarker(
+	area: GameArea | undefined,
+	player: PlayerConfig,
+	surfaceMode: TerrainSurfaceMode,
+): EntityMarker | undefined {
+	if (!area) {
+		return undefined;
+	}
+	const spawn = area.eventBlocks.find(
+		(eventBlock) => eventBlock.kind === "spawn",
+	);
+	if (!spawn) {
+		return undefined;
+	}
+	const point = previewGridPositionToThreePoint(area, spawn, {
+		height: 1,
+		width: 1,
+	});
+	const visual = resolveThreeCharacterVisual({
+		kind: "player",
+		name: player.name,
+		threeVisual: player.threeVisual,
+	});
+	return {
+		color: getWorldMaterialColor("friendly"),
+		depth: 0.64,
+		gridX: spawn.x,
+		gridY: spawn.y,
+		height: 1.25,
+		id: spawn.id,
+		kind: "event",
+		opacity: 1,
+		shape: "cylinder",
+		threeX: point.x,
+		threeY:
+			getTerrainPresentationSurfaceY(
+				area,
+				{ x: spawn.x, y: spawn.y },
+				surfaceMode,
+			) + 0.625,
+		threeZ: point.z,
+		visual,
+		visualType: visual.placeholderType,
+		width: 0.64,
+	};
+}
+
 function disposeMaterial(
 	material: THREE.Material,
 	tracker: ThreeResourceDisposeTracker,
@@ -340,7 +407,7 @@ export function ThreeDPreview({
 		useState<PreviewCameraMode>("isometric");
 	const [assetRenderVersion, setAssetRenderVersion] = useState(0);
 	const [terrainRenderMode, setTerrainRenderMode] =
-		useState<TerrainRenderMode>("blocky");
+		useState<TerrainRenderMode>("smooth");
 	const [walkPreviewPosition, setWalkPreviewPosition] =
 		useState<PreviewGridPosition>();
 	const [walkPreviewMessage, setWalkPreviewMessage] = useState("");
@@ -395,6 +462,27 @@ export function ThreeDPreview({
 			project.objects,
 			terrainRenderMode,
 		],
+	);
+	const playerSpawnMarker = useMemo(
+		() =>
+			createPlayerSpawnPreviewMarker(
+				activeArea,
+				project.player,
+				terrainRenderMode,
+			),
+		[activeArea, project.player, terrainRenderMode],
+	);
+	const renderMarkers = useMemo(
+		() => [
+			...entityMarkers.filter(
+				(marker) =>
+					!playerSpawnMarker ||
+					marker.kind !== "event" ||
+					marker.id !== playerSpawnMarker.id,
+			),
+			...(playerSpawnMarker ? [playerSpawnMarker] : []),
+		],
+		[entityMarkers, playerSpawnMarker],
 	);
 	const selectionDetails = useMemo(
 		() => getPreviewSelectionDetails(project, editorSelection),
@@ -537,7 +625,7 @@ export function ThreeDPreview({
 		const nextBuildInputs: ThreeDPreviewBuildInputs = {
 			activeAreaId: activeArea?.id ?? "",
 			assetRenderVersion,
-			entityMarkerCount: entityMarkers.length,
+			entityMarkerCount: renderMarkers.length,
 			selectionKey: createThreeDPreviewSelectionKey(editorSelection),
 			smoothTerrainMeshCount: smoothTerrainMeshes.length,
 			terrainBlockCount: terrainBlocks.length,
@@ -564,7 +652,6 @@ export function ThreeDPreview({
 		const rebuildReason = getSceneBuildReason();
 
 		const scene = new THREE.Scene();
-		configureThreeWorldScene(scene);
 
 		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
 		const areaHeight = Math.max(activeArea?.height ?? 8, 8);
@@ -600,8 +687,6 @@ export function ThreeDPreview({
 		};
 		applyCameraFromState();
 
-		addThreeWorldLighting(scene, { enableShadows: true });
-
 		const gridSize = Math.max(areaWidth, areaHeight, 8);
 		const grid = new THREE.GridHelper(
 			gridSize,
@@ -617,16 +702,16 @@ export function ThreeDPreview({
 		const smoothTerrainVisualMeshes =
 			terrainRenderMode === "smooth"
 				? smoothTerrainMeshes.map((smoothMesh) => {
-						const usesWaterPresentation = smoothMesh.materialKey === "water";
+						const usesWaterPresentation =
+							smoothTerrainMeshUsesWater(smoothMesh);
 						if (usesWaterPresentation) {
 							waterSurfaceMeshCount += 1;
 						}
 						const mesh = new THREE.Mesh(
 							createSmoothTerrainBufferGeometry(smoothMesh),
-							usesWaterPresentation
-								? waterPresentation.waterMaterial
-								: createWorldMaterial(smoothMesh.materialKey),
+							createSmoothTerrainMaterials(smoothMesh, waterPresentation),
 						);
+						mesh.userData.terrainSurface = true;
 						if (usesWaterPresentation) {
 							markWaterPresentationMesh(mesh);
 						}
@@ -638,42 +723,37 @@ export function ThreeDPreview({
 					})
 				: [];
 
-		const terrainPickMeshes = terrainBlocks.map((block) => {
-			const selectionMetadata = terrainBlockToSelectionMetadata(
-				block,
-				activeArea?.id ?? "",
-			);
-			const isSelected = selectionMatchesMetadata(
-				editorSelection,
-				selectionMetadata,
-			);
-			const usesWaterPresentation = block.materialKey === "water";
-			if (terrainRenderMode !== "smooth" && usesWaterPresentation) {
-				waterSurfaceMeshCount += 1;
-			}
-			const mesh = new THREE.Mesh(
-				new THREE.BoxGeometry(
-					terrainRenderMode === "smooth" ? 0.98 : 0.96,
-					block.height,
-					terrainRenderMode === "smooth" ? 0.98 : 0.96,
-				),
-				terrainRenderMode === "smooth"
-					? createWorldMaterial("default", { opacity: 0 })
-					: usesWaterPresentation
-						? waterPresentation.waterMaterial
-						: createTerrainMaterial(block.kind, { selected: isSelected }),
-			);
-			if (terrainRenderMode !== "smooth" && usesWaterPresentation) {
-				markWaterPresentationMesh(mesh);
-			}
-			if (terrainRenderMode !== "smooth") {
-				applyShadowRole(mesh, { receive: !usesWaterPresentation });
-			}
-			mesh.userData.selectionMetadata = selectionMetadata;
-			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
-			scene.add(mesh);
-			return mesh;
-		});
+		const terrainPickMeshes =
+			terrainRenderMode === "smooth"
+				? []
+				: terrainBlocks.map((block) => {
+						const selectionMetadata = terrainBlockToSelectionMetadata(
+							block,
+							activeArea?.id ?? "",
+						);
+						const isSelected = selectionMatchesMetadata(
+							editorSelection,
+							selectionMetadata,
+						);
+						const usesWaterPresentation = block.materialKey === "water";
+						if (usesWaterPresentation) {
+							waterSurfaceMeshCount += 1;
+						}
+						const mesh = new THREE.Mesh(
+							new THREE.BoxGeometry(0.96, block.height, 0.96),
+							usesWaterPresentation
+								? waterPresentation.waterMaterial
+								: createTerrainMaterial(block.kind, { selected: isSelected }),
+						);
+						if (usesWaterPresentation) {
+							markWaterPresentationMesh(mesh);
+						}
+						applyShadowRole(mesh, { receive: !usesWaterPresentation });
+						mesh.userData.selectionMetadata = selectionMetadata;
+						mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+						scene.add(mesh);
+						return mesh;
+					});
 		const coastlinePresentation = createCoastlinePresentation(
 			activeArea,
 			waterPresentation,
@@ -689,8 +769,10 @@ export function ThreeDPreview({
 			(total, mesh) => total + mesh.indices.length / 3,
 			0,
 		);
-		const terrainPickVertexCount = terrainPickMeshes.length * 24;
-		const terrainPickTriangleCount = terrainPickMeshes.length * 12;
+		const terrainPickVertexCount =
+			terrainRenderMode === "smooth" ? 0 : terrainPickMeshes.length * 24;
+		const terrainPickTriangleCount =
+			terrainRenderMode === "smooth" ? 0 : terrainPickMeshes.length * 12;
 		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
 		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
 		diagnostics.recordTerrainRebuild({
@@ -720,7 +802,7 @@ export function ThreeDPreview({
 			assetStateChangeQueued = true;
 			setAssetRenderVersion((version) => version + 1);
 		};
-		const markerRenderResults = entityMarkers.map((marker) => {
+		const markerRenderResults = renderMarkers.map((marker) => {
 			const selectionMetadata = entityMarkerToSelectionMetadata(
 				marker,
 				activeArea?.id ?? "",
@@ -776,25 +858,28 @@ export function ThreeDPreview({
 		}
 		diagnostics.setSceneEntityCounts({
 			assetStatuses: markerRenderResults.map((result) => ({
+				analysis: result.assetAnalysis,
+				category: result.assetCategory,
+				cloneType: result.cloneType,
 				definitionId: result.assetDefinitionId,
 				status: result.assetStatus,
 				usedAsset: result.usedAsset,
 			})),
-			entityCount: entityMarkers.length + (walkPreviewMesh ? 1 : 0),
+			entityCount: renderMarkers.length + (walkPreviewMesh ? 1 : 0),
 			sceneIdentity: {
 				areaId: activeArea?.id,
 				areaName: activeArea?.name,
 				projectName: project.metadata.name,
 			},
 		});
-		const selectableMeshes = [
-			...terrainPickMeshes,
-			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
-		];
 		const terrainSurfacePickMeshes =
 			terrainRenderMode === "smooth" && smoothTerrainVisualMeshes.length > 0
 				? smoothTerrainVisualMeshes
 				: terrainPickMeshes;
+		const selectableMeshes = [
+			...terrainSurfacePickMeshes,
+			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
+		];
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -808,7 +893,9 @@ export function ThreeDPreview({
 			return;
 		}
 
-		configureThreeRenderer(renderer, { enableShadows: true });
+		const atmosphere = applyAtmosphere(scene, renderer, {
+			enableShadows: true,
+		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		host.appendChild(renderer.domElement);
 
@@ -884,6 +971,20 @@ export function ThreeDPreview({
 			}
 			const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
 			diagnostics.recordPick(performance.now() - pickStartedAt);
+			if (hit?.object.userData.terrainSurface && activeArea) {
+				const position = terrainIntersectionToPreviewGridPosition(
+					activeArea,
+					hit,
+				);
+				if (position) {
+					return {
+						areaId: activeArea.id,
+						entityType: "terrain",
+						x: position.x,
+						y: position.y,
+					} satisfies PreviewSelectionMetadata;
+				}
+			}
 			return resolveSelectionMetadataFromIntersection(hit);
 		};
 
@@ -1927,6 +2028,7 @@ export function ThreeDPreview({
 			cleanupPlacementGhost();
 			cleanupTerrainBrushGhost();
 			renderer.dispose();
+			atmosphere.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),
@@ -1973,7 +2075,7 @@ export function ThreeDPreview({
 		brushSize,
 		brushStrength,
 		editorSelection,
-		entityMarkers,
+		renderMarkers,
 		heightToolValue,
 		mapPaletteSelection,
 		placementInfo,

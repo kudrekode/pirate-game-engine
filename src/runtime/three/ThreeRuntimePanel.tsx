@@ -4,9 +4,13 @@ import {
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
 } from "../../data/terrainSurface";
-import { areaEntitiesToMarkers } from "../../editor/sections/entityMarkers";
+import {
+	areaEntitiesToMarkers,
+	type EntityMarker,
+} from "../../editor/sections/entityMarkers";
 import { previewGridPositionToThreePoint } from "../../editor/sections/previewMove";
 import {
+	type SmoothTerrainMesh,
 	type TerrainRenderMode,
 	terrainTilesToBlocks,
 	terrainTilesToSmoothMeshes,
@@ -89,14 +93,19 @@ import {
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import {
+	createThreeCharacterAnimationController,
+	type ThreeCharacterAnimationController,
+} from "./threeCharacterAnimation";
+import {
 	createThreePerformanceDiagnostics,
 	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "./threePerformanceDiagnostics";
 import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
-	composeThreeVisualYaw,
 	type ResolvedThreeVisual,
+	resolveThreeCharacterFacingYaw,
+	resolveThreeCharacterVisual,
 } from "./threeVisuals";
 import {
 	advanceCameraFollowRig,
@@ -120,12 +129,11 @@ import {
 	createWaterPresentationState,
 	markWaterPresentationMesh,
 	updateWaterPresentation,
+	type WaterPresentationState,
 } from "./waterPresentation";
 import {
-	addThreeWorldLighting,
+	applyAtmosphere,
 	applyShadowRole,
-	configureThreeRenderer,
-	configureThreeWorldScene,
 	createTerrainMaterial,
 	createWorldMaterial,
 	getWorldMaterialColor,
@@ -141,6 +149,21 @@ type ThreeRuntimeBuildInputs = {
 	renderVersion: number;
 	terrainRenderMode: TerrainRenderMode;
 };
+
+function smoothTerrainMeshUsesWater(mesh: SmoothTerrainMesh): boolean {
+	return mesh.groups.some((group) => group.materialKey === "water");
+}
+
+function createSmoothTerrainMaterials(
+	mesh: SmoothTerrainMesh,
+	waterPresentation: WaterPresentationState,
+): THREE.Material[] {
+	return mesh.groups.map((group) =>
+		group.materialKey === "water"
+			? waterPresentation.waterMaterial
+			: createWorldMaterial(group.materialKey),
+	);
+}
 
 function resolveThreeRuntimeBuildReason(
 	previous: ThreeRuntimeBuildInputs | null,
@@ -284,16 +307,7 @@ function setObjectFacing(
 	facing: VisualGridPosition,
 	visual?: ResolvedThreeVisual,
 ): void {
-	object.rotation.y = composeThreeVisualYaw(facingToYawRadians(facing), visual);
-}
-
-function createFacingMarker(color: number, y: number, z: number): THREE.Mesh {
-	const marker = new THREE.Mesh(
-		new THREE.BoxGeometry(0.16, 0.12, 0.3),
-		createWorldMaterial("default", { color }),
-	);
-	marker.position.set(0, y, z);
-	return marker;
+	object.rotation.y = resolveThreeCharacterFacingYaw(facing, visual);
 }
 
 function getRuntimeCameraDimensions(area: GameArea): {
@@ -356,16 +370,30 @@ function getFollowCameraTarget(
 		: getCameraFollowTarget(playerPosition);
 }
 
-function createRuntimePlayerMesh(): THREE.Group {
-	const group = new THREE.Group();
-	const body = new THREE.Mesh(
-		new THREE.CylinderGeometry(0.32, 0.32, 1.25, 16),
-		createWorldMaterial("friendly"),
-	);
-	body.position.set(0, 0.625, 0);
-	group.add(body);
-	group.add(createFacingMarker(getWorldMaterialColor("water"), 0.78, -0.36));
-	return group;
+function createRuntimePlayerMarker(
+	area: GameArea,
+	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
+	visual: ResolvedThreeVisual,
+): EntityMarker {
+	const base = getVisualWorldBase(area, position, terrainMode);
+	return {
+		color: getWorldMaterialColor("friendly"),
+		depth: 0.64,
+		gridX: position.x,
+		gridY: position.y,
+		height: 1.25,
+		id: "runtime_player",
+		kind: "npc",
+		opacity: 1,
+		shape: "cylinder",
+		threeX: base.x,
+		threeY: base.y + 0.625,
+		threeZ: base.z,
+		visual,
+		visualType: visual.placeholderType,
+		width: 0.64,
+	};
 }
 
 export function ThreeRuntimePanel({
@@ -383,6 +411,9 @@ export function ThreeRuntimePanel({
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
+	const characterAnimationControllersRef = useRef<
+		Map<string, ThreeCharacterAnimationController>
+	>(new Map());
 	const cameraRigRef = useRef<CameraFollowRig | null>(null);
 	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
 	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
@@ -400,7 +431,7 @@ export function ThreeRuntimePanel({
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
 	const [terrainRenderMode, setTerrainRenderMode] =
-		useState<TerrainRenderMode>("blocky");
+		useState<TerrainRenderMode>("smooth");
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
@@ -703,6 +734,10 @@ export function ThreeRuntimePanel({
 		if (event.type === "endGame") {
 			setStatus("Game complete.");
 			setMouseLookActive(false);
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -777,6 +812,10 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
 			setMouseLookActive(false);
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -915,11 +954,29 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "gameOver") {
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
 
 	function handleCombatEvent(event: RuntimeCombatEvent): void {
+		if (event.type === "attackStarted") {
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.triggerAttack();
+			return;
+		}
+		if (event.type === "npcDefeated") {
+			// The shared runtime emits npcRemoved immediately after this event. Start
+			// the presentation state without changing that gameplay lifecycle.
+			characterAnimationControllersRef.current
+				.get(event.npcId)
+				?.sync({ defeated: true, moving: false });
+			return;
+		}
 		if (event.type === "status") {
 			setStatus(event.message);
 			return;
@@ -1194,6 +1251,7 @@ export function ThreeRuntimePanel({
 			previousBuildInputsRef.current = null;
 			resetPresentationVisuals(session, { resetCameraMode: true });
 			setMountError(null);
+			gameOverRef.current = false;
 			setGameOver(false);
 			setPendingCutscene(null);
 			setFlowLog([]);
@@ -1310,7 +1368,6 @@ export function ThreeRuntimePanel({
 
 		host.replaceChildren();
 		const scene = new THREE.Scene();
-		configureThreeWorldScene(scene, { fogFar: 52, fogNear: 20 });
 		const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
 		const initialPlayerVisual =
 			playerVisualRef.current ??
@@ -1362,8 +1419,6 @@ export function ThreeRuntimePanel({
 			});
 		};
 		applyCameraRig(cameraRig);
-		addThreeWorldLighting(scene, { enableShadows: true });
-
 		const renderObjects: Array<{
 			disposeResources: boolean;
 			object: THREE.Object3D;
@@ -1397,15 +1452,13 @@ export function ThreeRuntimePanel({
 				0,
 			);
 			smoothMeshes.forEach((smoothMesh) => {
-				const usesWaterPresentation = smoothMesh.materialKey === "water";
+				const usesWaterPresentation = smoothTerrainMeshUsesWater(smoothMesh);
 				if (usesWaterPresentation) {
 					waterSurfaceMeshCount += 1;
 				}
 				const mesh = new THREE.Mesh(
 					createSmoothTerrainBufferGeometry(smoothMesh),
-					usesWaterPresentation
-						? waterPresentation.waterMaterial
-						: createWorldMaterial(smoothMesh.materialKey),
+					createSmoothTerrainMaterials(smoothMesh, waterPresentation),
 				);
 				if (usesWaterPresentation) {
 					markWaterPresentationMesh(mesh);
@@ -1473,6 +1526,64 @@ export function ThreeRuntimePanel({
 		};
 		const npcRenderGroups = new Map<string, THREE.Group>();
 		const npcRenderVisuals = new Map<string, ResolvedThreeVisual | undefined>();
+		const characterAnimationControllers = new Map<
+			string,
+			ThreeCharacterAnimationController
+		>();
+		const updateCharacterAnimationDiagnostics = () => {
+			const sourceAssetIds = new Set<string>();
+			let activeLoopingActions = 0;
+			let incompatibleClipCount = 0;
+			let loadingSourceCount = 0;
+			let missingClipCount = 0;
+			let oneShotActionsTriggered = 0;
+			let playerState = "idle";
+			for (const [id, controller] of characterAnimationControllers) {
+				const stats = controller.getStats();
+				activeLoopingActions += stats.activeLoopingActions;
+				incompatibleClipCount += stats.incompatibleClipCount;
+				loadingSourceCount += stats.loadingSourceCount;
+				missingClipCount += stats.missingClipCount;
+				oneShotActionsTriggered += stats.oneShotActionsTriggered;
+				if (id === "runtime_player") {
+					playerState = stats.semanticState;
+				}
+				for (const assetId of stats.sourceAssetIds) {
+					sourceAssetIds.add(assetId);
+				}
+			}
+			diagnostics.setCharacterAnimationMetrics({
+				activeLoopingActions,
+				activeMixers: characterAnimationControllers.size,
+				incompatibleClipCount,
+				loadingSourceCount,
+				missingClipCount,
+				oneShotActionsTriggered,
+				playerState,
+				sourceAssetIds: Array.from(sourceAssetIds),
+			});
+		};
+		const addCharacterAnimationController = (
+			id: string,
+			group: THREE.Group,
+			visual: ResolvedThreeVisual | undefined,
+			usedAsset: boolean,
+		) => {
+			if (
+				!usedAsset ||
+				visual?.mode !== "asset" ||
+				visual.asset.category !== "character"
+			) {
+				return;
+			}
+			characterAnimationControllers.set(
+				id,
+				createThreeCharacterAnimationController({
+					asset: visual.asset,
+					root: group,
+				}),
+			);
+		};
 		let assetStateChangeQueued = false;
 		const handleAssetStateChange = () => {
 			if (assetStateChangeQueued) {
@@ -1498,9 +1609,6 @@ export function ThreeRuntimePanel({
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
 				if (npcVisual) {
-					group.add(
-						createFacingMarker(getWorldMaterialColor("sand"), 0.58, -0.34),
-					);
 					setObjectBasePosition(
 						group,
 						area,
@@ -1511,6 +1619,12 @@ export function ThreeRuntimePanel({
 					setObjectFacing(group, npcVisual.facing, marker.visual);
 					npcRenderGroups.set(marker.id, group);
 					npcRenderVisuals.set(marker.id, marker.visual);
+					addCharacterAnimationController(
+						marker.id,
+						group,
+						marker.visual,
+						renderResult.usedAsset,
+					);
 				}
 			}
 			if (!renderResult.usedAsset) {
@@ -1523,22 +1637,57 @@ export function ThreeRuntimePanel({
 			return renderResult;
 		});
 
-		const playerMesh = createRuntimePlayerMesh();
-		applyShadowRole(playerMesh, { cast: true });
+		const playerRenderVisual = resolveThreeCharacterVisual({
+			kind: "player",
+			name: session.project.player.name,
+			threeVisual: session.project.player.threeVisual,
+		});
+		const playerRenderResult = createThreeVisualMarkerGroup(
+			createRuntimePlayerMarker(
+				area,
+				initialPlayerPosition,
+				terrainRenderMode,
+				playerRenderVisual,
+			),
+			{
+				diagnostics,
+				onAssetStateChange: handleAssetStateChange,
+			},
+		);
+		const playerMesh = playerRenderResult.group;
+		if (!playerRenderResult.usedAsset) {
+			applyShadowRole(playerMesh, { cast: true });
+		}
 		setObjectBasePosition(
 			playerMesh,
 			area,
 			initialPlayerPosition,
 			terrainRenderMode,
+			playerRenderVisual,
 		);
-		setObjectFacing(playerMesh, initialPlayerVisual.facing);
-		addRenderObject(playerMesh);
+		setObjectFacing(playerMesh, initialPlayerVisual.facing, playerRenderVisual);
+		addCharacterAnimationController(
+			"runtime_player",
+			playerMesh,
+			playerRenderVisual,
+			playerRenderResult.usedAsset,
+		);
+		characterAnimationControllersRef.current = characterAnimationControllers;
+		updateCharacterAnimationDiagnostics();
+		addRenderObject(playerMesh, {
+			disposeResources: !playerRenderResult.usedAsset,
+		});
 		diagnostics.setSceneEntityCounts({
-			assetStatuses: markerRenderResults.map((result) => ({
-				definitionId: result.assetDefinitionId,
-				status: result.assetStatus,
-				usedAsset: result.usedAsset,
-			})),
+			assetStatuses: [...markerRenderResults, playerRenderResult].map(
+				(result) => ({
+					analysis: result.assetAnalysis,
+					category: result.assetCategory,
+					cloneType: result.cloneType,
+					definitionId: result.assetDefinitionId,
+					status: result.assetStatus,
+					usedAsset: result.usedAsset,
+				}),
+			),
 			entityCount: runtimeMarkers.length + 1,
 			sceneIdentity: {
 				areaId: area.id,
@@ -1551,6 +1700,15 @@ export function ThreeRuntimePanel({
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 		} catch (error) {
+			characterAnimationControllers.forEach((controller) => {
+				controller.dispose();
+			});
+			if (
+				characterAnimationControllersRef.current ===
+				characterAnimationControllers
+			) {
+				characterAnimationControllersRef.current = new Map();
+			}
 			setMountError(
 				error instanceof Error
 					? error.message
@@ -1560,7 +1718,9 @@ export function ThreeRuntimePanel({
 		}
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
 		renderer.domElement.tabIndex = 0;
-		configureThreeRenderer(renderer, { enableShadows: true });
+		const atmosphere = applyAtmosphere(scene, renderer, {
+			enableShadows: true,
+		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
@@ -1724,17 +1884,16 @@ export function ThreeRuntimePanel({
 					session.playerPosition,
 					session.playerFacing,
 				);
-			const playerVisualPosition = getVisualGridPosition(
-				playerVisual,
-				now,
-			).position;
+			const playerVisualGridPosition = getVisualGridPosition(playerVisual, now);
+			const playerVisualPosition = playerVisualGridPosition.position;
 			setObjectBasePosition(
 				playerMesh,
 				area,
 				playerVisualPosition,
 				terrainRenderMode,
+				playerRenderVisual,
 			);
-			setObjectFacing(playerMesh, playerVisual.facing);
+			setObjectFacing(playerMesh, playerVisual.facing, playerRenderVisual);
 			playerVisualRef.current = settleVisualEntityState(playerVisual, now);
 
 			npcRenderGroups.forEach((group, npcId) => {
@@ -1742,7 +1901,8 @@ export function ThreeRuntimePanel({
 				if (!npcVisual || npcVisual.areaId !== area.id) {
 					return;
 				}
-				const npcPosition = getVisualGridPosition(npcVisual, now).position;
+				const npcVisualGridPosition = getVisualGridPosition(npcVisual, now);
+				const npcPosition = npcVisualGridPosition.position;
 				const visual = npcRenderVisuals.get(npcId);
 				setObjectBasePosition(
 					group,
@@ -1756,7 +1916,23 @@ export function ThreeRuntimePanel({
 					npcId,
 					settleVisualEntityState(npcVisual, now),
 				);
+				characterAnimationControllers.get(npcId)?.sync({
+					defeated: session.defeatedNpcIds.has(npcId),
+					moving: !npcVisualGridPosition.done,
+				});
 			});
+			const animationUpdateStartedAt = performance.now();
+			characterAnimationControllers.get("runtime_player")?.sync({
+				defeated: gameOverRef.current,
+				moving: !playerVisualGridPosition.done,
+			});
+			characterAnimationControllers.forEach((controller) => {
+				controller.update(deltaMs / 1000);
+			});
+			updateCharacterAnimationDiagnostics();
+			diagnostics.recordCharacterAnimationUpdate(
+				performance.now() - animationUpdateStartedAt,
+			);
 
 			if (
 				cameraModeRef.current === "follow" &&
@@ -1835,7 +2011,17 @@ export function ThreeRuntimePanel({
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
+			characterAnimationControllers.forEach((controller) => {
+				controller.dispose();
+			});
+			if (
+				characterAnimationControllersRef.current ===
+				characterAnimationControllers
+			) {
+				characterAnimationControllersRef.current = new Map();
+			}
 			renderer.dispose();
+			atmosphere.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),

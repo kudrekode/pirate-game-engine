@@ -6,16 +6,22 @@ import {
 	type PlaceholderSelectionMetadata,
 } from "./placeholderMeshes";
 import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
+import type { ThreeVisualAssetAnalysis } from "./threeVisualAssetAnalysis";
 import {
 	requestThreeVisualAsset,
+	type ThreeVisualAssetCloneType,
 	type ThreeVisualAssetRequest,
 } from "./threeVisualAssetLoader";
-import { threeVisualRotationOffsetToRadians } from "./threeVisuals";
+import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
+import { resolveThreeVisualAssetTransform } from "./threeVisuals";
 import { applyShadowRole } from "./worldPresentation";
 
 export type ThreeVisualRenderResult = {
+	assetAnalysis?: ThreeVisualAssetAnalysis;
+	assetCategory?: ThreeVisualAssetDefinition["category"];
 	assetDefinitionId?: string;
 	group: THREE.Group;
+	cloneType?: ThreeVisualAssetCloneType;
 	assetStatus: ThreeVisualAssetRequest["status"] | "not_requested";
 	usedAsset: boolean;
 };
@@ -31,23 +37,30 @@ function getBaseY(marker: EntityMarker): number {
 	return Math.max(0, marker.threeY - marker.height / 2);
 }
 
-function applyMarkerTransform(group: THREE.Group, marker: EntityMarker): void {
+function applyMarkerTransform(
+	group: THREE.Group,
+	marker: EntityMarker,
+	transform: ReturnType<typeof resolveThreeVisualAssetTransform>,
+): void {
 	group.position.set(
 		marker.threeX,
-		getBaseY(marker) + (marker.visual?.heightOffset ?? 0),
+		getBaseY(marker) + transform.heightOffset,
 		marker.threeZ,
 	);
-	group.rotation.y = threeVisualRotationOffsetToRadians(marker.visual);
-	group.scale.setScalar(marker.visual?.scale ?? 1);
+	group.rotation.y = transform.rotationYRadians;
+	group.scale.setScalar(transform.scale);
 }
 
 function createAssetGroup(
 	marker: EntityMarker,
 	assetObject: THREE.Object3D,
+	analysis: Extract<ThreeVisualAssetRequest, { status: "loaded" }>["analysis"],
 	options: ThreeVisualRenderOptions,
 ): THREE.Group {
 	const group = new THREE.Group();
-	applyMarkerTransform(group, marker);
+	const transform = resolveThreeVisualAssetTransform(marker.visual, analysis);
+	applyMarkerTransform(group, marker, transform);
+	assetObject.position.y += transform.normalizationOffsetY;
 	applyShadowRole(assetObject, {
 		cast: marker.visual?.asset?.castShadow ?? false,
 		receive: marker.visual?.asset?.receiveShadow ?? false,
@@ -103,9 +116,17 @@ export function createThreeVisualMarkerGroup(
 
 	options.diagnostics?.recordAssetClone(assetRequest.definition.id);
 	return {
+		assetAnalysis: assetRequest.analysis,
+		assetCategory: assetRequest.definition.category,
 		assetDefinitionId: assetRequest.definition.id,
 		assetStatus: "loaded",
-		group: createAssetGroup(marker, assetRequest.object, options),
+		cloneType: assetRequest.cloneType,
+		group: createAssetGroup(
+			marker,
+			assetRequest.object,
+			assetRequest.analysis,
+			options,
+		),
 		usedAsset: true,
 	};
 }

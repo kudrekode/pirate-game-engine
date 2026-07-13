@@ -1,11 +1,20 @@
-import type * as THREE from "three";
+import * as THREE from "three";
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
+import {
+	analyzeThreeVisualAssetRoot,
+	type ThreeVisualAssetAnalysis,
+} from "./threeVisualAssetAnalysis";
+import { prepareThreeVisualAssetMaterials } from "./threeVisualAssetMaterialProfile";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 
 type GltfLike = {
+	animations?: THREE.AnimationClip[];
 	scene?: THREE.Object3D;
 	scenes?: THREE.Object3D[];
 };
+
+export type ThreeVisualAssetCloneType = "object3d" | "skeleton-utils";
 
 export type ThreeVisualAssetLoaderLike = {
 	loadAsync: (url: string) => Promise<GltfLike>;
@@ -23,6 +32,8 @@ type AssetCacheEntry =
 			promise: Promise<void>;
 	  }
 	| {
+			analysis: ThreeVisualAssetAnalysis;
+			animations: THREE.AnimationClip[];
 			status: "loaded";
 			definition: ThreeVisualAssetDefinition;
 			root: THREE.Object3D;
@@ -38,9 +49,25 @@ export type ThreeVisualAssetRequest =
 	| { status: "loading"; definition: ThreeVisualAssetDefinition }
 	| { status: "error"; definition: ThreeVisualAssetDefinition; error: unknown }
 	| {
+			analysis: ThreeVisualAssetAnalysis;
 			status: "loaded";
 			definition: ThreeVisualAssetDefinition;
+			cloneType: ThreeVisualAssetCloneType;
 			object: THREE.Object3D;
+	  };
+
+export type ThreeVisualAssetAnimationRequest =
+	| { status: "missing" }
+	| { status: "loading"; definition: ThreeVisualAssetDefinition }
+	| { status: "error"; definition: ThreeVisualAssetDefinition; error: unknown }
+	| {
+			clip: THREE.AnimationClip;
+			definition: ThreeVisualAssetDefinition;
+			status: "loaded";
+	  }
+	| {
+			definition: ThreeVisualAssetDefinition;
+			status: "missing_clip";
 	  };
 
 const cache = new Map<string, AssetCacheEntry>();
@@ -110,7 +137,11 @@ function startAssetLoad(
 				});
 				return;
 			}
+			prepareThreeVisualAssetMaterials(root, definition);
+			const analysis = analyzeThreeVisualAssetRoot(root, gltf.animations);
 			cache.set(key, {
+				analysis,
+				animations: gltf.animations ?? [],
 				definition,
 				root,
 				status: "loaded",
@@ -153,14 +184,17 @@ export function requestThreeVisualAsset(
 	const key = getCacheKey(definition);
 	const existing = cache.get(key);
 	if (existing?.status === "loaded") {
+		const cloneType = getThreeVisualAssetCloneType(existing.analysis);
 		emitThreePerformanceDiagnosticsEvent({
 			definitionId: existing.definition.id,
 			status: "cache_hit",
 			url: existing.definition.url,
 		});
 		return {
+			analysis: existing.analysis,
+			cloneType,
 			definition: existing.definition,
-			object: cloneThreeVisualAssetRoot(existing.root),
+			object: cloneThreeVisualAssetRoot(existing.root, cloneType),
 			status: "loaded",
 		};
 	}
@@ -196,10 +230,68 @@ export function requestThreeVisualAsset(
 	return { definition: entry.definition, status: "loading" };
 }
 
+export function requestThreeVisualAssetAnimationClip(
+	definition: ThreeVisualAssetDefinition | undefined,
+	clipName: string,
+	options: { onStateChange?: () => void } = {},
+): ThreeVisualAssetAnimationRequest {
+	if (!definition) {
+		return { status: "missing" };
+	}
+
+	const key = getCacheKey(definition);
+	const existing = cache.get(key);
+	if (existing?.status === "loaded") {
+		const clip = existing.animations.find(
+			(candidate) => candidate.name === clipName,
+		);
+		return clip
+			? { clip, definition: existing.definition, status: "loaded" }
+			: { definition: existing.definition, status: "missing_clip" };
+	}
+	if (existing?.status === "error") {
+		return {
+			definition: existing.definition,
+			error: existing.error,
+			status: "error",
+		};
+	}
+	if (existing?.status === "loading") {
+		if (options.onStateChange) {
+			existing.listeners.add(options.onStateChange);
+		}
+		return { definition: existing.definition, status: "loading" };
+	}
+
+	const entry = startAssetLoad(definition, key, options.onStateChange);
+	return { definition: entry.definition, status: "loading" };
+}
+
 export function cloneThreeVisualAssetRoot(
 	root: THREE.Object3D,
+	cloneType: ThreeVisualAssetCloneType = rootHasSkinnedMeshes(root)
+		? "skeleton-utils"
+		: "object3d",
 ): THREE.Object3D {
-	return root.clone(true);
+	return cloneType === "skeleton-utils"
+		? cloneSkeleton(root)
+		: root.clone(true);
+}
+
+export function getThreeVisualAssetCloneType(
+	analysis: Pick<ThreeVisualAssetAnalysis, "skinnedMeshCount">,
+): ThreeVisualAssetCloneType {
+	return analysis.skinnedMeshCount > 0 ? "skeleton-utils" : "object3d";
+}
+
+function rootHasSkinnedMeshes(root: THREE.Object3D): boolean {
+	let hasSkinnedMesh = false;
+	root.traverse((object) => {
+		if (object instanceof THREE.SkinnedMesh) {
+			hasSkinnedMesh = true;
+		}
+	});
+	return hasSkinnedMesh;
 }
 
 export function clearThreeVisualAssetCacheForTests(): void {

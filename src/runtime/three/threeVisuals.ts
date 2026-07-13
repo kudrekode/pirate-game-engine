@@ -7,12 +7,19 @@ import {
 	type ThreePlaceholderVisualType,
 	type ThreeVisualConfig,
 } from "../../types/game";
+import type { ThreeVisualAssetAnalysis } from "./threeVisualAssetAnalysis";
 import {
 	getThreeVisualAssetDefinition,
 	type ThreeVisualAssetDefinition,
 } from "./threeVisualAssetRegistry";
+import { facingToYawRadians, type VisualGridPosition } from "./visualSmoothing";
 
 export type PlaceholderVisualEntity =
+	| {
+			kind: "player";
+			name?: string;
+			threeVisual?: ThreeVisualConfig;
+	  }
 	| {
 			kind: "object";
 			name?: string;
@@ -36,6 +43,11 @@ export type PlaceholderVisualEntity =
 	| { kind: "pickup"; name?: string }
 	| { kind: "event"; name?: string };
 
+export type ThreeCharacterVisualEntity = Extract<
+	PlaceholderVisualEntity,
+	{ kind: "player" | "npc" }
+>;
+
 type ResolvedThreeVisualBase = {
 	requestedMode: ThreeVisualConfig["mode"];
 	placeholderType: ThreePlaceholderVisualType;
@@ -58,6 +70,13 @@ export type ResolvedThreeVisual =
 			requestedMode: "asset";
 			source: "authored";
 	  });
+
+export type ResolvedThreeVisualAssetTransform = {
+	heightOffset: number;
+	normalizationOffsetY: number;
+	rotationYRadians: number;
+	scale: number;
+};
 
 export const THREE_PLACEHOLDER_VISUAL_OPTIONS: {
 	label: string;
@@ -125,6 +144,9 @@ function isShopInteraction(interaction: Interaction | undefined): boolean {
 export function resolveInferredPlaceholderVisualType(
 	entity: PlaceholderVisualEntity,
 ): ThreePlaceholderVisualType {
+	if (entity.kind === "player") {
+		return "player";
+	}
 	if (entity.kind === "pickup") {
 		return "pickup";
 	}
@@ -193,7 +215,9 @@ export function resolveThreeVisual(
 	entity: PlaceholderVisualEntity,
 ): ResolvedThreeVisual {
 	const config =
-		entity.kind === "object" || entity.kind === "npc"
+		entity.kind === "object" ||
+		entity.kind === "npc" ||
+		entity.kind === "player"
 			? entity.threeVisual
 			: undefined;
 	const inferredPlaceholderType = resolveInferredPlaceholderVisualType(entity);
@@ -233,7 +257,8 @@ export function resolveThreeVisual(
 		placeholderType: authoredPlaceholderType ?? inferredPlaceholderType,
 		requestedMode,
 		rotationOffset: clampThreeVisualRotationOffset(
-			config?.rotationOffset ?? assetDefinition?.defaultRotationOffset,
+			(assetDefinition?.defaultRotationOffset ?? 0) +
+				(config?.rotationOffset ?? 0),
 		),
 		scale: clampThreeVisualScale(
 			config?.scale ?? assetDefinition?.defaultScale,
@@ -257,6 +282,24 @@ export function resolveThreeVisual(
 			};
 }
 
+// Characters share the object/NPC resolver, cache, transform, and fallback
+// rules. Keeping this seam distinct makes future animation presentation data
+// possible without introducing a second character transform schema.
+export function resolveThreeCharacterVisual(
+	entity: ThreeCharacterVisualEntity,
+): ResolvedThreeVisual {
+	const visual = resolveThreeVisual(entity);
+	if (
+		entity.kind !== "player" ||
+		visual.mode !== "asset" ||
+		visual.asset.category === "character"
+	) {
+		return visual;
+	}
+	const { asset: _asset, ...fallback } = visual;
+	return { ...fallback, mode: "placeholder" };
+}
+
 export function threeVisualRotationOffsetToRadians(
 	visual: Pick<ResolvedThreeVisual, "rotationOffset"> | undefined,
 ): number {
@@ -267,9 +310,37 @@ export function threeVisualRotationOffsetToRadians(
 	);
 }
 
+// Transform order is fixed for editor and runtime parity:
+// cached model bounds normalisation -> registry defaults + authored rotation
+// offset -> marker placement -> terrain surface sampling (when the marker is
+// created). The registry owns model-native forward correction; authored
+// rotation remains an additional project-level adjustment.
+export function resolveThreeVisualAssetTransform(
+	visual:
+		| Pick<ResolvedThreeVisual, "heightOffset" | "rotationOffset" | "scale">
+		| undefined,
+	analysis: Pick<ThreeVisualAssetAnalysis, "bounds"> | undefined,
+): ResolvedThreeVisualAssetTransform {
+	return {
+		heightOffset: visual?.heightOffset ?? DEFAULT_THREE_VISUAL_HEIGHT_OFFSET,
+		normalizationOffsetY: -(analysis?.bounds.minY ?? 0),
+		rotationYRadians: threeVisualRotationOffsetToRadians(visual),
+		scale: visual?.scale ?? DEFAULT_THREE_VISUAL_SCALE,
+	};
+}
+
 export function composeThreeVisualYaw(
 	baseYawRadians: number,
 	visual: Pick<ResolvedThreeVisual, "rotationOffset"> | undefined,
 ): number {
 	return baseYawRadians + threeVisualRotationOffsetToRadians(visual);
+}
+
+// This is the canonical player/NPC wrapper yaw. It only changes the cloned
+// instance wrapper; cached source scenes stay unmodified for future clones.
+export function resolveThreeCharacterFacingYaw(
+	facing: VisualGridPosition,
+	visual: Pick<ResolvedThreeVisual, "rotationOffset"> | undefined,
+): number {
+	return composeThreeVisualYaw(facingToYawRadians(facing), visual);
 }

@@ -58,6 +58,7 @@ describe("Three visual asset registry", () => {
 			id: "demo-box",
 			kind: "glb",
 			name: "Demo Box",
+			tags: ["demo", "primitive"],
 			url: "/assets/demo/Box.glb",
 		});
 		expect(getThreeVisualAssetDefinition("demo-box")).toMatchObject({
@@ -76,6 +77,12 @@ describe("Three visual asset registry", () => {
 			expect.arrayContaining(["demo-box", "pirate-chest", "pirate-small-ship"]),
 		);
 
+		const shadowCastingAssetIds = new Set([
+			"pirate-chest",
+			"pirate-palm",
+			"pirate-rocks",
+			"pirate-small-ship",
+		]);
 		for (const expected of expectedPirateAssets) {
 			expect(assets).toContainEqual(
 				expect.objectContaining({
@@ -89,9 +96,70 @@ describe("Three visual asset registry", () => {
 				url: expected.url,
 			});
 			const asset = getThreeVisualAssetDefinition(expected.id);
-			expect(asset?.castShadow).toBeUndefined();
-			expect(asset?.receiveShadow).toBeUndefined();
+			expect(asset?.castShadow).toBe(
+				shadowCastingAssetIds.has(expected.id) ? true : undefined,
+			);
+			expect(asset?.receiveShadow).toBe(true);
+			expect(asset?.tags?.length).toBeGreaterThan(0);
+			expect(asset?.defaultScale).toBeGreaterThan(0);
 		}
+	});
+
+	it("registers the curated skinned pirate character assets", () => {
+		const base = getThreeVisualAssetDefinition("pirate-character-base");
+		const walk = getThreeVisualAssetDefinition("pirate-character-walk");
+		const attack = getThreeVisualAssetDefinition("pirate-character-attack");
+		const dead = getThreeVisualAssetDefinition("pirate-character-dead");
+
+		expect(base).toMatchObject({
+			category: "character",
+			defaultHeightOffset: 0,
+			defaultRotationOffset: 180,
+			defaultScale: 0.75,
+			kind: "glb",
+			materialProfile: "standard",
+			receiveShadow: false,
+			tags: expect.arrayContaining(["base", "skinned"]),
+			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Character_output.glb",
+		});
+		expect(walk).toMatchObject({
+			category: "character",
+			defaultHeightOffset: 0,
+			defaultRotationOffset: 180,
+			defaultScale: 0.75,
+			kind: "glb",
+			materialProfile: "standard",
+			receiveShadow: false,
+			tags: expect.arrayContaining(["skinned", "walk"]),
+			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
+		});
+		expect(base?.animations).toEqual({
+			attack: {
+				assetId: "pirate-character-attack",
+				clipName: "Armature|Attack|baselayer",
+			},
+			defeated: {
+				assetId: "pirate-character-dead",
+				clipName: "Armature|Dead|baselayer",
+			},
+			walk: {
+				assetId: "pirate-character-walk",
+				clipName: "Armature|walking_man|baselayer",
+			},
+		});
+		expect(walk?.animations).toEqual(base?.animations);
+		expect(attack).toMatchObject({
+			animationOnly: true,
+			category: "character",
+			kind: "glb",
+			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Attack_withSkin.glb",
+		});
+		expect(dead).toMatchObject({
+			animationOnly: true,
+			category: "character",
+			kind: "glb",
+			url: "/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Dead_withSkin.glb",
+		});
 	});
 
 	it("looks up registered asset definitions by stable id", () => {

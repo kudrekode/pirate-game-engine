@@ -997,6 +997,7 @@ function migratePlayer(value: unknown): PlayerConfig {
 	const source = isRecord(value) ? value : {};
 	const fallback = defaultProject.player;
 	const combatSource = isRecord(source.combat) ? source.combat : {};
+	const threeVisual = migrateThreeVisualConfig(source.threeVisual);
 	const fallbackCombat = fallback.combat ?? {
 		maxHealth: 100,
 		health: 100,
@@ -1021,6 +1022,7 @@ function migratePlayer(value: unknown): PlayerConfig {
 			source.cutscenePortraitId ?? source.portraitId,
 			fallback.cutscenePortraitId,
 		),
+		...(threeVisual ? { threeVisual } : {}),
 		speed: readNumber(source.speed, fallback.speed, 1, 20),
 		health: readNumber(source.health, fallback.health, 1, 999),
 		combat: {
