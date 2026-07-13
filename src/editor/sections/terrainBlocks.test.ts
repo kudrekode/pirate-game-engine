@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { GameArea } from "../../types/game";
-import { terrainTilesToBlocks } from "./terrainBlocks";
+import {
+	terrainTilesToBlocks,
+	terrainTilesToSmoothMeshes,
+} from "./terrainBlocks";
 
 function makeArea(overrides: Partial<GameArea> = {}): GameArea {
 	return {
@@ -129,5 +132,254 @@ describe("terrainTilesToBlocks", () => {
 				}),
 			),
 		).toHaveLength(1);
+	});
+});
+
+describe("terrainTilesToSmoothMeshes", () => {
+	function everyNumberIsFinite(values: number[]): boolean {
+		return values.every((value) => Number.isFinite(value));
+	}
+
+	function getVertexHeights(vertices: number[]): number[] {
+		const heights: number[] = [];
+		for (let index = 1; index < vertices.length; index += 3) {
+			heights.push(vertices[index]);
+		}
+		return heights;
+	}
+
+	function getMaterialKeys(
+		meshes: ReturnType<typeof terrainTilesToSmoothMeshes>,
+	) {
+		return meshes.flatMap((mesh) =>
+			mesh.groups.map((group) => group.materialKey),
+		);
+	}
+
+	function getTriangleNormalY(vertices: number[], triangle: number[]): number {
+		const [aIndex, bIndex, cIndex] = triangle.map((index) => index * 3);
+		const ax = vertices[aIndex] ?? 0;
+		const az = vertices[aIndex + 2] ?? 0;
+		const abx = (vertices[bIndex] ?? 0) - ax;
+		const abz = (vertices[bIndex + 2] ?? 0) - az;
+		const acx = (vertices[cIndex] ?? 0) - ax;
+		const acz = (vertices[cIndex + 2] ?? 0) - az;
+		return abz * acx - abx * acz;
+	}
+
+	it("generates a flat smooth mesh from flat terrain", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 2,
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "grass" },
+					{ x: 0, y: 1, tileId: "grass" },
+					{ x: 1, y: 1, tileId: "grass" },
+				],
+				width: 2,
+			}),
+		);
+
+		expect(mesh).toMatchObject({
+			groups: [
+				expect.objectContaining({
+					count: 24,
+					materialKey: "grass",
+					start: 0,
+					tileCount: 4,
+				}),
+			],
+			surfaceKind: "land",
+			tileCount: 4,
+		});
+		expect(mesh.vertices).toHaveLength(27);
+		expect(mesh.normals).toHaveLength(27);
+		expect(mesh.indices).toHaveLength(24);
+		expect(new Set(getVertexHeights(mesh.vertices))).toEqual(new Set([1]));
+		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
+		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
+		expect(everyNumberIsFinite(mesh.indices)).toBe(true);
+	});
+
+	it("shares adjacent land cell boundary vertices", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 1,
+				terrainHeights: [{ height: 2, x: 1, y: 0 }],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "grass" },
+				],
+				width: 2,
+			}),
+		);
+		const boundaryVertices: Array<{ x: number; y: number; z: number }> = [];
+		for (let index = 0; index < mesh.vertices.length; index += 3) {
+			const x = mesh.vertices[index] ?? 0;
+			if (Math.abs(x) < 0.001) {
+				boundaryVertices.push({
+					x,
+					y: mesh.vertices[index + 1] ?? 0,
+					z: mesh.vertices[index + 2] ?? 0,
+				});
+			}
+		}
+
+		expect(mesh.vertices).toHaveLength(18);
+		expect(boundaryVertices).toHaveLength(2);
+		expect(new Set(boundaryVertices.map((vertex) => vertex.y))).toEqual(
+			new Set([2]),
+		);
+	});
+
+	it("orders smooth terrain triangles to face upward for front-side materials", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 1,
+				terrainTiles: [{ x: 0, y: 0, tileId: "grass" }],
+				width: 1,
+			}),
+		);
+
+		const triangleNormalYValues: number[] = [];
+		for (let index = 0; index < mesh.indices.length; index += 3) {
+			triangleNormalYValues.push(
+				getTriangleNormalY(mesh.vertices, mesh.indices.slice(index, index + 3)),
+			);
+		}
+
+		expect(triangleNormalYValues).toHaveLength(2);
+		expect(triangleNormalYValues.every((normalY) => normalY > 0)).toBe(true);
+	});
+
+	it("derives varied smooth mesh corner heights from neighboring cells", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 3,
+				terrainHeights: [{ x: 1, y: 1, height: 4 }],
+				terrainTiles: Array.from({ length: 3 }).flatMap((_, y) =>
+					Array.from({ length: 3 }).map((__, x) => ({
+						tileId: "grass",
+						x,
+						y,
+					})),
+				),
+				width: 3,
+			}),
+		);
+		const heights = getVertexHeights(mesh.vertices);
+
+		expect(Math.max(...heights)).toBe(2);
+		expect(heights).toContain(2);
+		expect(heights).toContain(1);
+		expect(heights).not.toContain(5);
+		expect(
+			mesh.normals.some((value, index) => index % 3 !== 1 && value !== 0),
+		).toBe(true);
+		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
+		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
+	});
+
+	it("handles map edges, missing tile data, and invalid heights safely", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 2,
+				terrainHeights: [{ x: 1, y: 1, height: Number.NaN }],
+				terrainTiles: [
+					{ x: -1, y: 0, tileId: "grass" },
+					{ x: 1, y: 1, tileId: "sand" },
+				],
+				width: 2,
+			}),
+		);
+
+		expect(mesh.groups.map((group) => group.materialKey)).toEqual(["sand"]);
+		expect(mesh.tileCount).toBe(1);
+		expect(new Set(getVertexHeights(mesh.vertices))).toEqual(new Set([1]));
+		expect(everyNumberIsFinite(mesh.vertices)).toBe(true);
+		expect(everyNumberIsFinite(mesh.normals)).toBe(true);
+		expect(everyNumberIsFinite(mesh.indices)).toBe(true);
+	});
+
+	it("groups smooth terrain by readable material category", () => {
+		const meshes = terrainTilesToSmoothMeshes(
+			makeArea({
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "sand" },
+					{ x: 2, y: 0, tileId: "water" },
+					{ x: 3, y: 0, tileId: "mystery" },
+				],
+			}),
+		);
+
+		expect(getMaterialKeys(meshes)).toEqual([
+			"grass",
+			"sand",
+			"default",
+			"water",
+		]);
+		expect(meshes.map((mesh) => mesh.surfaceKind)).toEqual(["land", "water"]);
+		expect(meshes[0]?.groups).toEqual([
+			expect.objectContaining({ count: 6, materialKey: "grass", start: 0 }),
+			expect.objectContaining({ count: 6, materialKey: "sand", start: 6 }),
+			expect.objectContaining({ count: 6, materialKey: "default", start: 12 }),
+		]);
+		expect(meshes[1]?.groups).toEqual([
+			expect.objectContaining({ count: 6, materialKey: "water", start: 0 }),
+		]);
+		expect(
+			meshes.find((mesh) => mesh.surfaceKind === "water")?.vertices,
+		).toContain(0.18);
+	});
+
+	it("keeps smooth water tiles flat while neighboring land can slope toward water", () => {
+		const meshes = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 1,
+				terrainHeights: [{ height: 4, x: 0, y: 0 }],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "water" },
+				],
+				width: 2,
+			}),
+		);
+		const grassHeights = getVertexHeights(
+			meshes.find((mesh) => mesh.materialKey === "grass")?.vertices ?? [],
+		);
+		const waterHeights = getVertexHeights(
+			meshes.find((mesh) => mesh.materialKey === "water")?.vertices ?? [],
+		);
+
+		expect(Math.max(...grassHeights)).toBeGreaterThan(
+			Math.min(...grassHeights),
+		);
+		expect(new Set(waterHeights)).toEqual(new Set([0.18]));
+	});
+
+	it("omits internal vertical wall faces from smooth mode", () => {
+		const [mesh] = terrainTilesToSmoothMeshes(
+			makeArea({
+				height: 1,
+				terrainHeights: [{ height: 3, x: 1, y: 0 }],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "grass" },
+					{ x: 1, y: 0, tileId: "grass" },
+				],
+				width: 2,
+			}),
+		);
+
+		expect(mesh.tileCount).toBe(2);
+		expect(mesh.indices).toHaveLength(12);
+		expect(mesh.indices.length / 3).toBe(mesh.tileCount * 2);
+		expect(mesh.groups[0]?.count).toBe(12);
+	});
+
+	it("returns no smooth meshes for empty or missing terrain", () => {
+		expect(terrainTilesToSmoothMeshes(undefined)).toEqual([]);
+		expect(terrainTilesToSmoothMeshes(makeArea())).toEqual([]);
 	});
 });

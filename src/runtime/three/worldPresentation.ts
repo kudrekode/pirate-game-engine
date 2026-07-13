@@ -62,20 +62,124 @@ export type WorldMaterialOptions = {
 	selected?: boolean;
 };
 
-export type WorldSceneOptions = {
-	background?: number;
-	fog?: boolean;
-	fogFar?: number;
-	fogNear?: number;
+export type AtmospherePresetId = "clear-day" | "golden-hour" | "overcast";
+
+export type AtmospherePreset = {
+	id: AtmospherePresetId;
+	label: string;
+	fog: {
+		far: number;
+		near: number;
+	};
+	lighting: {
+		ambientGroundColor: number;
+		ambientIntensity: number;
+		ambientSkyColor: number;
+		sunAzimuthDegrees: number;
+		sunColor: number;
+		sunElevationDegrees: number;
+		sunIntensity: number;
+	};
+	palette: {
+		fog: number;
+		horizon: number;
+		sky: number;
+	};
+	renderer: {
+		toneMappingExposure: number;
+	};
 };
 
-export type WorldLightingOptions = {
+export type ApplyAtmosphereOptions = {
 	enableShadows?: boolean;
-	sunIntensity?: number;
+	fog?: boolean;
+	preset?: AtmospherePresetId | string;
 };
 
-export const DEFAULT_WORLD_BACKGROUND = 0xbdd7ed;
-const DEFAULT_WORLD_FOG = 0xc7d9ea;
+export type AppliedAtmosphere = {
+	dispose: () => void;
+	lights: {
+		ambient: THREE.HemisphereLight;
+		sun: THREE.DirectionalLight;
+	};
+	preset: AtmospherePreset;
+	sky: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+};
+
+export const DEFAULT_ATMOSPHERE_PRESET_ID: AtmospherePresetId = "clear-day";
+
+export const ATMOSPHERE_PRESETS: Record<AtmospherePresetId, AtmospherePreset> =
+	{
+		"clear-day": {
+			fog: { far: 58, near: 16 },
+			id: "clear-day",
+			label: "Clear Day",
+			lighting: {
+				ambientGroundColor: 0x53654d,
+				ambientIntensity: 0.9,
+				ambientSkyColor: 0xd9eeff,
+				sunAzimuthDegrees: 38,
+				sunColor: 0xfff2d2,
+				sunElevationDegrees: 48,
+				sunIntensity: 1.35,
+			},
+			palette: {
+				fog: 0xb9d6e8,
+				horizon: 0xb9d6e8,
+				sky: 0x4f8fc8,
+			},
+			renderer: { toneMappingExposure: 1.05 },
+		},
+		"golden-hour": {
+			fog: { far: 52, near: 14 },
+			id: "golden-hour",
+			label: "Golden Hour",
+			lighting: {
+				ambientGroundColor: 0x55463d,
+				ambientIntensity: 0.76,
+				ambientSkyColor: 0xf5c9aa,
+				sunAzimuthDegrees: 24,
+				sunColor: 0xffc97f,
+				sunElevationDegrees: 18,
+				sunIntensity: 1.45,
+			},
+			palette: {
+				fog: 0xe6b991,
+				horizon: 0xe6b991,
+				sky: 0x5d78a6,
+			},
+			renderer: { toneMappingExposure: 1 },
+		},
+		overcast: {
+			fog: { far: 46, near: 12 },
+			id: "overcast",
+			label: "Overcast",
+			lighting: {
+				ambientGroundColor: 0x637064,
+				ambientIntensity: 1.05,
+				ambientSkyColor: 0xd7e0e4,
+				sunAzimuthDegrees: 42,
+				sunColor: 0xe9eef1,
+				sunElevationDegrees: 56,
+				sunIntensity: 0.82,
+			},
+			palette: {
+				fog: 0xc4d0d8,
+				horizon: 0xc4d0d8,
+				sky: 0x8294a7,
+			},
+			renderer: { toneMappingExposure: 0.96 },
+		},
+	};
+
+export function resolveAtmospherePreset(
+	presetId: AtmospherePresetId | string | undefined,
+): AtmospherePreset {
+	return (
+		ATMOSPHERE_PRESETS[presetId as AtmospherePresetId] ??
+		ATMOSPHERE_PRESETS[DEFAULT_ATMOSPHERE_PRESET_ID]
+	);
+}
 
 export function getWorldMaterialColor(key: WorldMaterialKey): number {
 	return (
@@ -143,55 +247,129 @@ export function createTerrainMaterial(
 	return createWorldMaterial(terrainBlockKindToMaterialKey(kind), options);
 }
 
-export function configureThreeWorldScene(
-	scene: THREE.Scene,
-	options: WorldSceneOptions = {},
-): void {
-	const background = options.background ?? DEFAULT_WORLD_BACKGROUND;
-	scene.background = new THREE.Color(background);
-	scene.fog =
-		options.fog === false
-			? null
-			: new THREE.Fog(
-					options.background ?? DEFAULT_WORLD_FOG,
-					options.fogNear ?? 18,
-					options.fogFar ?? 42,
-				);
+function createAtmosphereSky(
+	preset: AtmospherePreset,
+): THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial> {
+	const geometry = new THREE.SphereGeometry(280, 16, 8);
+	const material = new THREE.ShaderMaterial({
+		depthWrite: false,
+		fog: false,
+		fragmentShader: `
+			uniform vec3 horizonColor;
+			uniform vec3 skyColor;
+			varying vec3 vDirection;
+
+			void main() {
+				float skyBlend = smoothstep(-0.18, 0.38, normalize(vDirection).y);
+				gl_FragColor = vec4(mix(horizonColor, skyColor, skyBlend), 1.0);
+			}
+		`,
+		side: THREE.BackSide,
+		toneMapped: false,
+		uniforms: {
+			horizonColor: { value: new THREE.Color(preset.palette.horizon) },
+			skyColor: { value: new THREE.Color(preset.palette.sky) },
+		},
+		vertexShader: `
+			varying vec3 vDirection;
+
+			void main() {
+				vDirection = (modelMatrix * vec4(position, 0.0)).xyz;
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+			}
+		`,
+	});
+	const sky = new THREE.Mesh(geometry, material);
+	sky.frustumCulled = false;
+	sky.renderOrder = -1;
+	sky.userData.atmosphereSky = true;
+	return sky;
 }
 
-export function addThreeWorldLighting(
-	scene: THREE.Scene,
-	options: WorldLightingOptions = {},
-): THREE.Light[] {
-	const hemi = new THREE.HemisphereLight(0xddeeff, 0x4f5f3d, 0.82);
-	const sun = new THREE.DirectionalLight(
-		0xfff3d0,
-		options.sunIntensity ?? 1.25,
+function getSunPosition(
+	azimuthDegrees: number,
+	elevationDegrees: number,
+): THREE.Vector3 {
+	const azimuth = THREE.MathUtils.degToRad(azimuthDegrees);
+	const elevation = THREE.MathUtils.degToRad(elevationDegrees);
+	const distance = 80;
+	const horizontalDistance = Math.cos(elevation) * distance;
+	return new THREE.Vector3(
+		Math.sin(azimuth) * horizontalDistance,
+		Math.sin(elevation) * distance,
+		Math.cos(azimuth) * horizontalDistance,
 	);
-	sun.position.set(5, 9, 6);
-	sun.castShadow = options.enableShadows ?? false;
-	if (sun.castShadow) {
-		sun.shadow.mapSize.width = 1024;
-		sun.shadow.mapSize.height = 1024;
-		sun.shadow.camera.near = 0.5;
-		sun.shadow.camera.far = 48;
-	}
-	scene.add(hemi, sun);
-	return [hemi, sun];
 }
 
-export function configureThreeRenderer(
+function configureAtmosphereRenderer(
 	renderer: THREE.WebGLRenderer,
-	options: { enableShadows?: boolean } = {},
+	preset: AtmospherePreset,
+	enableShadows: boolean,
 ): void {
 	renderer.outputColorSpace = THREE.SRGBColorSpace;
 	renderer.toneMapping = THREE.ACESFilmicToneMapping;
-	renderer.toneMappingExposure = 1;
-	renderer.setClearColor(DEFAULT_WORLD_BACKGROUND, 1);
-	renderer.shadowMap.enabled = options.enableShadows ?? false;
-	if (renderer.shadowMap.enabled) {
-		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+	renderer.toneMappingExposure = preset.renderer.toneMappingExposure;
+	renderer.setClearColor(preset.palette.horizon, 1);
+	renderer.shadowMap.enabled = enableShadows;
+	if (enableShadows) {
+		renderer.shadowMap.type = THREE.PCFShadowMap;
 	}
+}
+
+export function applyAtmosphere(
+	scene: THREE.Scene,
+	renderer: THREE.WebGLRenderer,
+	options: ApplyAtmosphereOptions = {},
+): AppliedAtmosphere {
+	const preset = resolveAtmospherePreset(options.preset);
+	const enableShadows = options.enableShadows ?? false;
+	scene.background = new THREE.Color(preset.palette.horizon);
+	scene.fog =
+		options.fog === false
+			? null
+			: new THREE.Fog(preset.palette.fog, preset.fog.near, preset.fog.far);
+
+	const sky = createAtmosphereSky(preset);
+	const ambient = new THREE.HemisphereLight(
+		preset.lighting.ambientSkyColor,
+		preset.lighting.ambientGroundColor,
+		preset.lighting.ambientIntensity,
+	);
+	const sun = new THREE.DirectionalLight(
+		preset.lighting.sunColor,
+		preset.lighting.sunIntensity,
+	);
+	sun.position.copy(
+		getSunPosition(
+			preset.lighting.sunAzimuthDegrees,
+			preset.lighting.sunElevationDegrees,
+		),
+	);
+	sun.castShadow = enableShadows;
+	if (enableShadows) {
+		sun.shadow.mapSize.set(1024, 1024);
+		sun.shadow.camera.bottom = -20;
+		sun.shadow.camera.far = 96;
+		sun.shadow.camera.left = -20;
+		sun.shadow.camera.near = 0.5;
+		sun.shadow.camera.right = 20;
+		sun.shadow.camera.top = 20;
+		sun.shadow.normalBias = 0.02;
+		sun.shadow.radius = 2;
+	}
+	scene.add(sky, ambient, sun);
+	configureAtmosphereRenderer(renderer, preset, enableShadows);
+
+	return {
+		dispose: () => {
+			scene.remove(sky, ambient, sun);
+			sky.geometry.dispose();
+			sky.material.dispose();
+		},
+		lights: { ambient, sun },
+		preset,
+		sky,
+	};
 }
 
 export function applyShadowRole(

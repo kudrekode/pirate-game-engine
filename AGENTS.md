@@ -4,13 +4,21 @@
 
 Read this file first, then identify the likely files before opening broader repo context. Prefer minimal diffs and avoid scanning unrelated files.
 
+- Read the relevant docs before coding. Start with `README.md`, `ROADMAP.md`, `docs/RUNTIME_ARCHITECTURE.md`, `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`, or `docs/PLAYWRIGHT_SMOKE.md` when the task touches those systems.
 - Run `npm run ci` before the final response.
+- Run `git diff --check` before the final response.
 - Preserve migration compatibility for old saved/imported projects.
 - Keep runtime state separate from editor defaults in `GameProject`.
+- Preserve the `GameProject`/`RuntimeSession` boundary. `GameProject` stores authored defaults; `RuntimeSession` owns play-session state.
+- Do not duplicate gameplay semantics in Phaser or Three.js adapters. Shared runtime helpers remain the renderer-independent source of movement, interaction, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, vehicles, and progression.
+- Three.js presentation helpers may import/use Three.js. Shared gameplay/runtime helpers must not depend on Three.js, Phaser, React, or editor store state.
 - Add or update tests for engine logic changes.
 - Prefer focused helper tests over browser-heavy tests.
 - Do not redesign architecture unless the prompt explicitly asks for it.
 - Check `ROADMAP.md` before adding future-facing TODOs or major systems.
+- Use `docs/PLAYWRIGHT_SMOKE.md` and `npm run test:e2e:three-perf` for browser/performance work. Do not guess at performance fixes without artifacts from the diagnostics or Playwright harness.
+- For 3D visual work, use the existing visual resolver, built-in asset registry, GLTF loader/cache/clone path, and `createThreeVisualMarkerGroup` renderer.
+- GLTF/GLB assets are presentation-only. Store asset ids and transform defaults in authored config; do not store live Three.js objects in `GameProject`, `RuntimeSession`, or persisted project data.
 
 ## Common Files By Task
 
@@ -21,6 +29,9 @@ Read this file first, then identify the likely files before opening broader repo
 - NPCs, enemy NPCs, and combat: `src/editor/sections/NpcsEditor.tsx`, `src/editor/sections/MapEditor.tsx`, `src/runtime/npcMovement.ts`, `src/runtime/combat.ts`, `src/runtime/AdventureScene.ts`, `src/runtime/RuntimePanel.tsx`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/runtime/combat.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
 - Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
 - Runtime and Phaser: `src/runtime/AdventureScene.ts`, `src/runtime/PhaserGame.tsx`, `src/runtime/movement.ts`, `src/runtime/movement.test.ts`.
+- Three.js runtime and presentation: `src/runtime/three/ThreeRuntimePanel.tsx`, `src/editor/sections/ThreeDPreview.tsx`, `src/runtime/three/threeVisuals.ts`, `src/runtime/three/threeVisualAssetRegistry.ts`, `src/runtime/three/threeVisualAssetLoader.ts`, `src/runtime/three/threeVisualRenderer.ts`, `src/runtime/three/cameraControls.ts`, `src/runtime/three/visualSmoothing.ts`, `src/runtime/three/waterPresentation.ts`, `src/runtime/three/threePerformanceDiagnostics.ts`.
+- 3D visual controls and terrain tools: `src/editor/sections/ThreeVisualControls.tsx`, `src/editor/sections/terrainBrush.ts`, `src/editor/sections/terrainBlocks.ts`, `src/runtime/three/terrainMeshGeometry.ts`.
+- Playwright Three perf smoke: `e2e/three-perf-smoke.spec.ts`, `docs/PLAYWRIGHT_SMOKE.md`, `test-results/perf/*`.
 - Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
 - Editor tabs: `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`.
 - Smoke tests and helpers: `src/test/editorSmoke.test.tsx`, `src/test/testUtils.tsx` if present.
@@ -37,6 +48,11 @@ Read this file first, then identify the likely files before opening broader repo
 - Game State: Flags, variables, and optional default inventory are editor defaults copied into runtime memory.
 - Movement: Grid movement resolves terrain, overlays, structures, objects, NPCs, and vehicle context through `src/runtime/movement.ts`.
 - Vehicles placeholder: Boats have V1 runtime boarding, sailing, and dismounting. Horses/carts and advanced steering remain future work.
+- Three visuals: Object and NPC definitions can author 3D placeholder or asset presentation through `threeVisual`. Runtime/editor rendering resolves those settings through the shared visual resolver and registry-backed asset renderer.
+- Imported assets: Built-in GLB/GLTF registry entries currently include Demo Box and pirate demo assets. The loader caches source scenes and renderer code clones per active instance with placeholder fallback while loading or on failure.
+- Three cameras: The 3D editor uses orbit/pan/zoom controls. The experimental Three runtime supports follow, inspect, fixed-isometric, third-person follow, camera-relative WASD, and third-person mouse look while keeping movement grid-authoritative.
+- Three terrain presentation: 3D terrain supports blocky and smooth rendering, editor terrain paint/sculpt brush workflows, and V1 water/coastline presentation. Terrain height, water, and coastline visuals are presentation-only until movement helpers explicitly become height/water-depth aware.
+- Diagnostics: The Three performance overlay and Playwright smoke harness capture scene identity, imported asset status, RAF interval, render timing, rebuilds, terrain/water/coast counts, screenshots, console output, and network failures.
 - Runtime UI: React overlays and Phaser UI layers stay camera-independent for inventory, quests, combat health, debug text, prompts, and cutscenes.
 
 ## Prompting Guidance
@@ -126,6 +142,8 @@ Runtime helpers are the source of gameplay semantics. Do not duplicate movement,
 `src/runtime/AdventureScene.ts` is the Phaser adapter. It should translate Phaser input, tweens, cameras, rendering, and UI/cutscene/dialogue presentation into calls to shared runtime helpers.
 
 `src/runtime/three/ThreeRuntimePanel.tsx` is the experimental Three.js adapter. It must not import editor store/live editor state for gameplay. It may reuse rendering helpers, but runtime decisions must come from `RuntimeSession` and shared runtime helpers.
+
+Three.js-specific helpers under `src/runtime/three/` may own rendering, materials, GLTF loading, asset cloning, camera math, visual smoothing, terrain mesh generation, water/coast presentation, and diagnostics. They must not become gameplay engines. Keep gameplay decisions in shared runtime helpers and keep imported Three objects out of runtime state.
 
 Phaser remains the reference runtime until runtime contract tests and manual parity checks prove that the Three.js adapter matches Phaser gameplay semantics.
 

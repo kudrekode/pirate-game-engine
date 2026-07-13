@@ -10,7 +10,6 @@ import {
 	type RuntimeProgressionEvent,
 	transitionRuntimeArea,
 } from "./runtimeProgression";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import progressionSource from "./runtimeProgression.ts?raw";
 import { createRuntimeSession } from "./runtimeSession";
 

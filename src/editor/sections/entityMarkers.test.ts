@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { GameArea, ObjectDefinition } from "../../types/game";
+import type {
+	GameArea,
+	NPCDefinition,
+	ObjectDefinition,
+} from "../../types/game";
 import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
 	HIDE_ALL_OVERLAY_FILTERS,
@@ -158,6 +162,93 @@ describe("areaEntitiesToMarkers", () => {
 				opacity: 0.72,
 			},
 		]);
+	});
+
+	it("uses authored definition visuals and resolved NPC data for markers", () => {
+		const authoredObjects: ObjectDefinition[] = [
+			...objectDefinitions,
+			{
+				blocksMovement: true,
+				category: "misc",
+				heightTiles: 1,
+				id: "statue",
+				name: "Statue",
+				threeVisual: {
+					heightOffset: 0.25,
+					placeholderType: "rock",
+					rotationOffset: 45,
+					scale: 1.5,
+				},
+				widthTiles: 1,
+			},
+		];
+		const npcDefinitions: NPCDefinition[] = [
+			{
+				defaultAttributes: {
+					alignment: "hostile",
+					canInteract: true,
+					faction: "pirates",
+					health: 20,
+					maxHealth: 20,
+					movementSpeed: 1,
+				},
+				id: "raider",
+				mapAvatarId: "scout",
+				name: "Raider",
+			},
+		];
+		const markers = areaEntitiesToMarkers(
+			makeArea({
+				npcs: [
+					{
+						areaId: "area",
+						attributes: {
+							alignment: "friendly",
+							canInteract: true,
+							faction: "villagers",
+							health: 10,
+							maxHealth: 10,
+						},
+						blocksMovement: true,
+						id: "raider-1",
+						movementMode: "stationary",
+						npcDefinitionId: "raider",
+						x: 2,
+						y: 1,
+					},
+				],
+				objects: [
+					{
+						areaId: "area",
+						id: "statue-1",
+						objectDefinitionId: "statue",
+						x: 1,
+						y: 1,
+					},
+				],
+			}),
+			authoredObjects,
+			npcDefinitions,
+			false,
+		);
+
+		expect(markers.find((marker) => marker.id === "statue-1")).toMatchObject({
+			visual: {
+				heightOffset: 0.25,
+				placeholderType: "rock",
+				rotationOffset: 45,
+				scale: 1.5,
+				source: "authored",
+			},
+			visualType: "rock",
+		});
+		expect(markers.find((marker) => marker.id === "raider-1")).toMatchObject({
+			visual: {
+				placeholderType: "hostileNpc",
+				source: "inferred",
+			},
+			visualType: "hostileNpc",
+		});
 	});
 
 	it("filters hidden entity markers", () => {

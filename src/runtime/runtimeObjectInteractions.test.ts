@@ -16,7 +16,6 @@ import {
 	type RuntimeObjectInteractionEvent,
 	runRuntimeObjectBehaviour,
 } from "./runtimeObjectInteractions";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import objectInteractionSource from "./runtimeObjectInteractions.ts?raw";
 import { createRuntimeSession } from "./runtimeSession";
 

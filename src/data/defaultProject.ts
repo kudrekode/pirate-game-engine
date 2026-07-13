@@ -1,4 +1,9 @@
-import type { GameArea, GameProject, MapTile } from "../types/game";
+import type {
+	GameArea,
+	GameProject,
+	MapTile,
+	TerrainHeightTile,
+} from "../types/game";
 import { createDefaultPixelAssets, defaultTileStyles } from "./mapVisuals";
 import { defaultCameraConfig } from "./projectDefaults";
 
@@ -28,6 +33,45 @@ function makeOutdoorTiles(width: number, height: number): MapTile[] {
 	return tiles;
 }
 
+function makeOutdoorTerrainHeights(): TerrainHeightTile[] {
+	const heights = new Map<string, TerrainHeightTile>();
+	const setHeight = (x: number, y: number, height: number) => {
+		if (height === 0) {
+			return;
+		}
+		heights.set(`${x}:${y}`, { height, x, y });
+	};
+
+	for (let y = 2; y <= 6; y += 1) {
+		for (let x = 5; x <= 12; x += 1) {
+			setHeight(x, y, 1);
+		}
+	}
+	for (let y = 3; y <= 5; y += 1) {
+		for (let x = 7; x <= 10; x += 1) {
+			setHeight(x, y, 2);
+		}
+	}
+	setHeight(8, 4, 3);
+	setHeight(9, 4, 3);
+
+	for (let x = 3; x <= 16; x += 1) {
+		setHeight(x, 6, -1);
+		setHeight(x, 7, -1);
+		setHeight(x, 8, -1);
+	}
+
+	for (let y = 9; y <= 13; y += 1) {
+		for (let x = 13; x <= 17; x += 1) {
+			setHeight(x, y, 1);
+		}
+	}
+	setHeight(15, 11, 2);
+	setHeight(16, 11, 2);
+
+	return Array.from(heights.values()).sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
 function makeIndoorTiles(width: number, height: number): MapTile[] {
 	const tiles: MapTile[] = [];
 
@@ -49,6 +93,7 @@ const mainArea: GameArea = {
 	height: 15,
 	tileSize: 32,
 	terrainTiles: makeOutdoorTiles(20, 15),
+	terrainHeights: makeOutdoorTerrainHeights(),
 	overlayTiles: [
 		{ x: 2, y: 3, overlayId: "dirt_path" },
 		{ x: 3, y: 3, overlayId: "dirt_path" },
@@ -109,6 +154,102 @@ const mainArea: GameArea = {
 			y: 7,
 			widthTiles: 1,
 			heightTiles: 1,
+			blocksMovement: false,
+		},
+		{
+			id: "object_palm_northwest",
+			objectDefinitionId: "object_pirate_palm",
+			areaId: "area_main",
+			x: 0,
+			y: 1,
+			blocksMovement: true,
+		},
+		{
+			id: "object_palm_northeast",
+			objectDefinitionId: "object_pirate_palm",
+			areaId: "area_main",
+			x: 18,
+			y: 2,
+			blocksMovement: true,
+		},
+		{
+			id: "object_palm_southwest",
+			objectDefinitionId: "object_pirate_palm",
+			areaId: "area_main",
+			x: 1,
+			y: 12,
+			blocksMovement: true,
+		},
+		{
+			id: "object_palm_southeast",
+			objectDefinitionId: "object_pirate_palm",
+			areaId: "area_main",
+			x: 18,
+			y: 13,
+			blocksMovement: true,
+		},
+		{
+			id: "object_rocks_west_shore",
+			objectDefinitionId: "object_pirate_rocks",
+			areaId: "area_main",
+			x: 1,
+			y: 8,
+			blocksMovement: true,
+		},
+		{
+			id: "object_rocks_east_shore",
+			objectDefinitionId: "object_pirate_rocks",
+			areaId: "area_main",
+			x: 17,
+			y: 12,
+			blocksMovement: true,
+		},
+		{
+			id: "object_market_crate",
+			objectDefinitionId: "object_pirate_crate",
+			areaId: "area_main",
+			x: 6,
+			y: 1,
+			blocksMovement: false,
+		},
+		{
+			id: "object_tavern_crate",
+			objectDefinitionId: "object_pirate_crate",
+			areaId: "area_main",
+			x: 6,
+			y: 12,
+			blocksMovement: false,
+		},
+		{
+			id: "object_dock_crate",
+			objectDefinitionId: "object_pirate_crate",
+			areaId: "area_main",
+			x: 13,
+			y: 6,
+			blocksMovement: false,
+		},
+		{
+			id: "object_dock_pier",
+			objectDefinitionId: "object_pirate_dock",
+			areaId: "area_main",
+			x: 14,
+			y: 6,
+			blocksMovement: false,
+		},
+		{
+			id: "object_captain_flag",
+			objectDefinitionId: "object_pirate_flag",
+			areaId: "area_main",
+			x: 1,
+			y: 5,
+			blocksMovement: false,
+		},
+		{
+			id: "object_dock_flag",
+			objectDefinitionId: "object_pirate_flag",
+			areaId: "area_main",
+			x: 12,
+			y: 6,
 			blocksMovement: false,
 		},
 	],
@@ -373,6 +514,11 @@ export const defaultProject: GameProject = {
 		name: "Ari",
 		mapAvatarId: "scout",
 		cutscenePortraitId: "portrait_scout",
+		threeVisual: {
+			assetId: "pirate-character-walk",
+			mode: "asset",
+			placeholderType: "player",
+		},
 		speed: 6,
 		health: 100,
 		combat: {
@@ -607,6 +753,11 @@ export const defaultProject: GameProject = {
 				movementSpeed: 1,
 			},
 			defaultMovement: { movementMode: "stationary", movementSpeed: 1 },
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				placeholderType: "npc",
+			},
 		},
 		{
 			id: "npc_village_guard",
@@ -695,6 +846,11 @@ export const defaultProject: GameProject = {
 				returnToOrigin: true,
 				contactDamage: 10,
 			},
+			threeVisual: {
+				assetId: "pirate-character-walk",
+				mode: "asset",
+				placeholderType: "hostileNpc",
+			},
 		},
 	],
 	objects: [
@@ -725,6 +881,11 @@ export const defaultProject: GameProject = {
 				once: true,
 				openedFlag: "demo_chest_opened",
 			},
+			threeVisual: {
+				assetId: "pirate-chest",
+				mode: "asset",
+				placeholderType: "chest",
+			},
 		},
 		{
 			id: "object_dock_marker",
@@ -741,6 +902,83 @@ export const defaultProject: GameProject = {
 				allowedTerrainIds: ["water"],
 				dismountAllowedTerrainIds: ["grass", "dirt", "sand", "stone"],
 				speedMultiplier: 1,
+			},
+			threeVisual: {
+				assetId: "pirate-small-ship",
+				mode: "asset",
+				placeholderType: "boat",
+			},
+		},
+		{
+			id: "object_pirate_palm",
+			name: "Palm Tree",
+			description: "A tall coastal palm used to frame the island edge.",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: true,
+			threeVisual: {
+				assetId: "pirate-palm",
+				mode: "asset",
+				placeholderType: "tree",
+			},
+		},
+		{
+			id: "object_pirate_rocks",
+			name: "Rock Cluster",
+			description: "A coastal rock cluster that marks the island edge.",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: true,
+			threeVisual: {
+				assetId: "pirate-rocks",
+				mode: "asset",
+				placeholderType: "rock",
+			},
+		},
+		{
+			id: "object_pirate_crate",
+			name: "Supply Crate",
+			description:
+				"A non-blocking decorative crate for market and dock dressing.",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+			threeVisual: {
+				assetId: "pirate-crate",
+				mode: "asset",
+				placeholderType: "genericObject",
+			},
+		},
+		{
+			id: "object_pirate_dock",
+			name: "Dock Pier",
+			description:
+				"A non-blocking dock segment that keeps the boat approach clear.",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+			threeVisual: {
+				assetId: "pirate-dock",
+				mode: "asset",
+				placeholderType: "genericObject",
+			},
+		},
+		{
+			id: "object_pirate_flag",
+			name: "Pirate Flag",
+			description: "A non-blocking landmark for the captain and dock areas.",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+			threeVisual: {
+				assetId: "pirate-flag",
+				mode: "asset",
+				placeholderType: "sign",
 			},
 		},
 	],

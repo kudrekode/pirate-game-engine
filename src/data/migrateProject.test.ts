@@ -144,6 +144,7 @@ describe("migrateProject", () => {
 			attackRangeTiles: 1,
 			attackCooldownMs: 500,
 		});
+		expect(project.player.threeVisual).toBeUndefined();
 		expect(project.ruleGroups).toEqual([]);
 		expect(project.rules).toEqual([]);
 		expect(project.items).toEqual([]);
@@ -151,6 +152,34 @@ describe("migrateProject", () => {
 		expect(project.quests).toEqual([]);
 		expect(project.npcs).toEqual([]);
 		expect(project.objects).toEqual([]);
+	});
+
+	it("preserves optional player Three visual config without changing Phaser fields", () => {
+		const project = migrateProject({
+			player: {
+				cutscenePortraitId: "portrait_scout",
+				mapAvatarId: "scout",
+				threeVisual: {
+					assetId: "future_player_model",
+					heightOffset: 0.4,
+					mode: "asset",
+					placeholderType: "player",
+					rotationOffset: -90,
+					scale: 1.2,
+				},
+			},
+		});
+
+		expect(project.player.mapAvatarId).toBe("scout");
+		expect(project.player.cutscenePortraitId).toBe("portrait_scout");
+		expect(project.player.threeVisual).toEqual({
+			assetId: "future_player_model",
+			heightOffset: 0.4,
+			mode: "asset",
+			placeholderType: "player",
+			rotationOffset: -90,
+			scale: 1.2,
+		});
 	});
 
 	it("migrates Three runtime camera settings without affecting Phaser camera fields", () => {
@@ -379,6 +408,53 @@ describe("migrateProject", () => {
 			widthTiles: 1,
 			heightTiles: 1,
 			state: { read: false },
+		});
+	});
+
+	it("migrates optional 3D visual config on object and NPC definitions", () => {
+		const project = migrateProject({
+			npcs: [
+				{
+					id: "captain",
+					mapAvatarId: "ranger",
+					name: "Captain",
+					threeVisual: {
+						heightOffset: Number.NaN,
+						mode: "placeholder",
+						placeholderType: "missing",
+						scale: "large",
+					},
+				},
+			],
+			objects: [
+				{
+					category: "vehicle",
+					heightTiles: 1,
+					id: "boat",
+					name: "Boat",
+					threeVisual: {
+						assetId: "demo_boat",
+						heightOffset: -99,
+						mode: "asset",
+						placeholderType: "boat",
+						rotationOffset: 999,
+						scale: 99,
+					},
+					widthTiles: 2,
+				},
+			],
+		});
+
+		expect(project.objects[0].threeVisual).toEqual({
+			assetId: "demo_boat",
+			heightOffset: -5,
+			mode: "asset",
+			placeholderType: "boat",
+			rotationOffset: 360,
+			scale: 5,
+		});
+		expect(project.npcs[0].threeVisual).toEqual({
+			mode: "placeholder",
 		});
 	});
 

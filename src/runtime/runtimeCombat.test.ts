@@ -8,7 +8,6 @@ import {
 	attemptRuntimeCombatAttack,
 	type RuntimeCombatEvent,
 } from "./runtimeCombat";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import combatSource from "./runtimeCombat.ts?raw";
 import {
 	createRuntimeSession,
