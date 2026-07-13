@@ -1,3 +1,32 @@
+export const THREE_PLACEHOLDER_VISUAL_TYPES = [
+	"tree",
+	"house",
+	"marketStall",
+	"boat",
+	"chest",
+	"sign",
+	"door",
+	"rock",
+	"pickup",
+	"player",
+	"npc",
+	"hostileNpc",
+	"genericObject",
+	"event",
+] as const;
+
+export type ThreePlaceholderVisualType =
+	(typeof THREE_PLACEHOLDER_VISUAL_TYPES)[number];
+
+export type ThreeVisualConfig = {
+	mode?: "placeholder" | "asset";
+	placeholderType?: ThreePlaceholderVisualType;
+	assetId?: string;
+	scale?: number;
+	heightOffset?: number;
+	rotationOffset?: number;
+};
+
 export type GameProject = {
 	metadata: ProjectMetadata;
 	areas: GameArea[];
@@ -170,6 +199,7 @@ export type ObjectDefinition = {
 	blocksMovement: boolean;
 	defaultInteraction?: Interaction;
 	defaultBehaviour?: ObjectBehaviour;
+	threeVisual?: ThreeVisualConfig;
 };
 
 export type ObjectBehaviour =
@@ -236,6 +266,7 @@ export type NPCDefinition = {
 	defaultMovement?: NPCMovementConfig;
 	defaultEnemyBehaviour?: EnemyBehaviour;
 	defaultInteraction?: Interaction;
+	threeVisual?: ThreeVisualConfig;
 };
 
 export type NPCMovementMode = "stationary" | "patrol" | "wander";
@@ -382,6 +413,7 @@ export type PlayerConfig = {
 	name: string;
 	mapAvatarId: string;
 	cutscenePortraitId: string;
+	threeVisual?: ThreeVisualConfig;
 	speed: number;
 	health: number;
 	combat?: PlayerCombatStats;

@@ -10,8 +10,13 @@ import type {
 } from "../../types/game";
 import { RuntimePanel } from "../RuntimePanel";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
+import {
+	clearThreeVisualAssetCacheForTests,
+	setThreeVisualAssetLoaderFactoryForTests,
+} from "./threeVisualAssetLoader";
+import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
@@ -121,12 +126,26 @@ vi.mock("three", () => {
 		dispose = vi.fn();
 	}
 
+	class BufferGeometry extends Disposable {
+		computeBoundingSphere = vi.fn();
+		setAttribute = vi.fn(() => this);
+		setIndex = vi.fn(() => this);
+	}
+
+	class Float32BufferAttribute {
+		constructor(
+			public values: number[],
+			public itemSize: number,
+		) {}
+	}
+
 	class Object3D {
 		children: Object3D[] = [];
 		castShadow = false;
 		position = { set: vi.fn() };
 		receiveShadow = false;
 		rotation = { y: 0 };
+		scale = { setScalar: vi.fn() };
 		userData: Record<string, unknown> = {};
 
 		add = vi.fn((...children: Object3D[]) => {
@@ -139,6 +158,12 @@ vi.mock("three", () => {
 				child.traverse(callback);
 			});
 		}
+
+		clone() {
+			const clone = new Object3D();
+			clone.children = [...this.children];
+			return clone;
+		}
 	}
 
 	class Mesh {
@@ -148,6 +173,7 @@ vi.mock("three", () => {
 		position = { set: vi.fn() };
 		receiveShadow = false;
 		rotation = { y: 0 };
+		scale = { setScalar: vi.fn() };
 		userData: Record<string, unknown> = {};
 
 		constructor(geometry: Disposable, material: Disposable | Disposable[]) {
@@ -163,23 +189,28 @@ vi.mock("three", () => {
 	return {
 		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
+		BackSide: "BackSide",
 		BoxGeometry: Disposable,
+		BufferGeometry,
 		ConeGeometry: Disposable,
 		Color: class {},
 		CylinderGeometry: Disposable,
 		DirectionalLight: class {
 			castShadow = false;
-			position = { set: vi.fn() };
+			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
 				camera: { far: 0, near: 0 },
-				mapSize: { height: 0, width: 0 },
+				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
 		},
 		Fog: class {},
+		Float32BufferAttribute,
 		Group: Object3D,
 		HemisphereLight: class {},
+		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		Mesh,
 		MeshStandardMaterial: Disposable,
+		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
 		PerspectiveCamera: class {
 			lookAt = vi.fn();
@@ -189,7 +220,9 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
+			remove = vi.fn();
 		},
+		ShaderMaterial: Disposable,
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
 			outputColorSpace: unknown;
@@ -207,6 +240,13 @@ vi.mock("three", () => {
 			}
 		},
 		SRGBColorSpace: "SRGBColorSpace",
+		Vector3: class {
+			constructor(
+				public x = 0,
+				public y = 0,
+				public z = 0,
+			) {}
+		},
 	};
 });
 
@@ -329,6 +369,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	clearThreeVisualAssetCacheForTests();
 	vi.restoreAllMocks();
 });
 
@@ -336,6 +377,17 @@ function runLatestAnimationFrame(): void {
 	const calls = vi.mocked(window.requestAnimationFrame).mock.calls;
 	const callback = calls[calls.length - 1]?.[0];
 	callback?.(performance.now());
+}
+
+function getRuntimeDiagnosticsSnapshot() {
+	const snapshot =
+		window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel");
+	if (!snapshot) {
+		throw new Error(
+			"ThreeRuntimePanel diagnostics snapshot was not registered.",
+		);
+	}
+	return snapshot;
 }
 
 describe("ThreeRuntimePanel", () => {
@@ -349,7 +401,114 @@ describe("ThreeRuntimePanel", () => {
 			"active",
 		);
 		expect(screen.getByRole("button", { name: "Inspect" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
+			"active",
+		);
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
+		expect(getRuntimeDiagnosticsSnapshot().raf).toMatchObject({
+			activeLoopCount: 1,
+			loopCancelCount: 0,
+			loopStartCount: 1,
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Blocky terrain" }));
+		expect(screen.getByRole("button", { name: "Blocky terrain" })).toHaveClass(
+			"active",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
+		expect(screen.getByRole("button", { name: "Smooth terrain" })).toHaveClass(
+			"active",
+		);
 		expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
+	});
+
+	it("requests imported asset rendering for assigned object visuals", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "object",
+				id: "demo_object",
+				kind: "glb",
+				name: "Demo Object",
+				url: "/assets/demo-object.glb",
+			},
+		]);
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const project = makeProject({
+			areas: [
+				makeArea({
+					objects: [makeObject({ id: "asset_object", x: 1, y: 1 })],
+				}),
+			],
+			objects: [
+				{
+					blocksMovement: false,
+					category: "misc",
+					heightTiles: 1,
+					id: "boat_def",
+					name: "Asset Object",
+					threeVisual: {
+						assetId: "demo_object",
+						mode: "asset",
+						placeholderType: "genericObject",
+					},
+					widthTiles: 1,
+				},
+			],
+		});
+
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+			await waitFor(() =>
+				expect(loadAsync).toHaveBeenCalledWith("/assets/demo-object.glb"),
+			);
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument();
+			expect(runtimeSpies.createRuntimeSession).toHaveBeenCalledTimes(1);
+		} finally {
+			restoreLoader();
+			restoreRegistry();
+		}
+	});
+
+	it("requests player character assets through the shared renderer path", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const restoreRegistry = setThreeVisualAssetRegistryForTests([
+			{
+				category: "character",
+				id: "demo_player",
+				kind: "glb",
+				name: "Demo Player",
+				url: "/assets/demo-player.glb",
+			},
+		]);
+		const loadAsync = vi.fn(() => new Promise<never>(() => undefined));
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		const project = makeProject();
+		project.player = {
+			...project.player,
+			threeVisual: { assetId: "demo_player", mode: "asset" },
+		};
+
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+			await waitFor(() =>
+				expect(loadAsync).toHaveBeenCalledWith("/assets/demo-player.glb"),
+			);
+			expect(threeRuntimeSource).toContain("resolveThreeCharacterVisual");
+			expect(threeRuntimeSource).toContain("createThreeVisualMarkerGroup(");
+			expect(threeRuntimeSource).not.toContain("GLTFLoader");
+		} finally {
+			restoreLoader();
+			restoreRegistry();
+		}
 	});
 
 	it("moves with the shared player movement transaction", async () => {
@@ -492,12 +651,97 @@ describe("ThreeRuntimePanel", () => {
 		);
 		const rendererCountAfterStartup =
 			threeSpies.WebGLRenderer.mock.calls.length;
+		const rafStartCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopStartCount;
+		const rafCancelCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopCancelCount;
 
 		fireEvent.keyDown(window, { key: "ArrowRight" });
 
 		await waitFor(() => {
 			expect(runtimeSpies.attemptPlayerMove).toHaveBeenCalledTimes(1);
 			expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+		});
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopStartCount).toBe(
+			rafStartCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopCancelCount).toBe(
+			rafCancelCountAfterStartup,
+		);
+	});
+
+	it("does not rebuild the Three scene for diagnostic-only asset events", async () => {
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={makeProject()} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		emitThreePerformanceDiagnosticsEvent({
+			definitionId: "cached_asset",
+			status: "cache_hit",
+		});
+
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
+			rendererCountAfterStartup,
+		);
+	});
+
+	it("does not rebuild the Three scene for non-visual object state changes", async () => {
+		const project = makeProject({
+			areas: [
+				makeArea({
+					objects: [
+						makeObject({ id: "chest", objectDefinitionId: "chest_def" }),
+					],
+				}),
+			],
+			items: [
+				{
+					category: "currency",
+					id: "gold_coin",
+					maxStack: 999,
+					name: "Gold Coin",
+					stackable: true,
+				},
+			],
+			objects: [
+				{
+					blocksMovement: true,
+					category: "container",
+					defaultBehaviour: {
+						contents: [{ itemId: "gold_coin", quantity: 1 }],
+						once: true,
+						type: "container",
+					},
+					heightTiles: 1,
+					id: "chest_def",
+					name: "Chest",
+					widthTiles: 1,
+				},
+			],
+		});
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+
+		await waitFor(() =>
+			expect(
+				screen.getByLabelText("Three runtime viewport"),
+			).toBeInTheDocument(),
+		);
+		const rendererCountAfterStartup =
+			threeSpies.WebGLRenderer.mock.calls.length;
+
+		fireEvent.keyDown(window, { key: "e" });
+
+		await waitFor(() => {
+			expect(runtimeSpies.runRuntimeObjectBehaviour).toHaveBeenCalledTimes(1);
 		});
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
@@ -596,6 +840,10 @@ describe("ThreeRuntimePanel", () => {
 		const canvas = screen.getByLabelText("Three runtime viewport");
 		const rendererCountAfterStartup =
 			threeSpies.WebGLRenderer.mock.calls.length;
+		const rafStartCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopStartCount;
+		const rafCancelCountAfterStartup =
+			getRuntimeDiagnosticsSnapshot().raf.loopCancelCount;
 
 		expect(screen.getByText("Camera - Third-person")).toBeInTheDocument();
 		expect(
@@ -613,6 +861,12 @@ describe("ThreeRuntimePanel", () => {
 		expect(JSON.stringify(project)).toBe(projectBefore);
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopStartCount).toBe(
+			rafStartCountAfterStartup,
+		);
+		expect(getRuntimeDiagnosticsSnapshot().raf.loopCancelCount).toBe(
+			rafCancelCountAfterStartup,
 		);
 	});
 
@@ -632,6 +886,15 @@ describe("ThreeRuntimePanel", () => {
 	it("does not import editor store state", () => {
 		expect(threeRuntimeSource).not.toContain("useProjectStore");
 		expect(threeRuntimeSource).not.toMatch(/from\s+["'][^"']*store/);
+		expect(threeRuntimeSource).toContain("createThreeVisualMarkerGroup");
+		expect(threeRuntimeSource).not.toContain("GLTFLoader");
+	});
+
+	it("coalesces asset-load rebuilds and preserves cached imported resources", () => {
+		expect(threeRuntimeSource).toContain("assetStateChangeQueued");
+		expect(threeRuntimeSource).toContain(
+			"disposeResources: !renderResult.usedAsset",
+		);
 	});
 
 	it("uses shared vehicle dismount instead of normal interaction while boarded", async () => {

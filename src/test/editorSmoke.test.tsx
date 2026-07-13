@@ -845,11 +845,52 @@ describe("editor smoke tests", () => {
 		expect(screen.getByText("pirates")).toBeInTheDocument();
 	});
 
+	it("updates NPC 3D visual config on the definition", () => {
+		render(<NpcsEditor />);
+		fireEvent.change(screen.getByLabelText("Visual source"), {
+			target: { value: "placeholder" },
+		});
+
+		fireEvent.change(screen.getByLabelText("Placeholder type"), {
+			target: { value: "hostileNpc" },
+		});
+		fireEvent.change(screen.getByLabelText("Scale"), {
+			target: { value: "1.4" },
+		});
+
+		expect(
+			useProjectStore.getState().project.npcs[0].threeVisual,
+		).toMatchObject({
+			mode: "placeholder",
+			placeholderType: "hostileNpc",
+			scale: 1.4,
+		});
+	});
+
 	it("renders Objects Editor", () => {
 		render(<ObjectsEditor />);
 
 		expect(screen.getByText("Object Definition")).toBeInTheDocument();
 		expect(screen.getByText("Default Behaviour")).toBeInTheDocument();
 		expect(screen.getAllByDisplayValue("Sign").length).toBeGreaterThan(0);
+	});
+
+	it("updates object 3D visual config on the definition", () => {
+		render(<ObjectsEditor />);
+
+		fireEvent.change(screen.getByLabelText("Placeholder type"), {
+			target: { value: "rock" },
+		});
+		fireEvent.change(screen.getByLabelText("Height offset"), {
+			target: { value: "0.5" },
+		});
+
+		expect(
+			useProjectStore.getState().project.objects[0].threeVisual,
+		).toMatchObject({
+			heightOffset: 0.5,
+			mode: "placeholder",
+			placeholderType: "rock",
+		});
 	});
 });

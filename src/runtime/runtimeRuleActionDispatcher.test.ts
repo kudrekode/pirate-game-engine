@@ -7,7 +7,6 @@ import {
 	createRuntimeRuleContext,
 	type RuntimeRuleEvent,
 } from "./runtimeRuleActionDispatcher";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import dispatcherSource from "./runtimeRuleActionDispatcher.ts?raw";
 import { createRuntimeSession } from "./runtimeSession";
 

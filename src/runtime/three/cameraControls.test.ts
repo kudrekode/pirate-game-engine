@@ -49,6 +49,19 @@ describe("Three orbit camera helpers", () => {
 		expect(low.pitch).toBe(bounds.minPitch);
 	});
 
+	it("changes orbit pitch on vertical drags within editor clamps", () => {
+		const bounds = getOrbitCameraBounds(dimensions);
+		const initial = createOrbitCameraState("isometric", dimensions);
+
+		const raised = rotateOrbitCamera(initial, 0, -80, bounds);
+		const lowered = rotateOrbitCamera(initial, 0, 80, bounds);
+
+		expect(raised.pitch).toBeGreaterThan(initial.pitch);
+		expect(lowered.pitch).toBeLessThan(initial.pitch);
+		expect((bounds.minPitch * 180) / Math.PI).toBeLessThan(5);
+		expect((bounds.maxPitch * 180) / Math.PI).toBeGreaterThan(85);
+	});
+
 	it("clamps zoom distance", () => {
 		const bounds = getOrbitCameraBounds(dimensions);
 		const initial = createOrbitCameraState("isometric", dimensions);

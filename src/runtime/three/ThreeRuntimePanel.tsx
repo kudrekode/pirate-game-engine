@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { getTerrainSurfaceY } from "../../data/terrainHeight";
-import { areaEntitiesToMarkers } from "../../editor/sections/entityMarkers";
+import {
+	getTerrainPresentationSurfaceY,
+	type TerrainSurfaceMode,
+} from "../../data/terrainSurface";
+import {
+	areaEntitiesToMarkers,
+	type EntityMarker,
+} from "../../editor/sections/entityMarkers";
 import { previewGridPositionToThreePoint } from "../../editor/sections/previewMove";
-import { terrainTilesToBlocks } from "../../editor/sections/terrainBlocks";
+import {
+	type SmoothTerrainMesh,
+	type TerrainRenderMode,
+	terrainTilesToBlocks,
+	terrainTilesToSmoothMeshes,
+} from "../../editor/sections/terrainBlocks";
 import type {
 	Cutscene,
 	GameArea,
@@ -76,9 +87,26 @@ import {
 	zoomOrbitCamera,
 } from "./cameraControls";
 import {
-	createPlaceholderMeshGroup,
 	disposePlaceholderObject,
+	type ThreeResourceDisposeTracker,
 } from "./placeholderMeshes";
+import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
+import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
+import {
+	createThreeCharacterAnimationController,
+	type ThreeCharacterAnimationController,
+} from "./threeCharacterAnimation";
+import {
+	createThreePerformanceDiagnostics,
+	registerThreePerformanceDiagnostics,
+	type ThreePerformanceDiagnostics,
+} from "./threePerformanceDiagnostics";
+import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
+import {
+	type ResolvedThreeVisual,
+	resolveThreeCharacterFacingYaw,
+	resolveThreeCharacterVisual,
+} from "./threeVisuals";
 import {
 	advanceCameraFollowRig,
 	type CameraFollowRig,
@@ -97,10 +125,15 @@ import {
 	type VisualWorldPosition,
 } from "./visualSmoothing";
 import {
-	addThreeWorldLighting,
+	createCoastlinePresentation,
+	createWaterPresentationState,
+	markWaterPresentationMesh,
+	updateWaterPresentation,
+	type WaterPresentationState,
+} from "./waterPresentation";
+import {
+	applyAtmosphere,
 	applyShadowRole,
-	configureThreeRenderer,
-	configureThreeWorldScene,
 	createTerrainMaterial,
 	createWorldMaterial,
 	getWorldMaterialColor,
@@ -111,6 +144,46 @@ type PendingCutscene = {
 	continueLabel: string;
 	onContinue: () => void;
 };
+type ThreeRuntimeBuildInputs = {
+	areaId: string;
+	renderVersion: number;
+	terrainRenderMode: TerrainRenderMode;
+};
+
+function smoothTerrainMeshUsesWater(mesh: SmoothTerrainMesh): boolean {
+	return mesh.groups.some((group) => group.materialKey === "water");
+}
+
+function createSmoothTerrainMaterials(
+	mesh: SmoothTerrainMesh,
+	waterPresentation: WaterPresentationState,
+): THREE.Material[] {
+	return mesh.groups.map((group) =>
+		group.materialKey === "water"
+			? waterPresentation.waterMaterial
+			: createWorldMaterial(group.materialKey),
+	);
+}
+
+function resolveThreeRuntimeBuildReason(
+	previous: ThreeRuntimeBuildInputs | null,
+	next: ThreeRuntimeBuildInputs,
+	requestedReason: string,
+): string {
+	if (!previous) {
+		return "initial runtime build";
+	}
+	if (previous.areaId !== next.areaId) {
+		return "area changed";
+	}
+	if (previous.terrainRenderMode !== next.terrainRenderMode) {
+		return "terrain mode changed";
+	}
+	if (previous.renderVersion !== next.renderVersion) {
+		return requestedReason;
+	}
+	return "runtime view changed";
+}
 
 type ThreeRuntimePanelProps = {
 	project: GameProject;
@@ -189,13 +262,18 @@ function clampGridCoordinate(value: number, max: number): number {
 function getVisualWorldBase(
 	area: GameArea,
 	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
 ): VisualWorldPosition {
 	const point = previewGridPositionToThreePoint(area, position);
 	const terrainX = clampGridCoordinate(position.x, area.width - 1);
 	const terrainY = clampGridCoordinate(position.y, area.height - 1);
 	return {
 		x: point.x,
-		y: getTerrainSurfaceY(area, terrainX, terrainY),
+		y: getTerrainPresentationSurfaceY(
+			area,
+			{ x: terrainX, y: terrainY },
+			terrainMode,
+		),
 		z: point.z,
 	};
 }
@@ -203,8 +281,9 @@ function getVisualWorldBase(
 function getVisualPlayerCenter(
 	area: GameArea,
 	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
 ): VisualWorldPosition {
-	const base = getVisualWorldBase(area, position);
+	const base = getVisualWorldBase(area, position, terrainMode);
 	return {
 		x: base.x,
 		y: base.y + 0.625,
@@ -216,25 +295,19 @@ function setObjectBasePosition(
 	object: THREE.Object3D,
 	area: GameArea,
 	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
+	visual?: ResolvedThreeVisual,
 ): void {
-	const base = getVisualWorldBase(area, position);
-	object.position.set(base.x, base.y, base.z);
+	const base = getVisualWorldBase(area, position, terrainMode);
+	object.position.set(base.x, base.y + (visual?.heightOffset ?? 0), base.z);
 }
 
 function setObjectFacing(
 	object: THREE.Object3D,
 	facing: VisualGridPosition,
+	visual?: ResolvedThreeVisual,
 ): void {
-	object.rotation.y = facingToYawRadians(facing);
-}
-
-function createFacingMarker(color: number, y: number, z: number): THREE.Mesh {
-	const marker = new THREE.Mesh(
-		new THREE.BoxGeometry(0.16, 0.12, 0.3),
-		createWorldMaterial("default", { color }),
-	);
-	marker.position.set(0, y, z);
-	return marker;
+	object.rotation.y = resolveThreeCharacterFacingYaw(facing, visual);
 }
 
 function getRuntimeCameraDimensions(area: GameArea): {
@@ -297,16 +370,30 @@ function getFollowCameraTarget(
 		: getCameraFollowTarget(playerPosition);
 }
 
-function createRuntimePlayerMesh(): THREE.Group {
-	const group = new THREE.Group();
-	const body = new THREE.Mesh(
-		new THREE.CylinderGeometry(0.32, 0.32, 1.25, 16),
-		createWorldMaterial("friendly"),
-	);
-	body.position.set(0, 0.625, 0);
-	group.add(body);
-	group.add(createFacingMarker(getWorldMaterialColor("water"), 0.78, -0.36));
-	return group;
+function createRuntimePlayerMarker(
+	area: GameArea,
+	position: VisualGridPosition,
+	terrainMode: TerrainSurfaceMode,
+	visual: ResolvedThreeVisual,
+): EntityMarker {
+	const base = getVisualWorldBase(area, position, terrainMode);
+	return {
+		color: getWorldMaterialColor("friendly"),
+		depth: 0.64,
+		gridX: position.x,
+		gridY: position.y,
+		height: 1.25,
+		id: "runtime_player",
+		kind: "npc",
+		opacity: 1,
+		shape: "cylinder",
+		threeX: base.x,
+		threeY: base.y + 0.625,
+		threeZ: base.z,
+		visual,
+		visualType: visual.placeholderType,
+		width: 0.64,
+	};
 }
 
 export function ThreeRuntimePanel({
@@ -314,9 +401,19 @@ export function ThreeRuntimePanel({
 	onRestart,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
+	if (!diagnosticsRef.current) {
+		diagnosticsRef.current = createThreePerformanceDiagnostics({
+			label: "ThreeRuntimePanel",
+		});
+	}
+	const diagnostics = diagnosticsRef.current;
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
+	const characterAnimationControllersRef = useRef<
+		Map<string, ThreeCharacterAnimationController>
+	>(new Map());
 	const cameraRigRef = useRef<CameraFollowRig | null>(null);
 	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
 	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
@@ -327,9 +424,14 @@ export function ThreeRuntimePanel({
 	const mouseLookActiveRef = useRef(false);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const gameOverRef = useRef(false);
+	const nextRebuildReasonRef = useRef("initial runtime start");
+	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
+	const isStartingRuntimeRef = useRef(false);
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
+	const [terrainRenderMode, setTerrainRenderMode] =
+		useState<TerrainRenderMode>("smooth");
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
@@ -343,7 +445,20 @@ export function ThreeRuntimePanel({
 	const [gameOver, setGameOver] = useState(false);
 	const [mountError, setMountError] = useState<string | null>(null);
 
-	function forceRender() {
+	useEffect(() => {
+		const unregisterDiagnostics =
+			registerThreePerformanceDiagnostics(diagnostics);
+		return () => {
+			unregisterDiagnostics();
+			diagnostics.dispose();
+		};
+	}, [diagnostics]);
+
+	function forceRender(reason = "runtime state changed") {
+		nextRebuildReasonRef.current = reason;
+		if (isStartingRuntimeRef.current) {
+			return;
+		}
 		setRenderVersion((version) => version + 1);
 	}
 
@@ -564,22 +679,22 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender();
+			forceRender("progression state changed");
 			return;
 		}
 		if (event.type === "spawnPlayer") {
 			resetPlayerVisual(session, { resetCamera: true, resetCameraMode: true });
-			forceRender();
+			forceRender("spawn player");
 			return;
 		}
 		if (event.type === "areaChanged") {
 			resetPresentationVisuals(session, { resetCameraMode: true });
-			forceRender();
+			forceRender("area changed");
 			return;
 		}
 		if (event.type === "vehicleLeft") {
 			resetPlayerVisual(session, { resetCamera: true });
-			forceRender();
+			forceRender("vehicle left");
 			return;
 		}
 		if (event.type === "areaEnterTriggerRequested") {
@@ -619,6 +734,10 @@ export function ThreeRuntimePanel({
 		if (event.type === "endGame") {
 			setStatus("Game complete.");
 			setMouseLookActive(false);
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -638,7 +757,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender();
+			forceRender("rule state changed");
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -652,7 +771,6 @@ export function ThreeRuntimePanel({
 		if (event.type === "shopOpened") {
 			setMouseLookActive(false);
 			setShopMessage(event.message);
-			forceRender();
 			return;
 		}
 		if (event.type === "teleportRequested") {
@@ -689,11 +807,15 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "movementModeChanged") {
 			setStatus(`Movement mode: ${event.mode}.`);
-			forceRender();
+			forceRender("movement mode changed");
 			return;
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
 			setMouseLookActive(false);
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -713,7 +835,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender();
+			diagnostics.recordObjectStateUpdate("object state changed");
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -752,12 +874,12 @@ export function ThreeRuntimePanel({
 		if (event.type === "shopChanged") {
 			setMouseLookActive(false);
 			setShopMessage(event.message);
-			forceRender();
+			diagnostics.recordObjectStateUpdate("shop changed");
 			return;
 		}
 		if (event.type === "shopClosed") {
 			setShopMessage(undefined);
-			forceRender();
+			diagnostics.recordObjectStateUpdate("shop closed");
 			return;
 		}
 		if (
@@ -766,15 +888,16 @@ export function ThreeRuntimePanel({
 			event.type === "playerMoved"
 		) {
 			resetPlayerVisual(session, { resetCamera: true });
-			forceRender();
+			forceRender("player movement");
 			return;
 		}
-		if (
-			event.type === "pickupCollected" ||
-			event.type === "movementModeChanged" ||
-			event.type === "objectMoved"
-		) {
-			forceRender();
+		if (event.type === "movementModeChanged") {
+			setStatus(`Movement mode: ${event.mode}.`);
+			diagnostics.recordObjectStateUpdate("movement mode changed");
+			return;
+		}
+		if (event.type === "pickupCollected" || event.type === "objectMoved") {
+			forceRender("object interaction changed");
 		}
 	}
 
@@ -827,15 +950,33 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged" || event.type === "combatChanged") {
-			forceRender();
+			forceRender("npc state changed");
 			return;
 		}
 		if (event.type === "gameOver") {
+			gameOverRef.current = true;
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.sync({ defeated: true, moving: false });
 			setGameOver(true);
 		}
 	}
 
 	function handleCombatEvent(event: RuntimeCombatEvent): void {
+		if (event.type === "attackStarted") {
+			characterAnimationControllersRef.current
+				.get("runtime_player")
+				?.triggerAttack();
+			return;
+		}
+		if (event.type === "npcDefeated") {
+			// The shared runtime emits npcRemoved immediately after this event. Start
+			// the presentation state without changing that gameplay lifecycle.
+			characterAnimationControllersRef.current
+				.get(event.npcId)
+				?.sync({ defeated: true, moving: false });
+			return;
+		}
 		if (event.type === "status") {
 			setStatus(event.message);
 			return;
@@ -854,7 +995,7 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "npcRemoved") {
 			npcVisualsRef.current.delete(event.npcId);
-			forceRender();
+			forceRender("npc removed");
 			return;
 		}
 		if (
@@ -862,7 +1003,7 @@ export function ThreeRuntimePanel({
 			event.type === "combatChanged" ||
 			event.type === "npcDamaged"
 		) {
-			forceRender();
+			forceRender("combat changed");
 		}
 	}
 
@@ -949,14 +1090,14 @@ export function ThreeRuntimePanel({
 			session.runtimeState.flags[interaction.flag] = value;
 			syncRuntimeQuestProgress(session, handleProgressionEvent);
 			setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
-			forceRender();
+			forceRender("direct interaction changed flag");
 			return;
 		}
 
 		if (interaction.mode) {
 			session.currentMovementMode = interaction.mode;
 			setStatus(`Movement mode: ${interaction.mode}.`);
-			forceRender();
+			forceRender("direct interaction changed movement mode");
 		}
 	}
 
@@ -1065,7 +1206,7 @@ export function ThreeRuntimePanel({
 
 		if (target.type === "pickup") {
 			collectRuntimePickup(session, target.pickup, handleObjectEvent);
-			forceRender();
+			forceRender("pickup collected");
 			return;
 		}
 
@@ -1080,7 +1221,7 @@ export function ThreeRuntimePanel({
 				} else {
 					setStatus(`Interacted with ${target.label}.`);
 				}
-				forceRender();
+				diagnostics.recordObjectStateUpdate("interaction completed");
 			},
 		);
 	}
@@ -1103,11 +1244,14 @@ export function ThreeRuntimePanel({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: session startup owns fresh runtime state; callbacks read sessionRef.
 	useEffect(() => {
+		isStartingRuntimeRef.current = true;
 		try {
 			const session = createRuntimeSession(project);
 			sessionRef.current = session;
+			previousBuildInputsRef.current = null;
 			resetPresentationVisuals(session, { resetCameraMode: true });
 			setMountError(null);
+			gameOverRef.current = false;
 			setGameOver(false);
 			setPendingCutscene(null);
 			setFlowLog([]);
@@ -1122,13 +1266,15 @@ export function ThreeRuntimePanel({
 			fireRuntimeTrigger({ type: "on_game_start" }, () =>
 				processRuntimeProgression(session, handleProgressionEvent),
 			);
-			forceRender();
+			nextRebuildReasonRef.current = "initial runtime start";
 		} catch (error) {
 			sessionRef.current = null;
 			resetPresentationVisuals(null);
 			setMountError(
 				error instanceof Error ? error.message : "Could not start 3D runtime.",
 			);
+		} finally {
+			isStartingRuntimeRef.current = false;
 		}
 
 		return () => {
@@ -1187,7 +1333,9 @@ export function ThreeRuntimePanel({
 			const session = getSession();
 			const area = session ? getArea(session) : undefined;
 			if (session && area) {
+				const tickStartedAt = performance.now();
 				tickRuntimeNpcs(session, area, performance.now(), handleNpcEvent);
+				diagnostics.recordRuntimeTick(performance.now() - tickStartedAt);
 			}
 		}, 500);
 
@@ -1202,13 +1350,24 @@ export function ThreeRuntimePanel({
 		if (!host || !session || !area) {
 			return undefined;
 		}
+		const nextBuildInputs: ThreeRuntimeBuildInputs = {
+			areaId: area.id,
+			renderVersion,
+			terrainRenderMode,
+		};
+		const rebuildReason = resolveThreeRuntimeBuildReason(
+			previousBuildInputsRef.current,
+			nextBuildInputs,
+			nextRebuildReasonRef.current,
+		);
+		previousBuildInputsRef.current = nextBuildInputs;
+		const sceneBuildStartedAt = performance.now();
 
 		syncPlayerVisual(session);
 		syncNpcVisuals(session, area);
 
 		host.replaceChildren();
 		const scene = new THREE.Scene();
-		configureThreeWorldScene(scene, { fogFar: 52, fogNear: 20 });
 		const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
 		const initialPlayerVisual =
 			playerVisualRef.current ??
@@ -1226,7 +1385,7 @@ export function ThreeRuntimePanel({
 		let cameraRig: CameraFollowRig =
 			cameraRigRef.current ??
 			getFollowCameraTarget(
-				getVisualPlayerCenter(area, initialPlayerPosition),
+				getVisualPlayerCenter(area, initialPlayerPosition, terrainRenderMode),
 				initialPlayerVisual.facing,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
@@ -1260,22 +1419,97 @@ export function ThreeRuntimePanel({
 			});
 		};
 		applyCameraRig(cameraRig);
-		addThreeWorldLighting(scene, { enableShadows: true });
-
-		const renderObjects: THREE.Object3D[] = [];
-		const addRenderObject = (object: THREE.Object3D) => {
-			renderObjects.push(object);
+		const renderObjects: Array<{
+			disposeResources: boolean;
+			object: THREE.Object3D;
+		}> = [];
+		const addRenderObject = (
+			object: THREE.Object3D,
+			options: { disposeResources?: boolean } = {},
+		) => {
+			renderObjects.push({
+				disposeResources: options.disposeResources ?? true,
+				object,
+			});
 			scene.add(object);
 		};
 
-		terrainTilesToBlocks(area).forEach((block) => {
-			const mesh = new THREE.Mesh(
-				new THREE.BoxGeometry(0.98, block.height, 0.98),
-				createTerrainMaterial(block.kind),
+		const terrainRebuildStartedAt = performance.now();
+		const waterPresentation = createWaterPresentationState();
+		let terrainMeshCount = 0;
+		let terrainTriangleCount = 0;
+		let terrainVertexCount = 0;
+		let waterSurfaceMeshCount = 0;
+		if (terrainRenderMode === "smooth") {
+			const smoothMeshes = terrainTilesToSmoothMeshes(area);
+			terrainMeshCount = smoothMeshes.length;
+			terrainTriangleCount = smoothMeshes.reduce(
+				(total, mesh) => total + mesh.indices.length / 3,
+				0,
 			);
-			applyShadowRole(mesh, { receive: block.kind !== "water" });
-			mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+			terrainVertexCount = smoothMeshes.reduce(
+				(total, mesh) => total + mesh.vertices.length / 3,
+				0,
+			);
+			smoothMeshes.forEach((smoothMesh) => {
+				const usesWaterPresentation = smoothTerrainMeshUsesWater(smoothMesh);
+				if (usesWaterPresentation) {
+					waterSurfaceMeshCount += 1;
+				}
+				const mesh = new THREE.Mesh(
+					createSmoothTerrainBufferGeometry(smoothMesh),
+					createSmoothTerrainMaterials(smoothMesh, waterPresentation),
+				);
+				if (usesWaterPresentation) {
+					markWaterPresentationMesh(mesh);
+				}
+				applyShadowRole(mesh, {
+					receive: !usesWaterPresentation,
+				});
+				addRenderObject(mesh);
+			});
+		} else {
+			const terrainBlocks = terrainTilesToBlocks(area);
+			terrainMeshCount = terrainBlocks.length;
+			terrainTriangleCount = terrainBlocks.length * 12;
+			terrainVertexCount = terrainBlocks.length * 24;
+			terrainBlocks.forEach((block) => {
+				const usesWaterPresentation = block.materialKey === "water";
+				if (usesWaterPresentation) {
+					waterSurfaceMeshCount += 1;
+				}
+				const mesh = new THREE.Mesh(
+					new THREE.BoxGeometry(0.98, block.height, 0.98),
+					usesWaterPresentation
+						? waterPresentation.waterMaterial
+						: createTerrainMaterial(block.kind),
+				);
+				if (usesWaterPresentation) {
+					markWaterPresentationMesh(mesh);
+				}
+				applyShadowRole(mesh, { receive: !usesWaterPresentation });
+				mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+				addRenderObject(mesh);
+			});
+		}
+		const coastlinePresentation = createCoastlinePresentation(
+			area,
+			waterPresentation,
+		);
+		coastlinePresentation.meshes.forEach((mesh) => {
 			addRenderObject(mesh);
+		});
+		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
+		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
+		diagnostics.recordTerrainRebuild({
+			coastlineEdgeCount: coastlinePresentation.edges.length,
+			durationMs: performance.now() - terrainRebuildStartedAt,
+			meshCount: terrainMeshCount + coastlinePresentation.meshes.length,
+			mode: terrainRenderMode,
+			tileCount: area.terrainTiles.length,
+			triangleCount: terrainTriangleCount + coastlineTriangleCount,
+			vertexCount: terrainVertexCount + coastlineVertexCount,
+			waterMeshCount: waterSurfaceMeshCount,
 		});
 
 		const runtimeArea: GameArea = {
@@ -1291,42 +1525,190 @@ export function ThreeRuntimePanel({
 			),
 		};
 		const npcRenderGroups = new Map<string, THREE.Group>();
-		areaEntitiesToMarkers(runtimeArea, session.project.objects, true).forEach(
-			(marker) => {
-				const group = createPlaceholderMeshGroup(marker);
-				if (marker.kind === "npc") {
-					const npcVisual = npcVisualsRef.current.get(marker.id);
-					if (npcVisual) {
-						group.add(
-							createFacingMarker(getWorldMaterialColor("sand"), 0.58, -0.34),
-						);
-						setObjectBasePosition(
-							group,
-							area,
-							getVisualGridPosition(npcVisual, performance.now()).position,
-						);
-						setObjectFacing(group, npcVisual.facing);
-						npcRenderGroups.set(marker.id, group);
-					}
+		const npcRenderVisuals = new Map<string, ResolvedThreeVisual | undefined>();
+		const characterAnimationControllers = new Map<
+			string,
+			ThreeCharacterAnimationController
+		>();
+		const updateCharacterAnimationDiagnostics = () => {
+			const sourceAssetIds = new Set<string>();
+			let activeLoopingActions = 0;
+			let incompatibleClipCount = 0;
+			let loadingSourceCount = 0;
+			let missingClipCount = 0;
+			let oneShotActionsTriggered = 0;
+			let playerState = "idle";
+			for (const [id, controller] of characterAnimationControllers) {
+				const stats = controller.getStats();
+				activeLoopingActions += stats.activeLoopingActions;
+				incompatibleClipCount += stats.incompatibleClipCount;
+				loadingSourceCount += stats.loadingSourceCount;
+				missingClipCount += stats.missingClipCount;
+				oneShotActionsTriggered += stats.oneShotActionsTriggered;
+				if (id === "runtime_player") {
+					playerState = stats.semanticState;
 				}
+				for (const assetId of stats.sourceAssetIds) {
+					sourceAssetIds.add(assetId);
+				}
+			}
+			diagnostics.setCharacterAnimationMetrics({
+				activeLoopingActions,
+				activeMixers: characterAnimationControllers.size,
+				incompatibleClipCount,
+				loadingSourceCount,
+				missingClipCount,
+				oneShotActionsTriggered,
+				playerState,
+				sourceAssetIds: Array.from(sourceAssetIds),
+			});
+		};
+		const addCharacterAnimationController = (
+			id: string,
+			group: THREE.Group,
+			visual: ResolvedThreeVisual | undefined,
+			usedAsset: boolean,
+		) => {
+			if (
+				!usedAsset ||
+				visual?.mode !== "asset" ||
+				visual.asset.category !== "character"
+			) {
+				return;
+			}
+			characterAnimationControllers.set(
+				id,
+				createThreeCharacterAnimationController({
+					asset: visual.asset,
+					root: group,
+				}),
+			);
+		};
+		let assetStateChangeQueued = false;
+		const handleAssetStateChange = () => {
+			if (assetStateChangeQueued) {
+				return;
+			}
+			assetStateChangeQueued = true;
+			nextRebuildReasonRef.current = "asset state changed";
+			setRenderVersion((version) => version + 1);
+		};
+		const runtimeMarkers = areaEntitiesToMarkers(
+			runtimeArea,
+			session.project.objects,
+			session.project.npcs,
+			true,
+			terrainRenderMode,
+		);
+		const markerRenderResults = runtimeMarkers.map((marker) => {
+			const renderResult = createThreeVisualMarkerGroup(marker, {
+				diagnostics,
+				onAssetStateChange: handleAssetStateChange,
+			});
+			const { group } = renderResult;
+			if (marker.kind === "npc") {
+				const npcVisual = npcVisualsRef.current.get(marker.id);
+				if (npcVisual) {
+					setObjectBasePosition(
+						group,
+						area,
+						getVisualGridPosition(npcVisual, performance.now()).position,
+						terrainRenderMode,
+						marker.visual,
+					);
+					setObjectFacing(group, npcVisual.facing, marker.visual);
+					npcRenderGroups.set(marker.id, group);
+					npcRenderVisuals.set(marker.id, marker.visual);
+					addCharacterAnimationController(
+						marker.id,
+						group,
+						marker.visual,
+						renderResult.usedAsset,
+					);
+				}
+			}
+			if (!renderResult.usedAsset) {
 				applyShadowRole(group, {
 					cast: true,
 					receive: marker.kind !== "event",
 				});
-				addRenderObject(group);
+			}
+			addRenderObject(group, { disposeResources: !renderResult.usedAsset });
+			return renderResult;
+		});
+
+		const playerRenderVisual = resolveThreeCharacterVisual({
+			kind: "player",
+			name: session.project.player.name,
+			threeVisual: session.project.player.threeVisual,
+		});
+		const playerRenderResult = createThreeVisualMarkerGroup(
+			createRuntimePlayerMarker(
+				area,
+				initialPlayerPosition,
+				terrainRenderMode,
+				playerRenderVisual,
+			),
+			{
+				diagnostics,
+				onAssetStateChange: handleAssetStateChange,
 			},
 		);
-
-		const playerMesh = createRuntimePlayerMesh();
-		applyShadowRole(playerMesh, { cast: true });
-		setObjectBasePosition(playerMesh, area, initialPlayerPosition);
-		setObjectFacing(playerMesh, initialPlayerVisual.facing);
-		addRenderObject(playerMesh);
+		const playerMesh = playerRenderResult.group;
+		if (!playerRenderResult.usedAsset) {
+			applyShadowRole(playerMesh, { cast: true });
+		}
+		setObjectBasePosition(
+			playerMesh,
+			area,
+			initialPlayerPosition,
+			terrainRenderMode,
+			playerRenderVisual,
+		);
+		setObjectFacing(playerMesh, initialPlayerVisual.facing, playerRenderVisual);
+		addCharacterAnimationController(
+			"runtime_player",
+			playerMesh,
+			playerRenderVisual,
+			playerRenderResult.usedAsset,
+		);
+		characterAnimationControllersRef.current = characterAnimationControllers;
+		updateCharacterAnimationDiagnostics();
+		addRenderObject(playerMesh, {
+			disposeResources: !playerRenderResult.usedAsset,
+		});
+		diagnostics.setSceneEntityCounts({
+			assetStatuses: [...markerRenderResults, playerRenderResult].map(
+				(result) => ({
+					analysis: result.assetAnalysis,
+					category: result.assetCategory,
+					cloneType: result.cloneType,
+					definitionId: result.assetDefinitionId,
+					status: result.assetStatus,
+					usedAsset: result.usedAsset,
+				}),
+			),
+			entityCount: runtimeMarkers.length + 1,
+			sceneIdentity: {
+				areaId: area.id,
+				areaName: area.name,
+				projectName: session.project.metadata.name,
+			},
+		});
 
 		let renderer: THREE.WebGLRenderer;
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 		} catch (error) {
+			characterAnimationControllers.forEach((controller) => {
+				controller.dispose();
+			});
+			if (
+				characterAnimationControllersRef.current ===
+				characterAnimationControllers
+			) {
+				characterAnimationControllersRef.current = new Map();
+			}
 			setMountError(
 				error instanceof Error
 					? error.message
@@ -1336,7 +1718,9 @@ export function ThreeRuntimePanel({
 		}
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
 		renderer.domElement.tabIndex = 0;
-		configureThreeRenderer(renderer, { enableShadows: true });
+		const atmosphere = applyAtmosphere(scene, renderer, {
+			enableShadows: true,
+		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
@@ -1399,6 +1783,7 @@ export function ThreeRuntimePanel({
 			renderer.domElement.focus();
 		};
 		const handlePointerMove = (event: PointerEvent) => {
+			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				event.preventDefault();
 				const deltaX = event.clientX - cameraDrag.x;
@@ -1485,10 +1870,13 @@ export function ThreeRuntimePanel({
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
 		const render = () => {
+			const frameCallbackStartedAt = performance.now();
 			const now = performance.now();
 			const deltaMs = now - lastFrameMs;
 			lastFrameMs = now;
+			diagnostics.recordFrameInterval(deltaMs);
 
+			const visualUpdateStartedAt = performance.now();
 			const playerVisual =
 				playerVisualRef.current ??
 				resetVisualEntityState(
@@ -1496,12 +1884,16 @@ export function ThreeRuntimePanel({
 					session.playerPosition,
 					session.playerFacing,
 				);
-			const playerVisualPosition = getVisualGridPosition(
-				playerVisual,
-				now,
-			).position;
-			setObjectBasePosition(playerMesh, area, playerVisualPosition);
-			setObjectFacing(playerMesh, playerVisual.facing);
+			const playerVisualGridPosition = getVisualGridPosition(playerVisual, now);
+			const playerVisualPosition = playerVisualGridPosition.position;
+			setObjectBasePosition(
+				playerMesh,
+				area,
+				playerVisualPosition,
+				terrainRenderMode,
+				playerRenderVisual,
+			);
+			setObjectFacing(playerMesh, playerVisual.facing, playerRenderVisual);
 			playerVisualRef.current = settleVisualEntityState(playerVisual, now);
 
 			npcRenderGroups.forEach((group, npcId) => {
@@ -1509,14 +1901,38 @@ export function ThreeRuntimePanel({
 				if (!npcVisual || npcVisual.areaId !== area.id) {
 					return;
 				}
-				const npcPosition = getVisualGridPosition(npcVisual, now).position;
-				setObjectBasePosition(group, area, npcPosition);
-				setObjectFacing(group, npcVisual.facing);
+				const npcVisualGridPosition = getVisualGridPosition(npcVisual, now);
+				const npcPosition = npcVisualGridPosition.position;
+				const visual = npcRenderVisuals.get(npcId);
+				setObjectBasePosition(
+					group,
+					area,
+					npcPosition,
+					terrainRenderMode,
+					visual,
+				);
+				setObjectFacing(group, npcVisual.facing, visual);
 				npcVisualsRef.current.set(
 					npcId,
 					settleVisualEntityState(npcVisual, now),
 				);
+				characterAnimationControllers.get(npcId)?.sync({
+					defeated: session.defeatedNpcIds.has(npcId),
+					moving: !npcVisualGridPosition.done,
+				});
 			});
+			const animationUpdateStartedAt = performance.now();
+			characterAnimationControllers.get("runtime_player")?.sync({
+				defeated: gameOverRef.current,
+				moving: !playerVisualGridPosition.done,
+			});
+			characterAnimationControllers.forEach((controller) => {
+				controller.update(deltaMs / 1000);
+			});
+			updateCharacterAnimationDiagnostics();
+			diagnostics.recordCharacterAnimationUpdate(
+				performance.now() - animationUpdateStartedAt,
+			);
 
 			if (
 				cameraModeRef.current === "follow" &&
@@ -1527,9 +1943,11 @@ export function ThreeRuntimePanel({
 					getFrameLerpAlpha(deltaMs, 22),
 				);
 			}
+			diagnostics.recordVisualUpdate(performance.now() - visualUpdateStartedAt);
 
+			const cameraUpdateStartedAt = performance.now();
 			const nextCameraTarget = getFollowCameraTarget(
-				getVisualPlayerCenter(area, playerVisualPosition),
+				getVisualPlayerCenter(area, playerVisualPosition, terrainRenderMode),
 				playerVisual.facing,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
@@ -1560,24 +1978,64 @@ export function ThreeRuntimePanel({
 				cameraRigRef.current = cameraRig;
 				applyCameraRig(cameraRig);
 			}
+			diagnostics.recordCameraUpdate(performance.now() - cameraUpdateStartedAt);
+			if (
+				waterSurfaceMeshCount > 0 ||
+				coastlinePresentation.meshes.length > 0
+			) {
+				const waterUpdateStartedAt = performance.now();
+				updateWaterPresentation(waterPresentation, now);
+				diagnostics.recordWaterUpdate(performance.now() - waterUpdateStartedAt);
+			}
+			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
+			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
+			diagnostics.recordRendererInfo(renderer.info);
 			animationFrame = window.requestAnimationFrame(render);
+			diagnostics.recordFrameCallback(
+				performance.now() - frameCallbackStartedAt,
+			);
 		};
+		diagnostics.recordSceneBuild(
+			rebuildReason,
+			performance.now() - sceneBuildStartedAt,
+		);
+		diagnostics.recordRafLoopStart(rebuildReason);
 		render();
 
 		return () => {
+			diagnostics.recordRafLoopCancel(rebuildReason);
+			diagnostics.recordSceneCleanup();
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
+			characterAnimationControllers.forEach((controller) => {
+				controller.dispose();
+			});
+			if (
+				characterAnimationControllersRef.current ===
+				characterAnimationControllers
+			) {
+				characterAnimationControllersRef.current = new Map();
+			}
 			renderer.dispose();
-			renderObjects.forEach(disposePlaceholderObject);
+			atmosphere.dispose();
+			const disposeTracker: ThreeResourceDisposeTracker = {
+				geometries: new Set(),
+				materials: new Set(),
+			};
+			renderObjects.forEach((entry) => {
+				if (entry.disposeResources) {
+					disposePlaceholderObject(entry.object, disposeTracker);
+				}
+			});
 			if (renderer.domElement.parentElement === host) {
 				host.removeChild(renderer.domElement);
 			}
 		};
-	}, [renderVersion]);
+	}, [renderVersion, terrainRenderMode]);
 
 	const session = getSession();
 	const area = session ? getArea(session) : undefined;
@@ -1595,6 +2053,10 @@ export function ThreeRuntimePanel({
 					<div className="three-runtime-error">{mountError}</div>
 				) : null}
 			</div>
+			<ThreePerformanceOverlay
+				diagnostics={diagnostics}
+				title="3D Runtime Perf"
+			/>
 			<div className="three-runtime-hud">
 				<strong>3D Runtime Experimental</strong>
 				<span>{area?.name ?? "No area"}</span>
@@ -1628,6 +2090,20 @@ export function ThreeRuntimePanel({
 						type="button"
 					>
 						Inspect
+					</button>
+					<button
+						className={terrainRenderMode === "blocky" ? "active" : ""}
+						onClick={() => setTerrainRenderMode("blocky")}
+						type="button"
+					>
+						Blocky terrain
+					</button>
+					<button
+						className={terrainRenderMode === "smooth" ? "active" : ""}
+						onClick={() => setTerrainRenderMode("smooth")}
+						type="button"
+					>
+						Smooth terrain
 					</button>
 					{cameraMode === "follow" &&
 					runtimeThreeCamera?.style === "thirdPerson" ? (

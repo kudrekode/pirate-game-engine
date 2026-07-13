@@ -3,13 +3,20 @@ import {
 	portraitPresets,
 	tilePresets,
 } from "../../data/presets";
-import { useProjectStore } from "../../store/useProjectStore";
 import { getPlayerCombatStats } from "../../runtime/combat";
+import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
+import { useProjectStore } from "../../store/useProjectStore";
+import { ThreeVisualControls } from "./ThreeVisualControls";
 
 export function CharacterEditor() {
 	const player = useProjectStore((state) => state.project.player);
 	const updatePlayer = useProjectStore((state) => state.updatePlayer);
 	const combat = getPlayerCombatStats(player);
+	const threeVisual = resolveThreeCharacterVisual({
+		kind: "player",
+		name: player.name,
+		threeVisual: player.threeVisual,
+	});
 
 	function toggleWalkable(tileId: string) {
 		const canWalkOn = player.canWalkOn.includes(tileId)
@@ -34,7 +41,7 @@ export function CharacterEditor() {
 						</label>
 					</div>
 
-					<div className="panel-title">Map Avatar</div>
+					<div className="panel-title">2D / Phaser Visual</div>
 					<div className="preset-grid">
 						{characterSprites.map((sprite) => (
 							<button
@@ -77,6 +84,16 @@ export function CharacterEditor() {
 							</button>
 						))}
 					</div>
+
+					<ThreeVisualControls
+						assetCategories={["character"]}
+						inferredPlaceholderType={threeVisual.placeholderType}
+						onChange={(nextThreeVisual) =>
+							updatePlayer({ threeVisual: nextThreeVisual })
+						}
+						title="3D Character Visual"
+						value={player.threeVisual}
+					/>
 
 					<div className="panel-title">Stats</div>
 					<div className="form-grid compact">

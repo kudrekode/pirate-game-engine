@@ -1,9 +1,19 @@
-import { getTerrainSurfaceY } from "../../data/terrainHeight";
 import {
-	type PlaceholderVisualType,
-	resolvePlaceholderVisualType,
-} from "../../runtime/three/placeholderMeshes";
-import type { GameArea, ObjectDefinition } from "../../types/game";
+	getTerrainPresentationSurfaceY,
+	type TerrainSurfaceMode,
+} from "../../data/terrainSurface";
+import { resolveNPCInstance } from "../../runtime/npcResolver";
+import type { PlaceholderVisualType } from "../../runtime/three/placeholderMeshes";
+import {
+	type ResolvedThreeVisual,
+	resolveThreeCharacterVisual,
+	resolveThreeVisual,
+} from "../../runtime/three/threeVisuals";
+import type {
+	GameArea,
+	NPCDefinition,
+	ObjectDefinition,
+} from "../../types/game";
 import type { MapOverlayFilters } from "./overlayFilters";
 
 export type EntityMarkerKind =
@@ -31,6 +41,7 @@ export type EntityMarker = {
 	threeY: number;
 	threeZ: number;
 	visualType: PlaceholderVisualType;
+	visual?: ResolvedThreeVisual;
 };
 
 const ENTITY_MARKER_COLORS: Record<EntityMarkerKind, number> = {
@@ -70,11 +81,15 @@ function getFootprintSurfaceY(
 	y: number,
 	widthTiles = 1,
 	heightTiles = 1,
+	mode: TerrainSurfaceMode = "blocky",
 ): number {
-	let surfaceY = getTerrainSurfaceY(area, x, y);
+	let surfaceY = getTerrainPresentationSurfaceY(area, { x, y }, mode);
 	for (let tileY = y; tileY < y + heightTiles; tileY += 1) {
 		for (let tileX = x; tileX < x + widthTiles; tileX += 1) {
-			surfaceY = Math.max(surfaceY, getTerrainSurfaceY(area, tileX, tileY));
+			surfaceY = Math.max(
+				surfaceY,
+				getTerrainPresentationSurfaceY(area, { x: tileX, y: tileY }, mode),
+			);
 		}
 	}
 	return surfaceY;
@@ -83,11 +98,19 @@ function getFootprintSurfaceY(
 export function areaEntitiesToMarkers(
 	area: GameArea | undefined,
 	objectDefinitions: ObjectDefinition[],
-	filtersOrIncludeEventBlocks: boolean | MapOverlayFilters,
+	npcDefinitionsOrFilters: NPCDefinition[] | boolean | MapOverlayFilters,
+	filtersMaybe?: boolean | MapOverlayFilters,
+	surfaceMode: TerrainSurfaceMode = "blocky",
 ): EntityMarker[] {
 	if (!area) {
 		return [];
 	}
+	const npcDefinitions = Array.isArray(npcDefinitionsOrFilters)
+		? npcDefinitionsOrFilters
+		: [];
+	const filtersOrIncludeEventBlocks: boolean | MapOverlayFilters =
+		filtersMaybe ??
+		(Array.isArray(npcDefinitionsOrFilters) ? false : npcDefinitionsOrFilters);
 	const filters =
 		typeof filtersOrIncludeEventBlocks === "boolean"
 			? ({
@@ -102,6 +125,9 @@ export function areaEntitiesToMarkers(
 
 	const objectDefinitionsById = new Map(
 		objectDefinitions.map((definition) => [definition.id, definition]),
+	);
+	const npcDefinitionsById = new Map(
+		npcDefinitions.map((definition) => [definition.id, definition]),
 	);
 	const markers: EntityMarker[] = [];
 
@@ -120,7 +146,13 @@ export function areaEntitiesToMarkers(
 				structure.y,
 				structure.widthTiles,
 				structure.heightTiles,
+				surfaceMode,
 			);
+			const visual = resolveThreeVisual({
+				kind: "structure",
+				name: structure.name,
+				structureId: structure.structureId,
+			});
 			markers.push({
 				color: ENTITY_MARKER_COLORS.structure,
 				depth: structure.heightTiles * 0.96,
@@ -134,11 +166,8 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: surfaceY + 0.85,
 				threeZ,
-				visualType: resolvePlaceholderVisualType({
-					kind: "structure",
-					name: structure.name,
-					structureId: structure.structureId,
-				}),
+				visual,
+				visualType: visual.placeholderType,
 				width: structure.widthTiles * 0.96,
 			});
 		});
@@ -165,8 +194,17 @@ export function areaEntitiesToMarkers(
 				object.y,
 				widthTiles,
 				heightTiles,
+				surfaceMode,
 			);
 			const markerHeight = isVehicle ? 0.35 : 0.8;
+			const visual = resolveThreeVisual({
+				behaviour: object.behaviourOverride ?? definition?.defaultBehaviour,
+				category: definition?.category,
+				interaction: object.interaction ?? definition?.defaultInteraction,
+				kind: "object",
+				name: object.nameOverride ?? definition?.name,
+				threeVisual: definition?.threeVisual,
+			});
 			markers.push({
 				color: isVehicle
 					? ENTITY_MARKER_COLORS.vehicle
@@ -184,13 +222,8 @@ export function areaEntitiesToMarkers(
 				threeX,
 				threeY: surfaceY + markerHeight / 2,
 				threeZ,
-				visualType: resolvePlaceholderVisualType({
-					behaviour: object.behaviourOverride ?? definition?.defaultBehaviour,
-					category: definition?.category,
-					interaction: object.interaction ?? definition?.defaultInteraction,
-					kind: "object",
-					name: object.nameOverride ?? definition?.name,
-				}),
+				visual,
+				visualType: visual.placeholderType,
 				width: isVehicle ? Math.max(1.1, widthTiles * 0.9) : widthTiles * 0.74,
 			});
 		});
@@ -198,8 +231,17 @@ export function areaEntitiesToMarkers(
 
 	if (filters.npcs) {
 		area.npcs.forEach((npc) => {
+			const definition = npcDefinitionsById.get(npc.npcDefinitionId);
+			const resolvedNpc = resolveNPCInstance(definition, npc);
 			const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
 			const markerHeight = 1.25;
+			const visual = resolveThreeCharacterVisual({
+				attributes: resolvedNpc.attributes,
+				enemyEnabled: resolvedNpc.enemyBehaviour?.enabled,
+				kind: "npc",
+				name: resolvedNpc.name,
+				threeVisual: definition?.threeVisual,
+			});
 			markers.push({
 				color: ENTITY_MARKER_COLORS.npc,
 				depth: 0.48,
@@ -211,13 +253,16 @@ export function areaEntitiesToMarkers(
 				opacity: 1,
 				shape: "cylinder",
 				threeX,
-				threeY: getTerrainSurfaceY(area, npc.x, npc.y) + markerHeight / 2,
+				threeY:
+					getTerrainPresentationSurfaceY(
+						area,
+						{ x: npc.x, y: npc.y },
+						surfaceMode,
+					) +
+					markerHeight / 2,
 				threeZ,
-				visualType: resolvePlaceholderVisualType({
-					attributes: npc.attributes,
-					enemyEnabled: npc.enemyBehaviour?.enabled,
-					kind: "npc",
-				}),
+				visual,
+				visualType: visual.placeholderType,
 				width: 0.48,
 			});
 		});
@@ -227,6 +272,7 @@ export function areaEntitiesToMarkers(
 		area.pickups.forEach((pickup) => {
 			const { threeX, threeZ } = toThreePosition(area, pickup.x, pickup.y);
 			const markerHeight = 0.34;
+			const visual = resolveThreeVisual({ kind: "pickup" });
 			markers.push({
 				color: ENTITY_MARKER_COLORS.pickup,
 				depth: 0.34,
@@ -238,9 +284,15 @@ export function areaEntitiesToMarkers(
 				opacity: 1,
 				shape: "box",
 				threeX,
-				threeY: getTerrainSurfaceY(area, pickup.x, pickup.y) + 0.75,
+				threeY:
+					getTerrainPresentationSurfaceY(
+						area,
+						{ x: pickup.x, y: pickup.y },
+						surfaceMode,
+					) + 0.75,
 				threeZ,
-				visualType: resolvePlaceholderVisualType({ kind: "pickup" }),
+				visual,
+				visualType: visual.placeholderType,
 				width: 0.34,
 			});
 		});
@@ -260,6 +312,10 @@ export function areaEntitiesToMarkers(
 				eventBlock.y,
 			);
 			const markerHeight = 0.12;
+			const visual = resolveThreeVisual({
+				kind: "event",
+				name: eventBlock.name,
+			});
 			markers.push({
 				color: ENTITY_MARKER_COLORS.event,
 				depth: 0.72,
@@ -271,12 +327,15 @@ export function areaEntitiesToMarkers(
 				opacity: 0.72,
 				shape: "box",
 				threeX,
-				threeY: getTerrainSurfaceY(area, eventBlock.x, eventBlock.y) + 0.06,
+				threeY:
+					getTerrainPresentationSurfaceY(
+						area,
+						{ x: eventBlock.x, y: eventBlock.y },
+						surfaceMode,
+					) + 0.06,
 				threeZ,
-				visualType: resolvePlaceholderVisualType({
-					kind: "event",
-					name: eventBlock.name,
-				}),
+				visual,
+				visualType: visual.placeholderType,
 				width: 0.72,
 			});
 		});

@@ -3,7 +3,6 @@ import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import type { GameArea, GameProject, NPCInstance } from "../types/game";
 import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "./runtimeNpcTick";
-// @ts-expect-error Vite raw import used for a source-boundary test.
 import npcTickSource from "./runtimeNpcTick.ts?raw";
 import {
 	createRuntimeSession,
