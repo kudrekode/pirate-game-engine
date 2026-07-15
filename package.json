@@ -21,6 +21,7 @@
 		"test:run": "vitest run",
 		"test:asset-studio": "npm --workspace @adventure-game-builder/asset-studio run test:run",
 		"test:contracts": "npm --workspace @adventure-game-builder/character-contract run test:run && npm --workspace @adventure-game-builder/asset-compiler-contract run test:run",
+		"test:retarget-spike": "node --test tools/animation-retargeting/*.test.mjs",
 		"check:asset-studio": "npm run build:contracts && npm run test:contracts && npm --workspace @adventure-game-builder/asset-studio run check",
 		"test:e2e": "playwright test",
 		"test:e2e:three-perf": "playwright test e2e/three-perf-smoke.spec.ts",

@@ -274,6 +274,24 @@ h1 {
 	padding: 4px 7px;
 }
 
+.animation-controls {
+	position: absolute;
+	top: 50px;
+	left: 10px;
+	display: flex;
+	gap: 5px;
+	border: 1px solid #cbd5df;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.92);
+	padding: 5px;
+}
+
+.animation-controls button[aria-pressed="true"] {
+	border-color: #0f6b91;
+	background: #dff2fa;
+	color: #0f4d68;
+}
+
 .preview-status,
 .preview-diagnostics {
 	position: absolute;

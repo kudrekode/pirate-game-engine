@@ -1,0 +1,1033 @@
+{
+	"artifactStatus": "experimental-runtime-retarget-diagnostic",
+	"boneMapVersion": "mixamo-quaternius-v1",
+	"hashes": {
+		"idleSource": "42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0",
+		"targetSource": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"walkSource": "17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e"
+	},
+	"idle": {
+		"boneMapVersion": "mixamo-quaternius-v1",
+		"clip": {
+			"duration": 8.333333015441895,
+			"maxLoopEndpointDifference": 0.0006707241240400406,
+			"name": "GoldenReference_Idle",
+			"trackCount": 65
+		},
+		"method": "Three.js SkeletonUtils.retargetClip runtime feasibility experiment",
+		"rootMotion": {
+			"after": {
+				"x": 0,
+				"y": 0,
+				"z": 0
+			},
+			"before": {
+				"x": 4.656612873077393e-10,
+				"y": 0,
+				"z": -9.313225416557325e-10
+			},
+			"policy": "freeze target-world pelvis X/Z; preserve target-world pelvis Y"
+		},
+		"scale": {
+			"scale": 0.004537874318057981,
+			"sourceHipHeight": 209.15078735351562,
+			"targetHipHeight": 0.9490999865331244
+		},
+		"semanticState": "idle",
+		"validation": {
+			"allTracksTargetGoldenBones": true,
+			"finiteValues": true,
+			"independentBeforeSecondUpdate": true,
+			"restRestored": true,
+			"separateSkeletons": true
+		},
+		"warnings": [
+			"THREE.FBXLoader: %s map is not supported in three.js, skipping texture. ShininessExponent",
+			"THREE.FBXLoader: Vertex has more than 4 skinning weights assigned to vertex. Deleting additional weights."
+		]
+	},
+	"idleComparison": {
+		"directBinding": {
+			"animatedSourceTargetCount": 52,
+			"boundTargetCount": 0,
+			"boundTargets": [],
+			"viable": false
+		},
+		"exactNameMatches": [],
+		"hierarchyDifferences": [],
+		"normalizedNameMatches": [
+			{
+				"source": "mixamorigHead",
+				"target": "Head"
+			}
+		],
+		"restPoseDifferences": [
+			{
+				"angleDegrees": 179.917903847679,
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"angleDegrees": 174.83032540822762,
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
+			},
+			{
+				"angleDegrees": 8.869143966030922,
+				"source": "mixamorigLeftLeg",
+				"target": "calf_l"
+			},
+			{
+				"angleDegrees": 10.586234299510673,
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"angleDegrees": 160.23413155644732,
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
+			},
+			{
+				"angleDegrees": 161.2249581887209,
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
+				"angleDegrees": 121.91769582708352,
+				"source": "mixamorigLeftFoot",
+				"target": "foot_l"
+			},
+			{
+				"angleDegrees": 122.42520346395906,
+				"source": "mixamorigRightFoot",
+				"target": "foot_r"
+			},
+			{
+				"angleDegrees": 15.17846090088627,
+				"source": "mixamorigHead",
+				"target": "Head"
+			},
+			{
+				"angleDegrees": 89.99978945534211,
+				"source": "mixamorigLeftHandIndex1",
+				"target": "index_01_l"
+			},
+			{
+				"angleDegrees": 89.99980877406828,
+				"source": "mixamorigRightHandIndex1",
+				"target": "index_01_r"
+			},
+			{
+				"angleDegrees": 177.84371436485554,
+				"source": "mixamorigLeftHandIndex4",
+				"target": "index_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.84371436485554,
+				"source": "mixamorigRightHandIndex4",
+				"target": "index_04_leaf_r"
+			},
+			{
+				"angleDegrees": 90.00245540876865,
+				"source": "mixamorigLeftHandMiddle1",
+				"target": "middle_01_l"
+			},
+			{
+				"angleDegrees": 90.00246506790744,
+				"source": "mixamorigRightHandMiddle1",
+				"target": "middle_01_r"
+			},
+			{
+				"angleDegrees": 177.85932836026763,
+				"source": "mixamorigLeftHandMiddle4",
+				"target": "middle_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.85932836026763,
+				"source": "mixamorigRightHandMiddle4",
+				"target": "middle_04_leaf_r"
+			},
+			{
+				"angleDegrees": 29.814983630355545,
+				"source": "mixamorigNeck",
+				"target": "neck_01"
+			},
+			{
+				"angleDegrees": 106.36932584117574,
+				"source": "mixamorigHips",
+				"target": "pelvis"
+			},
+			{
+				"angleDegrees": 90.00029174116436,
+				"source": "mixamorigLeftHandPinky1",
+				"target": "pinky_01_l"
+			},
+			{
+				"angleDegrees": 90.00030140048551,
+				"source": "mixamorigRightHandPinky1",
+				"target": "pinky_01_r"
+			},
+			{
+				"angleDegrees": 177.88179950702457,
+				"source": "mixamorigLeftHandPinky4",
+				"target": "pinky_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.88179950702457,
+				"source": "mixamorigRightHandPinky4",
+				"target": "pinky_04_leaf_r"
+			},
+			{
+				"angleDegrees": 90.01188234088869,
+				"source": "mixamorigLeftHandRing1",
+				"target": "ring_01_l"
+			},
+			{
+				"angleDegrees": 90.011891999233,
+				"source": "mixamorigRightHandRing1",
+				"target": "ring_01_r"
+			},
+			{
+				"angleDegrees": 177.81692647051713,
+				"source": "mixamorigLeftHandRing4",
+				"target": "ring_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.81691280765946,
+				"source": "mixamorigRightHandRing4",
+				"target": "ring_04_leaf_r"
+			},
+			{
+				"angleDegrees": 7.82292321754615,
+				"source": "mixamorigSpine1",
+				"target": "spine_02"
+			},
+			{
+				"angleDegrees": 23.667419439453944,
+				"source": "mixamorigSpine2",
+				"target": "spine_03"
+			},
+			{
+				"angleDegrees": 179.95874447750114,
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
+			},
+			{
+				"angleDegrees": 179.9493944910751,
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"angleDegrees": 179.99401163644455,
+				"source": "mixamorigLeftHandThumb1",
+				"target": "thumb_01_l"
+			},
+			{
+				"angleDegrees": 179.99402175525162,
+				"source": "mixamorigRightHandThumb1",
+				"target": "thumb_01_r"
+			},
+			{
+				"angleDegrees": 45.00314964537569,
+				"source": "mixamorigLeftHandThumb4",
+				"target": "thumb_04_leaf_l"
+			},
+			{
+				"angleDegrees": 45.00314964537569,
+				"source": "mixamorigRightHandThumb4",
+				"target": "thumb_04_leaf_r"
+			},
+			{
+				"angleDegrees": 94.23004625021811,
+				"source": "mixamorigLeftArm",
+				"target": "upperarm_l"
+			},
+			{
+				"angleDegrees": 95.2059740420307,
+				"source": "mixamorigRightArm",
+				"target": "upperarm_r"
+			}
+		],
+		"semanticMatches": [
+			{
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"source": "mixamorigLeftToe_End",
+				"target": "ball_leaf_l"
+			},
+			{
+				"source": "mixamorigRightToe_End",
+				"target": "ball_leaf_r"
+			},
+			{
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
+			},
+			{
+				"source": "mixamorigLeftLeg",
+				"target": "calf_l"
+			},
+			{
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
+			},
+			{
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
+				"source": "mixamorigLeftFoot",
+				"target": "foot_l"
+			},
+			{
+				"source": "mixamorigRightFoot",
+				"target": "foot_r"
+			},
+			{
+				"source": "mixamorigLeftHand",
+				"target": "hand_l"
+			},
+			{
+				"source": "mixamorigRightHand",
+				"target": "hand_r"
+			},
+			{
+				"source": "mixamorigHead",
+				"target": "Head"
+			},
+			{
+				"source": "mixamorigLeftHandIndex1",
+				"target": "index_01_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex1",
+				"target": "index_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandIndex2",
+				"target": "index_02_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex2",
+				"target": "index_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandIndex3",
+				"target": "index_03_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex3",
+				"target": "index_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandIndex4",
+				"target": "index_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex4",
+				"target": "index_04_leaf_r"
+			},
+			{
+				"source": "mixamorigLeftForeArm",
+				"target": "lowerarm_l"
+			},
+			{
+				"source": "mixamorigRightForeArm",
+				"target": "lowerarm_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle1",
+				"target": "middle_01_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle1",
+				"target": "middle_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle2",
+				"target": "middle_02_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle2",
+				"target": "middle_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle3",
+				"target": "middle_03_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle3",
+				"target": "middle_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle4",
+				"target": "middle_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle4",
+				"target": "middle_04_leaf_r"
+			},
+			{
+				"source": "mixamorigNeck",
+				"target": "neck_01"
+			},
+			{
+				"source": "mixamorigHips",
+				"target": "pelvis"
+			},
+			{
+				"source": "mixamorigLeftHandPinky1",
+				"target": "pinky_01_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky1",
+				"target": "pinky_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandPinky2",
+				"target": "pinky_02_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky2",
+				"target": "pinky_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandPinky3",
+				"target": "pinky_03_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky3",
+				"target": "pinky_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandPinky4",
+				"target": "pinky_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky4",
+				"target": "pinky_04_leaf_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing1",
+				"target": "ring_01_l"
+			},
+			{
+				"source": "mixamorigRightHandRing1",
+				"target": "ring_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing2",
+				"target": "ring_02_l"
+			},
+			{
+				"source": "mixamorigRightHandRing2",
+				"target": "ring_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing3",
+				"target": "ring_03_l"
+			},
+			{
+				"source": "mixamorigRightHandRing3",
+				"target": "ring_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing4",
+				"target": "ring_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandRing4",
+				"target": "ring_04_leaf_r"
+			},
+			{
+				"source": "mixamorigSpine",
+				"target": "spine_01"
+			},
+			{
+				"source": "mixamorigSpine1",
+				"target": "spine_02"
+			},
+			{
+				"source": "mixamorigSpine2",
+				"target": "spine_03"
+			},
+			{
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
+			},
+			{
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb1",
+				"target": "thumb_01_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb1",
+				"target": "thumb_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb2",
+				"target": "thumb_02_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb2",
+				"target": "thumb_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb3",
+				"target": "thumb_03_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb3",
+				"target": "thumb_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb4",
+				"target": "thumb_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb4",
+				"target": "thumb_04_leaf_r"
+			},
+			{
+				"source": "mixamorigLeftArm",
+				"target": "upperarm_l"
+			},
+			{
+				"source": "mixamorigRightArm",
+				"target": "upperarm_r"
+			}
+		],
+		"missingMappedSourceBones": [],
+		"missingMappedTargetBones": [],
+		"unmatchedSourceBones": [
+			"mixamorigHeadTop_End",
+			"mixamorigLeftEye",
+			"mixamorigRightEye"
+		],
+		"unmatchedTargetBones": ["root"]
+	},
+	"provenance": {
+		"licenseSidecarsPresent": false,
+		"note": "The continuation brief states Mixamo licensing/provenance, but LICENSE.txt and SOURCE.md are absent from the workspace.",
+		"provider": "Adobe Mixamo (per supplied continuation brief)"
+	},
+	"targetSkeletonId": "golden-reference-quaternius-superhero-male",
+	"walk": {
+		"boneMapVersion": "mixamo-quaternius-v1",
+		"clip": {
+			"duration": 1.0333333015441895,
+			"maxLoopEndpointDifference": 0.0006488376856211727,
+			"name": "GoldenReference_Walk_InPlace",
+			"trackCount": 65
+		},
+		"method": "Three.js SkeletonUtils.retargetClip runtime feasibility experiment",
+		"rootMotion": {
+			"after": {
+				"x": 0,
+				"y": -2.3841857099693442e-7,
+				"z": -8.1601392309949e-15
+			},
+			"before": {
+				"x": -6.402842700481415e-9,
+				"y": -2.3531969151058263e-7,
+				"z": 1.6508375283585794
+			},
+			"policy": "freeze target-world pelvis X/Z; preserve target-world pelvis Y"
+		},
+		"scale": {
+			"scale": 0.004537874318057981,
+			"sourceHipHeight": 209.15078735351562,
+			"targetHipHeight": 0.9490999865331244
+		},
+		"semanticState": "walk",
+		"validation": {
+			"allTracksTargetGoldenBones": true,
+			"finiteValues": true,
+			"independentBeforeSecondUpdate": true,
+			"restRestored": true,
+			"separateSkeletons": true
+		},
+		"warnings": [
+			"THREE.FBXLoader: %s map is not supported in three.js, skipping texture. ShininessExponent",
+			"THREE.FBXLoader: Vertex has more than 4 skinning weights assigned to vertex. Deleting additional weights."
+		]
+	},
+	"walkComparison": {
+		"directBinding": {
+			"animatedSourceTargetCount": 52,
+			"boundTargetCount": 0,
+			"boundTargets": [],
+			"viable": false
+		},
+		"exactNameMatches": [],
+		"hierarchyDifferences": [],
+		"normalizedNameMatches": [
+			{
+				"source": "mixamorigHead",
+				"target": "Head"
+			}
+		],
+		"restPoseDifferences": [
+			{
+				"angleDegrees": 179.917903847679,
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"angleDegrees": 174.83032540822762,
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
+			},
+			{
+				"angleDegrees": 8.869143966030922,
+				"source": "mixamorigLeftLeg",
+				"target": "calf_l"
+			},
+			{
+				"angleDegrees": 10.586234299510673,
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"angleDegrees": 160.23413155644732,
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
+			},
+			{
+				"angleDegrees": 161.2249581887209,
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
+				"angleDegrees": 121.91769582708352,
+				"source": "mixamorigLeftFoot",
+				"target": "foot_l"
+			},
+			{
+				"angleDegrees": 122.42520346395906,
+				"source": "mixamorigRightFoot",
+				"target": "foot_r"
+			},
+			{
+				"angleDegrees": 15.17846090088627,
+				"source": "mixamorigHead",
+				"target": "Head"
+			},
+			{
+				"angleDegrees": 89.99978945534211,
+				"source": "mixamorigLeftHandIndex1",
+				"target": "index_01_l"
+			},
+			{
+				"angleDegrees": 89.99980877406828,
+				"source": "mixamorigRightHandIndex1",
+				"target": "index_01_r"
+			},
+			{
+				"angleDegrees": 177.84371436485554,
+				"source": "mixamorigLeftHandIndex4",
+				"target": "index_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.84371436485554,
+				"source": "mixamorigRightHandIndex4",
+				"target": "index_04_leaf_r"
+			},
+			{
+				"angleDegrees": 90.00245540876865,
+				"source": "mixamorigLeftHandMiddle1",
+				"target": "middle_01_l"
+			},
+			{
+				"angleDegrees": 90.00246506790744,
+				"source": "mixamorigRightHandMiddle1",
+				"target": "middle_01_r"
+			},
+			{
+				"angleDegrees": 177.85932836026763,
+				"source": "mixamorigLeftHandMiddle4",
+				"target": "middle_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.85932836026763,
+				"source": "mixamorigRightHandMiddle4",
+				"target": "middle_04_leaf_r"
+			},
+			{
+				"angleDegrees": 29.814983630355545,
+				"source": "mixamorigNeck",
+				"target": "neck_01"
+			},
+			{
+				"angleDegrees": 106.36932584117574,
+				"source": "mixamorigHips",
+				"target": "pelvis"
+			},
+			{
+				"angleDegrees": 90.00029174116436,
+				"source": "mixamorigLeftHandPinky1",
+				"target": "pinky_01_l"
+			},
+			{
+				"angleDegrees": 90.00030140048551,
+				"source": "mixamorigRightHandPinky1",
+				"target": "pinky_01_r"
+			},
+			{
+				"angleDegrees": 177.88179950702457,
+				"source": "mixamorigLeftHandPinky4",
+				"target": "pinky_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.88179950702457,
+				"source": "mixamorigRightHandPinky4",
+				"target": "pinky_04_leaf_r"
+			},
+			{
+				"angleDegrees": 90.01188234088869,
+				"source": "mixamorigLeftHandRing1",
+				"target": "ring_01_l"
+			},
+			{
+				"angleDegrees": 90.011891999233,
+				"source": "mixamorigRightHandRing1",
+				"target": "ring_01_r"
+			},
+			{
+				"angleDegrees": 177.81692647051713,
+				"source": "mixamorigLeftHandRing4",
+				"target": "ring_04_leaf_l"
+			},
+			{
+				"angleDegrees": 177.81691280765946,
+				"source": "mixamorigRightHandRing4",
+				"target": "ring_04_leaf_r"
+			},
+			{
+				"angleDegrees": 7.82292321754615,
+				"source": "mixamorigSpine1",
+				"target": "spine_02"
+			},
+			{
+				"angleDegrees": 23.667419439453944,
+				"source": "mixamorigSpine2",
+				"target": "spine_03"
+			},
+			{
+				"angleDegrees": 179.95874447750114,
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
+			},
+			{
+				"angleDegrees": 179.9493944910751,
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"angleDegrees": 179.99401163644455,
+				"source": "mixamorigLeftHandThumb1",
+				"target": "thumb_01_l"
+			},
+			{
+				"angleDegrees": 179.99402175525162,
+				"source": "mixamorigRightHandThumb1",
+				"target": "thumb_01_r"
+			},
+			{
+				"angleDegrees": 45.00314964537569,
+				"source": "mixamorigLeftHandThumb4",
+				"target": "thumb_04_leaf_l"
+			},
+			{
+				"angleDegrees": 45.00314964537569,
+				"source": "mixamorigRightHandThumb4",
+				"target": "thumb_04_leaf_r"
+			},
+			{
+				"angleDegrees": 94.23004625021811,
+				"source": "mixamorigLeftArm",
+				"target": "upperarm_l"
+			},
+			{
+				"angleDegrees": 95.2059740420307,
+				"source": "mixamorigRightArm",
+				"target": "upperarm_r"
+			}
+		],
+		"semanticMatches": [
+			{
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"source": "mixamorigLeftToe_End",
+				"target": "ball_leaf_l"
+			},
+			{
+				"source": "mixamorigRightToe_End",
+				"target": "ball_leaf_r"
+			},
+			{
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
+			},
+			{
+				"source": "mixamorigLeftLeg",
+				"target": "calf_l"
+			},
+			{
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
+			},
+			{
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
+				"source": "mixamorigLeftFoot",
+				"target": "foot_l"
+			},
+			{
+				"source": "mixamorigRightFoot",
+				"target": "foot_r"
+			},
+			{
+				"source": "mixamorigLeftHand",
+				"target": "hand_l"
+			},
+			{
+				"source": "mixamorigRightHand",
+				"target": "hand_r"
+			},
+			{
+				"source": "mixamorigHead",
+				"target": "Head"
+			},
+			{
+				"source": "mixamorigLeftHandIndex1",
+				"target": "index_01_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex1",
+				"target": "index_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandIndex2",
+				"target": "index_02_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex2",
+				"target": "index_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandIndex3",
+				"target": "index_03_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex3",
+				"target": "index_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandIndex4",
+				"target": "index_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandIndex4",
+				"target": "index_04_leaf_r"
+			},
+			{
+				"source": "mixamorigLeftForeArm",
+				"target": "lowerarm_l"
+			},
+			{
+				"source": "mixamorigRightForeArm",
+				"target": "lowerarm_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle1",
+				"target": "middle_01_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle1",
+				"target": "middle_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle2",
+				"target": "middle_02_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle2",
+				"target": "middle_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle3",
+				"target": "middle_03_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle3",
+				"target": "middle_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandMiddle4",
+				"target": "middle_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandMiddle4",
+				"target": "middle_04_leaf_r"
+			},
+			{
+				"source": "mixamorigNeck",
+				"target": "neck_01"
+			},
+			{
+				"source": "mixamorigHips",
+				"target": "pelvis"
+			},
+			{
+				"source": "mixamorigLeftHandPinky1",
+				"target": "pinky_01_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky1",
+				"target": "pinky_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandPinky2",
+				"target": "pinky_02_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky2",
+				"target": "pinky_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandPinky3",
+				"target": "pinky_03_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky3",
+				"target": "pinky_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandPinky4",
+				"target": "pinky_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandPinky4",
+				"target": "pinky_04_leaf_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing1",
+				"target": "ring_01_l"
+			},
+			{
+				"source": "mixamorigRightHandRing1",
+				"target": "ring_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing2",
+				"target": "ring_02_l"
+			},
+			{
+				"source": "mixamorigRightHandRing2",
+				"target": "ring_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing3",
+				"target": "ring_03_l"
+			},
+			{
+				"source": "mixamorigRightHandRing3",
+				"target": "ring_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandRing4",
+				"target": "ring_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandRing4",
+				"target": "ring_04_leaf_r"
+			},
+			{
+				"source": "mixamorigSpine",
+				"target": "spine_01"
+			},
+			{
+				"source": "mixamorigSpine1",
+				"target": "spine_02"
+			},
+			{
+				"source": "mixamorigSpine2",
+				"target": "spine_03"
+			},
+			{
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
+			},
+			{
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb1",
+				"target": "thumb_01_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb1",
+				"target": "thumb_01_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb2",
+				"target": "thumb_02_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb2",
+				"target": "thumb_02_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb3",
+				"target": "thumb_03_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb3",
+				"target": "thumb_03_r"
+			},
+			{
+				"source": "mixamorigLeftHandThumb4",
+				"target": "thumb_04_leaf_l"
+			},
+			{
+				"source": "mixamorigRightHandThumb4",
+				"target": "thumb_04_leaf_r"
+			},
+			{
+				"source": "mixamorigLeftArm",
+				"target": "upperarm_l"
+			},
+			{
+				"source": "mixamorigRightArm",
+				"target": "upperarm_r"
+			}
+		],
+		"missingMappedSourceBones": [],
+		"missingMappedTargetBones": [],
+		"unmatchedSourceBones": [
+			"mixamorigHeadTop_End",
+			"mixamorigLeftEye",
+			"mixamorigRightEye"
+		],
+		"unmatchedTargetBones": ["root"]
+	}
+}

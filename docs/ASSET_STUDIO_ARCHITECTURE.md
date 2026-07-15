@@ -104,7 +104,11 @@ Animation sets map semantic states to stable clip references:
 
 The shape is compatible in spirit with the existing Three character registry, where semantic states map to asset ids and clip names. The shared contract does not import Three.js, GLTF loader code, or game runtime presentation modules.
 
-Retargeting is not implemented in V0.
+Production retargeting is not implemented in V0. The Golden Reference preview
+does include an isolated runtime-retargeting feasibility fixture for a real
+idle and walk. Its derived AnimationClip JSON does not enter the shared
+animation contract or game registry; the intended production boundary remains
+an offline compiler bake and verified GLB import.
 
 ## Browser Preview
 
@@ -119,8 +123,10 @@ modules directly.
 
 The fixture is distinct from compiled recipe output. It is not generated from
 `CharacterRecipeV1`, has no embedded animation clips, and does not make recipe
-controls functional. A future preview-source contract can add compiled
-artifacts without weakening this provenance boundary.
+controls functional. Its Rest/Idle/Walk controls consume explicitly labelled
+experimental, target-bound AnimationClip JSON from the Golden Reference
+retargeting spike through presentation-only code. A future preview-source
+contract can add compiled artifacts without weakening this provenance boundary.
 
 Future previews may load compiled or golden-kit assets, but live Three.js objects must stay in app presentation code, not shared recipe contracts.
 
@@ -185,7 +191,7 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - clothing fitting
 - Blender execution
 - GLB export
-- real character animation preview
+- production character animation preview sourced from compiled package output
 - AI generation
 - backend service
 - asset upload into the game editor

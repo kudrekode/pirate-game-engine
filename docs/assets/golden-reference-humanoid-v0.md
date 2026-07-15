@@ -84,7 +84,7 @@ The built-in definition id is
 `golden-reference-quaternius-superhero-male`. It is a `character` `gltf`
 registry entry with `standard` material preparation, cast shadows enabled,
 receive shadows disabled, 0.75 default scale, zero height offset, and 180
-degrees rotation offset. It deliberately has no animation mappings.
+degrees rotation offset. It deliberately has no production animation mappings.
 
 Player and NPC authoring both use the existing `ThreeVisualControls` character
 asset selection and the shared `resolveThreeCharacterVisual` / renderer path.
@@ -99,10 +99,13 @@ and textures remain shared; skeletons and bones are instance-local. The shared
 renderer applies normalisation, facing, grounding, and shadow metadata in both
 the editor 3D view and experimental Three runtime.
 
-No animation clips are embedded. The model is intentionally renderable in its
-bind/rest pose. Diagnostics consequently show the loaded character asset and
-metrics with `clips none`; no idle, walk, attack, or defeated mapping is
-claimed. Animation retargeting is a subsequent milestone.
+No animation clips are embedded. The model remains renderable in its bind/rest
+pose, and the game registry still reports no animation mappings. An isolated
+Asset Studio feasibility fixture can load target-bound idle and walk
+AnimationClip JSON produced from the supplied Mixamo FBXs, but these diagnostic
+files are not canonical GLBs and are not registered for the editor or runtime.
+See `golden-reference-animation-retargeting-spike.md` for the evidence and
+limitations.
 
 ## Limits And Next Step
 
@@ -111,9 +114,10 @@ This fixture is within neither the preferred 12,000-triangle budget nor the
 It is suitable as a Golden Reference for pipeline validation, but not yet as a
 production crowd-budget default.
 
-The smallest next task is an animation-retargeting feasibility spike against
-this exact skeleton, beginning with a real idle and walk source and validating
-track compatibility before adding any registry mappings.
+The animation-retargeting spike found that direct binding fails while explicit
+semantic runtime retargeting is feasible. The smallest next task is a
+deterministic Blender bake and GLB round-trip validation against this exact
+skeleton before adding registry mappings.
 
 ## Boundary With Asset Studio
 
@@ -132,6 +136,7 @@ bounds and applies the registry scale, grounding, facing correction, and
 shadow policy while reporting live load metrics.
 
 The preview source is explicitly `golden-reference-humanoid-v0`: externally
-authored vendor content, not a `CharacterRecipeV1` compile artifact. It has no
-embedded clips, so no fake animation playback is presented. The next sensible
-step remains an animation-retargeting feasibility spike against this skeleton.
+authored vendor content, not a `CharacterRecipeV1` compile artifact. The target
+has no embedded clips. The preview's Rest/Idle/Walk controls use explicitly
+labelled experimental target-bound AnimationClip JSON from the retargeting
+spike; they do not imply recipe compilation or a production registry mapping.

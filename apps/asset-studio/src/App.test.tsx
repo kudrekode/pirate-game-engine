@@ -20,6 +20,15 @@ describe("Asset Studio app", () => {
 			screen.getByRole("button", { name: "Reset view" }),
 		).toBeInTheDocument();
 		expect(
+			screen.getByRole("group", {
+				name: "Golden Reference animation controls",
+			}),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Rest" })).toBeEnabled();
+		expect(screen.getByRole("button", { name: "Idle" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Walk" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Pause" })).toBeDisabled();
+		expect(
 			screen.getByText("CharacterRecipeV1 is editable source data."),
 		).toBeInTheDocument();
 	});

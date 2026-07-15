@@ -3,11 +3,9 @@ import {
 	createNotImplementedCharacterCompileResult,
 } from "@adventure-game-builder/asset-compiler-contract";
 import {
-	CHARACTER_ANIMATION_STATES,
 	CHARACTER_BODY_PARAMETER_LIMITS,
 	CHARACTER_COMPONENT_SLOTS,
 	CHARACTER_PALETTE_REGIONS,
-	type CharacterAnimationState,
 	type CharacterBodyParameters,
 	type CharacterComponentSlot,
 	type CharacterPaletteRegion,
@@ -111,6 +109,21 @@ function downloadRecipe(recipe: CharacterRecipeV1) {
 }
 
 const GOLDEN_REFERENCE_FIXTURE_ID = "golden-reference-humanoid-v0";
+const RETARGET_ARTIFACT_ROOT =
+	"/assets/derived/humanoid-animations/golden-reference-v0";
+type PreviewAnimationState = "idle" | "rest" | "walk";
+type RuntimeRetargetReport = {
+	artifactStatus: string;
+	boneMapVersion: string;
+	idle: { clip: { duration: number }; rootMotion: { policy: string } };
+	provenance: { provider: string };
+	walk: { clip: { duration: number }; rootMotion: { policy: string } };
+	idleComparison: {
+		semanticMatches: unknown[];
+		unmatchedSourceBones: string[];
+		unmatchedTargetBones: string[];
+	};
+};
 
 function GoldenReferenceHumanoidPreview() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -122,6 +135,23 @@ function GoldenReferenceHumanoidPreview() {
 	const [analysis, setAnalysis] = useState<ThreeVisualAssetAnalysis>();
 	const [error, setError] = useState("");
 	const [canResetView, setCanResetView] = useState(false);
+	const [animationState, setAnimationState] =
+		useState<PreviewAnimationState>("rest");
+	const [animationPlaying, setAnimationPlaying] = useState(true);
+	const [clipStatus, setClipStatus] = useState<"loading" | "loaded" | "error">(
+		"loading",
+	);
+	const [retargetReport, setRetargetReport] = useState<RuntimeRetargetReport>();
+	const animationPlayingRef = useRef(animationPlaying);
+	const applyAnimationStateRef = useRef<(state: PreviewAnimationState) => void>(
+		() => undefined,
+	);
+	useEffect(() => {
+		animationPlayingRef.current = animationPlaying;
+	}, [animationPlaying]);
+	useEffect(() => {
+		applyAnimationStateRef.current(animationState);
+	}, [animationState]);
 	useEffect(() => {
 		const canvas = canvasRef.current,
 			host = hostRef.current;
@@ -130,6 +160,15 @@ function GoldenReferenceHumanoidPreview() {
 		let disposed = false,
 			frame = 0;
 		let activeClone: THREE.Group | undefined;
+		let animationRoot: THREE.Object3D | undefined;
+		let animationMixer: THREE.AnimationMixer | undefined;
+		let activeAction: THREE.AnimationAction | undefined;
+		let activeState: PreviewAnimationState = "rest";
+		const animationClips = new Map<
+			PreviewAnimationState,
+			THREE.AnimationClip
+		>();
+		const clock = new THREE.Clock();
 		let renderer: THREE.WebGLRenderer;
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
@@ -181,7 +220,59 @@ function GoldenReferenceHumanoidPreview() {
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
 		};
+		const updateAnimationMetadata = () => {
+			animationRoot?.updateMatrixWorld(true);
+			host.dataset.animationState = activeState;
+			host.dataset.animationPlaying = String(animationPlayingRef.current);
+			host.dataset.animationTime = (activeAction?.time ?? 0).toFixed(4);
+			const pose = ["pelvis", "spine_03", "Head", "hand_l", "foot_l"]
+				.map((name) => animationRoot?.getObjectByName(name)?.quaternion)
+				.filter((quaternion): quaternion is THREE.Quaternion =>
+					Boolean(quaternion),
+				)
+				.flatMap((quaternion) => quaternion.toArray())
+				.map((value) => value.toFixed(4))
+				.join(",");
+			host.dataset.poseSnapshot = pose;
+			const pelvisWorld = animationRoot
+				?.getObjectByName("pelvis")
+				?.getWorldPosition(new THREE.Vector3());
+			host.dataset.pelvisHorizontal = pelvisWorld
+				? `${pelvisWorld.x.toFixed(5)},${pelvisWorld.z.toFixed(5)}`
+				: "";
+		};
+		const restoreRestPose = () => {
+			animationMixer?.stopAllAction();
+			activeAction = undefined;
+			const skeletons = new Set<THREE.Skeleton>();
+			animationRoot?.traverse((object) => {
+				if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton);
+			});
+			for (const skeleton of skeletons) skeleton.pose();
+			animationRoot?.updateMatrixWorld(true);
+		};
+		const applyAnimationState = (state: PreviewAnimationState) => {
+			activeState = state;
+			if (!animationMixer || state === "rest") {
+				restoreRestPose();
+				updateAnimationMetadata();
+				return;
+			}
+			const clip = animationClips.get(state);
+			if (!clip) return;
+			const nextAction = animationMixer.clipAction(clip);
+			nextAction.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+			if (activeAction && activeAction !== nextAction) {
+				nextAction.crossFadeFrom(activeAction, 0.12, false);
+			}
+			activeAction = nextAction;
+			updateAnimationMetadata();
+		};
+		applyAnimationStateRef.current = applyAnimationState;
 		const render = () => {
+			const deltaSeconds = Math.min(clock.getDelta(), 0.1);
+			if (animationPlayingRef.current) animationMixer?.update(deltaSeconds);
+			updateAnimationMetadata();
 			controls.update();
 			renderer.render(scene, camera);
 			frame = window.requestAnimationFrame(render);
@@ -215,6 +306,10 @@ function GoldenReferenceHumanoidPreview() {
 			group.add(result.object);
 			scene.add(group);
 			activeClone = group;
+			animationRoot = result.object;
+			animationMixer?.stopAllAction();
+			if (animationRoot)
+				animationMixer = new THREE.AnimationMixer(animationRoot);
 			const bounds = new THREE.Box3().setFromObject(group),
 				center = bounds.getCenter(new THREE.Vector3()),
 				radius = Math.max(
@@ -248,7 +343,47 @@ function GoldenReferenceHumanoidPreview() {
 			setCanResetView(true);
 			setAnalysis(result.analysis);
 			setStatus("loaded");
+			applyAnimationState(activeState);
 		};
+		Promise.all([
+			fetch(`${RETARGET_ARTIFACT_ROOT}/idle.runtime-retarget.json`).then(
+				(response) => {
+					if (!response.ok)
+						throw new Error(`Idle clip HTTP ${response.status}.`);
+					return response.json();
+				},
+			),
+			fetch(
+				`${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`,
+			).then((response) => {
+				if (!response.ok) throw new Error(`Walk clip HTTP ${response.status}.`);
+				return response.json();
+			}),
+			fetch(`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`).then(
+				(response) => {
+					if (!response.ok)
+						throw new Error(`Retarget report HTTP ${response.status}.`);
+					return response.json() as Promise<RuntimeRetargetReport>;
+				},
+			),
+		])
+			.then(([idleJson, walkJson, report]) => {
+				if (disposed) return;
+				animationClips.set("idle", THREE.AnimationClip.parse(idleJson));
+				animationClips.set("walk", THREE.AnimationClip.parse(walkJson));
+				setRetargetReport(report);
+				setClipStatus("loaded");
+				setAnimationState("idle");
+			})
+			.catch((clipError) => {
+				if (disposed) return;
+				setClipStatus("error");
+				setError(
+					clipError instanceof Error
+						? clipError.message
+						: "Retargeted clips failed to load.",
+				);
+			});
 		const observer =
 			typeof ResizeObserver === "undefined"
 				? undefined
@@ -260,10 +395,13 @@ function GoldenReferenceHumanoidPreview() {
 		return () => {
 			disposed = true;
 			resetViewRef.current = () => undefined;
+			applyAnimationStateRef.current = () => undefined;
 			window.cancelAnimationFrame(frame);
 			observer?.disconnect();
 			controls.removeEventListener("change", updateCameraMetadata);
 			controls.dispose();
+			animationMixer?.stopAllAction();
+			if (animationRoot) animationMixer?.uncacheRoot(animationRoot);
 			activeClone?.removeFromParent();
 			ground.geometry.dispose();
 			(ground.material as THREE.Material).dispose();
@@ -288,6 +426,29 @@ function GoldenReferenceHumanoidPreview() {
 					Reset view
 				</button>
 			</fieldset>
+			<fieldset
+				className="animation-controls"
+				aria-label="Golden Reference animation controls"
+			>
+				{(["rest", "idle", "walk"] as const).map((state) => (
+					<button
+						aria-pressed={animationState === state}
+						disabled={state !== "rest" && clipStatus !== "loaded"}
+						key={state}
+						onClick={() => setAnimationState(state)}
+						type="button"
+					>
+						{state[0].toUpperCase() + state.slice(1)}
+					</button>
+				))}
+				<button
+					disabled={animationState === "rest" || clipStatus !== "loaded"}
+					onClick={() => setAnimationPlaying((playing) => !playing)}
+					type="button"
+				>
+					{animationPlaying ? "Pause" : "Play"}
+				</button>
+			</fieldset>
 			<div className="preview-label">
 				Golden Reference Humanoid · Reference fixture
 			</div>
@@ -295,7 +456,11 @@ function GoldenReferenceHumanoidPreview() {
 				{status === "loading"
 					? "Loading reference fixture…"
 					: status === "loaded"
-						? "Reference fixture loaded · No embedded animation clips"
+						? clipStatus === "loaded"
+							? `Reference loaded · ${animationState === "rest" ? "Rest pose" : `${animationState} runtime-retarget experiment`}`
+							: clipStatus === "error"
+								? `Reference loaded · Clip error: ${error}`
+								: "Reference loaded · Loading retargeted clips…"
 						: `Preview error: ${error}`}
 			</div>
 			<dl
@@ -324,7 +489,39 @@ function GoldenReferenceHumanoidPreview() {
 				</div>
 				<div>
 					<dt>Animation clips</dt>
-					<dd>{analysis?.animationClips.length ?? "—"}</dd>
+					<dd>
+						{clipStatus === "loaded"
+							? 2
+							: (analysis?.animationClips.length ?? "—")}
+					</dd>
+				</div>
+				<div>
+					<dt>Active clip</dt>
+					<dd>
+						{animationState === "rest"
+							? "Rest"
+							: `${animationState} · ${retargetReport?.[animationState].clip.duration.toFixed(3) ?? "—"}s`}
+					</dd>
+				</div>
+				<div>
+					<dt>Provider / method</dt>
+					<dd>
+						{retargetReport
+							? `${retargetReport.provenance.provider} · runtime experiment`
+							: "—"}
+					</dd>
+				</div>
+				<div>
+					<dt>Bone mapping</dt>
+					<dd>
+						{retargetReport
+							? `${retargetReport.idleComparison.semanticMatches.length} mapped · ${retargetReport.idleComparison.unmatchedSourceBones.length} source / ${retargetReport.idleComparison.unmatchedTargetBones.length} target unmapped`
+							: "—"}
+					</dd>
+				</div>
+				<div>
+					<dt>Root motion</dt>
+					<dd>{retargetReport?.walk.rootMotion.policy ?? "—"}</dd>
 				</div>
 				<div>
 					<dt>Bounds</dt>
@@ -352,8 +549,6 @@ export default function App() {
 	const [recipe, setRecipe] = useState<CharacterRecipeV1>(() =>
 		createDefaultCharacterRecipe(),
 	);
-	const [previewState, setPreviewState] =
-		useState<CharacterAnimationState>("idle");
 	const [loadStatus, setLoadStatus] = useState("");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -571,24 +766,7 @@ export default function App() {
 								<strong>{recipe.name || "Untitled Character"}</strong>
 								<span>{recipe.skeletonId} source recipe</span>
 							</div>
-							<label>
-								Animation preview state (unavailable: fixture has no clips)
-								<select
-									disabled
-									onChange={(event) =>
-										setPreviewState(
-											event.target.value as CharacterAnimationState,
-										)
-									}
-									value={previewState}
-								>
-									{CHARACTER_ANIMATION_STATES.map((state) => (
-										<option key={state} value={state}>
-											{state}
-										</option>
-									))}
-								</select>
-							</label>
+							<span>Golden Reference animation feasibility fixture</span>
 						</div>
 						<GoldenReferenceHumanoidPreview />
 						<div className="compile-status">
