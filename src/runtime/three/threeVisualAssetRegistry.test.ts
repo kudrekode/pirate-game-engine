@@ -162,6 +162,29 @@ describe("Three visual asset registry", () => {
 		});
 	});
 
+	it("registers the Quaternius Golden Reference Humanoid without animation mappings", () => {
+		const asset = getThreeVisualAssetDefinition(
+			"golden-reference-quaternius-superhero-male",
+		);
+
+		expect(asset).toMatchObject({
+			castShadow: true,
+			category: "character",
+			defaultHeightOffset: 0,
+			defaultRotationOffset: 180,
+			defaultScale: 0.75,
+			kind: "gltf",
+			materialProfile: "standard",
+			receiveShadow: false,
+			resourceUrlAliases: {
+				"T_Eye_Normal_png.png": "T_Eye_Normal.png",
+				"T_Hair_1_Normal_png.png": "T_Hair_1_Normal.png",
+			},
+			url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
+		});
+		expect(asset?.animations).toBeUndefined();
+	});
+
 	it("looks up registered asset definitions by stable id", () => {
 		const restoreRegistry = setThreeVisualAssetRegistryForTests([
 			{

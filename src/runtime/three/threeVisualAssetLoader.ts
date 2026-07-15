@@ -18,6 +18,7 @@ export type ThreeVisualAssetCloneType = "object3d" | "skeleton-utils";
 
 export type ThreeVisualAssetLoaderLike = {
 	loadAsync: (url: string) => Promise<GltfLike>;
+	manager?: THREE.LoadingManager;
 };
 
 type ThreeVisualAssetLoaderFactory = () =>
@@ -86,6 +87,40 @@ function getGltfRoot(gltf: GltfLike): THREE.Object3D | undefined {
 	return gltf.scene ?? gltf.scenes?.[0];
 }
 
+/**
+ * Applies registry-declared aliases to glTF-dependent resource requests.
+ * The source glTF and its directory remain unchanged.
+ */
+export function resolveThreeVisualAssetResourceUrl(
+	definition: Pick<ThreeVisualAssetDefinition, "resourceUrlAliases">,
+	url: string,
+): string {
+	const aliases = definition.resourceUrlAliases;
+	if (!aliases || Object.keys(aliases).length === 0) {
+		return url;
+	}
+	const [path, suffix = ""] = url.split(/([?#].*)/, 2);
+	const slashIndex = path.lastIndexOf("/");
+	const resourceName = slashIndex === -1 ? path : path.slice(slashIndex + 1);
+	const alias = aliases[resourceName];
+	if (!alias) {
+		return url;
+	}
+	return `${slashIndex === -1 ? "" : path.slice(0, slashIndex + 1)}${alias}${suffix}`;
+}
+
+function configureThreeVisualAssetLoader(
+	loader: ThreeVisualAssetLoaderLike,
+	definition: ThreeVisualAssetDefinition,
+): void {
+	if (!loader.manager || !definition.resourceUrlAliases) {
+		return;
+	}
+	loader.manager.setURLModifier((url) =>
+		resolveThreeVisualAssetResourceUrl(definition, url),
+	);
+}
+
 function notifyListeners(
 	entry: Extract<AssetCacheEntry, { status: "loading" }>,
 ) {
@@ -117,7 +152,10 @@ function startAssetLoad(
 		url: definition.url,
 	});
 	entry.promise = Promise.resolve(loaderFactory())
-		.then((loader) => loader.loadAsync(definition.url))
+		.then((loader) => {
+			configureThreeVisualAssetLoader(loader, definition);
+			return loader.loadAsync(definition.url);
+		})
 		.then((gltf) => {
 			const callbackStartedAt = performance.now();
 			const root = getGltfRoot(gltf);

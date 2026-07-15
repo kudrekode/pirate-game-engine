@@ -21,6 +21,11 @@ export type ThreeVisualAssetDefinition = {
 	name: string;
 	kind: "gltf" | "glb";
 	url: string;
+	/**
+	 * Resolves known vendor-relative resource filename defects without changing
+	 * the source asset. Keys and values are relative to the glTF URL.
+	 */
+	resourceUrlAliases?: Record<string, string>;
 	category?: ThreeVisualAssetCategory;
 	/** Animation-only registry sources are never offered as character visuals. */
 	animationOnly?: boolean;
@@ -136,6 +141,26 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		receiveShadow: true,
 		tags: ["decoration", "flag"],
 		url: "/assets/pirate-demo/flag-pirate.glb",
+	},
+	{
+		category: "character",
+		castShadow: true,
+		defaultHeightOffset: 0,
+		// The source is 1.82 units tall; this keeps the reference readable in a
+		// one-tile world while preserving its measured source-space proportions.
+		defaultRotationOffset: 180,
+		defaultScale: 0.75,
+		id: "golden-reference-quaternius-superhero-male",
+		kind: "gltf",
+		materialProfile: "standard",
+		name: "Golden Reference: Quaternius Superhero Male",
+		receiveShadow: false,
+		resourceUrlAliases: {
+			"T_Eye_Normal_png.png": "T_Eye_Normal.png",
+			"T_Hair_1_Normal_png.png": "T_Hair_1_Normal.png",
+		},
+		tags: ["character", "golden-reference", "quaternius", "skinned"],
+		url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
 	},
 	{
 		category: "character",
