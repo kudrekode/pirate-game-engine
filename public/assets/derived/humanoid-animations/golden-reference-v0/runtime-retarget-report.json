@@ -1,20 +1,1056 @@
 {
 	"artifactStatus": "experimental-runtime-retarget-diagnostic",
-	"boneMapVersion": "mixamo-quaternius-v1",
+	"boneMapVersion": "mixamo-quaternius-rest-delta-v2",
 	"hashes": {
 		"idleSource": "42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0",
 		"targetSource": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"walkSource": "17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e"
 	},
 	"idle": {
-		"boneMapVersion": "mixamo-quaternius-v1",
+		"boneMapVersion": "mixamo-quaternius-rest-delta-v2",
 		"clip": {
 			"duration": 8.333333015441895,
-			"maxLoopEndpointDifference": 0.0006707241240400406,
+			"maxLoopEndpointDifference": 0.0006574705778611149,
 			"name": "GoldenReference_Idle",
-			"trackCount": 65
+			"trackCount": 23
 		},
-		"method": "Three.js SkeletonUtils.retargetClip runtime feasibility experiment",
+		"method": "rest-frame world-delta runtime feasibility experiment",
+		"profile": {
+			"boneMap": {
+				"Head": "mixamorigHead",
+				"neck_01": "mixamorigNeck",
+				"pelvis": "mixamorigHips",
+				"spine_01": "mixamorigSpine",
+				"spine_02": "mixamorigSpine1",
+				"spine_03": "mixamorigSpine2",
+				"clavicle_l": "mixamorigLeftShoulder",
+				"upperarm_l": "mixamorigLeftArm",
+				"lowerarm_l": "mixamorigLeftForeArm",
+				"hand_l": "mixamorigLeftHand",
+				"thigh_l": "mixamorigLeftUpLeg",
+				"calf_l": "mixamorigLeftLeg",
+				"foot_l": "mixamorigLeftFoot",
+				"ball_l": "mixamorigLeftToeBase",
+				"clavicle_r": "mixamorigRightShoulder",
+				"upperarm_r": "mixamorigRightArm",
+				"lowerarm_r": "mixamorigRightForeArm",
+				"hand_r": "mixamorigRightHand",
+				"thigh_r": "mixamorigRightUpLeg",
+				"calf_r": "mixamorigRightLeg",
+				"foot_r": "mixamorigRightFoot",
+				"ball_r": "mixamorigRightToeBase"
+			},
+			"ignoredTargetBones": [
+				"ball_leaf_l",
+				"ball_leaf_r",
+				"index_01_l",
+				"index_01_r",
+				"index_02_l",
+				"index_02_r",
+				"index_03_l",
+				"index_03_r",
+				"index_04_leaf_l",
+				"index_04_leaf_r",
+				"middle_01_l",
+				"middle_01_r",
+				"middle_02_l",
+				"middle_02_r",
+				"middle_03_l",
+				"middle_03_r",
+				"middle_04_leaf_l",
+				"middle_04_leaf_r",
+				"pinky_01_l",
+				"pinky_01_r",
+				"pinky_02_l",
+				"pinky_02_r",
+				"pinky_03_l",
+				"pinky_03_r",
+				"pinky_04_leaf_l",
+				"pinky_04_leaf_r",
+				"ring_01_l",
+				"ring_01_r",
+				"ring_02_l",
+				"ring_02_r",
+				"ring_03_l",
+				"ring_03_r",
+				"ring_04_leaf_l",
+				"ring_04_leaf_r",
+				"thumb_01_l",
+				"thumb_01_r",
+				"thumb_02_l",
+				"thumb_02_r",
+				"thumb_03_l",
+				"thumb_03_r",
+				"thumb_04_leaf_l",
+				"thumb_04_leaf_r"
+			],
+			"rootMotionPolicy": "freeze target-world pelvis X/Z; preserve target-world pelvis Y",
+			"scalePolicy": "target pelvis rest height / source hips rest height",
+			"sourceSkeletonId": "mixamo-67-fbx",
+			"targetSkeletonId": "golden-reference-quaternius-superhero-male",
+			"transformPolicy": "sourceAnimatedWorld * inverse(sourceRestWorld) * targetRestWorld, converted through animated target parent world",
+			"version": "mixamo-quaternius-rest-delta-v2"
+		},
+		"quality": {
+			"rest": {
+				"joints": {
+					"pelvis": {
+						"position": [0, 0.9490999865331241, -0.04299994887572594],
+						"rotation": [0.14236404075137296, 0, 0, 0.9898143663843952]
+					},
+					"spine_03": {
+						"position": [0, 1.3108998164970191, 0.006899974973219564],
+						"rotation": [-0.1130007551923241, 0, 0, 0.9935949020229344]
+					},
+					"neck_01": {
+						"position": [0, 1.5204998401619891, -0.04140002112155338],
+						"rotation": [0.1464139644237939, 0, 0, 0.9892234080437584]
+					},
+					"Head": {
+						"position": [0, 1.599799968593369, -0.017399985977202374],
+						"rotation": [0.0144846198013071, 0, 0, 0.9998950923918027]
+					},
+					"clavicle_l": {
+						"position": [
+							0.031399998813867576, 1.4952998785900102, 0.033499987980341
+						],
+						"rotation": [
+							-0.6003829511048416, -0.3737546325564774, -0.37396880955830797,
+							0.5999959301051598
+						]
+					},
+					"clavicle_r": {
+						"position": [
+							-0.031399998813867576, 1.4952998785900102, 0.033499987980341
+						],
+						"rotation": [
+							-0.6003829511048416, 0.3737546325564774, 0.37396880955830797,
+							0.5999959301051598
+						]
+					},
+					"upperarm_l": {
+						"position": [
+							0.21201160362218882, 1.4554998495563407, -0.06540000122775727
+						],
+						"rotation": [
+							-0.010730614882652383, 0.01067239043086329, -0.7070253548785824,
+							0.7070262382299161
+						]
+					},
+					"upperarm_r": {
+						"position": [
+							-0.21201160362218882, 1.4554998495563407, -0.06540000122775728
+						],
+						"rotation": [
+							-0.010730626358907687, -0.01067239492713227, 0.707025361290666,
+							0.7070262315757938
+						]
+					},
+					"lowerarm_l": {
+						"position": [
+							0.46301150911903566, 1.4554998100026963, -0.07299998276422885
+						],
+						"rotation": [
+							0.011032367718563363, -0.011031693412461942, -0.7070207086700534,
+							0.7070207253784513
+						]
+					},
+					"lowerarm_r": {
+						"position": [
+							-0.46301150890648146, 1.4554998122776037, -0.07299998616435256
+						],
+						"rotation": [
+							0.011032398047002573, 0.011031647110542704, 0.7070207171967124,
+							0.7070207171009965
+						]
+					},
+					"hand_l": {
+						"position": [
+							0.7064870110966622, 1.4554999606234467, -0.0653999540621635
+						],
+						"rotation": [
+							2.765567078266137e-8, 4.5771663735125366e-8, -0.7071067795261821,
+							0.707106782846911
+						]
+					},
+					"hand_r": {
+						"position": [
+							-0.7064869811785633, 1.4554999566779585, -0.06539996464477531
+						],
+						"rotation": [
+							1.6009563929932173e-8, -5.0100057990344596e-8, 0.7071067873240575,
+							0.7071067750490356
+						]
+					},
+					"thigh_l": {
+						"position": [
+							0.11430513858795169, 0.9711999684180068, -0.03599998193896555
+						],
+						"rotation": [0.9999999931792525, 0, 0, -0.00011679681085551837]
+					},
+					"thigh_r": {
+						"position": [
+							-0.11430513858795169, 0.9711999684180068, -0.03599998193896555
+						],
+						"rotation": [0.9999999931792525, 0, 0, -0.00011679681085551837]
+					},
+					"calf_l": {
+						"position": [
+							0.11430513113737106, 0.5423998752730389, -0.03610015008008726
+						],
+						"rotation": [0.9984248430372615, 0, 0, -0.0561055505812033]
+					},
+					"calf_r": {
+						"position": [
+							-0.11430513113737106, 0.5423998752730389, -0.03610015008008726
+						],
+						"rotation": [0.9984248430372615, 0, 0, -0.0561055505812033]
+					},
+					"foot_l": {
+						"position": [
+							0.11430513113737106, 0.08649976556390399, -0.08750032413935063
+						],
+						"rotation": [
+							0.8509463607956806, 1.2522968456919077e-7, 2.0288156161706424e-7,
+							0.5252525973743783
+						]
+					},
+					"foot_r": {
+						"position": [
+							-0.11430513113737106, 0.08649976556390399, -0.08750032413935063
+						],
+						"rotation": [
+							0.8509463607956806, -1.2522968456919077e-7,
+							-2.0288156161706424e-7, 0.5252525973743783
+						]
+					}
+				},
+				"localRotationFromRest": {
+					"clavicle_l": 0,
+					"clavicle_r": 0,
+					"upperarm_l": 0.0053639787317047065,
+					"upperarm_r": 0.006286135623184311
+				},
+				"normalizedTime": 0
+			},
+			"samples": [
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								0.002296254737302661, 0.9406734994438559, -0.04499056914287034
+							],
+							"rotation": [
+								0.11120641831482549, -0.05020807172911696, -0.0223443900496855,
+								0.9922766803125728
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.004812408175557115, 1.3043563209343592, -0.0014992596750576645
+							],
+							"rotation": [
+								-0.09684894410808736, -0.030380627378033674,
+								0.018403423413566416, 0.9946650760491829
+							]
+						},
+						"neck_01": {
+							"position": [
+								-0.0017965054491915142, 1.5152687418852793, -0.04318057963727137
+							],
+							"rotation": [
+								0.2902288389535102, -0.026913808301811802, 0.01913404689080013,
+								0.9563873463257299
+							]
+						},
+						"Head": {
+							"position": [
+								-0.006123175272076276, 1.5841026536770912, 0.0027289462952989896
+							],
+							"rotation": [
+								-0.03552537613126926, -0.017257904292299814,
+								0.01876870644474607, 0.9990434665461563
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.026486414768294077, 1.4889283214750577, 0.032564175762281676
+							],
+							"rotation": [
+								-0.526967941597112, -0.4007377291159613, -0.5416779887991382,
+								0.5179758850008425
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.03615511733270265, 1.4862596259338303, 0.02899258980476766
+							],
+							"rotation": [
+								-0.5865702930584888, 0.3229964535573242, 0.5337457236037487,
+								0.5164533713951147
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.22181243695266156, 1.4220560882183744, -0.004336354302931486
+							],
+							"rotation": [
+								-0.34978728252478913, -0.01798464942711065, 0.933573160308057,
+								-0.07593789384315612
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.21391022694701098, 1.397060596477289, -0.03758408853394978
+							],
+							"rotation": [
+								0.3625738334409792, -0.028243103468138492, 0.9274614728216445,
+								0.08693537163840294
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.26057670961342067, 1.1739997057445435, 0.0005714729735593217
+							],
+							"rotation": [
+								-0.3527957724530284, 0.02260050040446126, 0.9334583175621002,
+								-0.0606624240767914
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.25954753876510583, 1.1501419783039686, -0.034909178130690166
+							],
+							"rotation": [
+								0.3689125201328965, 0.0544387250653384, 0.926278030771399,
+								0.054304580034421374
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.28427972689086334, 0.9324472772371377, 0.02127614496314273
+							],
+							"rotation": [
+								-0.07294341037442399, 0.034588397823945044, 0.9967150096079866,
+								-0.006487776280966262
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.2742694919104269, 0.9094284465245375, -0.0005822461552995456
+							],
+							"rotation": [
+								0.20208584942268532, 0.03360607862030196, 0.9787788376047073,
+								-0.00489162550242171
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11662886517067265, 0.956802339766191, -0.02852885155883362
+							],
+							"rotation": [
+								0.9881008209643128, 0.04096934059999828, -0.09397955434257209,
+								0.11465654846551068
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11060055004355267, 0.9694926225533875, -0.05017159564397925
+							],
+							"rotation": [
+								0.9903762262890238, 0.004215888661060648, 0.13601195724375262,
+								0.025256764856842907
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.16058704904214383, 0.540715823480579, 0.06532858485730345
+							],
+							"rotation": [
+								0.9894351633948585, 0.0597880044049933, -0.11895959602706765,
+								-0.0573765324861605
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.10996583900347709, 0.5412548272637386, -0.02822808510131409
+							],
+							"rotation": [
+								0.9715906667504157, -0.0065276426619777055, 0.21909721579212238,
+								-0.0892489562790548
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.20860461592957114, 0.08822797024629087, 0.006710984616628966
+							],
+							"rotation": [
+								0.8452484185223617, 0.06443956912968243, -0.10258576432174299,
+								0.520460194322631
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.0978427831769129, 0.08981427350543764, -0.10910685977241949
+							],
+							"rotation": [
+								0.8278251760780078, -0.1216097606342063, 0.19701581125572537,
+								0.5109807374893449
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 21.439396648416025,
+						"clavicle_r": 21.372796164489525,
+						"upperarm_l": 72.97739498830097,
+						"upperarm_r": 68.3600092506318
+					},
+					"normalizedTime": 0,
+					"invariants": {
+						"boundingBoxSize": [
+							0.5585492188012902, 1.4958746834308003, 0.17443544462972294
+						],
+						"elbowChainContinuity": {
+							"left": 0.494709076310778,
+							"right": 0.49470904609046573
+						},
+						"handToShoulderDistance": {
+							"left": 0.6133970687984844,
+							"right": 0.6247458169858534
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875886906786521,
+							"right": 0.8875886380047249
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.026340420410221554,
+							"right": -0.02900911595144895
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534144080327,
+							"right": 0.08503534210053863
+						}
+					}
+				},
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								0.002296254737302661, 0.9405075899208024, -0.04499056914854918
+							],
+							"rotation": [
+								0.10964700516449045, -0.048894306699504446,
+								-0.01907642591223221, 0.9925839868773062
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.0015015346990128278, 1.3042194309884378,
+								-0.0009070715883087244
+							],
+							"rotation": [
+								-0.09324782495502767, -0.02377713814378538,
+								0.025587892675312373, 0.9950300249697417
+							]
+						},
+						"neck_01": {
+							"position": [
+								-0.008497523756706628, 1.515290378404717, -0.04108335147183112
+							],
+							"rotation": [
+								0.29463839843626016, -0.019243397400294217, 0.02239156334168026,
+								0.9551526180221283
+							]
+						},
+						"Head": {
+							"position": [
+								-0.012981029707027327, 1.5836745216316894, 0.005478641457611816
+							],
+							"rotation": [
+								-0.0397951187842335, -0.015359057765300376,
+								0.025649222504148316, 0.9987605144630236
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.021242143920215065, 1.4888389028937319, 0.03406237960643438
+							],
+							"rotation": [
+								-0.5270788042758056, -0.39711267086444385, -0.5377196065330343,
+								0.524735252743756
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.041404610124416014, 1.4853625599897806, 0.03139049731876663
+							],
+							"rotation": [
+								-0.5820325412505714, 0.32174567990790154, 0.547141160303435,
+								0.5082857356721856
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.2165459960607679, 1.4237330294653123, -0.0059804756722601216
+							],
+							"rotation": [
+								-0.3419466845119609, -0.018379431617370014, 0.9362579505472084,
+								-0.0784583423342674
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.21882852185466808, 1.3927467224083223, -0.031290138667232265
+							],
+							"rotation": [
+								0.37407129817407153, -0.029905470963317967, 0.9235627185502769,
+								0.07879233206885718
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.25659479752017356, 1.175879298324776, -0.0011487070152939403
+							],
+							"rotation": [
+								-0.3450777823375993, 0.022405574846917315, 0.9361561066661508,
+								-0.0634906158768235
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.2609939287060462, 1.1451988797316366, -0.030358834696917174
+							],
+							"rotation": [
+								0.37966040409665175, 0.05286886341565386, 0.922517518855192,
+								0.04499209094456976
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.2817851917422035, 0.9344936622073252, 0.01974413692392766
+							],
+							"rotation": [
+								-0.06539069413731234, 0.03727590411167261, 0.9971035750321459,
+								-0.010909846516425594
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.271436304162846, 0.9039527721643248, 0.0017246638061303825
+							],
+							"rotation": [
+								0.21030320572566963, 0.030167985466475398, 0.9771329475174446,
+								-0.008582376726300205
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11655148092899006, 0.9574507718755398, -0.02881202420801825
+							],
+							"rotation": [
+								0.9882631011491925, 0.043747968711845955, -0.09671646139296786,
+								0.10985483255729349
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11079935330935411, 0.9685594337960611, -0.050045361030004724
+							],
+							"rotation": [
+								0.9903115395238102, 0.006505599879068196, 0.13651212109725794,
+								0.024600257106827852
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.16274119512988516, 0.5406416056137446, 0.06066511584748521
+							],
+							"rotation": [
+								0.989210670236949, 0.06278258058660115, -0.11883527158180204,
+								-0.058299019651557205
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.10815421844090796, 0.5403146212938992, -0.02839094667185387
+							],
+							"rotation": [
+								0.9708329997845536, -0.0045911252221950884, 0.2193082135329618,
+								-0.09677869380964065
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.21337051014183805, 0.08858846434260914, 0.0009023105719117366
+							],
+							"rotation": [
+								0.846084934942458, 0.0655572231983188, -0.10184809000249923,
+								0.5191045173303591
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.09276904067618974, 0.09013959662039128, -0.11552685515461433
+							],
+							"rotation": [
+								0.8277832472328919, -0.12171849763468957, 0.197191885341364,
+								0.510954854453543
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 21.703974822417052,
+						"clavicle_r": 22.080903863784776,
+						"upperarm_l": 72.79224171863169,
+						"upperarm_r": 68.16626136269613
+					},
+					"normalizedTime": 0.25,
+					"invariants": {
+						"boundingBoxSize": [
+							0.5532214959050494, 1.4950860572890803, 0.17619197100209955
+						],
+						"elbowChainContinuity": {
+							"left": 0.4947090764360583,
+							"right": 0.49470904579369396
+						},
+						"handToShoulderDistance": {
+							"left": 0.6126877979146935,
+							"right": 0.6259648419196009
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875886862016322,
+							"right": 0.887588643276088
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.026451475510985034,
+							"right": -0.029927818414936302
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534141478458,
+							"right": 0.0850353421043963
+						}
+					}
+				},
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								0.002296254737302661, 0.9411794236513924, -0.04499056912555329
+							],
+							"rotation": [
+								0.10692720320007157, -0.04763992446562028,
+								-0.017132247965819126, 0.9929770877982828
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.0006280194427791645, 1.3053599357172154, -0.007606596298420058
+							],
+							"rotation": [
+								-0.10913045744843389, -0.025324007370121332,
+								0.026410910924476817, 0.9933537646236374
+							]
+						},
+						"neck_01": {
+							"position": [
+								-0.009469208579078917, 1.5150297257619045, -0.0545287084586924
+							],
+							"rotation": [
+								0.27417276791191225, -0.02018325174632373, 0.026081189914755314,
+								0.9611148220775163
+							]
+						},
+						"Head": {
+							"position": [
+								-0.014539891140277674, 1.5853132151913016, -0.01095083164340132
+							],
+							"rotation": [
+								-0.04646721060758601, -0.01259027982102145, 0.02566494915369916,
+								0.9985106877631892
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.0200135210665149, 1.4910260508160826, 0.02153443330658604
+							],
+							"rotation": [
+								-0.535062470110359, -0.40856904762062063, -0.5227194184727811,
+								0.5230142406830407
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.04261831809802126, 1.4873837764610813, 0.01873688667182108
+							],
+							"rotation": [
+								-0.5936948298564346, 0.3266237459737307, 0.5340835270999159,
+								0.5055671702635968
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.2161306564971085, 1.4283841989236494, -0.018463907304427776
+							],
+							"rotation": [
+								-0.3371234781255495, -0.01370838273267668, 0.9377923578832441,
+								-0.0818861052631781
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.21948437115765745, 1.3944503192425466, -0.045040630904214424
+							],
+							"rotation": [
+								0.36577780322256936, -0.01697646433718849, 0.9262494026202908,
+								0.08933332230379759
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.25701895998019797, 1.1807312280814501, -0.011055984784901097
+							],
+							"rotation": [
+								-0.34038135319396323, 0.026758473262448474, 0.937496721343117,
+								-0.06726377908960753
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.26415997885469916, 1.1474881129789956, -0.036526993414654776
+							],
+							"rotation": [
+								0.3722567620564066, 0.06456588607901269, 0.9241370363867397,
+								0.05680569897858465
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.28330359257149657, 0.9396902127121866, 0.012320056219082033
+							],
+							"rotation": [
+								-0.06862399707817962, 0.035836218606494434, 0.9969724084660675,
+								-0.007247704351762945
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.27802601443198705, 0.9074971222183358, 0.0028447712359264063
+							],
+							"rotation": [
+								0.20755975874508906, 0.04325181072726145, 0.9772649260300332,
+								0.0012213803697295846
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11651994866737775, 0.9586563396819057, -0.029160894656522433
+							],
+							"rotation": [
+								0.989174986293122, 0.04237170892321678, -0.09415011368079441,
+								0.1042748333435326
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.1109184373311228, 0.9687636266154876, -0.04995228997036597
+							],
+							"rotation": [
+								0.990253356388115, 0.005774745871803372, 0.1375253734209216,
+								0.021253567644644963
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.16088404496523806, 0.540720830119753, 0.05587595759306115
+							],
+							"rotation": [
+								0.9893800876723129, 0.06316597738859324, -0.11897111393653796,
+								-0.05461662262324182
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.1085209607045339, 0.5403795109668561, -0.03122179571710844
+							],
+							"rotation": [
+								0.9707307788229724, -0.0051739300783575845, 0.22042783592772727,
+								-0.09521845746234729
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.21226590481075422, 0.08833047445958514, -0.0006025758028292208
+							],
+							"rotation": [
+								0.8461181401645598, 0.0653424018994305, -0.10205385224899932,
+								0.5190370648032943
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.09387061696025627, 0.08993483975488542, -0.11708147887912398
+							],
+							"rotation": [
+								0.8276746420013306, -0.12199954280452621, 0.197647320091288,
+								0.5108877914025619
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 20.389710072745494,
+						"clavicle_r": 21.001909304712424,
+						"upperarm_l": 74.242160141381,
+						"upperarm_r": 68.11249051767558
+					},
+					"normalizedTime": 0.5,
+					"invariants": {
+						"boundingBoxSize": [
+							0.5613296070034837, 1.4969827407317164, 0.17295743647218514
+						],
+						"elbowChainContinuity": {
+							"left": 0.4947090768367547,
+							"right": 0.4947090456625812
+						},
+						"handToShoulderDistance": {
+							"left": 0.6110464572157625,
+							"right": 0.6260494186525039
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875886766677374,
+							"right": 0.8875886394851803
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.024003674945821896,
+							"right": -0.027645949300823203
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534143792627,
+							"right": 0.08503534209063218
+						}
+					}
+				},
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								0.002296254737302661, 0.9398538760016041, -0.04499056917092486
+							],
+							"rotation": [
+								0.10598532759276194, -0.0479190793106522, -0.019026656798905802,
+								0.9930301397762966
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.00033534989099274267, 1.3037004143932753,
+								-0.0011276716804643492
+							],
+							"rotation": [
+								-0.09017512686098883, -0.020332932438109668,
+								0.02963294317160703, 0.9952773015763295
+							]
+						},
+						"neck_01": {
+							"position": [
+								-0.011563374854998226, 1.5149177249548071, -0.0399957503596371
+							],
+							"rotation": [
+								0.30246864187021366, -0.014131997593867398,
+								0.024225399634665013, 0.9527466280925566
+							]
+						},
+						"Head": {
+							"position": [
+								-0.016096252378347796, 1.5825129510630338, 0.007699642341014515
+							],
+							"rotation": [
+								-0.04067835285190695, -0.010512273467975067,
+								0.02985905144452176, 0.9986707168845114
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.01895950063925754, 1.4882593201623449, 0.03476180987622048
+							],
+							"rotation": [
+								-0.5246586559102507, -0.39684690427738023, -0.5377862298480874,
+								0.527287208577725
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.04367827967614031, 1.4843247090142744, 0.03255567740964998
+							],
+							"rotation": [
+								-0.5782299104553278, 0.3224744442469077, 0.5528191332615269,
+								0.5060152264136386
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.21455683970529965, 1.4242209139271187, -0.005568862648302829
+							],
+							"rotation": [
+								-0.3428153896965326, -0.0167764390249572, 0.9358277478557488,
+								-0.08014103832677304
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.22144178321911695, 1.3910794906328598, -0.02820011254457324
+							],
+							"rotation": [
+								0.3756689229926755, -0.028641728652289058, 0.9231760733949482,
+								0.07614754880111015
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.25511158592363936, 1.1764729120018838, 0.00034422856465747206
+							],
+							"rotation": [
+								-0.34624052780550413, 0.027199196075762287, 0.9355685927868487,
+								-0.06394614006047707
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.26215120730138397, 1.1432886838254521, -0.027112847713162056
+							],
+							"rotation": [
+								0.38100469912311397, 0.053875605689737496, 0.9220320662789323,
+								0.04230493010361914
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.27967013299511806, 0.9352314047893934, 0.023528388701267607
+							],
+							"rotation": [
+								-0.06065826827052402, 0.05035811367804346, 0.9968062659152465,
+								-0.012724115266426169
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.271154362886897, 0.901980645844847, 0.0049410519117036415
+							],
+							"rotation": [
+								0.21029748863370235, 0.032963334961998915, 0.9770331632538749,
+								-0.009725365014653535
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11658568929521008, 0.956911136352178, -0.029177648455272348
+							],
+							"rotation": [
+								0.9877895221022976, 0.044953190358556355, -0.10040808618077711,
+								0.110314491029129
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11080918050502091, 0.9678719760303, -0.050012522455101543
+							],
+							"rotation": [
+								0.9902656704365184, 0.007016990189053853, 0.13664130400110674,
+								0.025569862034760978
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.16416598802193583, 0.5402804428981096, 0.060401979844135936
+							],
+							"rotation": [
+								0.9889404753054337, 0.06396239699499721, -0.11864402968209317,
+								-0.06188006378561603
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.10784634948023383, 0.539674812241944, -0.027474989532894914
+							],
+							"rotation": [
+								0.9703157158383138, -0.0036312692557318367, 0.21914183245880767,
+								-0.1022305372546243
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.21547071458226583, 0.0887594053153069, -0.0027133448372162194
+							],
+							"rotation": [
+								0.8461289843419327, 0.06623820522421528, -0.10143212116547343,
+								0.5190277129605289
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.09052291441233275, 0.09048808579340606, -0.1192252556178003
+							],
+							"rotation": [
+								0.8279069819394124, -0.12139743325238252, 0.19667178044327124,
+								0.5110312155171939
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 22.17169531566952,
+						"clavicle_r": 22.17404371562373,
+						"upperarm_l": 72.65716333589063,
+						"upperarm_r": 67.90679183214495
+					},
+					"normalizedTime": 0.75,
+					"invariants": {
+						"boundingBoxSize": [
+							0.550824495882015, 1.493753545747727, 0.17962723546193624
+						],
+						"elbowChainContinuity": {
+							"left": 0.49470907669019853,
+							"right": 0.4947090458013823
+						},
+						"handToShoulderDistance": {
+							"left": 0.6115031469718197,
+							"right": 0.6258055160215328
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.887588690104373,
+							"right": 0.8875886485776399
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.026658404792462287,
+							"right": -0.030593015940532764
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534139952923,
+							"right": 0.0850353421076836
+						}
+					}
+				}
+			],
+			"summary": {
+				"finiteTransforms": true,
+				"maxBoneLengthRelativeError": 1.8810247115474965e-7,
+				"maxBoundingBoxExpansion": {
+					"x": 0.3972681804989269,
+					"y": 0.9892172998688014,
+					"z": 1.4845187778049016
+				},
+				"maxBoundingSpanRelativeToRestHeight": 0.9892172998688014,
+				"maxClavicleRestRotationDegrees": 22.17404371562373,
+				"maxIdleSymmetryError": 0.11069936454457874,
+				"maxRootHorizontalDisplacement": 2.8054517042797045e-11,
+				"passed": true,
+				"thresholds": {
+					"maxBoneLengthRelativeError": 0.00001,
+					"maxBoundingSpanRelativeToRestHeight": 1.5,
+					"maxClavicleRestRotationDegrees": 45,
+					"maxIdleSymmetryError": 0.15,
+					"maxRootHorizontalDisplacement": 0.00001
+				}
+			}
+		},
 		"rootMotion": {
 			"after": {
 				"x": 0,
@@ -22,9 +1058,9 @@
 				"z": 0
 			},
 			"before": {
-				"x": 4.656612873077393e-10,
+				"x": 0,
 				"y": 0,
-				"z": -9.313225416557325e-10
+				"z": 0
 			},
 			"policy": "freeze target-world pelvis X/Z; preserve target-world pelvis Y"
 		},
@@ -63,89 +1099,9 @@
 		],
 		"restPoseDifferences": [
 			{
-				"angleDegrees": 179.917903847679,
-				"source": "mixamorigLeftToeBase",
-				"target": "ball_l"
-			},
-			{
-				"angleDegrees": 174.83032540822762,
-				"source": "mixamorigRightToeBase",
-				"target": "ball_r"
-			},
-			{
-				"angleDegrees": 8.869143966030922,
-				"source": "mixamorigLeftLeg",
-				"target": "calf_l"
-			},
-			{
-				"angleDegrees": 10.586234299510673,
-				"source": "mixamorigRightLeg",
-				"target": "calf_r"
-			},
-			{
-				"angleDegrees": 160.23413155644732,
-				"source": "mixamorigLeftShoulder",
-				"target": "clavicle_l"
-			},
-			{
-				"angleDegrees": 161.2249581887209,
-				"source": "mixamorigRightShoulder",
-				"target": "clavicle_r"
-			},
-			{
-				"angleDegrees": 121.91769582708352,
-				"source": "mixamorigLeftFoot",
-				"target": "foot_l"
-			},
-			{
-				"angleDegrees": 122.42520346395906,
-				"source": "mixamorigRightFoot",
-				"target": "foot_r"
-			},
-			{
 				"angleDegrees": 15.17846090088627,
 				"source": "mixamorigHead",
 				"target": "Head"
-			},
-			{
-				"angleDegrees": 89.99978945534211,
-				"source": "mixamorigLeftHandIndex1",
-				"target": "index_01_l"
-			},
-			{
-				"angleDegrees": 89.99980877406828,
-				"source": "mixamorigRightHandIndex1",
-				"target": "index_01_r"
-			},
-			{
-				"angleDegrees": 177.84371436485554,
-				"source": "mixamorigLeftHandIndex4",
-				"target": "index_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.84371436485554,
-				"source": "mixamorigRightHandIndex4",
-				"target": "index_04_leaf_r"
-			},
-			{
-				"angleDegrees": 90.00245540876865,
-				"source": "mixamorigLeftHandMiddle1",
-				"target": "middle_01_l"
-			},
-			{
-				"angleDegrees": 90.00246506790744,
-				"source": "mixamorigRightHandMiddle1",
-				"target": "middle_01_r"
-			},
-			{
-				"angleDegrees": 177.85932836026763,
-				"source": "mixamorigLeftHandMiddle4",
-				"target": "middle_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.85932836026763,
-				"source": "mixamorigRightHandMiddle4",
-				"target": "middle_04_leaf_r"
 			},
 			{
 				"angleDegrees": 29.814983630355545,
@@ -158,46 +1114,6 @@
 				"target": "pelvis"
 			},
 			{
-				"angleDegrees": 90.00029174116436,
-				"source": "mixamorigLeftHandPinky1",
-				"target": "pinky_01_l"
-			},
-			{
-				"angleDegrees": 90.00030140048551,
-				"source": "mixamorigRightHandPinky1",
-				"target": "pinky_01_r"
-			},
-			{
-				"angleDegrees": 177.88179950702457,
-				"source": "mixamorigLeftHandPinky4",
-				"target": "pinky_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.88179950702457,
-				"source": "mixamorigRightHandPinky4",
-				"target": "pinky_04_leaf_r"
-			},
-			{
-				"angleDegrees": 90.01188234088869,
-				"source": "mixamorigLeftHandRing1",
-				"target": "ring_01_l"
-			},
-			{
-				"angleDegrees": 90.011891999233,
-				"source": "mixamorigRightHandRing1",
-				"target": "ring_01_r"
-			},
-			{
-				"angleDegrees": 177.81692647051713,
-				"source": "mixamorigLeftHandRing4",
-				"target": "ring_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.81691280765946,
-				"source": "mixamorigRightHandRing4",
-				"target": "ring_04_leaf_r"
-			},
-			{
 				"angleDegrees": 7.82292321754615,
 				"source": "mixamorigSpine1",
 				"target": "spine_02"
@@ -208,34 +1124,9 @@
 				"target": "spine_03"
 			},
 			{
-				"angleDegrees": 179.95874447750114,
-				"source": "mixamorigLeftUpLeg",
-				"target": "thigh_l"
-			},
-			{
-				"angleDegrees": 179.9493944910751,
-				"source": "mixamorigRightUpLeg",
-				"target": "thigh_r"
-			},
-			{
-				"angleDegrees": 179.99401163644455,
-				"source": "mixamorigLeftHandThumb1",
-				"target": "thumb_01_l"
-			},
-			{
-				"angleDegrees": 179.99402175525162,
-				"source": "mixamorigRightHandThumb1",
-				"target": "thumb_01_r"
-			},
-			{
-				"angleDegrees": 45.00314964537569,
-				"source": "mixamorigLeftHandThumb4",
-				"target": "thumb_04_leaf_l"
-			},
-			{
-				"angleDegrees": 45.00314964537569,
-				"source": "mixamorigRightHandThumb4",
-				"target": "thumb_04_leaf_r"
+				"angleDegrees": 160.23413155644732,
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
 			},
 			{
 				"angleDegrees": 94.23004625021811,
@@ -243,135 +1134,60 @@
 				"target": "upperarm_l"
 			},
 			{
-				"angleDegrees": 95.2059740420307,
-				"source": "mixamorigRightArm",
-				"target": "upperarm_r"
-			}
-		],
-		"semanticMatches": [
-			{
-				"source": "mixamorigLeftToeBase",
-				"target": "ball_l"
+				"angleDegrees": 179.95874447750114,
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
 			},
 			{
-				"source": "mixamorigLeftToe_End",
-				"target": "ball_leaf_l"
-			},
-			{
-				"source": "mixamorigRightToe_End",
-				"target": "ball_leaf_r"
-			},
-			{
-				"source": "mixamorigRightToeBase",
-				"target": "ball_r"
-			},
-			{
+				"angleDegrees": 8.869143966030922,
 				"source": "mixamorigLeftLeg",
 				"target": "calf_l"
 			},
 			{
-				"source": "mixamorigRightLeg",
-				"target": "calf_r"
-			},
-			{
-				"source": "mixamorigLeftShoulder",
-				"target": "clavicle_l"
-			},
-			{
-				"source": "mixamorigRightShoulder",
-				"target": "clavicle_r"
-			},
-			{
+				"angleDegrees": 121.91769582708352,
 				"source": "mixamorigLeftFoot",
 				"target": "foot_l"
 			},
 			{
+				"angleDegrees": 179.917903847679,
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"angleDegrees": 161.2249581887209,
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
+				"angleDegrees": 95.2059740420307,
+				"source": "mixamorigRightArm",
+				"target": "upperarm_r"
+			},
+			{
+				"angleDegrees": 179.9493944910751,
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"angleDegrees": 10.586234299510673,
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"angleDegrees": 122.42520346395906,
 				"source": "mixamorigRightFoot",
 				"target": "foot_r"
 			},
 			{
-				"source": "mixamorigLeftHand",
-				"target": "hand_l"
-			},
-			{
-				"source": "mixamorigRightHand",
-				"target": "hand_r"
-			},
+				"angleDegrees": 174.83032540822762,
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
+			}
+		],
+		"semanticMatches": [
 			{
 				"source": "mixamorigHead",
 				"target": "Head"
-			},
-			{
-				"source": "mixamorigLeftHandIndex1",
-				"target": "index_01_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex1",
-				"target": "index_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandIndex2",
-				"target": "index_02_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex2",
-				"target": "index_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandIndex3",
-				"target": "index_03_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex3",
-				"target": "index_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandIndex4",
-				"target": "index_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex4",
-				"target": "index_04_leaf_r"
-			},
-			{
-				"source": "mixamorigLeftForeArm",
-				"target": "lowerarm_l"
-			},
-			{
-				"source": "mixamorigRightForeArm",
-				"target": "lowerarm_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle1",
-				"target": "middle_01_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle1",
-				"target": "middle_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle2",
-				"target": "middle_02_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle2",
-				"target": "middle_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle3",
-				"target": "middle_03_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle3",
-				"target": "middle_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle4",
-				"target": "middle_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle4",
-				"target": "middle_04_leaf_r"
 			},
 			{
 				"source": "mixamorigNeck",
@@ -380,70 +1196,6 @@
 			{
 				"source": "mixamorigHips",
 				"target": "pelvis"
-			},
-			{
-				"source": "mixamorigLeftHandPinky1",
-				"target": "pinky_01_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky1",
-				"target": "pinky_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandPinky2",
-				"target": "pinky_02_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky2",
-				"target": "pinky_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandPinky3",
-				"target": "pinky_03_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky3",
-				"target": "pinky_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandPinky4",
-				"target": "pinky_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky4",
-				"target": "pinky_04_leaf_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing1",
-				"target": "ring_01_l"
-			},
-			{
-				"source": "mixamorigRightHandRing1",
-				"target": "ring_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing2",
-				"target": "ring_02_l"
-			},
-			{
-				"source": "mixamorigRightHandRing2",
-				"target": "ring_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing3",
-				"target": "ring_03_l"
-			},
-			{
-				"source": "mixamorigRightHandRing3",
-				"target": "ring_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing4",
-				"target": "ring_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandRing4",
-				"target": "ring_04_leaf_r"
 			},
 			{
 				"source": "mixamorigSpine",
@@ -458,52 +1210,68 @@
 				"target": "spine_03"
 			},
 			{
-				"source": "mixamorigLeftUpLeg",
-				"target": "thigh_l"
-			},
-			{
-				"source": "mixamorigRightUpLeg",
-				"target": "thigh_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb1",
-				"target": "thumb_01_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb1",
-				"target": "thumb_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb2",
-				"target": "thumb_02_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb2",
-				"target": "thumb_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb3",
-				"target": "thumb_03_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb3",
-				"target": "thumb_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb4",
-				"target": "thumb_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb4",
-				"target": "thumb_04_leaf_r"
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
 			},
 			{
 				"source": "mixamorigLeftArm",
 				"target": "upperarm_l"
 			},
 			{
+				"source": "mixamorigLeftForeArm",
+				"target": "lowerarm_l"
+			},
+			{
+				"source": "mixamorigLeftHand",
+				"target": "hand_l"
+			},
+			{
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
+			},
+			{
+				"source": "mixamorigLeftLeg",
+				"target": "calf_l"
+			},
+			{
+				"source": "mixamorigLeftFoot",
+				"target": "foot_l"
+			},
+			{
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
 				"source": "mixamorigRightArm",
 				"target": "upperarm_r"
+			},
+			{
+				"source": "mixamorigRightForeArm",
+				"target": "lowerarm_r"
+			},
+			{
+				"source": "mixamorigRightHand",
+				"target": "hand_r"
+			},
+			{
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"source": "mixamorigRightFoot",
+				"target": "foot_r"
+			},
+			{
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
 			}
 		],
 		"missingMappedSourceBones": [],
@@ -511,9 +1279,342 @@
 		"unmatchedSourceBones": [
 			"mixamorigHeadTop_End",
 			"mixamorigLeftEye",
-			"mixamorigRightEye"
+			"mixamorigLeftHandIndex1",
+			"mixamorigLeftHandIndex2",
+			"mixamorigLeftHandIndex3",
+			"mixamorigLeftHandIndex4",
+			"mixamorigLeftHandMiddle1",
+			"mixamorigLeftHandMiddle2",
+			"mixamorigLeftHandMiddle3",
+			"mixamorigLeftHandMiddle4",
+			"mixamorigLeftHandPinky1",
+			"mixamorigLeftHandPinky2",
+			"mixamorigLeftHandPinky3",
+			"mixamorigLeftHandPinky4",
+			"mixamorigLeftHandRing1",
+			"mixamorigLeftHandRing2",
+			"mixamorigLeftHandRing3",
+			"mixamorigLeftHandRing4",
+			"mixamorigLeftHandThumb1",
+			"mixamorigLeftHandThumb2",
+			"mixamorigLeftHandThumb3",
+			"mixamorigLeftHandThumb4",
+			"mixamorigLeftToe_End",
+			"mixamorigRightEye",
+			"mixamorigRightHandIndex1",
+			"mixamorigRightHandIndex2",
+			"mixamorigRightHandIndex3",
+			"mixamorigRightHandIndex4",
+			"mixamorigRightHandMiddle1",
+			"mixamorigRightHandMiddle2",
+			"mixamorigRightHandMiddle3",
+			"mixamorigRightHandMiddle4",
+			"mixamorigRightHandPinky1",
+			"mixamorigRightHandPinky2",
+			"mixamorigRightHandPinky3",
+			"mixamorigRightHandPinky4",
+			"mixamorigRightHandRing1",
+			"mixamorigRightHandRing2",
+			"mixamorigRightHandRing3",
+			"mixamorigRightHandRing4",
+			"mixamorigRightHandThumb1",
+			"mixamorigRightHandThumb2",
+			"mixamorigRightHandThumb3",
+			"mixamorigRightHandThumb4",
+			"mixamorigRightToe_End"
 		],
-		"unmatchedTargetBones": ["root"]
+		"unmatchedTargetBones": [
+			"ball_leaf_l",
+			"ball_leaf_r",
+			"index_01_l",
+			"index_01_r",
+			"index_02_l",
+			"index_02_r",
+			"index_03_l",
+			"index_03_r",
+			"index_04_leaf_l",
+			"index_04_leaf_r",
+			"middle_01_l",
+			"middle_01_r",
+			"middle_02_l",
+			"middle_02_r",
+			"middle_03_l",
+			"middle_03_r",
+			"middle_04_leaf_l",
+			"middle_04_leaf_r",
+			"pinky_01_l",
+			"pinky_01_r",
+			"pinky_02_l",
+			"pinky_02_r",
+			"pinky_03_l",
+			"pinky_03_r",
+			"pinky_04_leaf_l",
+			"pinky_04_leaf_r",
+			"ring_01_l",
+			"ring_01_r",
+			"ring_02_l",
+			"ring_02_r",
+			"ring_03_l",
+			"ring_03_r",
+			"ring_04_leaf_l",
+			"ring_04_leaf_r",
+			"root",
+			"thumb_01_l",
+			"thumb_01_r",
+			"thumb_02_l",
+			"thumb_02_r",
+			"thumb_03_l",
+			"thumb_03_r",
+			"thumb_04_leaf_l",
+			"thumb_04_leaf_r"
+		]
+	},
+	"legacyFailedBaseline": {
+		"idleQuality": {
+			"finiteTransforms": true,
+			"maxBoneLengthRelativeError": 1.113093057725223e-7,
+			"maxBoundingBoxExpansion": {
+				"x": 0.42502906254495965,
+				"y": 0.994573015366227,
+				"z": 1.7209840558117853
+			},
+			"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+			"maxClavicleRestRotationDegrees": 168.23569985615333,
+			"maxIdleSymmetryError": 0.10348740525943342,
+			"maxRootHorizontalDisplacement": 2.804635690356605e-11,
+			"passed": false,
+			"thresholds": {
+				"maxBoneLengthRelativeError": 0.00001,
+				"maxBoundingSpanRelativeToRestHeight": 1.5,
+				"maxClavicleRestRotationDegrees": 45,
+				"maxIdleSymmetryError": 0.15,
+				"maxRootHorizontalDisplacement": 0.00001
+			}
+		},
+		"walkQuality": {
+			"finiteTransforms": true,
+			"maxBoneLengthRelativeError": 0.00000157461785854629,
+			"maxBoundingBoxExpansion": {
+				"x": 0.48040623744853794,
+				"y": 0.9865332825786874,
+				"z": 6.956227570324189
+			},
+			"maxBoundingSpanRelativeToRestHeight": 0.9865332825786874,
+			"maxClavicleRestRotationDegrees": 170.224259313995,
+			"maxIdleSymmetryError": 0,
+			"maxRootHorizontalDisplacement": 1.5794081494047152e-10,
+			"passed": false,
+			"thresholds": {
+				"maxBoneLengthRelativeError": 0.00001,
+				"maxBoundingSpanRelativeToRestHeight": 1.5,
+				"maxClavicleRestRotationDegrees": 45,
+				"maxIdleSymmetryError": 0.15,
+				"maxRootHorizontalDisplacement": 0.00001
+			}
+		}
+	},
+	"optionExperiments": {
+		"results": [
+			{
+				"name": "current-defaults",
+				"options": {},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.994573015366227,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 2.804635690356605e-11,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			},
+			{
+				"name": "preserve-bone-matrix-false",
+				"options": {
+					"preserveBoneMatrix": false
+				},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.994573015366227,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 2.804635690356605e-11,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			},
+			{
+				"name": "preserve-bone-positions-false",
+				"options": {
+					"preserveBonePositions": false
+				},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.994573015366227,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 2.804635690356605e-11,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			},
+			{
+				"name": "use-target-matrix-true",
+				"options": {
+					"useTargetMatrix": true
+				},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.994573015366227,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 2.804635690356605e-11,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			},
+			{
+				"name": "matrix-false-target-matrix-true",
+				"options": {
+					"preserveBoneMatrix": false,
+					"useTargetMatrix": true
+				},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.994573015366227,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 2.804635690356605e-11,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			},
+			{
+				"name": "use-first-frame-position-true",
+				"options": {
+					"useFirstFramePosition": true
+				},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.9945730153662269,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.9945730153662269,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 1.4187219738153446e-18,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			},
+			{
+				"name": "hip-influence-y-only",
+				"options": {
+					"hipInfluence": [0, 1, 0]
+				},
+				"quality": {
+					"finiteTransforms": true,
+					"maxBoneLengthRelativeError": 1.113093057725223e-7,
+					"maxBoundingBoxExpansion": {
+						"x": 0.42502906254495965,
+						"y": 0.994573015366227,
+						"z": 1.7209840558117853
+					},
+					"maxBoundingSpanRelativeToRestHeight": 0.994573015366227,
+					"maxClavicleRestRotationDegrees": 168.23569985615333,
+					"maxIdleSymmetryError": 0.10348740525943342,
+					"maxRootHorizontalDisplacement": 8.587912998094069e-16,
+					"passed": false,
+					"thresholds": {
+						"maxBoneLengthRelativeError": 0.00001,
+						"maxBoundingSpanRelativeToRestHeight": 1.5,
+						"maxClavicleRestRotationDegrees": 45,
+						"maxIdleSymmetryError": 0.15,
+						"maxRootHorizontalDisplacement": 0.00001
+					}
+				},
+				"trackCount": 65
+			}
+		],
+		"unsupportedCurrentOption": {
+			"name": "preserveHipPosition",
+			"effect": "none; this is not a SkeletonUtils retarget option"
+		}
 	},
 	"provenance": {
 		"licenseSidecarsPresent": false,
@@ -522,24 +1623,1058 @@
 	},
 	"targetSkeletonId": "golden-reference-quaternius-superhero-male",
 	"walk": {
-		"boneMapVersion": "mixamo-quaternius-v1",
+		"boneMapVersion": "mixamo-quaternius-rest-delta-v2",
 		"clip": {
 			"duration": 1.0333333015441895,
-			"maxLoopEndpointDifference": 0.0006488376856211727,
+			"maxLoopEndpointDifference": 0.0005846474320098055,
 			"name": "GoldenReference_Walk_InPlace",
-			"trackCount": 65
+			"trackCount": 23
 		},
-		"method": "Three.js SkeletonUtils.retargetClip runtime feasibility experiment",
+		"method": "rest-frame world-delta runtime feasibility experiment",
+		"profile": {
+			"boneMap": {
+				"Head": "mixamorigHead",
+				"neck_01": "mixamorigNeck",
+				"pelvis": "mixamorigHips",
+				"spine_01": "mixamorigSpine",
+				"spine_02": "mixamorigSpine1",
+				"spine_03": "mixamorigSpine2",
+				"clavicle_l": "mixamorigLeftShoulder",
+				"upperarm_l": "mixamorigLeftArm",
+				"lowerarm_l": "mixamorigLeftForeArm",
+				"hand_l": "mixamorigLeftHand",
+				"thigh_l": "mixamorigLeftUpLeg",
+				"calf_l": "mixamorigLeftLeg",
+				"foot_l": "mixamorigLeftFoot",
+				"ball_l": "mixamorigLeftToeBase",
+				"clavicle_r": "mixamorigRightShoulder",
+				"upperarm_r": "mixamorigRightArm",
+				"lowerarm_r": "mixamorigRightForeArm",
+				"hand_r": "mixamorigRightHand",
+				"thigh_r": "mixamorigRightUpLeg",
+				"calf_r": "mixamorigRightLeg",
+				"foot_r": "mixamorigRightFoot",
+				"ball_r": "mixamorigRightToeBase"
+			},
+			"ignoredTargetBones": [
+				"ball_leaf_l",
+				"ball_leaf_r",
+				"index_01_l",
+				"index_01_r",
+				"index_02_l",
+				"index_02_r",
+				"index_03_l",
+				"index_03_r",
+				"index_04_leaf_l",
+				"index_04_leaf_r",
+				"middle_01_l",
+				"middle_01_r",
+				"middle_02_l",
+				"middle_02_r",
+				"middle_03_l",
+				"middle_03_r",
+				"middle_04_leaf_l",
+				"middle_04_leaf_r",
+				"pinky_01_l",
+				"pinky_01_r",
+				"pinky_02_l",
+				"pinky_02_r",
+				"pinky_03_l",
+				"pinky_03_r",
+				"pinky_04_leaf_l",
+				"pinky_04_leaf_r",
+				"ring_01_l",
+				"ring_01_r",
+				"ring_02_l",
+				"ring_02_r",
+				"ring_03_l",
+				"ring_03_r",
+				"ring_04_leaf_l",
+				"ring_04_leaf_r",
+				"thumb_01_l",
+				"thumb_01_r",
+				"thumb_02_l",
+				"thumb_02_r",
+				"thumb_03_l",
+				"thumb_03_r",
+				"thumb_04_leaf_l",
+				"thumb_04_leaf_r"
+			],
+			"rootMotionPolicy": "freeze target-world pelvis X/Z; preserve target-world pelvis Y",
+			"scalePolicy": "target pelvis rest height / source hips rest height",
+			"sourceSkeletonId": "mixamo-67-fbx",
+			"targetSkeletonId": "golden-reference-quaternius-superhero-male",
+			"transformPolicy": "sourceAnimatedWorld * inverse(sourceRestWorld) * targetRestWorld, converted through animated target parent world",
+			"version": "mixamo-quaternius-rest-delta-v2"
+		},
+		"quality": {
+			"rest": {
+				"joints": {
+					"pelvis": {
+						"position": [0, 0.9490999865331241, -0.04299994887572594],
+						"rotation": [0.14236404075137296, 0, 0, 0.9898143663843952]
+					},
+					"spine_03": {
+						"position": [0, 1.3108998164970191, 0.006899974973219564],
+						"rotation": [-0.1130007551923241, 0, 0, 0.9935949020229344]
+					},
+					"neck_01": {
+						"position": [0, 1.5204998401619891, -0.04140002112155338],
+						"rotation": [0.1464139644237939, 0, 0, 0.9892234080437584]
+					},
+					"Head": {
+						"position": [0, 1.599799968593369, -0.017399985977202374],
+						"rotation": [0.0144846198013071, 0, 0, 0.9998950923918027]
+					},
+					"clavicle_l": {
+						"position": [
+							0.031399998813867576, 1.4952998785900102, 0.033499987980341
+						],
+						"rotation": [
+							-0.6003829511048416, -0.3737546325564774, -0.37396880955830797,
+							0.5999959301051598
+						]
+					},
+					"clavicle_r": {
+						"position": [
+							-0.031399998813867576, 1.4952998785900102, 0.033499987980341
+						],
+						"rotation": [
+							-0.6003829511048416, 0.3737546325564774, 0.37396880955830797,
+							0.5999959301051598
+						]
+					},
+					"upperarm_l": {
+						"position": [
+							0.21201160362218882, 1.4554998495563407, -0.06540000122775727
+						],
+						"rotation": [
+							-0.010730614882652383, 0.01067239043086329, -0.7070253548785824,
+							0.7070262382299161
+						]
+					},
+					"upperarm_r": {
+						"position": [
+							-0.21201160362218882, 1.4554998495563407, -0.06540000122775728
+						],
+						"rotation": [
+							-0.010730626358907687, -0.01067239492713227, 0.707025361290666,
+							0.7070262315757938
+						]
+					},
+					"lowerarm_l": {
+						"position": [
+							0.46301150911903566, 1.4554998100026963, -0.07299998276422885
+						],
+						"rotation": [
+							0.011032367718563363, -0.011031693412461942, -0.7070207086700534,
+							0.7070207253784513
+						]
+					},
+					"lowerarm_r": {
+						"position": [
+							-0.46301150890648146, 1.4554998122776037, -0.07299998616435256
+						],
+						"rotation": [
+							0.011032398047002573, 0.011031647110542704, 0.7070207171967124,
+							0.7070207171009965
+						]
+					},
+					"hand_l": {
+						"position": [
+							0.7064870110966622, 1.4554999606234467, -0.0653999540621635
+						],
+						"rotation": [
+							2.765567078266137e-8, 4.5771663735125366e-8, -0.7071067795261821,
+							0.707106782846911
+						]
+					},
+					"hand_r": {
+						"position": [
+							-0.7064869811785633, 1.4554999566779585, -0.06539996464477531
+						],
+						"rotation": [
+							1.6009563929932173e-8, -5.0100057990344596e-8, 0.7071067873240575,
+							0.7071067750490356
+						]
+					},
+					"thigh_l": {
+						"position": [
+							0.11430513858795169, 0.9711999684180068, -0.03599998193896555
+						],
+						"rotation": [0.9999999931792525, 0, 0, -0.00011679681085551837]
+					},
+					"thigh_r": {
+						"position": [
+							-0.11430513858795169, 0.9711999684180068, -0.03599998193896555
+						],
+						"rotation": [0.9999999931792525, 0, 0, -0.00011679681085551837]
+					},
+					"calf_l": {
+						"position": [
+							0.11430513113737106, 0.5423998752730389, -0.03610015008008726
+						],
+						"rotation": [0.9984248430372615, 0, 0, -0.0561055505812033]
+					},
+					"calf_r": {
+						"position": [
+							-0.11430513113737106, 0.5423998752730389, -0.03610015008008726
+						],
+						"rotation": [0.9984248430372615, 0, 0, -0.0561055505812033]
+					},
+					"foot_l": {
+						"position": [
+							0.11430513113737106, 0.08649976556390399, -0.08750032413935063
+						],
+						"rotation": [
+							0.8509463607956806, 1.2522968456919077e-7, 2.0288156161706424e-7,
+							0.5252525973743783
+						]
+					},
+					"foot_r": {
+						"position": [
+							-0.11430513113737106, 0.08649976556390399, -0.08750032413935063
+						],
+						"rotation": [
+							0.8509463607956806, -1.2522968456919077e-7,
+							-2.0288156161706424e-7, 0.5252525973743783
+						]
+					}
+				},
+				"localRotationFromRest": {
+					"clavicle_l": 0,
+					"clavicle_r": 0,
+					"upperarm_l": 0.0053639787317047065,
+					"upperarm_r": 0.006286135623184311
+				},
+				"normalizedTime": 0
+			},
+			"samples": [
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								-0.001258048927411437, 0.9290290767261942, -0.0418274703607698
+							],
+							"rotation": [
+								0.15091742689957513, 0.021399306172359384, -0.01930380672042953,
+								0.9881261877915459
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.009457507462941325, 1.2896651241440096, 0.015821722468410303
+							],
+							"rotation": [
+								-0.095522676989086, 0.03851779101599758, 0.002118137998260601,
+								0.9946795018735969
+							]
+						},
+						"neck_01": {
+							"position": [
+								0.006968369291613421, 1.5008310692558582, -0.025017074688433224
+							],
+							"rotation": [
+								0.24281916382544438, 0.028036005512320758, -0.03493035512766708,
+								0.969036999481795
+							]
+						},
+						"Head": {
+							"position": [
+								0.013705340586595213, 1.5737110953963307, 0.013811098923454477
+							],
+							"rotation": [
+								0.05597673631931796, 0.011544998708748698, 0.012206953872761205,
+								0.998290693271755
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.04388557232991498, 1.4729176040183514, 0.04631992785795279
+							],
+							"rotation": [
+								-0.5939784199354585, -0.31665637205230784, -0.5227462497965567,
+								0.5231201936584767
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.018727519098085215, 1.473115104126834, 0.05115743514890678
+							],
+							"rotation": [
+								-0.5832734107149584, 0.3167821244488659, 0.5343564770097334,
+								0.5233587387828248
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.21999815775724096, 1.38481372400828, -0.025845599251359708
+							],
+							"rotation": [
+								-0.015227810643442264, 0.0010703818036282696,
+								0.9822939062945014, -0.18672345787953756
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.19617065290964647, 1.3854568660590938, -0.018238298087951313
+							],
+							"rotation": [
+								-0.04402652536142693, -0.10711044277919242, 0.9802550935105208,
+								0.16027778935000744
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.3121075852282858, 1.1512099036708214, -0.023889514533967756
+							],
+							"rotation": [
+								-0.22983260513233397, 0.257626876163615, 0.9344851500690055,
+								-0.08684970118987435
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.27270915439892823, 1.1530055794500917, -0.07451418413458105
+							],
+							"rotation": [
+								0.09975702135836162, 0.11171387113174307, 0.987899684599841,
+								0.04028350597952238
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.32280084654390256, 0.9436261003511918, 0.10312512846209812
+							],
+							"rotation": [
+								-0.353743821205871, 0.33891576187897726, 0.8474716799262539,
+								-0.20443377174927432
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.2866681112637146, 0.9162822020687783, -0.01878921428729076
+							],
+							"rotation": [
+								0.2829274284306979, 0.13300682152023685, 0.9433644612559084,
+								0.11101688569774427
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11390888461188645, 0.9473647443447345, -0.03996893068833652
+							],
+							"rotation": [
+								0.9695769377503007, 0.039579832054753676, -0.08762425942812177,
+								0.22511327778907295
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11432164014165391, 0.9546094351428578, -0.028968892300667744
+							],
+							"rotation": [
+								0.9938518968968715, 0.021517799331015254, 0.049093018596629415,
+								0.09687758704422642
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.1637363707727424, 0.5633678605080448, 0.1442405819900748
+							],
+							"rotation": [
+								0.9225186060507415, -0.014115190496653456, -0.08466175868827745,
+								-0.3762878811538422
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.10006017648308661, 0.5342552614038625, 0.05450848415442284
+							],
+							"rotation": [
+								0.9900166770053533, 0.03345507290065181, -0.025483318634203125,
+								-0.13453006288513192
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.12255658782662035, 0.23468389810838552, -0.1731845038499298
+							],
+							"rotation": [
+								0.9715174297058781, 0.03187198394272634, -0.08893052795500597,
+								0.21732331125510482
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.07281470571966994, 0.0931003498396466, -0.06848349611130658
+							],
+							"rotation": [
+								0.850607976510941, 0.010641171329722011, -0.023886282870202315,
+								0.5251497703125642
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 22.333700303307655,
+						"clavicle_r": 19.372201604691213,
+						"upperarm_l": 51.718981165683154,
+						"upperarm_r": 57.93913482497329
+					},
+					"normalizedTime": 0,
+					"invariants": {
+						"boundingBoxSize": [
+							0.6094689578076171, 1.4806107455566841, 0.3174250858400046
+						],
+						"elbowChainContinuity": {
+							"left": 0.49470908055952223,
+							"right": 0.4947090431765253
+						},
+						"handToShoulderDistance": {
+							"left": 0.6009742564035367,
+							"right": 0.6218903243432998
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875893882744155,
+							"right": 0.8875886830593362
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.027913465237506818,
+							"right": -0.02771596512902419
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.0850353417941021,
+							"right": 0.08503534178286193
+						}
+					}
+				},
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								-0.001258048927411437, 0.8853132854855421, -0.04182747185709764
+							],
+							"rotation": [
+								0.14889106788129197, -0.03358160062741269,
+								-0.009915872837095314, 0.9882334751820281
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.011608866462182954, 1.2458600857787412, 0.01663482364933755
+							],
+							"rotation": [
+								-0.08725143798900167, 0.06689816854295932, -0.03026608216773249,
+								0.9934766156707793
+							]
+						},
+						"neck_01": {
+							"position": [
+								0.022033007004810486, 1.4572842365898742, -0.021525696498045144
+							],
+							"rotation": [
+								0.25832222385382775, 0.031032284384482564, -0.02141708061816719,
+								0.965322710106257
+							]
+						},
+						"Head": {
+							"position": [
+								0.026787195116682844, 1.529003039276101, 0.019685019233146542
+							],
+							"rotation": [
+								0.05076312094909377, 0.039796085657285055,
+								-0.039816247613686205, 0.997122882870427
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.06039435977616522, 1.4257593626678682, 0.04750761581284669
+							],
+							"rotation": [
+								-0.6195968750470813, -0.2711607857942718, -0.505331748400528,
+								0.5359210433802633
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.0017284779964130467, 1.430269106619885, 0.05552353444970645
+							],
+							"rotation": [
+								-0.5250072323549526, 0.39996442351726913, 0.5146490454852394,
+								0.5472953735202073
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.22452391700732324, 1.3331171520907064, -0.04449624077130087
+							],
+							"rotation": [
+								0.10248065723881575, -0.24270804360079334, 0.9602543464774285,
+								-0.09220688984334525
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.19858802007145157, 1.3757857793993806, 0.007945311948952684
+							],
+							"rotation": [
+								0.1197292926601998, 0.12270453463106114, 0.9592329919982597,
+								0.22467879455375817
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.25650043577740644, 1.1158571552920475, -0.16629245472612955
+							],
+							"rotation": [
+								-0.09603245348616415, 0.03730401724109513, 0.9944115322408316,
+								-0.02306258271628774
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.2994498049965544, 1.1575854241449763, 0.08056919337346777
+							],
+							"rotation": [
+								0.25588656586564995, 0.46259774269137066, 0.8358642522863411,
+								0.1478389177995052
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.2659283025408615, 0.87320011748218, -0.14714085727481255
+							],
+							"rotation": [
+								-0.30700437657404905, 0.04312403802954433, 0.949187231093386,
+								-0.05415007329336732
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.3019836401287615, 1.0288962231079448, 0.2873801432926292
+							],
+							"rotation": [
+								0.30123313278932434, 0.479888731446615, 0.7415521458661323,
+								0.35925731739495964
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11295544466443468, 0.9039315921035365, -0.027277214717488944
+							],
+							"rotation": [
+								0.9377521659528849, -0.006074075801093009, -0.02395591051251536,
+								0.34642473238115085
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11509425796644325, 0.9106980893921125, -0.04177571316838917
+							],
+							"rotation": [
+								0.9826133576741648, -0.03150113597456692, 0.14699906536474616,
+								-0.10894926587410715
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.11518771954109186, 0.5780838088682743, 0.25144804232974527
+							],
+							"rotation": [
+								0.9962725099858619, 0.0016778659415530495,
+								-0.012967926847684975, 0.0852649018390675
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.12790507890286612, 0.49292866484436254, -0.1375573434571002
+							],
+							"rotation": [
+								0.9221403918163482, 0.05449455491773047, 0.028914388352071163,
+								-0.3819049612290154
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.1177361027405318, 0.12596849118930242, 0.3293732152044663
+							],
+							"rotation": [
+								0.7157230243977754, 0.014582285538892353, -0.009632611024647995,
+								0.6981655406135507
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.07166289520190877, 0.1706950405534272, -0.4592550677713844
+							],
+							"rotation": [
+								0.9695695868521933, 0.003265200559424984, 0.010613141654725732,
+								0.24456393017121467
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 19.087716894928207,
+						"clavicle_r": 15.334443765082586,
+						"upperarm_l": 66.4070101902891,
+						"upperarm_r": 56.62952914801526
+					},
+					"normalizedTime": 0.25,
+					"invariants": {
+						"boundingBoxSize": [
+							0.5679119426696231, 1.4030345480867985, 0.7886282829758506
+						],
+						"elbowChainContinuity": {
+							"left": 0.49470909982685063,
+							"right": 0.49470908864024604
+						},
+						"handToShoulderDistance": {
+							"left": 0.6208493771793092,
+							"right": 0.5522778658157073
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875888222174673,
+							"right": 0.8875888554549246
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.03152487392200598,
+							"right": -0.027015129969989227
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534130501168,
+							"right": 0.08503534210196807
+						}
+					}
+				},
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								-0.001258048927411437, 0.9320063024427522, -0.0418274702588637
+							],
+							"rotation": [
+								0.15086958461190286, 0.0012219338680153253,
+								-0.008584384066114194, 0.9885156466474669
+							]
+						},
+						"spine_03": {
+							"position": [
+								0.009335857232894873, 1.2926540717799586, 0.0154636747389409
+							],
+							"rotation": [
+								-0.09858260464663812, 0.016838490950241376,
+								-0.022387513065051275, 0.9947345045500159
+							]
+						},
+						"neck_01": {
+							"position": [
+								0.018201846361753912, 1.5033508290231545, -0.02688405564386842
+							],
+							"rotation": [
+								0.2669861708373129, 0.004211371236960267, -0.03577623146312685,
+								0.9630268481180733
+							]
+						},
+						"Head": {
+							"position": [
+								0.024097263093108445, 1.5741793844760468, 0.015696125779282623
+							],
+							"rotation": [
+								0.04349431254951559, 0.016229899440638452,
+								0.0033174714401182225, 0.9989163275886704
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.0503997648775937, 1.4744724177067134, 0.04633029234551303
+							],
+							"rotation": [
+								0.5883700590186853, 0.31920810170356656, 0.5545592971892208,
+								-0.49435902677927507
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.012301669970278255, 1.4774779771300932, 0.04815686907142437
+							],
+							"rotation": [
+								-0.5910455577928283, 0.32047372810708724, 0.5000999426222508,
+								0.5457671532766796
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.22546505963289895, 1.3756762712309665, -0.013479940387984515
+							],
+							"rotation": [
+								-0.029905783494042257, -0.09177645981770036, 0.9876070253861393,
+								-0.12375414718254592
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.1902852591332555, 1.3997789713816118, -0.031029660778405965
+							],
+							"rotation": [
+								0.03385632730462033, -0.09512287592591705, 0.9883818327307387,
+								0.11360783557858775
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.28822622669669895, 1.1364832405147642, -0.0571428669379119
+							],
+							"rotation": [
+								-0.20869993628615752, 0.1665648806721604, 0.9620899814142821,
+								-0.05552787392912906
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.24829700844403468, 1.159690511769647, -0.07631642769242353
+							],
+							"rotation": [
+								0.1902509273146718, 0.1879222649087692, 0.9563535387796229,
+								0.11780371756085756
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.2973176360176895, 0.9079077954201489, 0.02657521508719704
+							],
+							"rotation": [
+								-0.376194378314398, 0.12290117891506679, 0.9144782777277951,
+								-0.08427674358882158
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.28576659742257604, 0.9400624647268858, 0.022160185947091765
+							],
+							"rotation": [
+								0.2757542446627034, 0.31741151217767616, 0.8714040285573087,
+								0.2527143595082719
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.1134317117639937, 0.9520814279538871, -0.03502147449567132
+							],
+							"rotation": [
+								0.9915135253953462, -0.01218803623855301, -0.08003096710181669,
+								0.10172229369950345
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11514418938869823, 0.9558770192450515, -0.03387704085725861
+							],
+							"rotation": [
+								0.984219285357473, -0.01934616805968438, 0.06029473659061493,
+								0.1652351925326446
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.11004961205783138, 0.5322826797357194, 0.052311767851408356
+							],
+							"rotation": [
+								0.987370633849161, -0.02741822890082711, 0.017059360175308635,
+								-0.15510141961522184
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.14001774778130394, 0.5508126568420362, 0.10459211125519717
+							],
+							"rotation": [
+								0.9337491413961719, 0.00739779448544035, 0.08788057845072868,
+								-0.3468930923351289
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.08763679906723207, 0.09625755321081031, -0.0886379446722264
+							],
+							"rotation": [
+								0.8528330577643356, -0.0017050528544704478,
+								0.014374526291270607, 0.521982989543719
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.10570687347912126, 0.20249059097445476, -0.1920254670562429
+							],
+							"rotation": [
+								0.9784706537681253, -0.09041422010294543, -0.00535347758442429,
+								0.18545023266501226
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 23.480543120298123,
+						"clavicle_r": 18.387354473233664,
+						"upperarm_l": 58.051362062903934,
+						"upperarm_r": 63.663507201944086
+					},
+					"normalizedTime": 0.5,
+					"invariants": {
+						"boundingBoxSize": [
+							0.5830842334402655, 1.4779218312652365, 0.2966175783114401
+						],
+						"elbowChainContinuity": {
+							"left": 0.4947090962049133,
+							"right": 0.49470907366047223
+						},
+						"handToShoulderDistance": {
+							"left": 0.6183479355448327,
+							"right": 0.6035514286716248
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875887915183294,
+							"right": 0.887589265287972
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.02887841131644109,
+							"right": -0.02587285189306132
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534176108458,
+							"right": 0.08503534180459958
+						}
+					}
+				},
+				{
+					"joints": {
+						"pelvis": {
+							"position": [
+								-0.001258048927411437, 0.8727282746343141, -0.041827468562574056
+							],
+							"rotation": [
+								0.16241129478859678, 0.07210054842477154, 0.0005364843626793067,
+								0.9840852577020283
+							]
+						},
+						"spine_03": {
+							"position": [
+								-0.0024527177694469845, 1.2318879701114362, 0.025689728206032627
+							],
+							"rotation": [
+								-0.07879899142201408, -0.004833777433463644,
+								0.015866203150642147, 0.9967525355594434
+							]
+						},
+						"neck_01": {
+							"position": [
+								-0.009092119355136267, 1.4442016735095529, -0.008131407798347177
+							],
+							"rotation": [
+								0.2616973332462256, 0.007075562425918164, -0.02384176566959676,
+								0.9648295250446718
+							]
+						},
+						"Head": {
+							"position": [
+								-0.004973546360529927, 1.5156114598661243, 0.033679976136001016
+							],
+							"rotation": [
+								0.058272602394116406, 0.002134180329224886, 0.04393848080959955,
+								0.9973310177612467
+							]
+						},
+						"clavicle_l": {
+							"position": [
+								0.022750623189490053, 1.4149439620424566, 0.06508768460586759
+							],
+							"rotation": [
+								-0.5446752627730378, -0.3568285636163895, -0.5537118411817062,
+								0.5190428029033364
+							]
+						},
+						"clavicle_r": {
+							"position": [
+								-0.040014821736264035, 1.4129097979804344, 0.06463956346920526
+							],
+							"rotation": [
+								-0.6201697325699044, 0.2400664505905374, 0.5117306257982714,
+								0.5439571386838709
+							]
+						},
+						"upperarm_l": {
+							"position": [
+								0.21054105203682946, 1.3360441564967043, 0.015133954832188448
+							],
+							"rotation": [
+								-0.1068225760308662, 0.04198541003687437, 0.961204526459146,
+								-0.25082268818552794
+							]
+						},
+						"upperarm_r": {
+							"position": [
+								-0.19769818857492055, 1.3184897707982364, -0.03638823033205682
+							],
+							"rotation": [
+								-0.03638846445017159, -0.28449537799110564, 0.9544712256598957,
+								0.08199352989079953
+							]
+						},
+						"lowerarm_l": {
+							"position": [
+								0.3293720762595315, 1.1174107940244244, 0.048858730820189725
+							],
+							"rotation": [
+								-0.3290213737680166, 0.49213459178145896, 0.797465707013916,
+								-0.11660585453869375
+							]
+						},
+						"lowerarm_r": {
+							"position": [
+								-0.23180363127875545, 1.1114005627601895, -0.17426353478765078
+							],
+							"rotation": [
+								0.15957530535884926, -0.08308440189628943, 0.9836808540726752,
+								0.002163657093513831
+							]
+						},
+						"hand_l": {
+							"position": [
+								0.2957885175226813, 0.9984362756949577, 0.2587523617998466
+							],
+							"rotation": [
+								-0.3512625874029348, 0.5463177418786508, 0.7227155590856033,
+								-0.23629164237270783
+							]
+						},
+						"hand_r": {
+							"position": [
+								-0.2392999187150984, 0.8711718035021815, -0.21391241128790495
+							],
+							"rotation": [
+								0.2310615832934884, -0.09316254588076353, 0.9684626404376145,
+								0.003376217932055405
+							]
+						},
+						"thigh_l": {
+							"position": [
+								0.11244623605708809, 0.897324317986849, -0.05016075496255018
+							],
+							"rotation": [
+								0.9763061177212109, 0.03945613403111548, -0.1757356789048263,
+								-0.11994394168658767
+							]
+						},
+						"thigh_r": {
+							"position": [
+								-0.11378705346331378, 0.8917289032476029, -0.017759384573254343
+							],
+							"rotation": [
+								0.943984498297639, 0.00905312880390971, -0.017146081089517737,
+								0.3294196711428846
+							]
+						},
+						"calf_l": {
+							"position": [
+								0.12740520612772066, 0.4821972209408736, -0.15653393012592243
+							],
+							"rotation": [
+								0.9208062694029939, -0.04734846324937768, 0.007403818053230247,
+								-0.3870647500539128
+							]
+						},
+						"calf_r": {
+							"position": [
+								-0.10161403574593109, 0.5560635608715231, 0.24879290926184175
+							],
+							"rotation": [
+								0.9943777372337396, -0.008446700280184275,
+								-0.008371542473220502, 0.1052211301255776
+							]
+						},
+						"foot_l": {
+							"position": [
+								0.09002947893833317, 0.16293648570082653, -0.48389112984636123
+							],
+							"rotation": [
+								0.9584900149976896, -0.0011468418847248125,
+								0.014458347186569794, 0.2847569702396291
+							]
+						},
+						"foot_r": {
+							"position": [
+								-0.10851270256404877, 0.10749923553941343, 0.3448631481073924
+							],
+							"rotation": [
+								0.6796680631839083, 0.009086353104484838, -0.008051737790984743,
+								0.7334193422549209
+							]
+						}
+					},
+					"localRotationFromRest": {
+						"clavicle_l": 23.785724900246993,
+						"clavicle_r": 20.46864466182698,
+						"upperarm_l": 45.794770064963444,
+						"upperarm_r": 64.50538794976573
+					},
+					"normalizedTime": 0.75,
+					"invariants": {
+						"boundingBoxSize": [
+							0.56867199497463, 1.408112224326711, 0.8287542779537536
+						],
+						"elbowChainContinuity": {
+							"left": 0.4947091404143038,
+							"right": 0.4947090533722284
+						},
+						"handToShoulderDistance": {
+							"left": 0.5343541444782641,
+							"right": 0.6409257423292255
+						},
+						"hipKneeAnkleContinuity": {
+							"left": 0.8875888342423914,
+							"right": 0.8875887666638025
+						},
+						"shoulderHeightRelativeToNeck": {
+							"left": -0.029257711467096215,
+							"right": -0.031291875529118496
+						},
+						"shoulderToNeckDistance": {
+							"left": 0.08503534221458832,
+							"right": 0.08503534121707627
+						}
+					}
+				}
+			],
+			"summary": {
+				"finiteTransforms": true,
+				"maxBoneLengthRelativeError": 0.000001707602867995206,
+				"maxBoundingBoxExpansion": {
+					"x": 0.43133770411883277,
+					"y": 0.9783985640077625,
+					"z": 6.849191241209053
+				},
+				"maxBoundingSpanRelativeToRestHeight": 0.9783985640077625,
+				"maxClavicleRestRotationDegrees": 23.785724900246993,
+				"maxIdleSymmetryError": 0,
+				"maxRootHorizontalDisplacement": 1.798195745084108e-9,
+				"passed": true,
+				"thresholds": {
+					"maxBoneLengthRelativeError": 0.00001,
+					"maxBoundingSpanRelativeToRestHeight": 1.5,
+					"maxClavicleRestRotationDegrees": 45,
+					"maxIdleSymmetryError": 0.15,
+					"maxRootHorizontalDisplacement": 0.00001
+				}
+			}
+		},
 		"rootMotion": {
 			"after": {
 				"x": 0,
-				"y": -2.3841857099693442e-7,
-				"z": -8.1601392309949e-15
+				"y": -1.7881392821994524e-7,
+				"z": -6.1201044232461754e-15
 			},
 			"before": {
-				"x": -6.402842700481415e-9,
-				"y": -2.3531969151058263e-7,
-				"z": 1.6508375283585794
+				"x": -1.0011717677116394e-8,
+				"y": -1.7571505350755245e-7,
+				"z": 1.6508376666599789
 			},
 			"policy": "freeze target-world pelvis X/Z; preserve target-world pelvis Y"
 		},
@@ -578,89 +2713,9 @@
 		],
 		"restPoseDifferences": [
 			{
-				"angleDegrees": 179.917903847679,
-				"source": "mixamorigLeftToeBase",
-				"target": "ball_l"
-			},
-			{
-				"angleDegrees": 174.83032540822762,
-				"source": "mixamorigRightToeBase",
-				"target": "ball_r"
-			},
-			{
-				"angleDegrees": 8.869143966030922,
-				"source": "mixamorigLeftLeg",
-				"target": "calf_l"
-			},
-			{
-				"angleDegrees": 10.586234299510673,
-				"source": "mixamorigRightLeg",
-				"target": "calf_r"
-			},
-			{
-				"angleDegrees": 160.23413155644732,
-				"source": "mixamorigLeftShoulder",
-				"target": "clavicle_l"
-			},
-			{
-				"angleDegrees": 161.2249581887209,
-				"source": "mixamorigRightShoulder",
-				"target": "clavicle_r"
-			},
-			{
-				"angleDegrees": 121.91769582708352,
-				"source": "mixamorigLeftFoot",
-				"target": "foot_l"
-			},
-			{
-				"angleDegrees": 122.42520346395906,
-				"source": "mixamorigRightFoot",
-				"target": "foot_r"
-			},
-			{
 				"angleDegrees": 15.17846090088627,
 				"source": "mixamorigHead",
 				"target": "Head"
-			},
-			{
-				"angleDegrees": 89.99978945534211,
-				"source": "mixamorigLeftHandIndex1",
-				"target": "index_01_l"
-			},
-			{
-				"angleDegrees": 89.99980877406828,
-				"source": "mixamorigRightHandIndex1",
-				"target": "index_01_r"
-			},
-			{
-				"angleDegrees": 177.84371436485554,
-				"source": "mixamorigLeftHandIndex4",
-				"target": "index_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.84371436485554,
-				"source": "mixamorigRightHandIndex4",
-				"target": "index_04_leaf_r"
-			},
-			{
-				"angleDegrees": 90.00245540876865,
-				"source": "mixamorigLeftHandMiddle1",
-				"target": "middle_01_l"
-			},
-			{
-				"angleDegrees": 90.00246506790744,
-				"source": "mixamorigRightHandMiddle1",
-				"target": "middle_01_r"
-			},
-			{
-				"angleDegrees": 177.85932836026763,
-				"source": "mixamorigLeftHandMiddle4",
-				"target": "middle_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.85932836026763,
-				"source": "mixamorigRightHandMiddle4",
-				"target": "middle_04_leaf_r"
 			},
 			{
 				"angleDegrees": 29.814983630355545,
@@ -673,46 +2728,6 @@
 				"target": "pelvis"
 			},
 			{
-				"angleDegrees": 90.00029174116436,
-				"source": "mixamorigLeftHandPinky1",
-				"target": "pinky_01_l"
-			},
-			{
-				"angleDegrees": 90.00030140048551,
-				"source": "mixamorigRightHandPinky1",
-				"target": "pinky_01_r"
-			},
-			{
-				"angleDegrees": 177.88179950702457,
-				"source": "mixamorigLeftHandPinky4",
-				"target": "pinky_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.88179950702457,
-				"source": "mixamorigRightHandPinky4",
-				"target": "pinky_04_leaf_r"
-			},
-			{
-				"angleDegrees": 90.01188234088869,
-				"source": "mixamorigLeftHandRing1",
-				"target": "ring_01_l"
-			},
-			{
-				"angleDegrees": 90.011891999233,
-				"source": "mixamorigRightHandRing1",
-				"target": "ring_01_r"
-			},
-			{
-				"angleDegrees": 177.81692647051713,
-				"source": "mixamorigLeftHandRing4",
-				"target": "ring_04_leaf_l"
-			},
-			{
-				"angleDegrees": 177.81691280765946,
-				"source": "mixamorigRightHandRing4",
-				"target": "ring_04_leaf_r"
-			},
-			{
 				"angleDegrees": 7.82292321754615,
 				"source": "mixamorigSpine1",
 				"target": "spine_02"
@@ -723,34 +2738,9 @@
 				"target": "spine_03"
 			},
 			{
-				"angleDegrees": 179.95874447750114,
-				"source": "mixamorigLeftUpLeg",
-				"target": "thigh_l"
-			},
-			{
-				"angleDegrees": 179.9493944910751,
-				"source": "mixamorigRightUpLeg",
-				"target": "thigh_r"
-			},
-			{
-				"angleDegrees": 179.99401163644455,
-				"source": "mixamorigLeftHandThumb1",
-				"target": "thumb_01_l"
-			},
-			{
-				"angleDegrees": 179.99402175525162,
-				"source": "mixamorigRightHandThumb1",
-				"target": "thumb_01_r"
-			},
-			{
-				"angleDegrees": 45.00314964537569,
-				"source": "mixamorigLeftHandThumb4",
-				"target": "thumb_04_leaf_l"
-			},
-			{
-				"angleDegrees": 45.00314964537569,
-				"source": "mixamorigRightHandThumb4",
-				"target": "thumb_04_leaf_r"
+				"angleDegrees": 160.23413155644732,
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
 			},
 			{
 				"angleDegrees": 94.23004625021811,
@@ -758,135 +2748,60 @@
 				"target": "upperarm_l"
 			},
 			{
-				"angleDegrees": 95.2059740420307,
-				"source": "mixamorigRightArm",
-				"target": "upperarm_r"
-			}
-		],
-		"semanticMatches": [
-			{
-				"source": "mixamorigLeftToeBase",
-				"target": "ball_l"
+				"angleDegrees": 179.95874447750114,
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
 			},
 			{
-				"source": "mixamorigLeftToe_End",
-				"target": "ball_leaf_l"
-			},
-			{
-				"source": "mixamorigRightToe_End",
-				"target": "ball_leaf_r"
-			},
-			{
-				"source": "mixamorigRightToeBase",
-				"target": "ball_r"
-			},
-			{
+				"angleDegrees": 8.869143966030922,
 				"source": "mixamorigLeftLeg",
 				"target": "calf_l"
 			},
 			{
-				"source": "mixamorigRightLeg",
-				"target": "calf_r"
-			},
-			{
-				"source": "mixamorigLeftShoulder",
-				"target": "clavicle_l"
-			},
-			{
-				"source": "mixamorigRightShoulder",
-				"target": "clavicle_r"
-			},
-			{
+				"angleDegrees": 121.91769582708352,
 				"source": "mixamorigLeftFoot",
 				"target": "foot_l"
 			},
 			{
+				"angleDegrees": 179.917903847679,
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"angleDegrees": 161.2249581887209,
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
+				"angleDegrees": 95.2059740420307,
+				"source": "mixamorigRightArm",
+				"target": "upperarm_r"
+			},
+			{
+				"angleDegrees": 179.9493944910751,
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"angleDegrees": 10.586234299510673,
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"angleDegrees": 122.42520346395906,
 				"source": "mixamorigRightFoot",
 				"target": "foot_r"
 			},
 			{
-				"source": "mixamorigLeftHand",
-				"target": "hand_l"
-			},
-			{
-				"source": "mixamorigRightHand",
-				"target": "hand_r"
-			},
+				"angleDegrees": 174.83032540822762,
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
+			}
+		],
+		"semanticMatches": [
 			{
 				"source": "mixamorigHead",
 				"target": "Head"
-			},
-			{
-				"source": "mixamorigLeftHandIndex1",
-				"target": "index_01_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex1",
-				"target": "index_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandIndex2",
-				"target": "index_02_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex2",
-				"target": "index_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandIndex3",
-				"target": "index_03_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex3",
-				"target": "index_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandIndex4",
-				"target": "index_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandIndex4",
-				"target": "index_04_leaf_r"
-			},
-			{
-				"source": "mixamorigLeftForeArm",
-				"target": "lowerarm_l"
-			},
-			{
-				"source": "mixamorigRightForeArm",
-				"target": "lowerarm_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle1",
-				"target": "middle_01_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle1",
-				"target": "middle_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle2",
-				"target": "middle_02_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle2",
-				"target": "middle_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle3",
-				"target": "middle_03_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle3",
-				"target": "middle_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandMiddle4",
-				"target": "middle_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandMiddle4",
-				"target": "middle_04_leaf_r"
 			},
 			{
 				"source": "mixamorigNeck",
@@ -895,70 +2810,6 @@
 			{
 				"source": "mixamorigHips",
 				"target": "pelvis"
-			},
-			{
-				"source": "mixamorigLeftHandPinky1",
-				"target": "pinky_01_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky1",
-				"target": "pinky_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandPinky2",
-				"target": "pinky_02_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky2",
-				"target": "pinky_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandPinky3",
-				"target": "pinky_03_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky3",
-				"target": "pinky_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandPinky4",
-				"target": "pinky_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandPinky4",
-				"target": "pinky_04_leaf_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing1",
-				"target": "ring_01_l"
-			},
-			{
-				"source": "mixamorigRightHandRing1",
-				"target": "ring_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing2",
-				"target": "ring_02_l"
-			},
-			{
-				"source": "mixamorigRightHandRing2",
-				"target": "ring_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing3",
-				"target": "ring_03_l"
-			},
-			{
-				"source": "mixamorigRightHandRing3",
-				"target": "ring_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandRing4",
-				"target": "ring_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandRing4",
-				"target": "ring_04_leaf_r"
 			},
 			{
 				"source": "mixamorigSpine",
@@ -973,52 +2824,68 @@
 				"target": "spine_03"
 			},
 			{
-				"source": "mixamorigLeftUpLeg",
-				"target": "thigh_l"
-			},
-			{
-				"source": "mixamorigRightUpLeg",
-				"target": "thigh_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb1",
-				"target": "thumb_01_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb1",
-				"target": "thumb_01_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb2",
-				"target": "thumb_02_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb2",
-				"target": "thumb_02_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb3",
-				"target": "thumb_03_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb3",
-				"target": "thumb_03_r"
-			},
-			{
-				"source": "mixamorigLeftHandThumb4",
-				"target": "thumb_04_leaf_l"
-			},
-			{
-				"source": "mixamorigRightHandThumb4",
-				"target": "thumb_04_leaf_r"
+				"source": "mixamorigLeftShoulder",
+				"target": "clavicle_l"
 			},
 			{
 				"source": "mixamorigLeftArm",
 				"target": "upperarm_l"
 			},
 			{
+				"source": "mixamorigLeftForeArm",
+				"target": "lowerarm_l"
+			},
+			{
+				"source": "mixamorigLeftHand",
+				"target": "hand_l"
+			},
+			{
+				"source": "mixamorigLeftUpLeg",
+				"target": "thigh_l"
+			},
+			{
+				"source": "mixamorigLeftLeg",
+				"target": "calf_l"
+			},
+			{
+				"source": "mixamorigLeftFoot",
+				"target": "foot_l"
+			},
+			{
+				"source": "mixamorigLeftToeBase",
+				"target": "ball_l"
+			},
+			{
+				"source": "mixamorigRightShoulder",
+				"target": "clavicle_r"
+			},
+			{
 				"source": "mixamorigRightArm",
 				"target": "upperarm_r"
+			},
+			{
+				"source": "mixamorigRightForeArm",
+				"target": "lowerarm_r"
+			},
+			{
+				"source": "mixamorigRightHand",
+				"target": "hand_r"
+			},
+			{
+				"source": "mixamorigRightUpLeg",
+				"target": "thigh_r"
+			},
+			{
+				"source": "mixamorigRightLeg",
+				"target": "calf_r"
+			},
+			{
+				"source": "mixamorigRightFoot",
+				"target": "foot_r"
+			},
+			{
+				"source": "mixamorigRightToeBase",
+				"target": "ball_r"
 			}
 		],
 		"missingMappedSourceBones": [],
@@ -1026,8 +2893,94 @@
 		"unmatchedSourceBones": [
 			"mixamorigHeadTop_End",
 			"mixamorigLeftEye",
-			"mixamorigRightEye"
+			"mixamorigLeftHandIndex1",
+			"mixamorigLeftHandIndex2",
+			"mixamorigLeftHandIndex3",
+			"mixamorigLeftHandIndex4",
+			"mixamorigLeftHandMiddle1",
+			"mixamorigLeftHandMiddle2",
+			"mixamorigLeftHandMiddle3",
+			"mixamorigLeftHandMiddle4",
+			"mixamorigLeftHandPinky1",
+			"mixamorigLeftHandPinky2",
+			"mixamorigLeftHandPinky3",
+			"mixamorigLeftHandPinky4",
+			"mixamorigLeftHandRing1",
+			"mixamorigLeftHandRing2",
+			"mixamorigLeftHandRing3",
+			"mixamorigLeftHandRing4",
+			"mixamorigLeftHandThumb1",
+			"mixamorigLeftHandThumb2",
+			"mixamorigLeftHandThumb3",
+			"mixamorigLeftHandThumb4",
+			"mixamorigLeftToe_End",
+			"mixamorigRightEye",
+			"mixamorigRightHandIndex1",
+			"mixamorigRightHandIndex2",
+			"mixamorigRightHandIndex3",
+			"mixamorigRightHandIndex4",
+			"mixamorigRightHandMiddle1",
+			"mixamorigRightHandMiddle2",
+			"mixamorigRightHandMiddle3",
+			"mixamorigRightHandMiddle4",
+			"mixamorigRightHandPinky1",
+			"mixamorigRightHandPinky2",
+			"mixamorigRightHandPinky3",
+			"mixamorigRightHandPinky4",
+			"mixamorigRightHandRing1",
+			"mixamorigRightHandRing2",
+			"mixamorigRightHandRing3",
+			"mixamorigRightHandRing4",
+			"mixamorigRightHandThumb1",
+			"mixamorigRightHandThumb2",
+			"mixamorigRightHandThumb3",
+			"mixamorigRightHandThumb4",
+			"mixamorigRightToe_End"
 		],
-		"unmatchedTargetBones": ["root"]
+		"unmatchedTargetBones": [
+			"ball_leaf_l",
+			"ball_leaf_r",
+			"index_01_l",
+			"index_01_r",
+			"index_02_l",
+			"index_02_r",
+			"index_03_l",
+			"index_03_r",
+			"index_04_leaf_l",
+			"index_04_leaf_r",
+			"middle_01_l",
+			"middle_01_r",
+			"middle_02_l",
+			"middle_02_r",
+			"middle_03_l",
+			"middle_03_r",
+			"middle_04_leaf_l",
+			"middle_04_leaf_r",
+			"pinky_01_l",
+			"pinky_01_r",
+			"pinky_02_l",
+			"pinky_02_r",
+			"pinky_03_l",
+			"pinky_03_r",
+			"pinky_04_leaf_l",
+			"pinky_04_leaf_r",
+			"ring_01_l",
+			"ring_01_r",
+			"ring_02_l",
+			"ring_02_r",
+			"ring_03_l",
+			"ring_03_r",
+			"ring_04_leaf_l",
+			"ring_04_leaf_r",
+			"root",
+			"thumb_01_l",
+			"thumb_01_r",
+			"thumb_02_l",
+			"thumb_02_r",
+			"thumb_03_l",
+			"thumb_03_r",
+			"thumb_04_leaf_l",
+			"thumb_04_leaf_r"
+		]
 	}
 }

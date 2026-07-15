@@ -6,6 +6,8 @@ import { inspectAnimationSource } from "./animation-source-inspection.mjs";
 import {
 	compareSkeletonReports,
 	runRuntimeRetargetExperiment,
+	runSkeletonUtilsOptionExperiments,
+	serializeClip,
 	TARGET_TO_MIXAMO_BONE_MAP,
 } from "./humanoid-retargeting-experiment.mjs";
 
@@ -70,16 +72,13 @@ test("maps Mixamo to Quaternius deterministically and reports missing bones", as
 	const first = compareSkeletonReports(source, target);
 	const second = compareSkeletonReports(source, target);
 	assert.deepEqual(first, second);
-	assert.equal(Object.keys(TARGET_TO_MIXAMO_BONE_MAP).length, 64);
+	assert.equal(Object.keys(TARGET_TO_MIXAMO_BONE_MAP).length, 22);
 	assert.equal(first.exactNameMatches.length, 0);
 	assert.equal(first.normalizedNameMatches.length, 1);
-	assert.equal(first.semanticMatches.length, 64);
-	assert.deepEqual(first.unmatchedSourceBones, [
-		"mixamorigHeadTop_End",
-		"mixamorigLeftEye",
-		"mixamorigRightEye",
-	]);
-	assert.deepEqual(first.unmatchedTargetBones, ["root"]);
+	assert.equal(first.semanticMatches.length, 22);
+	assert.ok(first.unmatchedSourceBones.includes("mixamorigLeftHandIndex1"));
+	assert.ok(first.unmatchedTargetBones.includes("index_01_l"));
+	assert.ok(first.unmatchedTargetBones.includes("root"));
 	assert.equal(first.directBinding.viable, false);
 
 	const missingSource = structuredClone(source);
@@ -88,7 +87,20 @@ test("maps Mixamo to Quaternius deterministically and reports missing bones", as
 	);
 	const missing = compareSkeletonReports(missingSource, target);
 	assert.deepEqual(missing.missingMappedSourceBones, ["mixamorigLeftArm"]);
-	assert.equal(missing.semanticMatches.length, 63);
+	assert.equal(missing.semanticMatches.length, 21);
+});
+
+test("proves SkeletonUtils option changes do not correct the clavicle rest-frame failure", async () => {
+	const experiment = await runSkeletonUtilsOptionExperiments({
+		sourcePath: IDLE,
+		targetPath: TARGET,
+	});
+	assert.equal(experiment.results.length, 7);
+	for (const result of experiment.results) {
+		assert.equal(result.quality.passed, false);
+		assert.ok(result.quality.maxClavicleRestRotationDegrees > 160);
+	}
+	assert.equal(experiment.unsupportedCurrentOption.name, "preserveHipPosition");
 });
 
 test("retargets real clips without mutating sources and keeps clone mixers independent", async () => {
@@ -107,7 +119,13 @@ test("retargets real clips without mutating sources and keeps clone mixers indep
 	]);
 	assert.deepEqual({ idle: await hash(IDLE), walk: await hash(WALK) }, before);
 	for (const result of [idle, walk]) {
-		assert.equal(result.report.clip.trackCount, 65);
+		const firstSerialization = serializeClip(result.clip);
+		assert.deepEqual(serializeClip(result.clip), firstSerialization);
+		assert.match(
+			firstSerialization.uuid,
+			/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/,
+		);
+		assert.equal(result.report.clip.trackCount, 23);
 		assert.equal(result.report.validation.allTracksTargetGoldenBones, true);
 		assert.equal(result.report.validation.finiteValues, true);
 		assert.equal(result.report.validation.independentBeforeSecondUpdate, true);
@@ -115,6 +133,17 @@ test("retargets real clips without mutating sources and keeps clone mixers indep
 		assert.equal(result.report.validation.separateSkeletons, true);
 		assert.ok(Math.abs(result.report.rootMotion.after.x) < 0.000001);
 		assert.ok(Math.abs(result.report.rootMotion.after.z) < 0.000001);
+		assert.equal(result.report.quality.summary.passed, true);
+		assert.ok(
+			result.report.quality.summary.maxClavicleRestRotationDegrees < 26,
+		);
+		assert.equal(result.report.quality.samples.length, 4);
+		for (const sample of result.report.quality.samples) {
+			assert.equal(Object.keys(sample.joints).length, 18);
+			assert.ok(sample.invariants.shoulderToNeckDistance.left > 0);
+			assert.ok(sample.invariants.elbowChainContinuity.left > 0);
+			assert.ok(sample.invariants.hipKneeAnkleContinuity.left > 0);
+		}
 	}
 	assert.ok(Math.abs(walk.report.rootMotion.before.z) > 1.6);
 	assert.ok(walk.report.clip.maxLoopEndpointDifference < 0.001);

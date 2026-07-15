@@ -19,6 +19,6 @@ Any future stub in this folder must return a clear not-implemented result and mu
 The Golden Reference animation spike confirms that a deterministic offline
 retarget bake is the next compiler experiment. Blender was unavailable during
 that spike, so `retarget_golden_reference.py` is not implemented and no baked
-GLB is claimed. Its required inputs, mapping, root-motion policy, output
-boundary, and exact prospective command are documented in
-`docs/assets/golden-reference-animation-retargeting-spike.md`.
+GLB is claimed. Its required rest-frame profile, input validation, finger and
+root-motion decisions, output boundary, and round-trip checks are documented
+in `docs/assets/golden-reference-animation-retargeting-spike.md`.

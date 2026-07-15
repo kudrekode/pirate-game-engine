@@ -106,9 +106,12 @@ The shape is compatible in spirit with the existing Three character registry, wh
 
 Production retargeting is not implemented in V0. The Golden Reference preview
 does include an isolated runtime-retargeting feasibility fixture for a real
-idle and walk. Its derived AnimationClip JSON does not enter the shared
-animation contract or game registry; the intended production boundary remains
-an offline compiler bake and verified GLB import.
+idle and walk. The initial name-mapped result failed visual anatomy checks; the
+current pair-specific V2 profile applies explicit source/target rest-frame
+deltas and passes the deterministic pose matrix while leaving fingers at rest.
+Its derived AnimationClip JSON does not enter the shared animation contract or
+game registry; the intended production boundary remains an offline compiler
+bake and verified GLB import.
 
 ## Browser Preview
 

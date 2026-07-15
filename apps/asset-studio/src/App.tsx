@@ -112,23 +112,72 @@ const GOLDEN_REFERENCE_FIXTURE_ID = "golden-reference-humanoid-v0";
 const RETARGET_ARTIFACT_ROOT =
 	"/assets/derived/humanoid-animations/golden-reference-v0";
 type PreviewAnimationState = "idle" | "rest" | "walk";
+type PreviewCameraPreset = "front" | "side" | "three-quarter";
+type RetargetQualitySummary = {
+	finiteTransforms: boolean;
+	maxBoneLengthRelativeError: number;
+	maxBoundingSpanRelativeToRestHeight: number;
+	maxClavicleRestRotationDegrees: number;
+	maxIdleSymmetryError: number;
+	maxRootHorizontalDisplacement: number;
+	passed: boolean;
+};
 type RuntimeRetargetReport = {
 	artifactStatus: string;
 	boneMapVersion: string;
-	idle: { clip: { duration: number }; rootMotion: { policy: string } };
+	idle: {
+		clip: { duration: number };
+		profile: { boneMap: Record<string, string>; transformPolicy: string };
+		quality: { summary: RetargetQualitySummary };
+		rootMotion: { policy: string };
+	};
 	provenance: { provider: string };
-	walk: { clip: { duration: number }; rootMotion: { policy: string } };
+	walk: {
+		clip: { duration: number };
+		quality: { summary: RetargetQualitySummary };
+		rootMotion: { policy: string };
+	};
 	idleComparison: {
 		semanticMatches: unknown[];
 		unmatchedSourceBones: string[];
 		unmatchedTargetBones: string[];
 	};
+	legacyFailedBaseline: {
+		idleQuality: RetargetQualitySummary;
+		walkQuality: RetargetQualitySummary;
+	};
 };
+const RETARGET_DIAGNOSTIC_JOINTS = [
+	"pelvis",
+	"spine_03",
+	"neck_01",
+	"Head",
+	"clavicle_l",
+	"clavicle_r",
+	"upperarm_l",
+	"upperarm_r",
+	"lowerarm_l",
+	"lowerarm_r",
+	"hand_l",
+	"hand_r",
+	"thigh_l",
+	"thigh_r",
+	"calf_l",
+	"calf_r",
+	"foot_l",
+	"foot_r",
+] as const;
 
 function GoldenReferenceHumanoidPreview() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const hostRef = useRef<HTMLDivElement>(null);
 	const resetViewRef = useRef<() => void>(() => undefined);
+	const setCameraPresetRef = useRef<(preset: PreviewCameraPreset) => void>(
+		() => undefined,
+	);
+	const seekAnimationRef = useRef<(normalizedTime: number) => void>(
+		() => undefined,
+	);
 	const [status, setStatus] = useState<"loading" | "loaded" | "error">(
 		"loading",
 	);
@@ -138,6 +187,9 @@ function GoldenReferenceHumanoidPreview() {
 	const [animationState, setAnimationState] =
 		useState<PreviewAnimationState>("rest");
 	const [animationPlaying, setAnimationPlaying] = useState(true);
+	const [animationSample, setAnimationSample] = useState(0);
+	const [cameraPreset, setCameraPreset] =
+		useState<PreviewCameraPreset>("three-quarter");
 	const [clipStatus, setClipStatus] = useState<"loading" | "loaded" | "error">(
 		"loading",
 	);
@@ -153,6 +205,9 @@ function GoldenReferenceHumanoidPreview() {
 		applyAnimationStateRef.current(animationState);
 	}, [animationState]);
 	useEffect(() => {
+		seekAnimationRef.current(animationSample);
+	}, [animationSample]);
+	useEffect(() => {
 		const canvas = canvasRef.current,
 			host = hostRef.current;
 		if (!canvas || !host || typeof WebGLRenderingContext === "undefined")
@@ -164,6 +219,8 @@ function GoldenReferenceHumanoidPreview() {
 		let animationMixer: THREE.AnimationMixer | undefined;
 		let activeAction: THREE.AnimationAction | undefined;
 		let activeState: PreviewAnimationState = "rest";
+		let restBoundsSize: THREE.Vector3 | undefined;
+		let restBoundsDiagonal: number | undefined;
 		const animationClips = new Map<
 			PreviewAnimationState,
 			THREE.AnimationClip
@@ -220,7 +277,7 @@ function GoldenReferenceHumanoidPreview() {
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
 		};
-		const updateAnimationMetadata = () => {
+		const updateAnimationMetadata = (measureBounds = false) => {
 			animationRoot?.updateMatrixWorld(true);
 			host.dataset.animationState = activeState;
 			host.dataset.animationPlaying = String(animationPlayingRef.current);
@@ -240,6 +297,51 @@ function GoldenReferenceHumanoidPreview() {
 			host.dataset.pelvisHorizontal = pelvisWorld
 				? `${pelvisWorld.x.toFixed(5)},${pelvisWorld.z.toFixed(5)}`
 				: "";
+			const jointDiagnostics = Object.fromEntries(
+				RETARGET_DIAGNOSTIC_JOINTS.map((name) => {
+					const bone = animationRoot?.getObjectByName(name);
+					return [
+						name,
+						bone
+							? {
+									position: bone
+										.getWorldPosition(new THREE.Vector3())
+										.toArray()
+										.map((value) => Number(value.toFixed(6))),
+									rotation: bone
+										.getWorldQuaternion(new THREE.Quaternion())
+										.toArray()
+										.map((value) => Number(value.toFixed(6))),
+								}
+							: undefined,
+					];
+				}),
+			);
+			host.dataset.jointDiagnostics = JSON.stringify(jointDiagnostics);
+			if (measureBounds && animationRoot && restBoundsSize) {
+				const animatedSize = new THREE.Box3()
+					.setFromObject(animationRoot, true)
+					.getSize(new THREE.Vector3());
+				const expansion = animatedSize
+					.clone()
+					.divide(restBoundsSize)
+					.toArray()
+					.map((value) => Number(value.toFixed(6)));
+				const diagonalExpansion = restBoundsDiagonal
+					? animatedSize.length() / restBoundsDiagonal
+					: Number.NaN;
+				const heightExpansion = expansion[1];
+				host.dataset.boundsExpansion = expansion.join(",");
+				host.dataset.boundsOverallExpansion = diagonalExpansion.toFixed(6);
+				host.dataset.meshInvariantPassed = String(
+					expansion.every(Number.isFinite) &&
+						Number.isFinite(diagonalExpansion) &&
+						diagonalExpansion >= 0.65 &&
+						diagonalExpansion <= 1.5 &&
+						heightExpansion >= 0.7 &&
+						heightExpansion <= 1.3,
+				);
+			}
 		};
 		const restoreRestPose = () => {
 			animationMixer?.stopAllAction();
@@ -255,20 +357,27 @@ function GoldenReferenceHumanoidPreview() {
 			activeState = state;
 			if (!animationMixer || state === "rest") {
 				restoreRestPose();
-				updateAnimationMetadata();
+				updateAnimationMetadata(true);
 				return;
 			}
 			const clip = animationClips.get(state);
 			if (!clip) return;
+			activeAction?.stop();
 			const nextAction = animationMixer.clipAction(clip);
 			nextAction.reset().setLoop(THREE.LoopRepeat, Infinity).play();
-			if (activeAction && activeAction !== nextAction) {
-				nextAction.crossFadeFrom(activeAction, 0.12, false);
-			}
 			activeAction = nextAction;
-			updateAnimationMetadata();
+			animationMixer.setTime(0);
+			updateAnimationMetadata(true);
 		};
 		applyAnimationStateRef.current = applyAnimationState;
+		seekAnimationRef.current = (normalizedTime) => {
+			if (!animationMixer || !activeAction) return;
+			const clip = activeAction.getClip();
+			animationMixer.setTime(
+				clip.duration * THREE.MathUtils.clamp(normalizedTime, 0, 0.999999),
+			);
+			updateAnimationMetadata(true);
+		};
 		const render = () => {
 			const deltaSeconds = Math.min(clock.getDelta(), 0.1);
 			if (animationPlayingRef.current) animationMixer?.update(deltaSeconds);
@@ -316,46 +425,64 @@ function GoldenReferenceHumanoidPreview() {
 					bounds.getSize(new THREE.Vector3()).length() / 2,
 					0.8,
 				);
-			camera.position.set(
-				center.x + radius * 1.15,
-				center.y + radius * 0.55,
-				center.z + radius * 1.45,
-			);
-			controls.target.set(center.x, Math.max(center.y, 0.8), center.z);
 			controls.minDistance = radius * 0.75;
 			controls.maxDistance = radius * 3.5;
-			controls.update();
+			setCameraPresetRef.current = (preset) => {
+				const target = new THREE.Vector3(
+					center.x,
+					Math.max(center.y, 0.8),
+					center.z,
+				);
+				const offset =
+					preset === "front"
+						? new THREE.Vector3(0, radius * 0.08, -radius * 2.45)
+						: preset === "side"
+							? new THREE.Vector3(radius * 2.45, radius * 0.08, 0)
+							: new THREE.Vector3(radius * 1.7, radius * 0.28, -radius * 1.7);
+				const damping = controls.enableDamping;
+				controls.enableDamping = false;
+				camera.position.copy(target).add(offset);
+				controls.target.copy(target);
+				controls.update();
+				controls.enableDamping = damping;
+				host.dataset.cameraPreset = preset;
+				updateCameraMetadata();
+			};
+			setCameraPresetRef.current("three-quarter");
 			initialCameraPosition = camera.position.clone();
 			initialCameraTarget = controls.target.clone();
 			controls.saveState();
 			resetViewRef.current = () => {
 				if (!initialCameraPosition || !initialCameraTarget) return;
-				const damping = controls.enableDamping;
-				controls.enableDamping = false;
-				controls.reset();
-				camera.position.copy(initialCameraPosition);
-				controls.target.copy(initialCameraTarget);
-				controls.update();
-				controls.enableDamping = damping;
-				updateCameraMetadata();
+				setCameraPresetRef.current("three-quarter");
 			};
+			restoreRestPose();
+			restBoundsSize = new THREE.Box3()
+				.setFromObject(animationRoot, true)
+				.getSize(new THREE.Vector3());
+			restBoundsDiagonal = restBoundsSize.length();
 			updateCameraMetadata();
 			setCanResetView(true);
 			setAnalysis(result.analysis);
 			setStatus("loaded");
 			applyAnimationState(activeState);
 		};
+		const failedBaseline =
+			new URLSearchParams(window.location.search).get("retarget") ===
+			"failed-v1";
+		host.dataset.retargetMode = failedBaseline ? "failed-v1" : "corrected-v2";
+		const idleClipUrl = failedBaseline
+			? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-idle.json`
+			: `${RETARGET_ARTIFACT_ROOT}/idle.runtime-retarget.json`;
+		const walkClipUrl = failedBaseline
+			? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-walk.json`
+			: `${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`;
 		Promise.all([
-			fetch(`${RETARGET_ARTIFACT_ROOT}/idle.runtime-retarget.json`).then(
-				(response) => {
-					if (!response.ok)
-						throw new Error(`Idle clip HTTP ${response.status}.`);
-					return response.json();
-				},
-			),
-			fetch(
-				`${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`,
-			).then((response) => {
+			fetch(idleClipUrl).then((response) => {
+				if (!response.ok) throw new Error(`Idle clip HTTP ${response.status}.`);
+				return response.json();
+			}),
+			fetch(walkClipUrl).then((response) => {
 				if (!response.ok) throw new Error(`Walk clip HTTP ${response.status}.`);
 				return response.json();
 			}),
@@ -371,6 +498,17 @@ function GoldenReferenceHumanoidPreview() {
 				if (disposed) return;
 				animationClips.set("idle", THREE.AnimationClip.parse(idleJson));
 				animationClips.set("walk", THREE.AnimationClip.parse(walkJson));
+				host.dataset.retargetProfile = report.boneMapVersion;
+				host.dataset.idleQuality = JSON.stringify(
+					failedBaseline
+						? report.legacyFailedBaseline.idleQuality
+						: report.idle.quality.summary,
+				);
+				host.dataset.walkQuality = JSON.stringify(
+					failedBaseline
+						? report.legacyFailedBaseline.walkQuality
+						: report.walk.quality.summary,
+				);
 				setRetargetReport(report);
 				setClipStatus("loaded");
 				setAnimationState("idle");
@@ -395,6 +533,8 @@ function GoldenReferenceHumanoidPreview() {
 		return () => {
 			disposed = true;
 			resetViewRef.current = () => undefined;
+			setCameraPresetRef.current = () => undefined;
+			seekAnimationRef.current = () => undefined;
 			applyAnimationStateRef.current = () => undefined;
 			window.cancelAnimationFrame(frame);
 			observer?.disconnect();
@@ -417,10 +557,26 @@ function GoldenReferenceHumanoidPreview() {
 		>
 			<canvas aria-label="Golden Reference Humanoid preview" ref={canvasRef} />
 			<fieldset className="preview-controls" aria-label="3D preview controls">
-				<span>Drag to rotate · Scroll to zoom</span>
+				{(["front", "side", "three-quarter"] as const).map((preset) => (
+					<button
+						aria-pressed={cameraPreset === preset}
+						disabled={!canResetView}
+						key={preset}
+						onClick={() => {
+							setCameraPreset(preset);
+							setCameraPresetRef.current(preset);
+						}}
+						type="button"
+					>
+						{preset[0].toUpperCase() + preset.slice(1)}
+					</button>
+				))}
 				<button
 					disabled={!canResetView}
-					onClick={() => resetViewRef.current()}
+					onClick={() => {
+						setCameraPreset("three-quarter");
+						resetViewRef.current();
+					}}
 					type="button"
 				>
 					Reset view
@@ -435,7 +591,10 @@ function GoldenReferenceHumanoidPreview() {
 						aria-pressed={animationState === state}
 						disabled={state !== "rest" && clipStatus !== "loaded"}
 						key={state}
-						onClick={() => setAnimationState(state)}
+						onClick={() => {
+							setAnimationSample(0);
+							setAnimationState(state);
+						}}
 						type="button"
 					>
 						{state[0].toUpperCase() + state.slice(1)}
@@ -448,6 +607,22 @@ function GoldenReferenceHumanoidPreview() {
 				>
 					{animationPlaying ? "Pause" : "Play"}
 				</button>
+				<label className="animation-sample-control">
+					Sample {Math.round(animationSample * 100)}%
+					<input
+						aria-label="Animation sample time"
+						disabled={animationState === "rest" || clipStatus !== "loaded"}
+						max="0.75"
+						min="0"
+						onChange={(event) => {
+							setAnimationPlaying(false);
+							setAnimationSample(Number(event.target.value));
+						}}
+						step="0.25"
+						type="range"
+						value={animationSample}
+					/>
+				</label>
 			</fieldset>
 			<div className="preview-label">
 				Golden Reference Humanoid · Reference fixture
@@ -522,6 +697,24 @@ function GoldenReferenceHumanoidPreview() {
 				<div>
 					<dt>Root motion</dt>
 					<dd>{retargetReport?.walk.rootMotion.policy ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Retarget profile</dt>
+					<dd>{retargetReport?.boneMapVersion ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Transform policy</dt>
+					<dd>{retargetReport?.idle.profile.transformPolicy ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Pose quality gate</dt>
+					<dd>
+						{animationState === "rest"
+							? "Rest baseline"
+							: retargetReport?.[animationState].quality.summary.passed
+								? "Pass (visual inspection still required)"
+								: "Failed"}
+					</dd>
 				</div>
 				<div>
 					<dt>Bounds</dt>

@@ -4,7 +4,9 @@ import path from "node:path";
 import {
 	BONE_MAP_VERSION,
 	buildComparisonReport,
+	runLegacySkeletonUtilsRetargetExperiment,
 	runRuntimeRetargetExperiment,
+	runSkeletonUtilsOptionExperiments,
 	serializeClip,
 } from "./humanoid-retargeting-experiment.mjs";
 
@@ -25,8 +27,17 @@ async function hash(filePath) {
 
 const outputDirectory = path.resolve(process.argv[2] ?? DEFAULT_OUTPUT);
 await mkdir(outputDirectory, { recursive: true });
+await mkdir(path.join(outputDirectory, "diagnostics"), { recursive: true });
 
-const [idleComparison, walkComparison, idle, walk] = await Promise.all([
+const [
+	idleComparison,
+	walkComparison,
+	idle,
+	walk,
+	optionExperiments,
+	legacyIdle,
+	legacyWalk,
+] = await Promise.all([
 	buildComparisonReport(IDLE_SOURCE, TARGET_SOURCE),
 	buildComparisonReport(WALK_SOURCE, TARGET_SOURCE),
 	runRuntimeRetargetExperiment({
@@ -35,6 +46,20 @@ const [idleComparison, walkComparison, idle, walk] = await Promise.all([
 		targetPath: TARGET_SOURCE,
 	}),
 	runRuntimeRetargetExperiment({
+		semanticState: "walk",
+		sourcePath: WALK_SOURCE,
+		targetPath: TARGET_SOURCE,
+	}),
+	runSkeletonUtilsOptionExperiments({
+		sourcePath: IDLE_SOURCE,
+		targetPath: TARGET_SOURCE,
+	}),
+	runLegacySkeletonUtilsRetargetExperiment({
+		semanticState: "idle",
+		sourcePath: IDLE_SOURCE,
+		targetPath: TARGET_SOURCE,
+	}),
+	runLegacySkeletonUtilsRetargetExperiment({
 		semanticState: "walk",
 		sourcePath: WALK_SOURCE,
 		targetPath: TARGET_SOURCE,
@@ -52,6 +77,11 @@ const metadata = {
 	hashes,
 	idle: idle.report,
 	idleComparison,
+	legacyFailedBaseline: {
+		idleQuality: legacyIdle.quality,
+		walkQuality: legacyWalk.quality,
+	},
+	optionExperiments,
 	provenance: {
 		licenseSidecarsPresent: false,
 		note: "The continuation brief states Mixamo licensing/provenance, but LICENSE.txt and SOURCE.md are absent from the workspace.",
@@ -74,6 +104,14 @@ await Promise.all([
 	writeFile(
 		path.join(outputDirectory, "runtime-retarget-report.json"),
 		`${JSON.stringify(metadata, null, 2)}\n`,
+	),
+	writeFile(
+		path.join(outputDirectory, "diagnostics", "failed-v1-idle.json"),
+		`${JSON.stringify(serializeClip(legacyIdle.clip), null, 2)}\n`,
+	),
+	writeFile(
+		path.join(outputDirectory, "diagnostics", "failed-v1-walk.json"),
+		`${JSON.stringify(serializeClip(legacyWalk.clip), null, 2)}\n`,
 	),
 ]);
 

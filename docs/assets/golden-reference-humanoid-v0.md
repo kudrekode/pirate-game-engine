@@ -114,10 +114,12 @@ This fixture is within neither the preferred 12,000-triangle budget nor the
 It is suitable as a Golden Reference for pipeline validation, but not yet as a
 production crowd-budget default.
 
-The animation-retargeting spike found that direct binding fails while explicit
-semantic runtime retargeting is feasible. The smallest next task is a
-deterministic Blender bake and GLB round-trip validation against this exact
-skeleton before adding registry mappings.
+The animation-retargeting spike found that direct binding and the first
+name-mapped `SkeletonUtils` attempt fail visually. A pair-specific V2
+rest-frame-delta profile passes deterministic numeric and visual checks while
+leaving fingers in the target rest pose. It remains diagnostic only. The
+smallest next task is a deterministic Blender bake and GLB round-trip
+validation against this exact skeleton before adding registry mappings.
 
 ## Boundary With Asset Studio
 
