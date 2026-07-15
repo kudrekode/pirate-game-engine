@@ -6,7 +6,8 @@
 	"workspaces": [
 		"apps/asset-studio",
 		"packages/asset-compiler-contract",
-		"packages/character-contract"
+		"packages/character-contract",
+		"packages/three-asset-preview"
 	],
 	"scripts": {
 		"dev": "vite",
@@ -23,6 +24,7 @@
 		"check:asset-studio": "npm run build:contracts && npm run test:contracts && npm --workspace @adventure-game-builder/asset-studio run check",
 		"test:e2e": "playwright test",
 		"test:e2e:three-perf": "playwright test e2e/three-perf-smoke.spec.ts",
+		"test:e2e:asset-studio": "playwright test -c apps/asset-studio/playwright.config.ts",
 		"test:e2e:headed": "playwright test --headed",
 		"ci": "npm run typecheck && npm run test:run && npm run build",
 		"preview": "vite preview",
@@ -30,6 +32,7 @@
 	},
 	"dependencies": {
 		"@vitejs/plugin-react": "^4.3.4",
+		"@adventure-game-builder/three-asset-preview": "0.1.0",
 		"phaser": "^3.87.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",

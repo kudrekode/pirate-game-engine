@@ -121,3 +121,17 @@ The Quaternius vendor model and the game registry definition are distinct from
 future Asset Studio output. Asset Studio recipes remain editable source data;
 future compiled GLB packages and metadata must be independently generated and
 round-trip validated rather than being inferred from this fixture.
+
+## Asset Studio Reference Preview
+
+Asset Studio now displays this fixture in a read-only Three.js viewport. The
+standalone app consumes the same `GOLDEN_REFERENCE_HUMANOID_ASSET` definition
+and shared presentation-only cache, aliases, material preparation, analysis,
+and `SkeletonUtils` clone path as the game editor/runtime. It frames measured
+bounds and applies the registry scale, grounding, facing correction, and
+shadow policy while reporting live load metrics.
+
+The preview source is explicitly `golden-reference-humanoid-v0`: externally
+authored vendor content, not a `CharacterRecipeV1` compile artifact. It has no
+embedded clips, so no fake animation playback is presented. The next sensible
+step remains an animation-retargeting feasibility spike against this skeleton.

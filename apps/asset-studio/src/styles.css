@@ -253,6 +253,61 @@ h1 {
 	padding: 6px 8px;
 }
 
+.preview-controls {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	border: 1px solid #cbd5df;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.92);
+	color: #334e68;
+	font-size: 12px;
+	font-weight: 700;
+	padding: 5px 6px 5px 8px;
+}
+
+.preview-controls button {
+	min-height: 28px;
+	padding: 4px 7px;
+}
+
+.preview-status,
+.preview-diagnostics {
+	position: absolute;
+	border: 1px solid #cbd5df;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.92);
+	color: #334e68;
+	font-size: 12px;
+	padding: 6px 8px;
+}
+
+.preview-status {
+	bottom: 10px;
+	left: 10px;
+}
+.preview-diagnostics {
+	right: 10px;
+	bottom: 10px;
+	display: grid;
+	gap: 3px;
+	margin: 0;
+}
+.preview-diagnostics div {
+	display: grid;
+	grid-template-columns: auto auto;
+	gap: 8px;
+}
+.preview-diagnostics dt {
+	font-weight: 800;
+}
+.preview-diagnostics dd {
+	margin: 0;
+}
+
 .compile-status {
 	border: 1px solid #e2e8f0;
 	border-radius: 8px;

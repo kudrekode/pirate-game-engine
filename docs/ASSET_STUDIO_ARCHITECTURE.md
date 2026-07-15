@@ -108,7 +108,19 @@ Retargeting is not implemented in V0.
 
 ## Browser Preview
 
-The Asset Studio app owns browser preview presentation. V0 renders a neutral Three.js grid and primitive bounds marker only. It does not load or imply a generated humanoid mesh.
+The Asset Studio app owns browser preview presentation. Its default read-only
+development fixture is `golden-reference-humanoid-v0`, which displays the
+externally authored Quaternius Golden Reference Humanoid through the shared
+`@adventure-game-builder/three-asset-preview` package. That package owns the
+fixture definition, loader cache, resource aliases, material preparation,
+analysis, and skeleton-safe clone path; it has no React, Phaser, gameplay, or
+recipe-state dependency. Asset Studio does not import root editor/runtime
+modules directly.
+
+The fixture is distinct from compiled recipe output. It is not generated from
+`CharacterRecipeV1`, has no embedded animation clips, and does not make recipe
+controls functional. A future preview-source contract can add compiled
+artifacts without weakening this provenance boundary.
 
 Future previews may load compiled or golden-kit assets, but live Three.js objects must stay in app presentation code, not shared recipe contracts.
 

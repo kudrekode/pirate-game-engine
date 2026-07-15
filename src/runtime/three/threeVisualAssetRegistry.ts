@@ -1,49 +1,13 @@
-export type ThreeVisualAssetCategory =
-	| "character"
-	| "object"
-	| "vehicle"
-	| "environment"
-	| "item";
+import { GOLDEN_REFERENCE_HUMANOID_ASSET } from "@adventure-game-builder/three-asset-preview";
 
-export type ThreeCharacterAnimationState =
-	| "idle"
-	| "walk"
-	| "attack"
-	| "defeated";
+export type {
+	ThreeCharacterAnimationMapping,
+	ThreeCharacterAnimationState,
+	ThreeVisualAssetCategory,
+	ThreeVisualAssetDefinition,
+} from "@adventure-game-builder/three-asset-preview";
 
-export type ThreeCharacterAnimationMapping = {
-	assetId?: string;
-	clipName: string;
-};
-
-export type ThreeVisualAssetDefinition = {
-	id: string;
-	name: string;
-	kind: "gltf" | "glb";
-	url: string;
-	/**
-	 * Resolves known vendor-relative resource filename defects without changing
-	 * the source asset. Keys and values are relative to the glTF URL.
-	 */
-	resourceUrlAliases?: Record<string, string>;
-	category?: ThreeVisualAssetCategory;
-	/** Animation-only registry sources are never offered as character visuals. */
-	animationOnly?: boolean;
-	animations?: Partial<
-		Record<ThreeCharacterAnimationState, ThreeCharacterAnimationMapping>
-	>;
-	/**
-	 * Optional presentation-only material preparation for this cached source.
-	 * It never changes authored project data or gameplay state.
-	 */
-	materialProfile?: "preserve" | "standard";
-	defaultScale?: number;
-	defaultHeightOffset?: number;
-	defaultRotationOffset?: number;
-	castShadow?: boolean;
-	receiveShadow?: boolean;
-	tags?: string[];
-};
+import type { ThreeVisualAssetDefinition } from "@adventure-game-builder/three-asset-preview";
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
@@ -142,26 +106,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		tags: ["decoration", "flag"],
 		url: "/assets/pirate-demo/flag-pirate.glb",
 	},
-	{
-		category: "character",
-		castShadow: true,
-		defaultHeightOffset: 0,
-		// The source is 1.82 units tall; this keeps the reference readable in a
-		// one-tile world while preserving its measured source-space proportions.
-		defaultRotationOffset: 180,
-		defaultScale: 0.75,
-		id: "golden-reference-quaternius-superhero-male",
-		kind: "gltf",
-		materialProfile: "standard",
-		name: "Golden Reference: Quaternius Superhero Male",
-		receiveShadow: false,
-		resourceUrlAliases: {
-			"T_Eye_Normal_png.png": "T_Eye_Normal.png",
-			"T_Hair_1_Normal_png.png": "T_Hair_1_Normal.png",
-		},
-		tags: ["character", "golden-reference", "quaternius", "skinned"],
-		url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
-	},
+	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	{
 		category: "character",
 		animations: {

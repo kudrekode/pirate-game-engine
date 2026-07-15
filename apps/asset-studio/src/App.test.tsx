@@ -10,7 +10,14 @@ describe("Asset Studio app", () => {
 			screen.getByRole("heading", { level: 1, name: "Character" }),
 		).toBeInTheDocument();
 		expect(
-			screen.getByLabelText("Neutral 3D recipe preview placeholder"),
+			screen.getByLabelText("Golden Reference Humanoid preview"),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Golden Reference Humanoid/)).toBeInTheDocument();
+		expect(
+			screen.getByLabelText("Golden Reference Humanoid diagnostics"),
+		).toHaveTextContent("golden-reference-quaternius-superhero-male");
+		expect(
+			screen.getByRole("button", { name: "Reset view" }),
 		).toBeInTheDocument();
 		expect(
 			screen.getByText("CharacterRecipeV1 is editable source data."),

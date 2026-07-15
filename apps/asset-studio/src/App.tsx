@@ -16,8 +16,14 @@ import {
 	parseCharacterRecipe,
 	serializeCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
+import {
+	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	requestThreeVisualAsset,
+	type ThreeVisualAssetAnalysis,
+} from "@adventure-game-builder/three-asset-preview";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const NAV_SECTIONS = [
 	"Character",
@@ -104,109 +110,238 @@ function downloadRecipe(recipe: CharacterRecipeV1) {
 	URL.revokeObjectURL(url);
 }
 
-function RecipePreviewCanvas() {
+const GOLDEN_REFERENCE_FIXTURE_ID = "golden-reference-humanoid-v0";
+
+function GoldenReferenceHumanoidPreview() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const hostRef = useRef<HTMLDivElement>(null);
-
+	const resetViewRef = useRef<() => void>(() => undefined);
+	const [status, setStatus] = useState<"loading" | "loaded" | "error">(
+		"loading",
+	);
+	const [analysis, setAnalysis] = useState<ThreeVisualAssetAnalysis>();
+	const [error, setError] = useState("");
+	const [canResetView, setCanResetView] = useState(false);
 	useEffect(() => {
-		const canvas = canvasRef.current;
-		const host = hostRef.current;
-		if (!canvas || !host || typeof WebGLRenderingContext === "undefined") {
+		const canvas = canvasRef.current,
+			host = hostRef.current;
+		if (!canvas || !host || typeof WebGLRenderingContext === "undefined")
+			return;
+		let disposed = false,
+			frame = 0;
+		let activeClone: THREE.Group | undefined;
+		let renderer: THREE.WebGLRenderer;
+		try {
+			renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+		} catch (renderError) {
+			setStatus("error");
+			setError(
+				renderError instanceof Error
+					? renderError.message
+					: "WebGL unavailable.",
+			);
 			return;
 		}
-
-		const renderer = new THREE.WebGLRenderer({
-			antialias: true,
-			canvas,
-		});
 		renderer.setClearColor(0xf6f8fb, 1);
-		const scene = new THREE.Scene();
-		const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-		camera.position.set(3.1, 2.4, 4.1);
-		camera.lookAt(0, 0.9, 0);
-
-		const ambient = new THREE.HemisphereLight(0xffffff, 0xb8c2cc, 1.8);
-		scene.add(ambient);
-		const key = new THREE.DirectionalLight(0xffffff, 1.2);
-		key.position.set(2.4, 4, 2);
-		scene.add(key);
-
+		renderer.shadowMap.enabled = true;
+		const scene = new THREE.Scene(),
+			camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+		const controls = new OrbitControls(camera, renderer.domElement);
+		controls.enableDamping = true;
+		controls.enablePan = false;
+		controls.minPolarAngle = 0.2;
+		controls.maxPolarAngle = Math.PI / 2.05;
+		controls.rotateSpeed = 0.7;
+		controls.zoomSpeed = 0.8;
+		let initialCameraPosition: THREE.Vector3 | undefined;
+		let initialCameraTarget: THREE.Vector3 | undefined;
+		const updateCameraMetadata = () => {
+			host.dataset.cameraPosition = camera.position
+				.toArray()
+				.map((value) => value.toFixed(3))
+				.join(",");
+		};
+		controls.addEventListener("change", updateCameraMetadata);
+		scene.add(new THREE.HemisphereLight(0xffffff, 0xaab7c4, 1.8));
+		const key = new THREE.DirectionalLight(0xffffff, 2.1);
+		key.position.set(3, 5, 4);
+		key.castShadow = true;
 		const grid = new THREE.GridHelper(4, 16, 0x94a3b8, 0xd3dae2);
-		scene.add(grid);
 		const ground = new THREE.Mesh(
-			new THREE.PlaneGeometry(4, 4),
-			new THREE.MeshStandardMaterial({
-				color: 0xe8edf2,
-				roughness: 0.9,
-				metalness: 0,
-			}),
+			new THREE.PlaneGeometry(8, 8),
+			new THREE.MeshStandardMaterial({ color: 0xe8edf2, roughness: 0.9 }),
 		);
 		ground.rotation.x = -Math.PI / 2;
-		ground.position.y = -0.01;
-		scene.add(ground);
-
-		const marker = new THREE.Group();
-		const bounds = new THREE.Mesh(
-			new THREE.BoxGeometry(0.8, 1.75, 0.5),
-			new THREE.MeshBasicMaterial({
-				color: 0x2f6f8f,
-				transparent: true,
-				opacity: 0.08,
-				wireframe: true,
-			}),
-		);
-		bounds.position.y = 0.875;
-		marker.add(bounds);
-		const origin = new THREE.Mesh(
-			new THREE.CylinderGeometry(0.28, 0.28, 0.025, 32),
-			new THREE.MeshStandardMaterial({ color: 0xd9a441, roughness: 0.75 }),
-		);
-		origin.position.y = 0.012;
-		marker.add(origin);
-		scene.add(marker);
-
-		let frame = 0;
+		ground.receiveShadow = true;
+		scene.add(key, grid, ground);
 		const resize = () => {
-			const width = Math.max(1, host.clientWidth);
-			const height = Math.max(1, host.clientHeight);
+			const width = Math.max(1, host.clientWidth),
+				height = Math.max(1, host.clientHeight);
 			renderer.setSize(width, height, false);
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
 		};
-		const animate = () => {
-			marker.rotation.y += 0.004;
+		const render = () => {
+			controls.update();
 			renderer.render(scene, camera);
-			frame = window.requestAnimationFrame(animate);
+			frame = window.requestAnimationFrame(render);
 		};
-
-		resize();
-		const resizeObserver =
+		const mountAsset = () => {
+			const result = requestThreeVisualAsset(GOLDEN_REFERENCE_HUMANOID_ASSET, {
+				onStateChange: mountAsset,
+			});
+			if (disposed || result.status === "loading") return;
+			if (result.status === "error" || result.status === "missing") {
+				setStatus("error");
+				setError(
+					result.status === "error" ? String(result.error) : "Fixture missing.",
+				);
+				return;
+			}
+			activeClone?.removeFromParent();
+			const group = new THREE.Group();
+			group.name = "GoldenReferenceHumanoidPreview";
+			group.rotation.y = THREE.MathUtils.degToRad(
+				result.definition.defaultRotationOffset ?? 0,
+			);
+			group.scale.setScalar(result.definition.defaultScale ?? 1);
+			result.object.position.y = -result.analysis.bounds.minY;
+			result.object.traverse((object) => {
+				if (object instanceof THREE.Mesh) {
+					object.castShadow = result.definition.castShadow ?? false;
+					object.receiveShadow = result.definition.receiveShadow ?? false;
+				}
+			});
+			group.add(result.object);
+			scene.add(group);
+			activeClone = group;
+			const bounds = new THREE.Box3().setFromObject(group),
+				center = bounds.getCenter(new THREE.Vector3()),
+				radius = Math.max(
+					bounds.getSize(new THREE.Vector3()).length() / 2,
+					0.8,
+				);
+			camera.position.set(
+				center.x + radius * 1.15,
+				center.y + radius * 0.55,
+				center.z + radius * 1.45,
+			);
+			controls.target.set(center.x, Math.max(center.y, 0.8), center.z);
+			controls.minDistance = radius * 0.75;
+			controls.maxDistance = radius * 3.5;
+			controls.update();
+			initialCameraPosition = camera.position.clone();
+			initialCameraTarget = controls.target.clone();
+			controls.saveState();
+			resetViewRef.current = () => {
+				if (!initialCameraPosition || !initialCameraTarget) return;
+				const damping = controls.enableDamping;
+				controls.enableDamping = false;
+				controls.reset();
+				camera.position.copy(initialCameraPosition);
+				controls.target.copy(initialCameraTarget);
+				controls.update();
+				controls.enableDamping = damping;
+				updateCameraMetadata();
+			};
+			updateCameraMetadata();
+			setCanResetView(true);
+			setAnalysis(result.analysis);
+			setStatus("loaded");
+		};
+		const observer =
 			typeof ResizeObserver === "undefined"
 				? undefined
 				: new ResizeObserver(resize);
-		resizeObserver?.observe(host);
-		animate();
-
+		observer?.observe(host);
+		resize();
+		mountAsset();
+		render();
 		return () => {
+			disposed = true;
+			resetViewRef.current = () => undefined;
 			window.cancelAnimationFrame(frame);
-			resizeObserver?.disconnect();
-			renderer.dispose();
-			bounds.geometry.dispose();
-			(bounds.material as THREE.Material).dispose();
-			origin.geometry.dispose();
-			(origin.material as THREE.Material).dispose();
+			observer?.disconnect();
+			controls.removeEventListener("change", updateCameraMetadata);
+			controls.dispose();
+			activeClone?.removeFromParent();
 			ground.geometry.dispose();
 			(ground.material as THREE.Material).dispose();
+			renderer.renderLists.dispose();
+			renderer.dispose();
 		};
 	}, []);
-
 	return (
-		<div className="preview-host" ref={hostRef}>
-			<canvas
-				aria-label="Neutral 3D recipe preview placeholder"
-				ref={canvasRef}
-			/>
-			<div className="preview-label">Primitive placeholder only</div>
+		<div
+			className="preview-host"
+			data-preview-source={GOLDEN_REFERENCE_FIXTURE_ID}
+			ref={hostRef}
+		>
+			<canvas aria-label="Golden Reference Humanoid preview" ref={canvasRef} />
+			<fieldset className="preview-controls" aria-label="3D preview controls">
+				<span>Drag to rotate · Scroll to zoom</span>
+				<button
+					disabled={!canResetView}
+					onClick={() => resetViewRef.current()}
+					type="button"
+				>
+					Reset view
+				</button>
+			</fieldset>
+			<div className="preview-label">
+				Golden Reference Humanoid · Reference fixture
+			</div>
+			<div className="preview-status" data-status={status}>
+				{status === "loading"
+					? "Loading reference fixture…"
+					: status === "loaded"
+						? "Reference fixture loaded · No embedded animation clips"
+						: `Preview error: ${error}`}
+			</div>
+			<dl
+				aria-label="Golden Reference Humanoid diagnostics"
+				className="preview-diagnostics"
+			>
+				<div>
+					<dt>Asset</dt>
+					<dd>{GOLDEN_REFERENCE_HUMANOID_ASSET.id}</dd>
+				</div>
+				<div>
+					<dt>Load</dt>
+					<dd>{status}</dd>
+				</div>
+				<div>
+					<dt>Skinned meshes</dt>
+					<dd>{analysis?.skinnedMeshCount ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Bones</dt>
+					<dd>{analysis?.boneCount ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Materials</dt>
+					<dd>{analysis?.materialCount ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Animation clips</dt>
+					<dd>{analysis?.animationClips.length ?? "—"}</dd>
+				</div>
+				<div>
+					<dt>Bounds</dt>
+					<dd>
+						{analysis
+							? `${analysis.bounds.dimensions.x.toFixed(2)} × ${analysis.bounds.dimensions.y.toFixed(2)} × ${analysis.bounds.dimensions.z.toFixed(2)}`
+							: "—"}
+					</dd>
+				</div>
+				<div>
+					<dt>Scale / facing</dt>
+					<dd>
+						{GOLDEN_REFERENCE_HUMANOID_ASSET.defaultScale} /{" "}
+						{GOLDEN_REFERENCE_HUMANOID_ASSET.defaultRotationOffset}°
+					</dd>
+				</div>
+			</dl>
 		</div>
 	);
 }
@@ -437,8 +572,9 @@ export default function App() {
 								<span>{recipe.skeletonId} source recipe</span>
 							</div>
 							<label>
-								Animation preview state
+								Animation preview state (unavailable: fixture has no clips)
 								<select
+									disabled
 									onChange={(event) =>
 										setPreviewState(
 											event.target.value as CharacterAnimationState,
@@ -454,7 +590,7 @@ export default function App() {
 								</select>
 							</label>
 						</div>
-						<RecipePreviewCanvas />
+						<GoldenReferenceHumanoidPreview />
 						<div className="compile-status">
 							<strong>Compile status</strong>
 							<span>{compileResult.errors[0]}</span>
