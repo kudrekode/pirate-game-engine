@@ -104,14 +104,13 @@ Animation sets map semantic states to stable clip references:
 
 The shape is compatible in spirit with the existing Three character registry, where semantic states map to asset ids and clip names. The shared contract does not import Three.js, GLTF loader code, or game runtime presentation modules.
 
-Production retargeting is not implemented in V0. The Golden Reference preview
-does include an isolated runtime-retargeting feasibility fixture for a real
-idle and walk. The initial name-mapped result failed visual anatomy checks; the
-current pair-specific V2 profile applies explicit source/target rest-frame
-deltas and passes the deterministic pose matrix while leaving fingers at rest.
-Its derived AnimationClip JSON does not enter the shared animation contract or
-game registry; the intended production boundary remains an offline compiler
-bake and verified GLB import.
+General production retargeting is not implemented in V0. The exact Mixamo-to-
+Quaternius Golden Reference pair does have a proven deterministic offline
+Blender profile. It applies explicit source/target rest-frame deltas to 22
+principal bones, leaves fingers/helpers at rest, and exports verified target
+GLBs. Those idle and walk artifacts enter the shared presentation animation
+contract only after deterministic generation, Three.js round-trip, clone, and
+browser visual gates. Runtime retarget JSON remains an explicit diagnostic.
 
 ## Browser Preview
 
@@ -125,11 +124,11 @@ recipe-state dependency. Asset Studio does not import root editor/runtime
 modules directly.
 
 The fixture is distinct from compiled recipe output. It is not generated from
-`CharacterRecipeV1`, has no embedded animation clips, and does not make recipe
-controls functional. Its Rest/Idle/Walk controls consume explicitly labelled
-experimental, target-bound AnimationClip JSON from the Golden Reference
-retargeting spike through presentation-only code. A future preview-source
-contract can add compiled artifacts without weakening this provenance boundary.
+`CharacterRecipeV1`, and it does not make recipe controls functional. Its
+Rest/Idle/Walk controls load explicitly labelled offline-baked Golden target
+GLBs through the shared production loader. `?retarget=runtime-v2` exposes the
+pair-specific JSON diagnostic for development comparison; a baked load failure
+is reported and never silently falls back.
 
 Future previews may load compiled or golden-kit assets, but live Three.js objects must stay in app presentation code, not shared recipe contracts.
 
@@ -147,7 +146,10 @@ blender --background \
   --output-dir output/
 ```
 
-V0 does not execute Blender and does not include a fake compiler that claims success.
+The Asset Studio app still does not execute Blender and does not include a fake
+recipe compiler. Repository tooling can run Blender headlessly for the narrow,
+versioned Golden Reference retarget profile; successful artifacts must pass
+determinism and round-trip validation before the app consumes them.
 
 ## Asset Package Format
 
@@ -183,6 +185,7 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - disabled compile state that reports no compiler is implemented
 - renderer-independent character, component, palette, animation, and compiler contracts
 - Blender compiler boundary documentation
+- deterministic Golden Reference offline-bake tooling and validated artifacts
 
 ## V0 Does Not Include
 
@@ -192,7 +195,7 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - rig creation
 - body morph targets
 - clothing fitting
-- Blender execution
+- Blender execution from the Asset Studio browser app
 - GLB export
 - production character animation preview sourced from compiled package output
 - AI generation

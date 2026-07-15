@@ -237,10 +237,12 @@ function summarizeThreeClip(clip) {
 		const target = separator < 0 ? track.name : track.name.slice(0, separator);
 		const property =
 			separator < 0 ? "unknown" : track.name.slice(separator + 1);
-		if (property === "position") propertyCounts.translation += 1;
-		else if (property === "quaternion") propertyCounts.rotation += 1;
+		if (property === "position" || property === "translation")
+			propertyCounts.translation += 1;
+		else if (property === "quaternion" || property === "rotation")
+			propertyCounts.rotation += 1;
 		else if (property === "scale") propertyCounts.scale += 1;
-		if (property === "position") {
+		if (property === "position" || property === "translation") {
 			const values = [];
 			for (let index = 0; index < track.values.length; index += 3) {
 				values.push(Array.from(track.values.slice(index, index + 3)));

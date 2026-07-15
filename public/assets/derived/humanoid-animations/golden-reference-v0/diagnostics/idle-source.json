@@ -2,7 +2,7 @@
 	"asset": {
 		"byteLength": 28849216,
 		"fileHash": "42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0",
-		"sourcePath": "public/assets/source/humanoid-animations/retarget-spike/Idle.fbx",
+		"sourcePath": "public/assets/source/humanoid-animations/retarget-spike/idle/source.fbx",
 		"sourceFormat": "fbx",
 		"axis": {
 			"loaderOutputUp": "+Y",

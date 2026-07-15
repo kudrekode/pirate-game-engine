@@ -51,7 +51,18 @@ async function waitForGoldenReference(
 			metrics.textureCount === 7 &&
 			!snapshot.asset.character.animationClips.some(
 				(clip) => clip.definitionId === ASSET_ID,
-			)
+			) &&
+			(label !== RUNTIME_LABEL ||
+				(snapshot.asset.character.animation.loadingSourceCount === 0 &&
+					snapshot.asset.character.animation.missingClipCount === 0 &&
+					snapshot.asset.character.animation.incompatibleClipCount === 0 &&
+					snapshot.asset.character.animation.activeLoopingActions >= 2 &&
+					snapshot.asset.character.animation.sourceAssetIds.includes(
+						"golden-reference-quaternius-idle-baked-v1",
+					) &&
+					snapshot.asset.character.animation.sourceAssetIds.includes(
+						"golden-reference-quaternius-walk-baked-v1",
+					)))
 		) {
 			return snapshot;
 		}
@@ -125,6 +136,19 @@ test("loads the Golden Reference Humanoid for a player and NPC through shared Th
 	expect(runtimeSnapshot.asset.character.animationClips).not.toEqual(
 		expect.arrayContaining([
 			expect.objectContaining({ definitionId: ASSET_ID }),
+		]),
+	);
+	expect(runtimeSnapshot.asset.character.animation).toMatchObject({
+		activeLoopingActions: 2,
+		incompatibleClipCount: 0,
+		loadingSourceCount: 0,
+		missingClipCount: 0,
+		playerState: "idle",
+	});
+	expect(runtimeSnapshot.asset.character.animation.sourceAssetIds).toEqual(
+		expect.arrayContaining([
+			"golden-reference-quaternius-idle-baked-v1",
+			"golden-reference-quaternius-walk-baked-v1",
 		]),
 	);
 });

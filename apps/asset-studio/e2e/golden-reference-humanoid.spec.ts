@@ -69,7 +69,7 @@ async function captureCanvas(page: Page, canvas: Locator, path: string) {
 	});
 }
 
-test("visually validates deterministic Golden Reference rest-frame retargeting", async ({
+test("visually validates deterministic Golden Reference offline-baked animation", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(240_000);
@@ -125,16 +125,28 @@ test("visually validates deterministic Golden Reference rest-frame retargeting",
 
 	await page.goto("/");
 	await waitForPreview(page, host);
-	await expect(host).toHaveAttribute("data-retarget-mode", "corrected-v2");
+	await expect(host).toHaveAttribute("data-retarget-mode", "offline-baked");
+	await expect(host).toHaveAttribute("data-playback-method", "Offline baked");
 	await expect(host).toHaveAttribute(
 		"data-retarget-profile",
-		"mixamo-quaternius-rest-delta-v2",
+		"mixamo-to-quaternius-v2",
+	);
+	await expect(host).toHaveAttribute("data-offline-round-trip-passed", "true");
+	await expect(host).toHaveAttribute(
+		"data-artifact-paths",
+		/idle\.glb,.*walk-in-place\.glb/,
+	);
+	await expect(host).toHaveAttribute(
+		"data-compiler-version",
+		"golden-reference-blender-bake-v1",
 	);
 	const diagnostics = page.getByLabel("Golden Reference Humanoid diagnostics");
 	await expect(diagnostics).toContainText("Animation clips2");
 	await expect(diagnostics).toContainText("22 mapped");
-	await expect(diagnostics).toContainText("rest-delta-v2");
-	await expect(diagnostics).toContainText("visual inspection still required");
+	await expect(diagnostics).toContainText("Offline baked");
+	await expect(diagnostics).toContainText("mixamo-to-quaternius-v2");
+	await expect(diagnostics).toContainText("golden-reference-blender-bake-v1");
+	await expect(diagnostics).toContainText("offline round trip");
 	const idleQuality = JSON.parse(
 		(await host.getAttribute("data-idle-quality")) ?? "{}",
 	) as QualitySummary;
@@ -172,7 +184,7 @@ test("visually validates deterministic Golden Reference rest-frame retargeting",
 				),
 			).toBe(true);
 		}
-		const screenshot = `after-v2-${state}-${String(Math.round(time * 100)).padStart(2, "0")}-${preset.toLowerCase()}.png`;
+		const screenshot = `after-offline-bake-${state}-${String(Math.round(time * 100)).padStart(2, "0")}-${preset.toLowerCase()}.png`;
 		await captureCanvas(page, canvas, testInfo.outputPath(screenshot));
 		diagnosticsLog.push({
 			boundsExpansion: await host.getAttribute("data-bounds-expansion"),

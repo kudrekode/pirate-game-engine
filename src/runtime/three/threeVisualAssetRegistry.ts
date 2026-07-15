@@ -1,4 +1,8 @@
-import { GOLDEN_REFERENCE_HUMANOID_ASSET } from "@adventure-game-builder/three-asset-preview";
+import {
+	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+} from "@adventure-game-builder/three-asset-preview";
 
 export type {
 	ThreeCharacterAnimationMapping,
@@ -107,6 +111,8 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		url: "/assets/pirate-demo/flag-pirate.glb",
 	},
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	{
 		category: "character",
 		animations: {

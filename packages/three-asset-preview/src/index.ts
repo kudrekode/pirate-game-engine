@@ -38,6 +38,16 @@ export type ThreeVisualAssetDefinition = {
 
 /** Externally-authored development fixture, never a CharacterRecipeV1 artifact. */
 export const GOLDEN_REFERENCE_HUMANOID_ASSET: ThreeVisualAssetDefinition = {
+	animations: {
+		idle: {
+			assetId: "golden-reference-quaternius-idle-baked-v1",
+			clipName: "GoldenReference_Idle",
+		},
+		walk: {
+			assetId: "golden-reference-quaternius-walk-baked-v1",
+			clipName: "GoldenReference_Walk_InPlace",
+		},
+	},
 	category: "character",
 	castShadow: true,
 	defaultHeightOffset: 0,
@@ -54,6 +64,28 @@ export const GOLDEN_REFERENCE_HUMANOID_ASSET: ThreeVisualAssetDefinition = {
 	},
 	tags: ["character", "golden-reference", "quaternius", "skinned"],
 	url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
+};
+
+export const GOLDEN_REFERENCE_IDLE_BAKED_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	id: "golden-reference-quaternius-idle-baked-v1",
+	kind: "glb",
+	materialProfile: "standard",
+	name: "Golden Reference Idle (Offline Baked)",
+	tags: ["animation", "golden-reference", "idle", "offline-baked"],
+	url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+};
+
+export const GOLDEN_REFERENCE_WALK_BAKED_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	id: "golden-reference-quaternius-walk-baked-v1",
+	kind: "glb",
+	materialProfile: "standard",
+	name: "Golden Reference Walk In Place (Offline Baked)",
+	tags: ["animation", "golden-reference", "offline-baked", "walk"],
+	url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
 };
 
 export type ThreeVisualAssetAnalysis = {

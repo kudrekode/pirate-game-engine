@@ -10,6 +10,7 @@ export default defineConfig({
 			"e2e/**",
 			"apps/asset-studio/e2e/**",
 			"tools/animation-retargeting/**",
+			"tools/blender-character/**",
 		],
 		fileParallelism: false,
 		maxWorkers: 1,

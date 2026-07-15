@@ -47,7 +47,12 @@ try {
 			const json = `${JSON.stringify(report, null, 2)}\n`;
 			console.log(json.trimEnd());
 			if (outputDirectory) {
-				const reportName = `${path.basename(filePath, path.extname(filePath)).toLowerCase()}-source.json`;
+				const sourceName = path.basename(filePath, path.extname(filePath));
+				const reportStem =
+					sourceName.toLowerCase() === "source"
+						? path.basename(path.dirname(filePath)).toLowerCase()
+						: sourceName.toLowerCase();
+				const reportName = `${reportStem}-source.json`;
 				await writeFile(
 					path.resolve(outputDirectory, reportName),
 					json,

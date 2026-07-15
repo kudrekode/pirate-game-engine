@@ -2,190 +2,222 @@
 
 ## Decision
 
-Runtime retargeting is **conditionally viable for this exact Mixamo-to-
-Quaternius pair as an isolated diagnostic/preview**, after applying an explicit
-rest-frame transform profile. It is not a general retargeter and the generated
-AnimationClip JSON is not a production asset.
+The deterministic offline-baking milestone passes for the exact Adobe Mixamo
+to Quaternius Golden Reference skeleton pair. Blender 5.2 genuinely imports the
+immutable FBXs and target glTF, applies the accepted V2 world-space rest-frame
+delta to 22 principal bones, bakes target-local actions, and exports two
+canonical target GLBs. Both files are byte-for-byte deterministic across two
+isolated passes, reload through the production Three.js loader, contain only
+the 65-joint Golden skeleton, and animate independent skeleton-safe clones.
 
-The original `SkeletonUtils.retargetClip` result is rejected. Its raised and
-displaced shoulders, arms, hands, and torso were a real deformation failure,
-not harmless source style. The corrected V2 result passes the numeric gates and
-manual inspection of Rest, Idle, and Walk at 0%, 25%, 50%, and 75% from front,
-side, and three-quarter cameras. Shoulders remain below the neck, the torso and
-limb chains remain coherent, and no mesh explosion is visible.
+Asset Studio now uses these offline-baked GLBs by default. Runtime V2 JSON is
+retained only behind `?retarget=runtime-v2`; the rejected V1 comparison remains
+behind `?retarget=failed-v1`. A baked load failure is surfaced and never
+silently falls back to runtime retargeting.
 
-The corrected profile intentionally leaves finger and end/helper bones in the
-target rest pose. Consequently, hands remain open and rigid through the clips.
-That limitation is acceptable for feasibility but requires an offline authoring
-pass before production use.
+The baked idle and walk sources are registered for the Golden Reference in the
+shared Three animation contract. Patchbeard remains the default character and
+gameplay movement remains authoritative. This is a proven pair-specific
+compiler profile, not a general humanoid retargeter.
 
-No clips were registered for the game editor, player, NPCs, or Three runtime.
-The next production step remains a deterministic offline bake and GLB round
-trip through the shared loader.
+## Immutable Sources And Provenance
 
-## Root Cause Of The Rejected V1 Result
+The genuine vendor downloads were moved without changing their bytes:
 
-Direct binding cannot work: none of the 52 animated FBX track targets exactly
-match a Golden skeleton bone. A semantic name map is necessary, but a name map
-alone is insufficient because the rigs use different rest frames and local
-bone axes.
+| Clip | Canonical source | SHA-256 before and after |
+| --- | --- | --- |
+| Idle | `public/assets/source/humanoid-animations/retarget-spike/idle/source.fbx` | `42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0` |
+| Walk | `public/assets/source/humanoid-animations/retarget-spike/walk/source.fbx` | `17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e` |
 
-The rejected V1 experiment passed source global rotations directly through
-`SkeletonUtils.retargetClip`, then derived target locals. It did not conjugate
-the animation by the source and target rest transforms. At Idle 0%, the
-resulting local rotations were already approximately 166-168 degrees from the
-Golden clavicle rest rotations, 79-89 degrees at the upper arms, 166-169
-degrees at the thighs, and 121-126 degrees at the feet. Those values explain
-the visible shoulder and torso displacement.
+The old top-level `Idle.fbx` and `Walking.fbx` paths no longer exist. Each
+canonical directory contains project-maintained `SOURCE.md` and `LICENSE.txt`
+records. They identify Adobe Mixamo, the original filename, download date and
+settings, intended use, and current-licence pointer; they explicitly do not
+claim to be Adobe-supplied text.
 
-This was not caused by corrupt bind data or scene scale:
+`source-provenance.mjs` validates known provider, required fields, FBX Binary
+signature, exact immutable hash, and both sidecars. It rejects missing or
+changed binaries, unknown providers, incomplete records, and non-FBX content.
+Run it with:
 
-- The FBX scene root, mesh, and armature transforms load as identity.
-- The source loaded rest matrices agree with the inverse bind matrices to
-  about `1.7e-6`; the target inverse binds agree with reconstructed rest
-  matrices to about `4.5e-7`.
-- Bone positions and segment lengths remained stable in V1. This proves why a
-  bone-length-only test was a false quality signal: a skeleton can retain every
-  joint length while rotating whole branches into anatomically invalid frames.
-
-Seven supported `SkeletonUtils` option variants were tested: current defaults,
-`preserveBoneMatrix: false`, `preserveBonePositions: false`,
-`useTargetMatrix: true`, the matrix options combined,
-`useFirstFramePosition: true`, and Y-only hip influence. Every variant produced
-the same failed Idle clavicle deviation of `168.2357` degrees. The previously
-mentioned `preserveHipPosition` setting is not a supported `SkeletonUtils`
-option and has no effect.
-
-Rejected comparison clips are retained only as diagnostic evidence:
-
-```text
-public/assets/derived/humanoid-animations/golden-reference-v0/diagnostics/failed-v1-idle.json
-public/assets/derived/humanoid-animations/golden-reference-v0/diagnostics/failed-v1-walk.json
+```powershell
+npm run validate:golden-animation-sources
 ```
 
-## Corrected Retarget Profile
+Read-only inspection reports 67 source joints rooted at `mixamorigHips`, an
+8.333333-second/251-frame Idle, and a 1.033333-second/32-frame Walk at 30 fps.
+The target hashes are:
 
-Profile `mixamo-quaternius-rest-delta-v2` records the exact source and target
-skeleton ids, a 22-bone map, ignored target bones, scale policy, root-motion
-policy, and transform policy. It maps the principal deforming chains only:
-pelvis, three spine bones, neck, head, and bilateral clavicle/arm/hand and
-thigh/calf/foot/ball chains. Fingers, leaf bones, eyes, and source end helpers
-remain unmapped.
+- glTF: `e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4`
+- buffer: `459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f`
 
-For each source sample and mapped target bone, V2 computes the world-space
-rest delta and converts it back through the animated target parent:
+## Why V1 Was Rejected
+
+Direct playback is impossible because 0 of the 52 animated Mixamo track names
+bind to Golden bones. A semantic name map alone was also insufficient: the
+rigs have different rest frames and local axes. The initial
+`SkeletonUtils.retargetClip` experiment omitted the rest-frame conjugation and
+reached `168.2357` degrees of clavicle deviation. Seven supported option
+variants produced the same anatomical shoulder and torso failure.
+
+The accepted runtime V2 diagnostic instead computes:
 
 ```text
 targetAnimatedWorld =
   sourceAnimatedWorld * inverse(sourceRestWorld) * targetRestWorld
 ```
 
-The opposite multiplication order was also inspected and rejected: it placed
-the idle hands near shoulder height. The selected order places them beside the
-hips while preserving the Golden skeleton's own rest frame. Target bone
-translations stay at rest except for the pelvis. Pelvis X/Z is frozen in target
-world space while Y is preserved, so the walk becomes in-place without hiding
-vertical body motion.
+It then converts through the animated target parent. V2 passed finite-value,
+bounds, symmetry, chain-length, root-policy, clone-independence, and rest-
+restoration checks, with maximum clavicle deviations of `22.1740` degrees for
+Idle and `23.7857` degrees for Walk. That result is the reference for the
+offline bake.
 
-| Gate | Rejected V1 Idle | Corrected V2 Idle | Corrected V2 Walk | Limit |
-| --- | ---: | ---: | ---: | ---: |
-| Max clavicle rotation from rest | 168.2357 deg | 22.1740 deg | 23.7857 deg | 45 deg |
-| Max relative bone-length error | 1.11e-7 | 1.88e-7 | 1.71e-6 | 1e-5 |
-| Max span / rest height | 0.9946 | 0.9892 | 0.9784 | 1.5 |
-| Idle bilateral symmetry error | 0.1035 | 0.1107 | n/a | 0.15 |
-| Post-policy horizontal root travel | 2.80e-11 | 2.81e-11 | 1.80e-9 | 1e-5 |
-| Result | Fail | Pass | Pass | |
+## Versioned Blender Profile
 
-The walk contained about `1.650838` target metres of horizontal travel before
-the in-place policy. Corrected output has 23 tracks per clip rather than V1's
-65: 22 quaternion tracks plus pelvis position. Loop endpoint differences remain
-below `0.001`.
+`tools/blender-character/profiles/mixamo-to-quaternius-v2.json` formalises the
+pair as profile `mixamo-to-quaternius-v2`. It records:
 
-Run the deterministic experiment and focused tests with:
+- source and target ids, joint counts, roots, hashes, and required bones;
+- the exact 22-bone pelvis/spine/head/arm/hand/leg/foot/ball mapping;
+- ignored source eyes, fingers, and end helpers;
+- ignored target fingers, twists/helpers, leaf bones, and root;
+- V2 world-space rest-delta strategy;
+- target-rest translation and scale policy;
+- orientation and 30 fps sampling policy;
+- in-place pelvis policy and known limitations.
+
+Finger and helper bones intentionally remain in target rest pose. The visible
+limitation is rigid, open hands.
+
+## Headless Compiler
+
+The discovered executable is
+`C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`, version
+`5.2.0 LTS`, build `fbe6228777e7`.
+
+`golden-animation-bake.mjs` discovers Blender from an explicit argument,
+`BLENDER_PATH`, `PATH`, or conventional Windows locations. It invokes:
+
+```text
+blender --background --factory-startup --python-exit-code 1
+  --python tools/blender-character/retarget_golden_reference.py --
+  --source <canonical source.fbx>
+  --target <Superhero_Male_FullBody.gltf>
+  --clip <idle|walk>
+  --output <derived .glb>
+  --profile tools/blender-character/profiles/mixamo-to-quaternius-v2.json
+  --profile-version mixamo-to-quaternius-v2
+  --frame-rate 30
+  --root-motion-policy <profile policy>
+  --metadata <metadata.json>
+  --diagnostics <diagnostics.json>
+```
+
+Convenience commands are:
 
 ```powershell
-node tools/animation-retargeting/run-runtime-retarget-experiment.mjs
-npm run test:retarget-spike
+npm run bake:golden-animation -- idle "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
+npm run bake:golden-animation -- walk "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 ```
 
-The complete machine-readable evidence is in:
+Each command starts clean, validates the 67- and 65-joint armatures and profile,
+imports the real sources, bakes only the target action from frame zero, freezes
+target-world pelvis X/Z while preserving Y, removes all source objects/actions,
+exports the complete target, and proves the source hash is unchanged. Two
+passes run in separate temporary directories and staging is always removed.
 
-```text
-public/assets/derived/humanoid-animations/golden-reference-v0/runtime-retarget-report.json
-public/assets/derived/humanoid-animations/golden-reference-v0/idle.runtime-retarget.json
-public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.runtime-retarget.json
-```
+## Artifacts And Determinism
 
-All remain marked `experimental-runtime-retarget-diagnostic`.
+Actual loading favoured a full target GLB per clip. This duplicates the 3
+meshes, 3 materials, and 7 embedded textures, but it is proven through the
+normal `GLTFLoader` and clone path. Animation-only reuse was not selected
+because reliable binding through the current loader contract has not been
+demonstrated. A combined two-clip library is a future size optimisation, not a
+condition of this feasibility milestone.
 
-## Browser Quality Evidence
+| Artifact | Frames / duration | SHA-256 | Normalized animation SHA-256 |
+| --- | --- | --- | --- |
+| `public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb` | 251 / 8.333333 s | `6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af` | `5b9ee52ba5c6760d2a9a180b8ff5864623c0e6bc2e5e8d94ac23417b9187358f` |
+| `public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb` | 32 / 1.033333 s | `00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c` | `5b1c6ca23c7a4ffe72ebb01b1c38f2c328dbec8bcb01a666219818ca1b1e8d57` |
 
-The Asset Studio fixture exposes fixed Front, Side, and Three-quarter cameras,
-Rest/Idle/Walk controls, and deterministic 0/25/50/75% seeking. It publishes
-18-joint world transforms and precise skinned-mesh bounds for the Playwright
-harness. The bounds gate uses overall extent and character height; raw axis
-ratios are retained as diagnostics because comparing walk depth against a
-nearly planar T-pose produces a misleading large ratio.
+Both repeated passes produced identical binary hashes, normalized actions,
+track names, times, key counts, values, and semantic metadata. Per-clip
+`.bake-metadata.json` and `.bake-diagnostics.json` files record compiler,
+Blender, hashes, profile, command, structure, samples, root policy, warnings,
+and determinism results.
 
-`npm run test:e2e:asset-studio` captures 30 images:
+## Root Motion
 
-- three rejected V1 Idle 0% views;
-- three corrected Rest views;
-- corrected Idle and Walk at four sample times from all three views.
+The policy freezes target-world pelvis X/Z to its first sample and preserves
+target-world Y. Idle residual X/Z is exactly `0 / 0`. Walk contained
+approximately `1.65083754` Blender-world units of forward source travel; the
+baked GLB residual measured by Three.js is `0` on X and
+`-3.725294253631439e-9` on Z. Vertical gait motion remains present. The runtime
+still controls entity position.
 
-Manual inspection of all captures confirmed the V1 shoulder/torso failure and
-the corrected V2 anatomy. The focused browser test additionally verifies
-finite joint transforms, arm and leg segment lengths against Rest, shoulder
-placement, hand reach, root stability, rest restoration, camera presets,
-skinned bounds, and absence of binding, skeleton, WebGL, page, or console
-errors. The run also writes `retarget-pose-diagnostics.json` beside the PNGs in
-the Playwright result directory.
+## Three.js Round Trip And V2 Comparison
 
-This evidence is deliberately stricter than a track-binding success message.
-The browser summary still says "visual inspection required" because numeric
-gates cannot certify deformation quality on their own.
+`offline-bake-roundtrip.mjs` uses the production `GLTFLoader`, real clip
+parsing, and skeleton-safe cloning. Each GLB reports 69 nodes, one 65-joint
+Golden skeleton, 3 skinned meshes, 3 materials, 7 textures, one 23-track
+target-only clip, no Mixamo names, finite keys and sampled transforms, stable
+bounds/facing/scale, and no inspector warnings. Two clones have distinct bone
+and skeleton objects and distinct `AnimationMixer`s; animating one does not
+mutate the other, and Rest restores the bind pose.
 
-## Source And Provenance
+Samples at 0/25/50/75% compare the required pelvis, torso, head, arm, hand, and
+leg chains against runtime V2. The justified importer/exporter representation
+tolerances are 10 degrees and 0.02 metres:
 
-The workspace contains these immutable tracked inputs:
+| Clip | Max angular difference | Max positional difference | Result |
+| --- | ---: | ---: | --- |
+| Idle | `9.548430` deg at `neck_01` | `0.013719` m at `Head` | Pass |
+| Walk | `9.693279` deg at `neck_01` | `0.014511` m at `Head` | Pass |
 
-```text
-public/assets/source/humanoid-animations/retarget-spike/Idle.fbx
-public/assets/source/humanoid-animations/retarget-spike/Walking.fbx
-public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf
-```
+The report is
+`public/assets/derived/humanoid-animations/golden-reference-v0/offline-bake-roundtrip-report.json`.
+Node validation uses one-pixel bitmap stand-ins only for embedded texture
+decode; real texture decode is covered by browser Playwright.
 
-| Asset | SHA-256 |
-| --- | --- |
-| `Idle.fbx` | `42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0` |
-| `Walking.fbx` | `17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e` |
-| Golden target glTF | `e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4` |
+## Browser And Asset Studio Validation
 
-The FBX directory has no `SOURCE.md` or `LICENSE.txt` sidecars. The request
-identifies Adobe Mixamo as provider, but repository provenance does not
-independently establish that. Add and verify source/licence records before any
-derived redistribution.
+Asset Studio defaults to Offline baked playback and shows artifact paths,
+duration, profile/compiler versions, Adobe Mixamo provider, root policy, 22
+mapped bones, and the finger/helper limitation. Rest, Idle, Walk, Play/Pause,
+seek, orbit, zoom, fixed cameras, and reset remain available.
 
-Read-only inspection found 67 source bones rooted at `mixamorigHips`, 53
-transform tracks per usable clip, an 8.333333-second/251-frame Idle, and a
-1.033333-second/32-frame Walk at 30 fps. The FBX loader reports one empty take,
-an unsupported shininess map, and vertices with more than four skin weights;
-the experiment consumes only skeleton and animation data.
+Playwright captures the rejected V1 baseline plus Rest and baked Idle/Walk at
+0/25/50/75% from Front, Side, and Three-quarter cameras. All baked captures
+were manually inspected. Shoulders and torso are coherent; elbows, hips,
+knees, and feet keep credible chains; gait phases progress correctly; hands
+track their arms without separation. Fingers remain rigid and open as
+documented. There is no visible root drift or mesh explosion. The harness also
+passes finite joints, segment lengths, bounds, pose progression, Rest restore,
+camera control, and zero binding/skeleton/WebGL/load/uncaught errors.
 
-## Offline Bake Requirements
+## Game Registry Promotion
 
-Blender was not executed: `BLENDER_PATH` is unset, `blender` is not on `PATH`,
-and `retarget_golden_reference.py` does not exist. No baked or exported asset is
-claimed.
+The shared preview contract exports explicit idle and walk baked-source
+definitions. The Golden Reference maps semantic `idle` and `walk` to those
+assets, and the root registry includes them as animation-only presentation
+sources. The shared Three controller now honours optional idle mappings as well
+as walk/attack/defeated while assets without idle mappings retain their bind
+pose. Player and NPC clones continue to use per-clone mixers and independent
+skeletons. No authored schema or gameplay semantics changed.
 
-An offline implementation must reproduce the V2 rest-frame profile, validate
-source/target bind poses, align clavicle, arm, hand, thigh, and foot frames,
-decide and document finger handling, bake target-local curves at source sample
-times, apply the target-world pelvis policy, and validate both foot contact and
-loop continuity. It must then export a GLB, re-import it through the shared GLTF
-loader, verify hashes/metadata/clip bindings/clone independence/rest restore,
-and repeat the same deterministic visual matrix.
+## Limitations And Next Milestone
 
-Only a successful round trip can justify a canonical animation asset and game
-registry mappings. Until then, runtime V2 remains a pair-specific feasibility
-diagnostic rather than a production pipeline.
+- The profile is valid only for these exact verified skeleton signatures.
+- Fingers/helpers remain at rest, producing rigid open hands.
+- Full per-clip GLBs duplicate approximately 3 meshes, 3 materials, and 7
+  embedded textures; a combined or animation-only library needs separate proof.
+- The Blender/Three boundary differs from runtime V2 by up to 9.69 degrees and
+  1.46 cm, within the documented feasibility tolerance.
+- FBX inspection still reports an unsupported shininess map and trimming of
+  skin influences beyond four; retargeting consumes the skeleton/action only.
+
+The smallest sensible next milestone is the deterministic procedural
+mannequin: Blender Python geometry, canonical skeleton, deterministic skinning,
+these canonical baked animations, GLB export, Asset Studio preview, and game-
+engine round trip.

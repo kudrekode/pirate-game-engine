@@ -2,7 +2,7 @@
 	"asset": {
 		"byteLength": 28426960,
 		"fileHash": "17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e",
-		"sourcePath": "public/assets/source/humanoid-animations/retarget-spike/Walking.fbx",
+		"sourcePath": "public/assets/source/humanoid-animations/retarget-spike/walk/source.fbx",
 		"sourceFormat": "fbx",
 		"axis": {
 			"loaderOutputUp": "+Y",

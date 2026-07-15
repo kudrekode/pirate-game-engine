@@ -9,11 +9,12 @@ import {
 	runSkeletonUtilsOptionExperiments,
 	serializeClip,
 } from "./humanoid-retargeting-experiment.mjs";
+import { assertSourceProvenance } from "./source-provenance.mjs";
 
 const IDLE_SOURCE =
-	"public/assets/source/humanoid-animations/retarget-spike/Idle.fbx";
+	"public/assets/source/humanoid-animations/retarget-spike/idle/source.fbx";
 const WALK_SOURCE =
-	"public/assets/source/humanoid-animations/retarget-spike/Walking.fbx";
+	"public/assets/source/humanoid-animations/retarget-spike/walk/source.fbx";
 const TARGET_SOURCE =
 	"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf";
 const DEFAULT_OUTPUT =
@@ -26,6 +27,7 @@ async function hash(filePath) {
 }
 
 const outputDirectory = path.resolve(process.argv[2] ?? DEFAULT_OUTPUT);
+const provenanceReport = await assertSourceProvenance();
 await mkdir(outputDirectory, { recursive: true });
 await mkdir(path.join(outputDirectory, "diagnostics"), { recursive: true });
 
@@ -83,9 +85,10 @@ const metadata = {
 	},
 	optionExperiments,
 	provenance: {
-		licenseSidecarsPresent: false,
-		note: "The continuation brief states Mixamo licensing/provenance, but LICENSE.txt and SOURCE.md are absent from the workspace.",
-		provider: "Adobe Mixamo (per supplied continuation brief)",
+		licenseSidecarsPresent: true,
+		note: "Project-maintained SOURCE.md and LICENSE.txt records validate against the immutable vendor FBX hashes.",
+		profile: provenanceReport.profile,
+		provider: "Adobe Mixamo",
 	},
 	targetSkeletonId: "golden-reference-quaternius-superhero-male",
 	walk: walk.report,

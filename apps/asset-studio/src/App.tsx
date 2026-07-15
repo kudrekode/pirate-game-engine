@@ -16,8 +16,12 @@ import {
 } from "@adventure-game-builder/character-contract";
 import {
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	requestThreeVisualAsset,
+	requestThreeVisualAssetAnimationClip,
 	type ThreeVisualAssetAnalysis,
+	type ThreeVisualAssetDefinition,
 } from "@adventure-game-builder/three-asset-preview";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -147,6 +151,28 @@ type RuntimeRetargetReport = {
 		walkQuality: RetargetQualitySummary;
 	};
 };
+type OfflineBakeMetadata = {
+	clipId: "idle" | "walk";
+	clipName: string;
+	compilerVersion: string;
+	durationSeconds: number;
+	mappedBoneCount: number;
+	outputPath: string;
+	profileVersion: string;
+	rootMotion: { policy: string };
+	warnings: string[];
+};
+type OfflineBakeRoundTripReport = {
+	passed: boolean;
+	profileVersion: string;
+	idle: { passed: boolean; poseComparison: { passed: boolean } };
+	walk: { passed: boolean; poseComparison: { passed: boolean } };
+};
+type OfflineBakeBundle = {
+	idle: OfflineBakeMetadata;
+	walk: OfflineBakeMetadata;
+	roundTrip: OfflineBakeRoundTripReport;
+};
 const RETARGET_DIAGNOSTIC_JOINTS = [
 	"pelvis",
 	"spine_03",
@@ -167,6 +193,30 @@ const RETARGET_DIAGNOSTIC_JOINTS = [
 	"foot_l",
 	"foot_r",
 ] as const;
+
+function loadRegisteredAnimationClip(
+	definition: ThreeVisualAssetDefinition,
+	clipName: string,
+): Promise<THREE.AnimationClip> {
+	return new Promise((resolve, reject) => {
+		const check = () => {
+			const result = requestThreeVisualAssetAnimationClip(
+				definition,
+				clipName,
+				{ onStateChange: check },
+			);
+			if (result.status === "loaded") resolve(result.clip);
+			else if (result.status === "error") reject(result.error);
+			else if (result.status === "missing_clip")
+				reject(
+					new Error(
+						`${definition.id} does not contain the required ${clipName} clip.`,
+					),
+				);
+		};
+		check();
+	});
+}
 
 function GoldenReferenceHumanoidPreview() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -194,6 +244,7 @@ function GoldenReferenceHumanoidPreview() {
 		"loading",
 	);
 	const [retargetReport, setRetargetReport] = useState<RuntimeRetargetReport>();
+	const [offlineBake, setOfflineBake] = useState<OfflineBakeBundle>();
 	const animationPlayingRef = useRef(animationPlaying);
 	const applyAnimationStateRef = useRef<(state: PreviewAnimationState) => void>(
 		() => undefined,
@@ -467,38 +518,85 @@ function GoldenReferenceHumanoidPreview() {
 			setStatus("loaded");
 			applyAnimationState(activeState);
 		};
-		const failedBaseline =
-			new URLSearchParams(window.location.search).get("retarget") ===
-			"failed-v1";
-		host.dataset.retargetMode = failedBaseline ? "failed-v1" : "corrected-v2";
-		const idleClipUrl = failedBaseline
-			? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-idle.json`
-			: `${RETARGET_ARTIFACT_ROOT}/idle.runtime-retarget.json`;
-		const walkClipUrl = failedBaseline
-			? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-walk.json`
-			: `${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`;
+		const requestedMode = new URLSearchParams(window.location.search).get(
+			"retarget",
+		);
+		const failedBaseline = requestedMode === "failed-v1";
+		const runtimeV2 = requestedMode === "runtime-v2";
+		const offlineBaked = !failedBaseline && !runtimeV2;
+		host.dataset.retargetMode = failedBaseline
+			? "failed-v1"
+			: runtimeV2
+				? "runtime-v2"
+				: "offline-baked";
+		host.dataset.playbackMethod = offlineBaked
+			? "Offline baked"
+			: "Runtime retarget diagnostic";
+		const fetchJson = async <Result,>(url: string): Promise<Result> => {
+			const response = await fetch(url);
+			if (!response.ok) throw new Error(`${url} HTTP ${response.status}.`);
+			return response.json() as Promise<Result>;
+		};
+		const runtimeClip = (url: string) =>
+			fetchJson<ReturnType<typeof THREE.AnimationClip.toJSON>>(url).then(
+				(json) => THREE.AnimationClip.parse(json),
+			);
+		const idleClipPromise = offlineBaked
+			? loadRegisteredAnimationClip(
+					GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+					"GoldenReference_Idle",
+				)
+			: runtimeClip(
+					failedBaseline
+						? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-idle.json`
+						: `${RETARGET_ARTIFACT_ROOT}/idle.runtime-retarget.json`,
+				);
+		const walkClipPromise = offlineBaked
+			? loadRegisteredAnimationClip(
+					GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+					"GoldenReference_Walk_InPlace",
+				)
+			: runtimeClip(
+					failedBaseline
+						? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-walk.json`
+						: `${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`,
+				);
+		const offlineBakePromise = offlineBaked
+			? Promise.all([
+					fetchJson<OfflineBakeMetadata>(
+						`${RETARGET_ARTIFACT_ROOT}/idle.bake-metadata.json`,
+					),
+					fetchJson<OfflineBakeMetadata>(
+						`${RETARGET_ARTIFACT_ROOT}/walk.bake-metadata.json`,
+					),
+					fetchJson<OfflineBakeRoundTripReport>(
+						`${RETARGET_ARTIFACT_ROOT}/offline-bake-roundtrip-report.json`,
+					),
+				]).then(([idle, walk, roundTrip]) => ({ idle, roundTrip, walk }))
+			: Promise.resolve(undefined);
 		Promise.all([
-			fetch(idleClipUrl).then((response) => {
-				if (!response.ok) throw new Error(`Idle clip HTTP ${response.status}.`);
-				return response.json();
-			}),
-			fetch(walkClipUrl).then((response) => {
-				if (!response.ok) throw new Error(`Walk clip HTTP ${response.status}.`);
-				return response.json();
-			}),
-			fetch(`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`).then(
-				(response) => {
-					if (!response.ok)
-						throw new Error(`Retarget report HTTP ${response.status}.`);
-					return response.json() as Promise<RuntimeRetargetReport>;
-				},
+			idleClipPromise,
+			walkClipPromise,
+			fetchJson<RuntimeRetargetReport>(
+				`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`,
 			),
+			offlineBakePromise,
 		])
-			.then(([idleJson, walkJson, report]) => {
+			.then(([idleClip, walkClip, report, baked]) => {
 				if (disposed) return;
-				animationClips.set("idle", THREE.AnimationClip.parse(idleJson));
-				animationClips.set("walk", THREE.AnimationClip.parse(walkJson));
-				host.dataset.retargetProfile = report.boneMapVersion;
+				animationClips.set("idle", idleClip);
+				animationClips.set("walk", walkClip);
+				host.dataset.retargetProfile =
+					baked?.idle.profileVersion ?? report.boneMapVersion;
+				if (baked) {
+					host.dataset.artifactPaths = `${baked.idle.outputPath},${baked.walk.outputPath}`;
+					host.dataset.compilerVersion = baked.idle.compilerVersion;
+					host.dataset.offlineRoundTripPassed = String(
+						baked.roundTrip.passed &&
+							baked.roundTrip.idle.poseComparison.passed &&
+							baked.roundTrip.walk.poseComparison.passed,
+					);
+				}
 				host.dataset.idleQuality = JSON.stringify(
 					failedBaseline
 						? report.legacyFailedBaseline.idleQuality
@@ -510,6 +608,7 @@ function GoldenReferenceHumanoidPreview() {
 						: report.walk.quality.summary,
 				);
 				setRetargetReport(report);
+				setOfflineBake(baked);
 				setClipStatus("loaded");
 				setAnimationState("idle");
 			})
@@ -519,7 +618,7 @@ function GoldenReferenceHumanoidPreview() {
 				setError(
 					clipError instanceof Error
 						? clipError.message
-						: "Retargeted clips failed to load.",
+						: "Animation artifacts failed to load.",
 				);
 			});
 		const observer =
@@ -632,10 +731,10 @@ function GoldenReferenceHumanoidPreview() {
 					? "Loading reference fixture…"
 					: status === "loaded"
 						? clipStatus === "loaded"
-							? `Reference loaded · ${animationState === "rest" ? "Rest pose" : `${animationState} runtime-retarget experiment`}`
+							? `Reference loaded · ${animationState === "rest" ? "Rest pose" : `${animationState} ${offlineBake ? "offline-baked" : "runtime-retarget diagnostic"}`}`
 							: clipStatus === "error"
 								? `Reference loaded · Clip error: ${error}`
-								: "Reference loaded · Loading retargeted clips…"
+								: "Reference loaded · Loading animation clips…"
 						: `Preview error: ${error}`}
 			</div>
 			<dl
@@ -675,45 +774,81 @@ function GoldenReferenceHumanoidPreview() {
 					<dd>
 						{animationState === "rest"
 							? "Rest"
-							: `${animationState} · ${retargetReport?.[animationState].clip.duration.toFixed(3) ?? "—"}s`}
+							: `${animationState} · ${
+									offlineBake?.[animationState].durationSeconds.toFixed(3) ??
+									retargetReport?.[animationState].clip.duration.toFixed(3) ??
+									"—"
+								}s`}
 					</dd>
 				</div>
 				<div>
 					<dt>Provider / method</dt>
 					<dd>
-						{retargetReport
-							? `${retargetReport.provenance.provider} · runtime experiment`
-							: "—"}
+						{offlineBake
+							? `${retargetReport?.provenance.provider ?? "Adobe Mixamo"} · Offline baked`
+							: retargetReport
+								? `${retargetReport.provenance.provider} · runtime diagnostic`
+								: "—"}
 					</dd>
 				</div>
 				<div>
 					<dt>Bone mapping</dt>
 					<dd>
-						{retargetReport
-							? `${retargetReport.idleComparison.semanticMatches.length} mapped · ${retargetReport.idleComparison.unmatchedSourceBones.length} source / ${retargetReport.idleComparison.unmatchedTargetBones.length} target unmapped`
-							: "—"}
+						{offlineBake
+							? `${offlineBake.idle.mappedBoneCount} mapped · fingers/helpers at rest`
+							: retargetReport
+								? `${retargetReport.idleComparison.semanticMatches.length} mapped · ${retargetReport.idleComparison.unmatchedSourceBones.length} source / ${retargetReport.idleComparison.unmatchedTargetBones.length} target unmapped`
+								: "—"}
 					</dd>
 				</div>
 				<div>
 					<dt>Root motion</dt>
-					<dd>{retargetReport?.walk.rootMotion.policy ?? "—"}</dd>
+					<dd>
+						{offlineBake?.walk.rootMotion.policy ??
+							retargetReport?.walk.rootMotion.policy ??
+							"—"}
+					</dd>
 				</div>
 				<div>
 					<dt>Retarget profile</dt>
-					<dd>{retargetReport?.boneMapVersion ?? "—"}</dd>
+					<dd>
+						{offlineBake?.roundTrip.profileVersion ??
+							retargetReport?.boneMapVersion ??
+							"—"}
+					</dd>
 				</div>
 				<div>
 					<dt>Transform policy</dt>
-					<dd>{retargetReport?.idle.profile.transformPolicy ?? "—"}</dd>
+					<dd>
+						{offlineBake
+							? "V2 rest-frame delta baked in Blender"
+							: (retargetReport?.idle.profile.transformPolicy ?? "—")}
+					</dd>
+				</div>
+				<div>
+					<dt>Artifact</dt>
+					<dd>
+						{offlineBake
+							? `${offlineBake.idle.outputPath} · ${offlineBake.walk.outputPath}`
+							: "Runtime JSON diagnostics"}
+					</dd>
+				</div>
+				<div>
+					<dt>Compiler</dt>
+					<dd>{offlineBake?.idle.compilerVersion ?? "Runtime only"}</dd>
 				</div>
 				<div>
 					<dt>Pose quality gate</dt>
 					<dd>
 						{animationState === "rest"
 							? "Rest baseline"
-							: retargetReport?.[animationState].quality.summary.passed
-								? "Pass (visual inspection still required)"
-								: "Failed"}
+							: offlineBake
+								? offlineBake.roundTrip[animationState].poseComparison.passed
+									? "Pass · offline round trip and V2 pose comparison"
+									: "Failed offline round trip"
+								: retargetReport?.[animationState].quality.summary.passed
+									? "Pass (visual inspection still required)"
+									: "Failed"}
 					</dd>
 				</div>
 				<div>

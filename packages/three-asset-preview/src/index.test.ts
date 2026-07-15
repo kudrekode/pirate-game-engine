@@ -4,6 +4,8 @@ import {
 	analyzeThreeVisualAssetRoot,
 	cloneThreeVisualAssetRoot,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	resolveThreeVisualAssetResourceUrl,
 } from "./index";
 
@@ -21,6 +23,29 @@ describe("shared Three asset preview", () => {
 				"textures/unrelated.png",
 			),
 		).toBe("textures/unrelated.png");
+	});
+
+	test("defines explicit offline-baked animation sources", () => {
+		expect(GOLDEN_REFERENCE_HUMANOID_ASSET.animations).toEqual({
+			idle: {
+				assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
+				clipName: "GoldenReference_Idle",
+			},
+			walk: {
+				assetId: GOLDEN_REFERENCE_WALK_BAKED_ASSET.id,
+				clipName: "GoldenReference_Walk_InPlace",
+			},
+		});
+		expect(GOLDEN_REFERENCE_IDLE_BAKED_ASSET).toMatchObject({
+			animationOnly: true,
+			kind: "glb",
+			url: expect.stringMatching(/idle\.glb$/u),
+		});
+		expect(GOLDEN_REFERENCE_WALK_BAKED_ASSET).toMatchObject({
+			animationOnly: true,
+			kind: "glb",
+			url: expect.stringMatching(/walk-in-place\.glb$/u),
+		});
 	});
 
 	test("reports deterministic mesh and animation analysis", () => {

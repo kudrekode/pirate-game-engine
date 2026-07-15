@@ -162,9 +162,15 @@ describe("Three visual asset registry", () => {
 		});
 	});
 
-	it("registers the Quaternius Golden Reference Humanoid without animation mappings", () => {
+	it("registers the Quaternius Golden Reference Humanoid with offline-baked animations", () => {
 		const asset = getThreeVisualAssetDefinition(
 			"golden-reference-quaternius-superhero-male",
+		);
+		const idle = getThreeVisualAssetDefinition(
+			"golden-reference-quaternius-idle-baked-v1",
+		);
+		const walk = getThreeVisualAssetDefinition(
+			"golden-reference-quaternius-walk-baked-v1",
 		);
 
 		expect(asset).toMatchObject({
@@ -182,7 +188,26 @@ describe("Three visual asset registry", () => {
 			},
 			url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
 		});
-		expect(asset?.animations).toBeUndefined();
+		expect(asset?.animations).toEqual({
+			idle: {
+				assetId: "golden-reference-quaternius-idle-baked-v1",
+				clipName: "GoldenReference_Idle",
+			},
+			walk: {
+				assetId: "golden-reference-quaternius-walk-baked-v1",
+				clipName: "GoldenReference_Walk_InPlace",
+			},
+		});
+		expect(idle).toMatchObject({
+			animationOnly: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+		});
+		expect(walk).toMatchObject({
+			animationOnly: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+		});
 	});
 
 	it("looks up registered asset definitions by stable id", () => {

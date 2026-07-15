@@ -11,9 +11,10 @@ import {
 	TARGET_TO_MIXAMO_BONE_MAP,
 } from "./humanoid-retargeting-experiment.mjs";
 
-const IDLE = "public/assets/source/humanoid-animations/retarget-spike/Idle.fbx";
+const IDLE =
+	"public/assets/source/humanoid-animations/retarget-spike/idle/source.fbx";
 const WALK =
-	"public/assets/source/humanoid-animations/retarget-spike/Walking.fbx";
+	"public/assets/source/humanoid-animations/retarget-spike/walk/source.fbx";
 const TARGET =
 	"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf";
 const EXPECTED_HASHES = {
