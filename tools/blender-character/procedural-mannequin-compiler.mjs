@@ -20,9 +20,13 @@ import {
 import {
 	canonicalizeProceduralMannequinRecipe,
 	deriveProceduralMannequinAnatomy,
+	deriveProceduralMannequinMeasurements,
+	GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE,
+	GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE,
 	GOLDEN_HUMANOID_SKELETON_CONTRACT,
 	GOLDEN_REFERENCE_ANIMATION_SET,
 	hashProceduralMannequinRecipe,
+	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 	PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
 	validateProceduralMannequinRecipe,
@@ -211,6 +215,9 @@ export async function compileProceduralMannequin({
 	}
 	const recipe = parsed.value;
 	const anatomy = deriveProceduralMannequinAnatomy(recipe.proportions);
+	const measurements = deriveProceduralMannequinMeasurements(
+		recipe.proportions,
+	);
 	const recipeHash = hashProceduralMannequinRecipe(recipe);
 	const blender = requestedBlender ?? (await discoverBlender());
 	const blenderVersion = await readBlenderVersion(blender, { execFileImpl });
@@ -272,6 +279,16 @@ export async function compileProceduralMannequin({
 				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, second: secondValidation.checks })}`,
 			);
 		}
+		if (
+			firstValidation.skeletonSignature !==
+				GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE ||
+			secondValidation.skeletonSignature !==
+				GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE
+		) {
+			throw new Error(
+				"Generated GLB changed the Golden exported rest signature.",
+			);
+		}
 		for (const pass of [first, second]) {
 			for (const [key, expected] of Object.entries(anatomy)) {
 				if (Math.abs(pass.report.anatomy?.[key] - expected) > 0.000001) {
@@ -279,6 +296,36 @@ export async function compileProceduralMannequin({
 						`Blender anatomy mismatch for ${key}; expected ${expected}.`,
 					);
 				}
+			}
+			for (const [key, expected] of Object.entries(measurements)) {
+				if (
+					typeof expected === "number" &&
+					Math.abs(pass.report.measurements?.[key] - expected) > 0.000001
+				) {
+					throw new Error(
+						`Blender measurement mismatch for ${key}; expected ${expected}.`,
+					);
+				}
+			}
+			if (
+				pass.report.geometry.topologyVersion !==
+					PROCEDURAL_HUMANOID_TOPOLOGY_VERSION ||
+				pass.report.geometry.topology.connectedComponentCount !== 1 ||
+				!pass.report.geometry.topology.manifold ||
+				pass.report.geometry.topology.boundaryEdgeCount !== 0 ||
+				pass.report.geometry.topology.degenerateFaceCount !== 0 ||
+				pass.report.geometry.topology.genus !== 0 ||
+				pass.report.geometry.topology.nonManifoldEdgeCount !== 0
+			) {
+				throw new Error("Generated topology failed the V1 connectivity gate.");
+			}
+			if (
+				pass.report.skeleton.restSignature !==
+				GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE
+			) {
+				throw new Error(
+					"Generated skeleton changed the Golden Blender rest signature.",
+				);
 			}
 			if (
 				pass.report.anatomy.maximumBoneRelativeAnchorOffset > 0.45 ||
@@ -370,6 +417,7 @@ export async function compileProceduralMannequin({
 				determinism.normalizedSemanticDeterministic,
 			engineForward: "-Z after registry 180-degree Y rotation",
 			geometryProfile: recipe.geometry.profile,
+			measurements,
 			heightMetres: recipe.proportions.height,
 			influenceStatistics: {
 				maximumInfluences: geometry.maximumInfluences,
@@ -400,6 +448,8 @@ export async function compileProceduralMannequin({
 				gltf: immutableBefore[portable(templatePath)],
 			},
 			triangleCount: geometry.triangleCount,
+			topology: geometry.topology,
+			topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 			units: "metres",
 			validationVersion: PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
 			vertexCount: geometry.vertexCount,

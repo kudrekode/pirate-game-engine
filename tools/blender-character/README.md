@@ -52,13 +52,24 @@ npm run test:procedural-mannequin
 
 `generate_procedural_mannequin.py` imports only the immutable Golden skeleton
 template, removes all vendor presentation data, generates one deterministic
-engineering mannequin from six validated body parameters, applies explicit
-weights, and exports a grounded GLB.
+engineering mannequin from six validated body parameters, unions the anatomical
+volumes into one closed genus-zero surface, applies deterministic max-four
+analytic weights, and exports a grounded GLB.
 The Node entry point validates the recipe, runs two isolated Blender passes,
 checks source immutability, performs the production Three.js round trip, and
 writes manifest/diagnostic artifacts. See
 `docs/assets/procedural-mannequin-v0.md` for the decision, hashes, metrics,
 visual evidence, and limitations.
+
+The complete default/extrema/seed/challenge topology matrix is available as:
+
+```powershell
+npm run validate:procedural-topology-matrix
+```
+
+See `docs/assets/generated-body-topology-v1.md` for the method decision,
+version/migration policy, topology and skeleton gates, matrix results, and
+fixed-camera evidence.
 
 ## Asset Studio Body Authoring
 

@@ -53,10 +53,11 @@ manifest, and immutable generated asset URL without invoking Blender again.
 
 ## Validation Evidence
 
-The checked-in default recipe produced a deterministic 1.82 m GLB with 65
-joints, 648 vertices, 1,108 triangles, valid explicit weights, and passing Idle
-and Walk round trips. Two non-default acceptance shapes also completed the same
-two-pass compile and validation:
+The checked-in default recipe now uses Generated Body Topology V1: one closed,
+manifold, genus-zero skinned surface with the unchanged 65-joint rest skeleton,
+deterministic blended weights, and passing Idle and Walk round trips. The full
+21-body acceptance matrix is documented in
+[`generated-body-topology-v1.md`](generated-body-topology-v1.md).
 
 | Height | Shoulders | Torso | Arms | Legs | Hips | Bounds (X × Y × Z) | GLB SHA-256 |
 | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -70,6 +71,6 @@ no additional compile request.
 
 ## Next Milestone
 
-The next milestone is improving the generated topology and joint transitions.
-It should preserve these six parameters and the deterministic compiler
+The next body milestone should refine generated topology and deformation
+quality while preserving these six parameters and the deterministic compiler
 boundary rather than expanding the parameter set.

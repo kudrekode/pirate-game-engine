@@ -48,15 +48,23 @@ test("previews and animates the checked-in Body Proportions V1 mannequin", async
 	await expect(host).toHaveAttribute("data-deterministic-build", "true");
 	await expect(host).toHaveAttribute("data-recipe-hash", /^[0-9a-f]{64}$/u);
 	await expect(host).toHaveAttribute("data-semantic-hash", /^[0-9a-f]{64}$/u);
+	await expect(host).toHaveAttribute(
+		"data-topology-version",
+		"procedural-humanoid-v1",
+	);
+	await expect(host).toHaveAttribute("data-topology-components", "1");
 	await expect(host).toHaveAttribute("data-proportions", /"armLength":0\.5/u);
 	const diagnostics = page.getByLabel("Procedural Mannequin V0 diagnostics");
 	await expect(diagnostics).toContainText("procedural-mannequin-v0");
 	await expect(diagnostics).toContainText("V1");
 	await expect(diagnostics).toContainText("1 mesh");
-	await expect(diagnostics).toContainText("648 vertices");
-	await expect(diagnostics).toContainText("1108 triangles");
+	await expect(diagnostics).toContainText("2724 vertices");
+	await expect(diagnostics).toContainText("5444 triangles");
+	await expect(diagnostics).toContainText("procedural-humanoid-v1");
+	await expect(diagnostics).toContainText("1 connected component");
+	await expect(diagnostics).toContainText("manifold");
 	await expect(diagnostics).toContainText("65-joint Golden template");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v1");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v2");
 	await verifyAnimations(page);
 
 	await page
@@ -154,8 +162,8 @@ test("randomises, compiles, animates, validates, and revisits several body shape
 	}
 
 	const diagnostics = page.getByLabel("Creator compilation diagnostics");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v1");
-	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v2");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v2");
+	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v3");
 	await page.screenshot({
 		path: testInfo.outputPath("creator-random-body.png"),
 	});

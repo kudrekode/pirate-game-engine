@@ -10,9 +10,13 @@ import {
 } from "./procedural-mannequin-compiler.mjs";
 import {
 	canonicalizeProceduralMannequinRecipe,
+	deriveProceduralMannequinMeasurements,
+	GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE,
 	hashProceduralMannequinRecipe,
+	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
+import { proceduralMannequinTopologyMatrixCases } from "./procedural-mannequin-topology-matrix.mjs";
 
 const RECIPE_PATH = PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe;
 
@@ -96,6 +100,7 @@ test("migrates a height-only V0 procedural recipe", async () => {
 	const recipe = await loadRecipe();
 	const legacy = {
 		...recipe,
+		geometry: { profile: "ellipsoid", radialSegments: 8 },
 		version: 0,
 		proportions: { heightMetres: 1.9 },
 	};
@@ -109,6 +114,32 @@ test("migrates a height-only V0 procedural recipe", async () => {
 		legLength: 0.5,
 		hipWidth: 0.5,
 	});
+	assert.equal(parsed.value.version, 2);
+	assert.equal(parsed.value.geometry.profile, "voxel-union");
+	assert.equal(
+		parsed.value.geometry.topologyVersion,
+		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+	);
+});
+
+test("migrates the disconnected V1 recipe and derives deterministic topology measurements", async () => {
+	const recipe = await loadRecipe();
+	const legacy = structuredClone(recipe);
+	legacy.version = 1;
+	legacy.geometry = { profile: "ellipsoid", radialSegments: 8 };
+	const parsed = validateProceduralMannequinRecipe(legacy);
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.value.version, 2);
+	assert.equal(parsed.value.geometry.profile, "voxel-union");
+	const measurements = deriveProceduralMannequinMeasurements(
+		parsed.value.proportions,
+	);
+	assert.equal(
+		measurements.topologyVersion,
+		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+	);
+	assert.equal(measurements.voxelSizeMetres, 0.035);
+	assert.ok(measurements.chestHalfWidth > measurements.pelvisHalfWidth);
 });
 
 test("builds a narrow headless Blender invocation and parses compiler modes", () => {
@@ -138,6 +169,25 @@ test("builds a narrow headless Blender invocation and parses compiler modes", ()
 	);
 });
 
+test("records a reproducible 21-body topology matrix", async () => {
+	const recipe = await loadRecipe();
+	const first = proceduralMannequinTopologyMatrixCases(recipe.proportions);
+	const repeated = proceduralMannequinTopologyMatrixCases(recipe.proportions);
+	assert.deepEqual(repeated, first);
+	assert.equal(first.length, 21);
+	assert.equal(
+		first.filter(([name]) => name.startsWith("seed-topology-")).length,
+		5,
+	);
+	for (const [name, proportions] of first) {
+		const parsed = validateProceduralMannequinRecipe({
+			...recipe,
+			proportions,
+		});
+		assert.equal(parsed.ok, true, `${name} must be a valid compiler recipe`);
+	}
+});
+
 test("round-trips the committed artifact and its canonical animations", async () => {
 	const result = await validateInstalledProceduralMannequin();
 	assert.equal(result.passed, true);
@@ -151,8 +201,33 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v2",
+		"procedural-mannequin-roundtrip-v3",
 	);
+	assert.equal(result.manifest.recipeVersion, 2);
+	assert.equal(
+		result.manifest.topologyVersion,
+		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+	);
+	assert.deepEqual(result.manifest.topology, {
+		boundaryEdgeCount: 0,
+		connectedComponentCount: 1,
+		degenerateFaceCount: 0,
+		edgeCount: 8166,
+		eulerCharacteristic: 2,
+		faceCount: 5444,
+		genus: 0,
+		manifold: true,
+		nonManifoldEdgeCount: 0,
+		unreferencedVertexCount: 0,
+	});
+	assert.equal(
+		result.manifest.skeletonSignature,
+		GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE,
+	);
+	assert.ok(result.manifest.vertexCount >= 2_000);
+	assert.ok(result.manifest.vertexCount <= 8_000);
+	assert.ok(result.manifest.triangleCount >= 4_000);
+	assert.ok(result.manifest.triangleCount <= 15_000);
 	assert.ok(result.manifest.generationDurationMs > 0);
 	assert.equal(result.validation.animations.idle.passed, true);
 	assert.equal(result.validation.animations.walk.passed, true);

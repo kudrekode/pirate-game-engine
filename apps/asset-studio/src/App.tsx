@@ -684,6 +684,11 @@ function HumanoidPreview({
 					host.dataset.recipeHash = manifest.recipeHash;
 					host.dataset.deterministicBuild = String(manifest.deterministicBuild);
 					host.dataset.semanticHash = manifest.normalizedSemanticHash;
+					host.dataset.topologyVersion =
+						manifest.topologyVersion ?? "legacy-primitive-v0";
+					host.dataset.topologyComponents = String(
+						manifest.topology?.connectedComponentCount ?? 38,
+					);
 				}
 				setClipStatus("loaded");
 				setAnimationState("idle");
@@ -969,6 +974,17 @@ function HumanoidPreview({
 						<div>
 							<dt>Skeleton contract</dt>
 							<dd>{mannequinManifest.skeletonContract}</dd>
+						</div>
+						<div>
+							<dt>Body topology</dt>
+							<dd>
+								{mannequinManifest.topologyVersion ?? "legacy-primitive-v0"} Â·{" "}
+								{mannequinManifest.topology?.connectedComponentCount ?? 38}{" "}
+								connected component Â·{" "}
+								{mannequinManifest.topology?.manifold
+									? "manifold"
+									: "legacy disconnected"}
+							</dd>
 						</div>
 						<div>
 							<dt>Generated geometry</dt>
@@ -1499,6 +1515,14 @@ export default function App() {
 								<div>
 									<dt>Generated asset hash</dt>
 									<dd>{activeManifest?.outputHash ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Body topology</dt>
+									<dd>
+										{activeManifest
+											? `${activeManifest.topologyVersion ?? "legacy-primitive-v0"} Â· ${activeManifest.vertexCount} vertices Â· ${activeManifest.triangleCount} triangles`
+											: "â€”"}
+									</dd>
 								</div>
 								<div>
 									<dt>Compiler version</dt>

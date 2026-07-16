@@ -1,11 +1,16 @@
 import { createHash } from "node:crypto";
 
-export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 1;
+export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 2;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v1";
+	"procedural-mannequin-blender-v2";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v2";
+	"procedural-mannequin-roundtrip-v3";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
 export const GOLDEN_HUMANOID_SKELETON_CONTRACT = "golden-humanoid-v0";
+export const GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE =
+	"38356ace6cdb45ddc8caa325c1989fd3dfe0779d10a03c4f4fd743acf58b22f9";
+export const GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE =
+	"24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840";
 export const GOLDEN_REFERENCE_ANIMATION_SET = "golden-reference-v0";
 
 export const PROCEDURAL_MANNEQUIN_PARAMETER_KEYS = Object.freeze([
@@ -136,6 +141,41 @@ export function deriveProceduralMannequinAnatomy(proportions) {
 	};
 }
 
+export function deriveProceduralMannequinMeasurements(proportions) {
+	const anatomy = deriveProceduralMannequinAnatomy(proportions);
+	return {
+		calfRadius:
+			0.068 *
+			anatomy.hipWidthMultiplier *
+			(0.94 + anatomy.legLengthMultiplier * 0.06),
+		chestDepth: 0.13,
+		chestHalfWidth: 0.245 * anatomy.shoulderWidthMultiplier,
+		elbowRadius: 0.07,
+		footDepth: 0.06,
+		footHalfWidth: 0.062 * anatomy.hipWidthMultiplier,
+		forearmRadius: 0.064,
+		handDepth: 0.035,
+		handHalfWidth: 0.064,
+		headDepth: 0.108,
+		headHalfWidth: 0.118,
+		hipJointRadius: 0.105 * anatomy.hipWidthMultiplier,
+		kneeRadius: 0.068 * anatomy.hipWidthMultiplier,
+		neckRadius: 0.064,
+		pelvisDepth: 0.13,
+		pelvisHalfWidth: 0.195 * anatomy.hipWidthMultiplier,
+		shoulderJointRadius: 0.08,
+		thighRadius: 0.082 * anatomy.hipWidthMultiplier,
+		topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+		upperArmRadius: 0.076 * (0.96 + anatomy.shoulderWidthMultiplier * 0.04),
+		voxelSizeMetres: 0.035,
+		waistDepth: 0.112,
+		waistHalfWidth:
+			0.17 *
+			((anatomy.hipWidthMultiplier + anatomy.shoulderWidthMultiplier) * 0.5),
+		wristRadius: 0.052,
+	};
+}
+
 export function validateProceduralMannequinAnatomy(proportions) {
 	const anatomy = deriveProceduralMannequinAnatomy(proportions);
 	const issues = [];
@@ -222,7 +262,7 @@ export function validateProceduralMannequinRecipe(value) {
 			ok: false,
 		};
 	}
-	if (![0, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)) {
+	if (![0, 1, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)) {
 		issues.push({ message: "Unsupported recipe version.", path: "$.version" });
 	}
 	const proportionsSource = isRecord(value.proportions)
@@ -254,10 +294,25 @@ export function validateProceduralMannequinRecipe(value) {
 			path: "$.animations",
 		});
 	}
-	if (geometry.profile !== "ellipsoid") {
+	const legacyRecipe = value.version === 0 || value.version === 1;
+	if (
+		(!legacyRecipe && geometry.profile !== "voxel-union") ||
+		(legacyRecipe && geometry.profile !== "ellipsoid")
+	) {
 		issues.push({
-			message: 'Expected the V1 "ellipsoid" geometry profile.',
+			message: legacyRecipe
+				? 'Expected the legacy "ellipsoid" geometry profile.'
+				: 'Expected the V1 "voxel-union" geometry profile.',
 			path: "$.geometry.profile",
+		});
+	}
+	if (
+		!legacyRecipe &&
+		geometry.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION
+	) {
+		issues.push({
+			message: `Expected ${PROCEDURAL_HUMANOID_TOPOLOGY_VERSION}.`,
+			path: "$.geometry.topologyVersion",
 		});
 	}
 	if (
@@ -300,7 +355,7 @@ export function validateProceduralMannequinRecipe(value) {
 	const recipe = {
 		animations: { set: GOLDEN_REFERENCE_ANIMATION_SET },
 		geometry: {
-			profile: "ellipsoid",
+			profile: "voxel-union",
 			radialSegments: readNumber(
 				geometry,
 				"radialSegments",
@@ -309,6 +364,7 @@ export function validateProceduralMannequinRecipe(value) {
 				issues,
 				{ integer: true },
 			),
+			topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 		},
 		id: readString(value, "id", "$.id", issues),
 		material: {
@@ -349,7 +405,7 @@ export function canonicalizeProceduralMannequinRecipe(recipe) {
 	const parsed = validateProceduralMannequinRecipe(recipe);
 	if (!parsed.ok) {
 		throw new Error(
-			`Invalid ProceduralMannequinRecipeV1: ${parsed.issues
+			`Invalid ProceduralMannequinRecipeV2: ${parsed.issues
 				.map((entry) => `${entry.path} ${entry.message}`)
 				.join("; ")}`,
 		);

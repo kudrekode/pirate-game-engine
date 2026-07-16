@@ -1,5 +1,5 @@
 {
-	"version": 1,
+	"version": 2,
 	"id": "procedural-mannequin-v0",
 	"name": "Procedural Mannequin Body Proportions V1",
 	"proportions": {
@@ -11,8 +11,9 @@
 		"hipWidth": 0.5
 	},
 	"geometry": {
-		"profile": "ellipsoid",
-		"radialSegments": 8
+		"profile": "voxel-union",
+		"radialSegments": 8,
+		"topologyVersion": "procedural-humanoid-v1"
 	},
 	"material": {
 		"baseColor": "#d6a35f",

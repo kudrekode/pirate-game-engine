@@ -57,6 +57,12 @@ and promotes the artifact through Asset Studio and the same root registry,
 clone, and animation path. See
 [`docs/assets/procedural-mannequin-v0.md`](docs/assets/procedural-mannequin-v0.md).
 
+The checked-in mannequin now uses Generated Body Topology V1: a deterministic
+voxel-unioned, closed genus-zero body with blended max-four skin weights, strict
+exported topology checks, the unchanged Golden rest signature, and a 21-body
+extrema/seed/challenge matrix. See
+[`docs/assets/generated-body-topology-v1.md`](docs/assets/generated-body-topology-v1.md).
+
 Asset Studio now has its first complete creator loop. Editing height and pressing
 Compile submits the existing CharacterRecipe height to a local development
 endpoint, runs the real two-pass Blender compiler and validation pipeline, and

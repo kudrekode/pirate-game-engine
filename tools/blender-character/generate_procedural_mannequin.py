@@ -243,6 +243,153 @@ class MeshBuilder:
             }
         )
 
+    def add_sphere(self, name, center, radius_x, radius_y, radius_z):
+        rings = max(6, self.radial_segments)
+        segments = max(8, self.radial_segments * 2)
+        vertex_start = len(self.vertices)
+        top = len(self.vertices)
+        self.vertices.append((center.x, center.y, center.z + radius_z))
+        self.weights.append(None)
+        ring_indices = []
+        for ring in range(1, rings):
+            theta = math.pi * ring / rings
+            indices = []
+            for segment in range(segments):
+                phi = math.tau * segment / segments
+                indices.append(len(self.vertices))
+                self.vertices.append(
+                    (
+                        center.x + math.sin(theta) * math.cos(phi) * radius_x,
+                        center.y + math.sin(theta) * math.sin(phi) * radius_y,
+                        center.z + math.cos(theta) * radius_z,
+                    )
+                )
+                self.weights.append(None)
+            ring_indices.append(indices)
+        bottom = len(self.vertices)
+        self.vertices.append((center.x, center.y, center.z - radius_z))
+        self.weights.append(None)
+        for segment in range(segments):
+            next_segment = (segment + 1) % segments
+            self.faces.append((top, ring_indices[0][next_segment], ring_indices[0][segment]))
+        for upper, lower in zip(ring_indices, ring_indices[1:]):
+            for segment in range(segments):
+                next_segment = (segment + 1) % segments
+                self.faces.append(
+                    (upper[segment], upper[next_segment], lower[next_segment], lower[segment])
+                )
+        for segment in range(segments):
+            next_segment = (segment + 1) % segments
+            self.faces.append((ring_indices[-1][segment], ring_indices[-1][next_segment], bottom))
+        self.parts.append(
+            {
+                "name": name,
+                "profile": "transition-ellipsoid",
+                "vertexCount": len(self.vertices) - vertex_start,
+            }
+        )
+
+
+def point_segment_distance(point, start, end):
+    axis = end - start
+    length_squared = axis.length_squared
+    if length_squared <= 0.00000001:
+        return (point - start).length
+    fraction = max(0.0, min(1.0, (point - start).dot(axis) / length_squared))
+    return (point - (start + axis * fraction)).length
+
+
+def mesh_topology_statistics(mesh):
+    adjacency = [set() for _ in mesh.vertices]
+    edge_use = {}
+    degenerate_faces = 0
+    for polygon in mesh.polygons:
+        if polygon.area <= 0.0000000001:
+            degenerate_faces += 1
+        indices = list(polygon.vertices)
+        for first, second in zip(indices, indices[1:] + indices[:1]):
+            adjacency[first].add(second)
+            adjacency[second].add(first)
+            edge = tuple(sorted((first, second)))
+            edge_use[edge] = edge_use.get(edge, 0) + 1
+    remaining = set(range(len(mesh.vertices)))
+    component_count = 0
+    while remaining:
+        component_count += 1
+        pending = [remaining.pop()]
+        while pending:
+            current = pending.pop()
+            for neighbor in adjacency[current]:
+                if neighbor in remaining:
+                    remaining.remove(neighbor)
+                    pending.append(neighbor)
+    boundary_edges = sum(count == 1 for count in edge_use.values())
+    non_manifold_edges = sum(count != 2 for count in edge_use.values())
+    euler_characteristic = len(mesh.vertices) - len(edge_use) + len(mesh.polygons)
+    genus = (2 * component_count - euler_characteristic) / 2
+    return {
+        "boundaryEdgeCount": boundary_edges,
+        "connectedComponentCount": component_count,
+        "degenerateFaceCount": degenerate_faces,
+        "edgeCount": len(edge_use),
+        "eulerCharacteristic": euler_characteristic,
+        "faceCount": len(mesh.polygons),
+        "genus": genus,
+        "manifold": non_manifold_edges == 0,
+        "nonManifoldEdgeCount": non_manifold_edges,
+    }
+
+
+def assign_analytic_weights(mesh_object, weight_segments):
+    groups = {
+        name: mesh_object.vertex_groups.new(name=name)
+        for name in sorted({segment[0] for segment in weight_segments})
+    }
+    influence_counts = []
+    weight_minimum = 1.0
+    weight_maximum = 0.0
+    weighted_bones = set()
+    for vertex in mesh_object.data.vertices:
+        point = vertex.co
+        candidates = []
+        for bone_name, start, end, radius in weight_segments:
+            # A connected surface does not imply that mirrored limbs should ever
+            # share weights. Keep the torso available as a transition zone, but
+            # restrict limb candidates to the anatomical side of the vertex.
+            if point.x > 0.01 and bone_name.endswith("_r"):
+                continue
+            if point.x < -0.01 and bone_name.endswith("_l"):
+                continue
+            if abs(point.x) <= 0.01 and (
+                bone_name.endswith("_l") or bone_name.endswith("_r")
+            ):
+                continue
+            normalized_distance = point_segment_distance(point, start, end) / radius
+            score = 1.0 / (0.04 + normalized_distance ** 4)
+            candidates.append((score, bone_name))
+        candidates.sort(key=lambda entry: (-entry[0], entry[1]))
+        selected = candidates[:4]
+        total = sum(score for score, _ in selected)
+        normalized = [(score / total, bone_name) for score, bone_name in selected]
+        normalized = [entry for entry in normalized if entry[0] >= 0.015]
+        total = sum(weight for weight, _ in normalized)
+        normalized = [(weight / total, bone_name) for weight, bone_name in normalized]
+        influence_counts.append(len(normalized))
+        for weight, bone_name in normalized:
+            groups[bone_name].add([vertex.index], weight, "REPLACE")
+            weighted_bones.add(bone_name)
+            weight_minimum = min(weight_minimum, weight)
+            weight_maximum = max(weight_maximum, weight)
+    return {
+        "maximumInfluences": max(influence_counts),
+        "normalizedWeightCount": len(mesh_object.data.vertices),
+        "strategy": "analytic-sided-segments-v2",
+        "unweightedVertexCount": sum(count == 0 for count in influence_counts),
+        "weightMaximum": weight_maximum,
+        "weightMinimum": weight_minimum,
+        "weightedBones": sorted(weighted_bones),
+    }
+
 
 def create_geometry(armature, recipe):
     builder = MeshBuilder(recipe["geometry"]["radialSegments"])
@@ -262,6 +409,32 @@ def create_geometry(armature, recipe):
     anatomy["armToLegRatio"] = anatomy["armLengthMultiplier"] / anatomy["legLengthMultiplier"]
     anatomy["legToTorsoRatio"] = anatomy["legLengthMultiplier"] / anatomy["torsoLengthMultiplier"]
     anatomy["shoulderToHipRatio"] = anatomy["shoulderWidthMultiplier"] / anatomy["hipWidthMultiplier"]
+    measurements = {
+        "calfRadius": 0.068 * anatomy["hipWidthMultiplier"] * (0.94 + anatomy["legLengthMultiplier"] * 0.06),
+        "chestDepth": 0.13,
+        "chestHalfWidth": 0.245 * anatomy["shoulderWidthMultiplier"],
+        "elbowRadius": 0.07,
+        "footDepth": 0.06,
+        "footHalfWidth": 0.062 * anatomy["hipWidthMultiplier"],
+        "forearmRadius": 0.064,
+        "handDepth": 0.035,
+        "handHalfWidth": 0.064,
+        "headDepth": 0.108,
+        "headHalfWidth": 0.118,
+        "hipJointRadius": 0.105 * anatomy["hipWidthMultiplier"],
+        "kneeRadius": 0.068 * anatomy["hipWidthMultiplier"],
+        "neckRadius": 0.064,
+        "pelvisDepth": 0.13,
+        "pelvisHalfWidth": 0.195 * anatomy["hipWidthMultiplier"],
+        "shoulderJointRadius": 0.08,
+        "thighRadius": 0.082 * anatomy["hipWidthMultiplier"],
+        "topologyVersion": "procedural-humanoid-v1",
+        "upperArmRadius": 0.076 * (0.96 + anatomy["shoulderWidthMultiplier"] * 0.04),
+        "voxelSizeMetres": 0.035,
+        "waistDepth": 0.112,
+        "waistHalfWidth": 0.17 * ((anatomy["hipWidthMultiplier"] + anatomy["shoulderWidthMultiplier"]) * 0.5),
+        "wristRadius": 0.052,
+    }
 
     pelvis_origin = head("pelvis")
 
@@ -289,13 +462,27 @@ def create_geometry(armature, recipe):
 
     builder.add_ellipsoid(
         "Pelvis", "pelvis", torso_heads["pelvis"], torso_heads["spine_01"],
-        0.19 * anatomy["hipWidthMultiplier"], 0.125,
+        measurements["pelvisHalfWidth"], measurements["pelvisDepth"],
     )
-    builder.add_ellipsoid("TorsoLower", "spine_01", torso_heads["spine_01"], torso_heads["spine_02"], 0.175 * anatomy["hipWidthMultiplier"], 0.11)
-    builder.add_ellipsoid("TorsoMiddle", "spine_02", torso_heads["spine_02"], torso_heads["spine_03"], 0.205 * ((anatomy["hipWidthMultiplier"] + anatomy["shoulderWidthMultiplier"]) * 0.5), 0.12)
-    builder.add_ellipsoid("TorsoUpper", "spine_03", torso_heads["spine_03"], torso_heads["neck_01"], 0.245 * anatomy["shoulderWidthMultiplier"], 0.125)
-    builder.add_ellipsoid("Neck", "neck_01", torso_heads["neck_01"], torso_heads["Head"], 0.06, 0.055)
-    builder.add_ellipsoid("Head", "Head", torso_heads["Head"], transformed_head_tail, 0.115, 0.105)
+    builder.add_ellipsoid("TorsoLower", "spine_01", torso_heads["spine_01"], torso_heads["spine_02"], measurements["waistHalfWidth"], measurements["waistDepth"])
+    builder.add_ellipsoid("TorsoMiddle", "spine_02", torso_heads["spine_02"], torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.12, 0.122)
+    builder.add_ellipsoid("TorsoUpper", "spine_03", torso_heads["spine_03"], torso_heads["neck_01"], measurements["chestHalfWidth"], measurements["chestDepth"])
+    builder.add_ellipsoid("Neck", "neck_01", torso_heads["neck_01"], torso_heads["Head"], measurements["neckRadius"], measurements["neckRadius"] * 0.9)
+    builder.add_ellipsoid("Head", "Head", torso_heads["Head"], transformed_head_tail, measurements["headHalfWidth"], measurements["headDepth"])
+    builder.add_sphere("TorsoPelvisTransition", torso_heads["spine_01"], measurements["waistHalfWidth"], measurements["waistDepth"], 0.11)
+    builder.add_sphere("WaistTransition", torso_heads["spine_02"], measurements["waistHalfWidth"] * 1.06, measurements["waistDepth"], 0.11)
+    builder.add_sphere("ChestTransition", torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.16, 0.122, 0.12)
+    builder.add_sphere("NeckBaseTransition", torso_heads["neck_01"], measurements["neckRadius"] * 1.2, measurements["neckRadius"], 0.075)
+    builder.add_sphere("HeadNeckTransition", torso_heads["Head"], measurements["neckRadius"] * 1.1, measurements["neckRadius"], 0.075)
+
+    weight_segments = [
+        ("pelvis", torso_heads["pelvis"], torso_heads["spine_01"], measurements["pelvisHalfWidth"]),
+        ("spine_01", torso_heads["spine_01"], torso_heads["spine_02"], measurements["waistHalfWidth"]),
+        ("spine_02", torso_heads["spine_02"], torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.12),
+        ("spine_03", torso_heads["spine_03"], torso_heads["neck_01"], measurements["chestHalfWidth"]),
+        ("neck_01", torso_heads["neck_01"], torso_heads["Head"], measurements["neckRadius"]),
+        ("Head", torso_heads["Head"], transformed_head_tail, measurements["headHalfWidth"]),
+    ]
 
     for suffix, label in (("l", "L"), ("r", "R")):
         clavicle_start = record(head(f"clavicle_{suffix}"), width_point(head(f"clavicle_{suffix}"), anatomy["shoulderWidthMultiplier"]))
@@ -336,64 +523,82 @@ def create_geometry(armature, recipe):
             f"clavicle_{suffix}",
             clavicle_start,
             upper_arm,
-            0.075,
-            0.075,
+            measurements["shoulderJointRadius"],
+            measurements["shoulderJointRadius"],
         )
         builder.add_ellipsoid(
             f"UpperArm.{label}",
             f"upperarm_{suffix}",
             upper_arm,
             lower_arm,
-            0.075,
-            0.075,
+            measurements["upperArmRadius"],
+            measurements["upperArmRadius"],
         )
         builder.add_ellipsoid(
             f"LowerArm.{label}",
             f"lowerarm_{suffix}",
             lower_arm,
             hand,
-            0.065,
-            0.06,
+            measurements["forearmRadius"],
+            measurements["forearmRadius"] * 0.94,
         )
         builder.add_box(
             f"Hand.{label}",
             f"hand_{suffix}",
             hand,
             hand_tail,
-            0.062,
-            0.032,
+            measurements["handHalfWidth"],
+            measurements["handDepth"],
         )
         builder.add_ellipsoid(
             f"UpperLeg.{label}",
             f"thigh_{suffix}",
             thigh,
             calf,
-            0.105,
-            0.095,
+            measurements["thighRadius"],
+            measurements["thighRadius"] * 0.9,
         )
         builder.add_ellipsoid(
             f"LowerLeg.{label}",
             f"calf_{suffix}",
             calf,
             foot,
-            0.087,
-            0.08,
+            measurements["calfRadius"],
+            measurements["calfRadius"] * 0.92,
         )
         builder.add_box(
             f"Foot.{label}",
             f"foot_{suffix}",
             foot,
             ball,
-            0.09,
-            0.055,
+            measurements["footHalfWidth"],
+            measurements["footDepth"],
         )
         builder.add_box(
             f"Toe.{label}",
             f"ball_{suffix}",
             ball,
             ball_tail,
-            0.09,
+            measurements["footHalfWidth"],
             0.045,
+        )
+        builder.add_sphere(f"ShoulderTransition.{label}", upper_arm, measurements["shoulderJointRadius"] * 1.12, measurements["shoulderJointRadius"], measurements["shoulderJointRadius"])
+        builder.add_sphere(f"ElbowTransition.{label}", lower_arm, measurements["elbowRadius"], measurements["elbowRadius"], measurements["elbowRadius"])
+        builder.add_sphere(f"WristTransition.{label}", hand, measurements["wristRadius"], measurements["wristRadius"], measurements["wristRadius"])
+        builder.add_sphere(f"HipTransition.{label}", thigh, measurements["hipJointRadius"], measurements["hipJointRadius"] * 0.9, measurements["hipJointRadius"])
+        builder.add_sphere(f"KneeTransition.{label}", calf, measurements["kneeRadius"], measurements["kneeRadius"] * 0.92, measurements["kneeRadius"])
+        builder.add_sphere(f"AnkleTransition.{label}", foot, measurements["wristRadius"] * 1.15, measurements["wristRadius"], measurements["wristRadius"] * 1.15)
+        weight_segments.extend(
+            [
+                (f"clavicle_{suffix}", clavicle_start, upper_arm, measurements["shoulderJointRadius"]),
+                (f"upperarm_{suffix}", upper_arm, lower_arm, measurements["upperArmRadius"]),
+                (f"lowerarm_{suffix}", lower_arm, hand, measurements["forearmRadius"]),
+                (f"hand_{suffix}", hand, hand_tail, measurements["handHalfWidth"]),
+                (f"thigh_{suffix}", thigh, calf, measurements["thighRadius"]),
+                (f"calf_{suffix}", calf, foot, measurements["calfRadius"]),
+                (f"foot_{suffix}", foot, ball, measurements["footHalfWidth"]),
+                (f"ball_{suffix}", ball, ball_tail, measurements["footHalfWidth"]),
+            ]
         )
 
     chest_center = (torso_heads["spine_03"] + torso_heads["neck_01"]) * 0.5
@@ -407,8 +612,16 @@ def create_geometry(armature, recipe):
     mesh.update(calc_edges=True)
     mesh_object = bpy.data.objects.new("ProceduralMannequinMesh", mesh)
     bpy.context.collection.objects.link(mesh_object)
+    bpy.context.view_layer.objects.active = mesh_object
+    mesh_object.select_set(True)
+    mesh.remesh_voxel_size = measurements["voxelSizeMetres"]
+    mesh.remesh_voxel_adaptivity = 0.0
+    bpy.ops.object.voxel_remesh()
+    mesh = mesh_object.data
+    mesh.validate(clean_customdata=False)
+    mesh.update(calc_edges=True)
     for polygon in mesh.polygons:
-        polygon.use_smooth = len(polygon.vertices) != 4 or polygon.index < len(mesh.polygons) - 18
+        polygon.use_smooth = True
 
     color = recipe["material"]["baseColor"].lstrip("#")
     material = bpy.data.materials.new("ProceduralMannequinMaterial")
@@ -419,13 +632,7 @@ def create_geometry(armature, recipe):
     principled.inputs["Roughness"].default_value = recipe["material"]["roughness"]
     mesh.materials.append(material)
 
-    groups = {}
-    for index, bone_name in enumerate(builder.weights):
-        group = groups.get(bone_name)
-        if group is None:
-            group = mesh_object.vertex_groups.new(name=bone_name)
-            groups[bone_name] = group
-        group.add([index], 1.0, "REPLACE")
+    skinning = assign_analytic_weights(mesh_object, weight_segments)
     modifier = mesh_object.modifiers.new("ProceduralMannequinArmature", "ARMATURE")
     modifier.object = armature
     mesh_object.parent = armature
@@ -439,13 +646,14 @@ def create_geometry(armature, recipe):
             f"Derived bone-relative anchor offset {maximum_anchor_offset:.4f} exceeds the 0.45 metre tolerance."
         )
     anatomy["maximumBoneRelativeAnchorOffset"] = maximum_anchor_offset
-    local_minimum_x = min(vertex[0] for vertex in builder.vertices)
-    local_maximum_x = max(vertex[0] for vertex in builder.vertices)
+    local_minimum_x = min(vertex.co.x for vertex in mesh.vertices)
+    local_maximum_x = max(vertex.co.x for vertex in mesh.vertices)
     anatomy["lateralCentreError"] = abs(
         (local_minimum_x + local_maximum_x) * 0.5
     )
 
-    return mesh_object, builder, anatomy
+    topology = mesh_topology_statistics(mesh)
+    return mesh_object, builder, anatomy, measurements, skinning, topology
 
 
 def skeleton_rest_signature(armature):
@@ -475,13 +683,13 @@ def compile_mannequin(args, recipe):
     armature.data.name = "ProceduralMannequinArmature"
     armature.animation_data_clear()
 
-    mesh_object, builder, anatomy = create_geometry(armature, recipe)
+    mesh_object, builder, anatomy, measurements, skinning, topology = create_geometry(armature, recipe)
     root = bpy.data.objects.new("ProceduralMannequinRoot", None)
     bpy.context.collection.objects.link(root)
     armature.parent = root
 
-    local_min_z = min(vertex[2] for vertex in builder.vertices)
-    local_max_z = max(vertex[2] for vertex in builder.vertices)
+    local_min_z = min(vertex.co.z for vertex in mesh_object.data.vertices)
+    local_max_z = max(vertex.co.z for vertex in mesh_object.data.vertices)
     unscaled_height = local_max_z - local_min_z
     target_height = recipe["proportions"]["height"]
     scale = target_height / unscaled_height
@@ -515,7 +723,7 @@ def compile_mannequin(args, recipe):
         raise RuntimeError(f"Procedural mannequin GLB export failed: {result}")
 
     rest_signature, rest_snapshot = skeleton_rest_signature(armature)
-    triangle_count = sum(len(face) - 2 for face in builder.faces)
+    triangle_count = sum(len(polygon.vertices) - 2 for polygon in mesh_object.data.polygons)
     report = {
         "animationSet": recipe["animations"]["set"],
         "blender": {
@@ -524,14 +732,17 @@ def compile_mannequin(args, recipe):
         },
         "compilerVersion": args.compiler_version,
         "anatomy": anatomy,
+        "measurements": measurements,
         "geometry": {
             "materialCount": len(bpy.data.materials),
             "meshCount": len([obj for obj in bpy.data.objects if obj.type == "MESH"]),
             "parts": builder.parts,
             "profile": recipe["geometry"]["profile"],
             "radialSegments": recipe["geometry"]["radialSegments"],
+            "topology": topology,
+            "topologyVersion": recipe["geometry"]["topologyVersion"],
             "triangleCount": triangle_count,
-            "vertexCount": len(builder.vertices),
+            "vertexCount": len(mesh_object.data.vertices),
         },
         "grounding": {
             "localMaximumZ": local_max_z,
@@ -548,17 +759,10 @@ def compile_mannequin(args, recipe):
             "restSignature": rest_signature,
             "restSnapshot": rest_snapshot,
         },
-        "skinning": {
-            "maximumInfluences": 1,
-            "normalizedWeightCount": len(builder.vertices),
-            "strategy": "explicit-rigid-body-part-groups",
-            "unweightedVertexCount": 0,
-            "weightMaximum": 1.0,
-            "weightMinimum": 1.0,
-        },
+        "skinning": skinning,
         "templateHash": sha256(args.template),
         "warnings": [
-            "V1 uses deliberately rigid body-part weighting with overlapping joint volumes.",
+            "Topology V1 uses a controlled voxel union and analytic segment weights.",
             "Finger bones remain present for animation compatibility but the generated hands have no fingers.",
             "The Golden skeleton is a compatibility template, not the future canonical generated rig.",
         ],

@@ -31,9 +31,10 @@
 - The editor preview and runtime both use the shared visual renderer/cache/clone path.
 - The shared animation registry provides validated offline-baked Golden Reference idle and walk GLBs; playback is presentation-only and gameplay movement remains grid-authoritative.
 - Procedural Mannequin V0 is a validated compiler-generated character entry. It
-  uses one 1,108-triangle skinned mesh, one material, the 65-joint Golden
-  compatibility skeleton, explicit weights, skeleton-safe clones, and the same
-  offline-baked Idle/Walk mappings.
+  now uses Generated Body Topology V1: one closed genus-zero skinned mesh, one
+  material, deterministic max-four weights, the unchanged 65-joint Golden
+  compatibility skeleton, skeleton-safe clones, and the same offline-baked
+  Idle/Walk mappings.
 - Editor 3D view supports orbit, pan, zoom, camera presets, accurate terrain/entity picking, selection sync, entity dragging, and 3D placement.
 - Terrain tools include drag painting, brush/line/rectangle/fill gestures, height sculpting, brush falloff, and polished brush previews.
 - Terrain can render in blocky or smooth mode.

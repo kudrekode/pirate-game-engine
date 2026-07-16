@@ -211,13 +211,80 @@ function skeletonSignature(inspection) {
 			name: joint.name,
 			parent: joint.parentIsJoint ? joint.parent : null,
 			rest: {
-				rotation: joint.rest.rotation.map((value) => rounded(value)),
-				scale: joint.rest.scale.map((value) => rounded(value)),
-				translation: joint.rest.translation.map((value) => rounded(value)),
+				rotation: joint.rest.rotation.map((value) => rounded(value, 4)),
+				scale: joint.rest.scale.map((value) => rounded(value, 4)),
+				translation: joint.rest.translation.map((value) => rounded(value, 4)),
 			},
 		}))
 		.sort((left, right) => left.name.localeCompare(right.name));
 	return { hash: sha256(JSON.stringify(normalized)), joints: normalized };
+}
+
+function indexedTopology(geometry) {
+	const position = geometry.getAttribute("position");
+	const indexes = geometry.index
+		? [...geometry.index.array]
+		: Array.from({ length: position?.count ?? 0 }, (_, index) => index);
+	const referenced = new Set(indexes);
+	const adjacency = new Map([...referenced].map((index) => [index, new Set()]));
+	const edgeUse = new Map();
+	let degenerateFaceCount = 0;
+	for (let offset = 0; offset + 2 < indexes.length; offset += 3) {
+		const face = indexes.slice(offset, offset + 3);
+		const first = new THREE.Vector3().fromBufferAttribute(position, face[0]);
+		const second = new THREE.Vector3().fromBufferAttribute(position, face[1]);
+		const third = new THREE.Vector3().fromBufferAttribute(position, face[2]);
+		if (
+			new Set(face).size !== 3 ||
+			new THREE.Triangle(first, second, third).getArea() <= 1e-10
+		) {
+			degenerateFaceCount += 1;
+		}
+		for (const [left, right] of [
+			[face[0], face[1]],
+			[face[1], face[2]],
+			[face[2], face[0]],
+		]) {
+			adjacency.get(left)?.add(right);
+			adjacency.get(right)?.add(left);
+			const edge = left < right ? `${left}:${right}` : `${right}:${left}`;
+			edgeUse.set(edge, (edgeUse.get(edge) ?? 0) + 1);
+		}
+	}
+	const remaining = new Set(referenced);
+	let connectedComponentCount = 0;
+	while (remaining.size > 0) {
+		connectedComponentCount += 1;
+		const pending = [remaining.values().next().value];
+		remaining.delete(pending[0]);
+		while (pending.length > 0) {
+			const current = pending.pop();
+			for (const neighbor of adjacency.get(current) ?? []) {
+				if (!remaining.delete(neighbor)) continue;
+				pending.push(neighbor);
+			}
+		}
+	}
+	const boundaryEdgeCount = [...edgeUse.values()].filter(
+		(count) => count === 1,
+	).length;
+	const nonManifoldEdgeCount = [...edgeUse.values()].filter(
+		(count) => count !== 2,
+	).length;
+	const faceCount = Math.floor(indexes.length / 3);
+	const eulerCharacteristic = referenced.size - edgeUse.size + faceCount;
+	return {
+		boundaryEdgeCount,
+		connectedComponentCount,
+		degenerateFaceCount,
+		edgeCount: edgeUse.size,
+		eulerCharacteristic,
+		faceCount,
+		genus: (2 * connectedComponentCount - eulerCharacteristic) / 2,
+		manifold: nonManifoldEdgeCount === 0,
+		nonManifoldEdgeCount,
+		unreferencedVertexCount: (position?.count ?? 0) - referenced.size,
+	};
 }
 
 function compareSkeletonContracts(templateInspection, generatedInspection) {
@@ -285,6 +352,18 @@ function analyzeGeometry(root, expectedHeight) {
 	let outOfRangeJointCount = 0;
 	let skinnedMeshCount = 0;
 	let triangleCount = 0;
+	const topology = {
+		boundaryEdgeCount: 0,
+		connectedComponentCount: 0,
+		degenerateFaceCount: 0,
+		edgeCount: 0,
+		eulerCharacteristic: 0,
+		faceCount: 0,
+		genus: 0,
+		manifold: true,
+		nonManifoldEdgeCount: 0,
+		unreferencedVertexCount: 0,
+	};
 	let unweightedVertexCount = 0;
 	let vertexCount = 0;
 	root.updateMatrixWorld(true);
@@ -313,6 +392,21 @@ function analyzeGeometry(root, expectedHeight) {
 				if (value < 0 || value >= position.count) indexRangeValid = false;
 			}
 		}
+		const meshTopology = indexedTopology(object.geometry);
+		for (const key of [
+			"boundaryEdgeCount",
+			"connectedComponentCount",
+			"degenerateFaceCount",
+			"edgeCount",
+			"eulerCharacteristic",
+			"faceCount",
+			"genus",
+			"nonManifoldEdgeCount",
+			"unreferencedVertexCount",
+		]) {
+			topology[key] += meshTopology[key];
+		}
+		topology.manifold &&= meshTopology.manifold;
 		if (!(object instanceof THREE.SkinnedMesh)) return;
 		skinnedMeshCount += 1;
 		const skinIndex = object.geometry.getAttribute("skinIndex");
@@ -378,10 +472,16 @@ function analyzeGeometry(root, expectedHeight) {
 			outOfRangeJointCount === 0 &&
 			skinnedMeshCount === 1 &&
 			unweightedVertexCount === 0 &&
+			topology.connectedComponentCount === 1 &&
+			topology.degenerateFaceCount === 0 &&
+			topology.manifold &&
+			topology.genus === 0 &&
+			topology.unreferencedVertexCount === 0 &&
 			Math.abs(bounds.min.y) <= 0.002 &&
 			Math.abs(dimensions.y - expectedHeight) <= 0.01,
 		skinnedMeshCount,
 		triangleCount,
+		topology,
 		unweightedVertexCount,
 		vertexCount,
 		weightedBones: [...weightedBones].sort(),

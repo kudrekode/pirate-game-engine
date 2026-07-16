@@ -1,5 +1,10 @@
 # Procedural Mannequin V0
 
+> Historical baseline: this document records the disconnected primitive V0
+> body. The stable asset id remains in use for saved-project compatibility, but
+> the checked-in artifact now uses
+> [Generated Body Topology V1](generated-body-topology-v1.md).
+
 ## Result
 
 Procedural Mannequin V0 is the first repository humanoid whose body is generated

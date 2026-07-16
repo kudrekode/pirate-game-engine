@@ -20,6 +20,9 @@ const manifest = JSON.parse(manifestSource) as {
 	meshCount: number;
 	recipeHash: string;
 	skeletonContract: string;
+	skeletonSignature: string;
+	topology: { connectedComponentCount: number; manifold: boolean };
+	topologyVersion: string;
 	triangleCount: number;
 	vertexCount: number;
 };
@@ -30,7 +33,7 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 			animationSet: "golden-reference-v0",
 			deterministicBuild: true,
 			influenceStatistics: {
-				maximumInfluences: 1,
+				maximumInfluences: 4,
 				outOfRangeJointCount: 0,
 				unweightedVertexCount: 0,
 			},
@@ -38,10 +41,15 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 			materialCount: 1,
 			meshCount: 1,
 			skeletonContract: "golden-humanoid-v0",
-			triangleCount: 1108,
-			vertexCount: 648,
+			topology: { connectedComponentCount: 1, manifold: true },
+			topologyVersion: "procedural-humanoid-v1",
+			triangleCount: 5444,
+			vertexCount: 2724,
 		});
 		expect(manifest.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
+		expect(manifest.skeletonSignature).toBe(
+			"24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+		);
 	});
 
 	it("uses the same registry transform for player and NPC presentation", () => {

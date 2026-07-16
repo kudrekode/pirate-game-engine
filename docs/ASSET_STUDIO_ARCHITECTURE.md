@@ -185,11 +185,15 @@ The current reference preview provides:
   previous-preview preservation on failure during development.
 - An in-session Recent Compilations panel for switching among the last ten
   validated generated bodies without recompiling.
+- Generated Body Topology V1: one closed, manifold, genus-zero body surface,
+  deterministic blended weights, topology version/stats diagnostics, and the
+  unchanged Golden animation contract.
 
 The repository now has one narrow procedural recipe compiler, one validated
-derived mannequin, and a complete body-proportion authoring loop. Still missing
-are improved generated topology, a deployed compiler service, clothing,
-hairstyles as creator slots, and export of user-authored characters.
+connected-topology mannequin, and a complete body-proportion authoring loop.
+Still missing are higher-detail/deformation-oriented topology, a deployed
+compiler service, clothing, hairstyles as creator slots, and export of
+user-authored characters.
 
 ## Compiler Boundary
 
@@ -292,11 +296,11 @@ crowd-budget default.
 
 ## Next Milestone
 
-The next creator milestone is improving generated topology and joint
-transitions. It should not add more parameters or change the proven
-recipe/compile/Blender/validation/preview boundary. Body Proportions V1 evidence
-is documented in
-[`asset-studio-body-proportions-v1.md`](assets/asset-studio-body-proportions-v1.md).
+Generated Body Topology V1 is complete without changing the proven
+recipe/compile/Blender/validation/preview boundary. Evidence is documented in
+[`generated-body-topology-v1.md`](assets/generated-body-topology-v1.md). A later
+topology refinement should improve local edge flow and deformation without
+adding body parameters.
 
 ## Future Deployment Models
 

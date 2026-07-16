@@ -6,6 +6,7 @@ import {
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
 
 export const PROCEDURAL_MANNEQUIN_BODY_PARAMETERS = {
 	height: {
@@ -66,11 +67,14 @@ export type ProceduralMannequinManifest = {
 	};
 	compilerVersion: string;
 	deterministicBuild: boolean;
+	geometryProfile?: "ellipsoid" | "voxel-union";
 	generationDurationMs: number;
 	heightMetres: number;
 	proportions: CharacterBodyParameters;
 	influenceStatistics: {
 		maximumInfluences: number;
+		maximumWeightSumError: number;
+		strategy: string;
 		unweightedVertexCount: number;
 	};
 	jointCount: number;
@@ -83,6 +87,20 @@ export type ProceduralMannequinManifest = {
 	recipeId: string;
 	recipeVersion: number;
 	skeletonContract: string;
+	skeletonSignature: string;
+	topology?: {
+		boundaryEdgeCount: number;
+		connectedComponentCount: number;
+		degenerateFaceCount: number;
+		edgeCount: number;
+		eulerCharacteristic: number;
+		faceCount: number;
+		genus: number;
+		manifold: boolean;
+		nonManifoldEdgeCount: number;
+		unreferencedVertexCount: number;
+	};
+	topologyVersion?: string;
 	triangleCount: number;
 	validationVersion: string;
 	vertexCount: number;
@@ -257,6 +275,9 @@ export async function requestProceduralMannequinCompile(
 		) ||
 		payload.manifest.outputHash.length !== 64 ||
 		payload.manifest.recipeHash.length !== 64 ||
+		payload.manifest.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION ||
+		payload.manifest.topology?.connectedComponentCount !== 1 ||
+		!payload.manifest.topology?.manifold ||
 		!payload.validation.passed
 	) {
 		throw new Error(

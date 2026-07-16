@@ -25,14 +25,14 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 	const outputHash =
 		recipe.proportions.height === 1.82 ? "a".repeat(64) : "b".repeat(64);
 	const manifest = {
-		compilerVersion: "procedural-mannequin-blender-v1",
+		compilerVersion: "procedural-mannequin-blender-v2",
 		deterministicBuild: true,
 		generationDurationMs: 12,
 		heightMetres: recipe.proportions.height,
 		proportions: recipe.proportions,
 		outputHash,
 		recipeHash,
-		validationVersion: "procedural-mannequin-roundtrip-v2",
+		validationVersion: "procedural-mannequin-roundtrip-v3",
 	};
 	await mkdir(outputDirectory, { recursive: true });
 	await Promise.all([
