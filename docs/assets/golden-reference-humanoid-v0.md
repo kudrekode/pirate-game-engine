@@ -124,9 +124,10 @@ The animation-retargeting spike found that direct binding and the first
 name-mapped `SkeletonUtils` attempt fail visually. The pair-specific V2
 rest-frame-delta profile has now been reproduced by deterministic Blender
 bakes, passed production-loader round trip and visual checks, and been promoted
-for this fixture. Fingers remain rigid in the target rest pose. The smallest
-next task is the deterministic procedural mannequin using the same canonical
-animation and round-trip boundary.
+for this fixture. Fingers remain rigid in the target rest pose. That follow-up
+is now implemented as
+[`procedural-mannequin-v0`](procedural-mannequin-v0.md), using the same
+canonical animation and round-trip boundary without copying this body mesh.
 
 ## Boundary With Asset Studio
 

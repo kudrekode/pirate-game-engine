@@ -1,0 +1,88 @@
+import { describe, expect, it } from "vitest";
+import manifestSource from "../../../public/assets/derived/procedural-humanoids/mannequin-v0/manifest.json?raw";
+import { getThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
+import {
+	resolveThreeCharacterVisual,
+	resolveThreeVisualAssetTransform,
+} from "./threeVisuals";
+
+const ASSET_ID = "procedural-mannequin-v0";
+const manifest = JSON.parse(manifestSource) as {
+	animationSet: string;
+	deterministicBuild: boolean;
+	influenceStatistics: {
+		maximumInfluences: number;
+		outOfRangeJointCount: number;
+		unweightedVertexCount: number;
+	};
+	jointCount: number;
+	materialCount: number;
+	meshCount: number;
+	recipeHash: string;
+	skeletonContract: string;
+	triangleCount: number;
+	vertexCount: number;
+};
+
+describe("Procedural Mannequin V0 compiled artifact", () => {
+	it("records the deterministic geometry, rig, and weight contract", () => {
+		expect(manifest).toMatchObject({
+			animationSet: "golden-reference-v0",
+			deterministicBuild: true,
+			influenceStatistics: {
+				maximumInfluences: 1,
+				outOfRangeJointCount: 0,
+				unweightedVertexCount: 0,
+			},
+			jointCount: 65,
+			materialCount: 1,
+			meshCount: 1,
+			skeletonContract: "golden-humanoid-v0",
+			triangleCount: 1108,
+			vertexCount: 648,
+		});
+		expect(manifest.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
+	});
+
+	it("uses the same registry transform for player and NPC presentation", () => {
+		const definition = getThreeVisualAssetDefinition(ASSET_ID);
+		if (!definition) throw new Error(`Missing ${ASSET_ID}.`);
+		const transform = resolveThreeVisualAssetTransform(
+			{
+				heightOffset: definition.defaultHeightOffset ?? 0,
+				rotationOffset: definition.defaultRotationOffset ?? 0,
+				scale: definition.defaultScale ?? 1,
+			},
+			{
+				bounds: {
+					center: { x: 0, y: 0.91, z: 0 },
+					dimensions: { x: 2, y: 1.82, z: 0.33 },
+					maxY: 1.82,
+					minY: 0,
+				},
+			},
+		);
+		const player = resolveThreeCharacterVisual({
+			kind: "player",
+			threeVisual: { assetId: ASSET_ID, mode: "asset" },
+		});
+		const npc = resolveThreeCharacterVisual({
+			kind: "npc",
+			threeVisual: { assetId: ASSET_ID, mode: "asset" },
+		});
+
+		expect(transform.rotationYRadians).toBe(Math.PI);
+		expect(transform.scale).toBe(1);
+		expect(transform.normalizationOffsetY).toBeCloseTo(0);
+		expect(player).toMatchObject({
+			assetId: ASSET_ID,
+			mode: "asset",
+			rotationOffset: 180,
+		});
+		expect(npc).toMatchObject({
+			assetId: ASSET_ID,
+			mode: "asset",
+			rotationOffset: 180,
+		});
+	});
+});

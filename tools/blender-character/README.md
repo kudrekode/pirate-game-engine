@@ -39,15 +39,22 @@ blender --background --factory-startup --python-exit-code 1
 See `docs/assets/golden-reference-animation-retargeting-spike.md` for hashes,
 format choice, determinism, Three.js round trip, browser evidence, and limits.
 
-## Future Procedural Compiler
+## Procedural Mannequin V0
 
-The conceptual recipe compiler remains separate:
+The first narrow recipe compiler is implemented separately from the animation
+bake:
 
-```text
-blender --background --python compile_character.py --
-  --request request.json --output-dir output/
+```powershell
+npm run compile:procedural-mannequin -- --recipe tools/blender-character/recipes/procedural-mannequin-v0.recipe.json --blender "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --output-dir public/assets/derived/procedural-humanoids/mannequin-v0 --clean
+npm run validate:procedural-mannequin
+npm run test:procedural-mannequin
 ```
 
-`compile_character.py`, procedural body generation, rig creation, and
-deterministic skinning are not implemented. No future stub may create invalid
-GLBs or report success without a verified output package.
+`generate_procedural_mannequin.py` imports only the immutable Golden skeleton
+template, removes all vendor presentation data, generates one deterministic
+engineering mannequin, applies explicit weights, and exports a grounded GLB.
+The Node entry point validates the recipe, runs two isolated Blender passes,
+checks source immutability, performs the production Three.js round trip, and
+writes manifest/diagnostic artifacts. See
+`docs/assets/procedural-mannequin-v0.md` for the decision, hashes, metrics,
+visual evidence, and limitations.

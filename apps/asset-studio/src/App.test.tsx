@@ -12,7 +12,9 @@ describe("Asset Studio app", () => {
 		expect(
 			screen.getByLabelText("Golden Reference Humanoid preview"),
 		).toBeInTheDocument();
-		expect(screen.getByText(/Golden Reference Humanoid/)).toBeInTheDocument();
+		expect(
+			screen.getByText("Golden Reference Humanoid · Reference fixture"),
+		).toBeInTheDocument();
 		expect(
 			screen.getByLabelText("Golden Reference Humanoid diagnostics"),
 		).toHaveTextContent("golden-reference-quaternius-superhero-male");
@@ -26,7 +28,7 @@ describe("Asset Studio app", () => {
 		).toBeDisabled();
 		expect(
 			screen.getByRole("group", {
-				name: "Golden Reference animation controls",
+				name: "Golden Reference Humanoid animation controls",
 			}),
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Rest" })).toBeEnabled();
@@ -64,23 +66,42 @@ describe("Asset Studio app", () => {
 		expect(screen.getByText("$.body.parameters.height")).toBeInTheDocument();
 	});
 
-	it("keeps compile/export state truthful while the compiler is absent", () => {
+	it("keeps browser compile state truthful while the offline compiler is available", () => {
 		render(<App />);
 
 		expect(
-			screen.getByRole("button", { name: "Compile GLB unavailable" }),
+			screen.getByRole("button", { name: "Compile in browser unavailable" }),
 		).toBeDisabled();
 		expect(
-			screen.getByText("Asset Studio V0 has no character compiler."),
+			screen.getByText(/Repository compilation is available/u),
 		).toBeInTheDocument();
 	});
 
 	it("does not expose a live Blender compile action", () => {
 		render(<App />);
 
-		expect(screen.queryByText(/Blender/i)).not.toBeInTheDocument();
+		expect(screen.getByText(/headless Blender command/u)).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "Compile GLB unavailable" }),
+			screen.getByRole("button", { name: "Compile in browser unavailable" }),
 		).toBeDisabled();
+	});
+
+	it("switches between the Golden fixture and procedural artifact without duplicate canvases", () => {
+		render(<App />);
+
+		fireEvent.change(screen.getByLabelText("Preview source"), {
+			target: { value: "procedural-mannequin-v0" },
+		});
+
+		expect(
+			screen.getByLabelText("Procedural Mannequin V0 preview"),
+		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText("Procedural Mannequin V0 diagnostics"),
+		).toHaveTextContent("procedural-mannequin-v0");
+		expect(
+			screen.queryByLabelText("Golden Reference Humanoid preview"),
+		).not.toBeInTheDocument();
+		expect(document.querySelectorAll("canvas")).toHaveLength(1);
 	});
 });

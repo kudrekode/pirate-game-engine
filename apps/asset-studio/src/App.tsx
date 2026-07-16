@@ -1,8 +1,4 @@
 import {
-	type CharacterCompileResultV1,
-	createNotImplementedCharacterCompileResult,
-} from "@adventure-game-builder/asset-compiler-contract";
-import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
 	CHARACTER_COMPONENT_SLOTS,
 	CHARACTER_PALETTE_REGIONS,
@@ -18,6 +14,7 @@ import {
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+	PROCEDURAL_MANNEQUIN_V0_ASSET,
 	requestThreeVisualAsset,
 	requestThreeVisualAssetAnimationClip,
 	type ThreeVisualAssetAnalysis,
@@ -113,8 +110,29 @@ function downloadRecipe(recipe: CharacterRecipeV1) {
 }
 
 const GOLDEN_REFERENCE_FIXTURE_ID = "golden-reference-humanoid-v0";
+const PROCEDURAL_MANNEQUIN_FIXTURE_ID = "procedural-mannequin-v0";
 const RETARGET_ARTIFACT_ROOT =
 	"/assets/derived/humanoid-animations/golden-reference-v0";
+const MANNEQUIN_ARTIFACT_ROOT =
+	"/assets/derived/procedural-humanoids/mannequin-v0";
+const PREVIEW_SOURCES = {
+	[GOLDEN_REFERENCE_FIXTURE_ID]: {
+		definition: GOLDEN_REFERENCE_HUMANOID_ASSET,
+		description: "Externally authored engineering reference fixture",
+		displayName: "Golden Reference Humanoid",
+		fixtureId: GOLDEN_REFERENCE_FIXTURE_ID,
+		kindLabel: "Reference fixture",
+	},
+	[PROCEDURAL_MANNEQUIN_FIXTURE_ID]: {
+		definition: PROCEDURAL_MANNEQUIN_V0_ASSET,
+		description: "Compiler-generated engineering geometry",
+		displayName: "Procedural Mannequin V0",
+		fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+		kindLabel: "Compiled artifact",
+	},
+} as const;
+type PreviewSourceId = keyof typeof PREVIEW_SOURCES;
+type PreviewSource = (typeof PREVIEW_SOURCES)[PreviewSourceId];
 type PreviewAnimationState = "idle" | "rest" | "walk";
 type PreviewCameraPreset = "front" | "side" | "three-quarter";
 type RetargetQualitySummary = {
@@ -173,6 +191,27 @@ type OfflineBakeBundle = {
 	walk: OfflineBakeMetadata;
 	roundTrip: OfflineBakeRoundTripReport;
 };
+type ProceduralMannequinManifest = {
+	animationSet: string;
+	assetId: string;
+	compilerVersion: string;
+	deterministicBuild: boolean;
+	influenceStatistics: {
+		maximumInfluences: number;
+		unweightedVertexCount: number;
+	};
+	jointCount: number;
+	knownLimitations: string[];
+	materialCount: number;
+	meshCount: number;
+	normalizedSemanticHash: string;
+	recipeHash: string;
+	recipeId: string;
+	recipeVersion: number;
+	skeletonContract: string;
+	triangleCount: number;
+	vertexCount: number;
+};
 const RETARGET_DIAGNOSTIC_JOINTS = [
 	"pelvis",
 	"spine_03",
@@ -218,7 +257,7 @@ function loadRegisteredAnimationClip(
 	});
 }
 
-function GoldenReferenceHumanoidPreview() {
+function HumanoidPreview({ source }: { source: PreviewSource }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const hostRef = useRef<HTMLDivElement>(null);
 	const resetViewRef = useRef<() => void>(() => undefined);
@@ -245,6 +284,9 @@ function GoldenReferenceHumanoidPreview() {
 	);
 	const [retargetReport, setRetargetReport] = useState<RuntimeRetargetReport>();
 	const [offlineBake, setOfflineBake] = useState<OfflineBakeBundle>();
+	const [mannequinManifest, setMannequinManifest] =
+		useState<ProceduralMannequinManifest>();
+	const isMannequin = source.fixtureId === PROCEDURAL_MANNEQUIN_FIXTURE_ID;
 	const animationPlayingRef = useRef(animationPlaying);
 	const applyAnimationStateRef = useRef<(state: PreviewAnimationState) => void>(
 		() => undefined,
@@ -263,6 +305,16 @@ function GoldenReferenceHumanoidPreview() {
 			host = hostRef.current;
 		if (!canvas || !host || typeof WebGLRenderingContext === "undefined")
 			return;
+		setStatus("loading");
+		setAnalysis(undefined);
+		setError("");
+		setCanResetView(false);
+		setAnimationState("rest");
+		setAnimationSample(0);
+		setClipStatus("loading");
+		setRetargetReport(undefined);
+		setOfflineBake(undefined);
+		setMannequinManifest(undefined);
 		let disposed = false,
 			frame = 0;
 		let activeClone: THREE.Group | undefined;
@@ -438,7 +490,7 @@ function GoldenReferenceHumanoidPreview() {
 			frame = window.requestAnimationFrame(render);
 		};
 		const mountAsset = () => {
-			const result = requestThreeVisualAsset(GOLDEN_REFERENCE_HUMANOID_ASSET, {
+			const result = requestThreeVisualAsset(source.definition, {
 				onStateChange: mountAsset,
 			});
 			if (disposed || result.status === "loading") return;
@@ -451,7 +503,7 @@ function GoldenReferenceHumanoidPreview() {
 			}
 			activeClone?.removeFromParent();
 			const group = new THREE.Group();
-			group.name = "GoldenReferenceHumanoidPreview";
+			group.name = `${source.definition.id}Preview`;
 			group.rotation.y = THREE.MathUtils.degToRad(
 				result.definition.defaultRotationOffset ?? 0,
 			);
@@ -521,8 +573,8 @@ function GoldenReferenceHumanoidPreview() {
 		const requestedMode = new URLSearchParams(window.location.search).get(
 			"retarget",
 		);
-		const failedBaseline = requestedMode === "failed-v1";
-		const runtimeV2 = requestedMode === "runtime-v2";
+		const failedBaseline = !isMannequin && requestedMode === "failed-v1";
+		const runtimeV2 = !isMannequin && requestedMode === "runtime-v2";
 		const offlineBaked = !failedBaseline && !runtimeV2;
 		host.dataset.retargetMode = failedBaseline
 			? "failed-v1"
@@ -574,6 +626,11 @@ function GoldenReferenceHumanoidPreview() {
 					),
 				]).then(([idle, walk, roundTrip]) => ({ idle, roundTrip, walk }))
 			: Promise.resolve(undefined);
+		const mannequinManifestPromise = isMannequin
+			? fetchJson<ProceduralMannequinManifest>(
+					`${MANNEQUIN_ARTIFACT_ROOT}/manifest.json`,
+				)
+			: Promise.resolve(undefined);
 		Promise.all([
 			idleClipPromise,
 			walkClipPromise,
@@ -581,8 +638,9 @@ function GoldenReferenceHumanoidPreview() {
 				`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`,
 			),
 			offlineBakePromise,
+			mannequinManifestPromise,
 		])
-			.then(([idleClip, walkClip, report, baked]) => {
+			.then(([idleClip, walkClip, report, baked, manifest]) => {
 				if (disposed) return;
 				animationClips.set("idle", idleClip);
 				animationClips.set("walk", walkClip);
@@ -609,6 +667,14 @@ function GoldenReferenceHumanoidPreview() {
 				);
 				setRetargetReport(report);
 				setOfflineBake(baked);
+				setMannequinManifest(manifest);
+				if (manifest) {
+					host.dataset.recipeId = manifest.recipeId;
+					host.dataset.recipeVersion = String(manifest.recipeVersion);
+					host.dataset.recipeHash = manifest.recipeHash;
+					host.dataset.deterministicBuild = String(manifest.deterministicBuild);
+					host.dataset.semanticHash = manifest.normalizedSemanticHash;
+				}
 				setClipStatus("loaded");
 				setAnimationState("idle");
 			})
@@ -647,14 +713,14 @@ function GoldenReferenceHumanoidPreview() {
 			renderer.renderLists.dispose();
 			renderer.dispose();
 		};
-	}, []);
+	}, [isMannequin, source]);
 	return (
 		<div
 			className="preview-host"
-			data-preview-source={GOLDEN_REFERENCE_FIXTURE_ID}
+			data-preview-source={source.fixtureId}
 			ref={hostRef}
 		>
-			<canvas aria-label="Golden Reference Humanoid preview" ref={canvasRef} />
+			<canvas aria-label={`${source.displayName} preview`} ref={canvasRef} />
 			<fieldset className="preview-controls" aria-label="3D preview controls">
 				{(["front", "side", "three-quarter"] as const).map((preset) => (
 					<button
@@ -683,7 +749,7 @@ function GoldenReferenceHumanoidPreview() {
 			</fieldset>
 			<fieldset
 				className="animation-controls"
-				aria-label="Golden Reference animation controls"
+				aria-label={`${source.displayName} animation controls`}
 			>
 				{(["rest", "idle", "walk"] as const).map((state) => (
 					<button
@@ -724,26 +790,26 @@ function GoldenReferenceHumanoidPreview() {
 				</label>
 			</fieldset>
 			<div className="preview-label">
-				Golden Reference Humanoid · Reference fixture
+				{source.displayName} · {source.kindLabel}
 			</div>
 			<div className="preview-status" data-status={status}>
 				{status === "loading"
-					? "Loading reference fixture…"
+					? `Loading ${source.displayName}…`
 					: status === "loaded"
 						? clipStatus === "loaded"
-							? `Reference loaded · ${animationState === "rest" ? "Rest pose" : `${animationState} ${offlineBake ? "offline-baked" : "runtime-retarget diagnostic"}`}`
+							? `${source.kindLabel} loaded · ${animationState === "rest" ? "Rest pose" : `${animationState} ${offlineBake ? "offline-baked" : "runtime-retarget diagnostic"}`}`
 							: clipStatus === "error"
-								? `Reference loaded · Clip error: ${error}`
-								: "Reference loaded · Loading animation clips…"
+								? `${source.kindLabel} loaded · Clip error: ${error}`
+								: `${source.kindLabel} loaded · Loading animation clips…`
 						: `Preview error: ${error}`}
 			</div>
 			<dl
-				aria-label="Golden Reference Humanoid diagnostics"
+				aria-label={`${source.displayName} diagnostics`}
 				className="preview-diagnostics"
 			>
 				<div>
 					<dt>Asset</dt>
-					<dd>{GOLDEN_REFERENCE_HUMANOID_ASSET.id}</dd>
+					<dd>{source.definition.id}</dd>
 				</div>
 				<div>
 					<dt>Load</dt>
@@ -784,21 +850,25 @@ function GoldenReferenceHumanoidPreview() {
 				<div>
 					<dt>Provider / method</dt>
 					<dd>
-						{offlineBake
-							? `${retargetReport?.provenance.provider ?? "Adobe Mixamo"} · Offline baked`
-							: retargetReport
-								? `${retargetReport.provenance.provider} · runtime diagnostic`
-								: "—"}
+						{isMannequin
+							? "Blender-generated geometry · Offline-baked animation reuse"
+							: offlineBake
+								? `${retargetReport?.provenance.provider ?? "Adobe Mixamo"} · Offline baked`
+								: retargetReport
+									? `${retargetReport.provenance.provider} · runtime diagnostic`
+									: "—"}
 					</dd>
 				</div>
 				<div>
 					<dt>Bone mapping</dt>
 					<dd>
-						{offlineBake
-							? `${offlineBake.idle.mappedBoneCount} mapped · fingers/helpers at rest`
-							: retargetReport
-								? `${retargetReport.idleComparison.semanticMatches.length} mapped · ${retargetReport.idleComparison.unmatchedSourceBones.length} source / ${retargetReport.idleComparison.unmatchedTargetBones.length} target unmapped`
-								: "—"}
+						{isMannequin
+							? "65-joint Golden template · 22 explicitly weighted bones"
+							: offlineBake
+								? `${offlineBake.idle.mappedBoneCount} mapped · fingers/helpers at rest`
+								: retargetReport
+									? `${retargetReport.idleComparison.semanticMatches.length} mapped · ${retargetReport.idleComparison.unmatchedSourceBones.length} source / ${retargetReport.idleComparison.unmatchedTargetBones.length} target unmapped`
+									: "—"}
 					</dd>
 				</div>
 				<div>
@@ -820,23 +890,78 @@ function GoldenReferenceHumanoidPreview() {
 				<div>
 					<dt>Transform policy</dt>
 					<dd>
-						{offlineBake
-							? "V2 rest-frame delta baked in Blender"
-							: (retargetReport?.idle.profile.transformPolicy ?? "—")}
+						{isMannequin
+							? "Exact Golden rest skeleton · registry-owned facing"
+							: offlineBake
+								? "V2 rest-frame delta baked in Blender"
+								: (retargetReport?.idle.profile.transformPolicy ?? "—")}
 					</dd>
 				</div>
 				<div>
 					<dt>Artifact</dt>
 					<dd>
-						{offlineBake
-							? `${offlineBake.idle.outputPath} · ${offlineBake.walk.outputPath}`
-							: "Runtime JSON diagnostics"}
+						{isMannequin
+							? `${MANNEQUIN_ARTIFACT_ROOT}/mannequin.glb`
+							: offlineBake
+								? `${offlineBake.idle.outputPath} · ${offlineBake.walk.outputPath}`
+								: "Runtime JSON diagnostics"}
 					</dd>
 				</div>
 				<div>
 					<dt>Compiler</dt>
-					<dd>{offlineBake?.idle.compilerVersion ?? "Runtime only"}</dd>
+					<dd>
+						{mannequinManifest?.compilerVersion ??
+							offlineBake?.idle.compilerVersion ??
+							"Runtime only"}
+					</dd>
 				</div>
+				{mannequinManifest ? (
+					<>
+						<div>
+							<dt>Recipe</dt>
+							<dd>
+								{mannequinManifest.recipeId} · V
+								{mannequinManifest.recipeVersion}
+							</dd>
+						</div>
+						<div>
+							<dt>Recipe hash</dt>
+							<dd>{mannequinManifest.recipeHash}</dd>
+						</div>
+						<div>
+							<dt>Skeleton contract</dt>
+							<dd>{mannequinManifest.skeletonContract}</dd>
+						</div>
+						<div>
+							<dt>Generated geometry</dt>
+							<dd>
+								{mannequinManifest.meshCount} mesh ·{" "}
+								{mannequinManifest.vertexCount} vertices ·{" "}
+								{mannequinManifest.triangleCount} triangles ·{" "}
+								{mannequinManifest.materialCount} material
+							</dd>
+						</div>
+						<div>
+							<dt>Weights</dt>
+							<dd>
+								{mannequinManifest.influenceStatistics.maximumInfluences}{" "}
+								maximum influence ·{" "}
+								{mannequinManifest.influenceStatistics.unweightedVertexCount}{" "}
+								unweighted
+							</dd>
+						</div>
+						<div>
+							<dt>Deterministic build</dt>
+							<dd>
+								{mannequinManifest.deterministicBuild ? "Pass" : "Failed"}
+							</dd>
+						</div>
+						<div>
+							<dt>Known limitations</dt>
+							<dd>{mannequinManifest.knownLimitations.join(" · ")}</dd>
+						</div>
+					</>
+				) : null}
 				<div>
 					<dt>Pose quality gate</dt>
 					<dd>
@@ -862,8 +987,8 @@ function GoldenReferenceHumanoidPreview() {
 				<div>
 					<dt>Scale / facing</dt>
 					<dd>
-						{GOLDEN_REFERENCE_HUMANOID_ASSET.defaultScale} /{" "}
-						{GOLDEN_REFERENCE_HUMANOID_ASSET.defaultRotationOffset}°
+						{source.definition.defaultScale} /{" "}
+						{source.definition.defaultRotationOffset}°
 					</dd>
 				</div>
 			</dl>
@@ -878,18 +1003,14 @@ export default function App() {
 		createDefaultCharacterRecipe(),
 	);
 	const [loadStatus, setLoadStatus] = useState("");
+	const [previewSourceId, setPreviewSourceId] = useState<PreviewSourceId>(
+		GOLDEN_REFERENCE_FIXTURE_ID,
+	);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const validation = useMemo(() => parseCharacterRecipe(recipe), [recipe]);
 	const recipeJson = useMemo(() => JSON.stringify(recipe, null, 2), [recipe]);
-	const compileResult: CharacterCompileResultV1 = useMemo(
-		() =>
-			createNotImplementedCharacterCompileResult(
-				{ requestId: "asset-studio-v0-preview" },
-				"Asset Studio V0 has no character compiler.",
-			),
-		[],
-	);
+	const previewSource = PREVIEW_SOURCES[previewSourceId];
 
 	function updateRecipe(
 		updater: (current: CharacterRecipeV1) => CharacterRecipeV1,
@@ -1094,14 +1215,35 @@ export default function App() {
 								<strong>{recipe.name || "Untitled Character"}</strong>
 								<span>{recipe.skeletonId} source recipe</span>
 							</div>
-							<span>Golden Reference animation feasibility fixture</span>
+							<label>
+								Preview source
+								<select
+									onChange={(event) =>
+										setPreviewSourceId(event.target.value as PreviewSourceId)
+									}
+									value={previewSourceId}
+								>
+									{Object.values(PREVIEW_SOURCES).map((source) => (
+										<option key={source.fixtureId} value={source.fixtureId}>
+											{source.displayName}
+										</option>
+									))}
+								</select>
+							</label>
 						</div>
-						<GoldenReferenceHumanoidPreview />
+						<HumanoidPreview
+							key={previewSource.fixtureId}
+							source={previewSource}
+						/>
 						<div className="compile-status">
-							<strong>Compile status</strong>
-							<span>{compileResult.errors[0]}</span>
+							<strong>Browser compile status</strong>
+							<span>
+								{previewSource.description}. Repository compilation is available
+								through the headless Blender command; live browser generation is
+								not wired.
+							</span>
 							<button disabled type="button">
-								Compile GLB unavailable
+								Compile in browser unavailable
 							</button>
 						</div>
 					</section>
@@ -1163,7 +1305,8 @@ export default function App() {
 
 			<footer className="status-bar">
 				<span>CharacterRecipeV1 is editable source data.</span>
-				<span>GLB output is a future compiled artifact.</span>
+				<span>The mannequin GLB is a derived compiler artifact.</span>
+				<span>CharacterRecipeV1 does not rebuild it yet.</span>
 				<span>Active section: {activeSection}</span>
 			</footer>
 		</div>

@@ -1,0 +1,22 @@
+{
+	"animations": {
+		"set": "golden-reference-v0"
+	},
+	"geometry": {
+		"profile": "ellipsoid",
+		"radialSegments": 8
+	},
+	"id": "procedural-mannequin-v0",
+	"material": {
+		"baseColor": "#d6a35f",
+		"roughness": 0.72
+	},
+	"name": "Procedural Mannequin V0",
+	"proportions": {
+		"heightMetres": 1.82
+	},
+	"skeleton": {
+		"contract": "golden-humanoid-v0"
+	},
+	"version": 0
+}

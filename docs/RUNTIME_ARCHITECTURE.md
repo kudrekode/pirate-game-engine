@@ -44,6 +44,13 @@ mesh/material/texture data as a proven but temporary format choice. The
 [detailed spike](assets/golden-reference-animation-retargeting-spike.md)
 contains the measurements and validation evidence.
 
+Procedural Mannequin V0 reuses that presentation contract. Its Blender-generated
+body and explicit weights compile to a separate deterministic GLB using the
+exact Golden compatibility rest skeleton; its registry definition maps Idle and
+Walk to the existing offline-baked sources. The asset adds no gameplay state or
+runtime retargeting. See
+[`procedural-mannequin-v0.md`](assets/procedural-mannequin-v0.md).
+
 ### Dual Character Presentation
 
 Player and NPC gameplay data remains renderer-independent. `mapAvatarId` and

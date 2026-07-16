@@ -217,7 +217,8 @@ skeletons. No authored schema or gameplay semantics changed.
 - FBX inspection still reports an unsupported shininess map and trimming of
   skin influences beyond four; retargeting consumes the skeleton/action only.
 
-The smallest sensible next milestone is the deterministic procedural
-mannequin: Blender Python geometry, canonical skeleton, deterministic skinning,
+That next milestone is now complete as
+[`procedural-mannequin-v0`](procedural-mannequin-v0.md): Blender Python
+geometry, explicit deterministic skinning, the Golden compatibility skeleton,
 these canonical baked animations, GLB export, Asset Studio preview, and game-
 engine round trip.

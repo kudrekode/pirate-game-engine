@@ -50,6 +50,13 @@ registered for Asset Studio, the editor, and runtime presentation. See
 [`docs/ASSET_STUDIO_ARCHITECTURE.md`](docs/ASSET_STUDIO_ARCHITECTURE.md) and the
 [Golden Reference retargeting spike](docs/assets/golden-reference-animation-retargeting-spike.md).
 
+The first procedural compiler milestone is also complete: project-owned Blender
+Python generates Procedural Mannequin V0 geometry, binds explicit deterministic
+weights to the Golden compatibility skeleton, validates two isolated GLB builds,
+and promotes the artifact through Asset Studio and the same root registry,
+clone, and animation path. See
+[`docs/assets/procedural-mannequin-v0.md`](docs/assets/procedural-mannequin-v0.md).
+
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
 Areas own map contents: terrain, overlays, structures, objects, pickups, NPC instances, and event blocks. `activeAreaId` controls which area is edited.

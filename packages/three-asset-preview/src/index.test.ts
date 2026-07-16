@@ -6,6 +6,7 @@ import {
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+	PROCEDURAL_MANNEQUIN_V0_ASSET,
 	resolveThreeVisualAssetResourceUrl,
 } from "./index";
 
@@ -23,6 +24,18 @@ describe("shared Three asset preview", () => {
 				"textures/unrelated.png",
 			),
 		).toBe("textures/unrelated.png");
+	});
+
+	test("maps the procedural mannequin to the canonical offline clips", () => {
+		expect(PROCEDURAL_MANNEQUIN_V0_ASSET).toMatchObject({
+			animations: GOLDEN_REFERENCE_HUMANOID_ASSET.animations,
+			category: "character",
+			id: "procedural-mannequin-v0",
+			kind: "glb",
+			url: expect.stringMatching(
+				/procedural-humanoids\/mannequin-v0\/mannequin\.glb$/u,
+			),
+		});
 	});
 
 	test("defines explicit offline-baked animation sources", () => {

@@ -1,0 +1,69 @@
+{
+	"animationProfile": "mixamo-to-quaternius-v2",
+	"animationSet": "golden-reference-v0",
+	"assetId": "procedural-mannequin-v0",
+	"blender": {
+		"buildHash": "fbe6228777e7",
+		"version": "5.2.0 LTS"
+	},
+	"bounds": {
+		"dimensions": {
+			"x": 1.6235553,
+			"y": 1.8200001,
+			"z": 0.3274023
+		},
+		"maxY": 1.8200001,
+		"minY": 0
+	},
+	"compilerHash": "1a17f1065925da5206cad8ac3432530882d8a1a5e95b0a5b99db20618828efec",
+	"compilerVersion": "procedural-mannequin-blender-v0",
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "20e73b2dff59ed146a5172837239d167781c1041258901f85beae48e4d69a4b6",
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "20e73b2dff59ed146a5172837239d167781c1041258901f85beae48e4d69a4b6",
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"deterministicBuild": true,
+	"engineForward": "-Z after registry 180-degree Y rotation",
+	"geometryProfile": "ellipsoid",
+	"influenceStatistics": {
+		"maximumInfluences": 1,
+		"maximumWeightSumError": 0,
+		"outOfRangeJointCount": 0,
+		"strategy": "explicit-rigid-body-part-groups",
+		"unweightedVertexCount": 0
+	},
+	"jointCount": 65,
+	"knownLimitations": [
+		"V0 uses deliberately rigid body-part weighting with overlapping joint volumes.",
+		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+	],
+	"materialCount": 1,
+	"meshCount": 1,
+	"meshNames": ["ProceduralMannequinMesh"],
+	"normalizedSemanticHash": "29d9c5ad9e148250b154123cb40e3d406b60ea3a707883bd67438b3edd410d8a",
+	"outputFile": "mannequin.glb",
+	"outputHash": "20e73b2dff59ed146a5172837239d167781c1041258901f85beae48e4d69a4b6",
+	"recipeHash": "48d66f2ceba6baa946dbaaceb91045b694647734e50c57c49837eb670e7769ed",
+	"recipeId": "procedural-mannequin-v0",
+	"recipeVersion": 0,
+	"skeletonContract": "golden-humanoid-v0",
+	"skeletonSignature": "93809fef8050dc5f1610f34b6c8e43b72867499b2deb51ebf05c207f9a648c85",
+	"sourceImmutable": true,
+	"templateHashes": {
+		"buffer": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4"
+	},
+	"triangleCount": 1108,
+	"units": "metres",
+	"vertexCount": 648,
+	"warnings": [
+		"V0 uses deliberately rigid body-part weighting with overlapping joint volumes.",
+		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+	]
+}

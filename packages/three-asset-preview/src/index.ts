@@ -88,6 +88,38 @@ export const GOLDEN_REFERENCE_WALK_BAKED_ASSET: ThreeVisualAssetDefinition = {
 	url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
 };
 
+/** Blender-compiled engineering geometry using the Golden compatibility rig. */
+export const PROCEDURAL_MANNEQUIN_V0_ASSET: ThreeVisualAssetDefinition = {
+	animations: {
+		idle: {
+			assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
+			clipName: "GoldenReference_Idle",
+		},
+		walk: {
+			assetId: GOLDEN_REFERENCE_WALK_BAKED_ASSET.id,
+			clipName: "GoldenReference_Walk_InPlace",
+		},
+	},
+	category: "character",
+	castShadow: true,
+	defaultHeightOffset: 0,
+	defaultRotationOffset: 180,
+	defaultScale: 1,
+	id: "procedural-mannequin-v0",
+	kind: "glb",
+	materialProfile: "standard",
+	name: "Procedural Mannequin V0",
+	receiveShadow: false,
+	tags: [
+		"character",
+		"compiler-generated",
+		"golden-skeleton",
+		"procedural",
+		"skinned",
+	],
+	url: "/assets/derived/procedural-humanoids/mannequin-v0/mannequin.glb",
+};
+
 export type ThreeVisualAssetAnalysis = {
 	animationClips: { duration: number; name: string; trackCount: number }[];
 	bounds: {

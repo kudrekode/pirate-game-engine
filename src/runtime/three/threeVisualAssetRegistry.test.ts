@@ -210,6 +210,34 @@ describe("Three visual asset registry", () => {
 		});
 	});
 
+	it("registers the procedural mannequin through the shared character path", () => {
+		const mannequin = getThreeVisualAssetDefinition("procedural-mannequin-v0");
+
+		expect(mannequin).toMatchObject({
+			animations: {
+				idle: {
+					assetId: "golden-reference-quaternius-idle-baked-v1",
+					clipName: "GoldenReference_Idle",
+				},
+				walk: {
+					assetId: "golden-reference-quaternius-walk-baked-v1",
+					clipName: "GoldenReference_Walk_InPlace",
+				},
+			},
+			category: "character",
+			defaultRotationOffset: 180,
+			defaultScale: 1,
+			kind: "glb",
+			materialProfile: "standard",
+			tags: expect.arrayContaining([
+				"compiler-generated",
+				"procedural",
+				"skinned",
+			]),
+			url: "/assets/derived/procedural-humanoids/mannequin-v0/mannequin.glb",
+		});
+	});
+
 	it("looks up registered asset definitions by stable id", () => {
 		const restoreRegistry = setThreeVisualAssetRegistryForTests([
 			{

@@ -251,6 +251,7 @@ h1 {
 	font-size: 12px;
 	font-weight: 800;
 	padding: 6px 8px;
+	pointer-events: none;
 }
 
 .preview-controls {
@@ -320,6 +321,7 @@ h1 {
 	color: #334e68;
 	font-size: 12px;
 	padding: 6px 8px;
+	pointer-events: none;
 }
 
 .preview-status {
@@ -329,9 +331,12 @@ h1 {
 .preview-diagnostics {
 	right: 10px;
 	bottom: 10px;
+	max-width: min(420px, calc(100% - 20px));
+	max-height: 62%;
 	display: grid;
 	gap: 3px;
 	margin: 0;
+	overflow: auto;
 }
 .preview-diagnostics div {
 	display: grid;
@@ -343,6 +348,7 @@ h1 {
 }
 .preview-diagnostics dd {
 	margin: 0;
+	overflow-wrap: anywhere;
 }
 
 .compile-status {
