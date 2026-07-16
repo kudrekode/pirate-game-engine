@@ -1,6 +1,7 @@
 import {
 	CHARACTER_COMPONENT_SLOTS,
 	CHARACTER_PALETTE_REGIONS,
+	type CharacterBodyParameters,
 	type CharacterComponentSlot,
 	type CharacterPaletteRegion,
 	type CharacterRecipeV1,
@@ -23,11 +24,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
-	PROCEDURAL_MANNEQUIN_HEIGHT,
+	PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS,
+	PROCEDURAL_MANNEQUIN_BODY_PARAMETERS,
 	type ProceduralMannequinCompileResult,
 	type ProceduralMannequinManifest,
+	randomizeProceduralMannequinBody,
 	requestProceduralMannequinCompile,
-	validateProceduralMannequinHeight,
+	validateProceduralMannequinBody,
 } from "./proceduralMannequinCreator";
 
 const NAV_SECTIONS = [
@@ -141,6 +144,13 @@ const PREVIEW_SOURCES = {
 	},
 } as const satisfies Record<string, PreviewSource>;
 type PreviewSourceId = keyof typeof PREVIEW_SOURCES;
+type RecentCompilation = {
+	parameters: CharacterBodyParameters;
+	recipe: CharacterRecipeV1;
+	result: ProceduralMannequinCompileResult;
+	seed: string;
+	source: PreviewSource;
+};
 type PreviewAnimationState = "idle" | "rest" | "walk";
 type PreviewCameraPreset = "front" | "side" | "three-quarter";
 type RetargetQualitySummary = {
@@ -667,6 +677,8 @@ function HumanoidPreview({
 					host.dataset.assetHash = manifest.outputHash;
 					host.dataset.boundsHeight = String(manifest.bounds.dimensions.y);
 					host.dataset.heightMetres = String(manifest.heightMetres);
+					host.dataset.proportions = JSON.stringify(manifest.proportions);
+					host.dataset.anatomy = JSON.stringify(manifest.anatomy);
 					host.dataset.recipeId = manifest.recipeId;
 					host.dataset.recipeVersion = String(manifest.recipeVersion);
 					host.dataset.recipeHash = manifest.recipeHash;
@@ -940,6 +952,17 @@ function HumanoidPreview({
 							<dd>{mannequinManifest.heightMetres.toFixed(2)} m</dd>
 						</div>
 						<div>
+							<dt>Body proportions</dt>
+							<dd>
+								Shoulders{" "}
+								{mannequinManifest.proportions.shoulderWidth.toFixed(2)} · Torso{" "}
+								{mannequinManifest.proportions.torsoLength.toFixed(2)} · Arms{" "}
+								{mannequinManifest.proportions.armLength.toFixed(2)} · Legs{" "}
+								{mannequinManifest.proportions.legLength.toFixed(2)} · Hips{" "}
+								{mannequinManifest.proportions.hipWidth.toFixed(2)}
+							</dd>
+						</div>
+						<div>
 							<dt>Asset hash</dt>
 							<dd>{mannequinManifest.outputHash}</dd>
 						</div>
@@ -1015,18 +1038,12 @@ export default function App() {
 	const [activeSection, setActiveSection] =
 		useState<(typeof NAV_SECTIONS)[number]>("Character");
 	const [recipe, setRecipe] = useState<CharacterRecipeV1>(() => {
-		const initial = createDefaultCharacterRecipe();
-		return {
-			...initial,
-			body: {
-				...initial.body,
-				parameters: {
-					...initial.body.parameters,
-					height: PROCEDURAL_MANNEQUIN_HEIGHT.defaultValue,
-				},
-			},
-		};
+		return createDefaultCharacterRecipe();
 	});
+	const [randomSeed, setRandomSeed] = useState("asset-studio-1");
+	const [recentCompilations, setRecentCompilations] = useState<
+		RecentCompilation[]
+	>([]);
 	const [loadStatus, setLoadStatus] = useState("");
 	const [compileStatus, setCompileStatus] = useState<
 		"idle" | "compiling" | "succeeded" | "failed"
@@ -1045,8 +1062,8 @@ export default function App() {
 
 	const validation = useMemo(() => parseCharacterRecipe(recipe), [recipe]);
 	const recipeJson = useMemo(() => JSON.stringify(recipe, null, 2), [recipe]);
-	const heightValidation = validateProceduralMannequinHeight(
-		recipe.body.parameters.height,
+	const bodyValidation = validateProceduralMannequinBody(
+		recipe.body.parameters,
 	);
 	const previewSource =
 		previewSourceId === PROCEDURAL_MANNEQUIN_FIXTURE_ID && compiledPreviewSource
@@ -1055,7 +1072,11 @@ export default function App() {
 	const activeManifest = compileResult?.manifest ?? currentManifest;
 	const compileDirty = Boolean(
 		compileResult &&
-			compileResult.manifest.heightMetres !== recipe.body.parameters.height,
+			!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
+				(key) =>
+					compileResult.manifest.proportions[key] ===
+					recipe.body.parameters[key],
+			),
 	);
 
 	function updateRecipe(
@@ -1065,21 +1086,53 @@ export default function App() {
 		setLoadStatus("");
 	}
 
-	function updateHeight(value: number) {
+	function updateBodyParameter(
+		key: keyof CharacterBodyParameters,
+		value: number,
+	) {
 		updateRecipe((current) => ({
 			...current,
 			body: {
 				...current.body,
 				parameters: {
 					...current.body.parameters,
-					height: value,
+					[key]: value,
 				},
 			},
 		}));
 	}
 
+	function handleRandomise() {
+		const parameters = randomizeProceduralMannequinBody(randomSeed);
+		updateRecipe((current) => ({
+			...current,
+			body: { ...current.body, parameters },
+		}));
+		setCompileStatus("idle");
+		setCompileError("");
+	}
+
+	function selectRecentCompilation(compilation: RecentCompilation) {
+		setRecipe({
+			...compilation.recipe,
+			body: {
+				...compilation.recipe.body,
+				parameters: { ...compilation.recipe.body.parameters },
+			},
+			components: { ...compilation.recipe.components },
+			palette: { ...compilation.recipe.palette },
+		});
+		setRandomSeed(compilation.seed);
+		setCompileResult(compilation.result);
+		setCurrentManifest(compilation.result.manifest);
+		setCompiledPreviewSource(compilation.source);
+		setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
+		setCompileStatus("succeeded");
+		setCompileError("");
+	}
+
 	async function handleCompile() {
-		if (!heightValidation.ok || compileStatus === "compiling") return;
+		if (!bodyValidation.ok || compileStatus === "compiling") return;
 		setCompileStatus("compiling");
 		setCompileError("");
 		try {
@@ -1090,20 +1143,44 @@ export default function App() {
 				name: `Procedural Mannequin ${result.manifest.heightMetres.toFixed(2)} m`,
 				url: result.assetUrl,
 			};
-			setCompileResult(result);
-			setCurrentManifest(result.manifest);
-			setCompiledPreviewSource({
+			const source: PreviewSource = {
 				artifactUrl: result.assetUrl,
 				definition,
 				description: `Locally compiled ${result.manifest.heightMetres.toFixed(2)} m creator artifact`,
-				displayName: "Procedural Mannequin V0",
+				displayName: "Procedural Mannequin V1",
 				fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
 				kindLabel: "Creator compile",
 				manifestUrl: result.manifestUrl,
 				mannequin: true,
 				revision: result.requestId,
 				transient: true,
-			});
+			};
+			const compilation = {
+				parameters: { ...recipe.body.parameters },
+				recipe: {
+					...recipe,
+					body: {
+						...recipe.body,
+						parameters: { ...recipe.body.parameters },
+					},
+					components: { ...recipe.components },
+					palette: { ...recipe.palette },
+				},
+				result,
+				seed: randomSeed,
+				source,
+			};
+			setCompileResult(result);
+			setCurrentManifest(result.manifest);
+			setCompiledPreviewSource(source);
+			setRecentCompilations((current) =>
+				[
+					compilation,
+					...current.filter(
+						(entry) => entry.result.requestId !== result.requestId,
+					),
+				].slice(0, 10),
+			);
 			setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
 			setCompileStatus("succeeded");
 		} catch (error) {
@@ -1235,45 +1312,106 @@ export default function App() {
 							</select>
 						</label>
 
-						<div className="section-heading">Compiled parameter</div>
-						<div className="height-creator-control">
-							<label>
-								Height
-								<input
-									aria-label="Height"
-									max={PROCEDURAL_MANNEQUIN_HEIGHT.max}
-									min={PROCEDURAL_MANNEQUIN_HEIGHT.min}
-									onChange={(event) => updateHeight(Number(event.target.value))}
-									step={PROCEDURAL_MANNEQUIN_HEIGHT.step}
-									type="range"
-									value={recipe.body.parameters.height}
-								/>
-							</label>
-							<div className="height-creator-value">
-								<output aria-label="Current height">
-									{recipe.body.parameters.height.toFixed(2)} m
-								</output>
-								<button
-									onClick={() =>
-										updateHeight(PROCEDURAL_MANNEQUIN_HEIGHT.defaultValue)
-									}
-									type="button"
-								>
-									Reset height
+						<div className="section-heading">Body</div>
+						<div className="body-creator-panel">
+							{PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.map((key) => {
+								const parameter = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
+								const value = recipe.body.parameters[key];
+								return (
+									<div className="body-creator-control" key={key}>
+										<label>
+											{parameter.label}
+											<input
+												aria-label={parameter.label}
+												max={parameter.max}
+												min={parameter.min}
+												onChange={(event) =>
+													updateBodyParameter(key, Number(event.target.value))
+												}
+												step={parameter.step}
+												type="range"
+												value={value}
+											/>
+										</label>
+										<div className="body-creator-value">
+											<output
+												aria-label={`Current ${parameter.label.toLowerCase()}`}
+											>
+												{value.toFixed(2)}
+												{parameter.units === "metres" ? " m" : ""}
+											</output>
+											<button
+												onClick={() =>
+													updateBodyParameter(key, parameter.defaultValue)
+												}
+												type="button"
+											>
+												Reset {parameter.label.toLowerCase()}
+											</button>
+										</div>
+									</div>
+								);
+							})}
+							<div className="randomise-control">
+								<label>
+									Random seed
+									<input
+										aria-label="Random seed"
+										onChange={(event) => setRandomSeed(event.target.value)}
+										value={randomSeed}
+									/>
+								</label>
+								<button onClick={handleRandomise} type="button">
+									Randomise
 								</button>
 							</div>
-							{heightValidation.ok ? (
+							{bodyValidation.ok ? (
 								<p className="creator-note">
-									Height is valid for the procedural compiler.
+									Body proportions pass compiler anatomy validation.
 								</p>
 							) : (
-								<p className="creator-error">{heightValidation.message}</p>
+								<div
+									className="validation-list"
+									aria-label="Body validation errors"
+									role="alert"
+								>
+									{bodyValidation.issues.map((issue) => (
+										<p key={`${issue.path}:${issue.message}`}>
+											{issue.message}
+										</p>
+									))}
+								</div>
 							)}
 						</div>
 
+						<div className="section-heading">Recent Compilations</div>
+						<section
+							className="recent-compilations"
+							aria-label="Recent Compilations"
+						>
+							{recentCompilations.length === 0 ? (
+								<p className="creator-note">
+									Compiled bodies will appear here (up to 10).
+								</p>
+							) : (
+								recentCompilations.map((entry) => (
+									<button
+										aria-pressed={
+											compileResult?.requestId === entry.result.requestId
+										}
+										key={entry.result.requestId}
+										onClick={() => selectRecentCompilation(entry)}
+										type="button"
+									>
+										{entry.parameters.height.toFixed(2)} m · {entry.seed}
+									</button>
+								))
+							)}
+						</section>
+
 						<div className="section-heading">Components</div>
 						<p className="creator-note">
-							Only height enters the procedural compiler in this milestone.
+							Body proportions enter the procedural compiler in this milestone.
 							Existing component and palette fields remain CharacterRecipe
 							source data.
 						</p>
@@ -1343,11 +1481,11 @@ export default function App() {
 												: "Compilation and validation succeeded; the generated GLB is active."
 											: compileStatus === "failed"
 												? `Compilation failed. The previous preview remains active. ${compileError}`
-												: "Ready to compile height through the local Blender development endpoint."}
+												: "Ready to compile body proportions through the local Blender development endpoint."}
 								</span>
 							</div>
 							<button
-								disabled={!heightValidation.ok || compileStatus === "compiling"}
+								disabled={!bodyValidation.ok || compileStatus === "compiling"}
 								onClick={handleCompile}
 								type="button"
 							>
@@ -1450,7 +1588,9 @@ export default function App() {
 			<footer className="status-bar">
 				<span>CharacterRecipeV1 is editable source data.</span>
 				<span>The mannequin GLB is a derived compiler artifact.</span>
-				<span>Height now rebuilds it through the local Blender compiler.</span>
+				<span>
+					Body proportions rebuild it through the local Blender compiler.
+				</span>
 				<span>Active section: {activeSection}</span>
 			</footer>
 		</div>

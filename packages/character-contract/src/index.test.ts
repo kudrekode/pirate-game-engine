@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	CHARACTER_BODY_PARAMETER_LIMITS,
 	createDefaultCharacterRecipe,
 	HUMANOID_V1_CONTRACT,
 	HUMANOID_V1_SKELETON_ID,
@@ -20,16 +21,34 @@ describe("CharacterRecipeV1", () => {
 			body: {
 				baseId: "humanoid-default",
 				parameters: {
-					height: 1.75,
-					build: 0.45,
+					height: 1.82,
 					shoulderWidth: 0.5,
-					waist: 0.5,
-					headScale: 1,
+					torsoLength: 0.5,
+					armLength: 0.5,
+					legLength: 0.5,
+					hipWidth: 0.5,
 				},
 			},
 			components: {},
 			animationSetId: "humanoid-basic-v1",
 		});
+	});
+
+	it("defines range, default, units, and validation for exactly six body parameters", () => {
+		expect(Object.keys(CHARACTER_BODY_PARAMETER_LIMITS)).toEqual([
+			"height",
+			"shoulderWidth",
+			"torsoLength",
+			"armLength",
+			"legLength",
+			"hipWidth",
+		]);
+		for (const limits of Object.values(CHARACTER_BODY_PARAMETER_LIMITS)) {
+			expect(limits.defaultValue).toBeGreaterThanOrEqual(limits.min);
+			expect(limits.defaultValue).toBeLessThanOrEqual(limits.max);
+			expect(limits.units.length).toBeGreaterThan(0);
+			expect(limits.validation.length).toBeGreaterThan(0);
+		}
 	});
 
 	it("parses valid recipes and preserves stable JSON serialization", () => {
@@ -65,10 +84,11 @@ describe("CharacterRecipeV1", () => {
 				baseId: "humanoid-default",
 				parameters: {
 					height: 0.4,
-					build: 0.45,
 					shoulderWidth: 0.5,
-					waist: 0.5,
-					headScale: 1,
+					torsoLength: 0.5,
+					armLength: 0.5,
+					legLength: 0.5,
+					hipWidth: 0.5,
 				},
 			},
 		});
@@ -77,6 +97,29 @@ describe("CharacterRecipeV1", () => {
 		expect(parsed.issues).toContainEqual(
 			expect.objectContaining({ path: "$.body.parameters.height" }),
 		);
+	});
+
+	it("migrates legacy saved recipes to default V1 proportions", () => {
+		const legacy = createDefaultCharacterRecipe();
+		legacy.body.parameters = {
+			height: 1.9,
+			shoulderWidth: 0.2,
+			build: 0.45,
+			waist: 0.5,
+			headScale: 1,
+		} as unknown as typeof legacy.body.parameters;
+		const parsed = parseCharacterRecipe(legacy);
+		expect(parsed.ok).toBe(true);
+		if (parsed.ok) {
+			expect(parsed.value.body.parameters).toEqual({
+				height: 1.9,
+				shoulderWidth: 0.2,
+				torsoLength: 0.5,
+				armLength: 0.5,
+				legLength: 0.5,
+				hipWidth: 0.5,
+			});
+		}
 	});
 
 	it("accepts optional component slots when they are non-empty strings", () => {

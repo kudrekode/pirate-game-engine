@@ -9,6 +9,18 @@ function successfulCompile(heightMetres = 1.9) {
 		compilationDurationMs: 1234,
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
+			anatomy: {
+				armLengthMultiplier: 1,
+				armToLegRatio: 1,
+				armToTorsoRatio: 1,
+				heightScale: heightMetres / 1.82,
+				hipWidthMultiplier: 1,
+				legLengthMultiplier: 1,
+				legToTorsoRatio: 1,
+				shoulderToHipRatio: 1,
+				shoulderWidthMultiplier: 1,
+				torsoLengthMultiplier: 1,
+			},
 			animationSet: "golden-reference-v0",
 			assetId: "procedural-mannequin-v0",
 			bounds: {
@@ -16,10 +28,18 @@ function successfulCompile(heightMetres = 1.9) {
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v0",
+			compilerVersion: "procedural-mannequin-blender-v1",
 			deterministicBuild: true,
 			generationDurationMs: 1200,
 			heightMetres,
+			proportions: {
+				height: heightMetres,
+				shoulderWidth: 0.5,
+				torsoLength: 0.5,
+				armLength: 0.5,
+				legLength: 0.5,
+				hipWidth: 0.5,
+			},
 			influenceStatistics: {
 				maximumInfluences: 1,
 				unweightedVertexCount: 0,
@@ -32,10 +52,10 @@ function successfulCompile(heightMetres = 1.9) {
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 0,
+			recipeVersion: 1,
 			skeletonContract: "golden-humanoid-v0",
 			triangleCount: 1108,
-			validationVersion: "procedural-mannequin-roundtrip-v1",
+			validationVersion: "procedural-mannequin-roundtrip-v2",
 			vertexCount: 648,
 		},
 		manifestUrl:
@@ -44,7 +64,7 @@ function successfulCompile(heightMetres = 1.9) {
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v1",
+			version: "procedural-mannequin-roundtrip-v2",
 		},
 	};
 }
@@ -119,15 +139,41 @@ describe("Asset Studio app", () => {
 		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
 	});
 
-	it("exposes only height as the genuine compiled body parameter", () => {
+	it("exposes exactly the six genuine compiled body parameters", () => {
 		render(<App />);
 
-		expect(screen.getByLabelText("Height")).toHaveAttribute("type", "range");
+		for (const label of [
+			"Height",
+			"Shoulders",
+			"Torso",
+			"Arms",
+			"Legs",
+			"Hips",
+		]) {
+			expect(screen.getByLabelText(label)).toHaveAttribute("type", "range");
+		}
 		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
-		expect(screen.getByRole("button", { name: "Reset height" })).toBeEnabled();
+		expect(screen.getByRole("button", { name: "Reset arms" })).toBeEnabled();
 		expect(screen.getByRole("button", { name: "Compile" })).toBeEnabled();
 		expect(screen.queryByLabelText("Build")).not.toBeInTheDocument();
-		expect(screen.queryByLabelText("Shoulders")).not.toBeInTheDocument();
+	});
+
+	it("reproduces Randomise for the displayed seed without compiling", () => {
+		const fetch = vi.fn();
+		vi.stubGlobal("fetch", fetch);
+		render(<App />);
+		fireEvent.change(screen.getByLabelText("Random seed"), {
+			target: { value: "body-test-7" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Randomise" }));
+		const first = screen.getByTestId("recipe-json").textContent;
+		fireEvent.change(screen.getByLabelText("Arms"), {
+			target: { value: "0.5" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Randomise" }));
+		expect(screen.getByTestId("recipe-json").textContent).toBe(first);
+		expect(screen.getByLabelText("Random seed")).toHaveValue("body-test-7");
+		expect(fetch).not.toHaveBeenCalled();
 	});
 
 	it("compiles the current height and replaces the preview only after success", async () => {
@@ -150,7 +196,7 @@ describe("Asset Studio app", () => {
 			).toBeInTheDocument(),
 		);
 		expect(
-			screen.getByLabelText("Procedural Mannequin V0 preview"),
+			screen.getByLabelText("Procedural Mannequin V1 preview"),
 		).toBeInTheDocument();
 		expect(
 			screen.getByLabelText("Creator compilation diagnostics"),
@@ -162,6 +208,9 @@ describe("Asset Studio app", () => {
 			screen.getByLabelText("Creator compilation diagnostics"),
 		).toHaveTextContent("2026-07-16T12:00:00.000Z");
 		expect(document.querySelectorAll("canvas")).toHaveLength(1);
+		expect(screen.getByLabelText("Recent Compilations")).toHaveTextContent(
+			"1.90 m",
+		);
 	});
 
 	it("keeps the previous preview active when compilation fails", async () => {

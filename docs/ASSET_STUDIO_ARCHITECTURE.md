@@ -26,20 +26,21 @@ The V0 recipe contains:
 - stable `id` and `name`
 - `skeletonId: "humanoid-v1"`
 - one body base id
-- five body parameters: height, build, shoulder width, waist, and head scale
+- six compiled body parameters: height, shoulder width, torso length, arm
+  length, leg length, and hip width
 - optional component ids for hair, headwear, torso, legs, feet, and main hand
 - a constrained palette for skin, hair, primary, secondary, and metal
 - an `animationSetId`
 
 Validation rejects unsupported versions, invalid skeleton ids, invalid colors, empty ids, and body parameters outside their declared ranges. V0 rejects bad bounds instead of silently normalizing imported data.
 
-The first creator loop reuses `body.parameters.height` rather than introducing
-a second UI recipe. The local adapter copies only height into
-`ProceduralMannequinRecipeV0.proportions.heightMetres`; the procedural compiler's
-current validated range is 1.50 to 2.10 metres with a 1.82 metre default. The
-remaining CharacterRecipe parameters are not compiled yet and stay explicitly
-source-only. This adapter does not claim that provisional `humanoid-v1` and the
-65-joint Golden compatibility skeleton are the same contract.
+The creator loop reuses the six values under `body.parameters` rather than
+introducing a second UI recipe. Height is measured in metres; the remaining
+five values are normalized offsets. The compiler derives bounded anatomical
+multipliers and rejects incompatible limb reach, torso/leg intersection,
+shoulder/hip centring, and bone-relative anchor placement before compilation.
+Legacy saved recipes receive safe defaults for the four newly introduced
+fields and retain their existing height and shoulder width values.
 
 ## Humanoid V1 Contract
 
@@ -163,9 +164,9 @@ pair-specific JSON diagnostic for development comparison; a baked load failure
 is reported and never silently falls back.
 
 The mannequin preview can read either the checked-in manifest or a successful
-local creator job. Height is adapted from
-`CharacterRecipeV1.body.parameters.height` into the narrow procedural recipe;
-the browser submits the request but never executes Blender or deforms the mesh.
+local creator job. Body proportions are adapted from `CharacterRecipeV1` into
+the narrow procedural recipe; the browser submits the request but never
+executes Blender, scales body parts, or deforms the mesh.
 Live Three.js objects stay in app presentation code, not recipe contracts.
 
 ## Current Asset Studio Capabilities
@@ -178,15 +179,17 @@ The current reference preview provides:
 - Compiler/artifact metadata and diagnostics.
 - Explicit reference-fixture status.
 - An explicit Golden Reference / Procedural Mannequin V0 source selector.
-- One genuine creator parameter: height, with reset, compile status, hashes,
-  compiler/validation versions, timestamp, duration, and diagnostics.
+- Six genuine creator parameters in one Body panel, each with slider, numeric
+  value, and reset, plus deterministic seeded Randomise.
 - Local Blender compilation, validation, successful preview replacement, and
   previous-preview preservation on failure during development.
+- An in-session Recent Compilations panel for switching among the last ten
+  validated generated bodies without recompiling.
 
 The repository now has one narrow procedural recipe compiler, one validated
-derived mannequin, and a complete height authoring loop. Still missing are a
-deployed compiler service, additional compiled proportions, body morphing,
-clothing, hairstyles as creator slots, and export of user-authored characters.
+derived mannequin, and a complete body-proportion authoring loop. Still missing
+are improved generated topology, a deployed compiler service, clothing,
+hairstyles as creator slots, and export of user-authored characters.
 
 ## Compiler Boundary
 
@@ -215,13 +218,13 @@ CharacterRecipe
 ```
 
 The Asset Studio browser still does not execute Blender. During development, a
-Vite server plugin accepts one narrow height request, adapts it to
-`ProceduralMannequinRecipeV0`, and invokes the repository compiler in an
+Vite server plugin accepts one narrow six-parameter request, adapts it to
+`ProceduralMannequinRecipeV1`, and invokes the repository compiler in an
 isolated job directory. Successful artifacts pass two-build determinism,
 geometry/skinning, animation binding, and Three.js round-trip validation before
 the app consumes them. The request waits for completion; there is no polling.
 This is a local development boundary, not a deployed backend. See
-[`asset-studio-height-authoring-v0.md`](assets/asset-studio-height-authoring-v0.md).
+[`asset-studio-body-proportions-v1.md`](assets/asset-studio-body-proportions-v1.md).
 
 ## Asset Package Format
 
@@ -260,7 +263,7 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - standalone Asset Studio Vite app shell
 - real `CharacterRecipeV1` state editing and validation
 - recipe JSON view, load, and save
-- one height authoring adapter and development-only local compile endpoint
+- one body-proportion authoring adapter and development-only local compile endpoint
 - renderer-independent character, component, palette, animation, and compiler contracts
 - Blender compiler boundary documentation
 - deterministic Golden Reference offline-bake tooling and validated artifacts
@@ -289,12 +292,11 @@ crowd-budget default.
 
 ## Next Milestone
 
-The next creator parameter should reuse the height pipeline rather than create a
-new architecture. Shoulder width or torso proportion is the likely candidate,
-but it must prove generated topology/placement, skinning and animation quality,
-deterministic hashes, manifest evidence, and safe preview replacement. Height
-measurements and the reusable boundary are documented in
-[`asset-studio-height-authoring-v0.md`](assets/asset-studio-height-authoring-v0.md).
+The next creator milestone is improving generated topology and joint
+transitions. It should not add more parameters or change the proven
+recipe/compile/Blender/validation/preview boundary. Body Proportions V1 evidence
+is documented in
+[`asset-studio-body-proportions-v1.md`](assets/asset-studio-body-proportions-v1.md).
 
 ## Future Deployment Models
 

@@ -39,10 +39,11 @@ export type CharacterAnimationState =
 
 export type CharacterBodyParameters = {
 	height: number;
-	build: number;
 	shoulderWidth: number;
-	waist: number;
-	headScale: number;
+	torsoLength: number;
+	armLength: number;
+	legLength: number;
+	hipWidth: number;
 };
 
 export type CharacterRecipeV1 = {
@@ -159,14 +160,57 @@ export type ValidationResult<T> =
 	| { ok: false; issues: ValidationIssue[] };
 
 export const CHARACTER_BODY_PARAMETER_LIMITS = {
-	height: { defaultValue: 1.75, min: 1.2, max: 2.4 },
-	build: { defaultValue: 0.45, min: 0, max: 1 },
-	shoulderWidth: { defaultValue: 0.5, min: 0, max: 1 },
-	waist: { defaultValue: 0.5, min: 0, max: 1 },
-	headScale: { defaultValue: 1, min: 0.75, max: 1.25 },
+	height: {
+		defaultValue: 1.82,
+		min: 1.5,
+		max: 2.1,
+		units: "metres",
+		validation: "finite number within the inclusive compiler range",
+	},
+	shoulderWidth: {
+		defaultValue: 0.5,
+		min: 0,
+		max: 1,
+		units: "normalized",
+		validation: "finite normalized offset plus anatomical compatibility",
+	},
+	torsoLength: {
+		defaultValue: 0.5,
+		min: 0,
+		max: 1,
+		units: "normalized",
+		validation: "finite normalized offset plus anatomical compatibility",
+	},
+	armLength: {
+		defaultValue: 0.5,
+		min: 0,
+		max: 1,
+		units: "normalized",
+		validation: "finite normalized offset plus reach compatibility",
+	},
+	legLength: {
+		defaultValue: 0.5,
+		min: 0,
+		max: 1,
+		units: "normalized",
+		validation: "finite normalized offset plus torso compatibility",
+	},
+	hipWidth: {
+		defaultValue: 0.5,
+		min: 0,
+		max: 1,
+		units: "normalized",
+		validation: "finite normalized offset plus centring compatibility",
+	},
 } as const satisfies Record<
 	keyof CharacterBodyParameters,
-	{ defaultValue: number; min: number; max: number }
+	{
+		defaultValue: number;
+		min: number;
+		max: number;
+		units: "metres" | "normalized";
+		validation: string;
+	}
 >;
 
 const COMPONENT_SLOT_SET = new Set<string>(CHARACTER_COMPONENT_SLOTS);
@@ -318,11 +362,12 @@ export function createDefaultCharacterRecipe(
 			baseId: DEFAULT_CHARACTER_BODY_BASE_ID,
 			parameters: {
 				height: CHARACTER_BODY_PARAMETER_LIMITS.height.defaultValue,
-				build: CHARACTER_BODY_PARAMETER_LIMITS.build.defaultValue,
 				shoulderWidth:
 					CHARACTER_BODY_PARAMETER_LIMITS.shoulderWidth.defaultValue,
-				waist: CHARACTER_BODY_PARAMETER_LIMITS.waist.defaultValue,
-				headScale: CHARACTER_BODY_PARAMETER_LIMITS.headScale.defaultValue,
+				torsoLength: CHARACTER_BODY_PARAMETER_LIMITS.torsoLength.defaultValue,
+				armLength: CHARACTER_BODY_PARAMETER_LIMITS.armLength.defaultValue,
+				legLength: CHARACTER_BODY_PARAMETER_LIMITS.legLength.defaultValue,
+				hipWidth: CHARACTER_BODY_PARAMETER_LIMITS.hipWidth.defaultValue,
 			},
 		},
 		components: {},
@@ -421,14 +466,6 @@ export function validateCharacterRecipe(
 							issues,
 						)
 					: CHARACTER_BODY_PARAMETER_LIMITS.height.defaultValue,
-				build: parameters
-					? readNumberInRange(
-							parameters,
-							"build",
-							"$.body.parameters.build",
-							issues,
-						)
-					: CHARACTER_BODY_PARAMETER_LIMITS.build.defaultValue,
 				shoulderWidth: parameters
 					? readNumberInRange(
 							parameters,
@@ -437,22 +474,38 @@ export function validateCharacterRecipe(
 							issues,
 						)
 					: CHARACTER_BODY_PARAMETER_LIMITS.shoulderWidth.defaultValue,
-				waist: parameters
+				torsoLength: parameters
 					? readNumberInRange(
 							parameters,
-							"waist",
-							"$.body.parameters.waist",
+							"torsoLength",
+							"$.body.parameters.torsoLength",
 							issues,
 						)
-					: CHARACTER_BODY_PARAMETER_LIMITS.waist.defaultValue,
-				headScale: parameters
+					: CHARACTER_BODY_PARAMETER_LIMITS.torsoLength.defaultValue,
+				armLength: parameters
 					? readNumberInRange(
 							parameters,
-							"headScale",
-							"$.body.parameters.headScale",
+							"armLength",
+							"$.body.parameters.armLength",
 							issues,
 						)
-					: CHARACTER_BODY_PARAMETER_LIMITS.headScale.defaultValue,
+					: CHARACTER_BODY_PARAMETER_LIMITS.armLength.defaultValue,
+				legLength: parameters
+					? readNumberInRange(
+							parameters,
+							"legLength",
+							"$.body.parameters.legLength",
+							issues,
+						)
+					: CHARACTER_BODY_PARAMETER_LIMITS.legLength.defaultValue,
+				hipWidth: parameters
+					? readNumberInRange(
+							parameters,
+							"hipWidth",
+							"$.body.parameters.hipWidth",
+							issues,
+						)
+					: CHARACTER_BODY_PARAMETER_LIMITS.hipWidth.defaultValue,
 			},
 		},
 		components: parsedComponents,
@@ -473,7 +526,33 @@ export function validateCharacterRecipe(
 export function migrateCharacterRecipe(
 	value: unknown,
 ): ValidationResult<CharacterRecipeV1> {
-	return validateCharacterRecipe(value);
+	if (!isRecord(value) || !isRecord(value.body)) {
+		return validateCharacterRecipe(value);
+	}
+	const parameters = isRecord(value.body.parameters)
+		? value.body.parameters
+		: {};
+	return validateCharacterRecipe({
+		...value,
+		body: {
+			...value.body,
+			parameters: {
+				...parameters,
+				torsoLength:
+					parameters.torsoLength ??
+					CHARACTER_BODY_PARAMETER_LIMITS.torsoLength.defaultValue,
+				armLength:
+					parameters.armLength ??
+					CHARACTER_BODY_PARAMETER_LIMITS.armLength.defaultValue,
+				legLength:
+					parameters.legLength ??
+					CHARACTER_BODY_PARAMETER_LIMITS.legLength.defaultValue,
+				hipWidth:
+					parameters.hipWidth ??
+					CHARACTER_BODY_PARAMETER_LIMITS.hipWidth.defaultValue,
+			},
+		},
+	});
 }
 
 export const parseCharacterRecipe = migrateCharacterRecipe;

@@ -1,4 +1,4 @@
-"""Deterministic Procedural Mannequin V0 generator for Blender 5.2+.
+"""Deterministic Procedural Mannequin Body Proportions V1 generator.
 
 The immutable Quaternius source supplies only the validated 65-joint Golden
 rest skeleton. Every source mesh, material, texture, and image is removed
@@ -249,80 +249,154 @@ def create_geometry(armature, recipe):
     head = lambda name: bone_head(armature, name)
     tail = lambda name: bone_tail(armature, name)
 
-    builder.add_ellipsoid("Pelvis", "pelvis", head("pelvis"), head("spine_01"), 0.19, 0.125)
-    builder.add_ellipsoid("TorsoLower", "spine_01", head("spine_01"), head("spine_02"), 0.175, 0.11)
-    builder.add_ellipsoid("TorsoMiddle", "spine_02", head("spine_02"), head("spine_03"), 0.205, 0.12)
-    builder.add_ellipsoid("TorsoUpper", "spine_03", head("spine_03"), head("neck_01"), 0.245, 0.125)
-    builder.add_ellipsoid("Neck", "neck_01", head("neck_01"), head("Head"), 0.06, 0.055)
-    builder.add_ellipsoid("Head", "Head", head("Head"), tail("Head"), 0.115, 0.105)
+    proportions = recipe["proportions"]
+    anatomy = {
+        "heightScale": proportions["height"] / 1.82,
+        "shoulderWidthMultiplier": 0.82 + proportions["shoulderWidth"] * 0.36,
+        "torsoLengthMultiplier": 0.88 + proportions["torsoLength"] * 0.24,
+        "armLengthMultiplier": 0.86 + proportions["armLength"] * 0.28,
+        "legLengthMultiplier": 0.88 + proportions["legLength"] * 0.24,
+        "hipWidthMultiplier": 0.84 + proportions["hipWidth"] * 0.32,
+    }
+    anatomy["armToTorsoRatio"] = anatomy["armLengthMultiplier"] / anatomy["torsoLengthMultiplier"]
+    anatomy["armToLegRatio"] = anatomy["armLengthMultiplier"] / anatomy["legLengthMultiplier"]
+    anatomy["legToTorsoRatio"] = anatomy["legLengthMultiplier"] / anatomy["torsoLengthMultiplier"]
+    anatomy["shoulderToHipRatio"] = anatomy["shoulderWidthMultiplier"] / anatomy["hipWidthMultiplier"]
+
+    pelvis_origin = head("pelvis")
+
+    def torso_point(point):
+        result = point.copy()
+        result.z = pelvis_origin.z + (point.z - pelvis_origin.z) * anatomy["torsoLengthMultiplier"]
+        return result
+
+    def width_point(point, width_multiplier):
+        result = torso_point(point)
+        result.x *= width_multiplier
+        return result
+
+    transformed_anchors = []
+
+    def record(original, transformed):
+        transformed_anchors.append((original.copy(), transformed.copy()))
+        return transformed
+
+    torso_heads = {
+        name: record(head(name), torso_point(head(name)))
+        for name in ("pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head")
+    }
+    transformed_head_tail = record(tail("Head"), torso_point(tail("Head")))
+
+    builder.add_ellipsoid(
+        "Pelvis", "pelvis", torso_heads["pelvis"], torso_heads["spine_01"],
+        0.19 * anatomy["hipWidthMultiplier"], 0.125,
+    )
+    builder.add_ellipsoid("TorsoLower", "spine_01", torso_heads["spine_01"], torso_heads["spine_02"], 0.175 * anatomy["hipWidthMultiplier"], 0.11)
+    builder.add_ellipsoid("TorsoMiddle", "spine_02", torso_heads["spine_02"], torso_heads["spine_03"], 0.205 * ((anatomy["hipWidthMultiplier"] + anatomy["shoulderWidthMultiplier"]) * 0.5), 0.12)
+    builder.add_ellipsoid("TorsoUpper", "spine_03", torso_heads["spine_03"], torso_heads["neck_01"], 0.245 * anatomy["shoulderWidthMultiplier"], 0.125)
+    builder.add_ellipsoid("Neck", "neck_01", torso_heads["neck_01"], torso_heads["Head"], 0.06, 0.055)
+    builder.add_ellipsoid("Head", "Head", torso_heads["Head"], transformed_head_tail, 0.115, 0.105)
 
     for suffix, label in (("l", "L"), ("r", "R")):
+        clavicle_start = record(head(f"clavicle_{suffix}"), width_point(head(f"clavicle_{suffix}"), anatomy["shoulderWidthMultiplier"]))
+        upper_arm = record(head(f"upperarm_{suffix}"), width_point(head(f"upperarm_{suffix}"), anatomy["shoulderWidthMultiplier"]))
+        lower_arm = record(
+            head(f"lowerarm_{suffix}"),
+            upper_arm + (head(f"lowerarm_{suffix}") - head(f"upperarm_{suffix}")) * anatomy["armLengthMultiplier"],
+        )
+        hand = record(
+            head(f"hand_{suffix}"),
+            lower_arm + (head(f"hand_{suffix}") - head(f"lowerarm_{suffix}")) * anatomy["armLengthMultiplier"],
+        )
+        hand_tail = record(
+            tail(f"hand_{suffix}"),
+            hand + (tail(f"hand_{suffix}") - head(f"hand_{suffix}")) * anatomy["armLengthMultiplier"],
+        )
+        thigh = head(f"thigh_{suffix}").copy()
+        thigh.x *= anatomy["hipWidthMultiplier"]
+        thigh = record(head(f"thigh_{suffix}"), thigh)
+        calf = record(
+            head(f"calf_{suffix}"),
+            thigh + (head(f"calf_{suffix}") - head(f"thigh_{suffix}")) * anatomy["legLengthMultiplier"],
+        )
+        foot = record(
+            head(f"foot_{suffix}"),
+            calf + (head(f"foot_{suffix}") - head(f"calf_{suffix}")) * anatomy["legLengthMultiplier"],
+        )
+        ball = record(
+            head(f"ball_{suffix}"),
+            foot + (head(f"ball_{suffix}") - head(f"foot_{suffix}")) * anatomy["legLengthMultiplier"],
+        )
+        ball_tail = record(
+            tail(f"ball_{suffix}"),
+            ball + (tail(f"ball_{suffix}") - head(f"ball_{suffix}")) * anatomy["legLengthMultiplier"],
+        )
         builder.add_ellipsoid(
             f"Shoulder.{label}",
             f"clavicle_{suffix}",
-            head(f"clavicle_{suffix}"),
-            head(f"upperarm_{suffix}"),
+            clavicle_start,
+            upper_arm,
             0.075,
             0.075,
         )
         builder.add_ellipsoid(
             f"UpperArm.{label}",
             f"upperarm_{suffix}",
-            head(f"upperarm_{suffix}"),
-            head(f"lowerarm_{suffix}"),
+            upper_arm,
+            lower_arm,
             0.075,
             0.075,
         )
         builder.add_ellipsoid(
             f"LowerArm.{label}",
             f"lowerarm_{suffix}",
-            head(f"lowerarm_{suffix}"),
-            head(f"hand_{suffix}"),
+            lower_arm,
+            hand,
             0.065,
             0.06,
         )
         builder.add_box(
             f"Hand.{label}",
             f"hand_{suffix}",
-            head(f"hand_{suffix}"),
-            tail(f"hand_{suffix}"),
+            hand,
+            hand_tail,
             0.062,
             0.032,
         )
         builder.add_ellipsoid(
             f"UpperLeg.{label}",
             f"thigh_{suffix}",
-            head(f"thigh_{suffix}"),
-            head(f"calf_{suffix}"),
+            thigh,
+            calf,
             0.105,
             0.095,
         )
         builder.add_ellipsoid(
             f"LowerLeg.{label}",
             f"calf_{suffix}",
-            head(f"calf_{suffix}"),
-            head(f"foot_{suffix}"),
+            calf,
+            foot,
             0.087,
             0.08,
         )
         builder.add_box(
             f"Foot.{label}",
             f"foot_{suffix}",
-            head(f"foot_{suffix}"),
-            head(f"ball_{suffix}"),
+            foot,
+            ball,
             0.09,
             0.055,
         )
         builder.add_box(
             f"Toe.{label}",
             f"ball_{suffix}",
-            head(f"ball_{suffix}"),
-            tail(f"ball_{suffix}"),
+            ball,
+            ball_tail,
             0.09,
             0.045,
         )
 
-    chest_center = (head("spine_03") + head("neck_01")) * 0.5
+    chest_center = (torso_heads["spine_03"] + torso_heads["neck_01"]) * 0.5
     chest_start = chest_center + Vector((0.0, 0.122, -0.035))
     chest_end = chest_center + Vector((0.0, 0.135, 0.055))
     builder.add_box("FacingMarker", "spine_03", chest_start, chest_end, 0.055, 0.018)
@@ -357,7 +431,21 @@ def create_geometry(armature, recipe):
     mesh_object.parent = armature
     mesh_object.matrix_parent_inverse = armature.matrix_world.inverted()
 
-    return mesh_object, builder
+    maximum_anchor_offset = max(
+        (transformed - original).length for original, transformed in transformed_anchors
+    )
+    if maximum_anchor_offset > 0.45:
+        raise RuntimeError(
+            f"Derived bone-relative anchor offset {maximum_anchor_offset:.4f} exceeds the 0.45 metre tolerance."
+        )
+    anatomy["maximumBoneRelativeAnchorOffset"] = maximum_anchor_offset
+    local_minimum_x = min(vertex[0] for vertex in builder.vertices)
+    local_maximum_x = max(vertex[0] for vertex in builder.vertices)
+    anatomy["lateralCentreError"] = abs(
+        (local_minimum_x + local_maximum_x) * 0.5
+    )
+
+    return mesh_object, builder, anatomy
 
 
 def skeleton_rest_signature(armature):
@@ -387,7 +475,7 @@ def compile_mannequin(args, recipe):
     armature.data.name = "ProceduralMannequinArmature"
     armature.animation_data_clear()
 
-    mesh_object, builder = create_geometry(armature, recipe)
+    mesh_object, builder, anatomy = create_geometry(armature, recipe)
     root = bpy.data.objects.new("ProceduralMannequinRoot", None)
     bpy.context.collection.objects.link(root)
     armature.parent = root
@@ -395,7 +483,7 @@ def compile_mannequin(args, recipe):
     local_min_z = min(vertex[2] for vertex in builder.vertices)
     local_max_z = max(vertex[2] for vertex in builder.vertices)
     unscaled_height = local_max_z - local_min_z
-    target_height = recipe["proportions"]["heightMetres"]
+    target_height = recipe["proportions"]["height"]
     scale = target_height / unscaled_height
     root.scale = (scale, scale, scale)
     root.location.z = -local_min_z * scale
@@ -435,6 +523,7 @@ def compile_mannequin(args, recipe):
             "version": bpy.app.version_string,
         },
         "compilerVersion": args.compiler_version,
+        "anatomy": anatomy,
         "geometry": {
             "materialCount": len(bpy.data.materials),
             "meshCount": len([obj for obj in bpy.data.objects if obj.type == "MESH"]),
@@ -469,7 +558,7 @@ def compile_mannequin(args, recipe):
         },
         "templateHash": sha256(args.template),
         "warnings": [
-            "V0 uses deliberately rigid body-part weighting with overlapping joint volumes.",
+            "V1 uses deliberately rigid body-part weighting with overlapping joint volumes.",
             "Finger bones remain present for animation compatibility but the generated hands have no fingers.",
             "The Golden skeleton is a compatibility template, not the future canonical generated rig.",
         ],

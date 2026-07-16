@@ -10,6 +10,9 @@ import {
 import {
 	canonicalizeProceduralMannequinRecipe,
 	hashProceduralMannequinRecipe,
+	PROCEDURAL_MANNEQUIN_LIMITS,
+	PROCEDURAL_MANNEQUIN_PARAMETER_KEYS,
+	validateProceduralMannequinAnatomy,
 	validateProceduralMannequinRecipe,
 } from "../../../tools/blender-character/procedural-mannequin-contract.mjs";
 
@@ -17,7 +20,7 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
-export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 1;
+export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 2;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
 const WORKSPACE_ROOT = path.resolve(
@@ -68,13 +71,34 @@ export function validateCreatorCompileRequest(value) {
 		issues.push({ message: "Unsupported request version.", path: "$.version" });
 	}
 	if (
-		typeof value.heightMetres !== "number" ||
-		!Number.isFinite(value.heightMetres)
+		typeof value.proportions !== "object" ||
+		value.proportions === null ||
+		Array.isArray(value.proportions)
 	) {
 		issues.push({
-			message: "Expected a finite height in metres.",
-			path: "$.heightMetres",
+			message: "Expected body proportions.",
+			path: "$.proportions",
 		});
+	} else {
+		for (const key of PROCEDURAL_MANNEQUIN_PARAMETER_KEYS) {
+			const parameter = value.proportions[key];
+			const limits = PROCEDURAL_MANNEQUIN_LIMITS[key];
+			if (
+				typeof parameter !== "number" ||
+				!Number.isFinite(parameter) ||
+				parameter < limits.min ||
+				parameter > limits.max
+			) {
+				issues.push({
+					message: `Expected a finite number between ${limits.min} and ${limits.max} ${limits.units}.`,
+					path: `$.proportions.${key}`,
+				});
+			}
+		}
+		if (issues.length === 0) {
+			const anatomy = validateProceduralMannequinAnatomy(value.proportions);
+			if (!anatomy.ok) issues.push(...anatomy.issues);
+		}
 	}
 	return issues.length > 0
 		? { issues, ok: false }
@@ -82,25 +106,30 @@ export function validateCreatorCompileRequest(value) {
 				issues: [],
 				ok: true,
 				value: {
-					heightMetres: value.heightMetres,
+					proportions: Object.fromEntries(
+						PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.map((key) => [
+							key,
+							value.proportions[key],
+						]),
+					),
 					version: PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION,
 				},
 			};
 }
 
-export async function createRecipeForHeight({
+export async function createRecipeForProportions({
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
 		PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
 	),
-	heightMetres,
+	proportions,
 } = {}) {
 	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
 	const candidate = {
 		...baseRecipe,
 		proportions: {
 			...baseRecipe.proportions,
-			heightMetres,
+			...proportions,
 		},
 	};
 	const parsed = validateProceduralMannequinRecipe(candidate);
@@ -126,11 +155,14 @@ export async function compileCreatorMannequin({
 		WORKSPACE_ROOT,
 		"test-results/asset-studio-creator/procedural-mannequin",
 	),
-	heightMetres,
+	proportions,
 	now = () => new Date(),
 	requestId = randomUUID(),
 } = {}) {
-	const recipe = await createRecipeForHeight({ baseRecipePath, heightMetres });
+	const recipe = await createRecipeForProportions({
+		baseRecipePath,
+		proportions,
+	});
 	const recipeHash = hashProceduralMannequinRecipe(recipe);
 	const stagingDirectory = path.join(generatedRoot, `.staging-${requestId}`);
 	const publishedDirectory = path.join(generatedRoot, requestId);
@@ -158,7 +190,10 @@ export async function compileCreatorMannequin({
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
 			result?.manifest?.recipeHash !== recipeHash ||
-			result?.manifest?.heightMetres !== heightMetres ||
+			!PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.every(
+				(key) =>
+					result?.manifest?.proportions?.[key] === recipe.proportions[key],
+			) ||
 			result?.manifest?.outputHash?.length !== 64 ||
 			result?.manifest?.deterministicBuild !== true
 		) {
@@ -268,7 +303,7 @@ export function createProceduralMannequinCompileMiddleware({
 			compileActive = true;
 			const result = await compileJob({
 				generatedRoot,
-				heightMetres: parsed.value.heightMetres,
+				proportions: parsed.value.proportions,
 			});
 			jsonResponse(response, 200, result);
 		} catch (error) {

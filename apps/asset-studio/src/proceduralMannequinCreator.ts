@@ -1,16 +1,62 @@
-import type { CharacterRecipeV1 } from "@adventure-game-builder/character-contract";
+import {
+	CHARACTER_BODY_PARAMETER_LIMITS,
+	type CharacterBodyParameters,
+	type CharacterRecipeV1,
+} from "@adventure-game-builder/character-contract";
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
-export const PROCEDURAL_MANNEQUIN_HEIGHT = {
-	defaultValue: 1.82,
-	max: 2.1,
-	min: 1.5,
-	step: 0.01,
-	units: "metres",
+
+export const PROCEDURAL_MANNEQUIN_BODY_PARAMETERS = {
+	height: {
+		...CHARACTER_BODY_PARAMETER_LIMITS.height,
+		label: "Height",
+		step: 0.01,
+	},
+	shoulderWidth: {
+		...CHARACTER_BODY_PARAMETER_LIMITS.shoulderWidth,
+		label: "Shoulders",
+		step: 0.01,
+	},
+	torsoLength: {
+		...CHARACTER_BODY_PARAMETER_LIMITS.torsoLength,
+		label: "Torso",
+		step: 0.01,
+	},
+	armLength: {
+		...CHARACTER_BODY_PARAMETER_LIMITS.armLength,
+		label: "Arms",
+		step: 0.01,
+	},
+	legLength: {
+		...CHARACTER_BODY_PARAMETER_LIMITS.legLength,
+		label: "Legs",
+		step: 0.01,
+	},
+	hipWidth: {
+		...CHARACTER_BODY_PARAMETER_LIMITS.hipWidth,
+		label: "Hips",
+		step: 0.01,
+	},
 } as const;
 
+export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
+	PROCEDURAL_MANNEQUIN_BODY_PARAMETERS,
+) as Array<keyof CharacterBodyParameters>;
+
 export type ProceduralMannequinManifest = {
+	anatomy: {
+		armLengthMultiplier: number;
+		armToLegRatio: number;
+		armToTorsoRatio: number;
+		heightScale: number;
+		hipWidthMultiplier: number;
+		legLengthMultiplier: number;
+		legToTorsoRatio: number;
+		shoulderToHipRatio: number;
+		shoulderWidthMultiplier: number;
+		torsoLengthMultiplier: number;
+	};
 	animationSet: string;
 	assetId: string;
 	bounds: {
@@ -22,6 +68,7 @@ export type ProceduralMannequinManifest = {
 	deterministicBuild: boolean;
 	generationDurationMs: number;
 	heightMetres: number;
+	proportions: CharacterBodyParameters;
 	influenceStatistics: {
 		maximumInfluences: number;
 		unweightedVertexCount: number;
@@ -58,23 +105,124 @@ export type ProceduralMannequinCompileFailure = {
 	status: "failed";
 };
 
-export function validateProceduralMannequinHeight(heightMetres: number) {
-	return Number.isFinite(heightMetres) &&
-		heightMetres >= PROCEDURAL_MANNEQUIN_HEIGHT.min &&
-		heightMetres <= PROCEDURAL_MANNEQUIN_HEIGHT.max
-		? { ok: true as const, value: heightMetres }
-		: {
-				message: `Height must be between ${PROCEDURAL_MANNEQUIN_HEIGHT.min.toFixed(2)} and ${PROCEDURAL_MANNEQUIN_HEIGHT.max.toFixed(2)} metres.`,
-				ok: false as const,
-			};
+function anatomyMultipliers(parameters: CharacterBodyParameters) {
+	return {
+		arm: 0.86 + parameters.armLength * 0.28,
+		hips: 0.84 + parameters.hipWidth * 0.32,
+		legs: 0.88 + parameters.legLength * 0.24,
+		shoulders: 0.82 + parameters.shoulderWidth * 0.36,
+		torso: 0.88 + parameters.torsoLength * 0.24,
+	};
+}
+
+export function validateProceduralMannequinBody(
+	parameters: CharacterBodyParameters,
+) {
+	const issues: Array<{ message: string; path: string }> = [];
+	for (const key of PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS) {
+		const value = parameters[key];
+		const limits = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
+		if (!Number.isFinite(value) || value < limits.min || value > limits.max) {
+			issues.push({
+				message: `${limits.label} must be between ${limits.min} and ${limits.max} ${limits.units}.`,
+				path: `$.body.parameters.${key}`,
+			});
+		}
+	}
+	if (issues.length === 0) {
+		const anatomy = anatomyMultipliers(parameters);
+		const armToTorso = anatomy.arm / anatomy.torso;
+		if (armToTorso < 0.82) {
+			issues.push({
+				message:
+					"Arms are impossibly short for the selected torso; increase Arms or shorten Torso.",
+				path: "$.body.parameters.armLength",
+			});
+		}
+		if (armToTorso > 1.28) {
+			issues.push({
+				message:
+					"Arms exceed the supported animation-rig reach; shorten Arms or lengthen Torso.",
+				path: "$.body.parameters.armLength",
+			});
+		}
+		const armToLeg = anatomy.arm / anatomy.legs;
+		if (armToLeg < 0.84) {
+			issues.push({
+				message:
+					"Arms are too short to maintain the supported thigh reach for these legs.",
+				path: "$.body.parameters.armLength",
+			});
+		}
+		if (armToLeg > 1.16) {
+			issues.push({
+				message:
+					"Arms extend below the supported thigh reach for these legs; shorten Arms or lengthen Legs.",
+				path: "$.body.parameters.armLength",
+			});
+		}
+		if (anatomy.legs / anatomy.torso < 0.82) {
+			issues.push({
+				message:
+					"Legs would intersect the lower torso; lengthen Legs or shorten Torso.",
+				path: "$.body.parameters.legLength",
+			});
+		}
+		if (anatomy.shoulders / anatomy.hips < 0.72) {
+			issues.push({
+				message:
+					"Shoulders are too narrow to keep the selected hips centred within rig tolerances.",
+				path: "$.body.parameters.shoulderWidth",
+			});
+		}
+	}
+	return issues.length === 0
+		? { issues: [], ok: true as const, value: parameters }
+		: { issues, ok: false as const };
+}
+
+function seedHash(seed: string) {
+	let hash = 2166136261;
+	for (let index = 0; index < seed.length; index += 1) {
+		hash = Math.imul(hash ^ seed.charCodeAt(index), 16777619);
+	}
+	return hash >>> 0;
+}
+
+function seededRandom(seed: string) {
+	let state = seedHash(seed);
+	return () => {
+		state += 0x6d2b79f5;
+		let value = state;
+		value = Math.imul(value ^ (value >>> 15), value | 1);
+		value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+		return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
+export function randomizeProceduralMannequinBody(seed: string) {
+	const random = seededRandom(seed);
+	for (let attempt = 0; attempt < 1_000; attempt += 1) {
+		const candidate = Object.fromEntries(
+			PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.map((key) => {
+				const limits = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
+				const steps = Math.round((limits.max - limits.min) / limits.step);
+				const value =
+					limits.min + Math.floor(random() * (steps + 1)) * limits.step;
+				return [key, Number(value.toFixed(key === "height" ? 2 : 2))];
+			}),
+		) as CharacterBodyParameters;
+		if (validateProceduralMannequinBody(candidate).ok) return candidate;
+	}
+	throw new Error("Seed did not produce a valid body within 1,000 attempts.");
 }
 
 export function createProceduralMannequinCompileRequest(
 	recipe: Pick<CharacterRecipeV1, "body">,
 ) {
 	return {
-		heightMetres: recipe.body.parameters.height,
-		version: 1 as const,
+		proportions: { ...recipe.body.parameters },
+		version: 2 as const,
 	};
 }
 
@@ -82,11 +230,9 @@ export async function requestProceduralMannequinCompile(
 	recipe: Pick<CharacterRecipeV1, "body">,
 	request: typeof fetch = fetch,
 ): Promise<ProceduralMannequinCompileResult> {
+	const validation = validateProceduralMannequinBody(recipe.body.parameters);
+	if (!validation.ok) throw new Error(validation.issues[0]?.message);
 	const compileRequest = createProceduralMannequinCompileRequest(recipe);
-	const heightValidation = validateProceduralMannequinHeight(
-		compileRequest.heightMetres,
-	);
-	if (!heightValidation.ok) throw new Error(heightValidation.message);
 	const response = await request(PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT, {
 		body: JSON.stringify(compileRequest),
 		headers: { "Content-Type": "application/json" },
@@ -105,7 +251,10 @@ export async function requestProceduralMannequinCompile(
 		);
 	}
 	if (
-		payload.manifest.heightMetres !== compileRequest.heightMetres ||
+		!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
+			(key) =>
+				payload.manifest.proportions[key] === compileRequest.proportions[key],
+		) ||
 		payload.manifest.outputHash.length !== 64 ||
 		payload.manifest.recipeHash.length !== 64 ||
 		!payload.validation.passed

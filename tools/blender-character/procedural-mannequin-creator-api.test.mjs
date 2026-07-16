@@ -5,24 +5,34 @@ import path from "node:path";
 import test from "node:test";
 import {
 	compileCreatorMannequin,
-	createRecipeForHeight,
+	createRecipeForProportions,
 	validateCreatorCompileRequest,
 } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
 import { hashProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
+
+const DEFAULT_PROPORTIONS = Object.freeze({
+	height: 1.82,
+	shoulderWidth: 0.5,
+	torsoLength: 0.5,
+	armLength: 0.5,
+	legLength: 0.5,
+	hipWidth: 0.5,
+});
 
 async function fakeCompiler({ outputDirectory, recipePath }) {
 	const recipe = JSON.parse(await readFile(recipePath, "utf8"));
 	const recipeHash = hashProceduralMannequinRecipe(recipe);
 	const outputHash =
-		recipe.proportions.heightMetres === 1.82 ? "a".repeat(64) : "b".repeat(64);
+		recipe.proportions.height === 1.82 ? "a".repeat(64) : "b".repeat(64);
 	const manifest = {
-		compilerVersion: "procedural-mannequin-blender-v0",
+		compilerVersion: "procedural-mannequin-blender-v1",
 		deterministicBuild: true,
 		generationDurationMs: 12,
-		heightMetres: recipe.proportions.heightMetres,
+		heightMetres: recipe.proportions.height,
+		proportions: recipe.proportions,
 		outputHash,
 		recipeHash,
-		validationVersion: "procedural-mannequin-roundtrip-v1",
+		validationVersion: "procedural-mannequin-roundtrip-v2",
 	};
 	await mkdir(outputDirectory, { recursive: true });
 	await Promise.all([
@@ -35,18 +45,24 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 	return { manifest };
 }
 
-test("validates the narrow creator compile request", () => {
+test("validates the six-parameter creator compile request", () => {
 	assert.equal(
-		validateCreatorCompileRequest({ heightMetres: 1.82, version: 1 }).ok,
+		validateCreatorCompileRequest({
+			proportions: DEFAULT_PROPORTIONS,
+			version: 2,
+		}).ok,
 		true,
 	);
 	assert.deepEqual(
-		validateCreatorCompileRequest({ heightMetres: "1.82", version: 1 }),
+		validateCreatorCompileRequest({
+			proportions: { ...DEFAULT_PROPORTIONS, height: "1.82" },
+			version: 2,
+		}),
 		{
 			issues: [
 				{
-					message: "Expected a finite height in metres.",
-					path: "$.heightMetres",
+					message: "Expected a finite number between 1.5 and 2.1 metres.",
+					path: "$.proportions.height",
 				},
 			],
 			ok: false,
@@ -54,12 +70,18 @@ test("validates the narrow creator compile request", () => {
 	);
 });
 
-test("adapts only height into a validated procedural recipe and stable hash", async () => {
-	const first = await createRecipeForHeight({ heightMetres: 1.82 });
-	const repeated = await createRecipeForHeight({ heightMetres: 1.82 });
-	const taller = await createRecipeForHeight({ heightMetres: 1.96 });
+test("adapts all body parameters into a validated recipe and stable hash", async () => {
+	const first = await createRecipeForProportions({
+		proportions: DEFAULT_PROPORTIONS,
+	});
+	const repeated = await createRecipeForProportions({
+		proportions: DEFAULT_PROPORTIONS,
+	});
+	const taller = await createRecipeForProportions({
+		proportions: { ...DEFAULT_PROPORTIONS, height: 1.96 },
+	});
 
-	assert.equal(first.proportions.heightMetres, 1.82);
+	assert.deepEqual(first.proportions, DEFAULT_PROPORTIONS);
 	assert.equal(
 		hashProceduralMannequinRecipe(first),
 		hashProceduralMannequinRecipe(repeated),
@@ -69,8 +91,10 @@ test("adapts only height into a validated procedural recipe and stable hash", as
 		hashProceduralMannequinRecipe(taller),
 	);
 	await assert.rejects(
-		createRecipeForHeight({ heightMetres: 1.2 }),
-		/Recipe validation failed.*heightMetres/u,
+		createRecipeForProportions({
+			proportions: { ...DEFAULT_PROPORTIONS, height: 1.2 },
+		}),
+		/Recipe validation failed.*height/u,
 	);
 });
 
@@ -82,7 +106,7 @@ test("publishes a successful compile and keeps it when a later compile fails", a
 		const successful = await compileCreatorMannequin({
 			compileImpl: fakeCompiler,
 			generatedRoot,
-			heightMetres: 1.82,
+			proportions: DEFAULT_PROPORTIONS,
 			now: () => new Date("2026-07-16T12:00:00.000Z"),
 			requestId: "11111111-1111-4111-8111-111111111111",
 		});
@@ -104,7 +128,7 @@ test("publishes a successful compile and keeps it when a later compile fails", a
 					throw new Error("synthetic validation failure");
 				},
 				generatedRoot,
-				heightMetres: 1.96,
+				proportions: { ...DEFAULT_PROPORTIONS, height: 1.96 },
 				requestId: "22222222-2222-4222-8222-222222222222",
 			}),
 			/synthetic validation failure/u,

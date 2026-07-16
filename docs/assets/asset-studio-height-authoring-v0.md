@@ -1,5 +1,9 @@
 # Asset Studio Height Authoring V0
 
+> Historical milestone. Body Proportions V1 supersedes the height-only request
+> and is documented in
+> [`asset-studio-body-proportions-v1.md`](asset-studio-body-proportions-v1.md).
+
 ## Result
 
 Height is the first Asset Studio parameter with a complete authoring loop:

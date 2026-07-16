@@ -19,6 +19,7 @@ import {
 } from "./blender-discovery.mjs";
 import {
 	canonicalizeProceduralMannequinRecipe,
+	deriveProceduralMannequinAnatomy,
 	GOLDEN_HUMANOID_SKELETON_CONTRACT,
 	GOLDEN_REFERENCE_ANIMATION_SET,
 	hashProceduralMannequinRecipe,
@@ -155,7 +156,7 @@ export async function validateInstalledProceduralMannequin({
 	const [validation, manifest, outputHash] = await Promise.all([
 		validateProceduralMannequinArtifact({
 			artifactPath,
-			expectedHeightMetres: parsed.value.proportions.heightMetres,
+			expectedHeightMetres: parsed.value.proportions.height,
 			templatePath,
 			workspaceRoot,
 		}),
@@ -168,8 +169,10 @@ export async function validateInstalledProceduralMannequin({
 		manifestGenerationDuration:
 			Number.isFinite(manifest.generationDurationMs) &&
 			manifest.generationDurationMs > 0,
-		manifestHeight:
-			manifest.heightMetres === parsed.value.proportions.heightMetres,
+		manifestHeight: manifest.heightMetres === parsed.value.proportions.height,
+		manifestProportions:
+			JSON.stringify(manifest.proportions) ===
+			JSON.stringify(parsed.value.proportions),
 		manifestOutputHash: manifest.outputHash === outputHash,
 		manifestRecipeHash:
 			manifest.recipeHash === hashProceduralMannequinRecipe(parsed.value),
@@ -207,6 +210,7 @@ export async function compileProceduralMannequin({
 		);
 	}
 	const recipe = parsed.value;
+	const anatomy = deriveProceduralMannequinAnatomy(recipe.proportions);
 	const recipeHash = hashProceduralMannequinRecipe(recipe);
 	const blender = requestedBlender ?? (await discoverBlender());
 	const blenderVersion = await readBlenderVersion(blender, { execFileImpl });
@@ -252,13 +256,13 @@ export async function compileProceduralMannequin({
 		const [firstValidation, secondValidation] = await Promise.all([
 			validateProceduralMannequinArtifact({
 				artifactPath: first.outputPath,
-				expectedHeightMetres: recipe.proportions.heightMetres,
+				expectedHeightMetres: recipe.proportions.height,
 				templatePath,
 				workspaceRoot,
 			}),
 			validateProceduralMannequinArtifact({
 				artifactPath: second.outputPath,
-				expectedHeightMetres: recipe.proportions.heightMetres,
+				expectedHeightMetres: recipe.proportions.height,
 				templatePath,
 				workspaceRoot,
 			}),
@@ -267,6 +271,23 @@ export async function compileProceduralMannequin({
 			throw new Error(
 				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, second: secondValidation.checks })}`,
 			);
+		}
+		for (const pass of [first, second]) {
+			for (const [key, expected] of Object.entries(anatomy)) {
+				if (Math.abs(pass.report.anatomy?.[key] - expected) > 0.000001) {
+					throw new Error(
+						`Blender anatomy mismatch for ${key}; expected ${expected}.`,
+					);
+				}
+			}
+			if (
+				pass.report.anatomy.maximumBoneRelativeAnchorOffset > 0.45 ||
+				pass.report.anatomy.lateralCentreError > 0.000001
+			) {
+				throw new Error(
+					"Generated bone-relative anchors are outside compiler tolerances.",
+				);
+			}
 		}
 		const determinism = {
 			binaryDeterministic: first.outputHash === second.outputHash,
@@ -324,6 +345,7 @@ export async function compileProceduralMannequin({
 		];
 		const geometry = firstValidation.geometry;
 		const manifest = {
+			anatomy,
 			animationProfile: "mixamo-to-quaternius-v2",
 			animationSet: GOLDEN_REFERENCE_ANIMATION_SET,
 			assetId: "procedural-mannequin-v0",
@@ -348,7 +370,7 @@ export async function compileProceduralMannequin({
 				determinism.normalizedSemanticDeterministic,
 			engineForward: "-Z after registry 180-degree Y rotation",
 			geometryProfile: recipe.geometry.profile,
-			heightMetres: recipe.proportions.heightMetres,
+			heightMetres: recipe.proportions.height,
 			influenceStatistics: {
 				maximumInfluences: geometry.maximumInfluences,
 				maximumWeightSumError: geometry.maximumWeightSumError,
@@ -366,6 +388,7 @@ export async function compileProceduralMannequin({
 			normalizedSemanticHash: firstValidation.semanticHash,
 			outputFile: OUTPUT_NAMES.glb,
 			outputHash: await hashFile(outputPath),
+			proportions: recipe.proportions,
 			recipeHash,
 			recipeId: recipe.id,
 			recipeVersion: recipe.version,
@@ -406,7 +429,8 @@ export async function compileProceduralMannequin({
 			`blender=${blenderVersion.version}`,
 			`blenderBuild=${blenderVersion.buildHash}`,
 			`recipeHash=${recipeHash}`,
-			`heightMetres=${recipe.proportions.heightMetres}`,
+			`heightMetres=${recipe.proportions.height}`,
+			`proportions=${JSON.stringify(recipe.proportions)}`,
 			`firstOutputHash=${first.outputHash}`,
 			`secondOutputHash=${second.outputHash}`,
 			`binaryDeterministic=${determinism.binaryDeterministic}`,

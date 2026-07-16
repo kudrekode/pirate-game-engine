@@ -20,32 +20,39 @@ async function loadRecipe() {
 	return JSON.parse(await readFile(RECIPE_PATH, "utf8"));
 }
 
-test("validates and stably hashes the authored V0 recipe", async () => {
+test("validates and stably hashes all six authored V1 parameters", async () => {
 	const recipe = await loadRecipe();
 	const parsed = validateProceduralMannequinRecipe(recipe);
 	assert.equal(parsed.ok, true);
-	assert.equal(
-		hashProceduralMannequinRecipe(recipe),
-		"48d66f2ceba6baa946dbaaceb91045b694647734e50c57c49837eb670e7769ed",
-	);
+	assert.equal(hashProceduralMannequinRecipe(recipe).length, 64);
 	assert.equal(
 		createHash("sha256")
 			.update(canonicalizeProceduralMannequinRecipe(recipe))
 			.digest("hex"),
 		hashProceduralMannequinRecipe(recipe),
 	);
-	const taller = structuredClone(recipe);
-	taller.proportions.heightMetres = 1.96;
-	assert.notEqual(
-		hashProceduralMannequinRecipe(taller),
-		hashProceduralMannequinRecipe(recipe),
-	);
+	for (const key of [
+		"height",
+		"shoulderWidth",
+		"torsoLength",
+		"armLength",
+		"legLength",
+		"hipWidth",
+	]) {
+		const changed = structuredClone(recipe);
+		changed.proportions[key] += 0.01;
+		assert.notEqual(
+			hashProceduralMannequinRecipe(changed),
+			hashProceduralMannequinRecipe(recipe),
+			`${key} must change the recipe hash`,
+		);
+	}
 });
 
 test("rejects unsupported contracts and invalid numeric ranges", async () => {
 	const recipe = await loadRecipe();
 	const invalid = structuredClone(recipe);
-	invalid.proportions.heightMetres = 4;
+	invalid.proportions.height = 4;
 	invalid.geometry.radialSegments = 7.5;
 	invalid.material.roughness = -1;
 	invalid.skeleton.contract = "parallel-rig-v0";
@@ -53,7 +60,7 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 	assert.equal(parsed.ok, false);
 	const issuePaths = parsed.issues.map((entry) => entry.path);
 	for (const path of [
-		"$.proportions.heightMetres",
+		"$.proportions.height",
 		"$.geometry.radialSegments",
 		"$.material.roughness",
 		"$.skeleton.contract",
@@ -63,6 +70,45 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 			`Missing validation issue for ${path}`,
 		);
 	}
+});
+
+test("rejects anatomically impossible parameter combinations", async () => {
+	const recipe = await loadRecipe();
+	const invalid = structuredClone(recipe);
+	invalid.proportions.armLength = 0;
+	invalid.proportions.torsoLength = 1;
+	invalid.proportions.legLength = 0;
+	const parsed = validateProceduralMannequinRecipe(invalid);
+	assert.equal(parsed.ok, false);
+	assert.ok(
+		parsed.issues.some(
+			(issue) =>
+				issue.path === "$.proportions.armLength" &&
+				issue.message.includes("impossibly short"),
+		),
+	);
+	assert.ok(
+		parsed.issues.some((issue) => issue.path === "$.proportions.legLength"),
+	);
+});
+
+test("migrates a height-only V0 procedural recipe", async () => {
+	const recipe = await loadRecipe();
+	const legacy = {
+		...recipe,
+		version: 0,
+		proportions: { heightMetres: 1.9 },
+	};
+	const parsed = validateProceduralMannequinRecipe(legacy);
+	assert.equal(parsed.ok, true);
+	assert.deepEqual(parsed.value.proportions, {
+		height: 1.9,
+		shoulderWidth: 0.5,
+		torsoLength: 0.5,
+		armLength: 0.5,
+		legLength: 0.5,
+		hipWidth: 0.5,
+	});
 });
 
 test("builds a narrow headless Blender invocation and parses compiler modes", () => {
@@ -102,9 +148,10 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.jointCount, 65);
 	assert.equal(result.manifest.influenceStatistics.unweightedVertexCount, 0);
 	assert.equal(result.manifest.heightMetres, 1.82);
+	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v1",
+		"procedural-mannequin-roundtrip-v2",
 	);
 	assert.ok(result.manifest.generationDurationMs > 0);
 	assert.equal(result.validation.animations.idle.passed, true);

@@ -11,12 +11,17 @@
 		"baseColor": "#d6a35f",
 		"roughness": 0.72
 	},
-	"name": "Procedural Mannequin V0",
+	"name": "Procedural Mannequin Body Proportions V1",
 	"proportions": {
-		"heightMetres": 1.82
+		"armLength": 0.5,
+		"height": 1.82,
+		"hipWidth": 0.5,
+		"legLength": 0.5,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5
 	},
 	"skeleton": {
 		"contract": "golden-humanoid-v0"
 	},
-	"version": 0
+	"version": 1
 }

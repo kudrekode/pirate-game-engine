@@ -1,12 +1,26 @@
 {
 	"artifactStatus": "procedural-compiled-validated",
 	"blenderReport": {
+		"anatomy": {
+			"armLengthMultiplier": 1,
+			"armToLegRatio": 1,
+			"armToTorsoRatio": 1,
+			"heightScale": 1,
+			"hipWidthMultiplier": 1,
+			"lateralCentreError": 8.940696716308594e-8,
+			"legLengthMultiplier": 1,
+			"legToTorsoRatio": 1,
+			"maximumBoneRelativeAnchorOffset": 2.9802322387695312e-8,
+			"shoulderToHipRatio": 1,
+			"shoulderWidthMultiplier": 1,
+			"torsoLengthMultiplier": 1
+		},
 		"animationSet": "golden-reference-v0",
 		"blender": {
 			"buildHash": "fbe6228777e7",
 			"version": "5.2.0 LTS"
 		},
-		"compilerVersion": "procedural-mannequin-blender-v0",
+		"compilerVersion": "procedural-mannequin-blender-v1",
 		"geometry": {
 			"materialCount": 1,
 			"meshCount": 1,
@@ -161,7 +175,7 @@
 			"outputHeightMetres": 1.82,
 			"rootScale": 1.052684501627521
 		},
-		"outputHash": "20e73b2dff59ed146a5172837239d167781c1041258901f85beae48e4d69a4b6",
+		"outputHash": "29b7f4e30ddb2c3c339b8557af61538890ffdb2ba0768acbc902d8b40ccf8613",
 		"recipeId": "procedural-mannequin-v0",
 		"removedVendorMeshNames": [
 			"Eyebrows",
@@ -836,7 +850,7 @@
 		},
 		"templateHash": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"warnings": [
-			"V0 uses deliberately rigid body-part weighting with overlapping joint volumes.",
+			"V1 uses deliberately rigid body-part weighting with overlapping joint volumes.",
 			"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
 			"The Golden skeleton is a compatibility template, not the future canonical generated rig."
 		]
@@ -844,10 +858,10 @@
 	"buildMode": "derived-artifact",
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "20e73b2dff59ed146a5172837239d167781c1041258901f85beae48e4d69a4b6",
+		"firstOutputHash": "29b7f4e30ddb2c3c339b8557af61538890ffdb2ba0768acbc902d8b40ccf8613",
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "20e73b2dff59ed146a5172837239d167781c1041258901f85beae48e4d69a4b6",
+		"secondOutputHash": "29b7f4e30ddb2c3c339b8557af61538890ffdb2ba0768acbc902d8b40ccf8613",
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -856,8 +870,8 @@
 			"idle": {
 				"finiteKeyframes": true,
 				"maximumBoneLengthRelativeError": 2.4328978875942653e-7,
-				"maximumBoundsExpansion": 0.8138664286373656,
-				"minimumBoundsExpansion": 0.812137538570852,
+				"maximumBoundsExpansion": 0.8138664272433572,
+				"minimumBoundsExpansion": 0.8121375371657802,
 				"missingTrackTargets": [],
 				"passed": true,
 				"poseAdvancement": 0.013084739988241945,
@@ -869,8 +883,8 @@
 			"walk": {
 				"finiteKeyframes": true,
 				"maximumBoneLengthRelativeError": 8.294229332239667e-7,
-				"maximumBoundsExpansion": 0.8992233879625043,
-				"minimumBoundsExpansion": 0.8110241734018753,
+				"maximumBoundsExpansion": 0.8992233862734735,
+				"minimumBoundsExpansion": 0.8110241720618614,
 				"missingTrackTargets": [],
 				"passed": true,
 				"poseAdvancement": 0.9068515250382854,
@@ -954,7 +968,7 @@
 			"warnings": []
 		},
 		"passed": true,
-		"semanticHash": "29d9c5ad9e148250b154123cb40e3d406b60ea3a707883bd67438b3edd410d8a",
+		"semanticHash": "bf2ae95922f77d9dda21e2f670bf0854b2bdb3a71847032c83d916fd7f740ffe",
 		"skeletonContract": {
 			"hierarchyMismatches": [],
 			"maximumRestRotationDegrees": 0.035105938173476486,
@@ -1539,7 +1553,7 @@
 						},
 						"position": {
 							"count": 648,
-							"hash": "0e69ae09ac3591efb0cda30a7bebea66ac290df822fd864688469db98946f11b",
+							"hash": "bb8cea66ae024bfe0d274e199e21617b03ab9fe7feab1f0efd5ee91cda9db8dd",
 							"itemSize": 3
 						},
 						"skinIndex": {
@@ -1575,16 +1589,16 @@
 			"symmetry": true
 		},
 		"passed": true,
-		"semanticHash": "29d9c5ad9e148250b154123cb40e3d406b60ea3a707883bd67438b3edd410d8a",
+		"semanticHash": "bf2ae95922f77d9dda21e2f670bf0854b2bdb3a71847032c83d916fd7f740ffe",
 		"skeletonSignature": "93809fef8050dc5f1610f34b6c8e43b72867499b2deb51ebf05c207f9a648c85"
 	},
 	"sourceHashesAfter": {
-		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "061b2e0c5a5b815e30908936d69b57a784667e08763473bb53b95b57f5db064a",
+		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "58d7bf03ed007d8507a65ec3dfc87f35ef6a7c4788a4d47ceda88fdca169cfa9",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f"
 	},
 	"sourceHashesBefore": {
-		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "061b2e0c5a5b815e30908936d69b57a784667e08763473bb53b95b57f5db064a",
+		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "58d7bf03ed007d8507a65ec3dfc87f35ef6a7c4788a4d47ceda88fdca169cfa9",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f"
 	},

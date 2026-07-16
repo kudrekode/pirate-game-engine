@@ -39,7 +39,7 @@ blender --background --factory-startup --python-exit-code 1
 See `docs/assets/golden-reference-animation-retargeting-spike.md` for hashes,
 format choice, determinism, Three.js round trip, browser evidence, and limits.
 
-## Procedural Mannequin V0
+## Procedural Mannequin Body Proportions V1
 
 The first narrow recipe compiler is implemented separately from the animation
 bake:
@@ -52,17 +52,18 @@ npm run test:procedural-mannequin
 
 `generate_procedural_mannequin.py` imports only the immutable Golden skeleton
 template, removes all vendor presentation data, generates one deterministic
-engineering mannequin, applies explicit weights, and exports a grounded GLB.
+engineering mannequin from six validated body parameters, applies explicit
+weights, and exports a grounded GLB.
 The Node entry point validates the recipe, runs two isolated Blender passes,
 checks source immutability, performs the production Three.js round trip, and
 writes manifest/diagnostic artifacts. See
 `docs/assets/procedural-mannequin-v0.md` for the decision, hashes, metrics,
 visual evidence, and limitations.
 
-## Asset Studio Height Authoring
+## Asset Studio Body Authoring
 
-Asset Studio's first creator feature reuses the CharacterRecipe height field and
-submits `{ version: 1, heightMetres }` to a development-only Vite middleware.
+Asset Studio submits the six `CharacterRecipeV1.body.parameters` values in a
+versioned request to a development-only Vite middleware.
 The server writes an isolated procedural recipe snapshot and calls the same
 `compileProceduralMannequin` function above. Blender and Node compiler code are
 never imported into the browser bundle.
@@ -70,7 +71,7 @@ never imported into the browser bundle.
 Successful jobs are served through immutable local URLs below ignored
 `test-results/asset-studio-creator/`. Failed jobs are deleted and never replace
 the active preview. The response includes the generated timestamp and manifest;
-the manifest includes authored height, recipe/asset hashes, generation duration,
-compiler version, and validation version. See
-`docs/assets/asset-studio-height-authoring-v0.md` for the complete boundary and
-measured determinism evidence.
+the manifest includes authored proportions, derived anatomy, recipe/asset
+hashes, generation duration, compiler version, and validation version. See
+`docs/assets/asset-studio-body-proportions-v1.md` for the complete boundary and
+measured validation evidence.

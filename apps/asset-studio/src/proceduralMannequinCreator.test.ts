@@ -2,9 +2,19 @@ import { createDefaultCharacterRecipe } from "@adventure-game-builder/character-
 import { describe, expect, it, vi } from "vitest";
 import {
 	createProceduralMannequinCompileRequest,
+	randomizeProceduralMannequinBody,
 	requestProceduralMannequinCompile,
-	validateProceduralMannequinHeight,
+	validateProceduralMannequinBody,
 } from "./proceduralMannequinCreator";
+
+const DEFAULT_PROPORTIONS = {
+	height: 1.82,
+	shoulderWidth: 0.5,
+	torsoLength: 0.5,
+	armLength: 0.5,
+	legLength: 0.5,
+	hipWidth: 0.5,
+};
 
 function successfulPayload(heightMetres = 1.82) {
 	return {
@@ -19,10 +29,23 @@ function successfulPayload(heightMetres = 1.82) {
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v0",
+			anatomy: {
+				armLengthMultiplier: 1,
+				armToLegRatio: 1,
+				armToTorsoRatio: 1,
+				heightScale: heightMetres / 1.82,
+				hipWidthMultiplier: 1,
+				legLengthMultiplier: 1,
+				legToTorsoRatio: 1,
+				shoulderToHipRatio: 1,
+				shoulderWidthMultiplier: 1,
+				torsoLengthMultiplier: 1,
+			},
+			compilerVersion: "procedural-mannequin-blender-v1",
 			deterministicBuild: true,
 			generationDurationMs: 1200,
 			heightMetres,
+			proportions: { ...DEFAULT_PROPORTIONS, height: heightMetres },
 			influenceStatistics: {
 				maximumInfluences: 1,
 				unweightedVertexCount: 0,
@@ -35,10 +58,10 @@ function successfulPayload(heightMetres = 1.82) {
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 0,
+			recipeVersion: 1,
 			skeletonContract: "golden-humanoid-v0",
 			triangleCount: 1108,
-			validationVersion: "procedural-mannequin-roundtrip-v1",
+			validationVersion: "procedural-mannequin-roundtrip-v2",
 			vertexCount: 648,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
@@ -46,26 +69,52 @@ function successfulPayload(heightMetres = 1.82) {
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v1",
+			version: "procedural-mannequin-roundtrip-v2",
 		},
 	};
 }
 
 describe("procedural mannequin creator client", () => {
-	it("validates the compiler height range", () => {
-		expect(validateProceduralMannequinHeight(1.5).ok).toBe(true);
-		expect(validateProceduralMannequinHeight(2.1).ok).toBe(true);
-		expect(validateProceduralMannequinHeight(1.49).ok).toBe(false);
-		expect(validateProceduralMannequinHeight(Number.NaN).ok).toBe(false);
+	it("validates ranges and cross-parameter anatomy", () => {
+		expect(validateProceduralMannequinBody(DEFAULT_PROPORTIONS).ok).toBe(true);
+		expect(
+			validateProceduralMannequinBody({
+				...DEFAULT_PROPORTIONS,
+				height: 1.49,
+			}).ok,
+		).toBe(false);
+		const impossible = validateProceduralMannequinBody({
+			...DEFAULT_PROPORTIONS,
+			armLength: 0,
+			torsoLength: 1,
+		});
+		expect(impossible.ok).toBe(false);
+		expect(impossible.issues[0]?.message).toContain("impossibly short");
 	});
 
-	it("builds a compile request from the existing CharacterRecipe height", () => {
+	it("builds a compile request from all CharacterRecipe body parameters", () => {
 		const recipe = createDefaultCharacterRecipe();
 		recipe.body.parameters.height = 1.93;
 		expect(createProceduralMannequinCompileRequest(recipe)).toEqual({
-			heightMetres: 1.93,
-			version: 1,
+			proportions: { ...DEFAULT_PROPORTIONS, height: 1.93 },
+			version: 2,
 		});
+	});
+
+	it("randomises reproducibly from a deterministic seed and only emits valid recipes", () => {
+		const first = randomizeProceduralMannequinBody("captain-42");
+		const repeated = randomizeProceduralMannequinBody("captain-42");
+		const different = randomizeProceduralMannequinBody("captain-43");
+		expect(repeated).toEqual(first);
+		expect(different).not.toEqual(first);
+		expect(validateProceduralMannequinBody(first).ok).toBe(true);
+		for (let index = 0; index < 100; index += 1) {
+			expect(
+				validateProceduralMannequinBody(
+					randomizeProceduralMannequinBody(`range-seed-${index}`),
+				).ok,
+			).toBe(true);
+		}
 	});
 
 	it("waits for a validated compile completion", async () => {
@@ -87,7 +136,10 @@ describe("procedural mannequin creator client", () => {
 		expect(request).toHaveBeenCalledWith(
 			"/__asset-studio/procedural-mannequin/compile",
 			expect.objectContaining({
-				body: JSON.stringify({ heightMetres: 1.82, version: 1 }),
+				body: JSON.stringify({
+					proportions: DEFAULT_PROPORTIONS,
+					version: 2,
+				}),
 				method: "POST",
 			}),
 		);
