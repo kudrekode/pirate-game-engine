@@ -29,6 +29,7 @@
 - While assets load or fail, the renderer falls back to placeholder meshes and reports diagnostics.
 - The default demo assigns real pirate chest and pirate small ship assets.
 - The editor preview and runtime both use the shared visual renderer/cache/clone path.
+- The shared animation registry provides validated offline-baked Golden Reference idle and walk GLBs; playback is presentation-only and gameplay movement remains grid-authoritative.
 - Editor 3D view supports orbit, pan, zoom, camera presets, accurate terrain/entity picking, selection sync, entity dragging, and 3D placement.
 - Terrain tools include drag painting, brush/line/rectangle/fill gestures, height sculpting, brush falloff, and polished brush previews.
 - Terrain can render in blocky or smooth mode.
@@ -58,7 +59,7 @@ crowds need a new measured budget before they become a target.
 
 ## Current Limitations
 
-- No skeletal/model animation system yet.
+- No general-purpose skeletal/model animation compiler; the current offline-baked Golden Reference playback is pair-specific.
 - No asset upload browser/library yet; registry entries are built in.
 - No model normalisation pipeline for consistent scale, origin, orientation, materials, or texture packaging.
 - Some pirate GLBs currently log missing `Textures/colormap.png` warnings in the browser console, even when assigned assets render and no fallback is used.
@@ -84,6 +85,6 @@ Visual differences, imported asset styling, water/coast presentation, and camera
 3. Sky / Atmosphere Presentation V1.
 4. Model Normalisation / Asset Transform Defaults V1.
 5. Pirate Vertical Slice Dressing V1 using current registry/visual-renderer paths.
-6. Character/NPC Model + Animation V1 after model normalisation.
+6. Deterministic procedural mannequin and Character/NPC Animation V1 after model normalisation. See [`docs/ASSET_STUDIO_ARCHITECTURE.md`](ASSET_STUDIO_ARCHITECTURE.md).
 7. Asset Upload/Library V1 later, once built-in registry workflows are stable.
 8. Diagonal/free movement later, after visual, animation, and parity work clarify requirements.

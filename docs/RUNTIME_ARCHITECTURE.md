@@ -17,6 +17,33 @@ Adapters are not separate engines. They translate input, rendering, camera, anim
 
 `GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 
+### Animation Asset Boundary
+
+The current animation pipeline is an offline compilation and presentation path:
+
+```text
+vendor Mixamo FBX
+  -> immutable source/provenance records
+  -> versioned retarget profile
+  -> headless Blender bake
+  -> deterministic Golden-target GLB
+  -> Three.js round-trip validation
+  -> shared animation registry
+  -> Asset Studio / editor / runtime
+```
+
+Blender is an offline compiler implementation detail; it is not a runtime
+dependency. Production/default playback uses offline-baked artifacts. Runtime
+retargeting V2 remains an experimental comparison path only. The current
+`mixamo-to-quaternius-v2` profile is specific to this verified source/target
+skeleton pair. Walk artifacts are in-place: horizontal root motion is
+neutralized while vertical hip movement is retained, and gameplay movement
+remains authoritative. Vendor assets are immutable; derived assets are
+reproducible compiled artifacts. Full per-clip GLBs currently duplicate
+mesh/material/texture data as a proven but temporary format choice. The
+[detailed spike](assets/golden-reference-animation-retargeting-spike.md)
+contains the measurements and validation evidence.
+
 ### Dual Character Presentation
 
 Player and NPC gameplay data remains renderer-independent. `mapAvatarId` and

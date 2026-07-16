@@ -3,11 +3,14 @@
 ## Purpose
 
 `Superhero_Male_FullBody.gltf` is the first Golden Reference Humanoid for the
-Adventure Game Builder and Asset Studio work. It validates the existing
+Adventure Game Builder and Asset Studio work. It serves as a loader fixture,
+skeleton fixture, animation-retarget target, offline compiler target, and
+runtime/editor/Asset Studio validation asset. It validates the existing
 registry, glTF loader/cache, material preparation, asset analysis,
 `SkeletonUtils` cloning, shared Three renderer, editor preview, runtime
-presentation, and diagnostics path. It is an engineering fixture, not a
-production character-art choice or Asset Studio output.
+presentation, and diagnostics path. It is an engineering fixture, not the
+final production humanoid, a recipe-generated character, a completed
+Sims-like character, or the long-term crowd-budget default.
 
 ## Source And Licence
 

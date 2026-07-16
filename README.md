@@ -41,7 +41,14 @@ The Phaser runtime remains the default and reference 2D playable runtime. Pressi
 
 Both runtime adapters use shared runtime helpers and `RuntimeSession` state for gameplay semantics. Movement, interaction discovery, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, and progression should stay in shared runtime code rather than being reimplemented inside Phaser or Three.js render adapters.
 
-The Three.js runtime is experimental. It now supports placeholder and registry-backed GLB presentation, visual movement smoothing, multiple camera modes, water/coastline visuals, and diagnostics, but still needs animation, model normalisation, UI polish, camera collision/framing polish, and broader parity/contract testing before it can be considered production-quality.
+The Three.js runtime is experimental. It now supports placeholder and registry-backed GLB presentation, offline-baked Golden Reference animation playback, visual movement smoothing, multiple camera modes, water/coastline visuals, and diagnostics. It still needs model normalisation, UI polish, camera collision/framing polish, and broader parity/contract testing before it can be considered production-quality.
+
+Character animation currently follows the documented offline pipeline: immutable
+Mixamo source/provenance records are retargeted by a versioned headless Blender
+profile into deterministic Golden-target GLBs, validated through Three.js, and
+registered for Asset Studio, the editor, and runtime presentation. See
+[`docs/ASSET_STUDIO_ARCHITECTURE.md`](docs/ASSET_STUDIO_ARCHITECTURE.md) and the
+[Golden Reference retargeting spike](docs/assets/golden-reference-animation-retargeting-spike.md).
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 

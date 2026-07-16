@@ -92,6 +92,32 @@ The V0 palette is intentionally constrained:
 
 Values are `#RRGGBB` colors. V0 does not expose material node graphs, shader graphs, texture generation, or arbitrary material authoring.
 
+## Current Animation Pipeline
+
+The proven Golden Reference pipeline is:
+
+```text
+vendor Mixamo FBX
+  -> immutable source/provenance records
+  -> versioned retarget profile
+  -> headless Blender bake
+  -> deterministic Golden-target GLB
+  -> Three.js round-trip validation
+  -> shared animation registry
+  -> Asset Studio / editor / runtime
+```
+
+Blender is an offline compiler implementation detail. Production/default
+playback uses offline-baked artifacts; runtime retargeting V2 is retained only
+as an experimental comparison path. `mixamo-to-quaternius-v2` is specific to
+the verified Mixamo/Quaternius source/target skeleton pair. Walk artifacts are
+in-place, with horizontal root motion neutralized and vertical hip movement
+retained, while gameplay movement remains authoritative. Vendor assets are
+immutable and derived assets are reproducible compiled artifacts. Full
+per-clip GLBs currently duplicate mesh/material/texture data as a proven but
+temporary format choice. See the [retargeting spike](assets/golden-reference-animation-retargeting-spike.md)
+for detailed measurements and evidence.
+
 ## Animation Sets
 
 Animation sets map semantic states to stable clip references:
@@ -104,13 +130,11 @@ Animation sets map semantic states to stable clip references:
 
 The shape is compatible in spirit with the existing Three character registry, where semantic states map to asset ids and clip names. The shared contract does not import Three.js, GLTF loader code, or game runtime presentation modules.
 
-General production retargeting is not implemented in V0. The exact Mixamo-to-
-Quaternius Golden Reference pair does have a proven deterministic offline
-Blender profile. It applies explicit source/target rest-frame deltas to 22
-principal bones, leaves fingers/helpers at rest, and exports verified target
-GLBs. Those idle and walk artifacts enter the shared presentation animation
-contract only after deterministic generation, Three.js round-trip, clone, and
-browser visual gates. Runtime retarget JSON remains an explicit diagnostic.
+General production retargeting is not implemented in V0. The exact pair has a
+proven deterministic offline Blender profile; its idle and walk artifacts enter
+the shared presentation animation contract only after deterministic generation,
+Three.js round-trip, clone, and browser visual gates. Runtime retarget JSON
+remains an explicit diagnostic.
 
 ## Browser Preview
 
@@ -132,6 +156,19 @@ is reported and never silently falls back.
 
 Future previews may load compiled or golden-kit assets, but live Three.js objects must stay in app presentation code, not shared recipe contracts.
 
+## Current Asset Studio Capabilities
+
+The current reference preview provides:
+
+- A real Three.js skinned preview with orbit and zoom controls.
+- Rest, Idle, Walk, and Play/Pause controls.
+- Offline-baked animation playback.
+- Compiler/artifact metadata and diagnostics.
+- Explicit reference-fixture status.
+
+Still missing are procedural geometry, recipe compilation, body morphing,
+clothing, hairstyles as creator slots, and export of user-authored characters.
+
 ## Compiler Boundary
 
 The planned compiler boundary is transport-neutral. The shared compiler contract defines request and result JSON for a future compiler that may run locally, inside a desktop wrapper, in a container, or remotely.
@@ -144,6 +181,16 @@ blender --background \
   -- \
   --request request.json \
   --output-dir output/
+```
+
+The intended long-term flow is:
+
+```text
+CharacterRecipe
+  -> Blender compiler
+  -> GLB + metadata + diagnostics
+  -> Asset Studio preview
+  -> game-engine registry/runtime
 ```
 
 The Asset Studio app still does not execute Blender and does not include a fake
@@ -187,6 +234,12 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - Blender compiler boundary documentation
 - deterministic Golden Reference offline-bake tooling and validated artifacts
 
+The current Golden Reference is a loader fixture, skeleton fixture,
+animation-retarget target, offline compiler target, and runtime/editor/Asset
+Studio validation asset. It is not the final production humanoid, a
+recipe-generated character, a completed Sims-like character, or the long-term
+crowd-budget default.
+
 ## V0 Does Not Include
 
 - humanoid mesh generation
@@ -203,9 +256,13 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - asset upload into the game editor
 - moving the root game app into `apps/game-engine`
 
-## Golden-Kit Dependency
+## Next Milestone
 
-The next milestone must validate the humanoid contract against a real golden kit before production assumptions are frozen. The kit should test scale, origin, forward axis, pose, bone names, skinning quality, animation compatibility, metadata output, and round-trip import into the game editor.
+The next milestone is a deterministic procedural mannequin: Blender Python
+creates simple deterministic humanoid geometry, a Golden/canonical skeleton,
+deterministic skinning, baked Idle/Walk, and GLB output, followed by Asset Studio
+preview and game-engine round trip. The detailed Golden Reference measurements
+remain in the [retargeting spike](assets/golden-reference-animation-retargeting-spike.md).
 
 ## Future Deployment Models
 
