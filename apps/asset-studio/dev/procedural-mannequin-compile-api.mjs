@@ -20,7 +20,8 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
-export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 2;
+export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 3;
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
 const WORKSPACE_ROOT = path.resolve(
@@ -100,12 +101,45 @@ export function validateCreatorCompileRequest(value) {
 			if (!anatomy.ok) issues.push(...anatomy.issues);
 		}
 	}
+	if (
+		typeof value.appearance !== "object" ||
+		value.appearance === null ||
+		Array.isArray(value.appearance)
+	) {
+		issues.push({ message: "Expected skin appearance.", path: "$.appearance" });
+	} else {
+		if (
+			typeof value.appearance.skinColor !== "string" ||
+			!HEX_COLOR_PATTERN.test(value.appearance.skinColor)
+		) {
+			issues.push({
+				message: "Expected a #RRGGBB sRGB color string.",
+				path: "$.appearance.skinColor",
+			});
+		}
+		const roughness = value.appearance.skinRoughness;
+		if (
+			typeof roughness !== "number" ||
+			!Number.isFinite(roughness) ||
+			roughness < PROCEDURAL_MANNEQUIN_LIMITS.skinRoughness.min ||
+			roughness > PROCEDURAL_MANNEQUIN_LIMITS.skinRoughness.max
+		) {
+			issues.push({
+				message: "Expected a finite roughness between 0 and 1.",
+				path: "$.appearance.skinRoughness",
+			});
+		}
+	}
 	return issues.length > 0
 		? { issues, ok: false }
 		: {
 				issues: [],
 				ok: true,
 				value: {
+					appearance: {
+						skinColor: value.appearance.skinColor.toLowerCase(),
+						skinRoughness: value.appearance.skinRoughness,
+					},
 					proportions: Object.fromEntries(
 						PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.map((key) => [
 							key,
@@ -118,6 +152,7 @@ export function validateCreatorCompileRequest(value) {
 }
 
 export async function createRecipeForProportions({
+	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
 		PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
@@ -127,6 +162,21 @@ export async function createRecipeForProportions({
 	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
 	const candidate = {
 		...baseRecipe,
+		appearance: {
+			skin: {
+				color:
+					appearance?.skinColor ??
+					baseRecipe.appearance?.skin?.color ??
+					baseRecipe.material?.baseColor ??
+					"#c98f65",
+				colorSpace: "srgb",
+				roughness:
+					appearance?.skinRoughness ??
+					baseRecipe.appearance?.skin?.roughness ??
+					baseRecipe.material?.roughness ??
+					0.72,
+			},
+		},
 		proportions: {
 			...baseRecipe.proportions,
 			...proportions,
@@ -146,6 +196,7 @@ export async function createRecipeForProportions({
 }
 
 export async function compileCreatorMannequin({
+	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
 		PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
@@ -160,6 +211,7 @@ export async function compileCreatorMannequin({
 	requestId = randomUUID(),
 } = {}) {
 	const recipe = await createRecipeForProportions({
+		appearance,
 		baseRecipePath,
 		proportions,
 	});
@@ -190,6 +242,10 @@ export async function compileCreatorMannequin({
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
 			result?.manifest?.recipeHash !== recipeHash ||
+			result?.manifest?.appearance?.skin?.authoredColor !==
+				recipe.appearance.skin.color ||
+			result?.manifest?.appearance?.skin?.authoredRoughness !==
+				recipe.appearance.skin.roughness ||
 			!PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.every(
 				(key) =>
 					result?.manifest?.proportions?.[key] === recipe.proportions[key],
@@ -302,6 +358,7 @@ export function createProceduralMannequinCompileMiddleware({
 			}
 			compileActive = true;
 			const result = await compileJob({
+				appearance: parsed.value.appearance,
 				generatedRoot,
 				proportions: parsed.value.proportions,
 			});

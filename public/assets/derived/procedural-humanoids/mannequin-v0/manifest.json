@@ -27,14 +27,16 @@
 		"maxY": 1.8199999,
 		"minY": 0
 	},
-	"compilerHash": "8fe1665a338652f10da46718733be619363f5ff20866f153563e91786b012cc0",
-	"compilerVersion": "procedural-mannequin-blender-v2",
+	"compilerHash": "f3b3e768eaa8f540feca6f48e17e68a96c9c56135a05fcc80a872a140410ec5a",
+	"compilerVersion": "procedural-mannequin-blender-v3",
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "5288d44351c48e3968d3e1a100734323e4d16e0a3d222f1062c790d08f89396f",
+		"firstOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "5288d44351c48e3968d3e1a100734323e4d16e0a3d222f1062c790d08f89396f",
+		"secondOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -81,12 +83,30 @@
 		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
 		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
 	],
+	"appearance": {
+		"skin": {
+			"authoredColor": "#c98f65",
+			"authoredColorSpace": "srgb",
+			"authoredRoughness": 0.72,
+			"canonicalLinearColor": [
+				0.5840784178911641, 0.27467731206038465, 0.1301364766903643
+			],
+			"exportedLinearColor": [0.5840784, 0.2746773, 0.1301365],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialName": "ProceduralSkinMaterial",
+			"materialSchemaVersion": "procedural-skin-material-v1"
+		}
+	},
 	"materialCount": 1,
 	"meshCount": 1,
 	"meshNames": ["ProceduralMannequinMesh"],
-	"normalizedSemanticHash": "3890c423a603b3e2bfb1551abd52a63b08e041ba59b8e0c2a170b33d7947a75d",
+	"normalizedSemanticHash": "249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1",
+	"geometryAndSkinningSemanticHash": "8c5fa7366941515f6bb960079e13688b5d198bd983d6ba5ec572b13f432e7a7e",
+	"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
 	"outputFile": "mannequin.glb",
-	"outputHash": "5288d44351c48e3968d3e1a100734323e4d16e0a3d222f1062c790d08f89396f",
+	"outputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
 	"proportions": {
 		"height": 1.82,
 		"shoulderWidth": 0.5,
@@ -95,9 +115,9 @@
 		"legLength": 0.5,
 		"hipWidth": 0.5
 	},
-	"recipeHash": "72f5463195cc035d2c6cc09b050501712684556e278194d2d06ce5c1e3449835",
+	"recipeHash": "569dcff2194d460e3e60f5efb63b605cd6bbc6139c5dd20a1439d81df8088404",
 	"recipeId": "procedural-mannequin-v0",
-	"recipeVersion": 2,
+	"recipeVersion": 3,
 	"skeletonContract": "golden-humanoid-v0",
 	"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
 	"sourceImmutable": true,
@@ -120,12 +140,12 @@
 	},
 	"topologyVersion": "procedural-humanoid-v1",
 	"units": "metres",
-	"validationVersion": "procedural-mannequin-roundtrip-v3",
+	"validationVersion": "procedural-mannequin-roundtrip-v4",
 	"vertexCount": 2724,
 	"warnings": [
 		"Topology V1 uses a controlled voxel union and analytic segment weights.",
 		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
 		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
 	],
-	"generationDurationMs": 6156
+	"generationDurationMs": 6229
 }

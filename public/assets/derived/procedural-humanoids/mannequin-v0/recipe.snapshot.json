@@ -2,16 +2,19 @@
 	"animations": {
 		"set": "golden-reference-v0"
 	},
+	"appearance": {
+		"skin": {
+			"color": "#c98f65",
+			"colorSpace": "srgb",
+			"roughness": 0.72
+		}
+	},
 	"geometry": {
 		"profile": "voxel-union",
 		"radialSegments": 8,
 		"topologyVersion": "procedural-humanoid-v1"
 	},
 	"id": "procedural-mannequin-v0",
-	"material": {
-		"baseColor": "#d6a35f",
-		"roughness": 0.72
-	},
 	"name": "Procedural Mannequin Body Proportions V1",
 	"proportions": {
 		"armLength": 0.5,
@@ -24,5 +27,5 @@
 	"skeleton": {
 		"contract": "golden-humanoid-v0"
 	},
-	"version": 2
+	"version": 3
 }

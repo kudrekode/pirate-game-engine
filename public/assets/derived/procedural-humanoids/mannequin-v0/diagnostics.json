@@ -20,7 +20,7 @@
 			"buildHash": "fbe6228777e7",
 			"version": "5.2.0 LTS"
 		},
-		"compilerVersion": "procedural-mannequin-blender-v2",
+		"compilerVersion": "procedural-mannequin-blender-v3",
 		"geometry": {
 			"materialCount": 1,
 			"meshCount": 1,
@@ -272,6 +272,14 @@
 			"outputHeightMetres": 1.82,
 			"rootScale": 1.0572694520768555
 		},
+		"material": {
+			"authoredColor": "#c98f65",
+			"canonicalLinearColor": [0.584078418, 0.274677312, 0.130136477],
+			"metallic": 0,
+			"name": "ProceduralSkinMaterial",
+			"roughness": 0.72,
+			"schemaVersion": "procedural-skin-material-v1"
+		},
 		"measurements": {
 			"calfRadius": 0.068,
 			"chestDepth": 0.13,
@@ -298,7 +306,7 @@
 			"waistHalfWidth": 0.17,
 			"wristRadius": 0.052
 		},
-		"outputHash": "5288d44351c48e3968d3e1a100734323e4d16e0a3d222f1062c790d08f89396f",
+		"outputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
 		"recipeId": "procedural-mannequin-v0",
 		"removedVendorMeshNames": [
 			"Eyebrows",
@@ -1005,10 +1013,12 @@
 	"buildMode": "derived-artifact",
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "5288d44351c48e3968d3e1a100734323e4d16e0a3d222f1062c790d08f89396f",
+		"firstOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "5288d44351c48e3968d3e1a100734323e4d16e0a3d222f1062c790d08f89396f",
+		"secondOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -1045,6 +1055,7 @@
 			"animationBinding": true,
 			"cloneIndependence": true,
 			"geometry": true,
+			"material": true,
 			"jointCount": true,
 			"missingRequiredBones": true,
 			"noEmbeddedAnimations": true,
@@ -1118,6 +1129,7 @@
 				"upperarm_r"
 			]
 		},
+		"geometrySemanticHash": "8c5fa7366941515f6bb960079e13688b5d198bd983d6ba5ec572b13f432e7a7e",
 		"inspection": {
 			"embeddedAnimationCount": 0,
 			"jointCount": 65,
@@ -1127,7 +1139,19 @@
 			"warnings": []
 		},
 		"passed": true,
-		"semanticHash": "3890c423a603b3e2bfb1551abd52a63b08e041ba59b8e0c2a170b33d7947a75d",
+		"material": {
+			"exportedLinearColor": [0.5840784, 0.2746773, 0.1301365],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"finite": true,
+			"materialCount": 1,
+			"materialName": "ProceduralSkinMaterial",
+			"materialType": "MeshStandardMaterial",
+			"maximumColorError": 0,
+			"passed": true
+		},
+		"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
+		"semanticHash": "249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1",
 		"skeletonContract": {
 			"hierarchyMismatches": [],
 			"maximumRestRotationDegrees": 0.04075099023456356,
@@ -1696,8 +1720,10 @@
 			],
 			"materials": [
 				{
-					"color": "ecd1a4",
-					"name": "ProceduralMannequinMaterial",
+					"color": "c98f65",
+					"name": "ProceduralSkinMaterial",
+					"linearColor": [0.5840784, 0.2746773, 0.1301365],
+					"metallic": 0,
 					"roughness": 0.72,
 					"type": "MeshStandardMaterial"
 				}
@@ -1740,6 +1766,7 @@
 			"animationBinding": true,
 			"cloneIndependence": true,
 			"geometry": true,
+			"material": true,
 			"jointCount": true,
 			"missingRequiredBones": true,
 			"noEmbeddedAnimations": true,
@@ -1748,16 +1775,16 @@
 			"symmetry": true
 		},
 		"passed": true,
-		"semanticHash": "3890c423a603b3e2bfb1551abd52a63b08e041ba59b8e0c2a170b33d7947a75d",
+		"semanticHash": "249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1",
 		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840"
 	},
 	"sourceHashesAfter": {
-		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "43d9696b84a93e941b66edb239e353dbf5ad81bda703e7f8f0cb078cc7b2563b",
+		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "ca8e4684b2835ade800822d918627d4258ed49307a9b6891bae8e4e25d0c0630",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f"
 	},
 	"sourceHashesBefore": {
-		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "43d9696b84a93e941b66edb239e353dbf5ad81bda703e7f8f0cb078cc7b2563b",
+		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "ca8e4684b2835ade800822d918627d4258ed49307a9b6891bae8e4e25d0c0630",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f"
 	},

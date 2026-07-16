@@ -69,6 +69,15 @@ def rounded(values, digits=9):
     return [round(float(value), digits) for value in values]
 
 
+def srgb_channel_to_linear(value):
+    return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+
+def canonical_srgb_hex_to_linear(color):
+    channels = [int(color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+    return tuple(srgb_channel_to_linear(channel) for channel in channels)
+
+
 def create_template_import_mirror(path):
     temporary = tempfile.TemporaryDirectory(prefix="mannequin-template-import-")
     mirror_root = Path(temporary.name)
@@ -623,13 +632,15 @@ def create_geometry(armature, recipe):
     for polygon in mesh.polygons:
         polygon.use_smooth = True
 
-    color = recipe["material"]["baseColor"].lstrip("#")
-    material = bpy.data.materials.new("ProceduralMannequinMaterial")
-    material.diffuse_color = tuple(int(color[index : index + 2], 16) / 255 for index in (0, 2, 4)) + (1.0,)
+    skin = recipe["appearance"]["skin"]
+    linear_color = canonical_srgb_hex_to_linear(skin["color"])
+    material = bpy.data.materials.new("ProceduralSkinMaterial")
+    material.diffuse_color = linear_color + (1.0,)
     material.use_nodes = True
     principled = material.node_tree.nodes.get("Principled BSDF")
     principled.inputs["Base Color"].default_value = material.diffuse_color
-    principled.inputs["Roughness"].default_value = recipe["material"]["roughness"]
+    principled.inputs["Roughness"].default_value = skin["roughness"]
+    principled.inputs["Metallic"].default_value = 0.0
     mesh.materials.append(material)
 
     skinning = assign_analytic_weights(mesh_object, weight_segments)
@@ -743,6 +754,16 @@ def compile_mannequin(args, recipe):
             "topologyVersion": recipe["geometry"]["topologyVersion"],
             "triangleCount": triangle_count,
             "vertexCount": len(mesh_object.data.vertices),
+        },
+        "material": {
+            "authoredColor": recipe["appearance"]["skin"]["color"],
+            "canonicalLinearColor": rounded(
+                canonical_srgb_hex_to_linear(recipe["appearance"]["skin"]["color"])
+            ),
+            "metallic": 0.0,
+            "name": "ProceduralSkinMaterial",
+            "roughness": recipe["appearance"]["skin"]["roughness"],
+            "schemaVersion": "procedural-skin-material-v1",
         },
         "grounding": {
             "localMaximumZ": local_max_z,

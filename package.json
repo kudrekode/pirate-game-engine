@@ -29,6 +29,7 @@
 		"validate:golden-animation-bakes": "node tools/blender-character/offline-bake-roundtrip.mjs",
 		"validate:procedural-mannequin": "node tools/blender-character/procedural-mannequin-compiler.mjs --validate-only",
 		"validate:procedural-topology-matrix": "node tools/blender-character/procedural-mannequin-topology-matrix.mjs",
+		"validate:procedural-appearance-matrix": "node tools/blender-character/procedural-mannequin-appearance-matrix.mjs",
 		"validate:golden-animation-sources": "node tools/animation-retargeting/validate-source-provenance.mjs",
 		"check:asset-studio": "npm run build:contracts && npm run test:contracts && npm --workspace @adventure-game-builder/asset-studio run check",
 		"test:e2e": "playwright test",

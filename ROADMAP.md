@@ -9,9 +9,9 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
   - Sky / Atmosphere Presentation V1.
   - Model Normalisation / Asset Transform Defaults V1.
   - Pirate Vertical Slice Dressing V1.
-  - Asset Studio creator follow-up: refine the completed Generated Body
-    Topology V1 for local deformation/edge-flow quality without adding body
-    parameters; see `docs/assets/generated-body-topology-v1.md`.
+  - Asset Studio creator follow-up: Hairstyle Slot V1, building on completed
+    Material and Skin Appearance V1; see
+    `docs/assets/material-skin-appearance-v1.md`.
   - Runtime contract tests that prove Phaser and Three.js adapters use the same gameplay semantics.
   - Keep using the Playwright Three perf harness for browser/performance-sensitive 3D work.
 - Expand map overlay filters for event blocks, collision, quest markers, and NPC movement.

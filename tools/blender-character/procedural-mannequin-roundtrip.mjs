@@ -193,6 +193,14 @@ function semanticSnapshot(root) {
 						? material.color.getHexString()
 						: undefined,
 				name: material.name,
+				linearColor:
+					material instanceof THREE.MeshStandardMaterial
+						? material.color.toArray().map((value) => rounded(value))
+						: undefined,
+				metallic:
+					material instanceof THREE.MeshStandardMaterial
+						? rounded(material.metalness)
+						: undefined,
 				roughness:
 					material instanceof THREE.MeshStandardMaterial
 						? rounded(material.roughness)
@@ -201,6 +209,60 @@ function semanticSnapshot(root) {
 			}))
 			.sort((left, right) => left.name.localeCompare(right.name)),
 		meshes,
+	};
+}
+
+function analyzeSkinMaterial(root, expected) {
+	const materials = new Set();
+	root.traverse((object) => {
+		if (!(object instanceof THREE.Mesh)) return;
+		for (const material of Array.isArray(object.material)
+			? object.material
+			: [object.material]) {
+			materials.add(material);
+		}
+	});
+	const material = [...materials][0];
+	const standard = material instanceof THREE.MeshStandardMaterial;
+	const exportedLinearColor = standard
+		? material.color.toArray().map((value) => rounded(value))
+		: [];
+	const exportedRoughness = standard ? rounded(material.roughness) : undefined;
+	const exportedMetallic = standard ? rounded(material.metalness) : undefined;
+	const finite =
+		exportedLinearColor.every(Number.isFinite) &&
+		Number.isFinite(exportedRoughness) &&
+		Number.isFinite(exportedMetallic);
+	const maximumColorError =
+		expected && exportedLinearColor.length === 3
+			? Math.max(
+					...exportedLinearColor.map((value, index) =>
+						Math.abs(value - expected.linearColor[index]),
+					),
+				)
+			: expected
+				? Number.POSITIVE_INFINITY
+				: 0;
+	return {
+		exportedLinearColor,
+		exportedMetallic,
+		exportedRoughness,
+		finite,
+		materialCount: materials.size,
+		materialName: material?.name,
+		materialType: material?.type,
+		maximumColorError: Number.isFinite(maximumColorError)
+			? rounded(maximumColorError)
+			: null,
+		passed:
+			materials.size === 1 &&
+			standard &&
+			finite &&
+			(!expected ||
+				(material.name === expected.name &&
+					maximumColorError <= 0.00001 &&
+					Math.abs(exportedRoughness - expected.roughness) <= 0.00001 &&
+					exportedMetallic === 0)),
 	};
 }
 
@@ -681,6 +743,7 @@ function validateSymmetry(root) {
 export async function validateProceduralMannequinArtifact({
 	artifactPath,
 	expectedHeightMetres,
+	expectedSkinMaterial,
 	templatePath,
 	workspaceRoot = process.cwd(),
 }) {
@@ -711,6 +774,7 @@ export async function validateProceduralMannequinArtifact({
 	);
 	const generatedSkeleton = skeletonSignature(inspection);
 	const geometry = analyzeGeometry(gltf.scene, expectedHeightMetres);
+	const material = analyzeSkinMaterial(gltf.scene, expectedSkinMaterial);
 	const skeletonContract = compareSkeletonContracts(
 		templateInspection,
 		inspection,
@@ -728,6 +792,7 @@ export async function validateProceduralMannequinArtifact({
 		animationBinding: animations.idle.passed && animations.walk.passed,
 		cloneIndependence: cloneIndependence.passed,
 		geometry: geometry.passed,
+		material: material.passed,
 		jointCount:
 			inspection.skeletons.length === 1 &&
 			inspection.skeletons[0].jointCount === 65,
@@ -742,6 +807,12 @@ export async function validateProceduralMannequinArtifact({
 		checks,
 		cloneIndependence,
 		geometry,
+		geometrySemanticHash: sha256(
+			JSON.stringify({
+				hierarchy: semantic.hierarchy,
+				meshes: semantic.meshes,
+			}),
+		),
 		inspection: {
 			embeddedAnimationCount: gltf.animations.length,
 			jointCount: inspection.skeletons[0]?.jointCount,
@@ -751,6 +822,8 @@ export async function validateProceduralMannequinArtifact({
 			warnings: inspection.warnings,
 		},
 		passed: Object.values(checks).every(Boolean),
+		material,
+		materialSemanticHash: sha256(JSON.stringify(semantic.materials)),
 		semanticHash: sha256(JSON.stringify(semantic)),
 		semanticSnapshot: semantic,
 		skeletonContract,

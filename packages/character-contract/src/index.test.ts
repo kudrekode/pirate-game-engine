@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
+	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	createDefaultCharacterRecipe,
 	HUMANOID_V1_CONTRACT,
 	HUMANOID_V1_SKELETON_ID,
@@ -30,8 +31,36 @@ describe("CharacterRecipeV1", () => {
 				},
 			},
 			components: {},
+			appearance: { skin: { roughness: 0.72 } },
 			animationSetId: "humanoid-basic-v1",
 		});
+	});
+
+	it("defines and validates exactly the two compiled skin appearance controls", () => {
+		expect(Object.keys(CHARACTER_SKIN_APPEARANCE_LIMITS)).toEqual([
+			"skinColor",
+			"skinRoughness",
+		]);
+		const recipe = createDefaultCharacterRecipe();
+		recipe.palette.skin = "#C98F65";
+		recipe.appearance.skin.roughness = 0.43;
+		const parsed = parseCharacterRecipe(recipe);
+		expect(parsed.ok).toBe(true);
+		if (parsed.ok) {
+			expect(parsed.value.palette.skin).toBe("#c98f65");
+			expect(parsed.value.appearance.skin.roughness).toBe(0.43);
+		}
+	});
+
+	it("rejects malformed skin colors and non-finite or out-of-range roughness", () => {
+		const malformed = createDefaultCharacterRecipe();
+		malformed.palette.skin = "skin";
+		malformed.appearance.skin.roughness = Number.NaN;
+		const parsed = parseCharacterRecipe(malformed);
+		expect(parsed.ok).toBe(false);
+		expect(parsed.issues.map((entry) => entry.path)).toEqual(
+			expect.arrayContaining(["$.palette.skin", "$.appearance.skin.roughness"]),
+		);
 	});
 
 	it("defines range, default, units, and validation for exactly six body parameters", () => {
@@ -101,6 +130,7 @@ describe("CharacterRecipeV1", () => {
 
 	it("migrates legacy saved recipes to default V1 proportions", () => {
 		const legacy = createDefaultCharacterRecipe();
+		delete (legacy as Partial<typeof legacy>).appearance;
 		legacy.body.parameters = {
 			height: 1.9,
 			shoulderWidth: 0.2,
@@ -119,6 +149,7 @@ describe("CharacterRecipeV1", () => {
 				legLength: 0.5,
 				hipWidth: 0.5,
 			});
+			expect(parsed.value.appearance.skin.roughness).toBe(0.72);
 		}
 	});
 

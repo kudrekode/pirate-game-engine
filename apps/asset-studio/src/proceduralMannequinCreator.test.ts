@@ -22,6 +22,20 @@ function successfulPayload(heightMetres = 1.82) {
 		compilationDurationMs: 1250,
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
+			appearance: {
+				skin: {
+					authoredColor: "#c98f65",
+					authoredColorSpace: "srgb",
+					authoredRoughness: 0.72,
+					canonicalLinearColor: [0.584, 0.275, 0.13],
+					exportedLinearColor: [0.584, 0.275, 0.13],
+					exportedMetallic: 0,
+					exportedRoughness: 0.72,
+					materialCount: 1,
+					materialName: "ProceduralSkinMaterial",
+					materialSchemaVersion: "procedural-skin-material-v1",
+				},
+			},
 			animationSet: "golden-reference-v0",
 			assetId: "procedural-mannequin-v0",
 			bounds: {
@@ -41,9 +55,10 @@ function successfulPayload(heightMetres = 1.82) {
 				shoulderWidthMultiplier: 1,
 				torsoLengthMultiplier: 1,
 			},
-			compilerVersion: "procedural-mannequin-blender-v2",
+			compilerVersion: "procedural-mannequin-blender-v3",
 			deterministicBuild: true,
 			generationDurationMs: 1200,
+			geometryAndSkinningSemanticHash: "e".repeat(64),
 			heightMetres,
 			proportions: { ...DEFAULT_PROPORTIONS, height: heightMetres },
 			influenceStatistics: {
@@ -55,12 +70,13 @@ function successfulPayload(heightMetres = 1.82) {
 			jointCount: 65,
 			knownLimitations: [],
 			materialCount: 1,
+			materialSemanticHash: "f".repeat(64),
 			meshCount: 1,
 			normalizedSemanticHash: "c".repeat(64),
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 2,
+			recipeVersion: 3,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
@@ -77,7 +93,7 @@ function successfulPayload(heightMetres = 1.82) {
 			},
 			topologyVersion: "procedural-humanoid-v1",
 			triangleCount: 5444,
-			validationVersion: "procedural-mannequin-roundtrip-v3",
+			validationVersion: "procedural-mannequin-roundtrip-v4",
 			vertexCount: 2724,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
@@ -85,7 +101,7 @@ function successfulPayload(heightMetres = 1.82) {
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v3",
+			version: "procedural-mannequin-roundtrip-v4",
 		},
 	};
 }
@@ -112,8 +128,12 @@ describe("procedural mannequin creator client", () => {
 		const recipe = createDefaultCharacterRecipe();
 		recipe.body.parameters.height = 1.93;
 		expect(createProceduralMannequinCompileRequest(recipe)).toEqual({
+			appearance: {
+				skinColor: "#c98f65",
+				skinRoughness: 0.72,
+			},
 			proportions: { ...DEFAULT_PROPORTIONS, height: 1.93 },
-			version: 2,
+			version: 3,
 		});
 	});
 
@@ -153,8 +173,12 @@ describe("procedural mannequin creator client", () => {
 			"/__asset-studio/procedural-mannequin/compile",
 			expect.objectContaining({
 				body: JSON.stringify({
+					appearance: {
+						skinColor: "#c98f65",
+						skinRoughness: 0.72,
+					},
 					proportions: DEFAULT_PROPORTIONS,
-					version: 2,
+					version: 3,
 				}),
 				method: "POST",
 			}),

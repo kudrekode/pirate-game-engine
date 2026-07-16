@@ -9,12 +9,39 @@ import {
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	PROCEDURAL_MANNEQUIN_V0_ASSET,
+	prepareThreeVisualAssetMaterials,
 	requestThreeVisualAsset,
 	resolveThreeVisualAssetResourceUrl,
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./index";
 
 describe("shared Three asset preview", () => {
+	test.each([
+		["Golden", GOLDEN_REFERENCE_HUMANOID_ASSET, true],
+		["Patchbeard", { materialProfile: "standard" as const }, true],
+		["procedural", PROCEDURAL_MANNEQUIN_V0_ASSET, false],
+	])("preserves authored %s material color, roughness, and metalness", (_, definition, physical) => {
+		const material = physical
+			? new THREE.MeshPhysicalMaterial({
+					color: new THREE.Color().setRGB(0.21, 0.34, 0.55),
+					metalness: 0.17,
+					roughness: 0.63,
+				})
+			: new THREE.MeshStandardMaterial({
+					color: new THREE.Color().setRGB(0.21, 0.34, 0.55),
+					metalness: 0.17,
+					roughness: 0.63,
+				});
+		const root = new THREE.Group();
+		const mesh = new THREE.Mesh(new THREE.BoxGeometry(), material);
+		root.add(mesh);
+		prepareThreeVisualAssetMaterials(root, definition);
+		const prepared = mesh.material as THREE.MeshStandardMaterial;
+		expect(prepared.color.toArray()).toEqual(material.color.toArray());
+		expect(prepared.roughness).toBe(0.63);
+		expect(prepared.metalness).toBe(0.17);
+	});
+
 	test("keeps Golden Reference resource aliases scoped and suffix-safe", () => {
 		expect(
 			resolveThreeVisualAssetResourceUrl(

@@ -18,6 +18,10 @@ const DEFAULT_PROPORTIONS = Object.freeze({
 	legLength: 0.5,
 	hipWidth: 0.5,
 });
+const DEFAULT_APPEARANCE = Object.freeze({
+	skinColor: "#c98f65",
+	skinRoughness: 0.72,
+});
 
 async function fakeCompiler({ outputDirectory, recipePath }) {
 	const recipe = JSON.parse(await readFile(recipePath, "utf8"));
@@ -25,14 +29,20 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 	const outputHash =
 		recipe.proportions.height === 1.82 ? "a".repeat(64) : "b".repeat(64);
 	const manifest = {
-		compilerVersion: "procedural-mannequin-blender-v2",
+		appearance: {
+			skin: {
+				authoredColor: recipe.appearance.skin.color,
+				authoredRoughness: recipe.appearance.skin.roughness,
+			},
+		},
+		compilerVersion: "procedural-mannequin-blender-v3",
 		deterministicBuild: true,
 		generationDurationMs: 12,
 		heightMetres: recipe.proportions.height,
 		proportions: recipe.proportions,
 		outputHash,
 		recipeHash,
-		validationVersion: "procedural-mannequin-roundtrip-v3",
+		validationVersion: "procedural-mannequin-roundtrip-v4",
 	};
 	await mkdir(outputDirectory, { recursive: true });
 	await Promise.all([
@@ -48,15 +58,17 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 test("validates the six-parameter creator compile request", () => {
 	assert.equal(
 		validateCreatorCompileRequest({
+			appearance: DEFAULT_APPEARANCE,
 			proportions: DEFAULT_PROPORTIONS,
-			version: 2,
+			version: 3,
 		}).ok,
 		true,
 	);
 	assert.deepEqual(
 		validateCreatorCompileRequest({
+			appearance: DEFAULT_APPEARANCE,
 			proportions: { ...DEFAULT_PROPORTIONS, height: "1.82" },
-			version: 2,
+			version: 3,
 		}),
 		{
 			issues: [
@@ -70,14 +82,37 @@ test("validates the six-parameter creator compile request", () => {
 	);
 });
 
+test("validates and canonicalizes creator skin appearance", () => {
+	const parsed = validateCreatorCompileRequest({
+		appearance: { skinColor: "#C98F65", skinRoughness: 0.41 },
+		proportions: DEFAULT_PROPORTIONS,
+		version: 3,
+	});
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.value.appearance.skinColor, "#c98f65");
+	const invalid = validateCreatorCompileRequest({
+		appearance: { skinColor: "red", skinRoughness: Number.NaN },
+		proportions: DEFAULT_PROPORTIONS,
+		version: 3,
+	});
+	assert.equal(invalid.ok, false);
+	assert.deepEqual(
+		invalid.issues.map((issue) => issue.path),
+		["$.appearance.skinColor", "$.appearance.skinRoughness"],
+	);
+});
+
 test("adapts all body parameters into a validated recipe and stable hash", async () => {
 	const first = await createRecipeForProportions({
+		appearance: DEFAULT_APPEARANCE,
 		proportions: DEFAULT_PROPORTIONS,
 	});
 	const repeated = await createRecipeForProportions({
+		appearance: DEFAULT_APPEARANCE,
 		proportions: DEFAULT_PROPORTIONS,
 	});
 	const taller = await createRecipeForProportions({
+		appearance: DEFAULT_APPEARANCE,
 		proportions: { ...DEFAULT_PROPORTIONS, height: 1.96 },
 	});
 
@@ -89,6 +124,14 @@ test("adapts all body parameters into a validated recipe and stable hash", async
 	assert.notEqual(
 		hashProceduralMannequinRecipe(first),
 		hashProceduralMannequinRecipe(taller),
+	);
+	const differentSkin = await createRecipeForProportions({
+		appearance: { skinColor: "#503126", skinRoughness: 0.41 },
+		proportions: DEFAULT_PROPORTIONS,
+	});
+	assert.notEqual(
+		hashProceduralMannequinRecipe(first),
+		hashProceduralMannequinRecipe(differentSkin),
 	);
 	await assert.rejects(
 		createRecipeForProportions({
@@ -104,6 +147,7 @@ test("publishes a successful compile and keeps it when a later compile fails", a
 	);
 	try {
 		const successful = await compileCreatorMannequin({
+			appearance: DEFAULT_APPEARANCE,
 			compileImpl: fakeCompiler,
 			generatedRoot,
 			proportions: DEFAULT_PROPORTIONS,

@@ -37,7 +37,8 @@ V0 intentionally has only fields that affect compilation:
   generated body and compatibility rig about the grounded origin;
 - `geometry.profile: "ellipsoid"` and `radialSegments`, range 6 to 16, control
   generated topology;
-- `material.baseColor` and `roughness` control the one generated material;
+- `appearance.skin.color` and `roughness` control the one generated material;
+  V0-V2 `material` blocks migrate to this V3 shape;
 - `skeleton.contract: "golden-humanoid-v0"` declares the exact compatibility
   target;
 - `animations.set: "golden-reference-v0"` declares the reused canonical set.
@@ -114,7 +115,7 @@ Use `--staging` to label a non-promoted build and `--validate-only` through
 without invoking Blender. `--template` and `--output-dir` are narrow overrides.
 
 The compiler used Blender `5.2.0 LTS`, build `fbe6228777e7`, and compiler version
-`procedural-mannequin-blender-v0`. It writes:
+`procedural-mannequin-blender-v3`. It writes:
 
 ```text
 public/assets/derived/procedural-humanoids/mannequin-v0/

@@ -405,6 +405,69 @@ h1 {
 	padding: 10px;
 }
 
+.appearance-panel {
+	display: grid;
+	gap: 10px;
+	border: 1px solid #cbd5df;
+	border-radius: 8px;
+	background: #f8fafc;
+	padding: 10px;
+}
+
+.appearance-control {
+	display: grid;
+	gap: 8px;
+}
+
+.appearance-control input[type="color"] {
+	width: 100%;
+	min-height: 34px;
+	padding: 3px;
+}
+
+.skin-presets {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: 5px;
+	min-width: 0;
+	margin: 0;
+	border: 0;
+	padding: 0;
+}
+
+.skin-presets legend {
+	grid-column: 1 / -1;
+	padding: 0;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.skin-presets button {
+	min-height: 28px;
+	padding: 0;
+}
+
+.appearance-comparison {
+	display: grid;
+	gap: 5px;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.appearance-comparison > div {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.appearance-swatch {
+	display: inline-block;
+	width: 22px;
+	height: 22px;
+	border: 1px solid #64748b;
+	border-radius: 50%;
+}
+
 .body-creator-control {
 	border-bottom: 1px solid #e2e8f0;
 	padding-bottom: 8px;

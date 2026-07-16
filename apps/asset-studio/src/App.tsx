@@ -26,10 +26,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
 	PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS,
 	PROCEDURAL_MANNEQUIN_BODY_PARAMETERS,
+	PROCEDURAL_SKIN_APPEARANCE,
 	type ProceduralMannequinCompileResult,
 	type ProceduralMannequinManifest,
 	randomizeProceduralMannequinBody,
 	requestProceduralMannequinCompile,
+	validateProceduralMannequinAppearance,
 	validateProceduralMannequinBody,
 } from "./proceduralMannequinCreator";
 
@@ -72,6 +74,15 @@ const PALETTE_LABELS: Record<CharacterPaletteRegion, string> = {
 	secondary: "Secondary color",
 	metal: "Metal color",
 };
+
+const SKIN_COLOR_PRESETS = [
+	{ color: "#f1c7a5", label: "Tone 1" },
+	{ color: "#dca47d", label: "Tone 2" },
+	{ color: "#c98f65", label: "Tone 3" },
+	{ color: "#a96f4c", label: "Tone 4" },
+	{ color: "#7d4f38", label: "Tone 5" },
+	{ color: "#503126", label: "Tone 6" },
+] as const;
 
 function replaceComponentValue(
 	recipe: CharacterRecipeV1,
@@ -682,8 +693,21 @@ function HumanoidPreview({
 					host.dataset.recipeId = manifest.recipeId;
 					host.dataset.recipeVersion = String(manifest.recipeVersion);
 					host.dataset.recipeHash = manifest.recipeHash;
+					host.dataset.skeletonSignature = manifest.skeletonSignature;
 					host.dataset.deterministicBuild = String(manifest.deterministicBuild);
 					host.dataset.semanticHash = manifest.normalizedSemanticHash;
+					host.dataset.geometrySkinningHash =
+						manifest.geometryAndSkinningSemanticHash ?? "legacy";
+					host.dataset.materialHash = manifest.materialSemanticHash ?? "legacy";
+					if (manifest.appearance?.skin) {
+						host.dataset.skinColor = manifest.appearance.skin.authoredColor;
+						host.dataset.skinRoughness = String(
+							manifest.appearance.skin.authoredRoughness,
+						);
+						host.dataset.skinMetallic = String(
+							manifest.appearance.skin.exportedMetallic,
+						);
+					}
 					host.dataset.topologyVersion =
 						manifest.topologyVersion ?? "legacy-primitive-v0";
 					host.dataset.topologyComponents = String(
@@ -1081,6 +1105,7 @@ export default function App() {
 	const bodyValidation = validateProceduralMannequinBody(
 		recipe.body.parameters,
 	);
+	const appearanceValidation = validateProceduralMannequinAppearance(recipe);
 	const previewSource =
 		previewSourceId === PROCEDURAL_MANNEQUIN_FIXTURE_ID && compiledPreviewSource
 			? compiledPreviewSource
@@ -1088,11 +1113,15 @@ export default function App() {
 	const activeManifest = compileResult?.manifest ?? currentManifest;
 	const compileDirty = Boolean(
 		compileResult &&
-			!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
+			(!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
 				(key) =>
 					compileResult.manifest.proportions[key] ===
 					recipe.body.parameters[key],
-			),
+			) ||
+				compileResult.manifest.appearance.skin.authoredColor !==
+					recipe.palette.skin.toLowerCase() ||
+				compileResult.manifest.appearance.skin.authoredRoughness !==
+					recipe.appearance.skin.roughness),
 	);
 
 	function updateRecipe(
@@ -1137,6 +1166,9 @@ export default function App() {
 			},
 			components: { ...compilation.recipe.components },
 			palette: { ...compilation.recipe.palette },
+			appearance: {
+				skin: { ...compilation.recipe.appearance.skin },
+			},
 		});
 		setRandomSeed(compilation.seed);
 		setCompileResult(compilation.result);
@@ -1148,7 +1180,12 @@ export default function App() {
 	}
 
 	async function handleCompile() {
-		if (!bodyValidation.ok || compileStatus === "compiling") return;
+		if (
+			!bodyValidation.ok ||
+			!appearanceValidation.ok ||
+			compileStatus === "compiling"
+		)
+			return;
 		setCompileStatus("compiling");
 		setCompileError("");
 		try {
@@ -1181,6 +1218,7 @@ export default function App() {
 					},
 					components: { ...recipe.components },
 					palette: { ...recipe.palette },
+					appearance: { skin: { ...recipe.appearance.skin } },
 				},
 				result,
 				seed: randomSeed,
@@ -1400,6 +1438,158 @@ export default function App() {
 							)}
 						</div>
 
+						<div className="section-heading">Appearance</div>
+						<section aria-label="Skin appearance" className="appearance-panel">
+							<div className="appearance-control">
+								<label>
+									Skin color
+									<input
+										aria-label="Skin color"
+										onChange={(event) =>
+											updateRecipe((current) => ({
+												...current,
+												palette: {
+													...current.palette,
+													skin: event.target.value.toLowerCase(),
+												},
+											}))
+										}
+										type="color"
+										value={recipe.palette.skin}
+									/>
+								</label>
+								<div className="body-creator-value">
+									<output aria-label="Current skin color">
+										{recipe.palette.skin.toLowerCase()}
+									</output>
+									<button
+										onClick={() =>
+											updateRecipe((current) => ({
+												...current,
+												palette: {
+													...current.palette,
+													skin: PROCEDURAL_SKIN_APPEARANCE.color.defaultValue,
+												},
+											}))
+										}
+										type="button"
+									>
+										Reset skin color
+									</button>
+								</div>
+							</div>
+							<fieldset className="skin-presets">
+								<legend>Skin tone presets</legend>
+								{SKIN_COLOR_PRESETS.map((preset) => (
+									<button
+										aria-label={`${preset.label} ${preset.color}`}
+										key={preset.color}
+										onClick={() =>
+											updateRecipe((current) => ({
+												...current,
+												palette: { ...current.palette, skin: preset.color },
+											}))
+										}
+										style={{ backgroundColor: preset.color }}
+										title={`${preset.label} ${preset.color}`}
+										type="button"
+									/>
+								))}
+							</fieldset>
+							<div className="body-creator-control">
+								<label>
+									Skin roughness
+									<input
+										aria-label="Skin roughness"
+										max={PROCEDURAL_SKIN_APPEARANCE.roughness.max}
+										min={PROCEDURAL_SKIN_APPEARANCE.roughness.min}
+										onChange={(event) =>
+											updateRecipe((current) => ({
+												...current,
+												appearance: {
+													skin: {
+														...current.appearance.skin,
+														roughness: Number(event.target.value),
+													},
+												},
+											}))
+										}
+										step={PROCEDURAL_SKIN_APPEARANCE.roughness.step}
+										type="range"
+										value={recipe.appearance.skin.roughness}
+									/>
+								</label>
+								<div className="body-creator-value">
+									<output aria-label="Current skin roughness">
+										{recipe.appearance.skin.roughness.toFixed(2)}
+									</output>
+									<button
+										onClick={() =>
+											updateRecipe((current) => ({
+												...current,
+												appearance: {
+													skin: {
+														...current.appearance.skin,
+														roughness:
+															PROCEDURAL_SKIN_APPEARANCE.roughness.defaultValue,
+													},
+												},
+											}))
+										}
+										type="button"
+									>
+										Reset skin roughness
+									</button>
+								</div>
+							</div>
+							<div className="appearance-comparison">
+								<div>
+									<span
+										aria-label="Draft skin swatch"
+										className="appearance-swatch"
+										role="img"
+										style={{ backgroundColor: recipe.palette.skin }}
+									/>
+									Draft · {recipe.palette.skin.toLowerCase()} ·{" "}
+									{recipe.appearance.skin.roughness.toFixed(2)}
+								</div>
+								<div>
+									<span
+										aria-label="Compiled skin swatch"
+										className="appearance-swatch"
+										role="img"
+										style={{
+											backgroundColor:
+												activeManifest?.appearance?.skin.authoredColor ??
+												"transparent",
+										}}
+									/>
+									Compiled ·{" "}
+									{activeManifest?.appearance?.skin.authoredColor ?? "—"} ·{" "}
+									{activeManifest?.appearance?.skin.authoredRoughness.toFixed(
+										2,
+									) ?? "—"}
+								</div>
+							</div>
+							{appearanceValidation.ok ? null : (
+								<div
+									aria-label="Appearance validation errors"
+									className="validation-list"
+									role="alert"
+								>
+									{appearanceValidation.issues.map((issue) => (
+										<p key={`${issue.path}:${issue.message}`}>
+											{issue.message}
+										</p>
+									))}
+								</div>
+							)}
+							<p className="creator-note">
+								Appearance edits are draft recipe values. Compile regenerates
+								the GLB; the 3D preview is never recolored in the browser.
+							</p>
+						</section>
+
 						<div className="section-heading">Recent Compilations</div>
 						<section
 							className="recent-compilations"
@@ -1427,9 +1617,9 @@ export default function App() {
 
 						<div className="section-heading">Components</div>
 						<p className="creator-note">
-							Body proportions enter the procedural compiler in this milestone.
-							Existing component and palette fields remain CharacterRecipe
-							source data.
+							Body proportions and skin appearance enter the procedural
+							compiler. Other component and palette fields remain
+							CharacterRecipe source data.
 						</p>
 						<div className="field-grid">
 							{CHARACTER_COMPONENT_SLOTS.map((slot) => (
@@ -1501,7 +1691,11 @@ export default function App() {
 								</span>
 							</div>
 							<button
-								disabled={!bodyValidation.ok || compileStatus === "compiling"}
+								disabled={
+									!bodyValidation.ok ||
+									!appearanceValidation.ok ||
+									compileStatus === "compiling"
+								}
 								onClick={handleCompile}
 								type="button"
 							>
@@ -1527,6 +1721,14 @@ export default function App() {
 								<div>
 									<dt>Compiler version</dt>
 									<dd>{activeManifest?.compilerVersion ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Compiled skin material</dt>
+									<dd>
+										{activeManifest?.appearance?.skin
+											? `${activeManifest.appearance.skin.authoredColor} · roughness ${activeManifest.appearance.skin.authoredRoughness.toFixed(2)} · metallic ${activeManifest.appearance.skin.exportedMetallic.toFixed(2)}`
+											: "—"}
+									</dd>
 								</div>
 								<div>
 									<dt>Generated timestamp</dt>
@@ -1557,7 +1759,9 @@ export default function App() {
 					<aside className="panel details-panel">
 						<div className="section-heading">Palette</div>
 						<div className="palette-grid">
-							{CHARACTER_PALETTE_REGIONS.map((region) => (
+							{CHARACTER_PALETTE_REGIONS.filter(
+								(region) => region !== "skin",
+							).map((region) => (
 								<label key={region}>
 									{PALETTE_LABELS[region]}
 									<input

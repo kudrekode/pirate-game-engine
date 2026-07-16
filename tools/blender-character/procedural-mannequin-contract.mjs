@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto";
 
-export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 2;
+export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 3;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v2";
+	"procedural-mannequin-blender-v3";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v3";
+	"procedural-mannequin-roundtrip-v4";
 export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
+export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
+	"procedural-skin-material-v1";
+export const PROCEDURAL_SKIN_MATERIAL_NAME = "ProceduralSkinMaterial";
+export const PROCEDURAL_SKIN_COLOR_SPACE = "srgb";
 export const GOLDEN_HUMANOID_SKELETON_CONTRACT = "golden-humanoid-v0";
 export const GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE =
 	"38356ace6cdb45ddc8caa325c1989fd3dfe0779d10a03c4f4fd743acf58b22f9";
@@ -72,10 +76,25 @@ export const PROCEDURAL_MANNEQUIN_LIMITS = Object.freeze({
 		validation: "finite normalized offset centred under the shoulders",
 	},
 	radialSegments: { max: 16, min: 6 },
-	roughness: { max: 1, min: 0 },
+	skinRoughness: { defaultValue: 0.72, max: 1, min: 0 },
 });
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
+export function srgbChannelToLinear(value) {
+	return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+}
+
+export function canonicalSrgbHexToLinear(color) {
+	if (typeof color !== "string" || !HEX_COLOR_PATTERN.test(color)) {
+		throw new Error("Expected a #RRGGBB sRGB color string.");
+	}
+	return [1, 3, 5].map((offset) =>
+		srgbChannelToLinear(
+			Number.parseInt(color.slice(offset, offset + 2), 16) / 255,
+		),
+	);
+}
 
 function isRecord(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -262,7 +281,7 @@ export function validateProceduralMannequinRecipe(value) {
 			ok: false,
 		};
 	}
-	if (![0, 1, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)) {
+	if (![0, 1, 2, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)) {
 		issues.push({ message: "Unsupported recipe version.", path: "$.version" });
 	}
 	const proportionsSource = isRecord(value.proportions)
@@ -279,9 +298,27 @@ export function validateProceduralMannequinRecipe(value) {
 	if (!isRecord(value.geometry)) {
 		issues.push({ message: "Expected geometry settings.", path: "$.geometry" });
 	}
+	const legacyMaterial =
+		value.version === 0 || value.version === 1 || value.version === 2;
 	const material = isRecord(value.material) ? value.material : {};
-	if (!isRecord(value.material)) {
-		issues.push({ message: "Expected material settings.", path: "$.material" });
+	const appearance = isRecord(value.appearance) ? value.appearance : {};
+	const skin = isRecord(appearance.skin) ? appearance.skin : {};
+	if (legacyMaterial && !isRecord(value.material)) {
+		issues.push({
+			message: "Expected legacy material settings.",
+			path: "$.material",
+		});
+	}
+	if (!legacyMaterial && !isRecord(value.appearance)) {
+		issues.push({
+			message: "Expected appearance settings.",
+			path: "$.appearance",
+		});
+	} else if (!legacyMaterial && !isRecord(appearance.skin)) {
+		issues.push({
+			message: "Expected skin appearance.",
+			path: "$.appearance.skin",
+		});
 	}
 	const skeleton = isRecord(value.skeleton) ? value.skeleton : {};
 	if (!isRecord(value.skeleton)) {
@@ -315,13 +352,23 @@ export function validateProceduralMannequinRecipe(value) {
 			path: "$.geometry.topologyVersion",
 		});
 	}
+	const authoredSkinColor = legacyMaterial ? material.baseColor : skin.color;
+	const authoredSkinRoughness = legacyMaterial
+		? material.roughness
+		: skin.roughness;
 	if (
-		typeof material.baseColor !== "string" ||
-		!HEX_COLOR_PATTERN.test(material.baseColor)
+		typeof authoredSkinColor !== "string" ||
+		!HEX_COLOR_PATTERN.test(authoredSkinColor)
 	) {
 		issues.push({
 			message: "Expected a #RRGGBB color string.",
-			path: "$.material.baseColor",
+			path: legacyMaterial ? "$.material.baseColor" : "$.appearance.skin.color",
+		});
+	}
+	if (!legacyMaterial && skin.colorSpace !== PROCEDURAL_SKIN_COLOR_SPACE) {
+		issues.push({
+			message: `Expected explicit ${PROCEDURAL_SKIN_COLOR_SPACE} color space.`,
+			path: "$.appearance.skin.colorSpace",
 		});
 	}
 	if (skeleton.contract !== GOLDEN_HUMANOID_SKELETON_CONTRACT) {
@@ -367,19 +414,24 @@ export function validateProceduralMannequinRecipe(value) {
 			topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 		},
 		id: readString(value, "id", "$.id", issues),
-		material: {
-			baseColor:
-				typeof material.baseColor === "string" &&
-				HEX_COLOR_PATTERN.test(material.baseColor)
-					? material.baseColor.toLowerCase()
-					: "#c98f65",
-			roughness: readNumber(
-				material,
-				"roughness",
-				"$.material.roughness",
-				PROCEDURAL_MANNEQUIN_LIMITS.roughness,
-				issues,
-			),
+		appearance: {
+			skin: {
+				color:
+					typeof authoredSkinColor === "string" &&
+					HEX_COLOR_PATTERN.test(authoredSkinColor)
+						? authoredSkinColor.toLowerCase()
+						: "#c98f65",
+				colorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
+				roughness: readNumber(
+					{ roughness: authoredSkinRoughness },
+					"roughness",
+					legacyMaterial
+						? "$.material.roughness"
+						: "$.appearance.skin.roughness",
+					PROCEDURAL_MANNEQUIN_LIMITS.skinRoughness,
+					issues,
+				),
+			},
 		},
 		name: readString(value, "name", "$.name", issues),
 		proportions: parsedProportions,
@@ -405,7 +457,7 @@ export function canonicalizeProceduralMannequinRecipe(recipe) {
 	const parsed = validateProceduralMannequinRecipe(recipe);
 	if (!parsed.ok) {
 		throw new Error(
-			`Invalid ProceduralMannequinRecipeV2: ${parsed.issues
+			`Invalid ProceduralMannequinRecipeV3: ${parsed.issues
 				.map((entry) => `${entry.path} ${entry.message}`)
 				.join("; ")}`,
 		);

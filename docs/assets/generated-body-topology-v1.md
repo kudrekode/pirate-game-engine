@@ -7,9 +7,11 @@ with one deterministic, closed, genus-zero skinned surface. The public six body
 parameters, Golden 65-joint skeleton, offline Idle/Walk clips, compiler
 boundary, registry id, and preview/runtime integration are unchanged.
 
-The recorded topology version is `procedural-humanoid-v1`. The procedural
-recipe is V2, the compiler is `procedural-mannequin-blender-v2`, and GLB
-validation is `procedural-mannequin-roundtrip-v3`.
+The recorded topology version remains `procedural-humanoid-v1`. Topology V1
+introduced procedural recipe V2, compiler `procedural-mannequin-blender-v2`,
+and validation `procedural-mannequin-roundtrip-v3`; Material and Skin
+Appearance V1 subsequently advanced those to V3/V3/V4 without changing the
+topology contract.
 
 ## Pre-Implementation Audit And Method Decision
 

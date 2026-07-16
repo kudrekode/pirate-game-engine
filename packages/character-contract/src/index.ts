@@ -46,6 +46,10 @@ export type CharacterBodyParameters = {
 	hipWidth: number;
 };
 
+export type CharacterSkinAppearance = {
+	roughness: number;
+};
+
 export type CharacterRecipeV1 = {
 	version: typeof CHARACTER_RECIPE_VERSION;
 	id: string;
@@ -57,6 +61,9 @@ export type CharacterRecipeV1 = {
 	};
 	components: Partial<Record<CharacterComponentSlot, string>>;
 	palette: Record<CharacterPaletteRegion, string>;
+	appearance: {
+		skin: CharacterSkinAppearance;
+	};
 	animationSetId: string;
 };
 
@@ -212,6 +219,22 @@ export const CHARACTER_BODY_PARAMETER_LIMITS = {
 		validation: string;
 	}
 >;
+
+export const CHARACTER_SKIN_APPEARANCE_LIMITS = {
+	skinColor: {
+		defaultValue: "#c98f65",
+		units: "sRGB #RRGGBB",
+		validation: "canonical six-digit sRGB hexadecimal color",
+	},
+	skinRoughness: {
+		defaultValue: 0.72,
+		min: 0,
+		max: 1,
+		units: "unitless",
+		validation:
+			"finite number within the inclusive physically-based material range",
+	},
+} as const;
 
 const COMPONENT_SLOT_SET = new Set<string>(CHARACTER_COMPONENT_SLOTS);
 const PALETTE_REGION_SET = new Set<string>(CHARACTER_PALETTE_REGIONS);
@@ -372,11 +395,16 @@ export function createDefaultCharacterRecipe(
 		},
 		components: {},
 		palette: {
-			skin: "#c98f65",
+			skin: CHARACTER_SKIN_APPEARANCE_LIMITS.skinColor.defaultValue,
 			hair: "#3b2a1f",
 			primary: "#2f6f8f",
 			secondary: "#d9a441",
 			metal: "#8a949e",
+		},
+		appearance: {
+			skin: {
+				roughness: CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.defaultValue,
+			},
 		},
 		animationSetId: DEFAULT_CHARACTER_ANIMATION_SET_ID,
 	};
@@ -444,8 +472,32 @@ export function validateCharacterRecipe(
 			);
 			parsedPalette[region] = createDefaultCharacterRecipe().palette[region];
 		} else {
-			parsedPalette[region] = color;
+			parsedPalette[region] = color.toLowerCase();
 		}
+	}
+	const appearance = isRecord(value.appearance) ? value.appearance : undefined;
+	const skinAppearance =
+		appearance && isRecord(appearance.skin) ? appearance.skin : undefined;
+	if (!appearance) {
+		issues.push(issue("$.appearance", "Expected an appearance object."));
+	} else if (!skinAppearance) {
+		issues.push(issue("$.appearance.skin", "Expected skin appearance."));
+	}
+	const roughness = skinAppearance?.roughness;
+	if (typeof roughness !== "number" || !Number.isFinite(roughness)) {
+		issues.push(
+			issue("$.appearance.skin.roughness", "Expected a finite number."),
+		);
+	} else if (
+		roughness < CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.min ||
+		roughness > CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.max
+	) {
+		issues.push(
+			issue(
+				"$.appearance.skin.roughness",
+				`Expected a number between ${CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.min} and ${CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.max}.`,
+			),
+		);
 	}
 
 	const recipe: CharacterRecipeV1 = {
@@ -510,6 +562,14 @@ export function validateCharacterRecipe(
 		},
 		components: parsedComponents,
 		palette: parsedPalette,
+		appearance: {
+			skin: {
+				roughness:
+					typeof roughness === "number" && Number.isFinite(roughness)
+						? roughness
+						: CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.defaultValue,
+			},
+		},
 		animationSetId: readRequiredString(
 			value,
 			"animationSetId",
@@ -534,6 +594,14 @@ export function migrateCharacterRecipe(
 		: {};
 	return validateCharacterRecipe({
 		...value,
+		appearance: isRecord(value.appearance)
+			? value.appearance
+			: {
+					skin: {
+						roughness:
+							CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.defaultValue,
+					},
+				},
 		body: {
 			...value.body,
 			parameters: {

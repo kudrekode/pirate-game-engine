@@ -64,7 +64,7 @@ test("previews and animates the checked-in Body Proportions V1 mannequin", async
 	await expect(diagnostics).toContainText("1 connected component");
 	await expect(diagnostics).toContainText("manifold");
 	await expect(diagnostics).toContainText("65-joint Golden template");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v2");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v3");
 	await verifyAnimations(page);
 
 	await page
@@ -162,8 +162,8 @@ test("randomises, compiles, animates, validates, and revisits several body shape
 	}
 
 	const diagnostics = page.getByLabel("Creator compilation diagnostics");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v2");
-	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v3");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v3");
+	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v4");
 	await page.screenshot({
 		path: testInfo.outputPath("creator-random-body.png"),
 	});
@@ -174,5 +174,90 @@ test("randomises, compiles, animates, validates, and revisits several body shape
 		.click();
 	await expect(host).toHaveAttribute("data-recipe-hash", bodies[0].recipeHash);
 	expect(compileRequests).toBe(seeds.length);
+	expect(consoleErrors).toEqual([]);
+});
+
+test("compiles isolated skin color and roughness changes without changing geometry or rig", async ({
+	page,
+}, testInfo) => {
+	test.setTimeout(360_000);
+	const consoleErrors = collectErrors(page);
+	await page.goto("/");
+	const cases = [
+		{ color: "#f1c7a5", name: "tone-1-matte", roughness: 0.82 },
+		{ color: "#7d4f38", name: "tone-5-matte", roughness: 0.82 },
+		{ color: "#503126", name: "tone-6-smooth", roughness: 0.36 },
+	] as const;
+	const results = [];
+	for (const appearance of cases) {
+		await page.getByLabel("Skin color", { exact: true }).fill(appearance.color);
+		await page
+			.getByLabel("Skin roughness", { exact: true })
+			.fill(String(appearance.roughness));
+		await expect(page.getByLabel("Draft skin swatch")).toHaveCSS(
+			"background-color",
+			/rgba?\(/u,
+		);
+		const hostBefore = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
+		if ((await hostBefore.count()) > 0) {
+			expect(await hostBefore.getAttribute("data-skin-color")).not.toBe(
+				appearance.color,
+			);
+		}
+		await page.getByRole("button", { exact: true, name: "Compile" }).click();
+		await expect(page.locator("[data-compile-status]")).toHaveAttribute(
+			"data-compile-status",
+			"succeeded",
+			{ timeout: 90_000 },
+		);
+		await expect(page.locator(".preview-status")).toHaveAttribute(
+			"data-status",
+			"loaded",
+			{ timeout: 60_000 },
+		);
+		const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
+		await expect(host).toHaveAttribute("data-skin-color", appearance.color);
+		await expect(host).toHaveAttribute(
+			"data-skin-roughness",
+			String(appearance.roughness),
+		);
+		await expect(host).toHaveAttribute("data-skin-metallic", "0");
+		await verifyAnimations(page);
+		await page.getByRole("button", { exact: true, name: "Rest" }).click();
+		await page.getByRole("button", { exact: true, name: "Front" }).click();
+		const previewChrome = page.locator(
+			".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
+		);
+		await previewChrome.evaluateAll((elements) => {
+			for (const element of elements) {
+				(element as HTMLElement).style.visibility = "hidden";
+			}
+		});
+		await page.locator("canvas").screenshot({
+			path: testInfo.outputPath(`${appearance.name}.png`),
+		});
+		await previewChrome.evaluateAll((elements) => {
+			for (const element of elements) {
+				(element as HTMLElement).style.visibility = "";
+			}
+		});
+		results.push({
+			geometry: await host.getAttribute("data-geometry-skinning-hash"),
+			material: await host.getAttribute("data-material-hash"),
+			output: await host.getAttribute("data-asset-hash"),
+			recipe: await host.getAttribute("data-recipe-hash"),
+			skeleton: await host.getAttribute("data-skeleton-signature"),
+		});
+	}
+	expect(new Set(results.map((entry) => entry.geometry)).size).toBe(1);
+	expect(new Set(results.map((entry) => entry.skeleton)).size).toBe(1);
+	expect(new Set(results.map((entry) => entry.material)).size).toBe(
+		cases.length,
+	);
+	expect(new Set(results.map((entry) => entry.output)).size).toBe(cases.length);
+	expect(new Set(results.map((entry) => entry.recipe)).size).toBe(cases.length);
+	await expect(
+		page.getByLabel("Recent Compilations").getByRole("button"),
+	).toHaveCount(cases.length);
 	expect(consoleErrors).toEqual([]);
 });

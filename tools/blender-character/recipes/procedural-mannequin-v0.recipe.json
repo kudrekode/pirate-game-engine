@@ -1,5 +1,5 @@
 {
-	"version": 2,
+	"version": 3,
 	"id": "procedural-mannequin-v0",
 	"name": "Procedural Mannequin Body Proportions V1",
 	"proportions": {
@@ -15,9 +15,12 @@
 		"radialSegments": 8,
 		"topologyVersion": "procedural-humanoid-v1"
 	},
-	"material": {
-		"baseColor": "#d6a35f",
-		"roughness": 0.72
+	"appearance": {
+		"skin": {
+			"color": "#c98f65",
+			"colorSpace": "srgb",
+			"roughness": 0.72
+		}
 	},
 	"skeleton": {
 		"contract": "golden-humanoid-v0"

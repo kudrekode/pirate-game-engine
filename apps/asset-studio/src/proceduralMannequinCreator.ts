@@ -1,5 +1,6 @@
 import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
+	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	type CharacterBodyParameters,
 	type CharacterRecipeV1,
 } from "@adventure-game-builder/character-contract";
@@ -7,6 +8,19 @@ import {
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
 export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
+export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
+	"procedural-skin-material-v1";
+export const PROCEDURAL_SKIN_APPEARANCE = {
+	color: {
+		...CHARACTER_SKIN_APPEARANCE_LIMITS.skinColor,
+		label: "Skin color",
+	},
+	roughness: {
+		...CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness,
+		label: "Skin roughness",
+		step: 0.01,
+	},
+} as const;
 
 export const PROCEDURAL_MANNEQUIN_BODY_PARAMETERS = {
 	height: {
@@ -46,6 +60,20 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 ) as Array<keyof CharacterBodyParameters>;
 
 export type ProceduralMannequinManifest = {
+	appearance: {
+		skin: {
+			authoredColor: string;
+			authoredColorSpace: "srgb";
+			authoredRoughness: number;
+			canonicalLinearColor: [number, number, number];
+			exportedLinearColor: [number, number, number];
+			exportedMetallic: number;
+			exportedRoughness: number;
+			materialCount: number;
+			materialName: string;
+			materialSchemaVersion: string;
+		};
+	};
 	anatomy: {
 		armLengthMultiplier: number;
 		armToLegRatio: number;
@@ -68,6 +96,7 @@ export type ProceduralMannequinManifest = {
 	compilerVersion: string;
 	deterministicBuild: boolean;
 	geometryProfile?: "ellipsoid" | "voxel-union";
+	geometryAndSkinningSemanticHash: string;
 	generationDurationMs: number;
 	heightMetres: number;
 	proportions: CharacterBodyParameters;
@@ -80,6 +109,7 @@ export type ProceduralMannequinManifest = {
 	jointCount: number;
 	knownLimitations: string[];
 	materialCount: number;
+	materialSemanticHash: string;
 	meshCount: number;
 	normalizedSemanticHash: string;
 	outputHash: string;
@@ -199,6 +229,32 @@ export function validateProceduralMannequinBody(
 		: { issues, ok: false as const };
 }
 
+export function validateProceduralMannequinAppearance(
+	recipe: Pick<CharacterRecipeV1, "appearance" | "palette">,
+) {
+	const issues: Array<{ message: string; path: string }> = [];
+	if (!/^#[0-9a-fA-F]{6}$/.test(recipe.palette.skin)) {
+		issues.push({
+			message: "Skin color must be a six-digit sRGB hexadecimal color.",
+			path: "$.palette.skin",
+		});
+	}
+	const roughness = recipe.appearance.skin.roughness;
+	if (
+		!Number.isFinite(roughness) ||
+		roughness < PROCEDURAL_SKIN_APPEARANCE.roughness.min ||
+		roughness > PROCEDURAL_SKIN_APPEARANCE.roughness.max
+	) {
+		issues.push({
+			message: "Skin roughness must be between 0 and 1.",
+			path: "$.appearance.skin.roughness",
+		});
+	}
+	return issues.length === 0
+		? { issues: [], ok: true as const }
+		: { issues, ok: false as const };
+}
+
 function seedHash(seed: string) {
 	let hash = 2166136261;
 	for (let index = 0; index < seed.length; index += 1) {
@@ -236,20 +292,27 @@ export function randomizeProceduralMannequinBody(seed: string) {
 }
 
 export function createProceduralMannequinCompileRequest(
-	recipe: Pick<CharacterRecipeV1, "body">,
+	recipe: Pick<CharacterRecipeV1, "appearance" | "body" | "palette">,
 ) {
 	return {
+		appearance: {
+			skinColor: recipe.palette.skin.toLowerCase(),
+			skinRoughness: recipe.appearance.skin.roughness,
+		},
 		proportions: { ...recipe.body.parameters },
-		version: 2 as const,
+		version: 3 as const,
 	};
 }
 
 export async function requestProceduralMannequinCompile(
-	recipe: Pick<CharacterRecipeV1, "body">,
+	recipe: Pick<CharacterRecipeV1, "appearance" | "body" | "palette">,
 	request: typeof fetch = fetch,
 ): Promise<ProceduralMannequinCompileResult> {
 	const validation = validateProceduralMannequinBody(recipe.body.parameters);
 	if (!validation.ok) throw new Error(validation.issues[0]?.message);
+	const appearanceValidation = validateProceduralMannequinAppearance(recipe);
+	if (!appearanceValidation.ok)
+		throw new Error(appearanceValidation.issues[0]?.message);
 	const compileRequest = createProceduralMannequinCompileRequest(recipe);
 	const response = await request(PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT, {
 		body: JSON.stringify(compileRequest),
@@ -273,6 +336,14 @@ export async function requestProceduralMannequinCompile(
 			(key) =>
 				payload.manifest.proportions[key] === compileRequest.proportions[key],
 		) ||
+		payload.manifest.appearance?.skin?.authoredColor !==
+			compileRequest.appearance.skinColor ||
+		payload.manifest.appearance?.skin?.authoredRoughness !==
+			compileRequest.appearance.skinRoughness ||
+		payload.manifest.appearance?.skin?.exportedMetallic !== 0 ||
+		payload.manifest.appearance?.skin?.materialCount !== 1 ||
+		payload.manifest.appearance?.skin?.materialSchemaVersion !==
+			PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION ||
 		payload.manifest.outputHash.length !== 64 ||
 		payload.manifest.recipeHash.length !== 64 ||
 		payload.manifest.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION ||

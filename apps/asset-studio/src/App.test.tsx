@@ -9,6 +9,20 @@ function successfulCompile(heightMetres = 1.9) {
 		compilationDurationMs: 1234,
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
+			appearance: {
+				skin: {
+					authoredColor: "#c98f65",
+					authoredColorSpace: "srgb",
+					authoredRoughness: 0.72,
+					canonicalLinearColor: [0.584, 0.275, 0.13],
+					exportedLinearColor: [0.584, 0.275, 0.13],
+					exportedMetallic: 0,
+					exportedRoughness: 0.72,
+					materialCount: 1,
+					materialName: "ProceduralSkinMaterial",
+					materialSchemaVersion: "procedural-skin-material-v1",
+				},
+			},
 			anatomy: {
 				armLengthMultiplier: 1,
 				armToLegRatio: 1,
@@ -28,9 +42,10 @@ function successfulCompile(heightMetres = 1.9) {
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v2",
+			compilerVersion: "procedural-mannequin-blender-v3",
 			deterministicBuild: true,
 			generationDurationMs: 1200,
+			geometryAndSkinningSemanticHash: "e".repeat(64),
 			heightMetres,
 			proportions: {
 				height: heightMetres,
@@ -49,12 +64,13 @@ function successfulCompile(heightMetres = 1.9) {
 			jointCount: 65,
 			knownLimitations: [],
 			materialCount: 1,
+			materialSemanticHash: "f".repeat(64),
 			meshCount: 1,
 			normalizedSemanticHash: "c".repeat(64),
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 2,
+			recipeVersion: 3,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
@@ -71,7 +87,7 @@ function successfulCompile(heightMetres = 1.9) {
 			},
 			topologyVersion: "procedural-humanoid-v1",
 			triangleCount: 5444,
-			validationVersion: "procedural-mannequin-roundtrip-v3",
+			validationVersion: "procedural-mannequin-roundtrip-v4",
 			vertexCount: 2724,
 		},
 		manifestUrl:
@@ -80,7 +96,7 @@ function successfulCompile(heightMetres = 1.9) {
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v3",
+			version: "procedural-mannequin-roundtrip-v4",
 		},
 	};
 }
@@ -153,6 +169,40 @@ describe("Asset Studio app", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Reset height" }));
 
 		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
+	});
+
+	it("edits and resets draft skin appearance without recoloring or compiling", () => {
+		const fetch = vi.fn();
+		vi.stubGlobal("fetch", fetch);
+		render(<App />);
+		const canvas = document.querySelector("canvas");
+		fireEvent.change(screen.getByLabelText("Skin color"), {
+			target: { value: "#503126" },
+		});
+		fireEvent.change(screen.getByLabelText("Skin roughness"), {
+			target: { value: "0.41" },
+		});
+		expect(screen.getByLabelText("Current skin color")).toHaveTextContent(
+			"#503126",
+		);
+		expect(screen.getByLabelText("Current skin roughness")).toHaveTextContent(
+			"0.41",
+		);
+		expect(screen.getByTestId("recipe-json")).toHaveTextContent(
+			'"roughness": 0.41',
+		);
+		expect(document.querySelector("canvas")).toBe(canvas);
+		expect(fetch).not.toHaveBeenCalled();
+		fireEvent.click(screen.getByRole("button", { name: "Reset skin color" }));
+		fireEvent.click(
+			screen.getByRole("button", { name: "Reset skin roughness" }),
+		);
+		expect(screen.getByLabelText("Current skin color")).toHaveTextContent(
+			"#c98f65",
+		);
+		expect(screen.getByLabelText("Current skin roughness")).toHaveTextContent(
+			"0.72",
+		);
 	});
 
 	it("exposes exactly the six genuine compiled body parameters", () => {

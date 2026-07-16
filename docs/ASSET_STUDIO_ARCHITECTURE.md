@@ -30,6 +30,8 @@ The V0 recipe contains:
   length, leg length, and hip width
 - optional component ids for hair, headwear, torso, legs, feet, and main hand
 - a constrained palette for skin, hair, primary, secondary, and metal
+- compiled skin appearance roughness; `palette.skin` is its single authored
+  sRGB color source
 - an `animationSetId`
 
 Validation rejects unsupported versions, invalid skeleton ids, invalid colors, empty ids, and body parameters outside their declared ranges. V0 rejects bad bounds instead of silently normalizing imported data.
@@ -164,7 +166,7 @@ pair-specific JSON diagnostic for development comparison; a baked load failure
 is reported and never silently falls back.
 
 The mannequin preview can read either the checked-in manifest or a successful
-local creator job. Body proportions are adapted from `CharacterRecipeV1` into
+local creator job. Body proportions and skin appearance are adapted from `CharacterRecipeV1` into
 the narrow procedural recipe; the browser submits the request but never
 executes Blender, scales body parts, or deforms the mesh.
 Live Three.js objects stay in app presentation code, not recipe contracts.
@@ -188,6 +190,9 @@ The current reference preview provides:
 - Generated Body Topology V1: one closed, manifold, genus-zero body surface,
   deterministic blended weights, topology version/stats diagnostics, and the
   unchanged Golden animation contract.
+- Material and Skin Appearance V1: compiled sRGB skin color and roughness, one
+  validated non-metallic material, draft/compiled UI state, neutral presets,
+  and separate geometry/skinning and material semantic hashes.
 
 The repository now has one narrow procedural recipe compiler, one validated
 connected-topology mannequin, and a complete body-proportion authoring loop.
@@ -296,11 +301,10 @@ crowd-budget default.
 
 ## Next Milestone
 
-Generated Body Topology V1 is complete without changing the proven
+Material and Skin Appearance V1 is complete without changing the proven
 recipe/compile/Blender/validation/preview boundary. Evidence is documented in
-[`generated-body-topology-v1.md`](assets/generated-body-topology-v1.md). A later
-topology refinement should improve local edge flow and deformation without
-adding body parameters.
+[`material-skin-appearance-v1.md`](assets/material-skin-appearance-v1.md). The
+next creator milestone is Hairstyle Slot V1.
 
 ## Future Deployment Models
 

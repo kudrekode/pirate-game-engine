@@ -19,6 +19,7 @@ import {
 } from "./blender-discovery.mjs";
 import {
 	canonicalizeProceduralMannequinRecipe,
+	canonicalSrgbHexToLinear,
 	deriveProceduralMannequinAnatomy,
 	deriveProceduralMannequinMeasurements,
 	GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE,
@@ -29,6 +30,9 @@ import {
 	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 	PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
+	PROCEDURAL_SKIN_COLOR_SPACE,
+	PROCEDURAL_SKIN_MATERIAL_NAME,
+	PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
 import { validateProceduralMannequinArtifact } from "./procedural-mannequin-roundtrip.mjs";
@@ -62,6 +66,14 @@ const OUTPUT_NAMES = Object.freeze({
 
 const sha256 = (input) => createHash("sha256").update(input).digest("hex");
 const portable = (filePath) => filePath.replaceAll(path.sep, "/");
+
+function expectedSkinMaterial(recipe) {
+	return {
+		linearColor: canonicalSrgbHexToLinear(recipe.appearance.skin.color),
+		name: PROCEDURAL_SKIN_MATERIAL_NAME,
+		roughness: recipe.appearance.skin.roughness,
+	};
+}
 
 async function hashFile(filePath) {
 	return sha256(await readFile(filePath));
@@ -161,6 +173,7 @@ export async function validateInstalledProceduralMannequin({
 		validateProceduralMannequinArtifact({
 			artifactPath,
 			expectedHeightMetres: parsed.value.proportions.height,
+			expectedSkinMaterial: expectedSkinMaterial(parsed.value),
 			templatePath,
 			workspaceRoot,
 		}),
@@ -170,6 +183,16 @@ export async function validateInstalledProceduralMannequin({
 		hashFile(artifactPath),
 	]);
 	const checks = {
+		manifestAppearance:
+			manifest.appearance?.skin?.authoredColor ===
+				parsed.value.appearance.skin.color &&
+			manifest.appearance?.skin?.authoredRoughness ===
+				parsed.value.appearance.skin.roughness &&
+			manifest.appearance?.skin?.exportedMetallic === 0 &&
+			manifest.appearance?.skin?.materialCount === 1,
+		manifestGeometryAndSkinningHash:
+			manifest.geometryAndSkinningSemanticHash ===
+			validation.geometrySemanticHash,
 		manifestGenerationDuration:
 			Number.isFinite(manifest.generationDurationMs) &&
 			manifest.generationDurationMs > 0,
@@ -178,6 +201,8 @@ export async function validateInstalledProceduralMannequin({
 			JSON.stringify(manifest.proportions) ===
 			JSON.stringify(parsed.value.proportions),
 		manifestOutputHash: manifest.outputHash === outputHash,
+		manifestMaterialHash:
+			manifest.materialSemanticHash === validation.materialSemanticHash,
 		manifestRecipeHash:
 			manifest.recipeHash === hashProceduralMannequinRecipe(parsed.value),
 		manifestSemanticHash:
@@ -264,12 +289,14 @@ export async function compileProceduralMannequin({
 			validateProceduralMannequinArtifact({
 				artifactPath: first.outputPath,
 				expectedHeightMetres: recipe.proportions.height,
+				expectedSkinMaterial: expectedSkinMaterial(recipe),
 				templatePath,
 				workspaceRoot,
 			}),
 			validateProceduralMannequinArtifact({
 				artifactPath: second.outputPath,
 				expectedHeightMetres: recipe.proportions.height,
+				expectedSkinMaterial: expectedSkinMaterial(recipe),
 				templatePath,
 				workspaceRoot,
 			}),
@@ -290,6 +317,21 @@ export async function compileProceduralMannequin({
 			);
 		}
 		for (const pass of [first, second]) {
+			const expectedMaterial = expectedSkinMaterial(recipe);
+			if (
+				pass.report.material?.name !== expectedMaterial.name ||
+				pass.report.material?.schemaVersion !==
+					PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION ||
+				pass.report.material?.metallic !== 0 ||
+				Math.abs(pass.report.material?.roughness - expectedMaterial.roughness) >
+					0.000001 ||
+				pass.report.material?.canonicalLinearColor?.some(
+					(value, index) =>
+						Math.abs(value - expectedMaterial.linearColor[index]) > 0.000001,
+				)
+			) {
+				throw new Error("Blender skin material did not match the recipe.");
+			}
 			for (const [key, expected] of Object.entries(anatomy)) {
 				if (Math.abs(pass.report.anatomy?.[key] - expected) > 0.000001) {
 					throw new Error(
@@ -339,6 +381,12 @@ export async function compileProceduralMannequin({
 		const determinism = {
 			binaryDeterministic: first.outputHash === second.outputHash,
 			firstOutputHash: first.outputHash,
+			geometryAndSkinningDeterministic:
+				firstValidation.geometrySemanticHash ===
+				secondValidation.geometrySemanticHash,
+			materialDeterministic:
+				firstValidation.materialSemanticHash ===
+				secondValidation.materialSemanticHash,
 			nodeHierarchyDeterministic:
 				JSON.stringify(firstValidation.semanticSnapshot.hierarchy) ===
 				JSON.stringify(secondValidation.semanticSnapshot.hierarchy),
@@ -354,6 +402,8 @@ export async function compileProceduralMannequin({
 		};
 		if (
 			!determinism.nodeHierarchyDeterministic ||
+			!determinism.geometryAndSkinningDeterministic ||
+			!determinism.materialDeterministic ||
 			!determinism.normalizedSemanticDeterministic ||
 			!determinism.skeletonDeterministic ||
 			!determinism.topologyAndWeightsDeterministic
@@ -428,12 +478,28 @@ export async function compileProceduralMannequin({
 			},
 			jointCount: firstValidation.inspection.jointCount,
 			knownLimitations: warnings,
+			appearance: {
+				skin: {
+					authoredColor: recipe.appearance.skin.color,
+					authoredColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
+					authoredRoughness: recipe.appearance.skin.roughness,
+					canonicalLinearColor: expectedSkinMaterial(recipe).linearColor,
+					exportedLinearColor: firstValidation.material.exportedLinearColor,
+					exportedMetallic: firstValidation.material.exportedMetallic,
+					exportedRoughness: firstValidation.material.exportedRoughness,
+					materialCount: firstValidation.material.materialCount,
+					materialName: firstValidation.material.materialName,
+					materialSchemaVersion: PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION,
+				},
+			},
 			materialCount: geometry.materialCount,
 			meshCount: geometry.meshCount,
 			meshNames: firstValidation.semanticSnapshot.meshes.map(
 				(mesh) => mesh.name,
 			),
 			normalizedSemanticHash: firstValidation.semanticHash,
+			geometryAndSkinningSemanticHash: firstValidation.geometrySemanticHash,
+			materialSemanticHash: firstValidation.materialSemanticHash,
 			outputFile: OUTPUT_NAMES.glb,
 			outputHash: await hashFile(outputPath),
 			proportions: recipe.proportions,

@@ -10,10 +10,12 @@ import {
 } from "./procedural-mannequin-compiler.mjs";
 import {
 	canonicalizeProceduralMannequinRecipe,
+	canonicalSrgbHexToLinear,
 	deriveProceduralMannequinMeasurements,
 	GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE,
 	hashProceduralMannequinRecipe,
 	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+	PROCEDURAL_MANNEQUIN_RECIPE_VERSION,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
 import { proceduralMannequinTopologyMatrixCases } from "./procedural-mannequin-topology-matrix.mjs";
@@ -51,6 +53,26 @@ test("validates and stably hashes all six authored V1 parameters", async () => {
 			`${key} must change the recipe hash`,
 		);
 	}
+	for (const [path, mutate] of [
+		["skinColor", (changed) => (changed.appearance.skin.color = "#7d4f38")],
+		["skinRoughness", (changed) => (changed.appearance.skin.roughness = 0.41)],
+	]) {
+		const changed = structuredClone(recipe);
+		mutate(changed);
+		assert.notEqual(
+			hashProceduralMannequinRecipe(changed),
+			hashProceduralMannequinRecipe(recipe),
+			`${path} must change the recipe hash`,
+		);
+	}
+});
+
+test("converts canonical authored sRGB skin colors to stable linear values", () => {
+	assert.deepEqual(canonicalSrgbHexToLinear("#000000"), [0, 0, 0]);
+	assert.deepEqual(canonicalSrgbHexToLinear("#ffffff"), [1, 1, 1]);
+	const linear = canonicalSrgbHexToLinear("#c98f65");
+	assert.ok(Math.abs(linear[0] - 0.5840784178911641) < 1e-12);
+	assert.throws(() => canonicalSrgbHexToLinear("c98f65"), /#RRGGBB/u);
 });
 
 test("rejects unsupported contracts and invalid numeric ranges", async () => {
@@ -58,7 +80,8 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 	const invalid = structuredClone(recipe);
 	invalid.proportions.height = 4;
 	invalid.geometry.radialSegments = 7.5;
-	invalid.material.roughness = -1;
+	invalid.appearance.skin.roughness = -1;
+	invalid.appearance.skin.color = "invalid";
 	invalid.skeleton.contract = "parallel-rig-v0";
 	const parsed = validateProceduralMannequinRecipe(invalid);
 	assert.equal(parsed.ok, false);
@@ -66,7 +89,8 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 	for (const path of [
 		"$.proportions.height",
 		"$.geometry.radialSegments",
-		"$.material.roughness",
+		"$.appearance.skin.color",
+		"$.appearance.skin.roughness",
 		"$.skeleton.contract",
 	]) {
 		assert.ok(
@@ -100,6 +124,10 @@ test("migrates a height-only V0 procedural recipe", async () => {
 	const recipe = await loadRecipe();
 	const legacy = {
 		...recipe,
+		material: {
+			baseColor: recipe.appearance.skin.color,
+			roughness: recipe.appearance.skin.roughness,
+		},
 		geometry: { profile: "ellipsoid", radialSegments: 8 },
 		version: 0,
 		proportions: { heightMetres: 1.9 },
@@ -114,7 +142,8 @@ test("migrates a height-only V0 procedural recipe", async () => {
 		legLength: 0.5,
 		hipWidth: 0.5,
 	});
-	assert.equal(parsed.value.version, 2);
+	assert.equal(parsed.value.version, PROCEDURAL_MANNEQUIN_RECIPE_VERSION);
+	assert.deepEqual(parsed.value.appearance, recipe.appearance);
 	assert.equal(parsed.value.geometry.profile, "voxel-union");
 	assert.equal(
 		parsed.value.geometry.topologyVersion,
@@ -125,11 +154,15 @@ test("migrates a height-only V0 procedural recipe", async () => {
 test("migrates the disconnected V1 recipe and derives deterministic topology measurements", async () => {
 	const recipe = await loadRecipe();
 	const legacy = structuredClone(recipe);
+	legacy.material = {
+		baseColor: recipe.appearance.skin.color,
+		roughness: recipe.appearance.skin.roughness,
+	};
 	legacy.version = 1;
 	legacy.geometry = { profile: "ellipsoid", radialSegments: 8 };
 	const parsed = validateProceduralMannequinRecipe(legacy);
 	assert.equal(parsed.ok, true);
-	assert.equal(parsed.value.version, 2);
+	assert.equal(parsed.value.version, PROCEDURAL_MANNEQUIN_RECIPE_VERSION);
 	assert.equal(parsed.value.geometry.profile, "voxel-union");
 	const measurements = deriveProceduralMannequinMeasurements(
 		parsed.value.proportions,
@@ -201,9 +234,12 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v3",
+		"procedural-mannequin-roundtrip-v4",
 	);
-	assert.equal(result.manifest.recipeVersion, 2);
+	assert.equal(result.manifest.recipeVersion, 3);
+	assert.equal(result.manifest.appearance.skin.authoredColor, "#c98f65");
+	assert.equal(result.manifest.appearance.skin.authoredRoughness, 0.72);
+	assert.equal(result.manifest.appearance.skin.exportedMetallic, 0);
 	assert.equal(
 		result.manifest.topologyVersion,
 		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
