@@ -15,7 +15,7 @@
 		"maxY": 1.8200001,
 		"minY": 0
 	},
-	"compilerHash": "1a17f1065925da5206cad8ac3432530882d8a1a5e95b0a5b99db20618828efec",
+	"compilerHash": "b70a9c9a6209b6c589fcce072a3a61b3d529f12a8c30d7751c4deb684525213b",
 	"compilerVersion": "procedural-mannequin-blender-v0",
 	"determinism": {
 		"binaryDeterministic": true,
@@ -29,6 +29,7 @@
 	"deterministicBuild": true,
 	"engineForward": "-Z after registry 180-degree Y rotation",
 	"geometryProfile": "ellipsoid",
+	"heightMetres": 1.82,
 	"influenceStatistics": {
 		"maximumInfluences": 1,
 		"maximumWeightSumError": 0,
@@ -60,10 +61,12 @@
 	},
 	"triangleCount": 1108,
 	"units": "metres",
+	"validationVersion": "procedural-mannequin-roundtrip-v1",
 	"vertexCount": 648,
 	"warnings": [
 		"V0 uses deliberately rigid body-part weighting with overlapping joint volumes.",
 		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
 		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
-	]
+	],
+	"generationDurationMs": 6203
 }

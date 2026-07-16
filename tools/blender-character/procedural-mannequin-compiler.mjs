@@ -23,6 +23,7 @@ import {
 	GOLDEN_REFERENCE_ANIMATION_SET,
 	hashProceduralMannequinRecipe,
 	PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
+	PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
 import { validateProceduralMannequinArtifact } from "./procedural-mannequin-roundtrip.mjs";
@@ -82,11 +83,11 @@ export function buildProceduralMannequinScriptArguments({
 	];
 }
 
-async function compilerHash() {
+async function compilerHash(workspaceRoot = process.cwd()) {
 	const sources = await Promise.all(
 		COMPILER_SOURCE_PATHS.map(async (filePath) => ({
 			filePath: portable(filePath),
-			hash: await hashFile(filePath),
+			hash: await hashFile(path.resolve(workspaceRoot, filePath)),
 		})),
 	);
 	return sha256(JSON.stringify(sources));
@@ -98,6 +99,7 @@ async function runPass({
 	execFileImpl = execFileAsync,
 	recipePath,
 	templatePath,
+	workspaceRoot = process.cwd(),
 }) {
 	const outputPath = path.join(directory, OUTPUT_NAMES.glb);
 	const reportPath = path.join(directory, "blender-report.json");
@@ -108,11 +110,11 @@ async function runPass({
 		templatePath,
 	});
 	const blenderArguments = buildHeadlessBlenderArguments(
-		path.resolve(PROCEDURAL_MANNEQUIN_PATHS.script),
+		path.resolve(workspaceRoot, PROCEDURAL_MANNEQUIN_PATHS.script),
 		scriptArguments,
 	);
 	const { stderr, stdout } = await execFileImpl(blender, blenderArguments, {
-		cwd: process.cwd(),
+		cwd: workspaceRoot,
 		maxBuffer: 32 * 1024 * 1024,
 		timeout: 10 * 60 * 1000,
 		windowsHide: true,
@@ -140,6 +142,7 @@ export async function validateInstalledProceduralMannequin({
 	outputDirectory = PROCEDURAL_MANNEQUIN_PATHS.defaultOutput,
 	recipePath = PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
 	templatePath = PROCEDURAL_MANNEQUIN_PATHS.template,
+	workspaceRoot = process.cwd(),
 } = {}) {
 	const rawRecipe = JSON.parse(await readFile(recipePath, "utf8"));
 	const parsed = validateProceduralMannequinRecipe(rawRecipe);
@@ -154,6 +157,7 @@ export async function validateInstalledProceduralMannequin({
 			artifactPath,
 			expectedHeightMetres: parsed.value.proportions.heightMetres,
 			templatePath,
+			workspaceRoot,
 		}),
 		readFile(path.join(outputDirectory, OUTPUT_NAMES.manifest), "utf8").then(
 			JSON.parse,
@@ -161,11 +165,18 @@ export async function validateInstalledProceduralMannequin({
 		hashFile(artifactPath),
 	]);
 	const checks = {
+		manifestGenerationDuration:
+			Number.isFinite(manifest.generationDurationMs) &&
+			manifest.generationDurationMs > 0,
+		manifestHeight:
+			manifest.heightMetres === parsed.value.proportions.heightMetres,
 		manifestOutputHash: manifest.outputHash === outputHash,
 		manifestRecipeHash:
 			manifest.recipeHash === hashProceduralMannequinRecipe(parsed.value),
 		manifestSemanticHash:
 			manifest.normalizedSemanticHash === validation.semanticHash,
+		manifestValidationVersion:
+			manifest.validationVersion === PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
 		roundTrip: validation.passed,
 	};
 	return {
@@ -185,7 +196,9 @@ export async function compileProceduralMannequin({
 	recipePath = PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
 	staging = false,
 	templatePath = PROCEDURAL_MANNEQUIN_PATHS.template,
+	workspaceRoot = process.cwd(),
 } = {}) {
+	const compilationStartedAt = performance.now();
 	const rawRecipe = JSON.parse(await readFile(recipePath, "utf8"));
 	const parsed = validateProceduralMannequinRecipe(rawRecipe);
 	if (!parsed.ok) {
@@ -226,6 +239,7 @@ export async function compileProceduralMannequin({
 			execFileImpl,
 			recipePath,
 			templatePath,
+			workspaceRoot,
 		});
 		const second = await runPass({
 			blender,
@@ -233,17 +247,20 @@ export async function compileProceduralMannequin({
 			execFileImpl,
 			recipePath,
 			templatePath,
+			workspaceRoot,
 		});
 		const [firstValidation, secondValidation] = await Promise.all([
 			validateProceduralMannequinArtifact({
 				artifactPath: first.outputPath,
 				expectedHeightMetres: recipe.proportions.heightMetres,
 				templatePath,
+				workspaceRoot,
 			}),
 			validateProceduralMannequinArtifact({
 				artifactPath: second.outputPath,
 				expectedHeightMetres: recipe.proportions.heightMetres,
 				templatePath,
+				workspaceRoot,
 			}),
 		]);
 		if (!firstValidation.passed || !secondValidation.passed) {
@@ -296,7 +313,7 @@ export async function compileProceduralMannequin({
 		await mkdir(outputDirectory, { recursive: true });
 		const outputPath = path.join(outputDirectory, OUTPUT_NAMES.glb);
 		await copyFile(first.outputPath, outputPath);
-		const compilerSourceHash = await compilerHash();
+		const compilerSourceHash = await compilerHash(workspaceRoot);
 		const warnings = [
 			...first.report.warnings,
 			...(determinism.binaryDeterministic
@@ -331,6 +348,7 @@ export async function compileProceduralMannequin({
 				determinism.normalizedSemanticDeterministic,
 			engineForward: "-Z after registry 180-degree Y rotation",
 			geometryProfile: recipe.geometry.profile,
+			heightMetres: recipe.proportions.heightMetres,
 			influenceStatistics: {
 				maximumInfluences: geometry.maximumInfluences,
 				maximumWeightSumError: geometry.maximumWeightSumError,
@@ -360,9 +378,13 @@ export async function compileProceduralMannequin({
 			},
 			triangleCount: geometry.triangleCount,
 			units: "metres",
+			validationVersion: PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
 			vertexCount: geometry.vertexCount,
 			warnings,
 		};
+		manifest.generationDurationMs = Math.round(
+			performance.now() - compilationStartedAt,
+		);
 		const diagnostics = {
 			artifactStatus: "procedural-compiled-validated",
 			blenderReport: first.report,
@@ -384,12 +406,14 @@ export async function compileProceduralMannequin({
 			`blender=${blenderVersion.version}`,
 			`blenderBuild=${blenderVersion.buildHash}`,
 			`recipeHash=${recipeHash}`,
+			`heightMetres=${recipe.proportions.heightMetres}`,
 			`firstOutputHash=${first.outputHash}`,
 			`secondOutputHash=${second.outputHash}`,
 			`binaryDeterministic=${determinism.binaryDeterministic}`,
 			`semanticHash=${firstValidation.semanticHash}`,
 			`semanticDeterministic=${determinism.normalizedSemanticDeterministic}`,
 			`roundTripPassed=${firstValidation.passed}`,
+			`validationVersion=${PROCEDURAL_MANNEQUIN_VALIDATION_VERSION}`,
 			`sourceImmutable=${sourceImmutable}`,
 		].join("\n");
 		await Promise.all([

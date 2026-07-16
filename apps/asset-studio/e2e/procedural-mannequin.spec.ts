@@ -151,3 +151,101 @@ test("previews the deterministic Procedural Mannequin V0 and disposes cleanly on
 	);
 	expect(consoleErrors).toEqual([]);
 });
+
+test("authors height through Blender and reloads only validated generated assets", async ({
+	page,
+}, testInfo) => {
+	test.setTimeout(240_000);
+	const consoleErrors: string[] = [];
+	page.on("console", (message) => {
+		if (
+			message.type() === "error" &&
+			/asset|track|bind|skeleton|webgl|uncaught|compile/iu.test(message.text())
+		) {
+			consoleErrors.push(message.text());
+		}
+	});
+	page.on("pageerror", (error) => consoleErrors.push(error.message));
+
+	await page.goto("/");
+	const height = page.getByRole("slider", { name: "Height" });
+	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compileStatus = page.locator("[data-compile-status]");
+	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
+
+	async function compileHeight(value: number) {
+		await height.fill(String(value));
+		await compile.click();
+		await expect(compileStatus).toHaveAttribute(
+			"data-compile-status",
+			"compiling",
+		);
+		await expect(compileStatus).toHaveAttribute(
+			"data-compile-status",
+			"succeeded",
+			{
+				timeout: 90_000,
+			},
+		);
+		await expect(page.locator(".preview-status")).toHaveAttribute(
+			"data-status",
+			"loaded",
+			{ timeout: 60_000 },
+		);
+		await expect(host).toHaveAttribute("data-height-metres", String(value));
+		await expect(host).toHaveAttribute("data-animation-state", "idle");
+		await expect(page.locator("canvas")).toHaveCount(1);
+		return {
+			assetHash: (await host.getAttribute("data-asset-hash")) ?? "",
+			boundsHeight: Number(await host.getAttribute("data-bounds-height")),
+			recipeHash: (await host.getAttribute("data-recipe-hash")) ?? "",
+			revision: (await host.getAttribute("data-preview-revision")) ?? "",
+		};
+	}
+
+	const first = await compileHeight(1.68);
+	expect(first.assetHash).toMatch(/^[0-9a-f]{64}$/u);
+	expect(first.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
+	expect(first.boundsHeight).toBeCloseTo(1.68, 4);
+	await page.screenshot({
+		path: testInfo.outputPath("creator-height-1.68.png"),
+	});
+
+	const repeated = await compileHeight(1.68);
+	expect(repeated.recipeHash).toBe(first.recipeHash);
+	expect(repeated.assetHash).toBe(first.assetHash);
+	expect(repeated.boundsHeight).toBe(first.boundsHeight);
+	expect(repeated.revision).not.toBe(first.revision);
+
+	const taller = await compileHeight(1.96);
+	expect(taller.recipeHash).not.toBe(first.recipeHash);
+	expect(taller.assetHash).not.toBe(first.assetHash);
+	expect(taller.boundsHeight).toBeCloseTo(1.96, 4);
+	expect(taller.boundsHeight).toBeGreaterThan(first.boundsHeight);
+	await page.screenshot({
+		path: testInfo.outputPath("creator-height-1.96.png"),
+	});
+
+	const creatorDiagnostics = page.getByLabel("Creator compilation diagnostics");
+	await expect(creatorDiagnostics).toContainText(taller.recipeHash);
+	await expect(creatorDiagnostics).toContainText(taller.assetHash);
+	await expect(creatorDiagnostics).toContainText(
+		"procedural-mannequin-blender-v0",
+	);
+	await expect(creatorDiagnostics).toContainText(
+		"procedural-mannequin-roundtrip-v1",
+	);
+
+	await page.getByRole("button", { exact: true, name: "Pause" }).click();
+	for (const state of ["Idle", "Walk"] as const) {
+		await page.getByRole("button", { exact: true, name: state }).click();
+		await page.getByLabel("Animation sample time").fill("0.25");
+		const firstPose = await host.getAttribute("data-pose-snapshot");
+		await page.getByLabel("Animation sample time").fill("0.75");
+		const secondPose = await host.getAttribute("data-pose-snapshot");
+		expect(secondPose).not.toBe(firstPose);
+		await expect(host).toHaveAttribute("data-mesh-invariant-passed", "true");
+	}
+
+	expect(consoleErrors).toEqual([]);
+});

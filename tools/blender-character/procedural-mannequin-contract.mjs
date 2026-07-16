@@ -3,11 +3,13 @@ import { createHash } from "node:crypto";
 export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 0;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
 	"procedural-mannequin-blender-v0";
+export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
+	"procedural-mannequin-roundtrip-v1";
 export const GOLDEN_HUMANOID_SKELETON_CONTRACT = "golden-humanoid-v0";
 export const GOLDEN_REFERENCE_ANIMATION_SET = "golden-reference-v0";
 
 export const PROCEDURAL_MANNEQUIN_LIMITS = Object.freeze({
-	heightMetres: { min: 1.5, max: 2.1 },
+	heightMetres: { defaultValue: 1.82, min: 1.5, max: 2.1, units: "metres" },
 	radialSegments: { min: 6, max: 16 },
 	roughness: { min: 0, max: 1 },
 });

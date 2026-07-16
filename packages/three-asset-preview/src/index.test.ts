@@ -1,13 +1,17 @@
 import * as THREE from "three";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
 	analyzeThreeVisualAssetRoot,
+	clearThreeVisualAssetCacheForTests,
 	cloneThreeVisualAssetRoot,
+	disposeThreeVisualAssetCacheEntry,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	PROCEDURAL_MANNEQUIN_V0_ASSET,
+	requestThreeVisualAsset,
 	resolveThreeVisualAssetResourceUrl,
+	setThreeVisualAssetLoaderFactoryForTests,
 } from "./index";
 
 describe("shared Three asset preview", () => {
@@ -124,5 +128,58 @@ describe("shared Three asset preview", () => {
 		expect(firstMesh.skeleton.bones[0]).not.toBe(secondMesh.skeleton.bones[0]);
 		firstMesh.skeleton.bones[0].rotation.x = 0.5;
 		expect(secondMesh.skeleton.bones[0].rotation.x).toBeCloseTo(0);
+	});
+
+	test("disposes transient cached geometry, material, and skeleton resources", async () => {
+		clearThreeVisualAssetCacheForTests();
+		const root = new THREE.Group();
+		const bone = new THREE.Bone();
+		const geometry = new THREE.BufferGeometry();
+		geometry.setAttribute(
+			"position",
+			new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3),
+		);
+		geometry.setAttribute(
+			"skinIndex",
+			new THREE.Uint16BufferAttribute(new Array(12).fill(0), 4),
+		);
+		geometry.setAttribute(
+			"skinWeight",
+			new THREE.Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], 4),
+		);
+		const material = new THREE.MeshStandardMaterial();
+		const mesh = new THREE.SkinnedMesh(geometry, material);
+		mesh.add(bone);
+		const skeleton = new THREE.Skeleton([bone]);
+		mesh.bind(skeleton);
+		root.add(mesh);
+		const geometryDispose = vi.spyOn(geometry, "dispose");
+		const materialDispose = vi.spyOn(material, "dispose");
+		const skeletonDispose = vi.spyOn(skeleton, "dispose");
+		const definition = {
+			id: "transient-test",
+			kind: "glb" as const,
+			name: "Transient test",
+			url: "/transient.glb",
+		};
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(
+			async () => ({
+				loadAsync: async () => ({ animations: [], scene: root }),
+			}),
+		);
+		try {
+			const completed = new Promise<void>((resolve) => {
+				requestThreeVisualAsset(definition, { onStateChange: resolve });
+			});
+			await completed;
+			expect(disposeThreeVisualAssetCacheEntry(definition)).toBe(true);
+			expect(geometryDispose).toHaveBeenCalledOnce();
+			expect(materialDispose).toHaveBeenCalledOnce();
+			expect(skeletonDispose).toHaveBeenCalledOnce();
+			expect(disposeThreeVisualAssetCacheEntry(definition)).toBe(false);
+		} finally {
+			restoreLoader();
+			clearThreeVisualAssetCacheForTests();
+		}
 	});
 });

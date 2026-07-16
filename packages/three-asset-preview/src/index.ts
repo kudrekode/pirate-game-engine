@@ -545,6 +545,40 @@ export function requestThreeVisualAssetAnimationClip(
 	start(definition, key, options.onStateChange);
 	return { definition, status: "loading" };
 }
+
+/** Releases a transient definition after all of its clones have been removed. */
+export function disposeThreeVisualAssetCacheEntry(
+	definition: Pick<ThreeVisualAssetDefinition, "id" | "url">,
+): boolean {
+	const key = definition.id || definition.url;
+	const entry = cache.get(key);
+	if (!entry) return false;
+	cache.delete(key);
+	if (entry.status !== "loaded") return true;
+	const geometries = new Set<THREE.BufferGeometry>();
+	const materials = new Set<THREE.Material>();
+	const textures = new Set<THREE.Texture>();
+	const skeletons = new Set<THREE.Skeleton>();
+	entry.root.traverse((object) => {
+		if (!(object instanceof THREE.Mesh)) return;
+		geometries.add(object.geometry);
+		for (const material of Array.isArray(object.material)
+			? object.material
+			: [object.material]) {
+			materials.add(material);
+			for (const value of Object.values(material)) {
+				if (value instanceof THREE.Texture) textures.add(value);
+			}
+		}
+		if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton);
+	});
+	for (const skeleton of skeletons) skeleton.dispose();
+	for (const geometry of geometries) geometry.dispose();
+	for (const texture of textures) texture.dispose();
+	for (const material of materials) material.dispose();
+	return true;
+}
+
 export function clearThreeVisualAssetCacheForTests() {
 	cache.clear();
 }

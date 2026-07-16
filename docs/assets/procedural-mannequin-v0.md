@@ -194,12 +194,13 @@ Patchbeard remains the default. Root Playwright evidence shows independent
 skeleton-safe player/NPC clones in both the Three editor and experimental Three
 runtime, with canonical Idle/Walk sources and zero load or binding issues.
 
-## Next Milestone
+## Height Authoring Follow-Up
 
-The first genuine creator control should be **height**. It is already the one
-V0 parameter that travels honestly through recipe validation, canonical recipe
-hashing, Blender root scaling, grounded GLB bounds, round-trip validation,
-Asset Studio metadata, and the root registry. Exposing it should require a real
-compile/import action or job boundary; changing the existing CharacterRecipe
-height input must not pretend to rebuild the checked-in artifact.
-
+Height is now the first genuine creator control. Asset Studio reuses the
+CharacterRecipe height field, submits it to a development-only local compile
+endpoint, waits for the two-pass Blender compiler and full validation, then
+reloads the returned GLB without browser scaling. Failed jobs do not replace the
+previous preview. See
+[`asset-studio-height-authoring-v0.md`](asset-studio-height-authoring-v0.md) for
+the endpoint boundary, manifest additions, measured hash/bounds differences,
+resource disposal, browser evidence, and limitations.

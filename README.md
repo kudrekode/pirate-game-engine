@@ -57,6 +57,14 @@ and promotes the artifact through Asset Studio and the same root registry,
 clone, and animation path. See
 [`docs/assets/procedural-mannequin-v0.md`](docs/assets/procedural-mannequin-v0.md).
 
+Asset Studio now has its first complete creator loop. Editing height and pressing
+Compile submits the existing CharacterRecipe height to a local development
+endpoint, runs the real two-pass Blender compiler and validation pipeline, and
+reloads the returned GLB without browser scaling. Repeated identical heights
+retain identical recipe/asset hashes; failed jobs leave the previous preview
+active. See
+[`docs/assets/asset-studio-height-authoring-v0.md`](docs/assets/asset-studio-height-authoring-v0.md).
+
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
 Areas own map contents: terrain, overlays, structures, objects, pickups, NPC instances, and event blocks. `activeAreaId` controls which area is edited.

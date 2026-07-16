@@ -9,9 +9,9 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
   - Sky / Atmosphere Presentation V1.
   - Model Normalisation / Asset Transform Defaults V1.
   - Pirate Vertical Slice Dressing V1.
-  - Procedural Mannequin V0 follow-up: expose height as the first genuine
-    creator control through a real compile/import boundary; see
-    `docs/assets/procedural-mannequin-v0.md`.
+  - Asset Studio creator follow-up: add shoulder width or torso proportion by
+    reusing the proven height compile/validate/preview boundary; see
+    `docs/assets/asset-studio-height-authoring-v0.md`.
   - Runtime contract tests that prove Phaser and Three.js adapters use the same gameplay semantics.
   - Keep using the Playwright Three perf harness for browser/performance-sensitive 3D work.
 - Expand map overlay filters for event blocks, collision, quest markers, and NPC movement.

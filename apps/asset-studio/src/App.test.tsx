@@ -1,6 +1,57 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+
+function successfulCompile(heightMetres = 1.9) {
+	return {
+		assetUrl:
+			"/__asset-studio/procedural-mannequin/assets/job/output/mannequin.glb",
+		compilationDurationMs: 1234,
+		generatedAt: "2026-07-16T12:00:00.000Z",
+		manifest: {
+			animationSet: "golden-reference-v0",
+			assetId: "procedural-mannequin-v0",
+			bounds: {
+				dimensions: { x: 1.69, y: heightMetres, z: 0.34 },
+				maxY: heightMetres,
+				minY: 0,
+			},
+			compilerVersion: "procedural-mannequin-blender-v0",
+			deterministicBuild: true,
+			generationDurationMs: 1200,
+			heightMetres,
+			influenceStatistics: {
+				maximumInfluences: 1,
+				unweightedVertexCount: 0,
+			},
+			jointCount: 65,
+			knownLimitations: [],
+			materialCount: 1,
+			meshCount: 1,
+			normalizedSemanticHash: "c".repeat(64),
+			outputHash: "a".repeat(64),
+			recipeHash: "b".repeat(64),
+			recipeId: "procedural-mannequin-v0",
+			recipeVersion: 0,
+			skeletonContract: "golden-humanoid-v0",
+			triangleCount: 1108,
+			validationVersion: "procedural-mannequin-roundtrip-v1",
+			vertexCount: 648,
+		},
+		manifestUrl:
+			"/__asset-studio/procedural-mannequin/assets/job/output/manifest.json",
+		requestId: "11111111-1111-4111-8111-111111111111",
+		status: "succeeded",
+		validation: {
+			passed: true,
+			version: "procedural-mannequin-roundtrip-v1",
+		},
+	};
+}
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
 
 describe("Asset Studio app", () => {
 	it("renders the Character screen as the active V0 workflow", () => {
@@ -56,34 +107,89 @@ describe("Asset Studio app", () => {
 		expect(json).toHaveTextContent('"hair": "tied-back"');
 	});
 
-	it("shows validation errors when controls create invalid recipe data", () => {
+	it("resets the authored height to the procedural default", () => {
 		render(<App />);
 
 		fireEvent.change(screen.getByLabelText("Height"), {
-			target: { value: "0.5" },
+			target: { value: "1.9" },
 		});
+		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.90 m");
+		fireEvent.click(screen.getByRole("button", { name: "Reset height" }));
 
-		expect(screen.getByText("$.body.parameters.height")).toBeInTheDocument();
+		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
 	});
 
-	it("keeps browser compile state truthful while the offline compiler is available", () => {
+	it("exposes only height as the genuine compiled body parameter", () => {
 		render(<App />);
 
+		expect(screen.getByLabelText("Height")).toHaveAttribute("type", "range");
+		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
+		expect(screen.getByRole("button", { name: "Reset height" })).toBeEnabled();
+		expect(screen.getByRole("button", { name: "Compile" })).toBeEnabled();
+		expect(screen.queryByLabelText("Build")).not.toBeInTheDocument();
+		expect(screen.queryByLabelText("Shoulders")).not.toBeInTheDocument();
+	});
+
+	it("compiles the current height and replaces the preview only after success", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(JSON.stringify(successfulCompile()), { status: 200 }),
+			),
+		);
+		render(<App />);
+		fireEvent.change(screen.getByLabelText("Height"), {
+			target: { value: "1.9" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+
+		await waitFor(() =>
+			expect(
+				screen.getByText(/Compilation and validation succeeded/u),
+			).toBeInTheDocument(),
+		);
 		expect(
-			screen.getByRole("button", { name: "Compile in browser unavailable" }),
-		).toBeDisabled();
-		expect(
-			screen.getByText(/Repository compilation is available/u),
+			screen.getByLabelText("Procedural Mannequin V0 preview"),
 		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent("b".repeat(64));
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent("a".repeat(64));
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent("2026-07-16T12:00:00.000Z");
+		expect(document.querySelectorAll("canvas")).toHaveLength(1);
 	});
 
-	it("does not expose a live Blender compile action", () => {
+	it("keeps the previous preview active when compilation fails", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						JSON.stringify({
+							error: "synthetic validation failure",
+							status: "failed",
+						}),
+						{ status: 500 },
+					),
+			),
+		);
 		render(<App />);
+		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
 
-		expect(screen.getByText(/headless Blender command/u)).toBeInTheDocument();
+		await waitFor(() =>
+			expect(
+				screen.getByText(/synthetic validation failure/u),
+			).toBeInTheDocument(),
+		);
 		expect(
-			screen.getByRole("button", { name: "Compile in browser unavailable" }),
-		).toBeDisabled();
+			screen.getByLabelText("Golden Reference Humanoid preview"),
+		).toBeInTheDocument();
+		expect(document.querySelectorAll("canvas")).toHaveLength(1);
 	});
 
 	it("switches between the Golden fixture and procedural artifact without duplicate canvases", () => {

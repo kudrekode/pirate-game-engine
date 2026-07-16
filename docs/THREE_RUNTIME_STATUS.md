@@ -90,8 +90,8 @@ Visual differences, imported asset styling, water/coast presentation, and camera
 3. Sky / Atmosphere Presentation V1.
 4. Model Normalisation / Asset Transform Defaults V1.
 5. Pirate Vertical Slice Dressing V1 using current registry/visual-renderer paths.
-6. First genuine Asset Studio creator control, beginning with height through a
-   real compile/import boundary. See
-   [`docs/assets/procedural-mannequin-v0.md`](assets/procedural-mannequin-v0.md).
+6. Extend Asset Studio creator authoring with shoulder width or torso proportion
+   through the existing height compile/validate/preview boundary. See
+   [`docs/assets/asset-studio-height-authoring-v0.md`](assets/asset-studio-height-authoring-v0.md).
 7. Asset Upload/Library V1 later, once built-in registry workflows are stable.
 8. Diagonal/free movement later, after visual, animation, and parity work clarify requirements.

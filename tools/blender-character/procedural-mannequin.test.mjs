@@ -34,6 +34,12 @@ test("validates and stably hashes the authored V0 recipe", async () => {
 			.digest("hex"),
 		hashProceduralMannequinRecipe(recipe),
 	);
+	const taller = structuredClone(recipe);
+	taller.proportions.heightMetres = 1.96;
+	assert.notEqual(
+		hashProceduralMannequinRecipe(taller),
+		hashProceduralMannequinRecipe(recipe),
+	);
 });
 
 test("rejects unsupported contracts and invalid numeric ranges", async () => {
@@ -95,6 +101,12 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.materialCount, 1);
 	assert.equal(result.manifest.jointCount, 65);
 	assert.equal(result.manifest.influenceStatistics.unweightedVertexCount, 0);
+	assert.equal(result.manifest.heightMetres, 1.82);
+	assert.equal(
+		result.manifest.validationVersion,
+		"procedural-mannequin-roundtrip-v1",
+	);
+	assert.ok(result.manifest.generationDurationMs > 0);
 	assert.equal(result.validation.animations.idle.passed, true);
 	assert.equal(result.validation.animations.walk.passed, true);
 	assert.equal(result.validation.cloneIndependence.passed, true);

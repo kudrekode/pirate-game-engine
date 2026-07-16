@@ -1,8 +1,6 @@
 import {
-	CHARACTER_BODY_PARAMETER_LIMITS,
 	CHARACTER_COMPONENT_SLOTS,
 	CHARACTER_PALETTE_REGIONS,
-	type CharacterBodyParameters,
 	type CharacterComponentSlot,
 	type CharacterPaletteRegion,
 	type CharacterRecipeV1,
@@ -11,6 +9,7 @@ import {
 	serializeCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
 import {
+	disposeThreeVisualAssetCacheEntry,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
@@ -23,6 +22,13 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import {
+	PROCEDURAL_MANNEQUIN_HEIGHT,
+	type ProceduralMannequinCompileResult,
+	type ProceduralMannequinManifest,
+	requestProceduralMannequinCompile,
+	validateProceduralMannequinHeight,
+} from "./proceduralMannequinCreator";
 
 const NAV_SECTIONS = [
 	"Character",
@@ -64,22 +70,6 @@ const PALETTE_LABELS: Record<CharacterPaletteRegion, string> = {
 	metal: "Metal color",
 };
 
-const PARAMETER_LABELS: Record<keyof CharacterBodyParameters, string> = {
-	height: "Height",
-	build: "Build",
-	shoulderWidth: "Shoulders",
-	waist: "Waist",
-	headScale: "Head scale",
-};
-
-const PARAMETER_STEP: Record<keyof CharacterBodyParameters, string> = {
-	height: "0.01",
-	build: "0.01",
-	shoulderWidth: "0.01",
-	waist: "0.01",
-	headScale: "0.01",
-};
-
 function replaceComponentValue(
 	recipe: CharacterRecipeV1,
 	slot: CharacterComponentSlot,
@@ -115,24 +105,42 @@ const RETARGET_ARTIFACT_ROOT =
 	"/assets/derived/humanoid-animations/golden-reference-v0";
 const MANNEQUIN_ARTIFACT_ROOT =
 	"/assets/derived/procedural-humanoids/mannequin-v0";
+type PreviewSource = {
+	artifactUrl: string;
+	definition: ThreeVisualAssetDefinition;
+	description: string;
+	displayName: string;
+	fixtureId: string;
+	kindLabel: string;
+	manifestUrl?: string;
+	mannequin: boolean;
+	revision: string;
+	transient?: boolean;
+};
 const PREVIEW_SOURCES = {
 	[GOLDEN_REFERENCE_FIXTURE_ID]: {
+		artifactUrl: GOLDEN_REFERENCE_HUMANOID_ASSET.url,
 		definition: GOLDEN_REFERENCE_HUMANOID_ASSET,
 		description: "Externally authored engineering reference fixture",
 		displayName: "Golden Reference Humanoid",
 		fixtureId: GOLDEN_REFERENCE_FIXTURE_ID,
 		kindLabel: "Reference fixture",
+		mannequin: false,
+		revision: "golden-reference",
 	},
 	[PROCEDURAL_MANNEQUIN_FIXTURE_ID]: {
+		artifactUrl: `${MANNEQUIN_ARTIFACT_ROOT}/mannequin.glb`,
 		definition: PROCEDURAL_MANNEQUIN_V0_ASSET,
 		description: "Compiler-generated engineering geometry",
 		displayName: "Procedural Mannequin V0",
 		fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
 		kindLabel: "Compiled artifact",
+		manifestUrl: `${MANNEQUIN_ARTIFACT_ROOT}/manifest.json`,
+		mannequin: true,
+		revision: "checked-in",
 	},
-} as const;
+} as const satisfies Record<string, PreviewSource>;
 type PreviewSourceId = keyof typeof PREVIEW_SOURCES;
-type PreviewSource = (typeof PREVIEW_SOURCES)[PreviewSourceId];
 type PreviewAnimationState = "idle" | "rest" | "walk";
 type PreviewCameraPreset = "front" | "side" | "three-quarter";
 type RetargetQualitySummary = {
@@ -191,27 +199,6 @@ type OfflineBakeBundle = {
 	walk: OfflineBakeMetadata;
 	roundTrip: OfflineBakeRoundTripReport;
 };
-type ProceduralMannequinManifest = {
-	animationSet: string;
-	assetId: string;
-	compilerVersion: string;
-	deterministicBuild: boolean;
-	influenceStatistics: {
-		maximumInfluences: number;
-		unweightedVertexCount: number;
-	};
-	jointCount: number;
-	knownLimitations: string[];
-	materialCount: number;
-	meshCount: number;
-	normalizedSemanticHash: string;
-	recipeHash: string;
-	recipeId: string;
-	recipeVersion: number;
-	skeletonContract: string;
-	triangleCount: number;
-	vertexCount: number;
-};
 const RETARGET_DIAGNOSTIC_JOINTS = [
 	"pelvis",
 	"spine_03",
@@ -257,7 +244,13 @@ function loadRegisteredAnimationClip(
 	});
 }
 
-function HumanoidPreview({ source }: { source: PreviewSource }) {
+function HumanoidPreview({
+	onManifestLoaded,
+	source,
+}: {
+	onManifestLoaded?: (manifest: ProceduralMannequinManifest) => void;
+	source: PreviewSource;
+}) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const hostRef = useRef<HTMLDivElement>(null);
 	const resetViewRef = useRef<() => void>(() => undefined);
@@ -286,7 +279,7 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 	const [offlineBake, setOfflineBake] = useState<OfflineBakeBundle>();
 	const [mannequinManifest, setMannequinManifest] =
 		useState<ProceduralMannequinManifest>();
-	const isMannequin = source.fixtureId === PROCEDURAL_MANNEQUIN_FIXTURE_ID;
+	const isMannequin = source.mannequin;
 	const animationPlayingRef = useRef(animationPlaying);
 	const applyAnimationStateRef = useRef<(state: PreviewAnimationState) => void>(
 		() => undefined,
@@ -315,6 +308,7 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 		setRetargetReport(undefined);
 		setOfflineBake(undefined);
 		setMannequinManifest(undefined);
+		host.dataset.previewRevision = source.revision;
 		let disposed = false,
 			frame = 0;
 		let activeClone: THREE.Group | undefined;
@@ -628,7 +622,7 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 			: Promise.resolve(undefined);
 		const mannequinManifestPromise = isMannequin
 			? fetchJson<ProceduralMannequinManifest>(
-					`${MANNEQUIN_ARTIFACT_ROOT}/manifest.json`,
+					source.manifestUrl ?? `${MANNEQUIN_ARTIFACT_ROOT}/manifest.json`,
 				)
 			: Promise.resolve(undefined);
 		Promise.all([
@@ -669,6 +663,10 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 				setOfflineBake(baked);
 				setMannequinManifest(manifest);
 				if (manifest) {
+					onManifestLoaded?.(manifest);
+					host.dataset.assetHash = manifest.outputHash;
+					host.dataset.boundsHeight = String(manifest.bounds.dimensions.y);
+					host.dataset.heightMetres = String(manifest.heightMetres);
 					host.dataset.recipeId = manifest.recipeId;
 					host.dataset.recipeVersion = String(manifest.recipeVersion);
 					host.dataset.recipeHash = manifest.recipeHash;
@@ -707,17 +705,26 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 			controls.dispose();
 			animationMixer?.stopAllAction();
 			if (animationRoot) animationMixer?.uncacheRoot(animationRoot);
+			const cloneSkeletons = new Set<THREE.Skeleton>();
+			activeClone?.traverse((object) => {
+				if (object instanceof THREE.SkinnedMesh)
+					cloneSkeletons.add(object.skeleton);
+			});
+			for (const skeleton of cloneSkeletons) skeleton.dispose();
 			activeClone?.removeFromParent();
+			if (source.transient)
+				disposeThreeVisualAssetCacheEntry(source.definition);
 			ground.geometry.dispose();
 			(ground.material as THREE.Material).dispose();
 			renderer.renderLists.dispose();
 			renderer.dispose();
 		};
-	}, [isMannequin, source]);
+	}, [isMannequin, onManifestLoaded, source]);
 	return (
 		<div
 			className="preview-host"
 			data-preview-source={source.fixtureId}
+			data-preview-revision={source.revision}
 			ref={hostRef}
 		>
 			<canvas aria-label={`${source.displayName} preview`} ref={canvasRef} />
@@ -901,7 +908,7 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 					<dt>Artifact</dt>
 					<dd>
 						{isMannequin
-							? `${MANNEQUIN_ARTIFACT_ROOT}/mannequin.glb`
+							? source.artifactUrl
 							: offlineBake
 								? `${offlineBake.idle.outputPath} · ${offlineBake.walk.outputPath}`
 								: "Runtime JSON diagnostics"}
@@ -927,6 +934,14 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 						<div>
 							<dt>Recipe hash</dt>
 							<dd>{mannequinManifest.recipeHash}</dd>
+						</div>
+						<div>
+							<dt>Authored height</dt>
+							<dd>{mannequinManifest.heightMetres.toFixed(2)} m</dd>
+						</div>
+						<div>
+							<dt>Asset hash</dt>
+							<dd>{mannequinManifest.outputHash}</dd>
 						</div>
 						<div>
 							<dt>Skeleton contract</dt>
@@ -999,10 +1014,30 @@ function HumanoidPreview({ source }: { source: PreviewSource }) {
 export default function App() {
 	const [activeSection, setActiveSection] =
 		useState<(typeof NAV_SECTIONS)[number]>("Character");
-	const [recipe, setRecipe] = useState<CharacterRecipeV1>(() =>
-		createDefaultCharacterRecipe(),
-	);
+	const [recipe, setRecipe] = useState<CharacterRecipeV1>(() => {
+		const initial = createDefaultCharacterRecipe();
+		return {
+			...initial,
+			body: {
+				...initial.body,
+				parameters: {
+					...initial.body.parameters,
+					height: PROCEDURAL_MANNEQUIN_HEIGHT.defaultValue,
+				},
+			},
+		};
+	});
 	const [loadStatus, setLoadStatus] = useState("");
+	const [compileStatus, setCompileStatus] = useState<
+		"idle" | "compiling" | "succeeded" | "failed"
+	>("idle");
+	const [compileError, setCompileError] = useState("");
+	const [compileResult, setCompileResult] =
+		useState<ProceduralMannequinCompileResult>();
+	const [currentManifest, setCurrentManifest] =
+		useState<ProceduralMannequinManifest>();
+	const [compiledPreviewSource, setCompiledPreviewSource] =
+		useState<PreviewSource>();
 	const [previewSourceId, setPreviewSourceId] = useState<PreviewSourceId>(
 		GOLDEN_REFERENCE_FIXTURE_ID,
 	);
@@ -1010,7 +1045,18 @@ export default function App() {
 
 	const validation = useMemo(() => parseCharacterRecipe(recipe), [recipe]);
 	const recipeJson = useMemo(() => JSON.stringify(recipe, null, 2), [recipe]);
-	const previewSource = PREVIEW_SOURCES[previewSourceId];
+	const heightValidation = validateProceduralMannequinHeight(
+		recipe.body.parameters.height,
+	);
+	const previewSource =
+		previewSourceId === PROCEDURAL_MANNEQUIN_FIXTURE_ID && compiledPreviewSource
+			? compiledPreviewSource
+			: PREVIEW_SOURCES[previewSourceId];
+	const activeManifest = compileResult?.manifest ?? currentManifest;
+	const compileDirty = Boolean(
+		compileResult &&
+			compileResult.manifest.heightMetres !== recipe.body.parameters.height,
+	);
 
 	function updateRecipe(
 		updater: (current: CharacterRecipeV1) => CharacterRecipeV1,
@@ -1019,20 +1065,53 @@ export default function App() {
 		setLoadStatus("");
 	}
 
-	function updateBodyParameter(
-		key: keyof CharacterBodyParameters,
-		value: number,
-	) {
+	function updateHeight(value: number) {
 		updateRecipe((current) => ({
 			...current,
 			body: {
 				...current.body,
 				parameters: {
 					...current.body.parameters,
-					[key]: value,
+					height: value,
 				},
 			},
 		}));
+	}
+
+	async function handleCompile() {
+		if (!heightValidation.ok || compileStatus === "compiling") return;
+		setCompileStatus("compiling");
+		setCompileError("");
+		try {
+			const result = await requestProceduralMannequinCompile(recipe);
+			const definition: ThreeVisualAssetDefinition = {
+				...PROCEDURAL_MANNEQUIN_V0_ASSET,
+				id: `procedural-mannequin-creator-${result.requestId}`,
+				name: `Procedural Mannequin ${result.manifest.heightMetres.toFixed(2)} m`,
+				url: result.assetUrl,
+			};
+			setCompileResult(result);
+			setCurrentManifest(result.manifest);
+			setCompiledPreviewSource({
+				artifactUrl: result.assetUrl,
+				definition,
+				description: `Locally compiled ${result.manifest.heightMetres.toFixed(2)} m creator artifact`,
+				displayName: "Procedural Mannequin V0",
+				fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+				kindLabel: "Creator compile",
+				manifestUrl: result.manifestUrl,
+				mannequin: true,
+				revision: result.requestId,
+				transient: true,
+			});
+			setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
+			setCompileStatus("succeeded");
+		} catch (error) {
+			setCompileError(
+				error instanceof Error ? error.message : "Compilation failed.",
+			);
+			setCompileStatus("failed");
+		}
 	}
 
 	function handleLoadRecipe(event: React.ChangeEvent<HTMLInputElement>) {
@@ -1156,32 +1235,48 @@ export default function App() {
 							</select>
 						</label>
 
-						<div className="field-grid">
-							{Object.entries(PARAMETER_LABELS).map(([key, label]) => {
-								const parameterKey = key as keyof CharacterBodyParameters;
-								const limits = CHARACTER_BODY_PARAMETER_LIMITS[parameterKey];
-								return (
-									<label key={key}>
-										{label}
-										<input
-											max={limits.max}
-											min={limits.min}
-											onChange={(event) =>
-												updateBodyParameter(
-													parameterKey,
-													Number(event.target.value),
-												)
-											}
-											step={PARAMETER_STEP[parameterKey]}
-											type="number"
-											value={recipe.body.parameters[parameterKey]}
-										/>
-									</label>
-								);
-							})}
+						<div className="section-heading">Compiled parameter</div>
+						<div className="height-creator-control">
+							<label>
+								Height
+								<input
+									aria-label="Height"
+									max={PROCEDURAL_MANNEQUIN_HEIGHT.max}
+									min={PROCEDURAL_MANNEQUIN_HEIGHT.min}
+									onChange={(event) => updateHeight(Number(event.target.value))}
+									step={PROCEDURAL_MANNEQUIN_HEIGHT.step}
+									type="range"
+									value={recipe.body.parameters.height}
+								/>
+							</label>
+							<div className="height-creator-value">
+								<output aria-label="Current height">
+									{recipe.body.parameters.height.toFixed(2)} m
+								</output>
+								<button
+									onClick={() =>
+										updateHeight(PROCEDURAL_MANNEQUIN_HEIGHT.defaultValue)
+									}
+									type="button"
+								>
+									Reset height
+								</button>
+							</div>
+							{heightValidation.ok ? (
+								<p className="creator-note">
+									Height is valid for the procedural compiler.
+								</p>
+							) : (
+								<p className="creator-error">{heightValidation.message}</p>
+							)}
 						</div>
 
 						<div className="section-heading">Components</div>
+						<p className="creator-note">
+							Only height enters the procedural compiler in this milestone.
+							Existing component and palette fields remain CharacterRecipe
+							source data.
+						</p>
 						<div className="field-grid">
 							{CHARACTER_COMPONENT_SLOTS.map((slot) => (
 								<label key={slot}>
@@ -1232,19 +1327,68 @@ export default function App() {
 							</label>
 						</div>
 						<HumanoidPreview
-							key={previewSource.fixtureId}
+							key={`${previewSource.fixtureId}:${previewSource.revision}`}
+							onManifestLoaded={setCurrentManifest}
 							source={previewSource}
 						/>
-						<div className="compile-status">
-							<strong>Browser compile status</strong>
-							<span>
-								{previewSource.description}. Repository compilation is available
-								through the headless Blender command; live browser generation is
-								not wired.
-							</span>
-							<button disabled type="button">
-								Compile in browser unavailable
+						<div className="compile-status" data-compile-status={compileStatus}>
+							<div className="compile-summary">
+								<strong>Compilation status</strong>
+								<span>
+									{compileStatus === "compiling"
+										? "Running the local headless Blender compiler and validation pipeline…"
+										: compileStatus === "succeeded"
+											? compileDirty
+												? "Recipe changed. Compile again to update the preview."
+												: "Compilation and validation succeeded; the generated GLB is active."
+											: compileStatus === "failed"
+												? `Compilation failed. The previous preview remains active. ${compileError}`
+												: "Ready to compile height through the local Blender development endpoint."}
+								</span>
+							</div>
+							<button
+								disabled={!heightValidation.ok || compileStatus === "compiling"}
+								onClick={handleCompile}
+								type="button"
+							>
+								{compileStatus === "compiling" ? "Compiling…" : "Compile"}
 							</button>
+							<dl aria-label="Creator compilation diagnostics">
+								<div>
+									<dt>Recipe hash</dt>
+									<dd>{activeManifest?.recipeHash ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Generated asset hash</dt>
+									<dd>{activeManifest?.outputHash ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Compiler version</dt>
+									<dd>{activeManifest?.compilerVersion ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Generated timestamp</dt>
+									<dd>{compileResult?.generatedAt ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Validation status</dt>
+									<dd>
+										{activeManifest
+											? `Pass · ${activeManifest.validationVersion}`
+											: "—"}
+									</dd>
+								</div>
+								<div>
+									<dt>Compilation duration</dt>
+									<dd>
+										{compileResult
+											? `${compileResult.compilationDurationMs} ms`
+											: activeManifest
+												? `${activeManifest.generationDurationMs} ms`
+												: "—"}
+									</dd>
+								</div>
+							</dl>
 						</div>
 					</section>
 
@@ -1306,7 +1450,7 @@ export default function App() {
 			<footer className="status-bar">
 				<span>CharacterRecipeV1 is editable source data.</span>
 				<span>The mannequin GLB is a derived compiler artifact.</span>
-				<span>CharacterRecipeV1 does not rebuild it yet.</span>
+				<span>Height now rebuilds it through the local Blender compiler.</span>
 				<span>Active section: {activeSection}</span>
 			</footer>
 		</div>

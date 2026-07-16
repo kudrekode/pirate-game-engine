@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -581,14 +582,15 @@ export async function validateProceduralMannequinArtifact({
 	artifactPath,
 	expectedHeightMetres,
 	templatePath,
+	workspaceRoot = process.cwd(),
 }) {
 	const [gltf, inspection, templateInspection, idleGltf, walkGltf] =
 		await Promise.all([
 			loadGlb(artifactPath),
 			inspectAnimationSource(artifactPath),
 			inspectAnimationSource(templatePath),
-			loadGlb(ANIMATIONS.idle.path),
-			loadGlb(ANIMATIONS.walk.path),
+			loadGlb(path.resolve(workspaceRoot, ANIMATIONS.idle.path)),
+			loadGlb(path.resolve(workspaceRoot, ANIMATIONS.walk.path)),
 		]);
 	const clips = {
 		idle: idleGltf.animations.find(

@@ -33,6 +33,14 @@ The V0 recipe contains:
 
 Validation rejects unsupported versions, invalid skeleton ids, invalid colors, empty ids, and body parameters outside their declared ranges. V0 rejects bad bounds instead of silently normalizing imported data.
 
+The first creator loop reuses `body.parameters.height` rather than introducing
+a second UI recipe. The local adapter copies only height into
+`ProceduralMannequinRecipeV0.proportions.heightMetres`; the procedural compiler's
+current validated range is 1.50 to 2.10 metres with a 1.82 metre default. The
+remaining CharacterRecipe parameters are not compiled yet and stay explicitly
+source-only. This adapter does not claim that provisional `humanoid-v1` and the
+65-joint Golden compatibility skeleton are the same contract.
+
 ## Humanoid V1 Contract
 
 The provisional identifier is `humanoid-v1`.
@@ -154,10 +162,11 @@ GLBs through the shared production loader. `?retarget=runtime-v2` exposes the
 pair-specific JSON diagnostic for development comparison; a baked load failure
 is reported and never silently falls back.
 
-The mannequin preview reads its checked-in manifest and diagnostics. It does
-not claim that the current CharacterRecipe controls generated the artifact or
-that browser controls execute Blender. Live Three.js objects stay in app
-presentation code, not recipe contracts.
+The mannequin preview can read either the checked-in manifest or a successful
+local creator job. Height is adapted from
+`CharacterRecipeV1.body.parameters.height` into the narrow procedural recipe;
+the browser submits the request but never executes Blender or deforms the mesh.
+Live Three.js objects stay in app presentation code, not recipe contracts.
 
 ## Current Asset Studio Capabilities
 
@@ -169,13 +178,15 @@ The current reference preview provides:
 - Compiler/artifact metadata and diagnostics.
 - Explicit reference-fixture status.
 - An explicit Golden Reference / Procedural Mannequin V0 source selector.
-- Read-only procedural recipe, compiler, skeleton, geometry, weight, and
-  deterministic-build diagnostics.
+- One genuine creator parameter: height, with reset, compile status, hashes,
+  compiler/validation versions, timestamp, duration, and diagnostics.
+- Local Blender compilation, validation, successful preview replacement, and
+  previous-preview preservation on failure during development.
 
-The repository now has one narrow procedural recipe compiler and one validated
-derived mannequin. Still missing are Asset Studio-triggered compilation,
-CharacterRecipeV1-to-compiler wiring, body morphing, clothing, hairstyles as
-creator slots, and export of user-authored characters.
+The repository now has one narrow procedural recipe compiler, one validated
+derived mannequin, and a complete height authoring loop. Still missing are a
+deployed compiler service, additional compiled proportions, body morphing,
+clothing, hairstyles as creator slots, and export of user-authored characters.
 
 ## Compiler Boundary
 
@@ -203,12 +214,14 @@ CharacterRecipe
   -> game-engine registry/runtime
 ```
 
-The Asset Studio app still does not execute Blender and does not include a fake
-recipe compiler. Repository tooling runs Blender headlessly for both the narrow
-Golden Reference retarget profile and `ProceduralMannequinRecipeV0`; successful
-artifacts pass two-build determinism, geometry/skinning, animation binding, and
-Three.js round-trip validation before the app consumes them. See
-[`procedural-mannequin-v0.md`](assets/procedural-mannequin-v0.md).
+The Asset Studio browser still does not execute Blender. During development, a
+Vite server plugin accepts one narrow height request, adapts it to
+`ProceduralMannequinRecipeV0`, and invokes the repository compiler in an
+isolated job directory. Successful artifacts pass two-build determinism,
+geometry/skinning, animation binding, and Three.js round-trip validation before
+the app consumes them. The request waits for completion; there is no polling.
+This is a local development boundary, not a deployed backend. See
+[`asset-studio-height-authoring-v0.md`](assets/asset-studio-height-authoring-v0.md).
 
 ## Asset Package Format
 
@@ -247,7 +260,7 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - standalone Asset Studio Vite app shell
 - real `CharacterRecipeV1` state editing and validation
 - recipe JSON view, load, and save
-- disabled compile state that reports no compiler is implemented
+- one height authoring adapter and development-only local compile endpoint
 - renderer-independent character, component, palette, animation, and compiler contracts
 - Blender compiler boundary documentation
 - deterministic Golden Reference offline-bake tooling and validated artifacts
@@ -266,7 +279,7 @@ crowd-budget default.
 - general rig creation beyond the Golden compatibility skeleton template
 - body morph targets
 - clothing fitting
-- Blender execution from the Asset Studio browser app
+- Blender execution inside browser code
 - GLB export
 - production character animation preview sourced from compiled package output
 - AI generation
@@ -276,13 +289,12 @@ crowd-budget default.
 
 ## Next Milestone
 
-The next milestone is the first genuine creator control. Height is the safest
-choice because it already travels through the V0 development recipe, hash,
-Blender compile, grounded GLB bounds, validation, Asset Studio manifest, and
-game registry. The UI must invoke a real compile/import boundary; existing
-CharacterRecipe controls must not fake live generation. The detailed decision
-and measurements are in
-[`procedural-mannequin-v0.md`](assets/procedural-mannequin-v0.md).
+The next creator parameter should reuse the height pipeline rather than create a
+new architecture. Shoulder width or torso proportion is the likely candidate,
+but it must prove generated topology/placement, skinning and animation quality,
+deterministic hashes, manifest evidence, and safe preview replacement. Height
+measurements and the reusable boundary are documented in
+[`asset-studio-height-authoring-v0.md`](assets/asset-studio-height-authoring-v0.md).
 
 ## Future Deployment Models
 
