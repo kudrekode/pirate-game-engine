@@ -1,13 +1,13 @@
 compiler=procedural-mannequin-blender-v4
 blender=5.2.0 LTS
 blenderBuild=fbe6228777e7
-recipeHash=cb587a6bf3ec62a20672faae4cde7da3d815f8f7ef6e65f926844fcf87915f74
+recipeHash=385cfb6ff4c81dde461d5b182ec4f26519bc4203c7d00f0d46fcb01ae559146f
 heightMetres=1.82
 proportions={"height":1.82,"shoulderWidth":0.5,"torsoLength":0.5,"armLength":0.5,"legLength":0.5,"hipWidth":0.5}
-firstOutputHash=7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5
-secondOutputHash=7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5
+firstOutputHash=4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c
+secondOutputHash=4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c
 binaryDeterministic=true
-semanticHash=249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1
+semanticHash=43598cdd3a1286f32a968e3a4abfb85d964aa85bb3b22c2b45453a5862c7293e
 semanticDeterministic=true
 roundTripPassed=true
 validationVersion=procedural-mannequin-roundtrip-v5

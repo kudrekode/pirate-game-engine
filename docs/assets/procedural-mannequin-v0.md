@@ -115,7 +115,7 @@ Use `--staging` to label a non-promoted build and `--validate-only` through
 without invoking Blender. `--template` and `--output-dir` are narrow overrides.
 
 The compiler used Blender `5.2.0 LTS`, build `fbe6228777e7`, and compiler version
-`procedural-mannequin-blender-v3`. It writes:
+`procedural-mannequin-blender-v4`. It writes:
 
 ```text
 public/assets/derived/procedural-humanoids/mannequin-v0/

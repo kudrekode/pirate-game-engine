@@ -1,10 +1,14 @@
 import { createHash } from "node:crypto";
+import {
+	CHARACTER_HAIR_COMPONENT_IDS,
+	NO_HAIR_COMPONENT_ID,
+} from "./character-component-registry.mjs";
 
-export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 3;
+export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 4;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v3";
+	"procedural-mannequin-blender-v4";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v4";
+	"procedural-mannequin-roundtrip-v5";
 export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
@@ -281,7 +285,9 @@ export function validateProceduralMannequinRecipe(value) {
 			ok: false,
 		};
 	}
-	if (![0, 1, 2, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)) {
+	if (
+		![0, 1, 2, 3, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)
+	) {
 		issues.push({ message: "Unsupported recipe version.", path: "$.version" });
 	}
 	const proportionsSource = isRecord(value.proportions)
@@ -303,6 +309,23 @@ export function validateProceduralMannequinRecipe(value) {
 	const material = isRecord(value.material) ? value.material : {};
 	const appearance = isRecord(value.appearance) ? value.appearance : {};
 	const skin = isRecord(appearance.skin) ? appearance.skin : {};
+	const components = isRecord(value.components) ? value.components : {};
+	const hairComponentId = components.hair ?? NO_HAIR_COMPONENT_ID;
+	if (
+		value.version === PROCEDURAL_MANNEQUIN_RECIPE_VERSION &&
+		!isRecord(value.components)
+	) {
+		issues.push({
+			message: "Expected component selections.",
+			path: "$.components",
+		});
+	}
+	if (!CHARACTER_HAIR_COMPONENT_IDS.includes(hairComponentId)) {
+		issues.push({
+			message: `Expected one of: ${CHARACTER_HAIR_COMPONENT_IDS.join(", ")}.`,
+			path: "$.components.hair",
+		});
+	}
 	if (legacyMaterial && !isRecord(value.material)) {
 		issues.push({
 			message: "Expected legacy material settings.",
@@ -401,6 +424,11 @@ export function validateProceduralMannequinRecipe(value) {
 	}
 	const recipe = {
 		animations: { set: GOLDEN_REFERENCE_ANIMATION_SET },
+		components: {
+			hair: CHARACTER_HAIR_COMPONENT_IDS.includes(hairComponentId)
+				? hairComponentId
+				: NO_HAIR_COMPONENT_ID,
+		},
 		geometry: {
 			profile: "voxel-union",
 			radialSegments: readNumber(
@@ -457,7 +485,7 @@ export function canonicalizeProceduralMannequinRecipe(recipe) {
 	const parsed = validateProceduralMannequinRecipe(recipe);
 	if (!parsed.ok) {
 		throw new Error(
-			`Invalid ProceduralMannequinRecipeV3: ${parsed.issues
+			`Invalid ProceduralMannequinRecipeV4: ${parsed.issues
 				.map((entry) => `${entry.path} ${entry.message}`)
 				.join("; ")}`,
 		);

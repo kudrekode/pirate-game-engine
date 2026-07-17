@@ -65,6 +65,13 @@ test("validates and stably hashes all six authored V1 parameters", async () => {
 			`${path} must change the recipe hash`,
 		);
 	}
+	const haired = structuredClone(recipe);
+	haired.components.hair = "quaternius-hair-v0";
+	assert.notEqual(
+		hashProceduralMannequinRecipe(haired),
+		hashProceduralMannequinRecipe(recipe),
+		"hair selection must change the recipe hash",
+	);
 });
 
 test("converts canonical authored sRGB skin colors to stable linear values", () => {
@@ -83,6 +90,7 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 	invalid.appearance.skin.roughness = -1;
 	invalid.appearance.skin.color = "invalid";
 	invalid.skeleton.contract = "parallel-rig-v0";
+	invalid.components.hair = "local-file.glb";
 	const parsed = validateProceduralMannequinRecipe(invalid);
 	assert.equal(parsed.ok, false);
 	const issuePaths = parsed.issues.map((entry) => entry.path);
@@ -92,6 +100,7 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 		"$.appearance.skin.color",
 		"$.appearance.skin.roughness",
 		"$.skeleton.contract",
+		"$.components.hair",
 	]) {
 		assert.ok(
 			issuePaths.includes(path),
@@ -184,6 +193,8 @@ test("builds a narrow headless Blender invocation and parses compiler modes", ()
 	assert.equal(arguments_[0], "--recipe");
 	assert.ok(arguments_.includes("--template"));
 	assert.ok(arguments_.includes("--compiler-version"));
+	assert.ok(arguments_.includes("--component-registry"));
+	assert.ok(arguments_.includes("--workspace-root"));
 	assert.deepEqual(
 		parseCliArguments([
 			"--recipe",
@@ -234,9 +245,10 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v4",
+		"procedural-mannequin-roundtrip-v5",
 	);
-	assert.equal(result.manifest.recipeVersion, 3);
+	assert.equal(result.manifest.recipeVersion, 4);
+	assert.equal(result.manifest.components.hair.componentId, "none");
 	assert.equal(result.manifest.appearance.skin.authoredColor, "#c98f65");
 	assert.equal(result.manifest.appearance.skin.authoredRoughness, 0.72);
 	assert.equal(result.manifest.appearance.skin.exportedMetallic, 0);
@@ -274,4 +286,27 @@ test("round-trips the committed artifact and its canonical animations", async ()
 			result.validation.animations.walk.rootMotionResidual.z,
 		) <= 0.00001,
 	);
+});
+
+test("round-trips the committed haired artifact with one shared-skeleton Head attachment", async () => {
+	const result = await validateInstalledProceduralMannequin({
+		outputDirectory:
+			"public/assets/derived/procedural-humanoids/mannequin-hair-v0",
+		recipePath:
+			"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json",
+	});
+	assert.equal(result.passed, true);
+	assert.equal(result.validation.hair.passed, true);
+	assert.equal(result.validation.hair.attachmentBone, "Head");
+	assert.equal(result.validation.hair.meshCount, 1);
+	assert.equal(result.validation.hair.triangleCount, 830);
+	assert.equal(result.validation.hair.materialCount, 1);
+	assert.equal(result.validation.hair.textureCount, 2);
+	assert.equal(result.validation.inspection.skeletonCount, 1);
+	assert.equal(
+		result.manifest.components.hair.componentId,
+		"quaternius-hair-v0",
+	);
+	assert.equal(result.manifest.components.hair.fittingProfile.version, 1);
+	assert.equal(result.manifest.determinism.binaryDeterministic, true);
 });

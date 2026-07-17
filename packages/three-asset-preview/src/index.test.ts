@@ -8,6 +8,7 @@ import {
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+	PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET,
 	PROCEDURAL_MANNEQUIN_V0_ASSET,
 	prepareThreeVisualAssetMaterials,
 	requestThreeVisualAsset,
@@ -20,6 +21,7 @@ describe("shared Three asset preview", () => {
 		["Golden", GOLDEN_REFERENCE_HUMANOID_ASSET, true],
 		["Patchbeard", { materialProfile: "standard" as const }, true],
 		["procedural", PROCEDURAL_MANNEQUIN_V0_ASSET, false],
+		["procedural-hair", PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET, false],
 	])("preserves authored %s material color, roughness, and metalness", (_, definition, physical) => {
 		const material = physical
 			? new THREE.MeshPhysicalMaterial({
@@ -66,6 +68,12 @@ describe("shared Three asset preview", () => {
 			url: expect.stringMatching(
 				/procedural-humanoids\/mannequin-v0\/mannequin\.glb$/u,
 			),
+		});
+		expect(PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET).toMatchObject({
+			id: "procedural-mannequin-quaternius-hair-v0",
+			kind: "glb",
+			materialProfile: "standard",
+			url: "/assets/derived/procedural-humanoids/mannequin-hair-v0/mannequin.glb",
 		});
 	});
 

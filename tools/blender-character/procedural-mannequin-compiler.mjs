@@ -18,6 +18,12 @@ import {
 	readBlenderVersion,
 } from "./blender-discovery.mjs";
 import {
+	CHARACTER_COMPONENT_REGISTRY_PATH,
+	NO_HAIR_COMPONENT_ID,
+	resolveCharacterComponent,
+	validateCharacterComponentRegistry,
+} from "./character-component-registry.mjs";
+import {
 	canonicalizeProceduralMannequinRecipe,
 	canonicalSrgbHexToLinear,
 	deriveProceduralMannequinAnatomy,
@@ -44,6 +50,7 @@ export const PROCEDURAL_MANNEQUIN_PATHS = Object.freeze({
 	defaultOutput: "public/assets/derived/procedural-humanoids/mannequin-v0",
 	defaultRecipe:
 		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json",
+	componentRegistry: CHARACTER_COMPONENT_REGISTRY_PATH,
 	script: "tools/blender-character/generate_procedural_mannequin.py",
 	template:
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
@@ -55,6 +62,8 @@ const COMPILER_SOURCE_PATHS = [
 	"tools/blender-character/procedural-mannequin-compiler.mjs",
 	"tools/blender-character/procedural-mannequin-contract.mjs",
 	"tools/blender-character/procedural-mannequin-roundtrip.mjs",
+	"tools/blender-character/character-component-registry.mjs",
+	CHARACTER_COMPONENT_REGISTRY_PATH,
 ];
 const OUTPUT_NAMES = Object.freeze({
 	buildLog: "build.log",
@@ -75,16 +84,29 @@ function expectedSkinMaterial(recipe) {
 	};
 }
 
+function expectedHairComponent(recipe) {
+	const componentId = recipe.components.hair;
+	return {
+		componentId,
+		definition:
+			componentId === NO_HAIR_COMPONENT_ID
+				? undefined
+				: resolveCharacterComponent(componentId),
+	};
+}
+
 async function hashFile(filePath) {
 	return sha256(await readFile(filePath));
 }
 
 export function buildProceduralMannequinScriptArguments({
+	componentRegistryPath = PROCEDURAL_MANNEQUIN_PATHS.componentRegistry,
 	compilerVersion = PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 	outputPath,
 	recipePath,
 	reportPath,
 	templatePath = PROCEDURAL_MANNEQUIN_PATHS.template,
+	workspaceRoot = process.cwd(),
 }) {
 	return [
 		"--recipe",
@@ -97,6 +119,10 @@ export function buildProceduralMannequinScriptArguments({
 		path.resolve(reportPath),
 		"--compiler-version",
 		compilerVersion,
+		"--component-registry",
+		path.resolve(workspaceRoot, componentRegistryPath),
+		"--workspace-root",
+		path.resolve(workspaceRoot),
 	];
 }
 
@@ -121,10 +147,12 @@ async function runPass({
 	const outputPath = path.join(directory, OUTPUT_NAMES.glb);
 	const reportPath = path.join(directory, "blender-report.json");
 	const scriptArguments = buildProceduralMannequinScriptArguments({
+		componentRegistryPath: PROCEDURAL_MANNEQUIN_PATHS.componentRegistry,
 		outputPath,
 		recipePath,
 		reportPath,
 		templatePath,
+		workspaceRoot,
 	});
 	const blenderArguments = buildHeadlessBlenderArguments(
 		path.resolve(workspaceRoot, PROCEDURAL_MANNEQUIN_PATHS.script),
@@ -173,6 +201,7 @@ export async function validateInstalledProceduralMannequin({
 		validateProceduralMannequinArtifact({
 			artifactPath,
 			expectedHeightMetres: parsed.value.proportions.height,
+			expectedHairComponent: expectedHairComponent(parsed.value),
 			expectedSkinMaterial: expectedSkinMaterial(parsed.value),
 			templatePath,
 			workspaceRoot,
@@ -197,6 +226,18 @@ export async function validateInstalledProceduralMannequin({
 			Number.isFinite(manifest.generationDurationMs) &&
 			manifest.generationDurationMs > 0,
 		manifestHeight: manifest.heightMetres === parsed.value.proportions.height,
+		manifestHair:
+			manifest.components?.hair?.componentId === parsed.value.components.hair &&
+			manifest.components?.hair?.meshCount === validation.hair.meshCount &&
+			manifest.components?.hair?.triangleCount ===
+				validation.hair.triangleCount &&
+			manifest.components?.hair?.attachmentBone ===
+				validation.hair.attachmentBone,
+		manifestArtifactStatistics:
+			manifest.meshCount === validation.artifact.meshCount &&
+			manifest.materialCount === validation.artifact.materialCount &&
+			manifest.vertexCount === validation.artifact.vertexCount &&
+			manifest.triangleCount === validation.artifact.triangleCount,
 		manifestProportions:
 			JSON.stringify(manifest.proportions) ===
 			JSON.stringify(parsed.value.proportions),
@@ -239,6 +280,10 @@ export async function compileProceduralMannequin({
 		);
 	}
 	const recipe = parsed.value;
+	const registryValidation = await validateCharacterComponentRegistry({
+		workspaceRoot,
+	});
+	const hairComponent = expectedHairComponent(recipe);
 	const anatomy = deriveProceduralMannequinAnatomy(recipe.proportions);
 	const measurements = deriveProceduralMannequinMeasurements(
 		recipe.proportions,
@@ -250,7 +295,18 @@ export async function compileProceduralMannequin({
 		path.dirname(templatePath),
 		path.basename(PROCEDURAL_MANNEQUIN_PATHS.templateBuffer),
 	);
-	const immutablePaths = [recipePath, templatePath, templateBufferPath];
+	const immutablePaths = [
+		recipePath,
+		templatePath,
+		templateBufferPath,
+		path.resolve(workspaceRoot, PROCEDURAL_MANNEQUIN_PATHS.componentRegistry),
+		...(hairComponent.definition
+			? [
+					hairComponent.definition.license.path,
+					...hairComponent.definition.sourceFiles.map((source) => source.path),
+				].map((filePath) => path.resolve(workspaceRoot, filePath))
+			: []),
+	];
 	const immutableBefore = Object.fromEntries(
 		await Promise.all(
 			immutablePaths.map(async (filePath) => [
@@ -289,6 +345,7 @@ export async function compileProceduralMannequin({
 			validateProceduralMannequinArtifact({
 				artifactPath: first.outputPath,
 				expectedHeightMetres: recipe.proportions.height,
+				expectedHairComponent: hairComponent,
 				expectedSkinMaterial: expectedSkinMaterial(recipe),
 				templatePath,
 				workspaceRoot,
@@ -296,6 +353,7 @@ export async function compileProceduralMannequin({
 			validateProceduralMannequinArtifact({
 				artifactPath: second.outputPath,
 				expectedHeightMetres: recipe.proportions.height,
+				expectedHairComponent: hairComponent,
 				expectedSkinMaterial: expectedSkinMaterial(recipe),
 				templatePath,
 				workspaceRoot,
@@ -303,7 +361,7 @@ export async function compileProceduralMannequin({
 		]);
 		if (!firstValidation.passed || !secondValidation.passed) {
 			throw new Error(
-				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, second: secondValidation.checks })}`,
+				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstHair: firstValidation.hair, second: secondValidation.checks, secondHair: secondValidation.hair })}`,
 			);
 		}
 		if (
@@ -445,7 +503,7 @@ export async function compileProceduralMannequin({
 			anatomy,
 			animationProfile: "mixamo-to-quaternius-v2",
 			animationSet: GOLDEN_REFERENCE_ANIMATION_SET,
-			assetId: "procedural-mannequin-v0",
+			assetId: recipe.id,
 			blender: {
 				buildHash: blenderVersion.buildHash,
 				version: blenderVersion.version,
@@ -461,6 +519,43 @@ export async function compileProceduralMannequin({
 			},
 			compilerHash: compilerSourceHash,
 			compilerVersion: PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
+			components: {
+				hair: hairComponent.definition
+					? {
+							attachmentBone: hairComponent.definition.expectedAttachmentBone,
+							attachmentStrategy: hairComponent.definition.attachmentStrategy,
+							compilerCompatibilityVersion:
+								hairComponent.definition.compilerCompatibilityVersion,
+							componentId: hairComponent.componentId,
+							fittingProfile: hairComponent.definition.fittingProfile,
+							license: hairComponent.definition.license,
+							knownLimitations: hairComponent.definition.knownLimitations,
+							bounds: firstValidation.hair.bounds,
+							materialCount: firstValidation.hair.materialCount,
+							materialNames: firstValidation.hair.materialNames,
+							meshCount: firstValidation.hair.meshCount,
+							objectName: firstValidation.hair.objectName,
+							normalizedTransform: hairComponent.definition.normalizedTransform,
+							provider: hairComponent.definition.provider,
+							packName: hairComponent.definition.packName,
+							sourceAsset: hairComponent.definition.sourceAsset,
+							sourceFiles: hairComponent.definition.sourceFiles,
+							sourceTransform: hairComponent.definition.sourceTransform,
+							textureCount: firstValidation.hair.textureCount,
+							textureNames: firstValidation.hair.textureNames,
+							triangleCount: firstValidation.hair.triangleCount,
+							vertexCount: firstValidation.hair.vertexCount,
+						}
+					: {
+							attachmentBone: null,
+							componentId: NO_HAIR_COMPONENT_ID,
+							materialCount: 0,
+							meshCount: 0,
+							textureCount: 0,
+							triangleCount: 0,
+							vertexCount: 0,
+						},
+			},
 			determinism,
 			deterministicBuild:
 				determinism.binaryDeterministic &&
@@ -492,8 +587,15 @@ export async function compileProceduralMannequin({
 					materialSchemaVersion: PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION,
 				},
 			},
-			materialCount: geometry.materialCount,
-			meshCount: geometry.meshCount,
+			artifactStatistics: firstValidation.artifact,
+			bodyStatistics: {
+				materialCount: geometry.materialCount,
+				meshCount: geometry.meshCount,
+				triangleCount: geometry.triangleCount,
+				vertexCount: geometry.vertexCount,
+			},
+			materialCount: firstValidation.artifact.materialCount,
+			meshCount: firstValidation.artifact.meshCount,
 			meshNames: firstValidation.semanticSnapshot.meshes.map(
 				(mesh) => mesh.name,
 			),
@@ -509,16 +611,21 @@ export async function compileProceduralMannequin({
 			skeletonContract: GOLDEN_HUMANOID_SKELETON_CONTRACT,
 			skeletonSignature: firstValidation.skeletonSignature,
 			sourceImmutable,
+			componentRegistry: {
+				path: PROCEDURAL_MANNEQUIN_PATHS.componentRegistry,
+				validated: registryValidation.passed,
+				version: registryValidation.version,
+			},
 			templateHashes: {
 				buffer: immutableBefore[portable(templateBufferPath)],
 				gltf: immutableBefore[portable(templatePath)],
 			},
-			triangleCount: geometry.triangleCount,
+			triangleCount: firstValidation.artifact.triangleCount,
 			topology: geometry.topology,
 			topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 			units: "metres",
 			validationVersion: PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
-			vertexCount: geometry.vertexCount,
+			vertexCount: firstValidation.artifact.vertexCount,
 			warnings,
 		};
 		manifest.generationDurationMs = Math.round(

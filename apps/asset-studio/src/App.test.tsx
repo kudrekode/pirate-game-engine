@@ -2,7 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
-function successfulCompile(heightMetres = 1.9) {
+function successfulCompile(
+	heightMetres = 1.9,
+	hair: "none" | "quaternius-hair-v0" = "none",
+) {
 	return {
 		assetUrl:
 			"/__asset-studio/procedural-mannequin/assets/job/output/mannequin.glb",
@@ -42,7 +45,29 @@ function successfulCompile(heightMetres = 1.9) {
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v3",
+			compilerVersion: "procedural-mannequin-blender-v4",
+			components: {
+				hair: {
+					attachmentBone: hair === "none" ? null : "Head",
+					componentId: hair,
+					fittingProfile:
+						hair === "none"
+							? undefined
+							: {
+									id: "quaternius-buzzed-fit-v1",
+									scalpOffsetMetres: 0.01,
+									version: 1,
+								},
+					materialCount: hair === "none" ? 0 : 1,
+					meshCount: hair === "none" ? 0 : 1,
+					packName: hair === "none" ? undefined : "Hairstyles",
+					provider: hair === "none" ? undefined : "Quaternius",
+					sourceAsset: hair === "none" ? undefined : "Hair_Buzzed.gltf",
+					textureCount: hair === "none" ? 0 : 2,
+					triangleCount: hair === "none" ? 0 : 830,
+					vertexCount: hair === "none" ? 0 : 466,
+				},
+			},
 			deterministicBuild: true,
 			generationDurationMs: 1200,
 			geometryAndSkinningSemanticHash: "e".repeat(64),
@@ -70,7 +95,7 @@ function successfulCompile(heightMetres = 1.9) {
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 3,
+			recipeVersion: 4,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
@@ -87,7 +112,7 @@ function successfulCompile(heightMetres = 1.9) {
 			},
 			topologyVersion: "procedural-humanoid-v1",
 			triangleCount: 5444,
-			validationVersion: "procedural-mannequin-roundtrip-v4",
+			validationVersion: "procedural-mannequin-roundtrip-v5",
 			vertexCount: 2724,
 		},
 		manifestUrl:
@@ -96,7 +121,7 @@ function successfulCompile(heightMetres = 1.9) {
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v4",
+			version: "procedural-mannequin-roundtrip-v5",
 		},
 	};
 }
@@ -151,12 +176,20 @@ describe("Asset Studio app", () => {
 			target: { value: "1.9" },
 		});
 		fireEvent.change(screen.getByLabelText("Hair component"), {
-			target: { value: "tied-back" },
+			target: { value: "quaternius-hair-v0" },
 		});
 
 		const json = screen.getByTestId("recipe-json");
 		expect(json).toHaveTextContent('"height": 1.9');
-		expect(json).toHaveTextContent('"hair": "tied-back"');
+		expect(json).toHaveTextContent('"hair": "quaternius-hair-v0"');
+	});
+
+	it("offers only no hair and the registered Quaternius hairstyle", () => {
+		render(<App />);
+		const hair = screen.getByLabelText("Hair component");
+		expect(hair).toHaveTextContent("No hair");
+		expect(hair).toHaveTextContent("Quaternius Buzzed");
+		expect(hair.querySelectorAll("option")).toHaveLength(2);
 	});
 
 	it("resets the authored height to the procedural default", () => {
@@ -243,16 +276,20 @@ describe("Asset Studio app", () => {
 	});
 
 	it("compiles the current height and replaces the preview only after success", async () => {
-		vi.stubGlobal(
-			"fetch",
-			vi.fn(
-				async () =>
-					new Response(JSON.stringify(successfulCompile()), { status: 200 }),
-			),
+		const fetch = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify(successfulCompile(1.9, "quaternius-hair-v0")),
+					{ status: 200 },
+				),
 		);
+		vi.stubGlobal("fetch", fetch);
 		render(<App />);
 		fireEvent.change(screen.getByLabelText("Height"), {
 			target: { value: "1.9" },
+		});
+		fireEvent.change(screen.getByLabelText("Hair component"), {
+			target: { value: "quaternius-hair-v0" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
 
@@ -277,6 +314,13 @@ describe("Asset Studio app", () => {
 		expect(screen.getByLabelText("Recent Compilations")).toHaveTextContent(
 			"1.90 m",
 		);
+		expect(screen.getByLabelText("Hair")).toHaveTextContent(
+			"Compiled · Quaternius Buzzed",
+		);
+		expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body as string)).toMatchObject({
+			components: { hair: "quaternius-hair-v0" },
+			version: 4,
+		});
 	});
 
 	it("keeps the previous preview active when compilation fails", async () => {
@@ -294,6 +338,9 @@ describe("Asset Studio app", () => {
 			),
 		);
 		render(<App />);
+		fireEvent.change(screen.getByLabelText("Hair component"), {
+			target: { value: "quaternius-hair-v0" },
+		});
 		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
 
 		await waitFor(() =>
@@ -304,6 +351,9 @@ describe("Asset Studio app", () => {
 		expect(
 			screen.getByLabelText("Golden Reference Humanoid preview"),
 		).toBeInTheDocument();
+		expect(screen.getByLabelText("Hair component")).toHaveValue(
+			"quaternius-hair-v0",
+		);
 		expect(document.querySelectorAll("canvas")).toHaveLength(1);
 	});
 

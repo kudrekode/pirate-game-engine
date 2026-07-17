@@ -10,15 +10,15 @@
 		}
 	},
 	"components": {
-		"hair": "none"
+		"hair": "quaternius-hair-v0"
 	},
 	"geometry": {
 		"profile": "voxel-union",
 		"radialSegments": 8,
 		"topologyVersion": "procedural-humanoid-v1"
 	},
-	"id": "procedural-mannequin-v0",
-	"name": "Procedural Mannequin Body Proportions V1",
+	"id": "procedural-mannequin-quaternius-hair-v0",
+	"name": "Procedural Mannequin with Quaternius Buzzed Hair",
 	"proportions": {
 		"armLength": 0.5,
 		"height": 1.82,

@@ -193,12 +193,15 @@ The current reference preview provides:
 - Material and Skin Appearance V1: compiled sRGB skin color and roughness, one
   validated non-metallic material, draft/compiled UI state, neutral presets,
   and separate geometry/skinning and material semantic hashes.
+- Hairstyle Slot V1: exactly `none` plus one provenance-backed Quaternius
+  Buzzed component, draft/compiled state, adaptive generated-head fitting,
+  one-skin GLB compilation, and Recent Compilation restoration.
 
 The repository now has one narrow procedural recipe compiler, one validated
-connected-topology mannequin, and a complete body-proportion authoring loop.
-Still missing are higher-detail/deformation-oriented topology, a deployed
-compiler service, clothing, hairstyles as creator slots, and export of
-user-authored characters.
+connected-topology mannequin, and a complete body/material/hairstyle authoring
+loop. Still missing are higher-detail/deformation-oriented topology, a deployed
+compiler service, a broader hairstyle library, clothing/headwear, and export
+of user-authored characters.
 
 ## Compiler Boundary
 
@@ -227,8 +230,9 @@ CharacterRecipe
 ```
 
 The Asset Studio browser still does not execute Blender. During development, a
-Vite server plugin accepts one narrow six-parameter request, adapts it to
-`ProceduralMannequinRecipeV1`, and invokes the repository compiler in an
+Vite server plugin accepts one narrow V4 request containing six body parameters,
+skin appearance, and the registered hair id, adapts it to the procedural
+mannequin recipe, and invokes the repository compiler in an
 isolated job directory. Successful artifacts pass two-build determinism,
 geometry/skinning, animation binding, and Three.js round-trip validation before
 the app consumes them. The request waits for completion; there is no polling.
@@ -278,6 +282,8 @@ The current V0 demonstration is intentionally narrow: `src/runtime/assetStudioCo
 - deterministic Golden Reference offline-bake tooling and validated artifacts
 - deterministic Procedural Mannequin V0 recipe/compiler, validated artifact,
   Asset Studio preview, and root registry round trip
+- Hairstyle Slot V1 component registry, source/provenance validation, adaptive
+  Blender fit, compiled bald/haired artifacts, and shared player/NPC loader path
 
 The current Golden Reference is a loader fixture, skeleton fixture,
 animation-retarget target, offline compiler target, and runtime/editor/Asset
@@ -301,10 +307,12 @@ crowd-budget default.
 
 ## Next Milestone
 
-Material and Skin Appearance V1 is complete without changing the proven
+Hairstyle Slot V1 is complete without changing the proven
 recipe/compile/Blender/validation/preview boundary. Evidence is documented in
-[`material-skin-appearance-v1.md`](assets/material-skin-appearance-v1.md). The
-next creator milestone is Hairstyle Slot V1.
+[`hairstyle-slot-v1.md`](assets/hairstyle-slot-v1.md). The recommended next
+creator milestone is Hairstyle Library V2: add a small set of additional
+provenance-backed styles through the same component registry and fit-profile
+contract before introducing headwear or clothing interactions.
 
 ## Future Deployment Models
 

@@ -212,6 +212,9 @@ describe("Three visual asset registry", () => {
 
 	it("registers the procedural mannequin through the shared character path", () => {
 		const mannequin = getThreeVisualAssetDefinition("procedural-mannequin-v0");
+		const haired = getThreeVisualAssetDefinition(
+			"procedural-mannequin-quaternius-hair-v0",
+		);
 
 		expect(mannequin).toMatchObject({
 			animations: {
@@ -235,6 +238,19 @@ describe("Three visual asset registry", () => {
 				"skinned",
 			]),
 			url: "/assets/derived/procedural-humanoids/mannequin-v0/mannequin.glb",
+		});
+		expect(haired).toMatchObject({
+			animations: mannequin?.animations,
+			category: "character",
+			defaultScale: 1,
+			kind: "glb",
+			materialProfile: "standard",
+			tags: expect.arrayContaining([
+				"compiler-generated",
+				"hairstyle-slot-v1",
+				"quaternius-hair-v0",
+			]),
+			url: "/assets/derived/procedural-humanoids/mannequin-hair-v0/mannequin.glb",
 		});
 	});
 

@@ -1,3 +1,5 @@
+import componentRegistryData from "./character-component-registry.json";
+
 export const CHARACTER_RECIPE_VERSION = 1 as const;
 export const HUMANOID_V1_SKELETON_ID = "humanoid-v1" as const;
 export const DEFAULT_CHARACTER_BODY_BASE_ID = "humanoid-default";
@@ -15,6 +17,15 @@ export const CHARACTER_COMPONENT_SLOTS = [
 ] as const;
 
 export type CharacterComponentSlot = (typeof CHARACTER_COMPONENT_SLOTS)[number];
+
+export const CHARACTER_HAIR_COMPONENT_IDS = [
+	"none",
+	"quaternius-hair-v0",
+] as const;
+export type CharacterHairComponentId =
+	(typeof CHARACTER_HAIR_COMPONENT_IDS)[number];
+export const DEFAULT_CHARACTER_HAIR_COMPONENT_ID: CharacterHairComponentId =
+	"none";
 
 export const CHARACTER_PALETTE_REGIONS = [
 	"skin",
@@ -59,7 +70,9 @@ export type CharacterRecipeV1 = {
 		baseId: string;
 		parameters: CharacterBodyParameters;
 	};
-	components: Partial<Record<CharacterComponentSlot, string>>;
+	components: Partial<Record<CharacterComponentSlot, string>> & {
+		hair: CharacterHairComponentId;
+	};
 	palette: Record<CharacterPaletteRegion, string>;
 	appearance: {
 		skin: CharacterSkinAppearance;
@@ -77,6 +90,62 @@ export type CharacterComponentDefinition = {
 	bodyMaskRegions?: string[];
 	sourceAsset?: string;
 };
+
+export type CharacterComponentSourceFile = {
+	path: string;
+	role: "mesh" | "buffer" | "baseColorTexture" | "normalTexture";
+	sha256: string;
+};
+
+export type CharacterComponentTransform = {
+	translationMetres: [number, number, number];
+	rotationDegrees: [number, number, number];
+	scale: [number, number, number];
+};
+
+export type CharacterComponentRegistryEntry = CharacterComponentDefinition & {
+	provider: string;
+	packName: string;
+	sourceHash: string;
+	sourceMeshName: string;
+	sourceFiles: CharacterComponentSourceFile[];
+	license: { path: string; sha256: string; spdx: string };
+	expectedAttachmentBone: "Head";
+	attachmentStrategy: "main-skeleton-head-surface-skinning";
+	sourceTransform: CharacterComponentTransform;
+	normalizedTransform: CharacterComponentTransform;
+	fittingProfile: {
+		baseHeightMetres?: number;
+		heightCompensationMetresPerMetre?: number;
+		heightCompensationQuadraticMetres?: number;
+		legLengthCompensationMetres?: number;
+		torsoLengthCompensationMetres?: number;
+		id: string;
+		mode?: "generated-head-bounds";
+		version: number;
+		pivotMetres: [number, number, number];
+		scalpOffsetMetres: number;
+	};
+	material: { name: string; textures: string[] };
+	compilerCompatibilityVersion: string;
+	knownLimitations: string[];
+};
+
+export type CharacterComponentRegistry = {
+	version: 1;
+	components: CharacterComponentRegistryEntry[];
+};
+
+export const CHARACTER_COMPONENT_REGISTRY =
+	componentRegistryData as CharacterComponentRegistry;
+
+export function getCharacterComponentDefinition(
+	id: string,
+): CharacterComponentRegistryEntry | undefined {
+	return CHARACTER_COMPONENT_REGISTRY.components.find(
+		(component) => component.id === id,
+	);
+}
 
 export type CharacterAnimationClipReference = {
 	assetId?: string;
@@ -237,6 +306,7 @@ export const CHARACTER_SKIN_APPEARANCE_LIMITS = {
 } as const;
 
 const COMPONENT_SLOT_SET = new Set<string>(CHARACTER_COMPONENT_SLOTS);
+const HAIR_COMPONENT_ID_SET = new Set<string>(CHARACTER_HAIR_COMPONENT_IDS);
 const PALETTE_REGION_SET = new Set<string>(CHARACTER_PALETTE_REGIONS);
 const ANIMATION_STATE_SET = new Set<string>(CHARACTER_ANIMATION_STATES);
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
@@ -393,7 +463,7 @@ export function createDefaultCharacterRecipe(
 				hipWidth: CHARACTER_BODY_PARAMETER_LIMITS.hipWidth.defaultValue,
 			},
 		},
-		components: {},
+		components: { hair: DEFAULT_CHARACTER_HAIR_COMPONENT_ID },
 		palette: {
 			skin: CHARACTER_SKIN_APPEARANCE_LIMITS.skinColor.defaultValue,
 			hair: "#3b2a1f",
@@ -446,8 +516,28 @@ export function validateCharacterRecipe(
 	if (!isRecord(value.components)) {
 		issues.push(issue("$.components", "Expected a components object."));
 	}
-	const parsedComponents: Partial<Record<CharacterComponentSlot, string>> = {};
+	const parsedComponents: Partial<Record<CharacterComponentSlot, string>> & {
+		hair: CharacterHairComponentId;
+	} = { hair: DEFAULT_CHARACTER_HAIR_COMPONENT_ID };
 	for (const slot of CHARACTER_COMPONENT_SLOTS) {
+		if (slot === "hair") {
+			const componentId =
+				components.hair ?? DEFAULT_CHARACTER_HAIR_COMPONENT_ID;
+			if (
+				typeof componentId !== "string" ||
+				!HAIR_COMPONENT_ID_SET.has(componentId)
+			) {
+				issues.push(
+					issue(
+						"$.components.hair",
+						`Expected one of: ${CHARACTER_HAIR_COMPONENT_IDS.join(", ")}.`,
+					),
+				);
+			} else {
+				parsedComponents.hair = componentId as CharacterHairComponentId;
+			}
+			continue;
+		}
 		const componentId = readOptionalString(
 			components,
 			slot,

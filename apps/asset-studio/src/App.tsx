@@ -1,11 +1,12 @@
 import {
-	CHARACTER_COMPONENT_SLOTS,
+	CHARACTER_HAIR_COMPONENT_IDS,
 	CHARACTER_PALETTE_REGIONS,
 	type CharacterBodyParameters,
-	type CharacterComponentSlot,
+	type CharacterHairComponentId,
 	type CharacterPaletteRegion,
 	type CharacterRecipeV1,
 	createDefaultCharacterRecipe,
+	getCharacterComponentDefinition,
 	parseCharacterRecipe,
 	serializeCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
@@ -49,23 +50,15 @@ const BODY_BASE_OPTIONS = [
 	{ label: "Future compact base", value: "humanoid-compact-placeholder" },
 ] as const;
 
-const COMPONENT_OPTIONS: Record<CharacterComponentSlot, string[]> = {
-	hair: ["short-curl", "tied-back", "none"],
-	headwear: ["wide-brim-hat", "head-scarf", "none"],
-	torso: ["linen-shirt", "sailor-coat", "none"],
-	legs: ["canvas-trousers", "utility-skirt", "none"],
-	feet: ["soft-boots", "deck-shoes", "none"],
-	mainHand: ["training-cutlass", "lantern", "none"],
-};
-
-const COMPONENT_LABELS: Record<CharacterComponentSlot, string> = {
-	hair: "Hair component",
-	headwear: "Headwear component",
-	torso: "Torso clothing",
-	legs: "Leg clothing",
-	feet: "Footwear",
-	mainHand: "Main-hand item",
-};
+const HAIR_COMPONENT_OPTIONS = CHARACTER_HAIR_COMPONENT_IDS.map((id) => ({
+	id,
+	label:
+		id === "none"
+			? "No hair"
+			: (getCharacterComponentDefinition(id)?.name ?? id),
+}));
+const QUATERNIUS_HAIR_COMPONENT =
+	getCharacterComponentDefinition("quaternius-hair-v0");
 
 const PALETTE_LABELS: Record<CharacterPaletteRegion, string> = {
 	skin: "Skin color",
@@ -84,18 +77,11 @@ const SKIN_COLOR_PRESETS = [
 	{ color: "#503126", label: "Tone 6" },
 ] as const;
 
-function replaceComponentValue(
+function replaceHairComponent(
 	recipe: CharacterRecipeV1,
-	slot: CharacterComponentSlot,
-	value: string,
+	value: CharacterHairComponentId,
 ): CharacterRecipeV1 {
-	const components = { ...recipe.components };
-	if (value === "none") {
-		delete components[slot];
-	} else {
-		components[slot] = value;
-	}
-	return { ...recipe, components };
+	return { ...recipe, components: { ...recipe.components, hair: value } };
 }
 
 function downloadRecipe(recipe: CharacterRecipeV1) {
@@ -708,6 +694,10 @@ function HumanoidPreview({
 							manifest.appearance.skin.exportedMetallic,
 						);
 					}
+					host.dataset.hairComponent =
+						manifest.components?.hair?.componentId ?? "none";
+					host.dataset.hairAttachment =
+						manifest.components?.hair?.attachmentBone ?? "none";
 					host.dataset.topologyVersion =
 						manifest.topologyVersion ?? "legacy-primitive-v0";
 					host.dataset.topologyComponents = String(
@@ -1002,9 +992,9 @@ function HumanoidPreview({
 						<div>
 							<dt>Body topology</dt>
 							<dd>
-								{mannequinManifest.topologyVersion ?? "legacy-primitive-v0"} Â·{" "}
+								{mannequinManifest.topologyVersion ?? "legacy-primitive-v0"} ·{" "}
 								{mannequinManifest.topology?.connectedComponentCount ?? 38}{" "}
-								connected component Â·{" "}
+								connected component ·{" "}
 								{mannequinManifest.topology?.manifold
 									? "manifold"
 									: "legacy disconnected"}
@@ -1121,7 +1111,9 @@ export default function App() {
 				compileResult.manifest.appearance.skin.authoredColor !==
 					recipe.palette.skin.toLowerCase() ||
 				compileResult.manifest.appearance.skin.authoredRoughness !==
-					recipe.appearance.skin.roughness),
+					recipe.appearance.skin.roughness ||
+				compileResult.manifest.components.hair.componentId !==
+					recipe.components.hair),
 	);
 
 	function updateRecipe(
@@ -1615,37 +1607,76 @@ export default function App() {
 							)}
 						</section>
 
-						<div className="section-heading">Components</div>
-						<p className="creator-note">
-							Body proportions and skin appearance enter the procedural
-							compiler. Other component and palette fields remain
-							CharacterRecipe source data.
-						</p>
-						<div className="field-grid">
-							{CHARACTER_COMPONENT_SLOTS.map((slot) => (
-								<label key={slot}>
-									{COMPONENT_LABELS[slot]}
-									<select
-										onChange={(event) =>
-											updateRecipe((current) =>
-												replaceComponentValue(
-													current,
-													slot,
-													event.target.value,
-												),
-											)
-										}
-										value={recipe.components[slot] ?? "none"}
-									>
-										{COMPONENT_OPTIONS[slot].map((componentId) => (
-											<option key={componentId} value={componentId}>
-												{componentId}
-											</option>
-										))}
-									</select>
-								</label>
-							))}
-						</div>
+						<div className="section-heading">Hair</div>
+						<section aria-label="Hair" className="appearance-panel">
+							<label>
+								Hairstyle
+								<select
+									aria-label="Hair component"
+									onChange={(event) =>
+										updateRecipe((current) =>
+											replaceHairComponent(
+												current,
+												event.target.value as CharacterHairComponentId,
+											),
+										)
+									}
+									value={recipe.components.hair}
+								>
+									{HAIR_COMPONENT_OPTIONS.map((option) => (
+										<option key={option.id} value={option.id}>
+											{option.label}
+										</option>
+									))}
+								</select>
+							</label>
+							<div className="appearance-comparison">
+								<div>
+									Draft ·{" "}
+									{recipe.components.hair === "none"
+										? "No hair"
+										: QUATERNIUS_HAIR_COMPONENT?.name}
+								</div>
+								<div>
+									Compiled ·{" "}
+									{activeManifest?.components?.hair?.componentId ===
+									"quaternius-hair-v0"
+										? QUATERNIUS_HAIR_COMPONENT?.name
+										: "No hair"}
+								</div>
+							</div>
+							{recipe.components.hair === "quaternius-hair-v0" ? (
+								<dl aria-label="Hair source status">
+									<div>
+										<dt>Provider</dt>
+										<dd>{QUATERNIUS_HAIR_COMPONENT?.provider}</dd>
+									</div>
+									<div>
+										<dt>Provenance</dt>
+										<dd>
+											Validated · {QUATERNIUS_HAIR_COMPONENT?.license.spdx}
+										</dd>
+									</div>
+									<div>
+										<dt>Fit profile</dt>
+										<dd>{QUATERNIUS_HAIR_COMPONENT?.fittingProfile.id}</dd>
+									</div>
+									<div>
+										<dt>Compiled geometry</dt>
+										<dd>
+											{activeManifest?.components?.hair?.componentId ===
+											"quaternius-hair-v0"
+												? `${activeManifest.components.hair.meshCount} mesh · ${activeManifest.components.hair.triangleCount} triangles · ${activeManifest.components.hair.materialCount} material`
+												: "Compile to inspect"}
+										</dd>
+									</div>
+								</dl>
+							) : null}
+							<p className="creator-note">
+								Hair edits are draft recipe values. Compile embeds the selected
+								hairstyle in the complete GLB.
+							</p>
+						</section>
 					</aside>
 
 					<section className="preview-panel" aria-label="Character preview">
@@ -1714,8 +1745,8 @@ export default function App() {
 									<dt>Body topology</dt>
 									<dd>
 										{activeManifest
-											? `${activeManifest.topologyVersion ?? "legacy-primitive-v0"} Â· ${activeManifest.vertexCount} vertices Â· ${activeManifest.triangleCount} triangles`
-											: "â€”"}
+											? `${activeManifest.topologyVersion ?? "legacy-primitive-v0"} · ${activeManifest.vertexCount} vertices · ${activeManifest.triangleCount} triangles`
+											: "—"}
 									</dd>
 								</div>
 								<div>

@@ -16,7 +16,10 @@ const DEFAULT_PROPORTIONS = {
 	hipWidth: 0.5,
 };
 
-function successfulPayload(heightMetres = 1.82) {
+function successfulPayload(
+	heightMetres = 1.82,
+	hair: "none" | "quaternius-hair-v0" = "none",
+) {
 	return {
 		assetUrl: "/generated/job/output/mannequin.glb",
 		compilationDurationMs: 1250,
@@ -55,7 +58,18 @@ function successfulPayload(heightMetres = 1.82) {
 				shoulderWidthMultiplier: 1,
 				torsoLengthMultiplier: 1,
 			},
-			compilerVersion: "procedural-mannequin-blender-v3",
+			compilerVersion: "procedural-mannequin-blender-v4",
+			components: {
+				hair: {
+					attachmentBone: hair === "none" ? null : "Head",
+					componentId: hair,
+					materialCount: hair === "none" ? 0 : 1,
+					meshCount: hair === "none" ? 0 : 1,
+					textureCount: hair === "none" ? 0 : 2,
+					triangleCount: hair === "none" ? 0 : 830,
+					vertexCount: hair === "none" ? 0 : 466,
+				},
+			},
 			deterministicBuild: true,
 			generationDurationMs: 1200,
 			geometryAndSkinningSemanticHash: "e".repeat(64),
@@ -76,7 +90,7 @@ function successfulPayload(heightMetres = 1.82) {
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 3,
+			recipeVersion: 4,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
@@ -93,7 +107,7 @@ function successfulPayload(heightMetres = 1.82) {
 			},
 			topologyVersion: "procedural-humanoid-v1",
 			triangleCount: 5444,
-			validationVersion: "procedural-mannequin-roundtrip-v4",
+			validationVersion: "procedural-mannequin-roundtrip-v5",
 			vertexCount: 2724,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
@@ -101,7 +115,7 @@ function successfulPayload(heightMetres = 1.82) {
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v4",
+			version: "procedural-mannequin-roundtrip-v5",
 		},
 	};
 }
@@ -132,8 +146,17 @@ describe("procedural mannequin creator client", () => {
 				skinColor: "#c98f65",
 				skinRoughness: 0.72,
 			},
+			components: { hair: "none" },
 			proportions: { ...DEFAULT_PROPORTIONS, height: 1.93 },
-			version: 3,
+			version: 4,
+		});
+	});
+
+	it("includes the selected registered hairstyle in the compile request", () => {
+		const recipe = createDefaultCharacterRecipe();
+		recipe.components.hair = "quaternius-hair-v0";
+		expect(createProceduralMannequinCompileRequest(recipe).components).toEqual({
+			hair: "quaternius-hair-v0",
 		});
 	});
 
@@ -177,8 +200,9 @@ describe("procedural mannequin creator client", () => {
 						skinColor: "#c98f65",
 						skinRoughness: 0.72,
 					},
+					components: { hair: "none" },
 					proportions: DEFAULT_PROPORTIONS,
-					version: 3,
+					version: 4,
 				}),
 				method: "POST",
 			}),
@@ -209,5 +233,16 @@ describe("procedural mannequin creator client", () => {
 		await expect(
 			requestProceduralMannequinCompile(recipe, mismatchedRequest),
 		).rejects.toThrow("mismatched validation metadata");
+
+		recipe.components.hair = "quaternius-hair-v0";
+		const wrongHairRequest = vi.fn(
+			async () =>
+				new Response(JSON.stringify(successfulPayload(1.82, "none")), {
+					status: 200,
+				}),
+		);
+		await expect(
+			requestProceduralMannequinCompile(recipe, wrongHairRequest),
+		).rejects.toThrow("hairstyle component mismatch");
 	});
 });

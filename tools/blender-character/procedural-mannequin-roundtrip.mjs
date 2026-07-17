@@ -154,6 +154,28 @@ function hierarchySnapshot(root) {
 	return snapshot;
 }
 
+function semanticMeshSnapshot(name, geometry) {
+	return {
+		attributes: Object.fromEntries(
+			Object.entries(geometry.attributes)
+				.sort(([left], [right]) => left.localeCompare(right))
+				.map(([attributeName, attribute]) => [
+					attributeName,
+					{
+						count: attribute.count,
+						hash: typedArrayHash(attribute),
+						itemSize: attribute.itemSize,
+					},
+				]),
+		),
+		index: {
+			count: geometry.index?.count ?? 0,
+			hash: indexHash(geometry.index),
+		},
+		name,
+	};
+}
+
 function semanticSnapshot(root) {
 	const materials = new Set();
 	const meshes = [];
@@ -164,25 +186,7 @@ function semanticSnapshot(root) {
 			: [object.material]) {
 			materials.add(material);
 		}
-		meshes.push({
-			attributes: Object.fromEntries(
-				Object.entries(object.geometry.attributes)
-					.sort(([left], [right]) => left.localeCompare(right))
-					.map(([name, attribute]) => [
-						name,
-						{
-							count: attribute.count,
-							hash: typedArrayHash(attribute),
-							itemSize: attribute.itemSize,
-						},
-					]),
-			),
-			index: {
-				count: object.geometry.index?.count ?? 0,
-				hash: indexHash(object.geometry.index),
-			},
-			name: object.name,
-		});
+		meshes.push(semanticMeshSnapshot(object.name, object.geometry));
 	});
 	return {
 		hierarchy: hierarchySnapshot(root),
@@ -222,7 +226,9 @@ function analyzeSkinMaterial(root, expected) {
 			materials.add(material);
 		}
 	});
-	const material = [...materials][0];
+	const material = expected
+		? [...materials].find((candidate) => candidate.name === expected.name)
+		: [...materials][0];
 	const standard = material instanceof THREE.MeshStandardMaterial;
 	const exportedLinearColor = standard
 		? material.color.toArray().map((value) => rounded(value))
@@ -248,14 +254,14 @@ function analyzeSkinMaterial(root, expected) {
 		exportedMetallic,
 		exportedRoughness,
 		finite,
-		materialCount: materials.size,
+		materialCount: material ? 1 : 0,
 		materialName: material?.name,
 		materialType: material?.type,
 		maximumColorError: Number.isFinite(maximumColorError)
 			? rounded(maximumColorError)
 			: null,
 		passed:
-			materials.size === 1 &&
+			Boolean(material) &&
 			standard &&
 			finite &&
 			(!expected ||
@@ -263,6 +269,230 @@ function analyzeSkinMaterial(root, expected) {
 					maximumColorError <= 0.00001 &&
 					Math.abs(exportedRoughness - expected.roughness) <= 0.00001 &&
 					exportedMetallic === 0)),
+	};
+}
+
+function analyzeArtifact(root) {
+	const materials = new Set();
+	const textures = new Set();
+	let meshCount = 0;
+	let triangleCount = 0;
+	let vertexCount = 0;
+	root.traverse((object) => {
+		if (!(object instanceof THREE.Mesh)) return;
+		meshCount += 1;
+		const position = object.geometry.getAttribute("position");
+		vertexCount += position?.count ?? 0;
+		triangleCount += object.geometry.index
+			? Math.floor(object.geometry.index.count / 3)
+			: Math.floor((position?.count ?? 0) / 3);
+		for (const material of Array.isArray(object.material)
+			? object.material
+			: [object.material]) {
+			materials.add(material);
+			for (const value of Object.values(material)) {
+				if (value instanceof THREE.Texture) textures.add(value);
+			}
+		}
+	});
+	return {
+		materialCount: materials.size,
+		meshCount,
+		textureCount: textures.size,
+		triangleCount,
+		vertexCount,
+	};
+}
+
+function headRelativeHairVertex(root, meshName, vertexIndex) {
+	root.updateMatrixWorld(true);
+	const head = root.getObjectByName("Head");
+	const hair = root.getObjectByName(meshName);
+	if (!head || !(hair instanceof THREE.SkinnedMesh)) return undefined;
+	const position = hair.geometry.getAttribute("position");
+	if (!position?.count) return undefined;
+	const point = new THREE.Vector3().fromBufferAttribute(position, vertexIndex);
+	hair.applyBoneTransform(vertexIndex, point).applyMatrix4(hair.matrixWorld);
+	return point.applyMatrix4(head.matrixWorld.clone().invert());
+}
+
+function validateHairAttachmentAnimation(root, clips, meshName, vertexIndex) {
+	const rest = headRelativeHairVertex(root, meshName, vertexIndex);
+	if (!rest) return { maximumRelativeVertexDifference: null, passed: false };
+	let maximumRelativeVertexDifference = 0;
+	for (const clip of Object.values(clips)) {
+		for (const normalizedTime of [0, 0.25, 0.5, 0.75]) {
+			const clone = cloneSkeleton(root);
+			const mixer = new THREE.AnimationMixer(clone);
+			mixer.clipAction(clip).play();
+			mixer.setTime(clip.duration * normalizedTime);
+			const relative = headRelativeHairVertex(clone, meshName, vertexIndex);
+			if (!relative)
+				return { maximumRelativeVertexDifference: null, passed: false };
+			maximumRelativeVertexDifference = Math.max(
+				maximumRelativeVertexDifference,
+				rest.distanceTo(relative),
+			);
+			mixer.stopAllAction();
+			mixer.uncacheRoot(clone);
+		}
+	}
+	return {
+		maximumRelativeVertexDifference,
+		passed: maximumRelativeVertexDifference <= 0.02,
+	};
+}
+
+function analyzeHair(root, expected, clips, glbResources) {
+	if (expected.componentId === "none") {
+		const unexpected = [];
+		root.traverse((object) => {
+			if (object.name.startsWith("Hair_")) unexpected.push(object.name);
+		});
+		return {
+			attachmentBone: null,
+			componentId: "none",
+			materialCount: 0,
+			materialNames: [],
+			meshCount: 0,
+			objectName: null,
+			passed: unexpected.length === 0,
+			textureCount: 0,
+			textureNames: [],
+			triangleCount: 0,
+			vertexCount: 0,
+		};
+	}
+	const definition = expected.definition;
+	let mesh;
+	root.traverse((object) => {
+		if (!(object instanceof THREE.SkinnedMesh)) return;
+		const objectMaterials = Array.isArray(object.material)
+			? object.material
+			: [object.material];
+		if (
+			objectMaterials.some(
+				(material) => material.name === definition.material.name,
+			)
+		) {
+			mesh = object;
+		}
+	});
+	const objectName = mesh?.name ?? "ProceduralMannequinMesh_2";
+	const materials = mesh
+		? Array.isArray(mesh.material)
+			? mesh.material
+			: [mesh.material]
+		: [];
+	const materialNames = materials.map((material) => material.name).sort();
+	const textureNames = glbResources.imageNames.slice().sort();
+	const expectedTextureNames = definition.material.textures
+		.map((name) => name.replace(/\.[^.]+$/u, ""))
+		.sort();
+	const position = mesh?.geometry.getAttribute("position");
+	const hairVertexIndices = new Set(
+		Array.from({ length: position?.count ?? 0 }, (_, index) => index),
+	);
+	const skinIndex = mesh?.geometry.getAttribute("skinIndex");
+	const skinWeight = mesh?.geometry.getAttribute("skinWeight");
+	let fullHeadWeights = Boolean(
+		mesh instanceof THREE.SkinnedMesh && skinIndex && skinWeight,
+	);
+	const attachmentWeightBones = new Set();
+	if (mesh instanceof THREE.SkinnedMesh && skinIndex && skinWeight) {
+		for (const vertex of hairVertexIndices) {
+			let sum = 0;
+			for (let component = 0; component < skinWeight.itemSize; component += 1) {
+				const weight = skinWeight.getComponent(vertex, component);
+				if (weight <= 0.000001) continue;
+				sum += weight;
+				const jointIndex = skinIndex.getComponent(vertex, component);
+				const boneName = mesh.skeleton.bones[jointIndex]?.name;
+				if (boneName) attachmentWeightBones.add(boneName);
+			}
+			fullHeadWeights &&= Math.abs(sum - 1) <= 0.000001;
+		}
+	}
+	fullHeadWeights &&=
+		attachmentWeightBones.has(definition.expectedAttachmentBone) &&
+		attachmentWeightBones.size <= 4;
+	const hairBounds = new THREE.Box3();
+	if (mesh && position) {
+		mesh.updateMatrixWorld(true);
+		for (const vertex of hairVertexIndices) {
+			const point = new THREE.Vector3().fromBufferAttribute(position, vertex);
+			mesh.applyBoneTransform(vertex, point).applyMatrix4(mesh.matrixWorld);
+			hairBounds.expandByPoint(point);
+		}
+	}
+	const hairDimensions = hairBounds.getSize(new THREE.Vector3());
+	const triangleCount = mesh?.geometry.index
+		? Math.floor(mesh.geometry.index.count / 3)
+		: Math.floor((position?.count ?? 0) / 3);
+	const attachmentAnimation = validateHairAttachmentAnimation(
+		root,
+		clips,
+		objectName,
+		[...hairVertexIndices][0] ?? 0,
+	);
+	const cloneOne = cloneSkeleton(root).getObjectByName(objectName);
+	const cloneTwo = cloneSkeleton(root).getObjectByName(objectName);
+	const cloneIndependent =
+		cloneOne instanceof THREE.SkinnedMesh &&
+		cloneTwo instanceof THREE.SkinnedMesh &&
+		cloneOne !== cloneTwo &&
+		cloneOne.skeleton !== cloneTwo.skeleton;
+	return {
+		attachmentAnimation,
+		attachmentBone: fullHeadWeights ? definition.expectedAttachmentBone : null,
+		attachmentWeightBones: [...attachmentWeightBones].sort(),
+		bounds: {
+			dimensions: hairDimensions.toArray().map((value) => rounded(value)),
+			maximum: hairBounds.max.toArray().map((value) => rounded(value)),
+			minimum: hairBounds.min.toArray().map((value) => rounded(value)),
+		},
+		cloneIndependent,
+		componentId: expected.componentId,
+		materialCount: materialNames.length,
+		materialNames,
+		meshCount: mesh ? 1 : 0,
+		objectName: mesh?.name ?? null,
+		passed:
+			mesh instanceof THREE.SkinnedMesh &&
+			fullHeadWeights &&
+			materialNames.length === 1 &&
+			materialNames[0] === definition.material.name &&
+			textureNames.length === expectedTextureNames.length &&
+			expectedTextureNames.every((name) => textureNames.includes(name)) &&
+			attachmentAnimation.passed &&
+			cloneIndependent,
+		textureCount: textureNames.length,
+		textureNames,
+		triangleCount,
+		vertexCount: hairVertexIndices.size,
+	};
+}
+
+async function inspectGlbResources(filePath) {
+	const buffer = await readFile(filePath);
+	if (buffer.toString("utf8", 0, 4) !== "glTF") {
+		throw new Error("Expected a GLB artifact for resource inspection.");
+	}
+	const jsonLength = buffer.readUInt32LE(12);
+	const jsonType = buffer.toString("utf8", 16, 20);
+	if (jsonType !== "JSON") throw new Error("GLB JSON chunk is missing.");
+	const document = JSON.parse(buffer.toString("utf8", 20, 20 + jsonLength));
+	return {
+		imageCount: document.images?.length ?? 0,
+		imageNames: (document.images ?? [])
+			.map((image) => image.name)
+			.filter(Boolean),
+		materialNames: (document.materials ?? [])
+			.map((material) => material.name)
+			.filter(Boolean),
+		meshCount: document.meshes?.length ?? 0,
+		nodeCount: document.nodes?.length ?? 0,
+		skinCount: document.skins?.length ?? 0,
 	};
 }
 
@@ -430,22 +660,28 @@ function analyzeGeometry(root, expectedHeight) {
 	let vertexCount = 0;
 	root.updateMatrixWorld(true);
 	for (const skeleton of uniqueSkeletons(root)) skeleton.pose();
+	let bodyObject;
 	root.traverse((object) => {
 		if (!(object instanceof THREE.Mesh)) return;
-		meshCount += 1;
-		for (const material of Array.isArray(object.material)
+		const objectMaterials = Array.isArray(object.material)
 			? object.material
-			: [object.material]) {
-			materials.add(material);
-		}
-		const position = object.geometry.getAttribute("position");
-		const normal = object.geometry.getAttribute("normal");
+			: [object.material];
+		const skinMaterial = objectMaterials.find(
+			(material) => material.name === "ProceduralSkinMaterial",
+		);
+		if (!skinMaterial) return;
+		const geometry = object.geometry;
+		bodyObject = object;
+		meshCount += 1;
+		materials.add(skinMaterial);
+		const position = geometry.getAttribute("position");
+		const normal = geometry.getAttribute("normal");
 		vertexCount += position?.count ?? 0;
 		for (const value of position?.array ?? [])
 			finitePositions &&= Number.isFinite(value);
 		for (const value of normal?.array ?? [])
 			finiteNormals &&= Number.isFinite(value);
-		const index = object.geometry.index;
+		const index = geometry.index;
 		triangleCount += index
 			? Math.floor(index.count / 3)
 			: Math.floor((position?.count ?? 0) / 3);
@@ -454,7 +690,7 @@ function analyzeGeometry(root, expectedHeight) {
 				if (value < 0 || value >= position.count) indexRangeValid = false;
 			}
 		}
-		const meshTopology = indexedTopology(object.geometry);
+		const meshTopology = indexedTopology(geometry);
 		for (const key of [
 			"boundaryEdgeCount",
 			"connectedComponentCount",
@@ -471,8 +707,8 @@ function analyzeGeometry(root, expectedHeight) {
 		topology.manifold &&= meshTopology.manifold;
 		if (!(object instanceof THREE.SkinnedMesh)) return;
 		skinnedMeshCount += 1;
-		const skinIndex = object.geometry.getAttribute("skinIndex");
-		const skinWeight = object.geometry.getAttribute("skinWeight");
+		const skinIndex = geometry.getAttribute("skinIndex");
+		const skinWeight = geometry.getAttribute("skinWeight");
 		if (!skinIndex || !skinWeight || skinIndex.count !== position.count) {
 			unweightedVertexCount += position.count;
 			return;
@@ -502,7 +738,9 @@ function analyzeGeometry(root, expectedHeight) {
 		}
 	});
 	materialCount = materials.size;
-	const bounds = new THREE.Box3().setFromObject(root, true);
+	const bounds = bodyObject
+		? new THREE.Box3().setFromObject(bodyObject, true)
+		: new THREE.Box3();
 	const dimensions = bounds.getSize(new THREE.Vector3());
 	const missingWeightedBones = EXPECTED_WEIGHTED_BONES.filter(
 		(name) => !weightedBones.has(name),
@@ -743,18 +981,26 @@ function validateSymmetry(root) {
 export async function validateProceduralMannequinArtifact({
 	artifactPath,
 	expectedHeightMetres,
+	expectedHairComponent = { componentId: "none", definition: undefined },
 	expectedSkinMaterial,
 	templatePath,
 	workspaceRoot = process.cwd(),
 }) {
-	const [gltf, inspection, templateInspection, idleGltf, walkGltf] =
-		await Promise.all([
-			loadGlb(artifactPath),
-			inspectAnimationSource(artifactPath),
-			inspectAnimationSource(templatePath),
-			loadGlb(path.resolve(workspaceRoot, ANIMATIONS.idle.path)),
-			loadGlb(path.resolve(workspaceRoot, ANIMATIONS.walk.path)),
-		]);
+	const [
+		gltf,
+		inspection,
+		templateInspection,
+		idleGltf,
+		walkGltf,
+		glbResources,
+	] = await Promise.all([
+		loadGlb(artifactPath),
+		inspectAnimationSource(artifactPath),
+		inspectAnimationSource(templatePath),
+		loadGlb(path.resolve(workspaceRoot, ANIMATIONS.idle.path)),
+		loadGlb(path.resolve(workspaceRoot, ANIMATIONS.walk.path)),
+		inspectGlbResources(artifactPath),
+	]);
 	const clips = {
 		idle: idleGltf.animations.find(
 			(clip) => clip.name === ANIMATIONS.idle.clipName,
@@ -774,6 +1020,7 @@ export async function validateProceduralMannequinArtifact({
 	);
 	const generatedSkeleton = skeletonSignature(inspection);
 	const geometry = analyzeGeometry(gltf.scene, expectedHeightMetres);
+	const artifact = analyzeArtifact(gltf.scene);
 	const material = analyzeSkinMaterial(gltf.scene, expectedSkinMaterial);
 	const skeletonContract = compareSkeletonContracts(
 		templateInspection,
@@ -783,6 +1030,12 @@ export async function validateProceduralMannequinArtifact({
 		idle: validateAnimation(gltf.scene, clips.idle),
 		walk: validateAnimation(gltf.scene, clips.walk),
 	};
+	const hair = analyzeHair(
+		gltf.scene,
+		expectedHairComponent,
+		clips,
+		glbResources,
+	);
 	const cloneIndependence = validateCloneAndRest(gltf.scene, clips.walk);
 	const symmetry = validateSymmetry(gltf.scene);
 	const noVendorPresentation = ![...names].some((name) =>
@@ -792,27 +1045,50 @@ export async function validateProceduralMannequinArtifact({
 		animationBinding: animations.idle.passed && animations.walk.passed,
 		cloneIndependence: cloneIndependence.passed,
 		geometry: geometry.passed,
+		hair: hair.passed,
 		material: material.passed,
 		jointCount:
 			inspection.skeletons.length === 1 &&
-			inspection.skeletons[0].jointCount === 65,
+			inspection.skeletons[0].jointCount === 65 &&
+			glbResources.skinCount === 1,
 		missingRequiredBones: missingRequiredBones.length === 0,
 		noEmbeddedAnimations: gltf.animations.length === 0,
 		noMixamoOrVendorPresentation: noVendorPresentation,
 		skeletonContract: skeletonContract.passed,
 		symmetry: symmetry.passed,
 	};
+	let bodyGeometry;
+	gltf.scene.traverse((object) => {
+		if (!(object instanceof THREE.Mesh)) return;
+		const objectMaterials = Array.isArray(object.material)
+			? object.material
+			: [object.material];
+		if (
+			objectMaterials.some(
+				(material) => material.name === "ProceduralSkinMaterial",
+			)
+		) {
+			bodyGeometry = object.geometry;
+		}
+	});
+	const bodySemantic = bodyGeometry
+		? semanticMeshSnapshot("ProceduralMannequinMesh", bodyGeometry)
+		: undefined;
+	if (bodySemantic) delete bodySemantic.attributes.uv;
 	return {
 		animations,
+		artifact,
 		checks,
 		cloneIndependence,
 		geometry,
 		geometrySemanticHash: sha256(
 			JSON.stringify({
-				hierarchy: semantic.hierarchy,
-				meshes: semantic.meshes,
+				mesh: bodySemantic,
+				skeleton: generatedSkeleton,
 			}),
 		),
+		glbResources,
+		hair,
 		inspection: {
 			embeddedAnimationCount: gltf.animations.length,
 			jointCount: inspection.skeletons[0]?.jointCount,
@@ -823,7 +1099,13 @@ export async function validateProceduralMannequinArtifact({
 		},
 		passed: Object.values(checks).every(Boolean),
 		material,
-		materialSemanticHash: sha256(JSON.stringify(semantic.materials)),
+		materialSemanticHash: sha256(
+			JSON.stringify(
+				semantic.materials.filter(
+					(candidate) => candidate.name === expectedSkinMaterial?.name,
+				),
+			),
+		),
 		semanticHash: sha256(JSON.stringify(semantic)),
 		semanticSnapshot: semantic,
 		skeletonContract,

@@ -2,6 +2,7 @@ import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	type CharacterBodyParameters,
+	type CharacterHairComponentId,
 	type CharacterRecipeV1,
 } from "@adventure-game-builder/character-contract";
 
@@ -94,6 +95,28 @@ export type ProceduralMannequinManifest = {
 		minY: number;
 	};
 	compilerVersion: string;
+	components: {
+		hair: {
+			attachmentBone: "Head" | null;
+			componentId: CharacterHairComponentId;
+			fittingProfile?: {
+				id: string;
+				version: number;
+				scalpOffsetMetres: number;
+			};
+			materialCount: number;
+			materialNames?: string[];
+			meshCount: number;
+			objectName?: string;
+			provider?: string;
+			packName?: string;
+			sourceAsset?: string;
+			textureCount: number;
+			textureNames?: string[];
+			triangleCount: number;
+			vertexCount: number;
+		};
+	};
 	deterministicBuild: boolean;
 	geometryProfile?: "ellipsoid" | "voxel-union";
 	geometryAndSkinningSemanticHash: string;
@@ -292,20 +315,27 @@ export function randomizeProceduralMannequinBody(seed: string) {
 }
 
 export function createProceduralMannequinCompileRequest(
-	recipe: Pick<CharacterRecipeV1, "appearance" | "body" | "palette">,
+	recipe: Pick<
+		CharacterRecipeV1,
+		"appearance" | "body" | "components" | "palette"
+	>,
 ) {
 	return {
 		appearance: {
 			skinColor: recipe.palette.skin.toLowerCase(),
 			skinRoughness: recipe.appearance.skin.roughness,
 		},
+		components: { hair: recipe.components.hair },
 		proportions: { ...recipe.body.parameters },
-		version: 3 as const,
+		version: 4 as const,
 	};
 }
 
 export async function requestProceduralMannequinCompile(
-	recipe: Pick<CharacterRecipeV1, "appearance" | "body" | "palette">,
+	recipe: Pick<
+		CharacterRecipeV1,
+		"appearance" | "body" | "components" | "palette"
+	>,
 	request: typeof fetch = fetch,
 ): Promise<ProceduralMannequinCompileResult> {
 	const validation = validateProceduralMannequinBody(recipe.body.parameters);
@@ -329,6 +359,14 @@ export async function requestProceduralMannequinCompile(
 				: "";
 		throw new Error(
 			`${payload.status === "failed" ? payload.error : `Compile failed with HTTP ${response.status}.`}${details}`,
+		);
+	}
+	if (
+		payload.manifest.components?.hair?.componentId !==
+		compileRequest.components.hair
+	) {
+		throw new Error(
+			"Compile endpoint returned a hairstyle component mismatch.",
 		);
 	}
 	if (

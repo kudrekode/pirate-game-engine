@@ -13,7 +13,7 @@
 	},
 	"animationProfile": "mixamo-to-quaternius-v2",
 	"animationSet": "golden-reference-v0",
-	"assetId": "procedural-mannequin-v0",
+	"assetId": "procedural-mannequin-quaternius-hair-v0",
 	"blender": {
 		"buildHash": "fbe6228777e7",
 		"version": "5.2.0 LTS"
@@ -31,23 +31,90 @@
 	"compilerVersion": "procedural-mannequin-blender-v4",
 	"components": {
 		"hair": {
-			"attachmentBone": null,
-			"componentId": "none",
-			"materialCount": 0,
-			"meshCount": 0,
-			"textureCount": 0,
-			"triangleCount": 0,
-			"vertexCount": 0
+			"attachmentBone": "Head",
+			"attachmentStrategy": "main-skeleton-head-surface-skinning",
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v4",
+			"componentId": "quaternius-hair-v0",
+			"fittingProfile": {
+				"id": "quaternius-buzzed-fit-v1",
+				"version": 1,
+				"mode": "generated-head-bounds",
+				"baseHeightMetres": 1.82,
+				"heightCompensationMetresPerMetre": -0.882,
+				"heightCompensationQuadraticMetres": 0.685,
+				"torsoLengthCompensationMetres": 0.1685,
+				"legLengthCompensationMetres": -0.0175,
+				"pivotMetres": [0, 0, 1.73],
+				"scalpOffsetMetres": 0.01
+			},
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+				"spdx": "CC0-1.0"
+			},
+			"knownLimitations": [
+				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
+				"Fixed vendor-authored brown material; hair colour authoring is not implemented.",
+				"Fit is tuned for the generated stylised head and has no user-facing fit controls."
+			],
+			"bounds": {
+				"dimensions": [0.2378636, 0.1893184, 0.1993825],
+				"maximum": [0.1189318, 1.8377204, 0.0877015],
+				"minimum": [-0.1189318, 1.648402, -0.111681]
+			},
+			"materialCount": 1,
+			"materialNames": ["MI_Hair_1"],
+			"meshCount": 1,
+			"objectName": "ProceduralMannequinMesh_2",
+			"normalizedTransform": {
+				"translationMetres": [0, 0, -0.12],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1.45, 1.3, 1]
+			},
+			"provider": "Quaternius",
+			"packName": "Universal Base Characters Kit",
+			"sourceAsset": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf",
+			"sourceFiles": [
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf",
+					"role": "mesh",
+					"sha256": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin",
+					"role": "buffer",
+					"sha256": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png",
+					"role": "baseColorTexture",
+					"sha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png",
+					"role": "normalTexture",
+					"sha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
+				}
+			],
+			"sourceTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"textureCount": 2,
+			"textureNames": ["T_Hair_1_BaseColor", "T_Hair_1_Normal"],
+			"triangleCount": 830,
+			"vertexCount": 466
 		}
 	},
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+		"firstOutputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
 		"geometryAndSkinningDeterministic": true,
 		"materialDeterministic": true,
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+		"secondOutputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -92,7 +159,9 @@
 	"knownLimitations": [
 		"Topology V1 uses a controlled voxel union and analytic segment weights.",
 		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
-		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
+		"Hairstyle Slot V1 reuses the generated Head-led body-surface blend and has no secondary motion.",
+		"The vendor-authored hair material is fixed; hair colour authoring is not implemented."
 	],
 	"appearance": {
 		"skin": {
@@ -111,11 +180,11 @@
 		}
 	},
 	"artifactStatistics": {
-		"materialCount": 1,
-		"meshCount": 1,
-		"textureCount": 0,
-		"triangleCount": 5444,
-		"vertexCount": 2724
+		"materialCount": 2,
+		"meshCount": 2,
+		"textureCount": 2,
+		"triangleCount": 6274,
+		"vertexCount": 3190
 	},
 	"bodyStatistics": {
 		"materialCount": 1,
@@ -123,14 +192,14 @@
 		"triangleCount": 5444,
 		"vertexCount": 2724
 	},
-	"materialCount": 1,
-	"meshCount": 1,
-	"meshNames": ["ProceduralMannequinMesh"],
-	"normalizedSemanticHash": "249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1",
+	"materialCount": 2,
+	"meshCount": 2,
+	"meshNames": ["ProceduralMannequinMesh_1", "ProceduralMannequinMesh_2"],
+	"normalizedSemanticHash": "43598cdd3a1286f32a968e3a4abfb85d964aa85bb3b22c2b45453a5862c7293e",
 	"geometryAndSkinningSemanticHash": "cefef92c58d85eda857eb1f2bc4e371c9efbd7f45e91f4909201e8b34f25aec4",
 	"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
 	"outputFile": "mannequin.glb",
-	"outputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+	"outputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
 	"proportions": {
 		"height": 1.82,
 		"shoulderWidth": 0.5,
@@ -139,8 +208,8 @@
 		"legLength": 0.5,
 		"hipWidth": 0.5
 	},
-	"recipeHash": "cb587a6bf3ec62a20672faae4cde7da3d815f8f7ef6e65f926844fcf87915f74",
-	"recipeId": "procedural-mannequin-v0",
+	"recipeHash": "385cfb6ff4c81dde461d5b182ec4f26519bc4203c7d00f0d46fcb01ae559146f",
+	"recipeId": "procedural-mannequin-quaternius-hair-v0",
 	"recipeVersion": 4,
 	"skeletonContract": "golden-humanoid-v0",
 	"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
@@ -154,7 +223,7 @@
 		"buffer": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
 		"gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4"
 	},
-	"triangleCount": 5444,
+	"triangleCount": 6274,
 	"topology": {
 		"boundaryEdgeCount": 0,
 		"connectedComponentCount": 1,
@@ -170,11 +239,13 @@
 	"topologyVersion": "procedural-humanoid-v1",
 	"units": "metres",
 	"validationVersion": "procedural-mannequin-roundtrip-v5",
-	"vertexCount": 2724,
+	"vertexCount": 3190,
 	"warnings": [
 		"Topology V1 uses a controlled voxel union and analytic segment weights.",
 		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
-		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
+		"Hairstyle Slot V1 reuses the generated Head-led body-surface blend and has no secondary motion.",
+		"The vendor-authored hair material is fixed; hair colour authoring is not implemented."
 	],
-	"generationDurationMs": 12245
+	"generationDurationMs": 11978
 }

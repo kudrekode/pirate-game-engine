@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
+	CHARACTER_COMPONENT_REGISTRY,
+	CHARACTER_HAIR_COMPONENT_IDS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	createDefaultCharacterRecipe,
+	getCharacterComponentDefinition,
 	HUMANOID_V1_CONTRACT,
 	HUMANOID_V1_SKELETON_ID,
 	parseCharacterRecipe,
@@ -30,7 +33,7 @@ describe("CharacterRecipeV1", () => {
 					hipWidth: 0.5,
 				},
 			},
-			components: {},
+			components: { hair: "none" },
 			appearance: { skin: { roughness: 0.72 } },
 			animationSetId: "humanoid-basic-v1",
 		});
@@ -138,6 +141,7 @@ describe("CharacterRecipeV1", () => {
 			waist: 0.5,
 			headScale: 1,
 		} as unknown as typeof legacy.body.parameters;
+		delete (legacy.components as Partial<typeof legacy.components>).hair;
 		const parsed = parseCharacterRecipe(legacy);
 		expect(parsed.ok).toBe(true);
 		if (parsed.ok) {
@@ -150,14 +154,15 @@ describe("CharacterRecipeV1", () => {
 				hipWidth: 0.5,
 			});
 			expect(parsed.value.appearance.skin.roughness).toBe(0.72);
+			expect(parsed.value.components.hair).toBe("none");
 		}
 	});
 
-	it("accepts optional component slots when they are non-empty strings", () => {
+	it("accepts the registered hairstyle and rejects unknown hair ids", () => {
 		const parsed = parseCharacterRecipe({
 			...createDefaultCharacterRecipe(),
 			components: {
-				hair: "short-curl",
+				hair: "quaternius-hair-v0",
 				torso: "linen-shirt",
 			},
 		});
@@ -165,10 +170,38 @@ describe("CharacterRecipeV1", () => {
 		expect(parsed.ok).toBe(true);
 		if (parsed.ok) {
 			expect(parsed.value.components).toEqual({
-				hair: "short-curl",
+				hair: "quaternius-hair-v0",
 				torso: "linen-shirt",
 			});
 		}
+		const unknown = parseCharacterRecipe({
+			...createDefaultCharacterRecipe(),
+			components: { hair: "filesystem/curl.gltf" },
+		});
+		expect(unknown.ok).toBe(false);
+		expect(unknown.issues).toContainEqual(
+			expect.objectContaining({ path: "$.components.hair" }),
+		);
+	});
+
+	it("exposes exactly none and one validated V1 hairstyle registry entry", () => {
+		expect(CHARACTER_HAIR_COMPONENT_IDS).toEqual([
+			"none",
+			"quaternius-hair-v0",
+		]);
+		expect(CHARACTER_COMPONENT_REGISTRY.version).toBe(1);
+		expect(CHARACTER_COMPONENT_REGISTRY.components).toHaveLength(1);
+		expect(getCharacterComponentDefinition("quaternius-hair-v0")).toMatchObject(
+			{
+				attachmentStrategy: "main-skeleton-head-surface-skinning",
+				expectedAttachmentBone: "Head",
+				fittingProfile: { id: "quaternius-buzzed-fit-v1", version: 1 },
+				provider: "Quaternius",
+				slot: "hair",
+				sourceHash:
+					"43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
+			},
+		);
 	});
 });
 

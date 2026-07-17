@@ -64,7 +64,7 @@ test("previews and animates the checked-in Body Proportions V1 mannequin", async
 	await expect(diagnostics).toContainText("1 connected component");
 	await expect(diagnostics).toContainText("manifold");
 	await expect(diagnostics).toContainText("65-joint Golden template");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v3");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v4");
 	await verifyAnimations(page);
 
 	await page
@@ -162,8 +162,8 @@ test("randomises, compiles, animates, validates, and revisits several body shape
 	}
 
 	const diagnostics = page.getByLabel("Creator compilation diagnostics");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v3");
-	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v4");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v4");
+	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v5");
 	await page.screenshot({
 		path: testInfo.outputPath("creator-random-body.png"),
 	});
@@ -259,5 +259,90 @@ test("compiles isolated skin color and roughness changes without changing geomet
 	await expect(
 		page.getByLabel("Recent Compilations").getByRole("button"),
 	).toHaveCount(cases.length);
+	expect(consoleErrors).toEqual([]);
+});
+
+test("compiles, animates, captures, and revisits bald and Quaternius hairstyle variants", async ({
+	page,
+}, testInfo) => {
+	test.setTimeout(360_000);
+	const consoleErrors = collectErrors(page);
+	await page.goto("/");
+	const hairSelect = page.getByLabel("Hair component");
+	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compileStatus = page.locator("[data-compile-status]");
+	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
+
+	async function compileHair(hair: "none" | "quaternius-hair-v0") {
+		await hairSelect.selectOption(hair);
+		await compile.click();
+		await expect(compileStatus).toHaveAttribute(
+			"data-compile-status",
+			"succeeded",
+			{ timeout: 90_000 },
+		);
+		await expect(page.locator(".preview-status")).toHaveAttribute(
+			"data-status",
+			"loaded",
+			{ timeout: 60_000 },
+		);
+		await expect(host).toHaveAttribute("data-hair-component", hair);
+		await expect(host).toHaveAttribute(
+			"data-hair-attachment",
+			hair === "none" ? "none" : "Head",
+		);
+		await verifyAnimations(page);
+		return (await host.getAttribute("data-recipe-hash")) ?? "";
+	}
+
+	const baldHash = await compileHair("none");
+	const hairHash = await compileHair("quaternius-hair-v0");
+	expect(hairHash).not.toBe(baldHash);
+	await expect(
+		page.getByRole("region", { exact: true, name: "Hair" }),
+	).toContainText("Compiled · Quaternius Buzzed");
+	const previewChrome = page.locator(
+		".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
+	);
+
+	for (const state of ["Rest", "Idle", "Walk"] as const) {
+		await page.getByRole("button", { exact: true, name: state }).click();
+		if (state !== "Rest") {
+			await page.getByLabel("Animation sample time").fill("0.25");
+		}
+		for (const view of ["Front", "Side", "Three-quarter"] as const) {
+			await page.getByRole("button", { exact: true, name: view }).click();
+			await previewChrome.evaluateAll((elements) => {
+				for (const element of elements) {
+					(element as HTMLElement).style.visibility = "hidden";
+				}
+			});
+			await page.locator("canvas").screenshot({
+				path: testInfo.outputPath(
+					`quaternius-hair-${state.toLowerCase()}-${view
+						.toLowerCase()
+						.replace("-", "")}.png`,
+				),
+			});
+			await previewChrome.evaluateAll((elements) => {
+				for (const element of elements) {
+					(element as HTMLElement).style.visibility = "";
+				}
+			});
+		}
+	}
+
+	const recent = page.getByLabel("Recent Compilations").getByRole("button");
+	await expect(recent).toHaveCount(2);
+	await recent.nth(1).click();
+	await expect(host).toHaveAttribute("data-hair-component", "none");
+	await expect(host).toHaveAttribute("data-recipe-hash", baldHash);
+	await recent.nth(0).click();
+	await expect(host).toHaveAttribute(
+		"data-hair-component",
+		"quaternius-hair-v0",
+	);
+	await expect(host).toHaveAttribute("data-recipe-hash", hairHash);
+	await expect(page.locator("canvas")).toHaveCount(1);
 	expect(consoleErrors).toEqual([]);
 });

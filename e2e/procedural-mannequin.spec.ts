@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
 
-const ASSET_ID = "procedural-mannequin-v0";
+const ASSET_ID = "procedural-mannequin-quaternius-hair-v0";
 const EDITOR_LABEL = "ThreeDPreview";
 const RUNTIME_LABEL = "ThreeRuntimePanel";
 
@@ -44,11 +44,11 @@ async function waitForMannequin(
 			snapshot.asset.statusCounts.loading === 0 &&
 			snapshot.asset.statusCounts.error === 0 &&
 			metrics?.boneCount === 65 &&
-			metrics.triangleCount === 5444 &&
-			metrics.vertexCount === 2724 &&
-			metrics.skinnedMeshCount === 1 &&
-			metrics.materialCount === 1 &&
-			metrics.textureCount === 0 &&
+			metrics.triangleCount === 6274 &&
+			metrics.vertexCount === 3190 &&
+			metrics.skinnedMeshCount === 2 &&
+			metrics.materialCount === 2 &&
+			metrics.textureCount === 2 &&
 			(label !== RUNTIME_LABEL ||
 				(snapshot.asset.character.animation.loadingSourceCount === 0 &&
 					snapshot.asset.character.animation.missingClipCount === 0 &&
@@ -70,7 +70,7 @@ async function waitForMannequin(
 	);
 }
 
-test("loads the Procedural Mannequin for a player and NPC through shared Three presentation", async ({
+test("loads the Quaternius-haired Procedural Mannequin for a player and NPC through shared Three presentation", async ({
 	context,
 	page,
 }, testInfo) => {

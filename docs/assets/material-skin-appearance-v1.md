@@ -44,7 +44,7 @@ The compiler converts each authored sRGB channel to scene-linear with the
 standard piecewise sRGB transfer function before assigning the Principled BSDF
 base color. Blender exports one `ProceduralSkinMaterial`, with the authored
 roughness, metallic fixed to `0`, and no textures. The compiler version is
-`procedural-mannequin-blender-v3`; the material schema is
+`procedural-mannequin-blender-v4`; the material schema is
 `procedural-skin-material-v1`.
 
 Round-trip validation loads the actual GLB through Three.js and requires:

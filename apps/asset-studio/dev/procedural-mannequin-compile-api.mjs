@@ -4,6 +4,10 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+	CHARACTER_HAIR_COMPONENT_IDS,
+	NO_HAIR_COMPONENT_ID,
+} from "../../../tools/blender-character/character-component-registry.mjs";
+import {
 	compileProceduralMannequin,
 	PROCEDURAL_MANNEQUIN_PATHS,
 } from "../../../tools/blender-character/procedural-mannequin-compiler.mjs";
@@ -20,7 +24,7 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
-export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 3;
+export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 4;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -130,6 +134,21 @@ export function validateCreatorCompileRequest(value) {
 			});
 		}
 	}
+	if (
+		typeof value.components !== "object" ||
+		value.components === null ||
+		Array.isArray(value.components)
+	) {
+		issues.push({
+			message: "Expected component selections.",
+			path: "$.components",
+		});
+	} else if (!CHARACTER_HAIR_COMPONENT_IDS.includes(value.components.hair)) {
+		issues.push({
+			message: `Expected one of: ${CHARACTER_HAIR_COMPONENT_IDS.join(", ")}.`,
+			path: "$.components.hair",
+		});
+	}
 	return issues.length > 0
 		? { issues, ok: false }
 		: {
@@ -140,6 +159,7 @@ export function validateCreatorCompileRequest(value) {
 						skinColor: value.appearance.skinColor.toLowerCase(),
 						skinRoughness: value.appearance.skinRoughness,
 					},
+					components: { hair: value.components.hair },
 					proportions: Object.fromEntries(
 						PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.map((key) => [
 							key,
@@ -158,6 +178,7 @@ export async function createRecipeForProportions({
 		PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
 	),
 	proportions,
+	hairComponentId = NO_HAIR_COMPONENT_ID,
 } = {}) {
 	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
 	const candidate = {
@@ -177,6 +198,7 @@ export async function createRecipeForProportions({
 					0.72,
 			},
 		},
+		components: { hair: hairComponentId },
 		proportions: {
 			...baseRecipe.proportions,
 			...proportions,
@@ -207,6 +229,7 @@ export async function compileCreatorMannequin({
 		"test-results/asset-studio-creator/procedural-mannequin",
 	),
 	proportions,
+	hairComponentId = NO_HAIR_COMPONENT_ID,
 	now = () => new Date(),
 	requestId = randomUUID(),
 } = {}) {
@@ -214,6 +237,7 @@ export async function compileCreatorMannequin({
 		appearance,
 		baseRecipePath,
 		proportions,
+		hairComponentId,
 	});
 	const recipeHash = hashProceduralMannequinRecipe(recipe);
 	const stagingDirectory = path.join(generatedRoot, `.staging-${requestId}`);
@@ -246,6 +270,8 @@ export async function compileCreatorMannequin({
 				recipe.appearance.skin.color ||
 			result?.manifest?.appearance?.skin?.authoredRoughness !==
 				recipe.appearance.skin.roughness ||
+			result?.manifest?.components?.hair?.componentId !==
+				recipe.components.hair ||
 			!PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.every(
 				(key) =>
 					result?.manifest?.proportions?.[key] === recipe.proportions[key],
@@ -360,6 +386,7 @@ export function createProceduralMannequinCompileMiddleware({
 			const result = await compileJob({
 				appearance: parsed.value.appearance,
 				generatedRoot,
+				hairComponentId: parsed.value.components.hair,
 				proportions: parsed.value.proportions,
 			});
 			jsonResponse(response, 200, result);

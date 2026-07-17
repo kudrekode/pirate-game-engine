@@ -23,19 +23,36 @@
 		"compilerVersion": "procedural-mannequin-blender-v4",
 		"components": {
 			"hair": {
-				"attachmentBone": null,
-				"componentId": "none",
-				"materialCount": 0,
-				"materials": [],
-				"meshCount": 0,
-				"objectName": null,
-				"textureNames": [],
-				"triangleCount": 0,
-				"vertexCount": 0
+				"attachmentBone": "Head",
+				"attachmentStrategy": "main-skeleton-head-surface-skinning",
+				"bounds": {
+					"maximum": [0.106396317, 0.099909827, 1.576939702],
+					"minimum": [-0.106396332, -0.078457668, 1.407575488]
+				},
+				"componentId": "quaternius-hair-v0",
+				"fittingProfile": {
+					"baseHeightMetres": 1.82,
+					"heightCompensationMetresPerMetre": -0.882,
+					"heightCompensationQuadraticMetres": 0.685,
+					"id": "quaternius-buzzed-fit-v1",
+					"legLengthCompensationMetres": -0.0175,
+					"mode": "generated-head-bounds",
+					"pivotMetres": [0, 0, 1.73],
+					"scalpOffsetMetres": 0.01,
+					"torsoLengthCompensationMetres": 0.1685,
+					"version": 1
+				},
+				"materialCount": 1,
+				"materials": ["MI_Hair_1"],
+				"meshCount": 1,
+				"objectName": "Hair_quaternius_hair_v0",
+				"textureNames": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"],
+				"triangleCount": 830,
+				"vertexCount": 466
 			}
 		},
 		"geometry": {
-			"materialCount": 1,
+			"materialCount": 2,
 			"meshCount": 1,
 			"parts": [
 				{
@@ -276,8 +293,8 @@
 				"nonManifoldEdgeCount": 0
 			},
 			"topologyVersion": "procedural-humanoid-v1",
-			"triangleCount": 5444,
-			"vertexCount": 2724
+			"triangleCount": 6274,
+			"vertexCount": 3190
 		},
 		"grounding": {
 			"localMaximumZ": 1.6869397163391113,
@@ -319,8 +336,8 @@
 			"waistHalfWidth": 0.17,
 			"wristRadius": 0.052
 		},
-		"outputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
-		"recipeId": "procedural-mannequin-v0",
+		"outputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
+		"recipeId": "procedural-mannequin-quaternius-hair-v0",
 		"removedVendorMeshNames": [
 			"Eyebrows",
 			"Eyes",
@@ -1020,18 +1037,20 @@
 		"warnings": [
 			"Topology V1 uses a controlled voxel union and analytic segment weights.",
 			"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
-			"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+			"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
+			"Hairstyle Slot V1 reuses the generated Head-led body-surface blend and has no secondary motion.",
+			"The vendor-authored hair material is fixed; hair colour authoring is not implemented."
 		]
 	},
 	"buildMode": "derived-artifact",
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+		"firstOutputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
 		"geometryAndSkinningDeterministic": true,
 		"materialDeterministic": true,
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "7e26b1a4d5049bf2a0d92a931a137ac6600d1c81ed03bc5e31ad0465e4f511c5",
+		"secondOutputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -1065,11 +1084,11 @@
 			}
 		},
 		"artifact": {
-			"materialCount": 1,
-			"meshCount": 1,
-			"textureCount": 0,
-			"triangleCount": 5444,
-			"vertexCount": 2724
+			"materialCount": 2,
+			"meshCount": 2,
+			"textureCount": 2,
+			"triangleCount": 6274,
+			"vertexCount": 3190
 		},
 		"checks": {
 			"animationBinding": true,
@@ -1152,25 +1171,36 @@
 		},
 		"geometrySemanticHash": "cefef92c58d85eda857eb1f2bc4e371c9efbd7f45e91f4909201e8b34f25aec4",
 		"glbResources": {
-			"imageCount": 0,
-			"imageNames": [],
-			"materialNames": ["ProceduralSkinMaterial"],
+			"imageCount": 2,
+			"imageNames": ["T_Hair_1_Normal", "T_Hair_1_BaseColor"],
+			"materialNames": ["ProceduralSkinMaterial", "MI_Hair_1"],
 			"meshCount": 1,
 			"nodeCount": 68,
 			"skinCount": 1
 		},
 		"hair": {
-			"attachmentBone": null,
-			"componentId": "none",
-			"materialCount": 0,
-			"materialNames": [],
-			"meshCount": 0,
-			"objectName": null,
+			"attachmentAnimation": {
+				"maximumRelativeVertexDifference": 0.0018832165530543548,
+				"passed": true
+			},
+			"attachmentBone": "Head",
+			"attachmentWeightBones": ["Head", "spine_03"],
+			"bounds": {
+				"dimensions": [0.2378636, 0.1893184, 0.1993825],
+				"maximum": [0.1189318, 1.8377204, 0.0877015],
+				"minimum": [-0.1189318, 1.648402, -0.111681]
+			},
+			"cloneIndependent": true,
+			"componentId": "quaternius-hair-v0",
+			"materialCount": 1,
+			"materialNames": ["MI_Hair_1"],
+			"meshCount": 1,
+			"objectName": "ProceduralMannequinMesh_2",
 			"passed": true,
-			"textureCount": 0,
-			"textureNames": [],
-			"triangleCount": 0,
-			"vertexCount": 0
+			"textureCount": 2,
+			"textureNames": ["T_Hair_1_BaseColor", "T_Hair_1_Normal"],
+			"triangleCount": 830,
+			"vertexCount": 466
 		},
 		"inspection": {
 			"embeddedAnimationCount": 0,
@@ -1193,7 +1223,7 @@
 			"passed": true
 		},
 		"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
-		"semanticHash": "249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1",
+		"semanticHash": "43598cdd3a1286f32a968e3a4abfb85d964aa85bb3b22c2b45453a5862c7293e",
 		"skeletonContract": {
 			"hierarchyMismatches": [],
 			"maximumRestRotationDegrees": 0.04075099023456356,
@@ -1234,6 +1264,22 @@
 				{
 					"name": "ProceduralMannequinMesh",
 					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Group"
+				},
+				{
+					"name": "ProceduralMannequinMesh_1",
+					"parent": "ProceduralMannequinMesh",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "ProceduralMannequinMesh_2",
+					"parent": "ProceduralMannequinMesh",
 					"position": [0, 0, 0],
 					"quaternion": [0, 0, 0, 1],
 					"scale": [1, 1, 1],
@@ -1762,6 +1808,14 @@
 			],
 			"materials": [
 				{
+					"color": "ffffff",
+					"name": "MI_Hair_1",
+					"linearColor": [1, 1, 1],
+					"metallic": 0,
+					"roughness": 1,
+					"type": "MeshStandardMaterial"
+				},
+				{
 					"color": "c98f65",
 					"name": "ProceduralSkinMaterial",
 					"linearColor": [0.5840784, 0.2746773, 0.1301365],
@@ -1792,13 +1846,52 @@
 							"count": 2724,
 							"hash": "7778ca276d013ae4e61cb13127e2de53496a8759dae5e762ef1c7f186529a82d",
 							"itemSize": 4
+						},
+						"uv": {
+							"count": 2724,
+							"hash": "e2901253b36b36b943dbad1e29be97dac8fb2ad7e00c45ab9263dc5c7ff348e3",
+							"itemSize": 2
 						}
 					},
 					"index": {
 						"count": 16332,
 						"hash": "2cce0dd838aab46966420fe2f384eaef025f081d1d75f856ff9a1643c6ece7dd"
 					},
-					"name": "ProceduralMannequinMesh"
+					"name": "ProceduralMannequinMesh_1"
+				},
+				{
+					"attributes": {
+						"normal": {
+							"count": 466,
+							"hash": "80fb1de7bac0dc3789b7f52ba4b481cfeeff1778481bf882fbf2ee0ec40bfc0c",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 466,
+							"hash": "abe1d42cb6b11194e0fcd3ec5b17bf96a10417a4bb625961cac442791d18cbb5",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 466,
+							"hash": "66ba2dbe5f03a6fc07a5148651c58659c39e8b08874d7ab1e40a6646cc778e84",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 466,
+							"hash": "162b9370564fd797b6c3b72c52c3201e25d673a1356828d0a44397bde987efff",
+							"itemSize": 4
+						},
+						"uv": {
+							"count": 466,
+							"hash": "d82599c249aae2479e7dea7b44ee1ed68441ca968ffd2a3e34fe99d350d44197",
+							"itemSize": 2
+						}
+					},
+					"index": {
+						"count": 2490,
+						"hash": "b44c3971a5327b19a4e37fcada9938fac530dd1c58cb49bfc678e24da7be0658"
+					},
+					"name": "ProceduralMannequinMesh_2"
 				}
 			]
 		}
@@ -1818,20 +1911,30 @@
 			"symmetry": true
 		},
 		"passed": true,
-		"semanticHash": "249670e2a1b720fec0b40e4f03bb1a6d98843ee2a5927d5b831c396b424a3ca1",
+		"semanticHash": "43598cdd3a1286f32a968e3a4abfb85d964aa85bb3b22c2b45453a5862c7293e",
 		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840"
 	},
 	"sourceHashesAfter": {
-		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "07e679c0c2d186c9917c0ed69714995e8fa9115a2928992546d1e28426ef6196",
+		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "79e2538bed8b624b18480cb5935d613cf8adf4a6d17ae9d29402a4b4861d7aab",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
-		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "26167c1016b2975b7709b97038c3464b8c7e03cc35fcf2d25541eccb04b7c80f"
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "26167c1016b2975b7709b97038c3464b8c7e03cc35fcf2d25541eccb04b7c80f",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
 	},
 	"sourceHashesBefore": {
-		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "07e679c0c2d186c9917c0ed69714995e8fa9115a2928992546d1e28426ef6196",
+		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "79e2538bed8b624b18480cb5935d613cf8adf4a6d17ae9d29402a4b4861d7aab",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
-		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "26167c1016b2975b7709b97038c3464b8c7e03cc35fcf2d25541eccb04b7c80f"
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "26167c1016b2975b7709b97038c3464b8c7e03cc35fcf2d25541eccb04b7c80f",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
 	},
 	"sourceImmutable": true
 }

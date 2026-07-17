@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import hairManifestSource from "../../../public/assets/derived/procedural-humanoids/mannequin-hair-v0/manifest.json?raw";
 import manifestSource from "../../../public/assets/derived/procedural-humanoids/mannequin-v0/manifest.json?raw";
 import { getThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 import {
@@ -7,6 +8,7 @@ import {
 } from "./threeVisuals";
 
 const ASSET_ID = "procedural-mannequin-v0";
+const HAIR_ASSET_ID = "procedural-mannequin-quaternius-hair-v0";
 const manifest = JSON.parse(manifestSource) as {
 	animationSet: string;
 	deterministicBuild: boolean;
@@ -25,6 +27,19 @@ const manifest = JSON.parse(manifestSource) as {
 	topologyVersion: string;
 	triangleCount: number;
 	vertexCount: number;
+};
+const hairManifest = JSON.parse(hairManifestSource) as typeof manifest & {
+	components: {
+		hair: {
+			attachmentBone: string;
+			componentId: string;
+			materialCount: number;
+			meshCount: number;
+			textureCount: number;
+			triangleCount: number;
+			vertexCount: number;
+		};
+	};
 };
 
 describe("Procedural Mannequin V0 compiled artifact", () => {
@@ -92,5 +107,41 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 			mode: "asset",
 			rotationOffset: 180,
 		});
+	});
+
+	it("records a complete hairstyle artifact without changing the body or rig contract", () => {
+		expect(hairManifest).toMatchObject({
+			components: {
+				hair: {
+					attachmentBone: "Head",
+					componentId: "quaternius-hair-v0",
+					materialCount: 1,
+					meshCount: 1,
+					textureCount: 2,
+					triangleCount: 830,
+					vertexCount: 466,
+				},
+			},
+			jointCount: 65,
+			materialCount: 2,
+			meshCount: 2,
+			triangleCount: 6274,
+			vertexCount: 3190,
+		});
+		expect(hairManifest.skeletonSignature).toBe(manifest.skeletonSignature);
+		const definition = getThreeVisualAssetDefinition(HAIR_ASSET_ID);
+		expect(definition).toMatchObject({
+			category: "character",
+			id: HAIR_ASSET_ID,
+			url: "/assets/derived/procedural-humanoids/mannequin-hair-v0/mannequin.glb",
+		});
+		for (const kind of ["player", "npc"] as const) {
+			expect(
+				resolveThreeCharacterVisual({
+					kind,
+					threeVisual: { assetId: HAIR_ASSET_ID, mode: "asset" },
+				}),
+			).toMatchObject({ assetId: HAIR_ASSET_ID, mode: "asset" });
+		}
 	});
 });

@@ -1,7 +1,7 @@
 {
 	"version": 4,
-	"id": "procedural-mannequin-v0",
-	"name": "Procedural Mannequin Body Proportions V1",
+	"id": "procedural-mannequin-quaternius-hair-v0",
+	"name": "Procedural Mannequin with Quaternius Buzzed Hair",
 	"proportions": {
 		"height": 1.82,
 		"shoulderWidth": 0.5,
@@ -23,7 +23,7 @@
 		}
 	},
 	"components": {
-		"hair": "none"
+		"hair": "quaternius-hair-v0"
 	},
 	"skeleton": {
 		"contract": "golden-humanoid-v0"

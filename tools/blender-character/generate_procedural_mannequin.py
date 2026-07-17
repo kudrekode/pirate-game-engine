@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Euler, Matrix, Vector
 
 
 EXPECTED_JOINT_COUNT = 65
@@ -54,6 +54,8 @@ def parse_arguments():
     parser.add_argument("--output", required=True)
     parser.add_argument("--report", required=True)
     parser.add_argument("--compiler-version", required=True)
+    parser.add_argument("--component-registry", required=True)
+    parser.add_argument("--workspace-root", required=True)
     return parser.parse_args(sys.argv[separator + 1 :])
 
 
@@ -134,6 +136,218 @@ def remove_vendor_presentation(imported, armature):
         for block in list(collection):
             collection.remove(block)
     return removed_mesh_names
+
+
+def load_component_definition(args, recipe):
+    component_id = recipe.get("components", {}).get("hair", "none")
+    if component_id == "none":
+        return None
+    registry = json.loads(Path(args.component_registry).read_text(encoding="utf8"))
+    matches = [
+        component
+        for component in registry.get("components", [])
+        if component.get("id") == component_id and component.get("slot") == "hair"
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(f'Unknown hair component "{component_id}".')
+    component = matches[0]
+    if component.get("compilerCompatibilityVersion") != args.compiler_version:
+        raise RuntimeError(
+            f'Hair component "{component_id}" is not compatible with {args.compiler_version}.'
+        )
+    return component
+
+
+def import_hair_component(args, recipe, armature, body_mesh_object):
+    component = load_component_definition(args, recipe)
+    if component is None:
+        return {
+            "attachmentBone": None,
+            "componentId": "none",
+            "materialCount": 0,
+            "materials": [],
+            "meshCount": 0,
+            "objectName": None,
+            "textureNames": [],
+            "triangleCount": 0,
+            "vertexCount": 0,
+        }, None
+
+    workspace_root = Path(args.workspace_root).resolve()
+    for source in component["sourceFiles"]:
+        source_path = (workspace_root / source["path"]).resolve()
+        if sha256(source_path) != source["sha256"]:
+            raise RuntimeError(f"Hair component source hash mismatch: {source['path']}")
+    source_path = (workspace_root / component["sourceAsset"]).resolve()
+    before_objects = set(bpy.data.objects)
+    before_images = set(bpy.data.images)
+    result = bpy.ops.import_scene.gltf(
+        filepath=str(source_path), import_shading="NORMALS"
+    )
+    if "FINISHED" not in result:
+        raise RuntimeError(f"Hair component import failed: {result}")
+    imported = set(bpy.data.objects) - before_objects
+    meshes = [obj for obj in imported if obj.type == "MESH"]
+    armatures = [obj for obj in imported if obj.type == "ARMATURE"]
+    if len(meshes) != 1 or meshes[0].name != component["sourceMeshName"]:
+        raise RuntimeError(
+            f"Expected only hair mesh {component['sourceMeshName']}; "
+            f"found {[obj.name for obj in meshes]}."
+        )
+    if armatures:
+        raise RuntimeError("Origin-aligned V1 hair source unexpectedly imported an armature.")
+    hair = meshes[0]
+    for obj in imported:
+        if obj != hair and obj.name in bpy.data.objects:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    materials = [material for material in hair.data.materials if material]
+    if len(materials) != 1 or materials[0].name != component["material"]["name"]:
+        raise RuntimeError(
+            f"Hair material mismatch; expected {component['material']['name']}."
+        )
+    imported_images = sorted(
+        Path(image.filepath).name for image in set(bpy.data.images) - before_images
+    )
+    if sorted(component["material"]["textures"]) != imported_images:
+        raise RuntimeError(
+            f"Hair textures mismatch; expected {component['material']['textures']}, "
+            f"found {imported_images}."
+        )
+
+    profile = component["fittingProfile"]
+    transform = component["normalizedTransform"]
+    translation = Vector(transform["translationMetres"])
+    height_delta = recipe["proportions"]["height"] - profile["baseHeightMetres"]
+    translation.z += (
+        profile["heightCompensationMetresPerMetre"] * height_delta
+        + profile["heightCompensationQuadraticMetres"] * height_delta * height_delta
+        + profile["torsoLengthCompensationMetres"]
+        * (recipe["proportions"]["torsoLength"] - 0.5)
+        + profile["legLengthCompensationMetres"]
+        * (recipe["proportions"]["legLength"] - 0.5)
+    )
+    scale = Vector(transform["scale"])
+    rotation = Euler(
+        tuple(math.radians(value) for value in transform["rotationDegrees"]),
+        "XYZ",
+    ).to_matrix()
+    source_matrix = hair.matrix_world.copy()
+    source_positions = [source_matrix @ vertex.co for vertex in hair.data.vertices]
+    source_minimum = Vector(
+        tuple(min(position[index] for position in source_positions) for index in range(3))
+    )
+    source_maximum = Vector(
+        tuple(max(position[index] for position in source_positions) for index in range(3))
+    )
+    head_vertices = []
+    for vertex in body_mesh_object.data.vertices:
+        if not vertex.groups:
+            continue
+        dominant = max(vertex.groups, key=lambda membership: membership.weight)
+        if body_mesh_object.vertex_groups[dominant.group].name == "Head":
+            head_vertices.append(
+                (body_mesh_object.matrix_world @ vertex.co, vertex)
+            )
+    if not head_vertices:
+        raise RuntimeError("Generated body has no Head-dominant vertices for hair fitting.")
+    crown_vertex = max(head_vertices, key=lambda entry: entry[0].z)[1]
+    crown_weights = []
+    for membership in crown_vertex.groups:
+        if membership.weight <= 0.000001:
+            continue
+        crown_weights.append(
+            (
+                body_mesh_object.vertex_groups[membership.group].name,
+                membership.weight,
+            )
+        )
+    if not any(name == component["expectedAttachmentBone"] for name, _ in crown_weights):
+        raise RuntimeError("Generated crown weights do not include Head.")
+    target_minimum = Vector(
+        tuple(min(entry[0][index] for entry in head_vertices) for index in range(3))
+    )
+    target_maximum = Vector(
+        tuple(max(entry[0][index] for entry in head_vertices) for index in range(3))
+    )
+    source_centre = (source_minimum + source_maximum) * 0.5
+    target_centre = (target_minimum + target_maximum) * 0.5
+    body_crown_z = max(
+        (body_mesh_object.matrix_world @ vertex.co).z
+        for vertex in body_mesh_object.data.vertices
+    )
+    fit_scale = Vector(
+        (
+            (target_maximum.x - target_minimum.x)
+            / (source_maximum.x - source_minimum.x),
+            (target_maximum.y - target_minimum.y)
+            / (source_maximum.y - source_minimum.y),
+            1.0,
+        )
+    )
+    for vertex in hair.data.vertices:
+        source_position = source_matrix @ vertex.co
+        offset = source_position - source_centre
+        scaled = Vector(
+            (
+                offset.x * fit_scale.x * scale.x,
+                offset.y * fit_scale.y * scale.y,
+                (source_position.z - source_maximum.z) * scale.z,
+            )
+        )
+        fitted = Vector(
+            (
+                target_centre.x,
+                target_centre.y,
+                body_crown_z + profile["scalpOffsetMetres"],
+            )
+        )
+        vertex.co = fitted + rotation @ scaled + translation
+    hair.matrix_world = Matrix.Identity(4)
+    hair.data.update()
+    hair.name = "Hair_quaternius_hair_v0"
+    hair.data.name = "Hair_quaternius_hair_v0_Mesh"
+    hair["characterComponentId"] = component["id"]
+    hair["attachmentBone"] = component["expectedAttachmentBone"]
+    hair["fittingProfile"] = profile["id"]
+    for group_name, weight in crown_weights:
+        group = hair.vertex_groups.new(name=group_name)
+        group.add(list(range(len(hair.data.vertices))), weight, "REPLACE")
+
+    coordinates = [hair.matrix_world @ vertex.co for vertex in hair.data.vertices]
+    triangle_count = sum(len(polygon.vertices) - 2 for polygon in hair.data.polygons)
+    report = {
+        "attachmentBone": component["expectedAttachmentBone"],
+        "attachmentStrategy": component["attachmentStrategy"],
+        "bounds": {
+            "maximum": rounded(
+                [max(vertex[index] for vertex in coordinates) for index in range(3)]
+            ),
+            "minimum": rounded(
+                [min(vertex[index] for vertex in coordinates) for index in range(3)]
+            ),
+        },
+        "componentId": component["id"],
+        "fittingProfile": profile,
+        "materialCount": len(materials),
+        "materials": [material.name for material in materials],
+        "meshCount": 1,
+        "objectName": hair.name,
+        "textureNames": imported_images,
+        "triangleCount": triangle_count,
+        "vertexCount": len(hair.data.vertices),
+    }
+    for obj in bpy.context.selected_objects:
+        obj.select_set(False)
+    body_mesh_object.select_set(True)
+    hair.select_set(True)
+    bpy.context.view_layer.objects.active = body_mesh_object
+    result = bpy.ops.object.join()
+    if "FINISHED" not in result:
+        raise RuntimeError(f"Could not join the fitted hair into the body mesh: {result}")
+    body_mesh_object["hairComponentId"] = component["id"]
+    body_mesh_object["hairAttachmentBone"] = component["expectedAttachmentBone"]
+    body_mesh_object["hairFittingProfile"] = profile["id"]
+    return report, None
 
 
 def bone_head(armature, name):
@@ -695,21 +909,26 @@ def compile_mannequin(args, recipe):
     armature.animation_data_clear()
 
     mesh_object, builder, anatomy, measurements, skinning, topology = create_geometry(armature, recipe)
-    root = bpy.data.objects.new("ProceduralMannequinRoot", None)
-    bpy.context.collection.objects.link(root)
-    armature.parent = root
-
     local_min_z = min(vertex.co.z for vertex in mesh_object.data.vertices)
     local_max_z = max(vertex.co.z for vertex in mesh_object.data.vertices)
     unscaled_height = local_max_z - local_min_z
     target_height = recipe["proportions"]["height"]
     scale = target_height / unscaled_height
+    hair_report, hair_object = import_hair_component(
+        args, recipe, armature, mesh_object
+    )
+    root = bpy.data.objects.new("ProceduralMannequinRoot", None)
+    bpy.context.collection.objects.link(root)
+    armature.parent = root
+
     root.scale = (scale, scale, scale)
     root.location.z = -local_min_z * scale
 
     for obj in bpy.context.selected_objects:
         obj.select_set(False)
-    for obj in (root, armature, mesh_object):
+    for obj in (root, armature, mesh_object, hair_object):
+        if obj is None:
+            continue
         obj.select_set(True)
     bpy.context.view_layer.objects.active = mesh_object
 
@@ -729,6 +948,7 @@ def compile_mannequin(args, recipe):
         export_yup=True,
         export_cameras=False,
         export_lights=False,
+        export_extras=True,
     )
     if "FINISHED" not in result:
         raise RuntimeError(f"Procedural mannequin GLB export failed: {result}")
@@ -742,6 +962,7 @@ def compile_mannequin(args, recipe):
             "version": bpy.app.version_string,
         },
         "compilerVersion": args.compiler_version,
+		"components": {"hair": hair_report},
         "anatomy": anatomy,
         "measurements": measurements,
         "geometry": {
@@ -786,6 +1007,14 @@ def compile_mannequin(args, recipe):
             "Topology V1 uses a controlled voxel union and analytic segment weights.",
             "Finger bones remain present for animation compatibility but the generated hands have no fingers.",
             "The Golden skeleton is a compatibility template, not the future canonical generated rig.",
+			*(
+				[]
+				if hair_report["componentId"] == "none"
+				else [
+					"Hairstyle Slot V1 reuses the generated Head-led body-surface blend and has no secondary motion.",
+					"The vendor-authored hair material is fixed; hair colour authoring is not implemented.",
+				]
+			),
         ],
     }
     report_path = Path(args.report)
