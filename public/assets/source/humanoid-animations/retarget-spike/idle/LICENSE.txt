@@ -1,0 +1,17 @@
+Adobe Mixamo
+
+Downloaded:
+2026-07-15
+
+Source:
+https://www.mixamo.com/
+
+This animation is used as a vendor source asset for the
+Golden Reference Humanoid animation-retargeting spike.
+
+The original downloaded FBX is preserved unchanged.
+
+Usage is governed by Adobe Mixamo's current licence terms.
+See the Adobe Mixamo FAQ and Adobe licence documentation.
+
+This project-maintained provenance record was not supplied by Adobe.

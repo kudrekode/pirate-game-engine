@@ -162,6 +162,100 @@ describe("Three visual asset registry", () => {
 		});
 	});
 
+	it("registers the Quaternius Golden Reference Humanoid with offline-baked animations", () => {
+		const asset = getThreeVisualAssetDefinition(
+			"golden-reference-quaternius-superhero-male",
+		);
+		const idle = getThreeVisualAssetDefinition(
+			"golden-reference-quaternius-idle-baked-v1",
+		);
+		const walk = getThreeVisualAssetDefinition(
+			"golden-reference-quaternius-walk-baked-v1",
+		);
+
+		expect(asset).toMatchObject({
+			castShadow: true,
+			category: "character",
+			defaultHeightOffset: 0,
+			defaultRotationOffset: 180,
+			defaultScale: 0.75,
+			kind: "gltf",
+			materialProfile: "standard",
+			receiveShadow: false,
+			resourceUrlAliases: {
+				"T_Eye_Normal_png.png": "T_Eye_Normal.png",
+				"T_Hair_1_Normal_png.png": "T_Hair_1_Normal.png",
+			},
+			url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
+		});
+		expect(asset?.animations).toEqual({
+			idle: {
+				assetId: "golden-reference-quaternius-idle-baked-v1",
+				clipName: "GoldenReference_Idle",
+			},
+			walk: {
+				assetId: "golden-reference-quaternius-walk-baked-v1",
+				clipName: "GoldenReference_Walk_InPlace",
+			},
+		});
+		expect(idle).toMatchObject({
+			animationOnly: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+		});
+		expect(walk).toMatchObject({
+			animationOnly: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+		});
+	});
+
+	it("registers the procedural mannequin through the shared character path", () => {
+		const mannequin = getThreeVisualAssetDefinition("procedural-mannequin-v0");
+		const haired = getThreeVisualAssetDefinition(
+			"procedural-mannequin-quaternius-hair-v0",
+		);
+
+		expect(mannequin).toMatchObject({
+			animations: {
+				idle: {
+					assetId: "golden-reference-quaternius-idle-baked-v1",
+					clipName: "GoldenReference_Idle",
+				},
+				walk: {
+					assetId: "golden-reference-quaternius-walk-baked-v1",
+					clipName: "GoldenReference_Walk_InPlace",
+				},
+			},
+			category: "character",
+			defaultRotationOffset: 180,
+			defaultScale: 1,
+			kind: "glb",
+			materialProfile: "standard",
+			tags: expect.arrayContaining([
+				"compiler-generated",
+				"procedural",
+				"skinned",
+			]),
+			url: "/assets/derived/procedural-humanoids/mannequin-v0/mannequin.glb",
+		});
+		expect(haired).toMatchObject({
+			animations: mannequin?.animations,
+			category: "character",
+			defaultScale: 1,
+			kind: "glb",
+			materialProfile: "standard",
+			tags: expect.arrayContaining([
+				"compiler-generated",
+				"hairstyle-fit-v2",
+				"hairstyle-slot-v1",
+				"procedural-head-v1",
+				"quaternius-hair-v0",
+			]),
+			url: "/assets/derived/procedural-humanoids/mannequin-hair-v0/mannequin.glb",
+		});
+	});
+
 	it("looks up registered asset definitions by stable id", () => {
 		const restoreRegistry = setThreeVisualAssetRegistryForTests([
 			{

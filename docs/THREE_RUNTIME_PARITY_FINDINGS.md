@@ -7,7 +7,7 @@ The original parity risk was that Phaser and Three could drift into separate gam
 Current remaining work is mainly visual/editor/runtime feel:
 
 - Camera polish and framing.
-- Model presentation, transform defaults, and animation.
+- Model presentation, transform defaults, and broader animation coverage.
 - UI polish for runtime panels.
 - Broader contract tests for shared helper semantics.
 - Reproducible browser/performance observation through the Playwright smoke harness.
@@ -57,6 +57,7 @@ The Playwright Three perf smoke now verifies the deterministic Demo Adventure be
 | combat | broadly shared | Shared combat helper owns damage/defeat/flags. |
 | boats/vehicles | broadly shared | Shared object/vehicle helpers own board/sail/dismount. |
 | imported assets | presentation-only | Registry ids in authored config; live Three objects are not runtime state. |
+| offline-baked Golden animation | presentation-only | Shared registry playback; gameplay movement remains authoritative. |
 | water/coastline | presentation-only | Does not change walkability, collision, sailing, or water physics. |
 
 ## Finding Template
@@ -91,7 +92,7 @@ Visual findings should not be treated as runtime parity failures unless they cha
 - [ ] pirate vertical slice dressing
 - [ ] object/structure model coverage
 - [ ] character/NPC model coverage
-- [ ] animation system
+- [ ] general animation/compiler coverage beyond the pair-specific offline-baked Golden Reference
 - [ ] attack/contact/damage feedback
 - [ ] runtime HUD layout polish
 - [ ] cutscene/dialogue/shop presentation polish

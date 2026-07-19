@@ -1,0 +1,34 @@
+{
+	"version": 4,
+	"id": "procedural-mannequin-quaternius-hair-v0",
+	"name": "Procedural Mannequin with Quaternius Buzzed Hair",
+	"proportions": {
+		"height": 1.82,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5,
+		"armLength": 0.5,
+		"legLength": 0.5,
+		"hipWidth": 0.5
+	},
+	"geometry": {
+		"profile": "voxel-union",
+		"radialSegments": 8,
+		"topologyVersion": "procedural-humanoid-v2"
+	},
+	"appearance": {
+		"skin": {
+			"color": "#c98f65",
+			"colorSpace": "srgb",
+			"roughness": 0.72
+		}
+	},
+	"components": {
+		"hair": "quaternius-hair-v0"
+	},
+	"skeleton": {
+		"contract": "golden-humanoid-v0"
+	},
+	"animations": {
+		"set": "golden-reference-v0"
+	}
+}

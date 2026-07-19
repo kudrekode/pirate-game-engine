@@ -1,0 +1,14 @@
+compiler=procedural-mannequin-blender-v5
+blender=5.2.0 LTS
+blenderBuild=fbe6228777e7
+recipeHash=a3e4359d4f309386d0c6fcfdb0e84ccfb99722a2ac30d5cb18d586a017ee823e
+heightMetres=1.82
+proportions={"height":1.82,"shoulderWidth":0.5,"torsoLength":0.5,"armLength":0.5,"legLength":0.5,"hipWidth":0.5}
+firstOutputHash=387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316
+secondOutputHash=387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316
+binaryDeterministic=true
+semanticHash=e82e42638661619a3239cc2ed6b90f62d25b9450a48a1607bd2e2ac8770bdde4
+semanticDeterministic=true
+roundTripPassed=true
+validationVersion=procedural-mannequin-roundtrip-v6
+sourceImmutable=true

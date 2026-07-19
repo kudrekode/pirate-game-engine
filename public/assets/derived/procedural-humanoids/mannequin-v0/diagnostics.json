@@ -1,0 +1,1895 @@
+{
+	"artifactStatus": "procedural-compiled-validated",
+	"blenderReport": {
+		"anatomy": {
+			"armLengthMultiplier": 1,
+			"armToLegRatio": 1,
+			"armToTorsoRatio": 1,
+			"heightScale": 1,
+			"hipWidthMultiplier": 1,
+			"lateralCentreError": 8.940696716308594e-8,
+			"legLengthMultiplier": 1,
+			"legToTorsoRatio": 1,
+			"maximumBoneRelativeAnchorOffset": 2.9802322387695312e-8,
+			"shoulderToHipRatio": 1,
+			"shoulderWidthMultiplier": 1,
+			"torsoLengthMultiplier": 1
+		},
+		"animationSet": "golden-reference-v0",
+		"blender": {
+			"buildHash": "fbe6228777e7",
+			"version": "5.2.0 LTS"
+		},
+		"compilerVersion": "procedural-mannequin-blender-v5",
+		"components": {
+			"hair": {
+				"attachmentBone": null,
+				"componentId": "none",
+				"materialCount": 0,
+				"materials": [],
+				"meshCount": 0,
+				"objectName": null,
+				"textureNames": [],
+				"triangleCount": 0,
+				"vertexCount": 0
+			}
+		},
+		"geometry": {
+			"materialCount": 1,
+			"meshCount": 1,
+			"parts": [
+				{
+					"bone": "pelvis",
+					"name": "Pelvis",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "spine_01",
+					"name": "TorsoLower",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "spine_02",
+					"name": "TorsoMiddle",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "spine_03",
+					"name": "TorsoUpper",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "neck_01",
+					"name": "Neck",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"name": "HeadCranium",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadRearCranium",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadFaceJaw",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadChin",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"bone": "Head",
+					"name": "HeadFacePlane",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"name": "TorsoPelvisTransition",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "WaistTransition",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "ChestTransition",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "NeckBaseTransition",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadNeckTransition",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"bone": "clavicle_l",
+					"name": "Shoulder.L",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "upperarm_l",
+					"name": "UpperArm.L",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "lowerarm_l",
+					"name": "LowerArm.L",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "hand_l",
+					"name": "Hand.L",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"bone": "thigh_l",
+					"name": "UpperLeg.L",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "calf_l",
+					"name": "LowerLeg.L",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "foot_l",
+					"name": "Foot.L",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"bone": "ball_l",
+					"name": "Toe.L",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"name": "ShoulderTransition.L",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "ElbowTransition.L",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "WristTransition.L",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HipTransition.L",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "KneeTransition.L",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "AnkleTransition.L",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"bone": "clavicle_r",
+					"name": "Shoulder.R",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "upperarm_r",
+					"name": "UpperArm.R",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "lowerarm_r",
+					"name": "LowerArm.R",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "hand_r",
+					"name": "Hand.R",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"bone": "thigh_r",
+					"name": "UpperLeg.R",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "calf_r",
+					"name": "LowerLeg.R",
+					"profile": "ellipsoid",
+					"vertexCount": 34
+				},
+				{
+					"bone": "foot_r",
+					"name": "Foot.R",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"bone": "ball_r",
+					"name": "Toe.R",
+					"profile": "box",
+					"vertexCount": 8
+				},
+				{
+					"name": "ShoulderTransition.R",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "ElbowTransition.R",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "WristTransition.R",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HipTransition.R",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "KneeTransition.R",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "AnkleTransition.R",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"bone": "spine_03",
+					"name": "FacingMarker",
+					"profile": "box",
+					"vertexCount": 8
+				}
+			],
+			"profile": "voxel-union",
+			"radialSegments": 8,
+			"topology": {
+				"boundaryEdgeCount": 0,
+				"connectedComponentCount": 1,
+				"degenerateFaceCount": 0,
+				"edgeCount": 5516,
+				"eulerCharacteristic": 2,
+				"faceCount": 2758,
+				"genus": 0,
+				"manifold": true,
+				"nonManifoldEdgeCount": 0
+			},
+			"topologyVersion": "procedural-humanoid-v2",
+			"triangleCount": 5516,
+			"vertexCount": 2760
+		},
+		"grounding": {
+			"localMaximumZ": 1.726205587387085,
+			"localMinimumZ": -0.03447576239705086,
+			"outputHeightMetres": 1.82,
+			"rootScale": 1.033690735818345
+		},
+		"head": {
+			"axes": {
+				"forward": [0, 1, 0],
+				"right": [1, 0, 0],
+				"up": [0, 0, 1]
+			},
+			"bounds": {
+				"centre": [7e-9, 0.026381154, 1.588115931],
+				"dimensions": [0.346707463, 0.288123578, 0.276179433],
+				"maximum": [0.173353732, 0.170442939, 1.726205587],
+				"minimum": [-0.173353717, -0.117680632, 1.450026155]
+			},
+			"coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+			"foreheadReference": [7e-9, 0.170442939, 1.63230464],
+			"headBonePosition": [0, 0.017400054, 1.59980011],
+			"headCentre": [7e-9, 0.026381154, 1.588115931],
+			"headDepth": 0.288123578,
+			"headHeight": 0.276179433,
+			"headWidth": 0.346707463,
+			"neckConnectionVertexCount": 46,
+			"neckTop": [0, 0.017400054, 1.55372011],
+			"rearCraniumReference": [7e-9, -0.117680632, 1.648875406],
+			"scalpBack": [7e-9, -0.117680632, 1.588115931],
+			"scalpBounds": {
+				"centre": [0, 0.006258409, 1.66500783],
+				"dimensions": [0.234044105, 0.247878075, 0.122395635],
+				"maximum": [0.117022052, 0.130197451, 1.726205587],
+				"minimum": [-0.117022052, -0.117680632, 1.603809953]
+			},
+			"scalpFront": [7e-9, 0.130197451, 1.588115931],
+			"scalpLeft": [-0.117022052, 0.026381154, 1.588115931],
+			"scalpRight": [0.117022052, 0.026381154, 1.588115931],
+			"scalpTop": [7e-9, 0.026381154, 1.726205587],
+			"symmetryErrorMetres": 0,
+			"topologyVersion": "procedural-humanoid-v2"
+		},
+		"material": {
+			"authoredColor": "#c98f65",
+			"canonicalLinearColor": [0.584078418, 0.274677312, 0.130136477],
+			"metallic": 0,
+			"name": "ProceduralSkinMaterial",
+			"roughness": 0.72,
+			"schemaVersion": "procedural-skin-material-v1"
+		},
+		"measurements": {
+			"calfRadius": 0.068,
+			"chestDepth": 0.13,
+			"chestHalfWidth": 0.245,
+			"elbowRadius": 0.07,
+			"footDepth": 0.06,
+			"footHalfWidth": 0.062,
+			"forearmRadius": 0.064,
+			"handDepth": 0.035,
+			"handHalfWidth": 0.064,
+			"headDepth": 0.112,
+			"headHalfWidth": 0.12,
+			"hipJointRadius": 0.105,
+			"kneeRadius": 0.068,
+			"neckRadius": 0.064,
+			"pelvisDepth": 0.13,
+			"pelvisHalfWidth": 0.195,
+			"shoulderJointRadius": 0.08,
+			"thighRadius": 0.082,
+			"topologyVersion": "procedural-humanoid-v2",
+			"upperArmRadius": 0.076,
+			"voxelSizeMetres": 0.035,
+			"waistDepth": 0.112,
+			"waistHalfWidth": 0.17,
+			"wristRadius": 0.052
+		},
+		"outputHash": "a80da106d82bade26dfe1d936416f88c4fb9fb359cf6d02e606291fa75b54d2f",
+		"recipeId": "procedural-mannequin-v0",
+		"removedVendorMeshNames": [
+			"Eyebrows",
+			"Eyes",
+			"Icosphere",
+			"SuperHero_Male"
+		],
+		"skeleton": {
+			"contract": "golden-humanoid-v0",
+			"jointCount": 65,
+			"restSignature": "38356ace6cdb45ddc8caa325c1989fd3dfe0779d10a03c4f4fd743acf58b22f9",
+			"restSnapshot": [
+				{
+					"matrixLocal": [
+						[1, 0, 2e-8, 0],
+						[2e-8, -0.028966278, -0.999580443, 0.017400032],
+						[1e-9, 0.999580324, -0.028966308, 1.59980011],
+						[0, 0, 0, 1]
+					],
+					"name": "Head",
+					"parent": "neck_01"
+				},
+				{
+					"matrixLocal": [
+						[-1, 0, -1.34e-7, 0.114305124],
+						[0, -1.000001311, 3.28e-7, -0.054699488],
+						[-1.34e-7, -6e-8, 1.000000119, 0.015199736],
+						[0, 0, 0, 1]
+					],
+					"name": "ball_l",
+					"parent": "foot_l"
+				},
+				{
+					"matrixLocal": [
+						[-1, 0, 0, 0.114305124],
+						[0, -1.000001311, 3.87e-7, -0.133599371],
+						[0, 0, 1.000000119, 0.015199731],
+						[0, 0, 0, 1]
+					],
+					"name": "ball_leaf_l",
+					"parent": "ball_l"
+				},
+				{
+					"matrixLocal": [
+						[-1, 0, 0, -0.114305124],
+						[0, -1.000001311, 3.87e-7, -0.133599371],
+						[0, 0, 1.000000119, 0.015199731],
+						[0, 0, 0, 1]
+					],
+					"name": "ball_leaf_r",
+					"parent": "ball_r"
+				},
+				{
+					"matrixLocal": [
+						[-1, 0, 1.34e-7, -0.114305124],
+						[0, -1.000001311, 3.28e-7, -0.054699488],
+						[1.34e-7, -6e-8, 1.000000119, 0.015199736],
+						[0, 0, 0, 1]
+					],
+					"name": "ball_r",
+					"parent": "foot_r"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 7e-9, 0.114305131],
+						[-7e-9, 0.112034433, 0.993705332, 0.03610016],
+						[-1e-9, -0.993704319, 0.112034656, 0.542399764],
+						[0, 0, 0, 1]
+					],
+					"name": "calf_l",
+					"parent": "thigh_l"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 7e-9, -0.114305131],
+						[-7e-9, 0.112034433, 0.993705332, 0.03610016],
+						[-1e-9, -0.993704319, 0.112034656, 0.542399764],
+						[0, 0, 0, 1]
+					],
+					"name": "calf_r",
+					"parent": "thigh_r"
+				},
+				{
+					"matrixLocal": [
+						[0.440909475, 0.897551477, 0.000546558, 0.031399995],
+						[-0.897551775, 0.440909505, 0.000304371, -0.033499956],
+						[0.000032172, -0.000624701, 0.999999821, 1.495300174],
+						[0, 0, 0, 1]
+					],
+					"name": "clavicle_l",
+					"parent": "spine_03"
+				},
+				{
+					"matrixLocal": [
+						[0.440909445, -0.897551417, -0.000546576, -0.031399995],
+						[0.897551775, 0.440909445, 0.000304356, -0.033499956],
+						[-0.000032067, -0.000624657, 0.999999762, 1.495300174],
+						[0, 0, 0, 1]
+					],
+					"name": "clavicle_r",
+					"parent": "spine_03"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 7.62e-7, 0.114305131],
+						[-3.41e-7, -0.893924356, 0.448220134, 0.087500259],
+						[6.81e-7, -0.448220074, -0.893923342, 0.086499691],
+						[0, 0, 0, 1]
+					],
+					"name": "foot_l",
+					"parent": "calf_l"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, -7.62e-7, -0.114305131],
+						[3.41e-7, -0.893924356, 0.448220134, 0.087500259],
+						[-6.81e-7, -0.448220074, -0.893923342, 0.086499691],
+						[0, 0, 0, 1]
+					],
+					"name": "foot_r",
+					"parent": "calf_r"
+				},
+				{
+					"matrixLocal": [
+						[-1.8e-8, 0.99999994, -9.3e-8, 0.706487179],
+						[2.24e-7, 0, -1.000000238, 0.065400019],
+						[-0.99999994, 0, -2.82e-7, 1.455500245],
+						[0, 0, 0, 1]
+					],
+					"name": "hand_l",
+					"parent": "lowerarm_l"
+				},
+				{
+					"matrixLocal": [
+						[-4.7e-8, -0.999999523, 2.6e-8, -0.706487179],
+						[-9.8e-8, 0, -1.000000119, 0.065399997],
+						[0.999999762, 0, -2.82e-7, 1.455500245],
+						[0, 0, 0, 1]
+					],
+					"name": "hand_r",
+					"parent": "lowerarm_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.014174, 0.999168813, -0.038214039, 0.823889732],
+						[0.999899745, 0.014158067, -0.000690099, 0.024756679],
+						[-0.000148431, -0.038219959, -0.999269247, 1.448340774],
+						[0, 0, 0, 1]
+					],
+					"name": "index_01_l",
+					"parent": "hand_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.0141742, -0.999168634, 0.038214184, -0.823889792],
+						[-0.999899685, 0.014158226, -0.000689633, 0.024756659],
+						[0.000147831, -0.038220085, -0.999269128, 1.448340774],
+						[0, 0, 0, 1]
+					],
+					"name": "index_01_r",
+					"parent": "hand_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.015235479, 0.999153078, -0.038216453, 0.856475234],
+						[0.999884129, 0.015224109, -0.000591103, 0.02521841],
+						[-0.000008733, -0.038220998, -0.999269247, 1.447094321],
+						[0, 0, 0, 1]
+					],
+					"name": "index_02_l",
+					"parent": "index_01_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.015235659, -0.999152958, 0.03821646, -0.856475174],
+						[-0.999884069, 0.01522424, -0.000590865, 0.025218394],
+						[0.000008364, -0.03822099, -0.999269128, 1.447094321],
+						[0, 0, 0, 1]
+					],
+					"name": "index_02_r",
+					"parent": "index_01_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.015607052, 0.999147177, -0.038220208, 0.884363055],
+						[0.999878407, 0.015595412, -0.000605308, 0.025643336],
+						[-0.000008674, -0.038224977, -0.999269068, 1.446027637],
+						[0, 0, 0, 1]
+					],
+					"name": "index_03_l",
+					"parent": "index_02_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.015607177, -0.999146998, 0.038220216, -0.884362996],
+						[-0.999878347, 0.015595485, -0.000605069, 0.025643323],
+						[0.000008307, -0.038224965, -0.999268949, 1.446027637],
+						[0, 0, 0, 1]
+					],
+					"name": "index_03_r",
+					"parent": "index_02_r"
+				},
+				{
+					"matrixLocal": [
+						[0.017033976, 0.999147177, 0.037605923, 0.90845257],
+						[-0.999147594, 0.015595336, 0.038225707, 0.026019335],
+						[0.037606571, -0.038224973, 0.998561203, 1.445106149],
+						[0, 0, 0, 1]
+					],
+					"name": "index_04_leaf_l",
+					"parent": "index_03_l"
+				},
+				{
+					"matrixLocal": [
+						[0.017034179, -0.999146998, -0.037605926, -0.908452511],
+						[0.999147534, 0.015595487, 0.038225465, 0.026019325],
+						[-0.037606195, -0.038224965, 0.998561084, 1.445106149],
+						[0, 0, 0, 1]
+					],
+					"name": "index_04_leaf_r",
+					"parent": "index_03_r"
+				},
+				{
+					"matrixLocal": [
+						[1.7e-8, 0.99951309, -0.031199552, 0.463011563],
+						[0.000001058, -0.031199468, -0.999513447, 0.073000029],
+						[-0.99999994, 0, -0.000001117, 1.455500126],
+						[0, 0, 0, 1]
+					],
+					"name": "lowerarm_l",
+					"parent": "upperarm_l"
+				},
+				{
+					"matrixLocal": [
+						[-4e-9, -0.999512732, 0.031199459, -0.463011503],
+						[-0.00000117, -0.031199452, -0.999513328, 0.073000029],
+						[0.999999762, 0, -0.000001355, 1.455500126],
+						[0, 0, 0, 1]
+					],
+					"name": "lowerarm_r",
+					"parent": "upperarm_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.023889964, 0.998984158, -0.038204588, 0.821925998],
+						[0.999714792, 0.023872305, -0.000921135, 0.050286643],
+						[-0.000008109, -0.038215663, -0.999269366, 1.450817585],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_01_l",
+					"parent": "hand_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.023890026, -0.99898392, 0.038204651, -0.821926057],
+						[-0.999714732, 0.023872303, -0.000921261, 0.050286617],
+						[0.000008109, -0.038215727, -0.999269247, 1.450817585],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_01_r",
+					"parent": "hand_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.019782368, 0.999073744, -0.0382092, 0.859414041],
+						[0.999804497, 0.0197677, -0.000764397, 0.051182486],
+						[-0.000008323, -0.038216814, -0.999269307, 1.449383616],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_02_l",
+					"parent": "middle_01_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.019782344, -0.999073565, 0.038209263, -0.859414041],
+						[-0.999804437, 0.019767612, -0.000764467, 0.051182456],
+						[0.000008269, -0.038216881, -0.999269187, 1.449383616],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_02_r",
+					"parent": "middle_01_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.022623349, 0.999013543, -0.038206194, 0.889502883],
+						[0.999744236, 0.022606604, -0.000872992, 0.051777825],
+						[-0.000008361, -0.038216129, -0.999269366, 1.448232889],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_03_l",
+					"parent": "middle_02_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.022623489, -0.999013364, 0.0382061, -0.889502823],
+						[-0.999744177, 0.022606678, -0.000873156, 0.051777795],
+						[0.000008398, -0.038216043, -0.999269247, 1.448232889],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_03_r",
+					"parent": "middle_02_r"
+				},
+				{
+					"matrixLocal": [
+						[0.024034683, 0.999013245, 0.037334479, 0.919992447],
+						[-0.99901396, 0.022606598, 0.038215905, 0.052467775],
+						[0.03733414, -0.038216118, 0.998571754, 1.447066426],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_04_leaf_l",
+					"parent": "middle_03_l"
+				},
+				{
+					"matrixLocal": [
+						[0.024034685, -0.999013364, -0.037334394, -0.919992447],
+						[0.999013901, 0.022606554, 0.038215831, 0.052467749],
+						[-0.037333943, -0.038216047, 0.998571634, 1.447066426],
+						[0, 0, 0, 1]
+					],
+					"name": "middle_04_leaf_r",
+					"parent": "middle_03_r"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 6.7e-8, 0],
+						[6.4e-8, -0.289672226, -0.957125962, 0.041400071],
+						[1.9e-8, 0.957125902, -0.289672256, 1.520499945],
+						[0, 0, 0, 1]
+					],
+					"name": "neck_01",
+					"parent": "spine_03"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 6e-8, 0],
+						[5.7e-8, -0.281827986, -0.959464967, 0.042999983],
+						[1.7e-8, 0.959464967, -0.281828046, 0.949099958],
+						[0, 0, 0, 1]
+					],
+					"name": "pelvis",
+					"parent": "root"
+				},
+				{
+					"matrixLocal": [
+						[-0.03085131, 0.998794258, -0.038185328, 0.805028558],
+						[0.999524236, 0.030828577, -0.001186998, 0.100017384],
+						[-0.00000831, -0.03820375, -0.999269903, 1.449462533],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_01_l",
+					"parent": "hand_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.030851111, -0.99879384, 0.038185354, -0.805028558],
+						[-0.999524117, 0.030828321, -0.001186881, 0.100017361],
+						[0.000008077, -0.038203761, -0.999269724, 1.449462652],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_01_r",
+					"parent": "hand_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.033974979, 0.998692632, -0.038192384, 0.836621463],
+						[0.999422967, 0.033961818, -0.000996449, 0.100992516],
+						[0.000301994, -0.038204163, -0.999269843, 1.448253989],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_02_l",
+					"parent": "pinky_01_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.033974744, -0.998692095, 0.038192384, -0.836621463],
+						[-0.999422848, 0.033961527, -0.00099621, 0.100992493],
+						[-0.000302347, -0.038204145, -0.999269664, 1.448254108],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_02_r",
+					"parent": "pinky_01_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.03305449, 0.998723567, -0.038189694, 0.864016354],
+						[0.999453843, 0.033030149, -0.001271212, 0.101924114],
+						[-0.00000812, -0.038210824, -0.999269605, 1.447205901],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_03_l",
+					"parent": "pinky_02_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.033054449, -0.99872309, 0.038189583, -0.864016294],
+						[-0.999453723, 0.033030044, -0.001271099, 0.101924084],
+						[0.00000789, -0.038210701, -0.999269426, 1.44720602],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_03_r",
+					"parent": "pinky_02_r"
+				},
+				{
+					"matrixLocal": [
+						[0.034443438, 0.998723567, 0.03694186, 0.885512233],
+						[-0.998723924, 0.033030149, 0.038211308, 0.102635033],
+						[0.03694227, -0.038210817, 0.998586476, 1.446383357],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_04_leaf_l",
+					"parent": "pinky_03_l"
+				},
+				{
+					"matrixLocal": [
+						[0.03444339, -0.99872309, -0.036941752, -0.885512233],
+						[0.998723805, 0.033030041, 0.038211193, 0.102634996],
+						[-0.036942035, -0.038210697, 0.998586297, 1.446383476],
+						[0, 0, 0, 1]
+					],
+					"name": "pinky_04_leaf_r",
+					"parent": "pinky_03_r"
+				},
+				{
+					"matrixLocal": [
+						[0.005102058, 0.999255896, -0.038229499, 0.815887868],
+						[0.999987185, -0.005108251, -0.000066801, 0.077770196],
+						[-0.000261978, -0.038228638, -0.999268949, 1.450748324],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_01_l",
+					"parent": "hand_l"
+				},
+				{
+					"matrixLocal": [
+						[0.005102034, -0.999255478, 0.038229633, -0.815887928],
+						[-0.999987066, -0.005108295, -0.000066806, 0.077770166],
+						[0.00026186, -0.038228758, -0.99926877, 1.450748324],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_01_r",
+					"parent": "hand_r"
+				},
+				{
+					"matrixLocal": [
+						[0.009914656, 0.999220192, -0.038216647, 0.851862133],
+						[0.999951065, -0.009907651, 0.000370257, 0.077586293],
+						[-0.00000861, -0.03821842, -0.999269366, 1.449372172],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_02_l",
+					"parent": "ring_01_l"
+				},
+				{
+					"matrixLocal": [
+						[0.009914556, -0.999219894, 0.038216565, -0.851862073],
+						[-0.999950945, -0.009907626, 0.000370101, 0.077586263],
+						[0.000008639, -0.038218327, -0.999269187, 1.449372172],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_02_r",
+					"parent": "ring_01_r"
+				},
+				{
+					"matrixLocal": [
+						[0.003125254, 0.999264061, -0.03822716, 0.880140185],
+						[0.999995291, -0.003132634, -0.000135645, 0.077305898],
+						[-0.000255239, -0.03822653, -0.999269009, 1.448290706],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_03_l",
+					"parent": "ring_02_l"
+				},
+				{
+					"matrixLocal": [
+						[0.003125198, -0.999263704, 0.038227238, -0.880140185],
+						[-0.999995172, -0.003132639, -0.000135489, 0.077305876],
+						[0.000254957, -0.038226593, -0.99926883, 1.448290706],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_03_r",
+					"parent": "ring_02_r"
+				},
+				{
+					"matrixLocal": [
+						[-0.001666817, 0.999264061, 0.038318537, 0.909220517],
+						[-0.9992643, -0.00313264, 0.038227975, 0.07721474],
+						[0.038319811, -0.038226604, 0.998534024, 1.447178245],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_04_leaf_l",
+					"parent": "ring_03_l"
+				},
+				{
+					"matrixLocal": [
+						[-0.001666754, -0.999263704, -0.038318541, -0.909220517],
+						[0.999264181, -0.003132639, 0.038227815, 0.07721471],
+						[-0.038319524, -0.038226597, 0.998533845, 1.447178245],
+						[0, 0, 0, 1]
+					],
+					"name": "ring_04_leaf_r",
+					"parent": "ring_03_r"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 0, 0],
+						[0, 1, 0, 0],
+						[0, 0, 1, 0],
+						[0, 0, 0, 1]
+					],
+					"name": "root",
+					"parent": null
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 6.7e-8, 0],
+						[6.7e-8, -0.101551726, -0.99483031, 0.006900027],
+						[7e-9, 0.99483031, -0.101551786, 1.072000027],
+						[0, 0, 0, 1]
+					],
+					"name": "spine_01",
+					"parent": "pelvis"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 1.88e-7, 0],
+						[1.88e-7, -0.022533715, -0.999746144, -0.003899967],
+						[4e-9, 0.999746144, -0.022533774, 1.177800059],
+						[0, 0, 0, 1]
+					],
+					"name": "spine_02",
+					"parent": "spine_01"
+				},
+				{
+					"matrixLocal": [
+						[1, 0, 6e-8, 0],
+						[5.8e-8, 0.224553883, -0.974461734, -0.00689993],
+						[-1.3e-8, 0.974461675, 0.224553823, 1.310900092],
+						[0, 0, 0, 1]
+					],
+					"name": "spine_03",
+					"parent": "spine_02"
+				},
+				{
+					"matrixLocal": [
+						[1, -1e-9, 3e-8, 0.114305139],
+						[-3e-8, 0.000233591, 1.000000954, 0.035999998],
+						[-1e-9, -1, 0.000233918, 0.97119993],
+						[0, 0, 0, 1]
+					],
+					"name": "thigh_l",
+					"parent": "pelvis"
+				},
+				{
+					"matrixLocal": [
+						[1, -1e-9, 3e-8, -0.114305139],
+						[-3e-8, 0.000233591, 1.000000954, 0.035999998],
+						[-1e-9, -1, 0.000233918, 0.97119993],
+						[0, 0, 0, 1]
+					],
+					"name": "thigh_r",
+					"parent": "pelvis"
+				},
+				{
+					"matrixLocal": [
+						[0.436756104, 0.787110031, 0.435547531, 0.740300834],
+						[-0.212978959, -0.379927039, 0.900164247, 0.024336858],
+						[0.874004602, -0.485914528, 0.001702443, 1.428019047],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_01_l",
+					"parent": "hand_l"
+				},
+				{
+					"matrixLocal": [
+						[0.436754674, -0.787110686, -0.435546905, -0.740300775],
+						[0.212978005, -0.379927039, 0.900164425, 0.02433688],
+						[-0.874005198, -0.485913008, 0.001702533, 1.428019047],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_01_r",
+					"parent": "hand_r"
+				},
+				{
+					"matrixLocal": [
+						[0.436745763, 0.787114203, 0.435550362, 0.771407366],
+						[-0.212984234, -0.379927367, 0.900162876, 0.00932222],
+						[0.874008477, -0.485907495, 0.001711286, 1.408815742],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_02_l",
+					"parent": "thumb_01_l"
+				},
+				{
+					"matrixLocal": [
+						[0.436745524, -0.787114024, -0.435550004, -0.771407485],
+						[0.212984204, -0.379927158, 0.900162935, 0.009322152],
+						[-0.874008298, -0.485907465, 0.001711561, 1.408815861],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_02_r",
+					"parent": "thumb_01_r"
+				},
+				{
+					"matrixLocal": [
+						[0.436774284, 0.787112653, 0.435524583, 0.799342632],
+						[-0.21293205, -0.379926831, 0.900175452, -0.004161739],
+						[0.874006987, -0.485910416, 0.001659271, 1.39157033],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_03_l",
+					"parent": "thumb_02_l"
+				},
+				{
+					"matrixLocal": [
+						[0.436774611, -0.787111998, -0.435524464, -0.79934293],
+						[0.212932408, -0.379926652, 0.900175393, -0.004161839],
+						[-0.874006391, -0.485911101, 0.001659531, 1.391570687],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_03_r",
+					"parent": "thumb_02_r"
+				},
+				{
+					"matrixLocal": [
+						[0.000849843, 0.787112594, 0.616808593, 0.826543868],
+						[-0.787112474, -0.37992692, 0.48591131, -0.017291298],
+						[0.61680907, -0.485910445, 0.619223237, 1.374778152],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_04_leaf_l",
+					"parent": "thumb_03_l"
+				},
+				{
+					"matrixLocal": [
+						[0.000850081, -0.787111998, -0.616808653, -0.826543987],
+						[0.787112653, -0.379926682, 0.485910952, -0.017291389],
+						[-0.616808414, -0.485911071, 0.619223118, 1.37477839],
+						[0, 0, 0, 1]
+					],
+					"name": "thumb_04_leaf_r",
+					"parent": "thumb_03_r"
+				},
+				{
+					"matrixLocal": [
+						[0.000002936, 0.999541819, 0.030264772, 0.212011591],
+						[-0.000082141, 0.030264875, -0.999542117, 0.065400034],
+						[-0.99999994, 4.68e-7, 0.000082135, 1.455500007],
+						[0, 0, 0, 1]
+					],
+					"name": "upperarm_l",
+					"parent": "clavicle_l"
+				},
+				{
+					"matrixLocal": [
+						[0.000002932, -0.999541402, -0.030264832, -0.212011591],
+						[0.000082153, 0.030264875, -0.999541998, 0.065400034],
+						[0.999999762, 4.96e-7, 0.000082021, 1.455500007],
+						[0, 0, 0, 1]
+					],
+					"name": "upperarm_r",
+					"parent": "clavicle_r"
+				}
+			]
+		},
+		"skinning": {
+			"maximumInfluences": 4,
+			"normalizedWeightCount": 2760,
+			"strategy": "analytic-sided-segments-v2",
+			"unweightedVertexCount": 0,
+			"weightMaximum": 1,
+			"weightMinimum": 0.015108634132308802,
+			"weightedBones": [
+				"Head",
+				"ball_l",
+				"ball_r",
+				"calf_l",
+				"calf_r",
+				"clavicle_l",
+				"clavicle_r",
+				"foot_l",
+				"foot_r",
+				"hand_l",
+				"hand_r",
+				"lowerarm_l",
+				"lowerarm_r",
+				"neck_01",
+				"pelvis",
+				"spine_01",
+				"spine_02",
+				"spine_03",
+				"thigh_l",
+				"thigh_r",
+				"upperarm_l",
+				"upperarm_r"
+			]
+		},
+		"templateHash": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"warnings": [
+			"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+			"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+			"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+		]
+	},
+	"buildMode": "derived-artifact",
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "a80da106d82bade26dfe1d936416f88c4fb9fb359cf6d02e606291fa75b54d2f",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "a80da106d82bade26dfe1d936416f88c4fb9fb359cf6d02e606291fa75b54d2f",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"roundTrip": {
+		"animations": {
+			"idle": {
+				"finiteKeyframes": true,
+				"maximumBoneLengthRelativeError": 1.5682782539272466e-7,
+				"maximumBoundsExpansion": 0.8155156937942395,
+				"minimumBoundsExpansion": 0.8118046750565218,
+				"missingTrackTargets": [],
+				"passed": true,
+				"poseAdvancement": 0.013084739979887829,
+				"rootMotionResidual": {
+					"x": 0,
+					"z": 0
+				}
+			},
+			"walk": {
+				"finiteKeyframes": true,
+				"maximumBoneLengthRelativeError": 8.781435600901943e-7,
+				"maximumBoundsExpansion": 0.9036432102166803,
+				"minimumBoundsExpansion": 0.8155726436924025,
+				"missingTrackTargets": [],
+				"passed": true,
+				"poseAdvancement": 0.8744218157020109,
+				"rootMotionResidual": {
+					"x": 0,
+					"z": -3.9805338261644785e-9
+				}
+			}
+		},
+		"artifact": {
+			"materialCount": 1,
+			"meshCount": 1,
+			"textureCount": 0,
+			"triangleCount": 5516,
+			"vertexCount": 2760
+		},
+		"checks": {
+			"animationBinding": true,
+			"cloneIndependence": true,
+			"geometry": true,
+			"hair": true,
+			"material": true,
+			"jointCount": true,
+			"missingRequiredBones": true,
+			"noEmbeddedAnimations": true,
+			"noMixamoOrVendorPresentation": true,
+			"skeletonContract": true,
+			"symmetry": true
+		},
+		"cloneIndependence": {
+			"maximumRestMatrixDifference": 0,
+			"passed": true,
+			"restRestored": true,
+			"secondUnaffected": true,
+			"separateBones": true,
+			"separateMixers": true,
+			"separateSkeletons": true
+		},
+		"geometry": {
+			"bounds": {
+				"dimensions": [1.5942612, 1.8199999, 0.3208103],
+				"maximumY": 1.8199999,
+				"minimumY": 0
+			},
+			"finiteNormals": true,
+			"finitePositions": true,
+			"indexRangeValid": true,
+			"materialCount": 1,
+			"maximumInfluences": 4,
+			"maximumWeightSumError": 4.0978193283081055e-8,
+			"meshCount": 1,
+			"missingWeightedBones": [],
+			"outOfRangeJointCount": 0,
+			"passed": true,
+			"skinnedMeshCount": 1,
+			"triangleCount": 5516,
+			"topology": {
+				"boundaryEdgeCount": 0,
+				"connectedComponentCount": 1,
+				"degenerateFaceCount": 0,
+				"edgeCount": 8274,
+				"eulerCharacteristic": 2,
+				"faceCount": 5516,
+				"genus": 0,
+				"manifold": true,
+				"nonManifoldEdgeCount": 0,
+				"unreferencedVertexCount": 0
+			},
+			"unweightedVertexCount": 0,
+			"vertexCount": 2760,
+			"weightedBones": [
+				"Head",
+				"ball_l",
+				"ball_r",
+				"calf_l",
+				"calf_r",
+				"clavicle_l",
+				"clavicle_r",
+				"foot_l",
+				"foot_r",
+				"hand_l",
+				"hand_r",
+				"lowerarm_l",
+				"lowerarm_r",
+				"neck_01",
+				"pelvis",
+				"spine_01",
+				"spine_02",
+				"spine_03",
+				"thigh_l",
+				"thigh_r",
+				"upperarm_l",
+				"upperarm_r"
+			]
+		},
+		"geometrySemanticHash": "7c570237574ba297088fa863d46bfd86e0f834cdb9d549eddc657458f7dd146b",
+		"glbResources": {
+			"imageCount": 0,
+			"imageNames": [],
+			"materialNames": ["ProceduralSkinMaterial"],
+			"meshCount": 1,
+			"nodeCount": 68,
+			"skinCount": 1
+		},
+		"hair": {
+			"attachmentBone": null,
+			"componentId": "none",
+			"materialCount": 0,
+			"materialNames": [],
+			"meshCount": 0,
+			"objectName": null,
+			"passed": true,
+			"textureCount": 0,
+			"textureNames": [],
+			"triangleCount": 0,
+			"vertexCount": 0
+		},
+		"inspection": {
+			"embeddedAnimationCount": 0,
+			"jointCount": 65,
+			"missingRequiredBones": [],
+			"nodeCount": 68,
+			"skeletonCount": 1,
+			"warnings": []
+		},
+		"passed": true,
+		"material": {
+			"exportedLinearColor": [0.5840784, 0.2746773, 0.1301365],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"finite": true,
+			"materialCount": 1,
+			"materialName": "ProceduralSkinMaterial",
+			"materialType": "MeshStandardMaterial",
+			"maximumColorError": 0,
+			"passed": true
+		},
+		"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
+		"semanticHash": "9750e82ec7277fecb46391d852b058db483644ea66288930ff33fd73b6a3039e",
+		"skeletonContract": {
+			"hierarchyMismatches": [],
+			"maximumRestRotationDegrees": 0.03575552834529974,
+			"maximumRestScaleDifference": 0.0000010728836059570312,
+			"maximumRestTranslationDifference": 3.463232516850761e-7,
+			"passed": true
+		},
+		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+		"symmetry": {
+			"maximumRelativeDifference": 1.4292099551115905e-7,
+			"passed": true
+		},
+		"semanticStructure": {
+			"hierarchy": [
+				{
+					"name": "Scene",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Group"
+				},
+				{
+					"name": "ProceduralMannequinRoot",
+					"parent": "Scene",
+					"position": [0, 0.0356373, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1.0336907, 1.0336907, 1.0336907],
+					"type": "Object3D"
+				},
+				{
+					"name": "ProceduralMannequinArmature",
+					"parent": "ProceduralMannequinRoot",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Object3D"
+				},
+				{
+					"name": "ProceduralMannequinMesh",
+					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "root",
+					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [-0.7071068, 0, 0, 0.7071068],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pelvis",
+					"parent": "root",
+					"position": [0, 0.043, 0.9491],
+					"quaternion": [0.8005711, 0, 0, 0.5992379],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "spine_01",
+					"parent": "pelvis",
+					"position": [0, 0.1280923, 0],
+					"quaternion": [-0.0918562, 0, 0, 0.9957723],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "spine_02",
+					"parent": "spine_01",
+					"position": [0, 0.1063496, 0],
+					"quaternion": [-0.0395854, 1e-7, 0, 0.9992162],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "spine_03",
+					"parent": "spine_02",
+					"position": [0, 0.1331337, 0],
+					"quaternion": [-0.124189, -1e-7, 0, 0.9922586],
+					"scale": [1, 0.9999998, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "clavicle_l",
+					"parent": "spine_03",
+					"position": [0.0314, 0.1737178, 0.0673285],
+					"quaternion": [-0.5287375, -0.329102, -0.4138081, 0.6639966],
+					"scale": [1.0000001, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "upperarm_l",
+					"parent": "clavicle_l",
+					"position": [-0.0091357, 0.205739, -0.0396716],
+					"quaternion": [0.1498032, 0.6911308, -0.1493883, 0.6910719],
+					"scale": [0.9999998, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "lowerarm_l",
+					"parent": "upperarm_l",
+					"position": [0, 0.2511151, 0],
+					"quaternion": [0.0307322, 0.0000416, -0.0000015, 0.9995277],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "hand_l",
+					"parent": "lowerarm_l",
+					"position": [-1e-7, 0.2435941, 0],
+					"quaternion": [-0.0156016, -4e-7, 0, 0.9998783],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_01_l",
+					"parent": "hand_l",
+					"position": [0.0071595, 0.1174025, 0.0406433],
+					"quaternion": [0.0085051, 0.7068115, -0.0185241, 0.7071082],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_02_l",
+					"parent": "index_01_l",
+					"position": [0, 0.0326126, 1e-7],
+					"quaternion": [5e-7, 0.0000495, -0.0005331, 0.9999999],
+					"scale": [0.9999999, 0.9999999, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "index_03_l",
+					"parent": "index_02_l",
+					"position": [0, 0.0279114, -1e-7],
+					"quaternion": [0.000002, -0.0000071, -0.0001857, 1],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_04_leaf_l",
+					"parent": "index_03_l",
+					"position": [0, 0.0241099, -3e-7],
+					"quaternion": [0, 0.999823, 0, 0.018816],
+					"scale": [0.9999999, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_01_l",
+					"parent": "hand_l",
+					"position": [0.0046826, 0.1154388, 0.0151134],
+					"quaternion": [0.0050673, 0.7067629, -0.0219582, 0.7070916],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_02_l",
+					"parent": "middle_01_l",
+					"position": [0, 0.0375262, -1e-7],
+					"quaternion": [6e-7, 0.0000784, 0.0020528, 0.9999979],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_03_l",
+					"parent": "middle_02_l",
+					"position": [0, 0.0301167, -2e-7],
+					"quaternion": [-4e-7, -0.0000543, -0.0014198, 0.999999],
+					"scale": [0.9999999, 0.9999998, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_04_leaf_l",
+					"parent": "middle_03_l",
+					"position": [0, 0.0305197, 3e-7],
+					"quaternion": [0, 0.9998255, 0, 0.0186798],
+					"scale": [1.0000001, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_01_l",
+					"parent": "hand_l",
+					"position": [0.0060377, 0.0985413, -0.0346174],
+					"quaternion": [0.002601, 0.7066821, -0.0244147, 0.707105],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_02_l",
+					"parent": "pinky_01_l",
+					"position": [0, 0.031631, -2e-7],
+					"quaternion": [4e-7, 0.0000953, -0.0015674, 0.9999988],
+					"scale": [0.9999999, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_03_l",
+					"parent": "pinky_02_l",
+					"position": [0, 0.0274307, 3e-7],
+					"quaternion": [0.0000033, -0.0001373, 0.0004661, 0.9999999],
+					"scale": [1, 0.9999998, 0.9999998],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_04_leaf_l",
+					"parent": "pinky_03_l",
+					"position": [0, 0.0215233, 3e-7],
+					"quaternion": [0, 0.9998292, 0, 0.0184837],
+					"scale": [1.0000001, 1, 0.9999998],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_01_l",
+					"parent": "hand_l",
+					"position": [0.0047518, 0.1094007, -0.0123702],
+					"quaternion": [0.0153238, 0.7069171, -0.0117133, 0.7070335],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_02_l",
+					"parent": "ring_01_l",
+					"position": [0, 0.036001, -2e-7],
+					"quaternion": [-0.0000048, 0.0002186, 0.0023998, 0.9999971],
+					"scale": [1, 0.9999998, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_03_l",
+					"parent": "ring_02_l",
+					"position": [0, 0.0283001, 0],
+					"quaternion": [0.0000036, -0.000253, -0.0033876, 0.9999942],
+					"scale": [0.9999999, 1, 0.9999998],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_04_leaf_l",
+					"parent": "ring_03_l",
+					"position": [0, 0.0291018, -1e-7],
+					"quaternion": [0, 0.9998186, 0, 0.0190498],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_01_l",
+					"parent": "hand_l",
+					"position": [0.0274811, 0.0338136, 0.0410632],
+					"quaternion": [-0.2444633, -0.9435676, -0.2160615, 0.0568801],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_02_l",
+					"parent": "thumb_01_l",
+					"position": [-1e-7, 0.0395199, 0],
+					"quaternion": [8e-7, 0.0000046, -0.000004, 1],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_03_l",
+					"parent": "thumb_02_l",
+					"position": [-2e-7, 0.0354909, 0],
+					"quaternion": [-1e-7, -0.0000297, 0.0000017, 1],
+					"scale": [1.0000001, 1, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_04_leaf_l",
+					"parent": "thumb_03_l",
+					"position": [2e-7, 0.0345582, 0],
+					"quaternion": [-1e-7, 0.3827087, 0, 0.9238691],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "clavicle_r",
+					"parent": "spine_03",
+					"position": [-0.0314, 0.1737178, 0.0673285],
+					"quaternion": [-0.5287375, 0.329102, 0.4138082, 0.6639966],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "upperarm_r",
+					"parent": "clavicle_r",
+					"position": [0.0091357, 0.205739, -0.0396713],
+					"quaternion": [0.1498032, -0.6911308, 0.1493883, 0.6910719],
+					"scale": [0.9999999, 0.9999995, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "lowerarm_r",
+					"parent": "upperarm_r",
+					"position": [1e-7, 0.2511151, 0],
+					"quaternion": [0.0307322, -0.0000417, 0.0000015, 0.9995276],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "hand_r",
+					"parent": "lowerarm_r",
+					"position": [1e-7, 0.2435943, 0],
+					"quaternion": [-0.0156016, 5e-7, 0, 0.9998783],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_01_r",
+					"parent": "hand_r",
+					"position": [-0.0071596, 0.1174027, 0.0406433],
+					"quaternion": [0.008505, -0.7068117, 0.0185242, 0.707108],
+					"scale": [0.9999999, 1.0000001, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_02_r",
+					"parent": "index_01_r",
+					"position": [0, 0.0326125, 0],
+					"quaternion": [4e-7, -0.0000494, 0.0005331, 0.9999999],
+					"scale": [1.0000001, 1.0000001, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "index_03_r",
+					"parent": "index_02_r",
+					"position": [0, 0.0279115, 0],
+					"quaternion": [0.000002, 0.0000071, 0.0001856, 1],
+					"scale": [0.9999999, 0.9999998, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_04_leaf_r",
+					"parent": "index_03_r",
+					"position": [0, 0.02411, -2e-7],
+					"quaternion": [0, -0.999823, 0, 0.018816],
+					"scale": [0.9999999, 1, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_01_r",
+					"parent": "hand_r",
+					"position": [-0.0046828, 0.1154389, 0.0151134],
+					"quaternion": [0.0050674, -0.7067628, 0.0219582, 0.7070916],
+					"scale": [0.9999999, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_02_r",
+					"parent": "middle_01_r",
+					"position": [0, 0.0375261, -2e-7],
+					"quaternion": [6e-7, -0.0000784, -0.0020528, 0.9999979],
+					"scale": [0.9999999, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_03_r",
+					"parent": "middle_02_r",
+					"position": [0, 0.0301166, -1e-7],
+					"quaternion": [-4e-7, 0.0000544, 0.0014199, 0.999999],
+					"scale": [1, 0.9999998, 0.9999998],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_04_leaf_r",
+					"parent": "middle_03_r",
+					"position": [0, 0.0305197, 1e-7],
+					"quaternion": [-1e-7, -0.9998255, 0, 0.0186797],
+					"scale": [0.9999999, 1, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_01_r",
+					"parent": "hand_r",
+					"position": [-0.0060377, 0.0985414, -0.0346173],
+					"quaternion": [0.0026011, -0.7066821, 0.0244147, 0.707105],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_02_r",
+					"parent": "pinky_01_r",
+					"position": [0, 0.031631, 3e-7],
+					"quaternion": [4e-7, -0.0000954, 0.0015674, 0.9999987],
+					"scale": [1, 0.9999998, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_03_r",
+					"parent": "pinky_02_r",
+					"position": [0, 0.0274307, 4e-7],
+					"quaternion": [0.0000032, 0.0001374, -0.000466, 0.9999999],
+					"scale": [0.9999999, 0.9999998, 0.9999998],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_04_leaf_r",
+					"parent": "pinky_03_r",
+					"position": [0, 0.0215233, 2e-7],
+					"quaternion": [0, -0.9998292, 0, 0.0184837],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_01_r",
+					"parent": "hand_r",
+					"position": [-0.0047519, 0.1094008, -0.0123702],
+					"quaternion": [0.0153239, -0.7069171, 0.0117133, 0.7070334],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_02_r",
+					"parent": "ring_01_r",
+					"position": [0, 0.0360009, -1e-7],
+					"quaternion": [-0.0000049, -0.0002185, -0.0023997, 0.9999971],
+					"scale": [0.9999999, 1.0000001, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_03_r",
+					"parent": "ring_02_r",
+					"position": [0, 0.0283002, -1e-7],
+					"quaternion": [0.0000037, 0.0002528, 0.0033876, 0.9999942],
+					"scale": [0.9999999, 0.9999998, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_04_leaf_r",
+					"parent": "ring_03_r",
+					"position": [0, 0.0291017, 0],
+					"quaternion": [0, -0.9998186, 0, 0.0190498],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_01_r",
+					"parent": "hand_r",
+					"position": [-0.0274813, 0.0338136, 0.0410631],
+					"quaternion": [-0.2444625, 0.9435679, 0.2160614, 0.0568799],
+					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_02_r",
+					"parent": "thumb_01_r",
+					"position": [-1e-7, 0.03952, 0],
+					"quaternion": [7e-7, -0.0000048, 0.0000032, 1],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_03_r",
+					"parent": "thumb_02_r",
+					"position": [0, 0.0354908, 0],
+					"quaternion": [-2e-7, 0.0000296, -0.0000021, 1],
+					"scale": [1, 1, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_04_leaf_r",
+					"parent": "thumb_03_r",
+					"position": [2e-7, 0.0345582, 0],
+					"quaternion": [0, -0.3827088, 0, 0.923869],
+					"scale": [0.9999999, 1.0000001, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "neck_01",
+					"parent": "spine_03",
+					"position": [0, 0.215093, 0],
+					"quaternion": [0.2572591, 0, 0, 0.9663424],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "Head",
+					"parent": "neck_01",
+					"position": [0, 0.0828523, 0],
+					"quaternion": [-0.13207, 0, 0, 0.9912404],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thigh_l",
+					"parent": "pelvis",
+					"position": [0.1143051, 0.0231769, 0.0004879],
+					"quaternion": [0.989831, 0, 0, 0.1422484],
+					"scale": [1, 0.9999999, 1.0000008],
+					"type": "Bone"
+				},
+				{
+					"name": "calf_l",
+					"parent": "thigh_l",
+					"position": [0, 0.4288003, 0],
+					"quaternion": [0.0559889, 0, 0, 0.9984314],
+					"scale": [1, 1.0000001, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "foot_l",
+					"parent": "calf_l",
+					"position": [0, 0.4587884, 0],
+					"quaternion": [-0.5721679, 3e-7, -2e-7, 0.8201365],
+					"scale": [1, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_l",
+					"parent": "foot_l",
+					"position": [0, 0.1590736, 0],
+					"quaternion": [1e-7, 0.9731196, -0.2303006, 3e-7],
+					"scale": [1, 1.0000002, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_leaf_l",
+					"parent": "ball_l",
+					"position": [0, 0.0788998, 0],
+					"quaternion": [0, -1e-7, 0, 1],
+					"scale": [1, 1.0000001, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thigh_r",
+					"parent": "pelvis",
+					"position": [-0.1143051, 0.0231769, 0.0004879],
+					"quaternion": [0.989831, 0, 0, 0.1422484],
+					"scale": [1, 0.9999999, 1.0000008],
+					"type": "Bone"
+				},
+				{
+					"name": "calf_r",
+					"parent": "thigh_r",
+					"position": [0, 0.4288003, 0],
+					"quaternion": [0.0559889, 0, 0, 0.9984314],
+					"scale": [1, 1.0000001, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "foot_r",
+					"parent": "calf_r",
+					"position": [0, 0.4587884, 0],
+					"quaternion": [-0.5721679, -3e-7, 2e-7, 0.8201365],
+					"scale": [1, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_r",
+					"parent": "foot_r",
+					"position": [0, 0.1590736, 0],
+					"quaternion": [1e-7, -0.9731196, 0.2303006, 3e-7],
+					"scale": [1, 1.0000002, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_leaf_r",
+					"parent": "ball_r",
+					"position": [0, 0.0788998, 0],
+					"quaternion": [0, 1e-7, 0, 1],
+					"scale": [1, 1.0000001, 1],
+					"type": "Bone"
+				}
+			],
+			"materials": [
+				{
+					"color": "c98f65",
+					"name": "ProceduralSkinMaterial",
+					"linearColor": [0.5840784, 0.2746773, 0.1301365],
+					"metallic": 0,
+					"roughness": 0.72,
+					"type": "MeshStandardMaterial"
+				}
+			],
+			"meshes": [
+				{
+					"attributes": {
+						"normal": {
+							"count": 2760,
+							"hash": "098d60312a909209f6fba91a8e75c57641ec9926bfb6a03ea5feddfde0ddc8d7",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 2760,
+							"hash": "f6c1e110d1e566019255dec682c4492f46e124f44aab621ab1bd4e65558a5989",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 2760,
+							"hash": "db391bb926b0dbb5f9fcab82235ba432f4cc7c15f74935e79755de5e82730ced",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 2760,
+							"hash": "b3c97ee7753176ffa27dde2196e021763d8221e02a7e8d3501f56d0d73d941b5",
+							"itemSize": 4
+						}
+					},
+					"index": {
+						"count": 16548,
+						"hash": "dd1640358e6bef548d385a4a6fdce1e7a69219ce5e3ac73b92624f55f0f956d0"
+					},
+					"name": "ProceduralMannequinMesh"
+				}
+			]
+		}
+	},
+	"secondRoundTrip": {
+		"checks": {
+			"animationBinding": true,
+			"cloneIndependence": true,
+			"geometry": true,
+			"hair": true,
+			"material": true,
+			"jointCount": true,
+			"missingRequiredBones": true,
+			"noEmbeddedAnimations": true,
+			"noMixamoOrVendorPresentation": true,
+			"skeletonContract": true,
+			"symmetry": true
+		},
+		"passed": true,
+		"semanticHash": "9750e82ec7277fecb46391d852b058db483644ea66288930ff33fd73b6a3039e",
+		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840"
+	},
+	"sourceHashesAfter": {
+		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "b5f6cc14aaed0bd6b5f1982da9a7e72c467d56a22bcc08a972e6a71b078e6aa0",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "0254494a7858f5870edb3774afbd6cce25faa7783b3bd13132355487d868150a"
+	},
+	"sourceHashesBefore": {
+		"tools/blender-character/recipes/procedural-mannequin-v0.recipe.json": "b5f6cc14aaed0bd6b5f1982da9a7e72c467d56a22bcc08a972e6a71b078e6aa0",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "0254494a7858f5870edb3774afbd6cce25faa7783b3bd13132355487d868150a"
+	},
+	"sourceImmutable": true
+}

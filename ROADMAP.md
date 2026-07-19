@@ -9,7 +9,9 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
   - Sky / Atmosphere Presentation V1.
   - Model Normalisation / Asset Transform Defaults V1.
   - Pirate Vertical Slice Dressing V1.
-  - Character/NPC Model + Animation V1.
+  - Asset Studio creator follow-up: a simple face-feature readability pass,
+    then Hairstyle Library V2, building on corrected Procedural Head and Hair
+    Fit V1; see `docs/assets/procedural-head-hair-fit-v1.md`.
   - Runtime contract tests that prove Phaser and Three.js adapters use the same gameplay semantics.
   - Keep using the Playwright Three perf harness for browser/performance-sensitive 3D work.
 - Expand map overlay filters for event blocks, collision, quest markers, and NPC movement.
@@ -58,6 +60,7 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
 - Richer NPC behavior without replacing the shared NPC model.
 - Advanced rule authoring, including an optional node-based view.
 - Larger-world authoring and additional runtime optimization.
-- Runtime animation systems after adapter parity is proven.
+- General animation/compiler coverage beyond the pair-specific offline-baked
+  Golden Reference.
 - WebGPU optimisation after real performance constraints are measured.
 - Native/C++ exploration only if deployment or performance requirements justify it.

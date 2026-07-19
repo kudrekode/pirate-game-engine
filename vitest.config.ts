@@ -5,7 +5,13 @@ export default defineConfig({
 	plugins: [react()],
 	test: {
 		environment: "jsdom",
-		exclude: [...configDefaults.exclude, "e2e/**"],
+		exclude: [
+			...configDefaults.exclude,
+			"e2e/**",
+			"apps/asset-studio/e2e/**",
+			"tools/animation-retargeting/**",
+			"tools/blender-character/**",
+		],
 		fileParallelism: false,
 		maxWorkers: 1,
 		setupFiles: "./src/test/setup.ts",

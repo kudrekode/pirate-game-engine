@@ -1,0 +1,218 @@
+{
+	"anatomy": {
+		"armLengthMultiplier": 1,
+		"heightScale": 1,
+		"hipWidthMultiplier": 1,
+		"legLengthMultiplier": 1,
+		"shoulderWidthMultiplier": 1,
+		"torsoLengthMultiplier": 1,
+		"armToLegRatio": 1,
+		"armToTorsoRatio": 1,
+		"legToTorsoRatio": 1,
+		"shoulderToHipRatio": 1
+	},
+	"animationProfile": "mixamo-to-quaternius-v2",
+	"animationSet": "golden-reference-v0",
+	"assetId": "procedural-mannequin-v0",
+	"blender": {
+		"buildHash": "fbe6228777e7",
+		"version": "5.2.0 LTS"
+	},
+	"bounds": {
+		"dimensions": {
+			"x": 1.5942612,
+			"y": 1.8199999,
+			"z": 0.3208103
+		},
+		"maxY": 1.8199999,
+		"minY": 0
+	},
+	"head": {
+		"axes": {
+			"forward": [0, 1, 0],
+			"right": [1, 0, 0],
+			"up": [0, 0, 1]
+		},
+		"bounds": {
+			"centre": [7e-9, 0.026381154, 1.588115931],
+			"dimensions": [0.346707463, 0.288123578, 0.276179433],
+			"maximum": [0.173353732, 0.170442939, 1.726205587],
+			"minimum": [-0.173353717, -0.117680632, 1.450026155]
+		},
+		"coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+		"foreheadReference": [7e-9, 0.170442939, 1.63230464],
+		"headBonePosition": [0, 0.017400054, 1.59980011],
+		"headCentre": [7e-9, 0.026381154, 1.588115931],
+		"headDepth": 0.288123578,
+		"headHeight": 0.276179433,
+		"headWidth": 0.346707463,
+		"neckConnectionVertexCount": 46,
+		"neckTop": [0, 0.017400054, 1.55372011],
+		"rearCraniumReference": [7e-9, -0.117680632, 1.648875406],
+		"scalpBack": [7e-9, -0.117680632, 1.588115931],
+		"scalpBounds": {
+			"centre": [0, 0.006258409, 1.66500783],
+			"dimensions": [0.234044105, 0.247878075, 0.122395635],
+			"maximum": [0.117022052, 0.130197451, 1.726205587],
+			"minimum": [-0.117022052, -0.117680632, 1.603809953]
+		},
+		"scalpFront": [7e-9, 0.130197451, 1.588115931],
+		"scalpLeft": [-0.117022052, 0.026381154, 1.588115931],
+		"scalpRight": [0.117022052, 0.026381154, 1.588115931],
+		"scalpTop": [7e-9, 0.026381154, 1.726205587],
+		"symmetryErrorMetres": 0,
+		"topologyVersion": "procedural-humanoid-v2"
+	},
+	"compilerHash": "9b5c67472edda85a98658930c3db42e2ca895e834f8abeee56c7f94d3bb4f140",
+	"compilerVersion": "procedural-mannequin-blender-v5",
+	"components": {
+		"hair": {
+			"attachmentBone": null,
+			"componentId": "none",
+			"materialCount": 0,
+			"meshCount": 0,
+			"textureCount": 0,
+			"triangleCount": 0,
+			"vertexCount": 0
+		}
+	},
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "a80da106d82bade26dfe1d936416f88c4fb9fb359cf6d02e606291fa75b54d2f",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "a80da106d82bade26dfe1d936416f88c4fb9fb359cf6d02e606291fa75b54d2f",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"deterministicBuild": true,
+	"engineForward": "-Z after registry 180-degree Y rotation",
+	"geometryProfile": "voxel-union",
+	"measurements": {
+		"calfRadius": 0.068,
+		"chestDepth": 0.13,
+		"chestHalfWidth": 0.245,
+		"elbowRadius": 0.07,
+		"footDepth": 0.06,
+		"footHalfWidth": 0.062,
+		"forearmRadius": 0.064,
+		"handDepth": 0.035,
+		"handHalfWidth": 0.064,
+		"headDepth": 0.112,
+		"headHalfWidth": 0.12,
+		"hipJointRadius": 0.105,
+		"kneeRadius": 0.068,
+		"neckRadius": 0.064,
+		"pelvisDepth": 0.13,
+		"pelvisHalfWidth": 0.195,
+		"shoulderJointRadius": 0.08,
+		"thighRadius": 0.082,
+		"topologyVersion": "procedural-humanoid-v2",
+		"upperArmRadius": 0.076,
+		"voxelSizeMetres": 0.035,
+		"waistDepth": 0.112,
+		"waistHalfWidth": 0.17,
+		"wristRadius": 0.052
+	},
+	"heightMetres": 1.82,
+	"influenceStatistics": {
+		"maximumInfluences": 4,
+		"maximumWeightSumError": 4.0978193283081055e-8,
+		"outOfRangeJointCount": 0,
+		"strategy": "analytic-sided-segments-v2",
+		"unweightedVertexCount": 0
+	},
+	"jointCount": 65,
+	"knownLimitations": [
+		"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+	],
+	"appearance": {
+		"skin": {
+			"authoredColor": "#c98f65",
+			"authoredColorSpace": "srgb",
+			"authoredRoughness": 0.72,
+			"canonicalLinearColor": [
+				0.5840784178911641, 0.27467731206038465, 0.1301364766903643
+			],
+			"exportedLinearColor": [0.5840784, 0.2746773, 0.1301365],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialName": "ProceduralSkinMaterial",
+			"materialSchemaVersion": "procedural-skin-material-v1"
+		}
+	},
+	"artifactStatistics": {
+		"materialCount": 1,
+		"meshCount": 1,
+		"textureCount": 0,
+		"triangleCount": 5516,
+		"vertexCount": 2760
+	},
+	"bodyStatistics": {
+		"materialCount": 1,
+		"meshCount": 1,
+		"triangleCount": 5516,
+		"vertexCount": 2760
+	},
+	"materialCount": 1,
+	"meshCount": 1,
+	"meshNames": ["ProceduralMannequinMesh"],
+	"normalizedSemanticHash": "9750e82ec7277fecb46391d852b058db483644ea66288930ff33fd73b6a3039e",
+	"geometryAndSkinningSemanticHash": "7c570237574ba297088fa863d46bfd86e0f834cdb9d549eddc657458f7dd146b",
+	"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
+	"outputFile": "mannequin.glb",
+	"outputHash": "a80da106d82bade26dfe1d936416f88c4fb9fb359cf6d02e606291fa75b54d2f",
+	"proportions": {
+		"height": 1.82,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5,
+		"armLength": 0.5,
+		"legLength": 0.5,
+		"hipWidth": 0.5
+	},
+	"recipeHash": "d034fa7ba8129b253c7909972ca505f8ec862f21ff9d01804573891edc70c938",
+	"recipeId": "procedural-mannequin-v0",
+	"recipeVersion": 4,
+	"skeletonContract": "golden-humanoid-v0",
+	"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+	"sourceImmutable": true,
+	"componentRegistry": {
+		"path": "packages/character-contract/src/character-component-registry.json",
+		"validated": true,
+		"version": 1
+	},
+	"templateHashes": {
+		"buffer": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4"
+	},
+	"triangleCount": 5516,
+	"topology": {
+		"boundaryEdgeCount": 0,
+		"connectedComponentCount": 1,
+		"degenerateFaceCount": 0,
+		"edgeCount": 8274,
+		"eulerCharacteristic": 2,
+		"faceCount": 5516,
+		"genus": 0,
+		"manifold": true,
+		"nonManifoldEdgeCount": 0,
+		"unreferencedVertexCount": 0
+	},
+	"topologyVersion": "procedural-humanoid-v2",
+	"units": "metres",
+	"validationVersion": "procedural-mannequin-roundtrip-v6",
+	"vertexCount": 2760,
+	"warnings": [
+		"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig."
+	],
+	"generationDurationMs": 11653
+}

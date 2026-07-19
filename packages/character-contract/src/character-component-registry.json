@@ -1,0 +1,94 @@
+{
+	"version": 1,
+	"components": [
+		{
+			"id": "quaternius-hair-v0",
+			"name": "Quaternius Buzzed",
+			"slot": "hair",
+			"skeletonId": "humanoid-v1",
+			"compatibleBodyBaseIds": ["humanoid-default"],
+			"materialRegions": ["hair"],
+			"provider": "Quaternius",
+			"packName": "Universal Base Characters Kit",
+			"sourceAsset": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf",
+			"sourceMeshName": "Hair_Buzzed",
+			"sourceHash": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
+			"sourceFiles": [
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf",
+					"role": "mesh",
+					"sha256": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin",
+					"role": "buffer",
+					"sha256": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png",
+					"role": "baseColorTexture",
+					"sha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png",
+					"role": "normalTexture",
+					"sha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
+				}
+			],
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+				"spdx": "CC0-1.0"
+			},
+			"expectedAttachmentBone": "Head",
+			"attachmentStrategy": "main-skeleton-head-surface-skinning",
+			"sourceTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"normalizedTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"fittingProfile": {
+				"id": "quaternius-buzzed-fit-v2",
+				"version": 2,
+				"mode": "geometry-aware-scalp",
+				"attachmentBone": "Head",
+				"sourceReferenceFrame": {
+					"forwardAxis": "+Y",
+					"upAxis": "+Z",
+					"centreMode": "bounds-centre",
+					"crownMode": "maximum-z"
+				},
+				"coverageRatios": {
+					"width": 0.96,
+					"depth": 1,
+					"heightFromWidth": 0.55
+				},
+				"frontOffsetMetres": 0.002,
+				"rearOffsetMetres": 0,
+				"verticalSeatingOffsetMetres": 0.012,
+				"scalpOffsetMetres": 0.012,
+				"allowNonUniformScaling": true,
+				"scaleLimits": {
+					"width": [1, 2.1],
+					"depth": [0.8, 1.8],
+					"height": [0.85, 1.25]
+				}
+			},
+			"material": {
+				"name": "MI_Hair_1",
+				"textures": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"]
+			},
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v5",
+			"knownLimitations": [
+				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
+				"Fixed vendor-authored brown material; hair colour authoring is not implemented.",
+				"Geometry-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
+			]
+		}
+	]
+}

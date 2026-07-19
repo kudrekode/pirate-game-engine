@@ -41,7 +41,43 @@ The Phaser runtime remains the default and reference 2D playable runtime. Pressi
 
 Both runtime adapters use shared runtime helpers and `RuntimeSession` state for gameplay semantics. Movement, interaction discovery, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, and progression should stay in shared runtime code rather than being reimplemented inside Phaser or Three.js render adapters.
 
-The Three.js runtime is experimental. It now supports placeholder and registry-backed GLB presentation, visual movement smoothing, multiple camera modes, water/coastline visuals, and diagnostics, but still needs animation, model normalisation, UI polish, camera collision/framing polish, and broader parity/contract testing before it can be considered production-quality.
+The Three.js runtime is experimental. It now supports placeholder and registry-backed GLB presentation, offline-baked Golden Reference animation playback, visual movement smoothing, multiple camera modes, water/coastline visuals, and diagnostics. It still needs model normalisation, UI polish, camera collision/framing polish, and broader parity/contract testing before it can be considered production-quality.
+
+Character animation currently follows the documented offline pipeline: immutable
+Mixamo source/provenance records are retargeted by a versioned headless Blender
+profile into deterministic Golden-target GLBs, validated through Three.js, and
+registered for Asset Studio, the editor, and runtime presentation. See
+[`docs/ASSET_STUDIO_ARCHITECTURE.md`](docs/ASSET_STUDIO_ARCHITECTURE.md) and the
+[Golden Reference retargeting spike](docs/assets/golden-reference-animation-retargeting-spike.md).
+
+The first procedural compiler milestone is also complete: project-owned Blender
+Python generates Procedural Mannequin V0 geometry, binds explicit deterministic
+weights to the Golden compatibility skeleton, validates two isolated GLB builds,
+and promotes the artifact through Asset Studio and the same root registry,
+clone, and animation path. See
+[`docs/assets/procedural-mannequin-v0.md`](docs/assets/procedural-mannequin-v0.md).
+
+The checked-in mannequin now uses Generated Body Topology V1: a deterministic
+voxel-unioned, closed genus-zero body with blended max-four skin weights, strict
+exported topology checks, the unchanged Golden rest signature, and a 21-body
+extrema/seed/challenge matrix. See
+[`docs/assets/generated-body-topology-v1.md`](docs/assets/generated-body-topology-v1.md).
+
+Procedural Head and Hair Fit V1 advances new builds to
+`procedural-humanoid-v2`, replaces the crude head pill with a symmetric
+stylised cranium/jaw/chin/face-plane volume, and fits Quaternius Buzzed from
+measured scalp/source geometry through `quaternius-buzzed-fit-v2`. Compiler
+diagnostics now record the head/scalp contract, derived transform, fit metrics,
+and warnings. See
+[`docs/assets/procedural-head-hair-fit-v1.md`](docs/assets/procedural-head-hair-fit-v1.md).
+
+Asset Studio now has its first complete creator loop. Editing height and pressing
+Compile submits the existing CharacterRecipe height to a local development
+endpoint, runs the real two-pass Blender compiler and validation pipeline, and
+reloads the returned GLB without browser scaling. Repeated identical heights
+retain identical recipe/asset hashes; failed jobs leave the previous preview
+active. See
+[`docs/assets/asset-studio-height-authoring-v0.md`](docs/assets/asset-studio-height-authoring-v0.md).
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
