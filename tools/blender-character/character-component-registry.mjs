@@ -65,7 +65,7 @@ export async function validateCharacterComponentRegistry({
 			component.expectedAttachmentBone !== "Head" ||
 			component.attachmentStrategy !== "main-skeleton-head-surface-skinning" ||
 			component.compilerCompatibilityVersion !==
-				"procedural-mannequin-blender-v4"
+				"procedural-mannequin-blender-v5"
 		) {
 			throw new Error(`Component "${component.id}" has incompatible metadata.`);
 		}
@@ -102,13 +102,34 @@ export async function validateCharacterComponentRegistry({
 			`${component.id} normalized scale`,
 			{ positive: true },
 		);
-		assertVector(
-			component.fittingProfile.pivotMetres,
-			`${component.id} fitting pivot`,
-		);
+		for (const axis of ["width", "depth", "height"]) {
+			const limits = component.fittingProfile.scaleLimits?.[axis];
+			if (
+				!Array.isArray(limits) ||
+				limits.length !== 2 ||
+				!limits.every(Number.isFinite) ||
+				limits[0] <= 0 ||
+				limits[1] < limits[0]
+			) {
+				throw new Error(
+					`Component "${component.id}" has invalid ${axis} fit limits.`,
+				);
+			}
+		}
 		if (
-			component.fittingProfile.version !== 1 ||
-			!Number.isFinite(component.fittingProfile.scalpOffsetMetres)
+			component.fittingProfile.version !== 2 ||
+			component.fittingProfile.mode !== "geometry-aware-scalp" ||
+			component.fittingProfile.attachmentBone !==
+				component.expectedAttachmentBone ||
+			component.fittingProfile.sourceReferenceFrame?.upAxis !== "+Z" ||
+			component.fittingProfile.sourceReferenceFrame?.forwardAxis !== "+Y" ||
+			!component.fittingProfile.allowNonUniformScaling ||
+			!Number.isFinite(component.fittingProfile.frontOffsetMetres) ||
+			!Number.isFinite(component.fittingProfile.rearOffsetMetres) ||
+			!Number.isFinite(component.fittingProfile.verticalSeatingOffsetMetres) ||
+			!Object.values(component.fittingProfile.coverageRatios ?? {}).every(
+				(value) => Number.isFinite(value) && value > 0,
+			)
 		) {
 			throw new Error(
 				`Component "${component.id}" has an invalid fitting profile.`,

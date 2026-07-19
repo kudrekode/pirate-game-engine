@@ -6,7 +6,7 @@ import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contra
 
 const DEFAULT_RECIPE =
 	"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json";
-const DEFAULT_OUTPUT = "test-results/hairstyle-slot-v1/body-fit-matrix";
+const DEFAULT_OUTPUT = "test-results/procedural-head-hair-v1/body-fit-matrix";
 
 const CASES = [
 	["default", {}],
@@ -53,33 +53,60 @@ const CASES = [
 			hipWidth: 0.66,
 		},
 	],
+	[
+		"short-broad-long-torso",
+		{
+			height: 1.55,
+			shoulderWidth: 0.9,
+			torsoLength: 0.82,
+			armLength: 0.62,
+			legLength: 0.45,
+			hipWidth: 0.7,
+		},
+	],
+	[
+		"tall-narrow-long-limbs",
+		{
+			height: 2.04,
+			shoulderWidth: 0.15,
+			torsoLength: 0.35,
+			armLength: 0.72,
+			legLength: 0.78,
+			hipWidth: 0.25,
+		},
+	],
 ];
 
 function hairstyleFit(manifest) {
 	const hair = manifest.components.hair;
-	const heightScale = manifest.heightMetres / 1.82;
+	const head = manifest.head;
 	const width = hair.bounds.dimensions[0];
-	const depth = hair.bounds.dimensions[2];
+	const depth = hair.bounds.dimensions[1];
 	const centreX = (hair.bounds.minimum[0] + hair.bounds.maximum[0]) / 2;
-	const crownClearance = hair.bounds.maximum[1] - manifest.bounds.maxY;
-	const backCoverage = manifest.bounds.maxY - hair.bounds.minimum[1];
+	const crownSeating = hair.bounds.maximum[2] - head.scalpTop[2];
+	const neckClearance = hair.bounds.minimum[2] - head.neckTop[2];
+	const validation = hair.fitValidation;
 	const checks = {
 		animationAttachmentValidated: hair.attachmentBone === "Head",
-		backCoverage:
-			backCoverage >= 0.1 * heightScale && backCoverage <= 0.3 * heightScale,
-		centred: Math.abs(centreX) <= 0.005 * heightScale,
-		crownClearance:
-			crownClearance >= 0.005 * heightScale &&
-			crownClearance <= 0.08 * heightScale,
-		depth: depth >= 0.12 && depth <= 0.34,
-		width: width >= 0.14 && width <= 0.38,
+		centred: Math.abs(centreX - head.headCentre[0]) <= 0.01,
+		compilerFitGate: validation?.passed === true,
+		crownSeating: crownSeating >= 0.006 && crownSeating <= 0.02,
+		depth: depth / head.headDepth >= 0.82 && depth / head.headDepth <= 1.12,
+		neckClearance:
+			validation?.metrics.verticesAboveNeckRatio >= 0.9 &&
+			neckClearance >= -0.025,
+		rearCoverage: validation?.checks.rearCoverage === true,
+		scalpRange: validation?.metrics.scalpVerticalRangeRatio >= 0.68,
+		shoulderClearance: validation?.metrics.shoulderClearanceMetres >= 0.025,
+		width: width / head.headWidth >= 0.86 && width / head.headWidth <= 1.08,
 	};
 	return {
-		backCoverage,
 		centreX,
 		checks,
-		crownClearance,
+		crownSeating,
 		depth,
+		fitValidation: validation,
+		neckClearance,
 		passed: Object.values(checks).every(Boolean),
 		width,
 	};
@@ -120,7 +147,9 @@ export async function runProceduralMannequinHairstyleMatrix({
 		}
 		results.push({
 			bounds: compiled.manifest.components.hair.bounds,
+			derivedTransform: compiled.manifest.components.hair.derivedTransform,
 			fit,
+			head: compiled.manifest.head,
 			name,
 			outputHash: compiled.manifest.outputHash,
 			proportions: parsed.value.proportions,

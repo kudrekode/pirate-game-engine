@@ -69,7 +69,7 @@ npm run validate:procedural-topology-matrix
 
 Hairstyle Slot V1 extends the same compiler with exactly `none` and the
 registry-backed `quaternius-hair-v0` component. Compile and validate the haired
-reference plus its eight-body fit matrix with:
+reference plus its ten-body fit matrix with:
 
 ```powershell
 npm run compile:procedural-mannequin -- --recipe tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json --blender "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --output-dir public/assets/derived/procedural-humanoids/mannequin-hair-v0 --clean
@@ -82,6 +82,14 @@ compiler compatibility. The fitted hair becomes a separate GLB primitive on
 the existing main skin and uses the generated Head-led surface weights; no
 browser overlay or duplicate skeleton is created. See
 `docs/assets/hairstyle-slot-v1.md`.
+
+Procedural Head and Hair Fit V1 supersedes the V1 placement calibration for new
+builds. `procedural-humanoid-v2` generates a stylised cranium/jaw/chin/face
+plane, records a geometry-derived head/scalp contract, and
+`quaternius-buzzed-fit-v2` derives its transform from measured source and scalp
+bounds. The compiler rejects low neck placement, weak scalp coverage,
+off-centre fits, and inadequate shoulder clearance. See
+`docs/assets/procedural-head-hair-fit-v1.md`.
 
 See `docs/assets/generated-body-topology-v1.md` for the method decision,
 version/migration policy, topology and skeleton gates, matrix results, and

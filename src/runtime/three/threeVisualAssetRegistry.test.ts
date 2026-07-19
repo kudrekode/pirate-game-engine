@@ -247,7 +247,9 @@ describe("Three visual asset registry", () => {
 			materialProfile: "standard",
 			tags: expect.arrayContaining([
 				"compiler-generated",
+				"hairstyle-fit-v2",
 				"hairstyle-slot-v1",
+				"procedural-head-v1",
 				"quaternius-hair-v0",
 			]),
 			url: "/assets/derived/procedural-humanoids/mannequin-hair-v0/mannequin.glb",

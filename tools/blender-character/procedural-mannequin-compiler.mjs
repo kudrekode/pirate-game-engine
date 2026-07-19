@@ -232,7 +232,9 @@ export async function validateInstalledProceduralMannequin({
 			manifest.components?.hair?.triangleCount ===
 				validation.hair.triangleCount &&
 			manifest.components?.hair?.attachmentBone ===
-				validation.hair.attachmentBone,
+				validation.hair.attachmentBone &&
+			(parsed.value.components.hair === NO_HAIR_COMPONENT_ID ||
+				manifest.components?.hair?.fitValidation?.passed === true),
 		manifestArtifactStatistics:
 			manifest.meshCount === validation.artifact.meshCount &&
 			manifest.materialCount === validation.artifact.materialCount &&
@@ -321,15 +323,20 @@ export async function compileProceduralMannequin({
 	try {
 		const firstDirectory = path.join(stagingRoot, "first");
 		const secondDirectory = path.join(stagingRoot, "second");
+		const canonicalRecipePath = path.join(stagingRoot, "canonical.recipe.json");
 		await Promise.all([
 			mkdir(firstDirectory, { recursive: true }),
 			mkdir(secondDirectory, { recursive: true }),
+			writeFile(
+				canonicalRecipePath,
+				canonicalizeProceduralMannequinRecipe(recipe),
+			),
 		]);
 		const first = await runPass({
 			blender,
 			directory: firstDirectory,
 			execFileImpl,
-			recipePath,
+			recipePath: canonicalRecipePath,
 			templatePath,
 			workspaceRoot,
 		});
@@ -337,7 +344,7 @@ export async function compileProceduralMannequin({
 			blender,
 			directory: secondDirectory,
 			execFileImpl,
-			recipePath,
+			recipePath: canonicalRecipePath,
 			templatePath,
 			workspaceRoot,
 		});
@@ -417,7 +424,18 @@ export async function compileProceduralMannequin({
 				pass.report.geometry.topology.genus !== 0 ||
 				pass.report.geometry.topology.nonManifoldEdgeCount !== 0
 			) {
-				throw new Error("Generated topology failed the V1 connectivity gate.");
+				throw new Error(
+					`Generated topology failed the V2 connectivity gate: ${JSON.stringify(pass.report.geometry.topology)}`,
+				);
+			}
+			if (
+				hairComponent.definition &&
+				(pass.report.components?.hair?.fittingProfile?.version !== 2 ||
+					pass.report.components?.hair?.fitValidation?.passed !== true)
+			) {
+				throw new Error(
+					"Generated hairstyle failed its geometry-aware fit gate.",
+				);
 			}
 			if (
 				pass.report.skeleton.restSignature !==
@@ -451,6 +469,14 @@ export async function compileProceduralMannequin({
 			normalizedSemanticDeterministic:
 				firstValidation.semanticHash === secondValidation.semanticHash,
 			secondOutputHash: second.outputHash,
+			headContractDeterministic:
+				JSON.stringify(first.report.head) ===
+				JSON.stringify(second.report.head),
+			hairstyleFitDeterministic:
+				JSON.stringify(first.report.components?.hair?.derivedTransform) ===
+					JSON.stringify(second.report.components?.hair?.derivedTransform) &&
+				JSON.stringify(first.report.components?.hair?.fitValidation) ===
+					JSON.stringify(second.report.components?.hair?.fitValidation),
 			skeletonDeterministic:
 				firstValidation.skeletonSignature ===
 				secondValidation.skeletonSignature,
@@ -460,6 +486,8 @@ export async function compileProceduralMannequin({
 		};
 		if (
 			!determinism.nodeHierarchyDeterministic ||
+			!determinism.headContractDeterministic ||
+			!determinism.hairstyleFitDeterministic ||
 			!determinism.geometryAndSkinningDeterministic ||
 			!determinism.materialDeterministic ||
 			!determinism.normalizedSemanticDeterministic ||
@@ -517,6 +545,7 @@ export async function compileProceduralMannequin({
 				maxY: geometry.bounds.maximumY,
 				minY: geometry.bounds.minimumY,
 			},
+			head: first.report.head,
 			compilerHash: compilerSourceHash,
 			compilerVersion: PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 			components: {
@@ -530,7 +559,10 @@ export async function compileProceduralMannequin({
 							fittingProfile: hairComponent.definition.fittingProfile,
 							license: hairComponent.definition.license,
 							knownLimitations: hairComponent.definition.knownLimitations,
-							bounds: firstValidation.hair.bounds,
+							bounds: first.report.components.hair.bounds,
+							derivedTransform: first.report.components.hair.derivedTransform,
+							exportedBounds: firstValidation.hair.bounds,
+							fitValidation: first.report.components.hair.fitValidation,
 							materialCount: firstValidation.hair.materialCount,
 							materialNames: firstValidation.hair.materialNames,
 							meshCount: firstValidation.hair.meshCount,
@@ -539,6 +571,7 @@ export async function compileProceduralMannequin({
 							provider: hairComponent.definition.provider,
 							packName: hairComponent.definition.packName,
 							sourceAsset: hairComponent.definition.sourceAsset,
+							sourceBounds: first.report.components.hair.sourceBounds,
 							sourceFiles: hairComponent.definition.sourceFiles,
 							sourceTransform: hairComponent.definition.sourceTransform,
 							textureCount: firstValidation.hair.textureCount,

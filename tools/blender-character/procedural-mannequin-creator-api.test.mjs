@@ -36,7 +36,7 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 				authoredRoughness: recipe.appearance.skin.roughness,
 			},
 		},
-		compilerVersion: "procedural-mannequin-blender-v4",
+		compilerVersion: "procedural-mannequin-blender-v5",
 		components: { hair: { componentId: recipe.components.hair } },
 		deterministicBuild: true,
 		generationDurationMs: 12,
@@ -44,7 +44,7 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 		proportions: recipe.proportions,
 		outputHash,
 		recipeHash,
-		validationVersion: "procedural-mannequin-roundtrip-v5",
+		validationVersion: "procedural-mannequin-roundtrip-v6",
 	};
 	await mkdir(outputDirectory, { recursive: true });
 	await Promise.all([

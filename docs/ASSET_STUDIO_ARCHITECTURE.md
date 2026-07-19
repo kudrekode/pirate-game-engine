@@ -194,8 +194,11 @@ The current reference preview provides:
   validated non-metallic material, draft/compiled UI state, neutral presets,
   and separate geometry/skinning and material semantic hashes.
 - Hairstyle Slot V1: exactly `none` plus one provenance-backed Quaternius
-  Buzzed component, draft/compiled state, adaptive generated-head fitting,
+  Buzzed component, draft/compiled state, geometry-aware generated-scalp fitting,
   one-skin GLB compilation, and Recent Compilation restoration.
+- Procedural Head and Hair Fit V1: a symmetric stylised head, measured
+  head/scalp coordinate contract, V2 component fitting profile, geometry-aware
+  fit rejection, and deterministic seven-view Rest/Idle/Walk evidence.
 
 The repository now has one narrow procedural recipe compiler, one validated
 connected-topology mannequin, and a complete body/material/hairstyle authoring
@@ -307,12 +310,13 @@ crowd-budget default.
 
 ## Next Milestone
 
-Hairstyle Slot V1 is complete without changing the proven
-recipe/compile/Blender/validation/preview boundary. Evidence is documented in
-[`hairstyle-slot-v1.md`](assets/hairstyle-slot-v1.md). The recommended next
-creator milestone is Hairstyle Library V2: add a small set of additional
-provenance-backed styles through the same component registry and fit-profile
-contract before introducing headwear or clothing interactions.
+Procedural Head and Hair Fit V1 corrects the failed visual fit without changing
+the proven recipe/compile/Blender/validation/preview boundary. Evidence is
+documented in
+[`procedural-head-hair-fit-v1.md`](assets/procedural-head-hair-fit-v1.md). The
+recommended next creator milestone is a small face-feature pass so the corrected
+engineering head reads more clearly before Hairstyle Library V2 expands the
+same component registry and fit-profile contract.
 
 ## Future Deployment Models
 

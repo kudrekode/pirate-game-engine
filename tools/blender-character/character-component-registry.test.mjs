@@ -40,3 +40,18 @@ test("rejects unknown components and changed source hashes", async () => {
 		/Component source hash mismatch/u,
 	);
 });
+
+test("rejects unsupported or unsafe geometry-aware fitting profiles", async () => {
+	const wrongVersion = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	wrongVersion.components[0].fittingProfile.version = 1;
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: wrongVersion }),
+		/invalid fitting profile/u,
+	);
+	const unsafeScale = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	unsafeScale.components[0].fittingProfile.scaleLimits.width = [2, 1];
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: unsafeScale }),
+		/invalid width fit limits/u,
+	);
+});

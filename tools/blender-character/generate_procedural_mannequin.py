@@ -71,6 +71,21 @@ def rounded(values, digits=9):
     return [round(float(value), digits) for value in values]
 
 
+def vector_bounds(points):
+    minimum = Vector(tuple(min(point[index] for point in points) for index in range(3)))
+    maximum = Vector(tuple(max(point[index] for point in points) for index in range(3)))
+    return minimum, maximum
+
+
+def bounds_report(minimum, maximum):
+    return {
+        "centre": rounded((minimum + maximum) * 0.5),
+        "dimensions": rounded(maximum - minimum),
+        "maximum": rounded(maximum),
+        "minimum": rounded(minimum),
+    }
+
+
 def srgb_channel_to_linear(value):
     return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
 
@@ -158,7 +173,92 @@ def load_component_definition(args, recipe):
     return component
 
 
-def import_hair_component(args, recipe, armature, body_mesh_object):
+def nearest_distance(point, candidates):
+    return min((point - candidate).length for candidate in candidates)
+
+
+def validate_hair_fit(coordinates, head_contract, scalp_vertices, shoulder_vertices):
+    minimum, maximum = vector_bounds(coordinates)
+    centre = (minimum + maximum) * 0.5
+    head_bounds = head_contract["bounds"]
+    head_minimum = Vector(head_bounds["minimum"])
+    head_maximum = Vector(head_bounds["maximum"])
+    head_centre = Vector(head_bounds["centre"])
+    head_dimensions = Vector(head_bounds["dimensions"])
+    neck_top = head_contract["neckTop"][2]
+    scalp_top = head_contract["scalpTop"][2]
+    scalp_floor = head_centre.z + head_dimensions.z * 0.02
+    scalp_ceiling = scalp_top + head_dimensions.z * 0.12
+    scalp_distances = [nearest_distance(point, scalp_vertices) for point in coordinates]
+    shoulder_clearance = min(
+        (nearest_distance(point, shoulder_vertices) for point in coordinates),
+        default=1.0,
+    )
+    above_neck = sum(point.z >= neck_top for point in coordinates) / len(coordinates)
+    in_scalp_range = (
+        sum(scalp_floor <= point.z <= scalp_ceiling for point in coordinates)
+        / len(coordinates)
+    )
+    close_to_scalp = sum(distance <= 0.045 for distance in scalp_distances) / len(
+        scalp_distances
+    )
+    width_ratio = (maximum.x - minimum.x) / head_dimensions.x
+    depth_ratio = (maximum.y - minimum.y) / head_dimensions.y
+    centre_offset = centre - head_centre
+    front_gap = head_maximum.y - maximum.y
+    rear_gap = minimum.y - head_minimum.y
+    checks = {
+        # A buzzed cap may retain a small nape fringe, but at least 90% of its
+        # vertices must remain above the measured neck-top plane.
+        "aboveNeck": above_neck >= 0.9,
+        "centred": abs(centre_offset.x) <= max(0.008, head_dimensions.x * 0.04),
+        "closeToScalp": close_to_scalp >= 0.12,
+        "depthCoverage": 0.82 <= depth_ratio <= 1.12,
+        "frontCoverage": front_gap <= head_dimensions.y * 0.16,
+        "rearCoverage": rear_gap <= head_dimensions.y * 0.16,
+        "scalpVerticalRange": in_scalp_range >= 0.68,
+        "shoulderClearance": shoulder_clearance >= 0.025,
+        "verticalCentre": centre.z >= head_centre.z,
+        "widthCoverage": 0.86 <= width_ratio <= 1.08,
+    }
+    passed = all(checks.values())
+    return {
+        "checks": checks,
+        "metrics": {
+            "centreOffset": rounded(centre_offset),
+            "closeToScalpRatio": round(close_to_scalp, 6),
+            "depthRatio": round(depth_ratio, 6),
+            "frontGapMetres": round(front_gap, 9),
+            "maximumScalpDistanceMetres": round(max(scalp_distances), 9),
+            "minimumScalpDistanceMetres": round(min(scalp_distances), 9),
+            "rearGapMetres": round(rear_gap, 9),
+            "scalpVerticalRangeRatio": round(in_scalp_range, 6),
+            "shoulderClearanceMetres": round(shoulder_clearance, 9),
+            "verticesAboveNeckRatio": round(above_neck, 6),
+            "widthRatio": round(width_ratio, 6),
+        },
+        "passed": passed,
+        "thresholds": {
+            "minimumCloseToScalpRatio": 0.12,
+            "minimumScalpVerticalRangeRatio": 0.68,
+            "minimumShoulderClearanceMetres": 0.025,
+            "minimumVerticesAboveNeckRatio": 0.9,
+        },
+        "warnings": [] if passed else [
+            name for name, value in checks.items() if not value
+        ],
+    }
+
+
+def import_hair_component(
+    args,
+    recipe,
+    armature,
+    body_mesh_object,
+    head_contract,
+    scalp_vertices,
+    shoulder_vertices,
+):
     component = load_component_definition(args, recipe)
     if component is None:
         return {
@@ -216,17 +316,8 @@ def import_hair_component(args, recipe, armature, body_mesh_object):
 
     profile = component["fittingProfile"]
     transform = component["normalizedTransform"]
-    translation = Vector(transform["translationMetres"])
-    height_delta = recipe["proportions"]["height"] - profile["baseHeightMetres"]
-    translation.z += (
-        profile["heightCompensationMetresPerMetre"] * height_delta
-        + profile["heightCompensationQuadraticMetres"] * height_delta * height_delta
-        + profile["torsoLengthCompensationMetres"]
-        * (recipe["proportions"]["torsoLength"] - 0.5)
-        + profile["legLengthCompensationMetres"]
-        * (recipe["proportions"]["legLength"] - 0.5)
-    )
-    scale = Vector(transform["scale"])
+    correction_translation = Vector(transform["translationMetres"])
+    correction_scale = Vector(transform["scale"])
     rotation = Euler(
         tuple(math.radians(value) for value in transform["rotationDegrees"]),
         "XYZ",
@@ -263,25 +354,51 @@ def import_hair_component(args, recipe, armature, body_mesh_object):
         )
     if not any(name == component["expectedAttachmentBone"] for name, _ in crown_weights):
         raise RuntimeError("Generated crown weights do not include Head.")
-    target_minimum = Vector(
-        tuple(min(entry[0][index] for entry in head_vertices) for index in range(3))
-    )
-    target_maximum = Vector(
-        tuple(max(entry[0][index] for entry in head_vertices) for index in range(3))
-    )
     source_centre = (source_minimum + source_maximum) * 0.5
-    target_centre = (target_minimum + target_maximum) * 0.5
-    body_crown_z = max(
-        (body_mesh_object.matrix_world @ vertex.co).z
-        for vertex in body_mesh_object.data.vertices
-    )
+    head_bounds = head_contract["bounds"]
+    target_minimum = Vector(head_bounds["minimum"])
+    target_maximum = Vector(head_bounds["maximum"])
+    target_centre = Vector(head_bounds["centre"])
+    source_dimensions = source_maximum - source_minimum
+    target_dimensions = target_maximum - target_minimum
+    coverage = profile["coverageRatios"]
+    scale_limits = profile["scaleLimits"]
     fit_scale = Vector(
         (
-            (target_maximum.x - target_minimum.x)
-            / (source_maximum.x - source_minimum.x),
-            (target_maximum.y - target_minimum.y)
-            / (source_maximum.y - source_minimum.y),
-            1.0,
+            max(
+                scale_limits["width"][0],
+                min(
+                    scale_limits["width"][1],
+                    target_dimensions.x * coverage["width"] / source_dimensions.x,
+                ),
+            ),
+            max(
+                scale_limits["depth"][0],
+                min(
+                    scale_limits["depth"][1],
+                    target_dimensions.y * coverage["depth"] / source_dimensions.y,
+                ),
+            ),
+            max(
+                scale_limits["height"][0],
+                min(
+                    scale_limits["height"][1],
+                    (target_dimensions.x / source_dimensions.x)
+                    * coverage["heightFromWidth"],
+                ),
+            ),
+        )
+    )
+    fit_scale.x *= correction_scale.x
+    fit_scale.y *= correction_scale.y
+    fit_scale.z *= correction_scale.z
+    fitted_centre = Vector(
+        (
+            target_centre.x,
+            (target_minimum.y + target_maximum.y) * 0.5
+            + profile["frontOffsetMetres"]
+            - profile["rearOffsetMetres"],
+            head_contract["scalpTop"][2] + profile["verticalSeatingOffsetMetres"],
         )
     )
     for vertex in hair.data.vertices:
@@ -289,19 +406,12 @@ def import_hair_component(args, recipe, armature, body_mesh_object):
         offset = source_position - source_centre
         scaled = Vector(
             (
-                offset.x * fit_scale.x * scale.x,
-                offset.y * fit_scale.y * scale.y,
-                (source_position.z - source_maximum.z) * scale.z,
+                offset.x * fit_scale.x,
+                offset.y * fit_scale.y,
+                (source_position.z - source_maximum.z) * fit_scale.z,
             )
         )
-        fitted = Vector(
-            (
-                target_centre.x,
-                target_centre.y,
-                body_crown_z + profile["scalpOffsetMetres"],
-            )
-        )
-        vertex.co = fitted + rotation @ scaled + translation
+        vertex.co = fitted_centre + rotation @ scaled + correction_translation
     hair.matrix_world = Matrix.Identity(4)
     hair.data.update()
     hair.name = "Hair_quaternius_hair_v0"
@@ -314,24 +424,34 @@ def import_hair_component(args, recipe, armature, body_mesh_object):
         group.add(list(range(len(hair.data.vertices))), weight, "REPLACE")
 
     coordinates = [hair.matrix_world @ vertex.co for vertex in hair.data.vertices]
+    fitted_minimum, fitted_maximum = vector_bounds(coordinates)
+    fit_validation = validate_hair_fit(
+        coordinates, head_contract, scalp_vertices, shoulder_vertices
+    )
+    if not fit_validation["passed"]:
+        raise RuntimeError(
+            "Geometry-aware hairstyle fit failed: "
+            + json.dumps(fit_validation, sort_keys=True)
+        )
     triangle_count = sum(len(polygon.vertices) - 2 for polygon in hair.data.polygons)
     report = {
         "attachmentBone": component["expectedAttachmentBone"],
         "attachmentStrategy": component["attachmentStrategy"],
-        "bounds": {
-            "maximum": rounded(
-                [max(vertex[index] for vertex in coordinates) for index in range(3)]
-            ),
-            "minimum": rounded(
-                [min(vertex[index] for vertex in coordinates) for index in range(3)]
-            ),
-        },
+        "bounds": bounds_report(fitted_minimum, fitted_maximum),
         "componentId": component["id"],
+        "derivedTransform": {
+            "fittedCrown": rounded(fitted_centre),
+            "rotationDegrees": transform["rotationDegrees"],
+            "scale": rounded(fit_scale),
+            "translationMetres": rounded(correction_translation),
+        },
+        "fitValidation": fit_validation,
         "fittingProfile": profile,
         "materialCount": len(materials),
         "materials": [material.name for material in materials],
         "meshCount": 1,
         "objectName": hair.name,
+        "sourceBounds": bounds_report(source_minimum, source_maximum),
         "textureNames": imported_images,
         "triangleCount": triangle_count,
         "vertexCount": len(hair.data.vertices),
@@ -614,6 +734,80 @@ def assign_analytic_weights(mesh_object, weight_segments):
     }
 
 
+def measure_head_contract(mesh_object, anchors, measurements, topology_version):
+    head_bone = anchors["head"]
+    neck_bone = anchors["neck"]
+    neck_top = head_bone.z - measurements["neckRadius"] * 0.72
+    head_vertices = [
+        mesh_object.matrix_world @ vertex.co
+        for vertex in mesh_object.data.vertices
+        if vertex.co.z >= head_bone.z - 0.15
+        and abs(vertex.co.x - head_bone.x) <= measurements["headHalfWidth"] * 1.45
+        and abs(vertex.co.y - head_bone.y) <= measurements["headDepth"] * 1.55
+    ]
+    if len(head_vertices) < 24:
+        raise RuntimeError("Generated head contract has too few geometry samples.")
+    minimum, maximum = vector_bounds(head_vertices)
+    centre = (minimum + maximum) * 0.5
+    dimensions = maximum - minimum
+    scalp_floor = centre.z + dimensions.z * 0.05
+    scalp_vertices = [point for point in head_vertices if point.z >= scalp_floor]
+    shoulder_vertices = [
+        mesh_object.matrix_world @ vertex.co
+        for vertex in mesh_object.data.vertices
+        if vertex.co.z >= neck_bone.z - 0.1
+        and vertex.co.z <= maximum.z
+        and abs(vertex.co.x) >= measurements["headHalfWidth"] * 1.35
+    ]
+    if len(scalp_vertices) < 12:
+        raise RuntimeError("Generated scalp contract has too few geometry samples.")
+    scalp_minimum, scalp_maximum = vector_bounds(scalp_vertices)
+    symmetry_error = abs(abs(minimum.x - centre.x) - abs(maximum.x - centre.x))
+    neck_connection_vertices = sum(
+        abs(point.z - neck_top) <= measurements["voxelSizeMetres"] * 1.5
+        and math.hypot(point.x - head_bone.x, point.y - head_bone.y)
+        <= measurements["neckRadius"] * 1.8
+        for point in head_vertices
+    )
+    if symmetry_error > measurements["voxelSizeMetres"] * 0.55:
+        raise RuntimeError(
+            f"Generated head symmetry error {symmetry_error:.6f} exceeds tolerance."
+        )
+    if neck_connection_vertices < 3:
+        raise RuntimeError("Generated head does not have a stable neck connection slice.")
+    contract = {
+        "axes": {
+            "forward": [0.0, 1.0, 0.0],
+            "right": [1.0, 0.0, 0.0],
+            "up": [0.0, 0.0, 1.0],
+        },
+        "bounds": bounds_report(minimum, maximum),
+        "coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+        "foreheadReference": rounded(
+            [centre.x, maximum.y, centre.z + dimensions.z * 0.16]
+        ),
+        "headBonePosition": rounded(head_bone),
+        "headCentre": rounded(centre),
+        "headDepth": round(dimensions.y, 9),
+        "headHeight": round(dimensions.z, 9),
+        "headWidth": round(dimensions.x, 9),
+        "neckConnectionVertexCount": neck_connection_vertices,
+        "neckTop": rounded([head_bone.x, head_bone.y, neck_top]),
+        "rearCraniumReference": rounded(
+            [centre.x, minimum.y, centre.z + dimensions.z * 0.22]
+        ),
+        "scalpBack": rounded([centre.x, scalp_minimum.y, centre.z]),
+        "scalpBounds": bounds_report(scalp_minimum, scalp_maximum),
+        "scalpFront": rounded([centre.x, scalp_maximum.y, centre.z]),
+        "scalpLeft": rounded([scalp_minimum.x, centre.y, centre.z]),
+        "scalpRight": rounded([scalp_maximum.x, centre.y, centre.z]),
+        "scalpTop": rounded([centre.x, centre.y, scalp_maximum.z]),
+        "symmetryErrorMetres": round(symmetry_error, 9),
+        "topologyVersion": topology_version,
+    }
+    return contract, scalp_vertices, shoulder_vertices
+
+
 def create_geometry(armature, recipe):
     builder = MeshBuilder(recipe["geometry"]["radialSegments"])
     head = lambda name: bone_head(armature, name)
@@ -642,8 +836,8 @@ def create_geometry(armature, recipe):
         "forearmRadius": 0.064,
         "handDepth": 0.035,
         "handHalfWidth": 0.064,
-        "headDepth": 0.108,
-        "headHalfWidth": 0.118,
+        "headDepth": 0.112,
+        "headHalfWidth": 0.12,
         "hipJointRadius": 0.105 * anatomy["hipWidthMultiplier"],
         "kneeRadius": 0.068 * anatomy["hipWidthMultiplier"],
         "neckRadius": 0.064,
@@ -651,7 +845,7 @@ def create_geometry(armature, recipe):
         "pelvisHalfWidth": 0.195 * anatomy["hipWidthMultiplier"],
         "shoulderJointRadius": 0.08,
         "thighRadius": 0.082 * anatomy["hipWidthMultiplier"],
-        "topologyVersion": "procedural-humanoid-v1",
+        "topologyVersion": recipe["geometry"]["topologyVersion"],
         "upperArmRadius": 0.076 * (0.96 + anatomy["shoulderWidthMultiplier"] * 0.04),
         "voxelSizeMetres": 0.035,
         "waistDepth": 0.112,
@@ -691,7 +885,46 @@ def create_geometry(armature, recipe):
     builder.add_ellipsoid("TorsoMiddle", "spine_02", torso_heads["spine_02"], torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.12, 0.122)
     builder.add_ellipsoid("TorsoUpper", "spine_03", torso_heads["spine_03"], torso_heads["neck_01"], measurements["chestHalfWidth"], measurements["chestDepth"])
     builder.add_ellipsoid("Neck", "neck_01", torso_heads["neck_01"], torso_heads["Head"], measurements["neckRadius"], measurements["neckRadius"] * 0.9)
-    builder.add_ellipsoid("Head", "Head", torso_heads["Head"], transformed_head_tail, measurements["headHalfWidth"], measurements["headDepth"])
+    # Procedural Head V1 deliberately keeps the canonical Head/Neck bones but
+    # replaces the short pill-shaped source with overlapping stylised volumes.
+    # +Y is the stable face direction in Blender and exports as engine -Z.
+    head_anchor = torso_heads["Head"]
+    builder.add_sphere(
+        "HeadCranium",
+        head_anchor + Vector((0.0, -0.012, 0.025)),
+        measurements["headHalfWidth"],
+        measurements["headDepth"],
+        0.105,
+    )
+    builder.add_sphere(
+        "HeadRearCranium",
+        head_anchor + Vector((0.0, -0.052, 0.018)),
+        measurements["headHalfWidth"] * 0.91,
+        measurements["headDepth"] * 0.78,
+        0.092,
+    )
+    builder.add_sphere(
+        "HeadFaceJaw",
+        head_anchor + Vector((0.0, 0.034, -0.052)),
+        measurements["headHalfWidth"] * 0.78,
+        measurements["headDepth"] * 0.78,
+        0.082,
+    )
+    builder.add_sphere(
+        "HeadChin",
+        head_anchor + Vector((0.0, 0.048, -0.112)),
+        measurements["headHalfWidth"] * 0.48,
+        measurements["headDepth"] * 0.5,
+        0.045,
+    )
+    builder.add_box(
+        "HeadFacePlane",
+        "Head",
+        head_anchor + Vector((0.0, measurements["headDepth"] * 0.86, -0.075)),
+        head_anchor + Vector((0.0, measurements["headDepth"] * 0.9, 0.042)),
+        measurements["headHalfWidth"] * 0.62,
+        0.012,
+    )
     builder.add_sphere("TorsoPelvisTransition", torso_heads["spine_01"], measurements["waistHalfWidth"], measurements["waistDepth"], 0.11)
     builder.add_sphere("WaistTransition", torso_heads["spine_02"], measurements["waistHalfWidth"] * 1.06, measurements["waistDepth"], 0.11)
     builder.add_sphere("ChestTransition", torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.16, 0.122, 0.12)
@@ -878,7 +1111,23 @@ def create_geometry(armature, recipe):
     )
 
     topology = mesh_topology_statistics(mesh)
-    return mesh_object, builder, anatomy, measurements, skinning, topology
+    head_contract, scalp_vertices, shoulder_vertices = measure_head_contract(
+        mesh_object,
+        {"head": torso_heads["Head"], "neck": torso_heads["neck_01"]},
+        measurements,
+        recipe["geometry"]["topologyVersion"],
+    )
+    return (
+        mesh_object,
+        builder,
+        anatomy,
+        measurements,
+        skinning,
+        topology,
+        head_contract,
+        scalp_vertices,
+        shoulder_vertices,
+    )
 
 
 def skeleton_rest_signature(armature):
@@ -908,14 +1157,30 @@ def compile_mannequin(args, recipe):
     armature.data.name = "ProceduralMannequinArmature"
     armature.animation_data_clear()
 
-    mesh_object, builder, anatomy, measurements, skinning, topology = create_geometry(armature, recipe)
+    (
+        mesh_object,
+        builder,
+        anatomy,
+        measurements,
+        skinning,
+        topology,
+        head_contract,
+        scalp_vertices,
+        shoulder_vertices,
+    ) = create_geometry(armature, recipe)
     local_min_z = min(vertex.co.z for vertex in mesh_object.data.vertices)
     local_max_z = max(vertex.co.z for vertex in mesh_object.data.vertices)
     unscaled_height = local_max_z - local_min_z
     target_height = recipe["proportions"]["height"]
     scale = target_height / unscaled_height
     hair_report, hair_object = import_hair_component(
-        args, recipe, armature, mesh_object
+        args,
+        recipe,
+        armature,
+        mesh_object,
+        head_contract,
+        scalp_vertices,
+        shoulder_vertices,
     )
     root = bpy.data.objects.new("ProceduralMannequinRoot", None)
     bpy.context.collection.objects.link(root)
@@ -976,6 +1241,7 @@ def compile_mannequin(args, recipe):
             "triangleCount": triangle_count,
             "vertexCount": len(mesh_object.data.vertices),
         },
+        "head": head_contract,
         "material": {
             "authoredColor": recipe["appearance"]["skin"]["color"],
             "canonicalLinearColor": rounded(
@@ -1004,17 +1270,17 @@ def compile_mannequin(args, recipe):
         "skinning": skinning,
         "templateHash": sha256(args.template),
         "warnings": [
-            "Topology V1 uses a controlled voxel union and analytic segment weights.",
+            "Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
             "Finger bones remain present for animation compatibility but the generated hands have no fingers.",
             "The Golden skeleton is a compatibility template, not the future canonical generated rig.",
-			*(
-				[]
-				if hair_report["componentId"] == "none"
-				else [
-					"Hairstyle Slot V1 reuses the generated Head-led body-surface blend and has no secondary motion.",
-					"The vendor-authored hair material is fixed; hair colour authoring is not implemented.",
-				]
-			),
+            *(
+                []
+                if hair_report["componentId"] == "none"
+                else [
+                    "Hairstyle Fit V2 reuses the generated Head-led body-surface blend and has no secondary motion.",
+                    "The vendor-authored hair material is fixed; hair colour authoring is not implemented.",
+                ]
+            ),
         ],
     }
     report_path = Path(args.report)

@@ -63,6 +63,14 @@ exported topology checks, the unchanged Golden rest signature, and a 21-body
 extrema/seed/challenge matrix. See
 [`docs/assets/generated-body-topology-v1.md`](docs/assets/generated-body-topology-v1.md).
 
+Procedural Head and Hair Fit V1 advances new builds to
+`procedural-humanoid-v2`, replaces the crude head pill with a symmetric
+stylised cranium/jaw/chin/face-plane volume, and fits Quaternius Buzzed from
+measured scalp/source geometry through `quaternius-buzzed-fit-v2`. Compiler
+diagnostics now record the head/scalp contract, derived transform, fit metrics,
+and warnings. See
+[`docs/assets/procedural-head-hair-fit-v1.md`](docs/assets/procedural-head-hair-fit-v1.md).
+
 Asset Studio now has its first complete creator loop. Editing height and pressing
 Compile submits the existing CharacterRecipe height to a local development
 endpoint, runs the real two-pass Blender compiler and validation pipeline, and

@@ -45,7 +45,7 @@ function successfulCompile(
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v4",
+			compilerVersion: "procedural-mannequin-blender-v5",
 			components: {
 				hair: {
 					attachmentBone: hair === "none" ? null : "Head",
@@ -54,9 +54,9 @@ function successfulCompile(
 						hair === "none"
 							? undefined
 							: {
-									id: "quaternius-buzzed-fit-v1",
-									scalpOffsetMetres: 0.01,
-									version: 1,
+									id: "quaternius-buzzed-fit-v2",
+									scalpOffsetMetres: 0.012,
+									version: 2,
 								},
 					materialCount: hair === "none" ? 0 : 1,
 					meshCount: hair === "none" ? 0 : 1,
@@ -102,17 +102,17 @@ function successfulCompile(
 				boundaryEdgeCount: 0,
 				connectedComponentCount: 1,
 				degenerateFaceCount: 0,
-				edgeCount: 8166,
+				edgeCount: 8274,
 				eulerCharacteristic: 2,
-				faceCount: 5444,
+				faceCount: 5516,
 				genus: 0,
 				manifold: true,
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v1",
-			triangleCount: 5444,
-			validationVersion: "procedural-mannequin-roundtrip-v5",
+			topologyVersion: "procedural-humanoid-v2",
+			triangleCount: 5516,
+			validationVersion: "procedural-mannequin-roundtrip-v6",
 			vertexCount: 2724,
 		},
 		manifestUrl:
@@ -121,7 +121,7 @@ function successfulCompile(
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v5",
+			version: "procedural-mannequin-roundtrip-v6",
 		},
 	};
 }
@@ -277,7 +277,7 @@ describe("Asset Studio app", () => {
 
 	it("compiles the current height and replaces the preview only after success", async () => {
 		const fetch = vi.fn(
-			async () =>
+			async (_input: RequestInfo | URL, _init?: RequestInit) =>
 				new Response(
 					JSON.stringify(successfulCompile(1.9, "quaternius-hair-v0")),
 					{ status: 200 },

@@ -149,7 +149,23 @@ type RecentCompilation = {
 	source: PreviewSource;
 };
 type PreviewAnimationState = "idle" | "rest" | "walk";
-type PreviewCameraPreset = "front" | "side" | "three-quarter";
+type PreviewCameraPreset =
+	| "back"
+	| "front"
+	| "right-side"
+	| "scalp"
+	| "side"
+	| "three-quarter"
+	| "three-quarter-rear";
+const PREVIEW_CAMERA_LABELS: Record<PreviewCameraPreset, string> = {
+	back: "Back",
+	front: "Front",
+	"right-side": "Right side",
+	scalp: "Scalp",
+	side: "Side",
+	"three-quarter": "Three-quarter",
+	"three-quarter-rear": "Three-quarter rear",
+};
 type RetargetQualitySummary = {
 	finiteTransforms: boolean;
 	maxBoneLengthRelativeError: number;
@@ -534,15 +550,33 @@ function HumanoidPreview({
 			setCameraPresetRef.current = (preset) => {
 				const target = new THREE.Vector3(
 					center.x,
-					Math.max(center.y, 0.8),
+					preset === "scalp"
+						? bounds.max.y - radius * 0.08
+						: Math.max(center.y, 0.8),
 					center.z,
 				);
-				const offset =
-					preset === "front"
-						? new THREE.Vector3(0, radius * 0.08, -radius * 2.45)
-						: preset === "side"
-							? new THREE.Vector3(radius * 2.45, radius * 0.08, 0)
-							: new THREE.Vector3(radius * 1.7, radius * 0.28, -radius * 1.7);
+				const offsets: Record<PreviewCameraPreset, THREE.Vector3> = {
+					back: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
+					front: new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
+					"right-side": new THREE.Vector3(-radius * 2.45, radius * 0.08, 0),
+					scalp: new THREE.Vector3(
+						radius * 0.72,
+						radius * 0.82,
+						-radius * 0.72,
+					),
+					side: new THREE.Vector3(radius * 2.45, radius * 0.08, 0),
+					"three-quarter": new THREE.Vector3(
+						radius * 1.7,
+						radius * 0.28,
+						-radius * 1.7,
+					),
+					"three-quarter-rear": new THREE.Vector3(
+						radius * 1.7,
+						radius * 0.28,
+						radius * 1.7,
+					),
+				};
+				const offset = offsets[preset];
 				const damping = controls.enableDamping;
 				controls.enableDamping = false;
 				camera.position.copy(target).add(offset);
@@ -698,6 +732,15 @@ function HumanoidPreview({
 						manifest.components?.hair?.componentId ?? "none";
 					host.dataset.hairAttachment =
 						manifest.components?.hair?.attachmentBone ?? "none";
+					host.dataset.hairFitProfile =
+						manifest.components?.hair?.fittingProfile?.id ?? "none";
+					host.dataset.hairFitStatus = String(
+						manifest.components?.hair?.fitValidation?.passed ??
+							manifest.components?.hair?.componentId === "none",
+					);
+					host.dataset.headContract = manifest.head
+						? JSON.stringify(manifest.head)
+						: "legacy";
 					host.dataset.topologyVersion =
 						manifest.topologyVersion ?? "legacy-primitive-v0";
 					host.dataset.topologyComponents = String(
@@ -760,7 +803,17 @@ function HumanoidPreview({
 		>
 			<canvas aria-label={`${source.displayName} preview`} ref={canvasRef} />
 			<fieldset className="preview-controls" aria-label="3D preview controls">
-				{(["front", "side", "three-quarter"] as const).map((preset) => (
+				{(
+					[
+						"front",
+						"side",
+						"right-side",
+						"three-quarter",
+						"three-quarter-rear",
+						"back",
+						"scalp",
+					] as const
+				).map((preset) => (
 					<button
 						aria-pressed={cameraPreset === preset}
 						disabled={!canResetView}
@@ -771,7 +824,7 @@ function HumanoidPreview({
 						}}
 						type="button"
 					>
-						{preset[0].toUpperCase() + preset.slice(1)}
+						{PREVIEW_CAMERA_LABELS[preset]}
 					</button>
 				))}
 				<button
@@ -1659,7 +1712,48 @@ export default function App() {
 									</div>
 									<div>
 										<dt>Fit profile</dt>
-										<dd>{QUATERNIUS_HAIR_COMPONENT?.fittingProfile.id}</dd>
+										<dd>
+											{activeManifest?.components.hair.fittingProfile?.id ??
+												QUATERNIUS_HAIR_COMPONENT?.fittingProfile.id}
+										</dd>
+									</div>
+									<div>
+										<dt>Source bounds</dt>
+										<dd>
+											{activeManifest?.components.hair.sourceBounds
+												? activeManifest.components.hair.sourceBounds.dimensions
+														.map((value) => value.toFixed(3))
+														.join(" × ")
+												: "Compile to inspect"}
+										</dd>
+									</div>
+									<div>
+										<dt>Fitted bounds</dt>
+										<dd>
+											{activeManifest?.components.hair.bounds
+												? activeManifest.components.hair.bounds.dimensions
+														.map((value) => value.toFixed(3))
+														.join(" × ")
+												: "Compile to inspect"}
+										</dd>
+									</div>
+									<div>
+										<dt>Derived fit transform</dt>
+										<dd>
+											{activeManifest?.components.hair.derivedTransform
+												? `Scale ${activeManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${activeManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
+												: "Compile to inspect"}
+										</dd>
+									</div>
+									<div>
+										<dt>Fit validation</dt>
+										<dd>
+											{activeManifest?.components.hair.fitValidation
+												? activeManifest.components.hair.fitValidation.passed
+													? "Pass"
+													: `Warnings: ${activeManifest.components.hair.fitValidation.warnings.join(", ")}`
+												: "Compile to inspect"}
+										</dd>
 									</div>
 									<div>
 										<dt>Compiled geometry</dt>
@@ -1752,6 +1846,22 @@ export default function App() {
 								<div>
 									<dt>Compiler version</dt>
 									<dd>{activeManifest?.compilerVersion ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Head dimensions</dt>
+									<dd>
+										{activeManifest?.head
+											? `${activeManifest.head.headWidth.toFixed(3)} × ${activeManifest.head.headHeight.toFixed(3)} × ${activeManifest.head.headDepth.toFixed(3)} m`
+											: "—"}
+									</dd>
+								</div>
+								<div>
+									<dt>Scalp anchors</dt>
+									<dd>
+										{activeManifest?.head
+											? `Top ${activeManifest.head.scalpTop[2].toFixed(3)} m · neck ${activeManifest.head.neckTop[2].toFixed(3)} m`
+											: "—"}
+									</dd>
 								</div>
 								<div>
 									<dt>Compiled skin material</dt>

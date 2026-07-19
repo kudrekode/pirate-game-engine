@@ -1,5 +1,9 @@
 # Generated Body Topology V1
 
+> Historical topology milestone. Procedural Head V1 advances newly compiled
+> bodies to `procedural-humanoid-v2` while preserving V1 recipe migration. See
+> [Procedural Head and Hair Fit V1](procedural-head-hair-fit-v1.md).
+
 ## Result
 
 Generated Body Topology V1 replaces the disconnected primitive mannequin body

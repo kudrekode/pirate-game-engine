@@ -1,5 +1,10 @@
 # Hairstyle Slot V1
 
+> Historical V1 record. The fixed calibrated fit described here was rejected
+> after visual inspection and is superseded by
+> [Procedural Head and Hair Fit V1](procedural-head-hair-fit-v1.md). Existing V1
+> artifacts retain `quaternius-buzzed-fit-v1`; corrected builds use V2 metadata.
+
 Hairstyle Slot V1 adds one real compiled character component to the procedural
 humanoid creator. The authored choice is exactly `none` or
 `quaternius-hair-v0`; selecting hair changes recipe state only, and Compile

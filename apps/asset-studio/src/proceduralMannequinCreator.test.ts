@@ -58,7 +58,7 @@ function successfulPayload(
 				shoulderWidthMultiplier: 1,
 				torsoLengthMultiplier: 1,
 			},
-			compilerVersion: "procedural-mannequin-blender-v4",
+			compilerVersion: "procedural-mannequin-blender-v5",
 			components: {
 				hair: {
 					attachmentBone: hair === "none" ? null : "Head",
@@ -97,17 +97,17 @@ function successfulPayload(
 				boundaryEdgeCount: 0,
 				connectedComponentCount: 1,
 				degenerateFaceCount: 0,
-				edgeCount: 8166,
+				edgeCount: 8274,
 				eulerCharacteristic: 2,
-				faceCount: 5444,
+				faceCount: 5516,
 				genus: 0,
 				manifold: true,
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v1",
-			triangleCount: 5444,
-			validationVersion: "procedural-mannequin-roundtrip-v5",
+			topologyVersion: "procedural-humanoid-v2",
+			triangleCount: 5516,
+			validationVersion: "procedural-mannequin-roundtrip-v6",
 			vertexCount: 2724,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
@@ -115,7 +115,7 @@ function successfulPayload(
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v5",
+			version: "procedural-mannequin-roundtrip-v6",
 		},
 	};
 }

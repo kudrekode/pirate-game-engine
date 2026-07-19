@@ -115,16 +115,31 @@ export type CharacterComponentRegistryEntry = CharacterComponentDefinition & {
 	sourceTransform: CharacterComponentTransform;
 	normalizedTransform: CharacterComponentTransform;
 	fittingProfile: {
-		baseHeightMetres?: number;
-		heightCompensationMetresPerMetre?: number;
-		heightCompensationQuadraticMetres?: number;
-		legLengthCompensationMetres?: number;
-		torsoLengthCompensationMetres?: number;
+		allowNonUniformScaling: boolean;
+		attachmentBone: "Head";
+		coverageRatios: {
+			depth: number;
+			heightFromWidth: number;
+			width: number;
+		};
+		frontOffsetMetres: number;
 		id: string;
-		mode?: "generated-head-bounds";
-		version: number;
-		pivotMetres: [number, number, number];
+		mode: "geometry-aware-scalp";
+		rearOffsetMetres: number;
+		scaleLimits: {
+			depth: [number, number];
+			height: [number, number];
+			width: [number, number];
+		};
 		scalpOffsetMetres: number;
+		sourceReferenceFrame: {
+			centreMode: "bounds-centre";
+			crownMode: "maximum-z";
+			forwardAxis: "+Y";
+			upAxis: "+Z";
+		};
+		version: 2;
+		verticalSeatingOffsetMetres: number;
 	};
 	material: { name: string; textures: string[] };
 	compilerCompatibilityVersion: string;

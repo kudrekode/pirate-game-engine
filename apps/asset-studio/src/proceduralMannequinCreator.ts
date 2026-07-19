@@ -8,7 +8,7 @@ import {
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v2";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
 export const PROCEDURAL_SKIN_APPEARANCE = {
@@ -95,6 +95,22 @@ export type ProceduralMannequinManifest = {
 		minY: number;
 	};
 	compilerVersion: string;
+	head?: {
+		bounds: {
+			centre: [number, number, number];
+			dimensions: [number, number, number];
+			maximum: [number, number, number];
+			minimum: [number, number, number];
+		};
+		headCentre: [number, number, number];
+		headDepth: number;
+		headHeight: number;
+		headWidth: number;
+		neckTop: [number, number, number];
+		scalpTop: [number, number, number];
+		symmetryErrorMetres: number;
+		topologyVersion: string;
+	};
 	components: {
 		hair: {
 			attachmentBone: "Head" | null;
@@ -104,6 +120,22 @@ export type ProceduralMannequinManifest = {
 				version: number;
 				scalpOffsetMetres: number;
 			};
+			bounds?: {
+				centre: [number, number, number];
+				dimensions: [number, number, number];
+				maximum: [number, number, number];
+				minimum: [number, number, number];
+			};
+			derivedTransform?: {
+				fittedCrown: [number, number, number];
+				rotationDegrees: [number, number, number];
+				scale: [number, number, number];
+				translationMetres: [number, number, number];
+			};
+			fitValidation?: {
+				passed: boolean;
+				warnings: string[];
+			};
 			materialCount: number;
 			materialNames?: string[];
 			meshCount: number;
@@ -111,6 +143,12 @@ export type ProceduralMannequinManifest = {
 			provider?: string;
 			packName?: string;
 			sourceAsset?: string;
+			sourceBounds?: {
+				centre: [number, number, number];
+				dimensions: [number, number, number];
+				maximum: [number, number, number];
+				minimum: [number, number, number];
+			};
 			textureCount: number;
 			textureNames?: string[];
 			triangleCount: number;

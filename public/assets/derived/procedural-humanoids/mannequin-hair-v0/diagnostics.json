@@ -20,32 +20,96 @@
 			"buildHash": "fbe6228777e7",
 			"version": "5.2.0 LTS"
 		},
-		"compilerVersion": "procedural-mannequin-blender-v4",
+		"compilerVersion": "procedural-mannequin-blender-v5",
 		"components": {
 			"hair": {
 				"attachmentBone": "Head",
 				"attachmentStrategy": "main-skeleton-head-surface-skinning",
 				"bounds": {
-					"maximum": [0.106396317, 0.099909827, 1.576939702],
-					"minimum": [-0.106396332, -0.078457668, 1.407575488]
+					"centre": [0, 0.028381154, 1.633749247],
+					"dimensions": [0.324640006, 0.288123578, 0.208912611],
+					"maximum": [0.162320003, 0.172442943, 1.738205552],
+					"minimum": [-0.162320003, -0.115680635, 1.529292941]
 				},
 				"componentId": "quaternius-hair-v0",
+				"derivedTransform": {
+					"fittedCrown": [7e-9, 0.028381154, 1.738205552],
+					"rotationDegrees": [0, 0, 0],
+					"scale": [2.099999905, 1.509102583, 1.233511209],
+					"translationMetres": [0, 0, 0]
+				},
+				"fitValidation": {
+					"checks": {
+						"aboveNeck": true,
+						"centred": true,
+						"closeToScalp": true,
+						"depthCoverage": true,
+						"frontCoverage": true,
+						"rearCoverage": true,
+						"scalpVerticalRange": true,
+						"shoulderClearance": true,
+						"verticalCentre": true,
+						"widthCoverage": true
+					},
+					"metrics": {
+						"centreOffset": [-7e-9, 0.002, 0.045633316],
+						"closeToScalpRatio": 0.536481,
+						"depthRatio": 1,
+						"frontGapMetres": -0.002000004,
+						"maximumScalpDistanceMetres": 0.090364498,
+						"minimumScalpDistanceMetres": 0.005299055,
+						"rearGapMetres": 0.001999997,
+						"scalpVerticalRangeRatio": 0.774678,
+						"shoulderClearanceMetres": 0.048570316,
+						"verticesAboveNeckRatio": 0.929185,
+						"widthRatio": 0.936351
+					},
+					"passed": true,
+					"thresholds": {
+						"minimumCloseToScalpRatio": 0.12,
+						"minimumScalpVerticalRangeRatio": 0.68,
+						"minimumShoulderClearanceMetres": 0.025,
+						"minimumVerticesAboveNeckRatio": 0.9
+					},
+					"warnings": []
+				},
 				"fittingProfile": {
-					"baseHeightMetres": 1.82,
-					"heightCompensationMetresPerMetre": -0.882,
-					"heightCompensationQuadraticMetres": 0.685,
-					"id": "quaternius-buzzed-fit-v1",
-					"legLengthCompensationMetres": -0.0175,
-					"mode": "generated-head-bounds",
-					"pivotMetres": [0, 0, 1.73],
-					"scalpOffsetMetres": 0.01,
-					"torsoLengthCompensationMetres": 0.1685,
-					"version": 1
+					"allowNonUniformScaling": true,
+					"attachmentBone": "Head",
+					"coverageRatios": {
+						"depth": 1,
+						"heightFromWidth": 0.55,
+						"width": 0.96
+					},
+					"frontOffsetMetres": 0.002,
+					"id": "quaternius-buzzed-fit-v2",
+					"mode": "geometry-aware-scalp",
+					"rearOffsetMetres": 0,
+					"scaleLimits": {
+						"depth": [0.8, 1.8],
+						"height": [0.85, 1.25],
+						"width": [1, 2.1]
+					},
+					"scalpOffsetMetres": 0.012,
+					"sourceReferenceFrame": {
+						"centreMode": "bounds-centre",
+						"crownMode": "maximum-z",
+						"forwardAxis": "+Y",
+						"upAxis": "+Z"
+					},
+					"version": 2,
+					"verticalSeatingOffsetMetres": 0.012
 				},
 				"materialCount": 1,
 				"materials": ["MI_Hair_1"],
 				"meshCount": 1,
 				"objectName": "Hair_quaternius_hair_v0",
+				"sourceBounds": {
+					"centre": [-4.1e-8, 0.012570329, 1.728831053],
+					"dimensions": [0.154590487, 0.19092378, 0.169364214],
+					"maximum": [0.077295206, 0.108032219, 1.81351316],
+					"minimum": [-0.077295288, -0.082891561, 1.644148946]
+				},
 				"textureNames": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"],
 				"triangleCount": 830,
 				"vertexCount": 466
@@ -86,10 +150,30 @@
 					"vertexCount": 34
 				},
 				{
+					"name": "HeadCranium",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadRearCranium",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadFaceJaw",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
+					"name": "HeadChin",
+					"profile": "transition-ellipsoid",
+					"vertexCount": 114
+				},
+				{
 					"bone": "Head",
-					"name": "Head",
-					"profile": "ellipsoid",
-					"vertexCount": 34
+					"name": "HeadFacePlane",
+					"profile": "box",
+					"vertexCount": 8
 				},
 				{
 					"name": "TorsoPelvisTransition",
@@ -285,22 +369,58 @@
 				"boundaryEdgeCount": 0,
 				"connectedComponentCount": 1,
 				"degenerateFaceCount": 0,
-				"edgeCount": 5444,
+				"edgeCount": 5516,
 				"eulerCharacteristic": 2,
-				"faceCount": 2722,
+				"faceCount": 2758,
 				"genus": 0,
 				"manifold": true,
 				"nonManifoldEdgeCount": 0
 			},
-			"topologyVersion": "procedural-humanoid-v1",
-			"triangleCount": 6274,
-			"vertexCount": 3190
+			"topologyVersion": "procedural-humanoid-v2",
+			"triangleCount": 6346,
+			"vertexCount": 3226
 		},
 		"grounding": {
-			"localMaximumZ": 1.6869397163391113,
+			"localMaximumZ": 1.726205587387085,
 			"localMinimumZ": -0.03447576239705086,
 			"outputHeightMetres": 1.82,
-			"rootScale": 1.0572694520768555
+			"rootScale": 1.033690735818345
+		},
+		"head": {
+			"axes": {
+				"forward": [0, 1, 0],
+				"right": [1, 0, 0],
+				"up": [0, 0, 1]
+			},
+			"bounds": {
+				"centre": [7e-9, 0.026381154, 1.588115931],
+				"dimensions": [0.346707463, 0.288123578, 0.276179433],
+				"maximum": [0.173353732, 0.170442939, 1.726205587],
+				"minimum": [-0.173353717, -0.117680632, 1.450026155]
+			},
+			"coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+			"foreheadReference": [7e-9, 0.170442939, 1.63230464],
+			"headBonePosition": [0, 0.017400054, 1.59980011],
+			"headCentre": [7e-9, 0.026381154, 1.588115931],
+			"headDepth": 0.288123578,
+			"headHeight": 0.276179433,
+			"headWidth": 0.346707463,
+			"neckConnectionVertexCount": 46,
+			"neckTop": [0, 0.017400054, 1.55372011],
+			"rearCraniumReference": [7e-9, -0.117680632, 1.648875406],
+			"scalpBack": [7e-9, -0.117680632, 1.588115931],
+			"scalpBounds": {
+				"centre": [0, 0.006258409, 1.66500783],
+				"dimensions": [0.234044105, 0.247878075, 0.122395635],
+				"maximum": [0.117022052, 0.130197451, 1.726205587],
+				"minimum": [-0.117022052, -0.117680632, 1.603809953]
+			},
+			"scalpFront": [7e-9, 0.130197451, 1.588115931],
+			"scalpLeft": [-0.117022052, 0.026381154, 1.588115931],
+			"scalpRight": [0.117022052, 0.026381154, 1.588115931],
+			"scalpTop": [7e-9, 0.026381154, 1.726205587],
+			"symmetryErrorMetres": 0,
+			"topologyVersion": "procedural-humanoid-v2"
 		},
 		"material": {
 			"authoredColor": "#c98f65",
@@ -320,8 +440,8 @@
 			"forearmRadius": 0.064,
 			"handDepth": 0.035,
 			"handHalfWidth": 0.064,
-			"headDepth": 0.108,
-			"headHalfWidth": 0.118,
+			"headDepth": 0.112,
+			"headHalfWidth": 0.12,
 			"hipJointRadius": 0.105,
 			"kneeRadius": 0.068,
 			"neckRadius": 0.064,
@@ -329,14 +449,14 @@
 			"pelvisHalfWidth": 0.195,
 			"shoulderJointRadius": 0.08,
 			"thighRadius": 0.082,
-			"topologyVersion": "procedural-humanoid-v1",
+			"topologyVersion": "procedural-humanoid-v2",
 			"upperArmRadius": 0.076,
 			"voxelSizeMetres": 0.035,
 			"waistDepth": 0.112,
 			"waistHalfWidth": 0.17,
 			"wristRadius": 0.052
 		},
-		"outputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
+		"outputHash": "387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316",
 		"recipeId": "procedural-mannequin-quaternius-hair-v0",
 		"removedVendorMeshNames": [
 			"Eyebrows",
@@ -1003,11 +1123,11 @@
 		},
 		"skinning": {
 			"maximumInfluences": 4,
-			"normalizedWeightCount": 2724,
+			"normalizedWeightCount": 2760,
 			"strategy": "analytic-sided-segments-v2",
 			"unweightedVertexCount": 0,
 			"weightMaximum": 1,
-			"weightMinimum": 0.01507601272242237,
+			"weightMinimum": 0.015108634132308802,
 			"weightedBones": [
 				"Head",
 				"ball_l",
@@ -1035,22 +1155,24 @@
 		},
 		"templateHash": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"warnings": [
-			"Topology V1 uses a controlled voxel union and analytic segment weights.",
+			"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
 			"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
 			"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
-			"Hairstyle Slot V1 reuses the generated Head-led body-surface blend and has no secondary motion.",
+			"Hairstyle Fit V2 reuses the generated Head-led body-surface blend and has no secondary motion.",
 			"The vendor-authored hair material is fixed; hair colour authoring is not implemented."
 		]
 	},
 	"buildMode": "derived-artifact",
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
+		"firstOutputHash": "387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316",
 		"geometryAndSkinningDeterministic": true,
 		"materialDeterministic": true,
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "4cf0c14a9c4301f57c28ee38ae6524178fc496dbd76837cfdb614f518b00921c",
+		"secondOutputHash": "387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -1058,12 +1180,12 @@
 		"animations": {
 			"idle": {
 				"finiteKeyframes": true,
-				"maximumBoneLengthRelativeError": 1.4161959183134343e-7,
-				"maximumBoundsExpansion": 0.8104595642303808,
-				"minimumBoundsExpansion": 0.8066806483024916,
+				"maximumBoneLengthRelativeError": 1.5682782539272466e-7,
+				"maximumBoundsExpansion": 0.8165351947307989,
+				"minimumBoundsExpansion": 0.8129248374646494,
 				"missingTrackTargets": [],
 				"passed": true,
-				"poseAdvancement": 0.013084739879336761,
+				"poseAdvancement": 0.013084739979887829,
 				"rootMotionResidual": {
 					"x": 0,
 					"z": 0
@@ -1071,15 +1193,15 @@
 			},
 			"walk": {
 				"finiteKeyframes": true,
-				"maximumBoneLengthRelativeError": 7.775051065195271e-7,
-				"maximumBoundsExpansion": 0.901994061376983,
-				"minimumBoundsExpansion": 0.8109841560900959,
+				"maximumBoneLengthRelativeError": 8.781435600901943e-7,
+				"maximumBoundsExpansion": 0.9045246560632706,
+				"minimumBoundsExpansion": 0.8177992719676485,
 				"missingTrackTargets": [],
 				"passed": true,
-				"poseAdvancement": 0.9147684285843494,
+				"poseAdvancement": 0.8744218157020109,
 				"rootMotionResidual": {
 					"x": 0,
-					"z": -4.1641989301233195e-9
+					"z": -3.9805338261644785e-9
 				}
 			}
 		},
@@ -1087,8 +1209,8 @@
 			"materialCount": 2,
 			"meshCount": 2,
 			"textureCount": 2,
-			"triangleCount": 6274,
-			"vertexCount": 3190
+			"triangleCount": 6346,
+			"vertexCount": 3226
 		},
 		"checks": {
 			"animationBinding": true,
@@ -1114,7 +1236,7 @@
 		},
 		"geometry": {
 			"bounds": {
-				"dimensions": [1.6306267, 1.8199999, 0.3278102],
+				"dimensions": [1.5942612, 1.8199999, 0.3208103],
 				"maximumY": 1.8199999,
 				"minimumY": 0
 			},
@@ -1129,21 +1251,21 @@
 			"outOfRangeJointCount": 0,
 			"passed": true,
 			"skinnedMeshCount": 1,
-			"triangleCount": 5444,
+			"triangleCount": 5516,
 			"topology": {
 				"boundaryEdgeCount": 0,
 				"connectedComponentCount": 1,
 				"degenerateFaceCount": 0,
-				"edgeCount": 8166,
+				"edgeCount": 8274,
 				"eulerCharacteristic": 2,
-				"faceCount": 5444,
+				"faceCount": 5516,
 				"genus": 0,
 				"manifold": true,
 				"nonManifoldEdgeCount": 0,
 				"unreferencedVertexCount": 0
 			},
 			"unweightedVertexCount": 0,
-			"vertexCount": 2724,
+			"vertexCount": 2760,
 			"weightedBones": [
 				"Head",
 				"ball_l",
@@ -1169,7 +1291,7 @@
 				"upperarm_r"
 			]
 		},
-		"geometrySemanticHash": "cefef92c58d85eda857eb1f2bc4e371c9efbd7f45e91f4909201e8b34f25aec4",
+		"geometrySemanticHash": "7c570237574ba297088fa863d46bfd86e0f834cdb9d549eddc657458f7dd146b",
 		"glbResources": {
 			"imageCount": 2,
 			"imageNames": ["T_Hair_1_Normal", "T_Hair_1_BaseColor"],
@@ -1180,15 +1302,15 @@
 		},
 		"hair": {
 			"attachmentAnimation": {
-				"maximumRelativeVertexDifference": 0.0018832165530543548,
+				"maximumRelativeVertexDifference": 0.001858729312970737,
 				"passed": true
 			},
 			"attachmentBone": "Head",
 			"attachmentWeightBones": ["Head", "spine_03"],
 			"bounds": {
-				"dimensions": [0.2378636, 0.1893184, 0.1993825],
-				"maximum": [0.1189318, 1.8377204, 0.0877015],
-				"minimum": [-0.1189318, 1.648402, -0.111681]
+				"dimensions": [0.3468832, 0.2232265, 0.3078648],
+				"maximum": [0.1734416, 1.9297763, 0.1236067],
+				"minimum": [-0.1734416, 1.7065498, -0.1842581]
 			},
 			"cloneIndependent": true,
 			"componentId": "quaternius-hair-v0",
@@ -1223,17 +1345,17 @@
 			"passed": true
 		},
 		"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
-		"semanticHash": "43598cdd3a1286f32a968e3a4abfb85d964aa85bb3b22c2b45453a5862c7293e",
+		"semanticHash": "e82e42638661619a3239cc2ed6b90f62d25b9450a48a1607bd2e2ac8770bdde4",
 		"skeletonContract": {
 			"hierarchyMismatches": [],
-			"maximumRestRotationDegrees": 0.04075099023456356,
+			"maximumRestRotationDegrees": 0.03575552834529974,
 			"maximumRestScaleDifference": 0.0000010728836059570312,
-			"maximumRestTranslationDifference": 5.158127955498418e-7,
+			"maximumRestTranslationDifference": 3.463232516850761e-7,
 			"passed": true
 		},
 		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
 		"symmetry": {
-			"maximumRelativeDifference": 6.025796381220746e-7,
+			"maximumRelativeDifference": 1.4292099551115905e-7,
 			"passed": true
 		},
 		"semanticStructure": {
@@ -1248,9 +1370,9 @@
 				{
 					"name": "ProceduralMannequinRoot",
 					"parent": "Scene",
-					"position": [0, 0.0364502, 0],
+					"position": [0, 0.0356373, 0],
 					"quaternion": [0, 0, 0, 1],
-					"scale": [1.0572695, 1.0572695, 1.0572695],
+					"scale": [1.0336907, 1.0336907, 1.0336907],
 					"type": "Object3D"
 				},
 				{
@@ -1296,15 +1418,15 @@
 				{
 					"name": "pelvis",
 					"parent": "root",
-					"position": [0, 0.043, 0.9491001],
-					"quaternion": [0.800571, 0, 0, 0.5992379],
+					"position": [0, 0.043, 0.9491],
+					"quaternion": [0.8005711, 0, 0, 0.5992379],
 					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "spine_01",
 					"parent": "pelvis",
-					"position": [0, 0.1280922, 0],
+					"position": [0, 0.1280923, 0],
 					"quaternion": [-0.0918562, 0, 0, 0.9957723],
 					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
@@ -1312,39 +1434,39 @@
 				{
 					"name": "spine_02",
 					"parent": "spine_01",
-					"position": [0, 0.1063497, 0],
+					"position": [0, 0.1063496, 0],
 					"quaternion": [-0.0395854, 1e-7, 0, 0.9992162],
-					"scale": [1, 1.0000001, 1.0000001],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "spine_03",
 					"parent": "spine_02",
-					"position": [0, 0.1331338, 0],
-					"quaternion": [-0.1241889, -1e-7, 0, 0.9922586],
-					"scale": [0.9999999, 0.9999998, 0.9999999],
+					"position": [0, 0.1331337, 0],
+					"quaternion": [-0.124189, -1e-7, 0, 0.9922586],
+					"scale": [1, 0.9999998, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "clavicle_l",
 					"parent": "spine_03",
-					"position": [0.0314, 0.1737177, 0.0673285],
-					"quaternion": [-0.5287374, -0.329102, -0.4138081, 0.6639966],
-					"scale": [1, 1.0000001, 1],
+					"position": [0.0314, 0.1737178, 0.0673285],
+					"quaternion": [-0.5287375, -0.329102, -0.4138081, 0.6639966],
+					"scale": [1.0000001, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "upperarm_l",
 					"parent": "clavicle_l",
-					"position": [-0.0091357, 0.205739, -0.0396713],
+					"position": [-0.0091357, 0.205739, -0.0396716],
 					"quaternion": [0.1498032, 0.6911308, -0.1493883, 0.6910719],
-					"scale": [0.9999999, 0.9999998, 1],
+					"scale": [0.9999998, 0.9999999, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "lowerarm_l",
 					"parent": "upperarm_l",
-					"position": [-1e-7, 0.251115, 0],
+					"position": [0, 0.2511151, 0],
 					"quaternion": [0.0307322, 0.0000416, -0.0000015, 0.9995277],
 					"scale": [1, 1, 1],
 					"type": "Bone"
@@ -1352,23 +1474,23 @@
 				{
 					"name": "hand_l",
 					"parent": "lowerarm_l",
-					"position": [-1e-7, 0.2435942, 0],
+					"position": [-1e-7, 0.2435941, 0],
 					"quaternion": [-0.0156016, -4e-7, 0, 0.9998783],
-					"scale": [1.0000001, 0.9999999, 0.9999999],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "index_01_l",
 					"parent": "hand_l",
-					"position": [0.0071595, 0.1174026, 0.0406433],
+					"position": [0.0071595, 0.1174025, 0.0406433],
 					"quaternion": [0.0085051, 0.7068115, -0.0185241, 0.7071082],
-					"scale": [1, 0.9999999, 1],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "index_02_l",
 					"parent": "index_01_l",
-					"position": [0, 0.0326126, -1e-7],
+					"position": [0, 0.0326126, 1e-7],
 					"quaternion": [5e-7, 0.0000495, -0.0005331, 0.9999999],
 					"scale": [0.9999999, 0.9999999, 1.0000001],
 					"type": "Bone"
@@ -1376,7 +1498,7 @@
 				{
 					"name": "index_03_l",
 					"parent": "index_02_l",
-					"position": [0, 0.0279115, -4e-7],
+					"position": [0, 0.0279114, -1e-7],
 					"quaternion": [0.000002, -0.0000071, -0.0001857, 1],
 					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
@@ -1384,47 +1506,47 @@
 				{
 					"name": "index_04_leaf_l",
 					"parent": "index_03_l",
-					"position": [0, 0.0241101, 0],
+					"position": [0, 0.0241099, -3e-7],
 					"quaternion": [0, 0.999823, 0, 0.018816],
-					"scale": [0.9999999, 1.0000001, 1],
+					"scale": [0.9999999, 0.9999999, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_01_l",
 					"parent": "hand_l",
-					"position": [0.0046827, 0.1154389, 0.0151134],
+					"position": [0.0046826, 0.1154388, 0.0151134],
 					"quaternion": [0.0050673, 0.7067629, -0.0219582, 0.7070916],
-					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_02_l",
 					"parent": "middle_01_l",
-					"position": [0, 0.0375262, -4e-7],
+					"position": [0, 0.0375262, -1e-7],
 					"quaternion": [6e-7, 0.0000784, 0.0020528, 0.9999979],
-					"scale": [1, 1, 1],
+					"scale": [1, 1, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_03_l",
 					"parent": "middle_02_l",
-					"position": [0, 0.0301168, -3e-7],
+					"position": [0, 0.0301167, -2e-7],
 					"quaternion": [-4e-7, -0.0000543, -0.0014198, 0.999999],
-					"scale": [1, 0.9999999, 1],
+					"scale": [0.9999999, 0.9999998, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_04_leaf_l",
 					"parent": "middle_03_l",
-					"position": [0, 0.0305196, 2e-7],
+					"position": [0, 0.0305197, 3e-7],
 					"quaternion": [0, 0.9998255, 0, 0.0186798],
-					"scale": [1, 0.9999998, 1.0000001],
+					"scale": [1.0000001, 0.9999999, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "pinky_01_l",
 					"parent": "hand_l",
-					"position": [0.0060377, 0.0985414, -0.0346173],
+					"position": [0.0060377, 0.0985413, -0.0346174],
 					"quaternion": [0.002601, 0.7066821, -0.0244147, 0.707105],
 					"scale": [1, 1, 1],
 					"type": "Bone"
@@ -1432,17 +1554,17 @@
 				{
 					"name": "pinky_02_l",
 					"parent": "pinky_01_l",
-					"position": [0, 0.0316311, 3e-7],
+					"position": [0, 0.031631, -2e-7],
 					"quaternion": [4e-7, 0.0000953, -0.0015674, 0.9999988],
-					"scale": [1, 1.0000001, 0.9999999],
+					"scale": [0.9999999, 0.9999999, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "pinky_03_l",
 					"parent": "pinky_02_l",
-					"position": [0, 0.0274308, 0],
+					"position": [0, 0.0274307, 3e-7],
 					"quaternion": [0.0000033, -0.0001373, 0.0004661, 0.9999999],
-					"scale": [0.9999999, 0.9999998, 0.9999999],
+					"scale": [1, 0.9999998, 0.9999998],
 					"type": "Bone"
 				},
 				{
@@ -1450,55 +1572,55 @@
 					"parent": "pinky_03_l",
 					"position": [0, 0.0215233, 3e-7],
 					"quaternion": [0, 0.9998292, 0, 0.0184837],
-					"scale": [0.9999999, 1, 1],
+					"scale": [1.0000001, 1, 0.9999998],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_01_l",
 					"parent": "hand_l",
-					"position": [0.0047521, 0.1094008, -0.0123702],
-					"quaternion": [0.0153238, 0.706917, -0.0117133, 0.7070335],
-					"scale": [1, 1.0000001, 1],
+					"position": [0.0047518, 0.1094007, -0.0123702],
+					"quaternion": [0.0153238, 0.7069171, -0.0117133, 0.7070335],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_02_l",
 					"parent": "ring_01_l",
-					"position": [0, 0.036001, -1e-7],
+					"position": [0, 0.036001, -2e-7],
 					"quaternion": [-0.0000048, 0.0002186, 0.0023998, 0.9999971],
-					"scale": [0.9999999, 0.9999998, 0.9999999],
+					"scale": [1, 0.9999998, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_03_l",
 					"parent": "ring_02_l",
-					"position": [0, 0.0283001, -1e-7],
+					"position": [0, 0.0283001, 0],
 					"quaternion": [0.0000036, -0.000253, -0.0033876, 0.9999942],
-					"scale": [0.9999999, 0.9999999, 0.9999998],
+					"scale": [0.9999999, 1, 0.9999998],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_04_leaf_l",
 					"parent": "ring_03_l",
-					"position": [0, 0.0291017, -2e-7],
+					"position": [0, 0.0291018, -1e-7],
 					"quaternion": [0, 0.9998186, 0, 0.0190498],
-					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"scale": [1, 1, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_01_l",
 					"parent": "hand_l",
-					"position": [0.0274812, 0.0338137, 0.0410632],
-					"quaternion": [-0.2444633, -0.9435676, -0.2160616, 0.0568801],
-					"scale": [1.0000001, 0.9999999, 0.9999999],
+					"position": [0.0274811, 0.0338136, 0.0410632],
+					"quaternion": [-0.2444633, -0.9435676, -0.2160615, 0.0568801],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_02_l",
 					"parent": "thumb_01_l",
-					"position": [1e-7, 0.0395199, 0],
+					"position": [-1e-7, 0.0395199, 0],
 					"quaternion": [8e-7, 0.0000046, -0.000004, 1],
-					"scale": [1, 1, 0.9999999],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
@@ -1506,22 +1628,22 @@
 					"parent": "thumb_02_l",
 					"position": [-2e-7, 0.0354909, 0],
 					"quaternion": [-1e-7, -0.0000297, 0.0000017, 1],
-					"scale": [1, 0.9999999, 0.9999999],
+					"scale": [1.0000001, 1, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_04_leaf_l",
 					"parent": "thumb_03_l",
-					"position": [0, 0.0345582, 1e-7],
-					"quaternion": [-1e-7, 0.3827087, 0, 0.923869],
-					"scale": [1.0000001, 1.0000001, 1],
+					"position": [2e-7, 0.0345582, 0],
+					"quaternion": [-1e-7, 0.3827087, 0, 0.9238691],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "clavicle_r",
 					"parent": "spine_03",
-					"position": [-0.0314, 0.1737177, 0.0673285],
-					"quaternion": [-0.5287375, 0.3291019, 0.4138082, 0.6639966],
+					"position": [-0.0314, 0.1737178, 0.0673285],
+					"quaternion": [-0.5287375, 0.329102, 0.4138082, 0.6639966],
 					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
@@ -1529,8 +1651,8 @@
 					"name": "upperarm_r",
 					"parent": "clavicle_r",
 					"position": [0.0091357, 0.205739, -0.0396713],
-					"quaternion": [0.1498032, -0.6911308, 0.1493882, 0.6910719],
-					"scale": [0.9999999, 0.9999996, 0.9999999],
+					"quaternion": [0.1498032, -0.6911308, 0.1493883, 0.6910719],
+					"scale": [0.9999999, 0.9999995, 0.9999999],
 					"type": "Bone"
 				},
 				{
@@ -1538,23 +1660,23 @@
 					"parent": "upperarm_r",
 					"position": [1e-7, 0.2511151, 0],
 					"quaternion": [0.0307322, -0.0000417, 0.0000015, 0.9995276],
-					"scale": [1, 1, 1.0000001],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "hand_r",
 					"parent": "lowerarm_r",
-					"position": [0, 0.2435944, 0],
+					"position": [1e-7, 0.2435943, 0],
 					"quaternion": [-0.0156016, 5e-7, 0, 0.9998783],
-					"scale": [1, 1.0000001, 0.9999999],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "index_01_r",
 					"parent": "hand_r",
-					"position": [-0.0071594, 0.1174027, 0.0406433],
+					"position": [-0.0071596, 0.1174027, 0.0406433],
 					"quaternion": [0.008505, -0.7068117, 0.0185242, 0.707108],
-					"scale": [1, 1, 1],
+					"scale": [0.9999999, 1.0000001, 0.9999999],
 					"type": "Bone"
 				},
 				{
@@ -1568,56 +1690,56 @@
 				{
 					"name": "index_03_r",
 					"parent": "index_02_r",
-					"position": [0, 0.0279115, -2e-7],
+					"position": [0, 0.0279115, 0],
 					"quaternion": [0.000002, 0.0000071, 0.0001856, 1],
-					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"scale": [0.9999999, 0.9999998, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "index_04_leaf_r",
 					"parent": "index_03_r",
-					"position": [0, 0.0241101, -1e-7],
+					"position": [0, 0.02411, -2e-7],
 					"quaternion": [0, -0.999823, 0, 0.018816],
-					"scale": [0.9999998, 1, 1],
+					"scale": [0.9999999, 1, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_01_r",
 					"parent": "hand_r",
-					"position": [-0.0046826, 0.1154389, 0.0151134],
-					"quaternion": [0.0050674, -0.7067629, 0.0219582, 0.7070916],
-					"scale": [1, 1, 0.9999999],
+					"position": [-0.0046828, 0.1154389, 0.0151134],
+					"quaternion": [0.0050674, -0.7067628, 0.0219582, 0.7070916],
+					"scale": [0.9999999, 1, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_02_r",
 					"parent": "middle_01_r",
-					"position": [0, 0.037526, -4e-7],
+					"position": [0, 0.0375261, -2e-7],
 					"quaternion": [6e-7, -0.0000784, -0.0020528, 0.9999979],
-					"scale": [1, 0.9999999, 0.9999999],
+					"scale": [0.9999999, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_03_r",
 					"parent": "middle_02_r",
-					"position": [0, 0.0301167, -3e-7],
+					"position": [0, 0.0301166, -1e-7],
 					"quaternion": [-4e-7, 0.0000544, 0.0014199, 0.999999],
-					"scale": [0.9999999, 1.0000001, 1.0000001],
+					"scale": [1, 0.9999998, 0.9999998],
 					"type": "Bone"
 				},
 				{
 					"name": "middle_04_leaf_r",
 					"parent": "middle_03_r",
-					"position": [0, 0.0305198, 1e-7],
+					"position": [0, 0.0305197, 1e-7],
 					"quaternion": [-1e-7, -0.9998255, 0, 0.0186797],
-					"scale": [1, 1.0000001, 1.0000001],
+					"scale": [0.9999999, 1, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "pinky_01_r",
 					"parent": "hand_r",
-					"position": [-0.0060375, 0.0985414, -0.0346174],
-					"quaternion": [0.0026011, -0.7066822, 0.0244147, 0.7071049],
+					"position": [-0.0060377, 0.0985414, -0.0346173],
+					"quaternion": [0.0026011, -0.7066821, 0.0244147, 0.707105],
 					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
@@ -1626,7 +1748,7 @@
 					"parent": "pinky_01_r",
 					"position": [0, 0.031631, 3e-7],
 					"quaternion": [4e-7, -0.0000954, 0.0015674, 0.9999987],
-					"scale": [1.0000001, 0.9999998, 1],
+					"scale": [1, 0.9999998, 0.9999999],
 					"type": "Bone"
 				},
 				{
@@ -1634,15 +1756,15 @@
 					"parent": "pinky_02_r",
 					"position": [0, 0.0274307, 4e-7],
 					"quaternion": [0.0000032, 0.0001374, -0.000466, 0.9999999],
-					"scale": [0.9999999, 0.9999999, 0.9999998],
+					"scale": [0.9999999, 0.9999998, 0.9999998],
 					"type": "Bone"
 				},
 				{
 					"name": "pinky_04_leaf_r",
 					"parent": "pinky_03_r",
-					"position": [0, 0.0215233, 1e-7],
+					"position": [0, 0.0215233, 2e-7],
 					"quaternion": [0, -0.9998292, 0, 0.0184837],
-					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
@@ -1650,85 +1772,85 @@
 					"parent": "hand_r",
 					"position": [-0.0047519, 0.1094008, -0.0123702],
 					"quaternion": [0.0153239, -0.7069171, 0.0117133, 0.7070334],
-					"scale": [1, 1, 1],
+					"scale": [1, 1, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_02_r",
 					"parent": "ring_01_r",
-					"position": [0, 0.0360009, 0],
+					"position": [0, 0.0360009, -1e-7],
 					"quaternion": [-0.0000049, -0.0002185, -0.0023997, 0.9999971],
-					"scale": [1, 1, 0.9999999],
+					"scale": [0.9999999, 1.0000001, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_03_r",
 					"parent": "ring_02_r",
-					"position": [0, 0.0283002, -2e-7],
+					"position": [0, 0.0283002, -1e-7],
 					"quaternion": [0.0000037, 0.0002528, 0.0033876, 0.9999942],
-					"scale": [1, 0.9999999, 0.9999999],
+					"scale": [0.9999999, 0.9999998, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "ring_04_leaf_r",
 					"parent": "ring_03_r",
-					"position": [0, 0.0291017, 2e-7],
+					"position": [0, 0.0291017, 0],
 					"quaternion": [0, -0.9998186, 0, 0.0190498],
-					"scale": [0.9999999, 0.9999999, 1],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_01_r",
 					"parent": "hand_r",
-					"position": [-0.0274812, 0.0338136, 0.0410631],
+					"position": [-0.0274813, 0.0338136, 0.0410631],
 					"quaternion": [-0.2444625, 0.9435679, 0.2160614, 0.0568799],
-					"scale": [0.9999999, 0.9999999, 1],
+					"scale": [0.9999999, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_02_r",
 					"parent": "thumb_01_r",
-					"position": [-3e-7, 0.03952, 0],
+					"position": [-1e-7, 0.03952, 0],
 					"quaternion": [7e-7, -0.0000048, 0.0000032, 1],
-					"scale": [1, 1, 1],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_03_r",
 					"parent": "thumb_02_r",
-					"position": [-2e-7, 0.0354909, 0],
+					"position": [0, 0.0354908, 0],
 					"quaternion": [-2e-7, 0.0000296, -0.0000021, 1],
-					"scale": [1, 1.0000001, 1],
+					"scale": [1, 1, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "thumb_04_leaf_r",
 					"parent": "thumb_03_r",
-					"position": [1e-7, 0.0345581, 0],
+					"position": [2e-7, 0.0345582, 0],
 					"quaternion": [0, -0.3827088, 0, 0.923869],
-					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"scale": [0.9999999, 1.0000001, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "neck_01",
 					"parent": "spine_03",
-					"position": [0, 0.2150929, 0],
+					"position": [0, 0.215093, 0],
 					"quaternion": [0.2572591, 0, 0, 0.9663424],
-					"scale": [1, 1, 0.9999999],
+					"scale": [1, 1, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "Head",
 					"parent": "neck_01",
-					"position": [0, 0.0828526, 0],
+					"position": [0, 0.0828523, 0],
 					"quaternion": [-0.13207, 0, 0, 0.9912404],
-					"scale": [1, 1, 1.0000001],
+					"scale": [1, 0.9999999, 0.9999999],
 					"type": "Bone"
 				},
 				{
 					"name": "thigh_l",
 					"parent": "pelvis",
-					"position": [0.1143051, 0.0231768, 0.0004879],
+					"position": [0.1143051, 0.0231769, 0.0004879],
 					"quaternion": [0.989831, 0, 0, 0.1422484],
 					"scale": [1, 0.9999999, 1.0000008],
 					"type": "Bone"
@@ -1736,17 +1858,17 @@
 				{
 					"name": "calf_l",
 					"parent": "thigh_l",
-					"position": [0, 0.4288002, 0],
+					"position": [0, 0.4288003, 0],
 					"quaternion": [0.0559889, 0, 0, 0.9984314],
-					"scale": [1, 0.9999999, 1],
+					"scale": [1, 1.0000001, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "foot_l",
 					"parent": "calf_l",
-					"position": [0, 0.4587885, 0],
+					"position": [0, 0.4587884, 0],
 					"quaternion": [-0.5721679, 3e-7, -2e-7, 0.8201365],
-					"scale": [1, 1.0000001, 1.0000001],
+					"scale": [1, 0.9999999, 1],
 					"type": "Bone"
 				},
 				{
@@ -1762,13 +1884,13 @@
 					"parent": "ball_l",
 					"position": [0, 0.0788998, 0],
 					"quaternion": [0, -1e-7, 0, 1],
-					"scale": [1, 0.9999999, 1],
+					"scale": [1, 1.0000001, 1],
 					"type": "Bone"
 				},
 				{
 					"name": "thigh_r",
 					"parent": "pelvis",
-					"position": [-0.1143051, 0.0231768, 0.0004878],
+					"position": [-0.1143051, 0.0231769, 0.0004879],
 					"quaternion": [0.989831, 0, 0, 0.1422484],
 					"scale": [1, 0.9999999, 1.0000008],
 					"type": "Bone"
@@ -1776,17 +1898,17 @@
 				{
 					"name": "calf_r",
 					"parent": "thigh_r",
-					"position": [0, 0.4288002, 0],
+					"position": [0, 0.4288003, 0],
 					"quaternion": [0.0559889, 0, 0, 0.9984314],
-					"scale": [1, 0.9999999, 1],
+					"scale": [1, 1.0000001, 1.0000001],
 					"type": "Bone"
 				},
 				{
 					"name": "foot_r",
 					"parent": "calf_r",
-					"position": [0, 0.4587885, 0],
+					"position": [0, 0.4587884, 0],
 					"quaternion": [-0.5721679, -3e-7, 2e-7, 0.8201365],
-					"scale": [1, 1.0000001, 1.0000001],
+					"scale": [1, 0.9999999, 1],
 					"type": "Bone"
 				},
 				{
@@ -1802,7 +1924,7 @@
 					"parent": "ball_r",
 					"position": [0, 0.0788998, 0],
 					"quaternion": [0, 1e-7, 0, 1],
-					"scale": [1, 0.9999999, 1],
+					"scale": [1, 1.0000001, 1],
 					"type": "Bone"
 				}
 			],
@@ -1828,34 +1950,34 @@
 				{
 					"attributes": {
 						"normal": {
-							"count": 2724,
-							"hash": "76bc20f13b6381a77b41672efcaaed7456938c9d92c6f16a4cb86ad93cf0d7e0",
+							"count": 2760,
+							"hash": "098d60312a909209f6fba91a8e75c57641ec9926bfb6a03ea5feddfde0ddc8d7",
 							"itemSize": 3
 						},
 						"position": {
-							"count": 2724,
-							"hash": "a2f8c30a164b7dfdcb41283fad010f1ada5a6d90499e88c23218311d84519560",
+							"count": 2760,
+							"hash": "f6c1e110d1e566019255dec682c4492f46e124f44aab621ab1bd4e65558a5989",
 							"itemSize": 3
 						},
 						"skinIndex": {
-							"count": 2724,
-							"hash": "c8cd5013e0dee57773da070eb2811c1d3052111b9f6bc7c930f88070f727dc45",
+							"count": 2760,
+							"hash": "db391bb926b0dbb5f9fcab82235ba432f4cc7c15f74935e79755de5e82730ced",
 							"itemSize": 4
 						},
 						"skinWeight": {
-							"count": 2724,
-							"hash": "7778ca276d013ae4e61cb13127e2de53496a8759dae5e762ef1c7f186529a82d",
+							"count": 2760,
+							"hash": "b3c97ee7753176ffa27dde2196e021763d8221e02a7e8d3501f56d0d73d941b5",
 							"itemSize": 4
 						},
 						"uv": {
-							"count": 2724,
-							"hash": "e2901253b36b36b943dbad1e29be97dac8fb2ad7e00c45ab9263dc5c7ff348e3",
+							"count": 2760,
+							"hash": "85431f3b1eee98cc124096e1fd687e9c29bc80848e93535cdc0fde70c1d1db12",
 							"itemSize": 2
 						}
 					},
 					"index": {
-						"count": 16332,
-						"hash": "2cce0dd838aab46966420fe2f384eaef025f081d1d75f856ff9a1643c6ece7dd"
+						"count": 16548,
+						"hash": "dd1640358e6bef548d385a4a6fdce1e7a69219ce5e3ac73b92624f55f0f956d0"
 					},
 					"name": "ProceduralMannequinMesh_1"
 				},
@@ -1863,12 +1985,12 @@
 					"attributes": {
 						"normal": {
 							"count": 466,
-							"hash": "80fb1de7bac0dc3789b7f52ba4b481cfeeff1778481bf882fbf2ee0ec40bfc0c",
+							"hash": "72a9362d69356dafe2712a2b5ac25edaf471ce50e97eb4dcc4d5607ccd0711aa",
 							"itemSize": 3
 						},
 						"position": {
 							"count": 466,
-							"hash": "abe1d42cb6b11194e0fcd3ec5b17bf96a10417a4bb625961cac442791d18cbb5",
+							"hash": "843da391b016db423cb978978b36f5b87891292daad873cb4b0b17aae1a54af6",
 							"itemSize": 3
 						},
 						"skinIndex": {
@@ -1878,7 +2000,7 @@
 						},
 						"skinWeight": {
 							"count": 466,
-							"hash": "162b9370564fd797b6c3b72c52c3201e25d673a1356828d0a44397bde987efff",
+							"hash": "93651a30f3e6945338242e7bc7f71fd830b09b085c7fde47fe39503f89d5cf25",
 							"itemSize": 4
 						},
 						"uv": {
@@ -1911,14 +2033,14 @@
 			"symmetry": true
 		},
 		"passed": true,
-		"semanticHash": "43598cdd3a1286f32a968e3a4abfb85d964aa85bb3b22c2b45453a5862c7293e",
+		"semanticHash": "e82e42638661619a3239cc2ed6b90f62d25b9450a48a1607bd2e2ac8770bdde4",
 		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840"
 	},
 	"sourceHashesAfter": {
-		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "79e2538bed8b624b18480cb5935d613cf8adf4a6d17ae9d29402a4b4861d7aab",
+		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "bc30524dd008170d02235d1d3bb05eb36bac10ce554c93769e0e8509a1ec09a6",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
-		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "26167c1016b2975b7709b97038c3464b8c7e03cc35fcf2d25541eccb04b7c80f",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "0254494a7858f5870edb3774afbd6cce25faa7783b3bd13132355487d868150a",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
@@ -1926,10 +2048,10 @@
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
 	},
 	"sourceHashesBefore": {
-		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "79e2538bed8b624b18480cb5935d613cf8adf4a6d17ae9d29402a4b4861d7aab",
+		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "bc30524dd008170d02235d1d3bb05eb36bac10ce554c93769e0e8509a1ec09a6",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
-		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "26167c1016b2975b7709b97038c3464b8c7e03cc35fcf2d25541eccb04b7c80f",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "0254494a7858f5870edb3774afbd6cce25faa7783b3bd13132355487d868150a",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",

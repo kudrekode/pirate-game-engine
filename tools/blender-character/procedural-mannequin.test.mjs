@@ -184,6 +184,22 @@ test("migrates the disconnected V1 recipe and derives deterministic topology mea
 	assert.ok(measurements.chestHalfWidth > measurements.pelvisHalfWidth);
 });
 
+test("canonicalizes a current recipe carrying the previous head topology version", async () => {
+	const recipe = await loadRecipe();
+	const parsed = validateProceduralMannequinRecipe({
+		...recipe,
+		geometry: {
+			...recipe.geometry,
+			topologyVersion: "procedural-humanoid-v1",
+		},
+	});
+	assert.equal(parsed.ok, true);
+	assert.equal(
+		parsed.value.geometry.topologyVersion,
+		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+	);
+});
+
 test("builds a narrow headless Blender invocation and parses compiler modes", () => {
 	const arguments_ = buildProceduralMannequinScriptArguments({
 		outputPath: "stage/mannequin.glb",
@@ -245,7 +261,7 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v5",
+		"procedural-mannequin-roundtrip-v6",
 	);
 	assert.equal(result.manifest.recipeVersion, 4);
 	assert.equal(result.manifest.components.hair.componentId, "none");
@@ -260,9 +276,9 @@ test("round-trips the committed artifact and its canonical animations", async ()
 		boundaryEdgeCount: 0,
 		connectedComponentCount: 1,
 		degenerateFaceCount: 0,
-		edgeCount: 8166,
+		edgeCount: 8274,
 		eulerCharacteristic: 2,
-		faceCount: 5444,
+		faceCount: 5516,
 		genus: 0,
 		manifold: true,
 		nonManifoldEdgeCount: 0,
@@ -277,6 +293,15 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.ok(result.manifest.triangleCount >= 4_000);
 	assert.ok(result.manifest.triangleCount <= 15_000);
 	assert.ok(result.manifest.generationDurationMs > 0);
+	assert.equal(result.manifest.head.topologyVersion, "procedural-humanoid-v2");
+	assert.ok(result.manifest.head.headWidth > 0.3);
+	assert.ok(result.manifest.head.headDepth > 0.25);
+	assert.ok(result.manifest.head.headHeight > 0.24);
+	assert.ok(result.manifest.head.neckConnectionVertexCount >= 3);
+	assert.ok(result.manifest.head.symmetryErrorMetres <= 0.000001);
+	assert.ok(
+		result.manifest.head.scalpTop[2] > result.manifest.head.headCentre[2],
+	);
 	assert.equal(result.validation.animations.idle.passed, true);
 	assert.equal(result.validation.animations.walk.passed, true);
 	assert.equal(result.validation.cloneIndependence.passed, true);
@@ -307,6 +332,21 @@ test("round-trips the committed haired artifact with one shared-skeleton Head at
 		result.manifest.components.hair.componentId,
 		"quaternius-hair-v0",
 	);
-	assert.equal(result.manifest.components.hair.fittingProfile.version, 1);
+	assert.equal(result.manifest.components.hair.fittingProfile.version, 2);
+	assert.equal(
+		result.manifest.components.hair.fittingProfile.id,
+		"quaternius-buzzed-fit-v2",
+	);
+	assert.equal(result.manifest.components.hair.fitValidation.passed, true);
+	assert.ok(
+		result.manifest.components.hair.fitValidation.metrics
+			.verticesAboveNeckRatio >= 0.9,
+	);
+	assert.ok(
+		result.manifest.components.hair.fitValidation.metrics
+			.shoulderClearanceMetres >= 0.025,
+	);
+	assert.equal(result.manifest.determinism.headContractDeterministic, true);
+	assert.equal(result.manifest.determinism.hairstyleFitDeterministic, true);
 	assert.equal(result.manifest.determinism.binaryDeterministic, true);
 });

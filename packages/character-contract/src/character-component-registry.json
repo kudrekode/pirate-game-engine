@@ -48,31 +48,46 @@
 				"scale": [1, 1, 1]
 			},
 			"normalizedTransform": {
-				"translationMetres": [0, 0, -0.12],
+				"translationMetres": [0, 0, 0],
 				"rotationDegrees": [0, 0, 0],
-				"scale": [1.45, 1.3, 1]
+				"scale": [1, 1, 1]
 			},
 			"fittingProfile": {
-				"id": "quaternius-buzzed-fit-v1",
-				"version": 1,
-				"mode": "generated-head-bounds",
-				"baseHeightMetres": 1.82,
-				"heightCompensationMetresPerMetre": -0.882,
-				"heightCompensationQuadraticMetres": 0.685,
-				"torsoLengthCompensationMetres": 0.1685,
-				"legLengthCompensationMetres": -0.0175,
-				"pivotMetres": [0, 0, 1.73],
-				"scalpOffsetMetres": 0.01
+				"id": "quaternius-buzzed-fit-v2",
+				"version": 2,
+				"mode": "geometry-aware-scalp",
+				"attachmentBone": "Head",
+				"sourceReferenceFrame": {
+					"forwardAxis": "+Y",
+					"upAxis": "+Z",
+					"centreMode": "bounds-centre",
+					"crownMode": "maximum-z"
+				},
+				"coverageRatios": {
+					"width": 0.96,
+					"depth": 1,
+					"heightFromWidth": 0.55
+				},
+				"frontOffsetMetres": 0.002,
+				"rearOffsetMetres": 0,
+				"verticalSeatingOffsetMetres": 0.012,
+				"scalpOffsetMetres": 0.012,
+				"allowNonUniformScaling": true,
+				"scaleLimits": {
+					"width": [1, 2.1],
+					"depth": [0.8, 1.8],
+					"height": [0.85, 1.25]
+				}
 			},
 			"material": {
 				"name": "MI_Hair_1",
 				"textures": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"]
 			},
-			"compilerCompatibilityVersion": "procedural-mannequin-blender-v4",
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v5",
 			"knownLimitations": [
 				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
 				"Fixed vendor-authored brown material; hair colour authoring is not implemented.",
-				"Fit is tuned for the generated stylised head and has no user-facing fit controls."
+				"Geometry-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
 			]
 		}
 	]

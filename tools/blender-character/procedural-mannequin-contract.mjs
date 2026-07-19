@@ -6,10 +6,12 @@ import {
 
 export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 4;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v4";
+	"procedural-mannequin-blender-v5";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v5";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v1";
+	"procedural-mannequin-roundtrip-v6";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v2";
+export const LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION =
+	"procedural-humanoid-v1";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
 export const PROCEDURAL_SKIN_MATERIAL_NAME = "ProceduralSkinMaterial";
@@ -179,8 +181,8 @@ export function deriveProceduralMannequinMeasurements(proportions) {
 		forearmRadius: 0.064,
 		handDepth: 0.035,
 		handHalfWidth: 0.064,
-		headDepth: 0.108,
-		headHalfWidth: 0.118,
+		headDepth: 0.112,
+		headHalfWidth: 0.12,
 		hipJointRadius: 0.105 * anatomy.hipWidthMultiplier,
 		kneeRadius: 0.068 * anatomy.hipWidthMultiplier,
 		neckRadius: 0.064,
@@ -368,7 +370,8 @@ export function validateProceduralMannequinRecipe(value) {
 	}
 	if (
 		!legacyRecipe &&
-		geometry.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION
+		geometry.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION &&
+		geometry.topologyVersion !== LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION
 	) {
 		issues.push({
 			message: `Expected ${PROCEDURAL_HUMANOID_TOPOLOGY_VERSION}.`,

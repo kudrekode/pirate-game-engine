@@ -115,18 +115,20 @@ export const PROCEDURAL_MANNEQUIN_V0_ASSET: ThreeVisualAssetDefinition = {
 		"compiler-generated",
 		"golden-skeleton",
 		"procedural",
+		"procedural-head-v1",
 		"skinned",
 	],
 	url: "/assets/derived/procedural-humanoids/mannequin-v0/mannequin.glb",
 };
 
-/** Complete Blender-compiled mannequin with the Quaternius Hairstyle Slot V1. */
+/** Complete Blender-compiled mannequin with Hairstyle Slot V1 and Fit V2. */
 export const PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET: ThreeVisualAssetDefinition = {
 	...PROCEDURAL_MANNEQUIN_V0_ASSET,
 	id: "procedural-mannequin-quaternius-hair-v0",
 	name: "Procedural Mannequin: Quaternius Buzzed Hair",
 	tags: [
 		...(PROCEDURAL_MANNEQUIN_V0_ASSET.tags ?? []),
+		"hairstyle-fit-v2",
 		"hairstyle-slot-v1",
 		"quaternius-hair-v0",
 	],
