@@ -65,9 +65,9 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 			meshCount: 5,
 			skeletonContract: "golden-humanoid-v0",
 			topology: { connectedComponentCount: 1, manifold: true },
-			topologyVersion: "procedural-humanoid-v2",
-			triangleCount: 5664,
-			vertexCount: 2870,
+			topologyVersion: "procedural-humanoid-v3",
+			triangleCount: 5676,
+			vertexCount: 2876,
 		});
 		expect(manifest.appearance.face).toEqual(
 			expect.objectContaining({
@@ -138,7 +138,7 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 					componentId: "quaternius-hair-v0",
 					materialCount: 1,
 					meshCount: 1,
-					textureCount: 2,
+					textureCount: 1,
 					triangleCount: 830,
 					vertexCount: 466,
 				},
@@ -146,8 +146,8 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 			jointCount: 65,
 			materialCount: 4,
 			meshCount: 6,
-			triangleCount: 6494,
-			vertexCount: 3336,
+			triangleCount: 6506,
+			vertexCount: 3342,
 		});
 		expect(hairManifest.skeletonSignature).toBe(manifest.skeletonSignature);
 		const definition = getThreeVisualAssetDefinition(HAIR_ASSET_ID);

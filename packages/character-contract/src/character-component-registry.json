@@ -53,12 +53,12 @@
 				"scale": [1, 1, 1]
 			},
 			"fittingProfile": {
-				"id": "quaternius-buzzed-fit-v2",
-				"version": 2,
+				"id": "quaternius-buzzed-fit-v3",
+				"version": 3,
 				"mode": "geometry-aware-scalp",
 				"attachmentBone": "Head",
 				"sourceReferenceFrame": {
-					"forwardAxis": "+Y",
+					"forwardAxis": "-Y",
 					"upAxis": "+Z",
 					"centreMode": "bounds-centre",
 					"crownMode": "maximum-z"
@@ -81,12 +81,14 @@
 			},
 			"material": {
 				"name": "MI_Hair_1",
-				"textures": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"]
+				"textures": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"],
+				"compiledTextures": ["T_Hair_1_Normal.png"],
+				"colorMode": "authored-solid-with-source-normal"
 			},
-			"compilerCompatibilityVersion": "procedural-mannequin-blender-v6",
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v7",
 			"knownLimitations": [
 				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
-				"Fixed vendor-authored brown material; hair colour authoring is not implemented.",
+				"Compiled solid hair colour with the source normal map; vendor base colour texture is not exported.",
 				"Geometry-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
 			]
 		}

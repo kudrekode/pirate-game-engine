@@ -85,9 +85,9 @@ browser overlay or duplicate skeleton is created. See
 `docs/assets/hairstyle-slot-v1.md`.
 
 Procedural Head and Hair Fit V1 supersedes the V1 placement calibration for new
-builds. `procedural-humanoid-v2` generates a stylised cranium/jaw/chin/face
+builds. `procedural-humanoid-v3` generates a stylised cranium/jaw/chin/face
 plane, records a geometry-derived head/scalp contract, and
-`quaternius-buzzed-fit-v2` derives its transform from measured source and scalp
+`quaternius-buzzed-fit-v3` derives its transform from measured source and scalp
 bounds. The compiler rejects low neck placement, weak scalp coverage,
 off-centre fits, and inadequate shoulder clearance. See
 `docs/assets/procedural-head-hair-fit-v1.md`.
@@ -103,10 +103,15 @@ eye appearance matrix with:
 ```powershell
 npm run validate:procedural-hairstyle-matrix
 npm run validate:procedural-appearance-matrix
+npm run validate:procedural-appearance-matrix -- --hair-colors
 ```
 
-See `docs/assets/face-readability-v0.md` for geometry counts, versioning,
-validation gates, fixed-camera evidence, limitations, and the next milestone.
+Hair Colour V1 compiles `appearance.hair.color` into the derived material,
+retaining the source normal map. Recipe/request V6 preserves V5 eye colours
+and supplies historical brown for older hair recipes. Compiler V7 / validator
+V8 use the corrected -Y head frame and an independent exported face/toe gate.
+See `docs/assets/hair-colour-v1.md` for current versions, evidence, and limits;
+`face-readability-v0.md` records the earlier diagnosis.
 
 See `docs/assets/generated-body-topology-v1.md` for the method decision,
 version/migration policy, topology and skeleton gates, matrix results, and

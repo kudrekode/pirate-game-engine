@@ -14,8 +14,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+import bmesh
 import bpy
 from mathutils import Euler, Matrix, Vector
+from mathutils.bvhtree import BVHTree
 
 
 EXPECTED_JOINT_COUNT = 65
@@ -205,8 +207,8 @@ def validate_hair_fit(coordinates, head_contract, scalp_vertices, shoulder_verti
     width_ratio = (maximum.x - minimum.x) / head_dimensions.x
     depth_ratio = (maximum.y - minimum.y) / head_dimensions.y
     centre_offset = centre - head_centre
-    front_gap = head_maximum.y - maximum.y
-    rear_gap = minimum.y - head_minimum.y
+    front_gap = minimum.y - head_minimum.y
+    rear_gap = head_maximum.y - maximum.y
     checks = {
         # A buzzed cap may retain a small nape fringe, but at least 90% of its
         # vertices must remain above the measured neck-top plane.
@@ -314,6 +316,20 @@ def import_hair_component(
             f"found {imported_images}."
         )
 
+    # Source files stay immutable. Replace only this derived material's brown
+    # albedo connection with authored linear colour; retain the normal map.
+    hair_material = materials[0]
+    hair_principled = hair_material.node_tree.nodes.get("Principled BSDF")
+    if hair_principled is None:
+        raise RuntimeError("Expected a Principled hair material.")
+    for link in list(hair_principled.inputs["Base Color"].links):
+        hair_material.node_tree.links.remove(link)
+    hair_linear = canonical_srgb_hex_to_linear(recipe["appearance"]["hair"]["color"])
+    hair_material.diffuse_color = hair_linear + (1.0,)
+    hair_principled.inputs["Base Color"].default_value = hair_material.diffuse_color
+    hair_principled.inputs["Metallic"].default_value = 0.0
+    hair_principled.inputs["Roughness"].default_value = 0.72
+
     profile = component["fittingProfile"]
     transform = component["normalizedTransform"]
     correction_translation = Vector(transform["translationMetres"])
@@ -396,8 +412,8 @@ def import_hair_component(
         (
             target_centre.x,
             (target_minimum.y + target_maximum.y) * 0.5
-            + profile["frontOffsetMetres"]
-            - profile["rearOffsetMetres"],
+            - profile["frontOffsetMetres"]
+            + profile["rearOffsetMetres"],
             head_contract["scalpTop"][2] + profile["verticalSeatingOffsetMetres"],
         )
     )
@@ -426,14 +442,14 @@ def import_hair_component(
     head_centre_x = head_contract["headCentre"][0]
     face_plane_y = head_contract["facePlane"]["centre"][1]
     forehead_z = head_contract["foreheadReference"][2]
-    hairline_min_y = face_plane_y - head_depth * 0.25
+    hairline_max_y = face_plane_y + head_depth * 0.25
     hairline_max_z = forehead_z + head_height * 0.08
     hairline_half_width = head_width * 0.40
     adjusted_hairline_vertices = 0
     for vertex in hair.data.vertices:
         lateral_distance = abs(vertex.co.x - head_centre_x)
         if (
-            vertex.co.y >= hairline_min_y
+            vertex.co.y <= hairline_max_y
             and vertex.co.z <= hairline_max_z
             and lateral_distance <= hairline_half_width
         ):
@@ -478,7 +494,7 @@ def import_hair_component(
 		"faceClearance": {
 			"hairlineHalfWidthMetres": round(hairline_half_width, 9),
 			"hairlineMaximumZ": round(hairline_max_z, 9),
-			"hairlineMinimumY": round(hairline_min_y, 9),
+			"hairlineMaximumY": round(hairline_max_y, 9),
 			"adjustedVertexCount": adjusted_hairline_vertices,
 		},
         "fitValidation": fit_validation,
@@ -847,6 +863,11 @@ def nose_wedge_geometry(center, base_y, tip_y, half_width, half_height):
 def create_head_skinned_feature(name, feature_type, vertices, faces, material, armature):
     mesh = bpy.data.meshes.new(name)
     mesh.from_pydata(vertices, [], faces)
+    normals = bmesh.new()
+    normals.from_mesh(mesh)
+    bmesh.ops.recalc_face_normals(normals, faces=list(normals.faces))
+    normals.to_mesh(mesh)
+    normals.free()
     mesh.validate(clean_customdata=False)
     mesh.update(calc_edges=True)
     feature = bpy.data.objects.new(name, mesh)
@@ -865,11 +886,23 @@ def create_head_skinned_feature(name, feature_type, vertices, faces, material, a
     return feature
 
 
-def create_face_features(recipe, armature, head_contract, skin_material):
+def create_face_features(recipe, armature, head_contract, skin_material, body_mesh):
     head_width = head_contract["headWidth"]
     head_height = head_contract["headHeight"]
     head_depth = head_contract["headDepth"]
     face_y = head_contract["facePlane"]["centre"][1]
+    surface = BVHTree.FromPolygons(
+        [vertex.co for vertex in body_mesh.data.vertices],
+        [tuple(polygon.vertices) for polygon in body_mesh.data.polygons],
+    )
+
+    def front_surface_y(x, z):
+        origin = Vector((x, head_contract["bounds"]["minimum"][1] - head_depth, z))
+        point, normal, index, distance = surface.ray_cast(origin, Vector((0, 1, 0)), head_depth * 3)
+        if point is None:
+            raise RuntimeError("Facial feature missed the measured head surface.")
+        return point.y
+
     eye_line = Vector(head_contract["eyeLine"]["centre"])
     eye_offset = head_contract["eyeLine"]["separationMetres"] * 0.5
     eye_radii = Vector(
@@ -897,14 +930,16 @@ def create_face_features(recipe, armature, head_contract, skin_material):
 
     objects = []
     eye_centres = []
+    eye_surface_y = max(front_surface_y(eye_line.x + sign * eye_offset, eye_line.z) for sign in (-1, 1))
     for side, sign in (("L", 1.0), ("R", -1.0)):
         centre = Vector(
             (
                 eye_line.x + sign * eye_offset,
-                face_y - head_depth * 0.006,
+                face_y + head_depth * 0.006,
                 eye_line.z,
             )
         )
+        centre.y = eye_surface_y + eye_radii.y * 0.25
         vertices, faces = ellipsoid_geometry(
             centre, eye_radii.x, eye_radii.y, eye_radii.z
         )
@@ -918,10 +953,15 @@ def create_face_features(recipe, armature, head_contract, skin_material):
 
     nose_centre = Vector(head_contract["noseCentre"])
     nose_projection = head_depth * 0.09
+    nose_surface_y = front_surface_y(nose_centre.x, nose_centre.z)
+    nose_base_y = max(front_surface_y(x, z)
+        for x in (nose_centre.x - head_width * 0.05, nose_centre.x + head_width * 0.05)
+        for z in (nose_centre.z - head_height * 0.095, nose_centre.z + head_height * 0.095))
+    nose_centre.y = nose_surface_y
     nose_vertices, nose_faces = nose_wedge_geometry(
         nose_centre,
-        face_y - head_depth * 0.035,
-        face_y + nose_projection,
+        nose_base_y + head_depth * 0.02,
+        nose_surface_y - nose_projection,
         head_width * 0.05,
         head_height * 0.095,
     )
@@ -932,10 +972,15 @@ def create_face_features(recipe, armature, head_contract, skin_material):
     )
 
     mouth_centre = Vector(head_contract["mouthLine"]["centre"])
+    mouth_surfaces = [front_surface_y(mouth_centre.x + offset, mouth_centre.z)
+        for offset in (-head_width * 0.105, 0, head_width * 0.105)]
+    mouth_front = min(mouth_surfaces) - head_depth * 0.004
+    mouth_back = max(mouth_surfaces) + head_depth * 0.015
+    mouth_centre.y = (mouth_front + mouth_back) * 0.5
     mouth_vertices, mouth_faces = box_geometry(
-        Vector((mouth_centre.x, face_y + head_depth * 0.002, mouth_centre.z)),
+        mouth_centre,
         head_width * 0.105,
-        head_depth * 0.012,
+        (mouth_back - mouth_front) * 0.5,
         head_height * 0.008,
     )
     objects.append(
@@ -958,7 +1003,7 @@ def create_face_features(recipe, armature, head_contract, skin_material):
     separation = abs(eye_centres[0].x - eye_centres[1].x)
     checks = {
         "eyeDepth": all(
-            centre.y <= face_y and centre.y - eye_radii.y > head_contract["headCentre"][1]
+            centre.y >= face_y and centre.y + eye_radii.y < head_contract["headCentre"][1]
             for centre in eye_centres
         ),
         "eyeSeparation": head_width * 0.28 <= separation <= head_width * 0.46,
@@ -1036,7 +1081,7 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
     minimum, maximum = vector_bounds(head_vertices)
     centre = (minimum + maximum) * 0.5
     dimensions = maximum - minimum
-    face_plane_y = maximum.y - dimensions.y * 0.07
+    face_plane_y = minimum.y + dimensions.y * 0.07
     scalp_floor = centre.z + dimensions.z * 0.05
     scalp_vertices = [point for point in head_vertices if point.z >= scalp_floor]
     shoulder_vertices = [
@@ -1064,19 +1109,19 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
         raise RuntimeError("Generated head does not have a stable neck connection slice.")
     contract = {
         "axes": {
-            "forward": [0.0, 1.0, 0.0],
+            "forward": [0.0, -1.0, 0.0],
             "right": [1.0, 0.0, 0.0],
             "up": [0.0, 0.0, 1.0],
         },
         "bounds": bounds_report(minimum, maximum),
         "coordinateSpace": "compiler-local-head-bone-compatible-z-up",
-		"version": "procedural-head-contract-v2",
+		"version": "procedural-head-contract-v3",
         "foreheadReference": rounded(
-            [centre.x, maximum.y, centre.z + dimensions.z * 0.16]
+            [centre.x, minimum.y, centre.z + dimensions.z * 0.16]
         ),
 		"facePlane": {
 			"centre": rounded([centre.x, face_plane_y, centre.z]),
-			"forward": [0.0, 1.0, 0.0],
+			"forward": [0.0, -1.0, 0.0],
 		},
         "headBonePosition": rounded(head_bone),
         "headCentre": rounded(centre),
@@ -1096,11 +1141,11 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
         "neckConnectionVertexCount": neck_connection_vertices,
         "neckTop": rounded([head_bone.x, head_bone.y, neck_top]),
         "rearCraniumReference": rounded(
-            [centre.x, minimum.y, centre.z + dimensions.z * 0.22]
+            [centre.x, maximum.y, centre.z + dimensions.z * 0.22]
         ),
-        "scalpBack": rounded([centre.x, scalp_minimum.y, centre.z]),
+        "scalpBack": rounded([centre.x, scalp_maximum.y, centre.z]),
         "scalpBounds": bounds_report(scalp_minimum, scalp_maximum),
-        "scalpFront": rounded([centre.x, scalp_maximum.y, centre.z]),
+        "scalpFront": rounded([centre.x, scalp_minimum.y, centre.z]),
         "scalpLeft": rounded([scalp_minimum.x, centre.y, centre.z]),
         "scalpRight": rounded([scalp_maximum.x, centre.y, centre.z]),
         "scalpTop": rounded([centre.x, centre.y, scalp_maximum.z]),
@@ -1189,32 +1234,37 @@ def create_geometry(armature, recipe):
     builder.add_ellipsoid("Neck", "neck_01", torso_heads["neck_01"], torso_heads["Head"], measurements["neckRadius"], measurements["neckRadius"] * 0.9)
     # Procedural Head V1 deliberately keeps the canonical Head/Neck bones but
     # replaces the short pill-shaped source with overlapping stylised volumes.
-    # +Y is the stable face direction in Blender and exports as engine -Z.
+    # Golden feet point along local -Y, exported +Z before the shared
+    # 180-degree presentation rotation. Keep anatomy aligned with that rig.
+    forward = (head("ball_l") - head("foot_l")) + (head("ball_r") - head("foot_r"))
+    forward.z = 0
+    if forward.normalized().dot(Vector((0, -1, 0))) < 0.99:
+        raise RuntimeError("Golden skeleton forward direction no longer matches the head frame.")
     head_anchor = torso_heads["Head"]
     builder.add_sphere(
         "HeadCranium",
-        head_anchor + Vector((0.0, -0.012, 0.025)),
+        head_anchor + Vector((0.0, 0.012, 0.025)),
         measurements["headHalfWidth"],
         measurements["headDepth"],
         0.105,
     )
     builder.add_sphere(
         "HeadRearCranium",
-        head_anchor + Vector((0.0, -0.052, 0.018)),
+        head_anchor + Vector((0.0, 0.052, 0.018)),
         measurements["headHalfWidth"] * 0.91,
         measurements["headDepth"] * 0.78,
         0.092,
     )
     builder.add_sphere(
         "HeadFaceJaw",
-        head_anchor + Vector((0.0, 0.034, -0.052)),
+        head_anchor + Vector((0.0, -0.034, -0.052)),
         measurements["headHalfWidth"] * 0.78,
         measurements["headDepth"] * 0.78,
         0.082,
     )
     builder.add_sphere(
         "HeadChin",
-        head_anchor + Vector((0.0, 0.048, -0.112)),
+        head_anchor + Vector((0.0, -0.048, -0.112)),
         measurements["headHalfWidth"] * 0.48,
         measurements["headDepth"] * 0.5,
         0.045,
@@ -1222,8 +1272,8 @@ def create_geometry(armature, recipe):
     builder.add_box(
         "HeadFacePlane",
         "Head",
-        head_anchor + Vector((0.0, measurements["headDepth"] * 0.86, -0.075)),
-        head_anchor + Vector((0.0, measurements["headDepth"] * 0.9, 0.042)),
+        head_anchor + Vector((0.0, -measurements["headDepth"] * 0.86, -0.075)),
+        head_anchor + Vector((0.0, -measurements["headDepth"] * 0.9, 0.042)),
         measurements["headHalfWidth"] * 0.62,
         0.012,
     )
@@ -1360,8 +1410,8 @@ def create_geometry(armature, recipe):
         )
 
     chest_center = (torso_heads["spine_03"] + torso_heads["neck_01"]) * 0.5
-    chest_start = chest_center + Vector((0.0, 0.122, -0.035))
-    chest_end = chest_center + Vector((0.0, 0.135, 0.055))
+    chest_start = chest_center + Vector((0.0, -0.122, -0.035))
+    chest_end = chest_center + Vector((0.0, -0.135, 0.055))
     builder.add_box("FacingMarker", "spine_03", chest_start, chest_end, 0.055, 0.018)
 
     mesh = bpy.data.meshes.new("ProceduralMannequinMesh")
@@ -1420,7 +1470,7 @@ def create_geometry(armature, recipe):
         recipe["geometry"]["topologyVersion"],
     )
     face_objects, face_report = create_face_features(
-        recipe, armature, head_contract, material
+        recipe, armature, head_contract, material, mesh_object
     )
     return (
         mesh_object,

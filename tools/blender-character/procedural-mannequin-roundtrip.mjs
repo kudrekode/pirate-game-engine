@@ -364,6 +364,7 @@ function analyzeHair(root, expected, clips, glbResources) {
 		};
 	}
 	const definition = expected.definition;
+	const material = analyzeSkinMaterial(root, expected.material);
 	let mesh;
 	root.traverse((object) => {
 		if (!(object instanceof THREE.SkinnedMesh)) return;
@@ -386,7 +387,7 @@ function analyzeHair(root, expected, clips, glbResources) {
 		: [];
 	const materialNames = materials.map((material) => material.name).sort();
 	const textureNames = glbResources.imageNames.slice().sort();
-	const expectedTextureNames = definition.material.textures
+	const expectedTextureNames = definition.material.compiledTextures
 		.map((name) => name.replace(/\.[^.]+$/u, ""))
 		.sort();
 	const position = mesh?.geometry.getAttribute("position");
@@ -444,6 +445,7 @@ function analyzeHair(root, expected, clips, glbResources) {
 		cloneOne.skeleton !== cloneTwo.skeleton;
 	return {
 		attachmentAnimation,
+		material,
 		attachmentBone: fullHeadWeights ? definition.expectedAttachmentBone : null,
 		attachmentWeightBones: [...attachmentWeightBones].sort(),
 		bounds: {
@@ -459,6 +461,7 @@ function analyzeHair(root, expected, clips, glbResources) {
 		objectName: mesh?.name ?? null,
 		passed:
 			mesh instanceof THREE.SkinnedMesh &&
+			material.passed &&
 			fullHeadWeights &&
 			materialNames.length === 1 &&
 			materialNames[0] === definition.material.name &&
@@ -470,6 +473,57 @@ function analyzeHair(root, expected, clips, glbResources) {
 		textureNames,
 		triangleCount,
 		vertexCount: hairVertexIndices.size,
+	};
+}
+
+// Compare exported facial geometry with an independent anatomical reference.
+// Do not trust the compiler's declared forward axis or camera labels.
+export function validateFaceOrientation(root) {
+	root.updateMatrixWorld(true);
+	const head = root.getObjectByName("Head");
+	const feet = ["l", "r"].map((side) => {
+		const foot = root.getObjectByName(`foot_${side}`);
+		const toe = root.getObjectByName(`ball_${side}`);
+		if (!foot || !toe) return null;
+		const forward = toe
+			.getWorldPosition(new THREE.Vector3())
+			.sub(foot.getWorldPosition(new THREE.Vector3()));
+		forward.y = 0;
+		return forward.length() > 0.01 ? forward.normalize() : null;
+	});
+	if (!head || feet.some((foot) => !foot))
+		return { passed: false, reason: "Missing anatomical landmarks" };
+	const forward = feet[0].clone().add(feet[1]).normalize();
+	const headCentre = head.getWorldPosition(new THREE.Vector3());
+	const features = [];
+	root.traverse((object) => {
+		if (
+			!(object instanceof THREE.Mesh) ||
+			!/^Face(Eye|Nose|Mouth)/u.test(object.name)
+		)
+			return;
+		const direction = new THREE.Box3()
+			.setFromObject(object, true)
+			.getCenter(new THREE.Vector3())
+			.sub(headCentre);
+		direction.y = 0;
+		features.push({
+			name: object.name,
+			forwardDistanceMetres: rounded(direction.dot(forward)),
+			alignment: rounded(direction.clone().normalize().dot(forward)),
+		});
+	});
+	const passed =
+		feet[0].dot(feet[1]) > 0.95 &&
+		features.length === 4 &&
+		features.every(
+			(feature) =>
+				feature.forwardDistanceMetres > 0.02 && feature.alignment > 0.7,
+		);
+	return {
+		passed,
+		footForward: forward.toArray().map((value) => rounded(value)),
+		features,
 	};
 }
 
@@ -544,6 +598,7 @@ function analyzeFace(root, expected, clips, glbResources) {
 	);
 	const nose = features.find((feature) => feature.featureType === "nose");
 	const mouth = features.find((feature) => feature.featureType === "mouth");
+	const orientation = validateFaceOrientation(root);
 	const eyeMaterial = analyzeSkinMaterial(root, expected.eyeMaterial);
 	const eyeNames = new Set(eyes.flatMap((feature) => feature.materialNames));
 	const materialNames = glbResources.materialNames.slice().sort();
@@ -553,6 +608,7 @@ function analyzeFace(root, expected, clips, glbResources) {
 		),
 		eyeMaterial: eyeMaterial.passed && eyeNames.has(expected.eyeMaterial.name),
 		eyeMeshCount: eyes.length === 2,
+		orientation: orientation.passed,
 		finiteGeometry: features.every((feature) => feature.finite),
 		headWeights: features.every((feature) => feature.fullHeadWeight),
 		materialAssignments:
@@ -567,6 +623,7 @@ function analyzeFace(root, expected, clips, glbResources) {
 		checks,
 		eyeMaterial,
 		eyeMeshCount: eyes.length,
+		orientation,
 		features,
 		materialCount: new Set(features.flatMap((feature) => feature.materialNames))
 			.size,
@@ -1220,6 +1277,7 @@ export async function validateProceduralMannequinArtifact({
 		checks,
 		cloneIndependence,
 		face,
+		allMeshGeometrySemanticHash: sha256(JSON.stringify(semantic.meshes)),
 		faceGeometrySemanticHash: sha256(JSON.stringify(faceSemantic)),
 		geometry,
 		geometrySemanticHash: sha256(
@@ -1246,7 +1304,8 @@ export async function validateProceduralMannequinArtifact({
 					(candidate) =>
 						candidate.name === expectedSkinMaterial?.name ||
 						candidate.name === expectedFace?.eyeMaterial?.name ||
-						candidate.name === expectedFace?.mouthMaterialName,
+						candidate.name === expectedFace?.mouthMaterialName ||
+						candidate.name === expectedHairComponent?.definition?.material.name,
 				),
 			),
 		),

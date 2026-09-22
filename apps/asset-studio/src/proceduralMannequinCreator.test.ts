@@ -26,6 +26,16 @@ function successfulPayload(
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
 			appearance: {
+				hair: {
+					authoredColor: "#3b2a1f",
+					authoredColorSpace: "srgb",
+					materialSchemaVersion: "procedural-hair-material-v1",
+					materialCount: hair === "none" ? 0 : 1,
+					exportedLinearColor:
+						hair === "none" ? null : [0.0437, 0.0232, 0.0137],
+					exportedRoughness: hair === "none" ? null : 0.72,
+					exportedMetallic: hair === "none" ? null : 0,
+				},
 				face: {
 					authoredEyeColor: "#4b5d67",
 					authoredEyeColorSpace: "srgb",
@@ -69,7 +79,7 @@ function successfulPayload(
 				shoulderWidthMultiplier: 1,
 				torsoLengthMultiplier: 1,
 			},
-			compilerVersion: "procedural-mannequin-blender-v6",
+			compilerVersion: "procedural-mannequin-blender-v7",
 			face: {
 				eyeColor: "#4b5d67",
 				eyeMeshCount: 2,
@@ -84,7 +94,7 @@ function successfulPayload(
 			},
 			faceGeometrySemanticHash: "1".repeat(64),
 			head: {
-				version: "procedural-head-contract-v2",
+				version: "procedural-head-contract-v3",
 				bounds: {
 					centre: [0, 0.0264, 1.5881],
 					dimensions: [0.346707, 0.288124, 0.276179],
@@ -98,7 +108,7 @@ function successfulPayload(
 				neckTop: [0, 0, 1.45],
 				scalpTop: [0, 0, 1.726],
 				symmetryErrorMetres: 0,
-				topologyVersion: "procedural-humanoid-v2",
+				topologyVersion: "procedural-humanoid-v3",
 			},
 			components: {
 				hair: {
@@ -106,7 +116,7 @@ function successfulPayload(
 					componentId: hair,
 					materialCount: hair === "none" ? 0 : 1,
 					meshCount: hair === "none" ? 0 : 1,
-					textureCount: hair === "none" ? 0 : 2,
+					textureCount: hair === "none" ? 0 : 1,
 					triangleCount: hair === "none" ? 0 : 830,
 					vertexCount: hair === "none" ? 0 : 466,
 				},
@@ -131,32 +141,32 @@ function successfulPayload(
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 5,
+			recipeVersion: 6,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
 				boundaryEdgeCount: 0,
 				connectedComponentCount: 1,
 				degenerateFaceCount: 0,
-				edgeCount: 8274,
+				edgeCount: 8292,
 				eulerCharacteristic: 2,
-				faceCount: 5516,
+				faceCount: 5528,
 				genus: 0,
 				manifold: true,
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v2",
-			triangleCount: 5664,
-			validationVersion: "procedural-mannequin-roundtrip-v7",
-			vertexCount: 2870,
+			topologyVersion: "procedural-humanoid-v3",
+			triangleCount: 5676,
+			validationVersion: "procedural-mannequin-roundtrip-v8",
+			vertexCount: 2876,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
 		requestId: "11111111-1111-4111-8111-111111111111",
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v7",
+			version: "procedural-mannequin-roundtrip-v8",
 		},
 	};
 }
@@ -185,12 +195,13 @@ describe("procedural mannequin creator client", () => {
 		expect(createProceduralMannequinCompileRequest(recipe)).toEqual({
 			appearance: {
 				eyeColor: "#4b5d67",
+				hairColor: "#3b2a1f",
 				skinColor: "#c98f65",
 				skinRoughness: 0.72,
 			},
 			components: { hair: "none" },
 			proportions: { ...DEFAULT_PROPORTIONS, height: 1.93 },
-			version: 5,
+			version: 6,
 		});
 	});
 
@@ -240,12 +251,13 @@ describe("procedural mannequin creator client", () => {
 				body: JSON.stringify({
 					appearance: {
 						eyeColor: "#4b5d67",
+						hairColor: "#3b2a1f",
 						skinColor: "#c98f65",
 						skinRoughness: 0.72,
 					},
 					components: { hair: "none" },
 					proportions: DEFAULT_PROPORTIONS,
-					version: 5,
+					version: 6,
 				}),
 				method: "POST",
 			}),
@@ -287,5 +299,23 @@ describe("procedural mannequin creator client", () => {
 		await expect(
 			requestProceduralMannequinCompile(recipe, wrongHairRequest),
 		).rejects.toThrow("hairstyle component mismatch");
+	});
+	it("submits authored hair colour and rejects stale compiled colour", async () => {
+		const recipe = createDefaultCharacterRecipe();
+		recipe.palette.hair = "#BD955B";
+		expect(
+			createProceduralMannequinCompileRequest(recipe).appearance.hairColor,
+		).toBe("#bd955b");
+		const stale = vi.fn(
+			async () =>
+				new Response(JSON.stringify(successfulPayload(1.82)), { status: 200 }),
+		);
+		await expect(
+			requestProceduralMannequinCompile(recipe, stale),
+		).rejects.toThrow("mismatched validation metadata");
+		recipe.palette.hair = "blond";
+		await expect(
+			requestProceduralMannequinCompile(recipe, stale),
+		).rejects.toThrow("Hair color");
 	});
 });

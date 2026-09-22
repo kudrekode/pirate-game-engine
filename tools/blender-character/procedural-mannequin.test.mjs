@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import * as THREE from "three";
+import { validateFaceOrientation } from "./procedural-mannequin-roundtrip.mjs";
 import {
 	buildProceduralMannequinScriptArguments,
 	PROCEDURAL_MANNEQUIN_PATHS,
@@ -275,9 +277,9 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v7",
+		"procedural-mannequin-roundtrip-v8",
 	);
-	assert.equal(result.manifest.recipeVersion, 5);
+	assert.equal(result.manifest.recipeVersion, 6);
 	assert.equal(result.manifest.components.hair.componentId, "none");
 	assert.equal(result.manifest.appearance.skin.authoredColor, "#c98f65");
 	assert.equal(result.manifest.appearance.skin.authoredRoughness, 0.72);
@@ -292,7 +294,7 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.face.validation.passed, true);
 	assert.equal(result.manifest.face.vertexCount, 110);
 	assert.equal(result.manifest.face.triangleCount, 148);
-	assert.equal(result.manifest.head.version, "procedural-head-contract-v2");
+	assert.equal(result.manifest.head.version, "procedural-head-contract-v3");
 	assert.equal(result.validation.face.passed, true);
 	assert.equal(result.validation.face.checks.headWeights, true);
 	assert.equal(result.validation.face.checks.animationAttachment, true);
@@ -305,9 +307,9 @@ test("round-trips the committed artifact and its canonical animations", async ()
 		boundaryEdgeCount: 0,
 		connectedComponentCount: 1,
 		degenerateFaceCount: 0,
-		edgeCount: 8274,
+		edgeCount: 8292,
 		eulerCharacteristic: 2,
-		faceCount: 5516,
+		faceCount: 5528,
 		genus: 0,
 		manifold: true,
 		nonManifoldEdgeCount: 0,
@@ -322,7 +324,7 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.ok(result.manifest.triangleCount >= 4_000);
 	assert.ok(result.manifest.triangleCount <= 15_000);
 	assert.ok(result.manifest.generationDurationMs > 0);
-	assert.equal(result.manifest.head.topologyVersion, "procedural-humanoid-v2");
+	assert.equal(result.manifest.head.topologyVersion, "procedural-humanoid-v3");
 	assert.ok(result.manifest.head.headWidth > 0.3);
 	assert.ok(result.manifest.head.headDepth > 0.25);
 	assert.ok(result.manifest.head.headHeight > 0.24);
@@ -355,16 +357,16 @@ test("round-trips the committed haired artifact with one shared-skeleton Head at
 	assert.equal(result.validation.hair.meshCount, 1);
 	assert.equal(result.validation.hair.triangleCount, 830);
 	assert.equal(result.validation.hair.materialCount, 1);
-	assert.equal(result.validation.hair.textureCount, 2);
+	assert.equal(result.validation.hair.textureCount, 1);
 	assert.equal(result.validation.inspection.skeletonCount, 1);
 	assert.equal(
 		result.manifest.components.hair.componentId,
 		"quaternius-hair-v0",
 	);
-	assert.equal(result.manifest.components.hair.fittingProfile.version, 2);
+	assert.equal(result.manifest.components.hair.fittingProfile.version, 3);
 	assert.equal(
 		result.manifest.components.hair.fittingProfile.id,
-		"quaternius-buzzed-fit-v2",
+		"quaternius-buzzed-fit-v3",
 	);
 	assert.equal(result.manifest.components.hair.fitValidation.passed, true);
 	assert.ok(
@@ -380,4 +382,65 @@ test("round-trips the committed haired artifact with one shared-skeleton Head at
 	assert.equal(result.manifest.determinism.faceGeometryDeterministic, true);
 	assert.equal(result.manifest.determinism.facePlacementDeterministic, true);
 	assert.equal(result.manifest.determinism.binaryDeterministic, true);
+});
+
+test("rejects backwards facial geometry independently of declared axes and global rotation", () => {
+	const root = new THREE.Group();
+	for (const [name, x, y, z] of [
+		["Head", 0, 1.6, 0],
+		["foot_l", 0.1, 0.1, 0],
+		["ball_l", 0.1, 0.05, 0.15],
+		["foot_r", -0.1, 0.1, 0],
+		["ball_r", -0.1, 0.05, 0.15],
+	]) {
+		const bone = new THREE.Bone();
+		bone.name = name;
+		bone.position.set(x, y, z);
+		root.add(bone);
+	}
+	const features = ["FaceEyeL", "FaceEyeR", "FaceNose", "FaceMouth"].map(
+		(name) => {
+			const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.01, 0.01));
+			mesh.name = name;
+			mesh.position.set(0, 1.6, 0.12);
+			root.add(mesh);
+			return mesh;
+		},
+	);
+	assert.equal(validateFaceOrientation(root).passed, true);
+	root.rotation.y = Math.PI;
+	root.position.set(3, 0, -2);
+	assert.equal(validateFaceOrientation(root).passed, true);
+	for (const mesh of features) mesh.position.z = -0.12;
+	assert.equal(validateFaceOrientation(root).passed, false);
+	for (const mesh of features) mesh.position.z = 0.12;
+	features[0].position.z = -0.12;
+	assert.equal(validateFaceOrientation(root).passed, false);
+	root.remove(root.getObjectByName("ball_l"));
+	assert.equal(validateFaceOrientation(root).passed, false);
+});
+
+test("migrates V5 hair colour without losing authored eyes and accepts old topology", async () => {
+	const legacy = await loadRecipe();
+	legacy.version = 5;
+	legacy.geometry.topologyVersion = "procedural-humanoid-v2";
+	legacy.appearance.face.eyeColor = "#405c72";
+	delete legacy.appearance.hair;
+	const parsed = validateProceduralMannequinRecipe(legacy);
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.value.appearance.face.eyeColor, "#405c72");
+	assert.equal(parsed.value.appearance.hair.color, "#3b2a1f");
+	assert.equal(parsed.value.geometry.topologyVersion, "procedural-humanoid-v3");
+	const changed = structuredClone(parsed.value);
+	changed.appearance.hair.color = "#BD955B";
+	assert.equal(
+		validateProceduralMannequinRecipe(changed).value.appearance.hair.color,
+		"#bd955b",
+	);
+	assert.notEqual(
+		hashProceduralMannequinRecipe(changed),
+		hashProceduralMannequinRecipe(parsed.value),
+	);
+	changed.appearance.hair.color = "blond";
+	assert.equal(validateProceduralMannequinRecipe(changed).ok, false);
 });

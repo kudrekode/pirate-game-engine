@@ -65,7 +65,7 @@ export async function validateCharacterComponentRegistry({
 			component.expectedAttachmentBone !== "Head" ||
 			component.attachmentStrategy !== "main-skeleton-head-surface-skinning" ||
 			component.compilerCompatibilityVersion !==
-				"procedural-mannequin-blender-v6"
+				"procedural-mannequin-blender-v7"
 		) {
 			throw new Error(`Component "${component.id}" has incompatible metadata.`);
 		}
@@ -117,12 +117,12 @@ export async function validateCharacterComponentRegistry({
 			}
 		}
 		if (
-			component.fittingProfile.version !== 2 ||
+			component.fittingProfile.version !== 3 ||
 			component.fittingProfile.mode !== "geometry-aware-scalp" ||
 			component.fittingProfile.attachmentBone !==
 				component.expectedAttachmentBone ||
 			component.fittingProfile.sourceReferenceFrame?.upAxis !== "+Z" ||
-			component.fittingProfile.sourceReferenceFrame?.forwardAxis !== "+Y" ||
+			component.fittingProfile.sourceReferenceFrame?.forwardAxis !== "-Y" ||
 			!component.fittingProfile.allowNonUniformScaling ||
 			!Number.isFinite(component.fittingProfile.frontOffsetMetres) ||
 			!Number.isFinite(component.fittingProfile.rearOffsetMetres) ||

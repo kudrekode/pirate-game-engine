@@ -5,7 +5,7 @@
 Read this file first, then identify the likely files before opening broader repo context. Prefer minimal diffs and avoid scanning unrelated files.
 
 - Read the relevant docs before coding. Start with `README.md`, `ROADMAP.md`, `docs/RUNTIME_ARCHITECTURE.md`, `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`, or `docs/PLAYWRIGHT_SMOKE.md` when the task touches those systems.
-- For Asset Studio work, start with the Quick Resume section in `docs/ASSET_STUDIO_ARCHITECTURE.md`, then read only the linked milestone relevant to the task. Current checkpoint: Face Readability V0 with a confirmed backwards head/face. Fix orientation before Hair Colour V1; see the milestone's Known Blocking Defect section.
+- For Asset Studio work, start with the Quick Resume section in `docs/ASSET_STUDIO_ARCHITECTURE.md`, then read only the linked milestone relevant to the task. Current milestone: corrected face orientation and Hair Colour V1; see `docs/assets/hair-colour-v1.md`. Next is Hairstyle Library V2.
 - Avoid opening generated `diagnostics.json`, full manifests, GLBs, or historical milestone docs wholesale. Use the resume file map, targeted searches, and summary JSON fields first.
 - Run `npm run ci` before the final response.
 - Run `git diff --check` before the final response.

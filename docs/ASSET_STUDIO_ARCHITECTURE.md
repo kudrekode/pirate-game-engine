@@ -2,10 +2,10 @@
 
 ## Quick Resume
 
-Read this section and the [Face Readability V0 milestone](assets/face-readability-v0.md)
+Read this section and the [Hair Colour V1 milestone](assets/hair-colour-v1.md)
 for current creator work; older milestone documents are historical evidence.
 
-- Current creator: six body proportions, skin colour/roughness, eye colour,
+- Current creator: six body proportions, skin colour/roughness, eye and hair colour,
   none/Quaternius Buzzed hair, seeded body randomisation, local Compile, and
   ten in-session Recent Compilations. Preview supports Rest/Idle/Walk and
   whole-body/close-head cameras.
@@ -13,18 +13,19 @@ for current creator work; older milestone documents are historical evidence.
   -> procedural recipe -> two isolated Blender builds -> Three.js validation
   -> shared preview/registry. Preserve this boundary and the unchanged
   65-joint Golden skeleton; game-session semantics are outside this work.
-- Blocking defect: the generated head/face points opposite the feet. In the
-  unrotated GLB the toes point +Z and the face projects -Z; the shared 180-degree
-  presentation rotation preserves that mismatch. Fix the compiler head/face
-  frame, related hair fitting, and camera presets, then validate side views and
-  a face-versus-feet regression gate before Hair Colour V1 / Hairstyle Library V2.
-  `palette.hair` exists as recipe metadata but does not tint the compiled hair;
-  the only current style still uses its vendor-authored material.
+- Orientation is corrected: compiler forward is -Y, exported anatomical forward
+  is +Z, and the shared 180-degree presentation rotation is unchanged. An
+  exported face-versus-foot/toe gate rejects backwards features independently
+  of declared axes. Face depth is fitted to the actual head surface.
+- Hair Colour V1 compiles `palette.hair` into a solid hair base colour while
+  preserving the source normal map. Vendor files remain immutable.
 - Version map: CharacterRecipe remains V1; compile request and procedural
-  recipe are V5; compiler is `procedural-mannequin-blender-v6`; validator is
-  `procedural-mannequin-roundtrip-v7`; topology is `procedural-humanoid-v2`;
-  head contract is V2 and hair fit remains `quaternius-buzzed-fit-v2`.
-  Legacy recipes receive eye colour `#4b5d67`.
+  recipe are V6; compiler is `procedural-mannequin-blender-v7`; validator is
+  `procedural-mannequin-roundtrip-v8`; topology is `procedural-humanoid-v3`;
+  head contract is V3 and hair fit is `quaternius-buzzed-fit-v3`.
+  Legacy procedural recipes receive hair colour `#3b2a1f`; V5 eye colour survives.
+- Next: Hairstyle Library V2 using the existing component registry and fit
+  profiles. Shirt Slot V1 remains deferred.
 - Generated fixtures live in
   `public/assets/derived/procedural-humanoids/{mannequin-v0,mannequin-hair-v0}/`.
   GLBs, manifests, diagnostics, recipe snapshots, and build logs form one
@@ -59,7 +60,7 @@ Playwright and does not typecheck/build the separate Asset Studio app.
 `test:blender-bake` includes fresh validation of both installed mannequin GLBs;
 it does not rebuild the Blender matrices. Use the
 [compiler guide](../tools/blender-character/README.md) for regeneration and
-[Face Readability validation](assets/face-readability-v0.md#validation) for
+[current validation](assets/hair-colour-v1.md#validation) for
 matrix evidence and browser-suite limitations. Test artifacts under
 `test-results/` are ignored/local, not portable checked-in proof.
 
@@ -303,8 +304,8 @@ CharacterRecipe
 ```
 
 The Asset Studio browser still does not execute Blender. During development, a
-Vite server plugin accepts one narrow V5 request containing six body parameters,
-skin and eye appearance, and the registered hair id, adapts it to the procedural
+Vite server plugin accepts one narrow V6 request containing six body parameters,
+skin, eye, and hair appearance, and the registered hair id, adapts it to the procedural
 mannequin recipe, and invokes the repository compiler in an
 isolated job directory. Successful artifacts pass two-build determinism,
 geometry/skinning, animation binding, and Three.js round-trip validation before
@@ -380,11 +381,10 @@ crowd-budget default.
 
 ## Next Milestone
 
-Face Readability V0 is a local checkpoint with a confirmed orientation defect:
-the face points opposite the feet. Correct and visually validate this before
-Hair Colour V1, then Hairstyle Library V2. The
-[blocking-defect diagnosis](assets/face-readability-v0.md#known-blocking-defect)
-records the screenshot, measured axes, affected files, and missing regression gate.
+Hair Colour V1 and the face orientation correction are implemented. Next is
+Hairstyle Library V2 through existing registry/fit profiles; see the
+[current milestone](assets/hair-colour-v1.md). Preserve the shared skeleton,
+source provenance, and round-trip gates when adding styles.
 
 ## Future Deployment Models
 

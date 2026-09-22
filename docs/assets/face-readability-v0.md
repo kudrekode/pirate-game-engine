@@ -2,6 +2,9 @@
 
 ## Known Blocking Defect
 
+**Resolved by [Hair Colour V1 and orientation correction](hair-colour-v1.md).**
+The diagnosis and evidence below describe checkpoint `977ef10`, not current assets.
+
 Confirmed on 2026-09-22: the generated head/face faces backwards relative to the
 feet. This is an incomplete visual milestone despite passing automated checks.
 
@@ -173,6 +176,7 @@ facial rig, blend shapes, face textures, or authored feature proportions. The
 nose and mouth are deliberately fixed and low-detail. The single buzzed style
 has a coarse helmet-like low-poly hairline and a fixed vendor-authored colour.
 
+Historical next step (now completed; see the current milestone above):
 **Correct head/face orientation first**, including an independent regression
 gate and fresh visual inspection. Hair Colour V1 follows that correction, then
 Hairstyle Library V2 through the existing fit-profile contract. Shirt Slot V1

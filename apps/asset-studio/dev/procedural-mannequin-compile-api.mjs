@@ -24,7 +24,7 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
-export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 5;
+export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 6;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -113,6 +113,15 @@ export function validateCreatorCompileRequest(value) {
 		issues.push({ message: "Expected skin appearance.", path: "$.appearance" });
 	} else {
 		if (
+			typeof value.appearance.hairColor !== "string" ||
+			!HEX_COLOR_PATTERN.test(value.appearance.hairColor)
+		) {
+			issues.push({
+				message: "Expected a #RRGGBB sRGB hair color string.",
+				path: "$.appearance.hairColor",
+			});
+		}
+		if (
 			typeof value.appearance.eyeColor !== "string" ||
 			!HEX_COLOR_PATTERN.test(value.appearance.eyeColor)
 		) {
@@ -166,6 +175,7 @@ export function validateCreatorCompileRequest(value) {
 				value: {
 					appearance: {
 						eyeColor: value.appearance.eyeColor.toLowerCase(),
+						hairColor: value.appearance.hairColor.toLowerCase(),
 						skinColor: value.appearance.skinColor.toLowerCase(),
 						skinRoughness: value.appearance.skinRoughness,
 					},
@@ -194,6 +204,12 @@ export async function createRecipeForProportions({
 	const candidate = {
 		...baseRecipe,
 		appearance: {
+			hair: {
+				color:
+					appearance?.hairColor ??
+					baseRecipe.appearance?.hair?.color ??
+					"#3b2a1f",
+			},
 			face: {
 				eyeColor:
 					appearance?.eyeColor ??
@@ -282,6 +298,8 @@ export async function compileCreatorMannequin({
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
 			result?.manifest?.recipeHash !== recipeHash ||
+			result?.manifest?.appearance?.hair?.authoredColor !==
+				recipe.appearance.hair.color ||
 			result?.manifest?.appearance?.face?.authoredEyeColor !==
 				recipe.appearance.face.eyeColor ||
 			result?.manifest?.appearance?.skin?.authoredColor !==

@@ -208,7 +208,7 @@ describe("CharacterRecipeV1", () => {
 			{
 				attachmentStrategy: "main-skeleton-head-surface-skinning",
 				expectedAttachmentBone: "Head",
-				fittingProfile: { id: "quaternius-buzzed-fit-v2", version: 2 },
+				fittingProfile: { id: "quaternius-buzzed-fit-v3", version: 3 },
 				provider: "Quaternius",
 				slot: "hair",
 				sourceHash:

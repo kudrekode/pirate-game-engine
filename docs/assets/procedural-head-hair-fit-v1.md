@@ -165,5 +165,6 @@ material; there is no hair colour authoring or secondary motion.
 
 The recommended face-feature follow-up was completed by Face Readability V0.
 The later side-view audit found that this head's +Y face assumption opposes
-the Golden feet. Correct the head/face orientation before Hair Colour V1 and
-Hairstyle Library V2; see the [blocking diagnosis](face-readability-v0.md#known-blocking-defect).
+the Golden feet. That defect and hair colour authoring are now resolved by
+[Hair Colour V1](hair-colour-v1.md); this document records the historical fit pass.
+Hairstyle Library V2 is next.

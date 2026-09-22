@@ -9,13 +9,13 @@ import {
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v2";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v3";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
 export const PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION =
 	"procedural-eye-material-v1";
 export const PROCEDURAL_FACE_FEATURE_VERSION = "procedural-face-readability-v0";
-export const PROCEDURAL_HEAD_CONTRACT_VERSION = "procedural-head-contract-v2";
+export const PROCEDURAL_HEAD_CONTRACT_VERSION = "procedural-head-contract-v3";
 export const PROCEDURAL_FACE_APPEARANCE = {
 	eyeColor: {
 		...CHARACTER_FACE_APPEARANCE_LIMITS.eyeColor,
@@ -73,6 +73,15 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 
 export type ProceduralMannequinManifest = {
 	appearance: {
+		hair: {
+			authoredColor: string;
+			authoredColorSpace: "srgb";
+			materialSchemaVersion: string;
+			materialCount: number;
+			exportedLinearColor: number[] | null;
+			exportedMetallic: number | null;
+			exportedRoughness: number | null;
+		};
 		face: {
 			authoredEyeColor: string;
 			authoredEyeColorSpace: "srgb";
@@ -336,6 +345,12 @@ export function validateProceduralMannequinAppearance(
 			path: "$.palette.skin",
 		});
 	}
+	if (!/^#[0-9a-fA-F]{6}$/.test(recipe.palette.hair)) {
+		issues.push({
+			message: "Hair color must be a six-digit sRGB hexadecimal color.",
+			path: "$.palette.hair",
+		});
+	}
 	if (!/^#[0-9a-fA-F]{6}$/.test(recipe.appearance.face.eyeColor)) {
 		issues.push({
 			message: "Eye color must be a six-digit sRGB hexadecimal color.",
@@ -403,12 +418,13 @@ export function createProceduralMannequinCompileRequest(
 	return {
 		appearance: {
 			eyeColor: recipe.appearance.face.eyeColor.toLowerCase(),
+			hairColor: recipe.palette.hair.toLowerCase(),
 			skinColor: recipe.palette.skin.toLowerCase(),
 			skinRoughness: recipe.appearance.skin.roughness,
 		},
 		components: { hair: recipe.components.hair },
 		proportions: { ...recipe.body.parameters },
-		version: 5 as const,
+		version: 6 as const,
 	};
 }
 
@@ -459,6 +475,12 @@ export async function requestProceduralMannequinCompile(
 			compileRequest.appearance.skinColor ||
 		payload.manifest.appearance?.skin?.authoredRoughness !==
 			compileRequest.appearance.skinRoughness ||
+		payload.manifest.appearance?.hair?.authoredColor !==
+			compileRequest.appearance.hairColor ||
+		payload.manifest.appearance?.hair?.materialSchemaVersion !==
+			"procedural-hair-material-v1" ||
+		payload.manifest.appearance?.hair?.materialCount !==
+			(compileRequest.components.hair === "none" ? 0 : 1) ||
 		payload.manifest.appearance?.face?.authoredEyeColor !==
 			compileRequest.appearance.eyeColor ||
 		payload.manifest.appearance?.face?.materialSchemaVersion !==

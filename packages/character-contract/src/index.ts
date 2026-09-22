@@ -140,13 +140,18 @@ export type CharacterComponentRegistryEntry = CharacterComponentDefinition & {
 		sourceReferenceFrame: {
 			centreMode: "bounds-centre";
 			crownMode: "maximum-z";
-			forwardAxis: "+Y";
+			forwardAxis: "-Y";
 			upAxis: "+Z";
 		};
-		version: 2;
+		version: 3;
 		verticalSeatingOffsetMetres: number;
 	};
-	material: { name: string; textures: string[] };
+	material: {
+		name: string;
+		textures: string[];
+		compiledTextures: string[];
+		colorMode: "authored-solid-with-source-normal";
+	};
 	compilerCompatibilityVersion: string;
 	knownLimitations: string[];
 };

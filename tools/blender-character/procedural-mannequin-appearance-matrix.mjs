@@ -7,7 +7,7 @@ import {
 } from "./procedural-mannequin-compiler.mjs";
 import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
 
-const DEFAULT_OUTPUT = "test-results/face-readability-v0/appearance-matrix";
+const DEFAULT_OUTPUT = "test-results/hair-colour-v1/appearance-matrix";
 const APPEARANCES = [
 	["tone-1-matte", "#f1c7a5", 0.82, "#4b5d67"],
 	["tone-3-balanced", "#c98f65", 0.62, "#4b5d67"],
@@ -20,7 +20,8 @@ const APPEARANCES = [
 ];
 
 export async function runProceduralMannequinAppearanceMatrix({
-	outputRoot = DEFAULT_OUTPUT,
+	outputRoot,
+	hairColorsOnly = false,
 	workspaceRoot = process.cwd(),
 } = {}) {
 	const baseRecipe = JSON.parse(
@@ -29,14 +30,46 @@ export async function runProceduralMannequinAppearanceMatrix({
 			"utf8",
 		),
 	);
-	const root = path.resolve(workspaceRoot, outputRoot);
+	const root = path.resolve(
+		workspaceRoot,
+		outputRoot ??
+			(hairColorsOnly
+				? "test-results/hair-colour-v1/hair-matrix"
+				: DEFAULT_OUTPUT),
+	);
 	await mkdir(root, { recursive: true });
 	const cases = [];
-	for (const [name, color, roughness, eyeColor] of APPEARANCES) {
+	const appearances = hairColorsOnly
+		? [
+				["hair-brown", "#3b2a1f"],
+				["hair-black", "#17191e"],
+				["hair-blond", "#bd955b"],
+				["hair-silver", "#a6a6ab"],
+			].map(([name, hairColor]) => [
+				name,
+				"#c98f65",
+				0.72,
+				"#4b5d67",
+				hairColor,
+			])
+		: APPEARANCES;
+	for (const [
+		name,
+		color,
+		roughness,
+		eyeColor,
+		hairColor = "#3b2a1f",
+	] of appearances) {
 		const parsed = validateProceduralMannequinRecipe({
 			...baseRecipe,
+			components: {
+				...baseRecipe.components,
+				hair: hairColorsOnly ? "quaternius-hair-v0" : "none",
+			},
 			appearance: {
+				...baseRecipe.appearance,
 				face: { eyeColor },
+				hair: { color: hairColor },
 				skin: { color, colorSpace: "srgb", roughness },
 			},
 		});
@@ -62,12 +95,15 @@ export async function runProceduralMannequinAppearanceMatrix({
 			manifest.appearance.face.authoredEyeColor !== eyeColor ||
 			manifest.appearance.face.materialCount !== 1 ||
 			manifest.face.eyeMeshCount !== 2 ||
-			manifest.face.validation.passed !== true
+			manifest.face.validation.passed !== true ||
+			manifest.face.orientation.passed !== true ||
+			manifest.appearance.hair.authoredColor !== hairColor
 		) {
 			throw new Error(`${name} did not preserve its authored material.`);
 		}
 		cases.push({
 			appearance: manifest.appearance,
+			allMeshGeometrySemanticHash: manifest.allMeshGeometrySemanticHash,
 			faceGeometrySemanticHash: manifest.faceGeometrySemanticHash,
 			geometryAndSkinningSemanticHash: manifest.geometryAndSkinningSemanticHash,
 			materialSemanticHash: manifest.materialSemanticHash,
@@ -82,6 +118,7 @@ export async function runProceduralMannequinAppearanceMatrix({
 	const variant = (key) =>
 		new Set(cases.map((entry) => entry[key])).size === cases.length;
 	const checks = {
+		allMeshGeometryStable: invariant("allMeshGeometrySemanticHash"),
 		faceGeometryStable: invariant("faceGeometrySemanticHash"),
 		geometryAndSkinningStable: invariant("geometryAndSkinningSemanticHash"),
 		materialChanges: variant("materialSemanticHash"),
@@ -106,7 +143,10 @@ if (path.resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
 		outputIndex >= 0 ? process.argv[outputIndex + 1] : undefined;
 	console.log(
 		JSON.stringify(
-			await runProceduralMannequinAppearanceMatrix({ outputRoot }),
+			await runProceduralMannequinAppearanceMatrix({
+				outputRoot,
+				hairColorsOnly: process.argv.includes("--hair-colors"),
+			}),
 			null,
 			2,
 		),

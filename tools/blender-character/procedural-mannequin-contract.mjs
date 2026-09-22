@@ -4,12 +4,12 @@ import {
 	NO_HAIR_COMPONENT_ID,
 } from "./character-component-registry.mjs";
 
-export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 5;
+export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 6;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v6";
+	"procedural-mannequin-blender-v7";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v7";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v2";
+	"procedural-mannequin-roundtrip-v8";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v3";
 export const LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION =
 	"procedural-humanoid-v1";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
@@ -20,7 +20,9 @@ export const PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION =
 export const PROCEDURAL_EYE_MATERIAL_NAME = "ProceduralEyeMaterial";
 export const PROCEDURAL_MOUTH_MATERIAL_NAME = "ProceduralMouthMaterial";
 export const PROCEDURAL_FACE_FEATURE_VERSION = "procedural-face-readability-v0";
-export const PROCEDURAL_HEAD_CONTRACT_VERSION = "procedural-head-contract-v2";
+export const PROCEDURAL_HEAD_CONTRACT_VERSION = "procedural-head-contract-v3";
+export const PROCEDURAL_HAIR_MATERIAL_SCHEMA_VERSION =
+	"procedural-hair-material-v1";
 export const PROCEDURAL_SKIN_COLOR_SPACE = "srgb";
 export const GOLDEN_HUMANOID_SKELETON_CONTRACT = "golden-humanoid-v0";
 export const GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE =
@@ -89,6 +91,7 @@ export const PROCEDURAL_MANNEQUIN_LIMITS = Object.freeze({
 	},
 	radialSegments: { max: 16, min: 6 },
 	eyeColor: { defaultValue: "#4b5d67" },
+	hairColor: { defaultValue: "#3b2a1f" },
 	skinRoughness: { defaultValue: 0.72, max: 1, min: 0 },
 });
 
@@ -295,7 +298,7 @@ export function validateProceduralMannequinRecipe(value) {
 		};
 	}
 	if (
-		![0, 1, 2, 3, 4, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(
+		![0, 1, 2, 3, 4, 5, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(
 			value.version,
 		)
 	) {
@@ -320,6 +323,7 @@ export function validateProceduralMannequinRecipe(value) {
 	const material = isRecord(value.material) ? value.material : {};
 	const appearance = isRecord(value.appearance) ? value.appearance : {};
 	const face = isRecord(appearance.face) ? appearance.face : {};
+	const hair = isRecord(appearance.hair) ? appearance.hair : {};
 	const skin = isRecord(appearance.skin) ? appearance.skin : {};
 	const components = isRecord(value.components) ? value.components : {};
 	const hairComponentId = components.hair ?? NO_HAIR_COMPONENT_ID;
@@ -390,6 +394,7 @@ export function validateProceduralMannequinRecipe(value) {
 	if (
 		!legacyRecipe &&
 		geometry.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION &&
+		geometry.topologyVersion !== "procedural-humanoid-v2" &&
 		geometry.topologyVersion !== LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION
 	) {
 		issues.push({
@@ -399,9 +404,22 @@ export function validateProceduralMannequinRecipe(value) {
 	}
 	const authoredSkinColor = legacyMaterial ? material.baseColor : skin.color;
 	const authoredEyeColor =
-		value.version === PROCEDURAL_MANNEQUIN_RECIPE_VERSION
+		value.version >= 5
 			? face.eyeColor
 			: PROCEDURAL_MANNEQUIN_LIMITS.eyeColor.defaultValue;
+	const authoredHairColor =
+		value.version >= 6
+			? hair.color
+			: PROCEDURAL_MANNEQUIN_LIMITS.hairColor.defaultValue;
+	if (
+		typeof authoredHairColor !== "string" ||
+		!HEX_COLOR_PATTERN.test(authoredHairColor)
+	) {
+		issues.push({
+			message: "Expected a #RRGGBB hair color string.",
+			path: "$.appearance.hair.color",
+		});
+	}
 	const authoredSkinRoughness = legacyMaterial
 		? material.roughness
 		: skin.roughness;
@@ -478,6 +496,12 @@ export function validateProceduralMannequinRecipe(value) {
 		},
 		id: readString(value, "id", "$.id", issues),
 		appearance: {
+			hair: {
+				color:
+					typeof authoredHairColor === "string"
+						? authoredHairColor.toLowerCase()
+						: PROCEDURAL_MANNEQUIN_LIMITS.hairColor.defaultValue,
+			},
 			face: {
 				eyeColor:
 					typeof authoredEyeColor === "string" &&
@@ -527,7 +551,7 @@ export function canonicalizeProceduralMannequinRecipe(recipe) {
 	const parsed = validateProceduralMannequinRecipe(recipe);
 	if (!parsed.ok) {
 		throw new Error(
-			`Invalid ProceduralMannequinRecipeV5: ${parsed.issues
+			`Invalid ProceduralMannequinRecipeV6: ${parsed.issues
 				.map((entry) => `${entry.path} ${entry.message}`)
 				.join("; ")}`,
 		);

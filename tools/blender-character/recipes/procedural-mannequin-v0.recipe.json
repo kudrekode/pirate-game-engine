@@ -1,5 +1,5 @@
 {
-	"version": 5,
+	"version": 6,
 	"id": "procedural-mannequin-v0",
 	"name": "Procedural Mannequin Body Proportions V1",
 	"proportions": {
@@ -13,7 +13,7 @@
 	"geometry": {
 		"profile": "voxel-union",
 		"radialSegments": 8,
-		"topologyVersion": "procedural-humanoid-v2"
+		"topologyVersion": "procedural-humanoid-v3"
 	},
 	"appearance": {
 		"face": {
@@ -23,6 +23,9 @@
 			"color": "#c98f65",
 			"colorSpace": "srgb",
 			"roughness": 0.72
+		},
+		"hair": {
+			"color": "#3b2a1f"
 		}
 	},
 	"components": {

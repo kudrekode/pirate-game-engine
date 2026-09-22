@@ -13,6 +13,16 @@ function successfulCompile(
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
 			appearance: {
+				hair: {
+					authoredColor: "#3b2a1f",
+					authoredColorSpace: "srgb",
+					materialSchemaVersion: "procedural-hair-material-v1",
+					materialCount: hair === "none" ? 0 : 1,
+					exportedLinearColor:
+						hair === "none" ? null : [0.0437, 0.0232, 0.0137],
+					exportedRoughness: hair === "none" ? null : 0.72,
+					exportedMetallic: hair === "none" ? null : 0,
+				},
 				face: {
 					authoredEyeColor: "#4b5d67",
 					authoredEyeColorSpace: "srgb",
@@ -56,7 +66,7 @@ function successfulCompile(
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v6",
+			compilerVersion: "procedural-mannequin-blender-v7",
 			face: {
 				eyeColor: "#4b5d67",
 				eyeMeshCount: 2,
@@ -71,7 +81,7 @@ function successfulCompile(
 			},
 			faceGeometrySemanticHash: "1".repeat(64),
 			head: {
-				version: "procedural-head-contract-v2",
+				version: "procedural-head-contract-v3",
 				bounds: {
 					centre: [0, 0.0264, 1.5881],
 					dimensions: [0.346707, 0.288124, 0.276179],
@@ -85,7 +95,7 @@ function successfulCompile(
 				neckTop: [0, 0, 1.45],
 				scalpTop: [0, 0, 1.726],
 				symmetryErrorMetres: 0,
-				topologyVersion: "procedural-humanoid-v2",
+				topologyVersion: "procedural-humanoid-v3",
 			},
 			components: {
 				hair: {
@@ -95,16 +105,16 @@ function successfulCompile(
 						hair === "none"
 							? undefined
 							: {
-									id: "quaternius-buzzed-fit-v2",
+									id: "quaternius-buzzed-fit-v3",
 									scalpOffsetMetres: 0.012,
-									version: 2,
+									version: 3,
 								},
 					materialCount: hair === "none" ? 0 : 1,
 					meshCount: hair === "none" ? 0 : 1,
 					packName: hair === "none" ? undefined : "Hairstyles",
 					provider: hair === "none" ? undefined : "Quaternius",
 					sourceAsset: hair === "none" ? undefined : "Hair_Buzzed.gltf",
-					textureCount: hair === "none" ? 0 : 2,
+					textureCount: hair === "none" ? 0 : 1,
 					triangleCount: hair === "none" ? 0 : 830,
 					vertexCount: hair === "none" ? 0 : 466,
 				},
@@ -136,25 +146,25 @@ function successfulCompile(
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 5,
+			recipeVersion: 6,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
 				boundaryEdgeCount: 0,
 				connectedComponentCount: 1,
 				degenerateFaceCount: 0,
-				edgeCount: 8274,
+				edgeCount: 8292,
 				eulerCharacteristic: 2,
-				faceCount: 5516,
+				faceCount: 5528,
 				genus: 0,
 				manifold: true,
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v2",
-			triangleCount: 5664,
-			validationVersion: "procedural-mannequin-roundtrip-v7",
-			vertexCount: 2870,
+			topologyVersion: "procedural-humanoid-v3",
+			triangleCount: 5676,
+			validationVersion: "procedural-mannequin-roundtrip-v8",
+			vertexCount: 2876,
 		},
 		manifestUrl:
 			"/__asset-studio/procedural-mannequin/assets/job/output/manifest.json",
@@ -162,7 +172,7 @@ function successfulCompile(
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v7",
+			version: "procedural-mannequin-roundtrip-v8",
 		},
 	};
 }
@@ -306,6 +316,29 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(fetch).not.toHaveBeenCalled();
 	});
 
+	it("edits and resets hair colour in the saved recipe without compiling", () => {
+		const fetch = vi.fn();
+		vi.stubGlobal("fetch", fetch);
+		render(<App />);
+		fireEvent.change(screen.getByLabelText("Hair color"), {
+			target: { value: "#a6a6ab" },
+		});
+		expect(screen.getByLabelText("Current hair color")).toHaveTextContent(
+			"#a6a6ab",
+		);
+		fireEvent.click(
+			screen.getByRole("button", { name: "Use Blond hair color" }),
+		);
+		expect(screen.getByTestId("recipe-json")).toHaveTextContent(
+			'"hair": "#bd955b"',
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Reset hair color" }));
+		expect(screen.getByLabelText("Current hair color")).toHaveTextContent(
+			"#3b2a1f",
+		);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+
 	it("exposes exactly the six genuine compiled body parameters", () => {
 		render(<App />);
 
@@ -388,7 +421,7 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body as string)).toMatchObject({
 			appearance: { eyeColor: "#4b5d67" },
 			components: { hair: "quaternius-hair-v0" },
-			version: 5,
+			version: 6,
 		});
 	});
 

@@ -79,6 +79,14 @@ const SKIN_COLOR_PRESETS = [
 	{ color: "#503126", label: "Tone 6" },
 ] as const;
 
+const HAIR_COLOR_PRESETS = [
+	{ color: "#3b2a1f", label: "Brown" },
+	{ color: "#17191e", label: "Black" },
+	{ color: "#bd955b", label: "Blond" },
+	{ color: "#8b3f27", label: "Auburn" },
+	{ color: "#a6a6ab", label: "Silver" },
+] as const;
+
 const EYE_COLOR_PRESETS = [
 	{ color: "#30343b", label: "Charcoal" },
 	{ color: "#4b5d67", label: "Slate" },
@@ -572,14 +580,14 @@ function HumanoidPreview({
 					center.z,
 				);
 				const offsets: Record<PreviewCameraPreset, THREE.Vector3> = {
-					back: new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
-					"close-front": new THREE.Vector3(0, radius * 0.02, radius * 0.88),
+					back: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
+					"close-front": new THREE.Vector3(0, radius * 0.02, -radius * 0.88),
 					"close-three-quarter": new THREE.Vector3(
 						radius * 0.62,
 						radius * 0.12,
-						radius * 0.62,
+						-radius * 0.62,
 					),
-					front: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
+					front: new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
 					"right-side": new THREE.Vector3(-radius * 2.45, radius * 0.08, 0),
 					scalp: new THREE.Vector3(
 						radius * 0.72,
@@ -590,12 +598,12 @@ function HumanoidPreview({
 					"three-quarter": new THREE.Vector3(
 						radius * 1.7,
 						radius * 0.28,
-						radius * 1.7,
+						-radius * 1.7,
 					),
 					"three-quarter-rear": new THREE.Vector3(
 						radius * 1.7,
 						radius * 0.28,
-						-radius * 1.7,
+						radius * 1.7,
 					),
 				};
 				const offset = offsets[preset];
@@ -755,6 +763,8 @@ function HumanoidPreview({
 						host.dataset.faceMaterial =
 							manifest.appearance.face.materialSchemaVersion;
 					}
+					host.dataset.hairColor =
+						manifest.appearance?.hair?.authoredColor ?? "legacy";
 					host.dataset.faceVersion = manifest.face?.version ?? "legacy";
 					host.dataset.faceEyeMeshes = String(manifest.face?.eyeMeshCount ?? 0);
 					host.dataset.faceValidation = String(
@@ -1199,6 +1209,8 @@ export default function App() {
 					recipe.palette.skin.toLowerCase() ||
 				compileResult.manifest.appearance.skin.authoredRoughness !==
 					recipe.appearance.skin.roughness ||
+				compileResult.manifest.appearance.hair.authoredColor !==
+					recipe.palette.hair.toLowerCase() ||
 				compileResult.manifest.appearance.face.authoredEyeColor !==
 					recipe.appearance.face.eyeColor.toLowerCase() ||
 				compileResult.manifest.components.hair.componentId !==
@@ -1809,6 +1821,68 @@ export default function App() {
 						<div className="section-heading">Hair</div>
 						<section aria-label="Hair" className="appearance-panel">
 							<label>
+								Hair color
+								<input
+									aria-label="Hair color"
+									type="color"
+									value={recipe.palette.hair}
+									onChange={(event) =>
+										updateRecipe((current) => ({
+											...current,
+											palette: {
+												...current.palette,
+												hair: event.target.value.toLowerCase(),
+											},
+										}))
+									}
+								/>
+							</label>
+							<div className="body-creator-value">
+								<output aria-label="Current hair color">
+									{recipe.palette.hair.toLowerCase()}
+								</output>
+								<button
+									type="button"
+									onClick={() =>
+										updateRecipe((current) => ({
+											...current,
+											palette: { ...current.palette, hair: "#3b2a1f" },
+										}))
+									}
+								>
+									Reset hair color
+								</button>
+							</div>
+							<fieldset className="skin-presets">
+								<legend>Hair color presets</legend>
+								{HAIR_COLOR_PRESETS.map((preset) => (
+									<button
+										key={preset.color}
+										type="button"
+										aria-label={`Use ${preset.label} hair color`}
+										title={`${preset.label} ${preset.color}`}
+										style={{ backgroundColor: preset.color }}
+										onClick={() =>
+											updateRecipe((current) => ({
+												...current,
+												palette: { ...current.palette, hair: preset.color },
+											}))
+										}
+									/>
+								))}
+							</fieldset>
+							<p>
+								Draft color: {recipe.palette.hair.toLowerCase()} ? Compiled
+								color:{" "}
+								{activeManifest?.components.hair.componentId === "none"
+									? "No hair"
+									: (activeManifest?.appearance?.hair?.authoredColor ?? "?")}
+							</p>
+							<p className="creator-note">
+								Choose a hairstyle and Compile to apply the colour. The colour
+								is saved even when No hair is selected.
+							</p>
+							<label>
 								Hairstyle
 								<select
 									aria-label="Hair component"
@@ -2067,7 +2141,7 @@ export default function App() {
 						<div className="section-heading">Palette</div>
 						<div className="palette-grid">
 							{CHARACTER_PALETTE_REGIONS.filter(
-								(region) => region !== "skin",
+								(region) => region !== "skin" && region !== "hair",
 							).map((region) => (
 								<label key={region}>
 									{PALETTE_LABELS[region]}

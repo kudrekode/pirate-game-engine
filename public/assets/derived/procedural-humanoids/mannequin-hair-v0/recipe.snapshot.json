@@ -6,6 +6,9 @@
 		"face": {
 			"eyeColor": "#4b5d67"
 		},
+		"hair": {
+			"color": "#3b2a1f"
+		},
 		"skin": {
 			"color": "#c98f65",
 			"colorSpace": "srgb",
@@ -18,7 +21,7 @@
 	"geometry": {
 		"profile": "voxel-union",
 		"radialSegments": 8,
-		"topologyVersion": "procedural-humanoid-v2"
+		"topologyVersion": "procedural-humanoid-v3"
 	},
 	"id": "procedural-mannequin-quaternius-hair-v0",
 	"name": "Procedural Mannequin with Quaternius Buzzed Hair",
@@ -33,5 +36,5 @@
 	"skeleton": {
 		"contract": "golden-humanoid-v0"
 	},
-	"version": 5
+	"version": 6
 }

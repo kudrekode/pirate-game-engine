@@ -75,11 +75,12 @@ Face Readability V0 now generates two Head-skinned eyes, a low-poly nose, and a
 fixed mouth line from the measured head contract. Eye colour is authored recipe
 data and compiled into a shared eye material; bald and haired artifacts retain
 one skin and the unchanged 65-joint skeleton. Asset Studio includes focused
-Face controls and close head cameras. This checkpoint has a confirmed defect:
-the face points opposite the feet. Orientation correction is the next task;
-see the [diagnosis](docs/assets/face-readability-v0.md#known-blocking-defect).
+Face controls and close head cameras. The backwards face is now corrected,
+with an independent exported face-versus-feet gate and surface-fitted features.
+Hair Colour V1 adds compiled hair colour, presets, reset, and recent-job restore;
+see the [current milestone](docs/assets/hair-colour-v1.md).
 
-Asset Studio compiles six body proportions, skin colour/roughness, eye colour,
+Asset Studio compiles six body proportions, skin colour/roughness, eye and hair colour,
 and the selected hairstyle through a local development endpoint and the real
 two-pass Blender compiler. Successful validated GLBs replace the preview;
 failed jobs preserve it, and Recent Compilations restores prior recipes and

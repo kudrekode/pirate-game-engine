@@ -44,11 +44,11 @@ async function waitForMannequin(
 			snapshot.asset.statusCounts.loading === 0 &&
 			snapshot.asset.statusCounts.error === 0 &&
 			metrics?.boneCount === 65 &&
-			metrics.triangleCount === 6494 &&
-			metrics.vertexCount === 3336 &&
+			metrics.triangleCount === 6506 &&
+			metrics.vertexCount === 3342 &&
 			metrics.skinnedMeshCount === 6 &&
 			metrics.materialCount === 4 &&
-			metrics.textureCount === 2 &&
+			metrics.textureCount === 1 &&
 			(label !== RUNTIME_LABEL ||
 				(snapshot.asset.character.animation.loadingSourceCount === 0 &&
 					snapshot.asset.character.animation.missingClipCount === 0 &&

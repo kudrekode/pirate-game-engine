@@ -6,7 +6,7 @@ import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contra
 
 const DEFAULT_RECIPE =
 	"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json";
-const DEFAULT_OUTPUT = "test-results/face-readability-v0/body-hair-matrix";
+const DEFAULT_OUTPUT = "test-results/hair-colour-v1/body-hair-matrix";
 
 const CASES = [
 	["default", {}],

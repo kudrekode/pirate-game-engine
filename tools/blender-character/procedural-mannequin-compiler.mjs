@@ -37,6 +37,7 @@ import {
 	PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION,
 	PROCEDURAL_FACE_FEATURE_VERSION,
 	PROCEDURAL_HEAD_CONTRACT_VERSION,
+	PROCEDURAL_HAIR_MATERIAL_SCHEMA_VERSION,
 	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 	PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
@@ -106,6 +107,14 @@ function expectedHairComponent(recipe) {
 	const componentId = recipe.components.hair;
 	return {
 		componentId,
+		material: {
+			linearColor: canonicalSrgbHexToLinear(recipe.appearance.hair.color),
+			name:
+				componentId === NO_HAIR_COMPONENT_ID
+					? null
+					: resolveCharacterComponent(componentId).material.name,
+			roughness: 0.72,
+		},
 		definition:
 			componentId === NO_HAIR_COMPONENT_ID
 				? undefined
@@ -232,6 +241,8 @@ export async function validateInstalledProceduralMannequin({
 	]);
 	const checks = {
 		manifestAppearance:
+			manifest.appearance?.hair?.authoredColor ===
+				parsed.value.appearance.hair.color &&
 			manifest.appearance?.face?.authoredEyeColor ===
 				parsed.value.appearance.face.eyeColor &&
 			manifest.appearance?.face?.materialCount === 1 &&
@@ -477,12 +488,12 @@ export async function compileProceduralMannequin({
 				pass.report.geometry.topology.nonManifoldEdgeCount !== 0
 			) {
 				throw new Error(
-					`Generated topology failed the V2 connectivity gate: ${JSON.stringify(pass.report.geometry.topology)}`,
+					`Generated topology failed the V3 connectivity gate: ${JSON.stringify(pass.report.geometry.topology)}`,
 				);
 			}
 			if (
 				hairComponent.definition &&
-				(pass.report.components?.hair?.fittingProfile?.version !== 2 ||
+				(pass.report.components?.hair?.fittingProfile?.version !== 3 ||
 					pass.report.components?.hair?.fitValidation?.passed !== true)
 			) {
 				throw new Error(
@@ -667,6 +678,18 @@ export async function compileProceduralMannequin({
 			jointCount: firstValidation.inspection.jointCount,
 			knownLimitations: warnings,
 			appearance: {
+				hair: {
+					authoredColor: recipe.appearance.hair.color,
+					authoredColorSpace: "srgb",
+					materialSchemaVersion: PROCEDURAL_HAIR_MATERIAL_SCHEMA_VERSION,
+					materialCount: firstValidation.hair.materialCount,
+					exportedLinearColor:
+						firstValidation.hair.material?.exportedLinearColor ?? null,
+					exportedRoughness:
+						firstValidation.hair.material?.exportedRoughness ?? null,
+					exportedMetallic:
+						firstValidation.hair.material?.exportedMetallic ?? null,
+				},
 				face: {
 					authoredEyeColor: recipe.appearance.face.eyeColor,
 					authoredEyeColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
@@ -695,12 +718,14 @@ export async function compileProceduralMannequin({
 			artifactStatistics: firstValidation.artifact,
 			face: {
 				...first.report.face,
+				orientation: firstValidation.face.orientation,
 				materialCount: firstValidation.face.materialCount,
 				sourceTriangleCount: first.report.face.triangleCount,
 				sourceVertexCount: first.report.face.vertexCount,
 				triangleCount: firstValidation.face.triangleCount,
 				vertexCount: firstValidation.face.vertexCount,
 			},
+			allMeshGeometrySemanticHash: firstValidation.allMeshGeometrySemanticHash,
 			faceGeometrySemanticHash: firstValidation.faceGeometrySemanticHash,
 			bodyStatistics: {
 				materialCount: geometry.materialCount,
