@@ -19,6 +19,7 @@ const DEFAULT_PROPORTIONS = Object.freeze({
 	hipWidth: 0.5,
 });
 const DEFAULT_APPEARANCE = Object.freeze({
+	eyeColor: "#4b5d67",
 	skinColor: "#c98f65",
 	skinRoughness: 0.72,
 });
@@ -31,12 +32,14 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 		recipe.proportions.height === 1.82 ? "a".repeat(64) : "b".repeat(64);
 	const manifest = {
 		appearance: {
+			face: { authoredEyeColor: recipe.appearance.face.eyeColor },
 			skin: {
 				authoredColor: recipe.appearance.skin.color,
 				authoredRoughness: recipe.appearance.skin.roughness,
 			},
 		},
-		compilerVersion: "procedural-mannequin-blender-v5",
+		compilerVersion: "procedural-mannequin-blender-v6",
+		face: { version: "procedural-face-readability-v0" },
 		components: { hair: { componentId: recipe.components.hair } },
 		deterministicBuild: true,
 		generationDurationMs: 12,
@@ -44,7 +47,7 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 		proportions: recipe.proportions,
 		outputHash,
 		recipeHash,
-		validationVersion: "procedural-mannequin-roundtrip-v6",
+		validationVersion: "procedural-mannequin-roundtrip-v7",
 	};
 	await mkdir(outputDirectory, { recursive: true });
 	await Promise.all([
@@ -63,7 +66,7 @@ test("validates the six-parameter creator compile request", () => {
 			appearance: DEFAULT_APPEARANCE,
 			components: DEFAULT_COMPONENTS,
 			proportions: DEFAULT_PROPORTIONS,
-			version: 4,
+			version: 5,
 		}).ok,
 		true,
 	);
@@ -72,7 +75,7 @@ test("validates the six-parameter creator compile request", () => {
 			appearance: DEFAULT_APPEARANCE,
 			components: DEFAULT_COMPONENTS,
 			proportions: { ...DEFAULT_PROPORTIONS, height: "1.82" },
-			version: 4,
+			version: 5,
 		}),
 		{
 			issues: [
@@ -86,25 +89,38 @@ test("validates the six-parameter creator compile request", () => {
 	);
 });
 
-test("validates and canonicalizes creator skin appearance", () => {
+test("validates and canonicalizes creator face and skin appearance", () => {
 	const parsed = validateCreatorCompileRequest({
-		appearance: { skinColor: "#C98F65", skinRoughness: 0.41 },
+		appearance: {
+			eyeColor: "#405C72",
+			skinColor: "#C98F65",
+			skinRoughness: 0.41,
+		},
 		components: DEFAULT_COMPONENTS,
 		proportions: DEFAULT_PROPORTIONS,
-		version: 4,
+		version: 5,
 	});
 	assert.equal(parsed.ok, true);
 	assert.equal(parsed.value.appearance.skinColor, "#c98f65");
+	assert.equal(parsed.value.appearance.eyeColor, "#405c72");
 	const invalid = validateCreatorCompileRequest({
-		appearance: { skinColor: "red", skinRoughness: Number.NaN },
+		appearance: {
+			eyeColor: "grey",
+			skinColor: "red",
+			skinRoughness: Number.NaN,
+		},
 		components: DEFAULT_COMPONENTS,
 		proportions: DEFAULT_PROPORTIONS,
-		version: 4,
+		version: 5,
 	});
 	assert.equal(invalid.ok, false);
 	assert.deepEqual(
 		invalid.issues.map((issue) => issue.path),
-		["$.appearance.skinColor", "$.appearance.skinRoughness"],
+		[
+			"$.appearance.eyeColor",
+			"$.appearance.skinColor",
+			"$.appearance.skinRoughness",
+		],
 	);
 });
 
@@ -141,7 +157,11 @@ test("adapts all body parameters into a validated recipe and stable hash", async
 		hashProceduralMannequinRecipe(haired),
 	);
 	const differentSkin = await createRecipeForProportions({
-		appearance: { skinColor: "#503126", skinRoughness: 0.41 },
+		appearance: {
+			eyeColor: "#405c72",
+			skinColor: "#503126",
+			skinRoughness: 0.41,
+		},
 		proportions: DEFAULT_PROPORTIONS,
 	});
 	assert.notEqual(

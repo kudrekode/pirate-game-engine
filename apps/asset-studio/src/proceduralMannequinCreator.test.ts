@@ -26,6 +26,17 @@ function successfulPayload(
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
 			appearance: {
+				face: {
+					authoredEyeColor: "#4b5d67",
+					authoredEyeColorSpace: "srgb",
+					canonicalLinearColor: [0.07, 0.109, 0.135],
+					exportedLinearColor: [0.07, 0.109, 0.135],
+					exportedMetallic: 0,
+					exportedRoughness: 0.48,
+					materialCount: 1,
+					materialName: "ProceduralEyeMaterial",
+					materialSchemaVersion: "procedural-eye-material-v1",
+				},
 				skin: {
 					authoredColor: "#c98f65",
 					authoredColorSpace: "srgb",
@@ -58,7 +69,37 @@ function successfulPayload(
 				shoulderWidthMultiplier: 1,
 				torsoLengthMultiplier: 1,
 			},
-			compilerVersion: "procedural-mannequin-blender-v5",
+			compilerVersion: "procedural-mannequin-blender-v6",
+			face: {
+				eyeColor: "#4b5d67",
+				eyeMeshCount: 2,
+				materialCount: 3,
+				mouthCentre: [0, 0.17, 1.52],
+				noseCentre: [0, 0.18, 1.57],
+				noseProjectionMetres: 0.026,
+				triangleCount: 148,
+				validation: { passed: true, warnings: [] },
+				version: "procedural-face-readability-v0",
+				vertexCount: 110,
+			},
+			faceGeometrySemanticHash: "1".repeat(64),
+			head: {
+				version: "procedural-head-contract-v2",
+				bounds: {
+					centre: [0, 0.0264, 1.5881],
+					dimensions: [0.346707, 0.288124, 0.276179],
+					maximum: [0.173, 0.1704, 1.726],
+					minimum: [-0.173, -0.1177, 1.45],
+				},
+				headCentre: [0, 0.0264, 1.5881],
+				headDepth: 0.288124,
+				headHeight: 0.276179,
+				headWidth: 0.346707,
+				neckTop: [0, 0, 1.45],
+				scalpTop: [0, 0, 1.726],
+				symmetryErrorMetres: 0,
+				topologyVersion: "procedural-humanoid-v2",
+			},
 			components: {
 				hair: {
 					attachmentBone: hair === "none" ? null : "Head",
@@ -83,14 +124,14 @@ function successfulPayload(
 			},
 			jointCount: 65,
 			knownLimitations: [],
-			materialCount: 1,
+			materialCount: 3,
 			materialSemanticHash: "f".repeat(64),
-			meshCount: 1,
+			meshCount: 5,
 			normalizedSemanticHash: "c".repeat(64),
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 4,
+			recipeVersion: 5,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
@@ -106,16 +147,16 @@ function successfulPayload(
 				unreferencedVertexCount: 0,
 			},
 			topologyVersion: "procedural-humanoid-v2",
-			triangleCount: 5516,
-			validationVersion: "procedural-mannequin-roundtrip-v6",
-			vertexCount: 2724,
+			triangleCount: 5664,
+			validationVersion: "procedural-mannequin-roundtrip-v7",
+			vertexCount: 2870,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
 		requestId: "11111111-1111-4111-8111-111111111111",
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v6",
+			version: "procedural-mannequin-roundtrip-v7",
 		},
 	};
 }
@@ -143,12 +184,13 @@ describe("procedural mannequin creator client", () => {
 		recipe.body.parameters.height = 1.93;
 		expect(createProceduralMannequinCompileRequest(recipe)).toEqual({
 			appearance: {
+				eyeColor: "#4b5d67",
 				skinColor: "#c98f65",
 				skinRoughness: 0.72,
 			},
 			components: { hair: "none" },
 			proportions: { ...DEFAULT_PROPORTIONS, height: 1.93 },
-			version: 4,
+			version: 5,
 		});
 	});
 
@@ -197,12 +239,13 @@ describe("procedural mannequin creator client", () => {
 			expect.objectContaining({
 				body: JSON.stringify({
 					appearance: {
+						eyeColor: "#4b5d67",
 						skinColor: "#c98f65",
 						skinRoughness: 0.72,
 					},
 					components: { hair: "none" },
 					proportions: DEFAULT_PROPORTIONS,
-					version: 4,
+					version: 5,
 				}),
 				method: "POST",
 			}),

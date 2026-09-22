@@ -5,7 +5,8 @@
 Read this file first, then identify the likely files before opening broader repo context. Prefer minimal diffs and avoid scanning unrelated files.
 
 - Read the relevant docs before coding. Start with `README.md`, `ROADMAP.md`, `docs/RUNTIME_ARCHITECTURE.md`, `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`, or `docs/PLAYWRIGHT_SMOKE.md` when the task touches those systems.
-- For Asset Studio work, read `docs/ASSET_STUDIO_ARCHITECTURE.md` before coding.
+- For Asset Studio work, start with the Quick Resume section in `docs/ASSET_STUDIO_ARCHITECTURE.md`, then read only the linked milestone relevant to the task. Current checkpoint: Face Readability V0 with a confirmed backwards head/face. Fix orientation before Hair Colour V1; see the milestone's Known Blocking Defect section.
+- Avoid opening generated `diagnostics.json`, full manifests, GLBs, or historical milestone docs wholesale. Use the resume file map, targeted searches, and summary JSON fields first.
 - Run `npm run ci` before the final response.
 - Run `git diff --check` before the final response.
 - Preserve migration compatibility for old saved/imported projects.
@@ -35,7 +36,7 @@ Read this file first, then identify the likely files before opening broader repo
 - Three.js runtime and presentation: `src/runtime/three/ThreeRuntimePanel.tsx`, `src/editor/sections/ThreeDPreview.tsx`, `src/runtime/three/threeVisuals.ts`, `src/runtime/three/threeVisualAssetRegistry.ts`, `src/runtime/three/threeVisualAssetLoader.ts`, `src/runtime/three/threeVisualRenderer.ts`, `src/runtime/three/cameraControls.ts`, `src/runtime/three/visualSmoothing.ts`, `src/runtime/three/waterPresentation.ts`, `src/runtime/three/threePerformanceDiagnostics.ts`.
 - 3D visual controls and terrain tools: `src/editor/sections/ThreeVisualControls.tsx`, `src/editor/sections/terrainBrush.ts`, `src/editor/sections/terrainBlocks.ts`, `src/runtime/three/terrainMeshGeometry.ts`.
 - Playwright Three perf smoke: `e2e/three-perf-smoke.spec.ts`, `docs/PLAYWRIGHT_SMOKE.md`, `test-results/perf/*`.
-- Asset Studio contracts and app shell: `docs/ASSET_STUDIO_ARCHITECTURE.md`, `apps/asset-studio/`, `packages/character-contract/`, `packages/asset-compiler-contract/`, `tools/blender-character/`.
+- Asset Studio creator/compiler: `docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume`, `docs/assets/face-readability-v0.md`; the resume section maps exact implementation files, versions, validation commands, and remaining work.
 - Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
 - Editor tabs: `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`.
 - Smoke tests and helpers: `src/test/editorSmoke.test.tsx`, `src/test/testUtils.tsx` if present.
@@ -309,7 +310,7 @@ npm run ci
 
 - `npm run test` starts Vitest in watch mode.
 - `npm run test:run` runs tests once.
-- `npm run ci` runs typecheck, tests, and build.
+- `npm run ci` runs root typecheck, Vitest discovery (including workspace tests), and root build. Asset Studio/contracts have separate typecheck/build coverage through `npm run check:asset-studio`; Node compiler/API tests require `npm run test:blender-bake`. Browser tests and Blender matrix rebuilds are opt-in.
 
 Current focused tests cover:
 

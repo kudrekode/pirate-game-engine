@@ -1,8 +1,71 @@
 # Asset Studio Architecture
 
+## Quick Resume
+
+Read this section and the [Face Readability V0 milestone](assets/face-readability-v0.md)
+for current creator work; older milestone documents are historical evidence.
+
+- Current creator: six body proportions, skin colour/roughness, eye colour,
+  none/Quaternius Buzzed hair, seeded body randomisation, local Compile, and
+  ten in-session Recent Compilations. Preview supports Rest/Idle/Walk and
+  whole-body/close-head cameras.
+- Data flow: CharacterRecipeV1 -> creator request -> Vite development middleware
+  -> procedural recipe -> two isolated Blender builds -> Three.js validation
+  -> shared preview/registry. Preserve this boundary and the unchanged
+  65-joint Golden skeleton; game-session semantics are outside this work.
+- Blocking defect: the generated head/face points opposite the feet. In the
+  unrotated GLB the toes point +Z and the face projects -Z; the shared 180-degree
+  presentation rotation preserves that mismatch. Fix the compiler head/face
+  frame, related hair fitting, and camera presets, then validate side views and
+  a face-versus-feet regression gate before Hair Colour V1 / Hairstyle Library V2.
+  `palette.hair` exists as recipe metadata but does not tint the compiled hair;
+  the only current style still uses its vendor-authored material.
+- Version map: CharacterRecipe remains V1; compile request and procedural
+  recipe are V5; compiler is `procedural-mannequin-blender-v6`; validator is
+  `procedural-mannequin-roundtrip-v7`; topology is `procedural-humanoid-v2`;
+  head contract is V2 and hair fit remains `quaternius-buzzed-fit-v2`.
+  Legacy recipes receive eye colour `#4b5d67`.
+- Generated fixtures live in
+  `public/assets/derived/procedural-humanoids/{mannequin-v0,mannequin-hair-v0}/`.
+  GLBs, manifests, diagnostics, recipe snapshots, and build logs form one
+  artifact set. Inspect selected manifest fields first; full diagnostics are large.
+
+| Task | Start here |
+| --- | --- |
+| Recipe types, defaults, migration | `packages/character-contract/src/index.ts` |
+| Hair source/provenance/fit metadata | `packages/character-contract/src/character-component-registry.json` |
+| Creator UI, cameras, recent jobs | `apps/asset-studio/src/App.tsx` |
+| Request adapter and response checks | `apps/asset-studio/src/proceduralMannequinCreator.ts` |
+| Local compile endpoint | `apps/asset-studio/dev/procedural-mannequin-compile-api.mjs` |
+| Procedural schema, versions, hashes | `tools/blender-character/procedural-mannequin-contract.mjs` |
+| Geometry, materials, head landmarks, fitting | `tools/blender-character/generate_procedural_mannequin.py` |
+| Two-build orchestration and manifests | `tools/blender-character/procedural-mannequin-compiler.mjs` |
+| Exported geometry/material/animation gates | `tools/blender-character/procedural-mannequin-roundtrip.mjs` |
+| Shared asset definitions and loader | `packages/three-asset-preview/src/index.ts` |
+| Focused browser checks | `apps/asset-studio/e2e/procedural-mannequin.spec.ts`, `e2e/procedural-mannequin.spec.ts` |
+
+Run from the repository root:
+
+```bash
+npm run dev:asset-studio
+npm run check:asset-studio
+npm run test:blender-bake
+npm run ci
+git diff --check
+```
+
+Root CI discovers workspace Vitest tests, but excludes Node compiler tests and
+Playwright and does not typecheck/build the separate Asset Studio app.
+`test:blender-bake` includes fresh validation of both installed mannequin GLBs;
+it does not rebuild the Blender matrices. Use the
+[compiler guide](../tools/blender-character/README.md) for regeneration and
+[Face Readability validation](assets/face-readability-v0.md#validation) for
+matrix evidence and browser-suite limitations. Test artifacts under
+`test-results/` are ignored/local, not portable checked-in proof.
+
 ## Product Boundary
 
-Asset Studio is a separate browser application for authoring constrained, game-ready source data for assets. V0 focuses on humanoid character recipes and read-only validated character artifacts. It does not replace the Adventure Game Builder editor, runtime, or map schema. Validated compiled fixtures may be promoted through the shared built-in Three.js registry without importing Asset Studio into the game app.
+Asset Studio is a separate browser application for authoring constrained, game-ready source data for assets. The current workflow authors humanoid recipes, compiles them locally during development, and previews validated artifacts. It does not replace the Adventure Game Builder editor, runtime, or map schema. Validated compiled fixtures may be promoted through the shared built-in Three.js registry without importing Asset Studio into the game app.
 
 The root game editor remains the existing application. Asset Studio lives under `apps/asset-studio`, and shared contracts live under `packages/`.
 
@@ -32,6 +95,7 @@ The V0 recipe contains:
 - a constrained palette for skin, hair, primary, secondary, and metal
 - compiled skin appearance roughness; `palette.skin` is its single authored
   sRGB color source
+- compiled eye colour at `appearance.face.eyeColor`, separate from the palette
 - an `animationSetId`
 
 Validation rejects unsupported versions, invalid skeleton ids, invalid colors, empty ids, and body parameters outside their declared ranges. V0 rejects bad bounds instead of silently normalizing imported data.
@@ -89,7 +153,9 @@ Reusable components use `CharacterComponentDefinition` metadata:
 - optional body mask region metadata
 - optional source asset reference
 
-V0 only defines metadata. It does not implement clothing fitting, deformation, body masking, mesh merging, or skinning.
+Only the hair slot currently has a compiled component implementation: `none`
+or `quaternius-hair-v0`, fitted in Blender and skinned to the main skeleton.
+Other slots remain metadata; clothing fitting and body masking are not implemented.
 
 ## Palette And Materials
 
@@ -166,7 +232,8 @@ pair-specific JSON diagnostic for development comparison; a baked load failure
 is reported and never silently falls back.
 
 The mannequin preview can read either the checked-in manifest or a successful
-local creator job. Body proportions and skin appearance are adapted from `CharacterRecipeV1` into
+local creator job. Body proportions, skin/eye appearance, and hair selection
+are adapted from `CharacterRecipeV1` into
 the narrow procedural recipe; the browser submits the request but never
 executes Blender, scales body parts, or deforms the mesh.
 Live Three.js objects stay in app presentation code, not recipe contracts.
@@ -199,9 +266,12 @@ The current reference preview provides:
 - Procedural Head and Hair Fit V1: a symmetric stylised head, measured
   head/scalp coordinate contract, V2 component fitting profile, geometry-aware
   fit rejection, and deterministic seven-view Rest/Idle/Walk evidence.
+- Face Readability V0: compiler-generated Head-skinned eyes, nose, and mouth,
+  authored eye colour, a V2 head/face landmark contract, close head cameras,
+  paired bald/haired body validation, and deterministic Rest/Idle/Walk evidence.
 
 The repository now has one narrow procedural recipe compiler, one validated
-connected-topology mannequin, and a complete body/material/hairstyle authoring
+connected-topology mannequin, and a complete body/material/face/hairstyle authoring
 loop. Still missing are higher-detail/deformation-oriented topology, a deployed
 compiler service, a broader hairstyle library, clothing/headwear, and export
 of user-authored characters.
@@ -233,8 +303,8 @@ CharacterRecipe
 ```
 
 The Asset Studio browser still does not execute Blender. During development, a
-Vite server plugin accepts one narrow V4 request containing six body parameters,
-skin appearance, and the registered hair id, adapts it to the procedural
+Vite server plugin accepts one narrow V5 request containing six body parameters,
+skin and eye appearance, and the registered hair id, adapts it to the procedural
 mannequin recipe, and invokes the repository compiler in an
 isolated job directory. Successful artifacts pass two-build determinism,
 geometry/skinning, animation binding, and Three.js round-trip validation before
@@ -301,22 +371,20 @@ crowd-budget default.
 - body morph targets
 - clothing fitting
 - Blender execution inside browser code
-- GLB export
-- production character animation preview sourced from compiled package output
+- user-facing GLB download/export and general compiled-package import
+- general animation-set authoring beyond the proven Golden Idle/Walk clips
 - AI generation
-- backend service
+- deployed compiler/backend service
 - asset upload into the game editor
 - moving the root game app into `apps/game-engine`
 
 ## Next Milestone
 
-Procedural Head and Hair Fit V1 corrects the failed visual fit without changing
-the proven recipe/compile/Blender/validation/preview boundary. Evidence is
-documented in
-[`procedural-head-hair-fit-v1.md`](assets/procedural-head-hair-fit-v1.md). The
-recommended next creator milestone is a small face-feature pass so the corrected
-engineering head reads more clearly before Hairstyle Library V2 expands the
-same component registry and fit-profile contract.
+Face Readability V0 is a local checkpoint with a confirmed orientation defect:
+the face points opposite the feet. Correct and visually validate this before
+Hair Colour V1, then Hairstyle Library V2. The
+[blocking-defect diagnosis](assets/face-readability-v0.md#known-blocking-defect)
+records the screenshot, measured axes, affected files, and missing regression gate.
 
 ## Future Deployment Models
 

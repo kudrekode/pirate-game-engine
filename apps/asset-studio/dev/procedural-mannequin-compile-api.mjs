@@ -24,7 +24,7 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
-export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 4;
+export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 5;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -113,6 +113,15 @@ export function validateCreatorCompileRequest(value) {
 		issues.push({ message: "Expected skin appearance.", path: "$.appearance" });
 	} else {
 		if (
+			typeof value.appearance.eyeColor !== "string" ||
+			!HEX_COLOR_PATTERN.test(value.appearance.eyeColor)
+		) {
+			issues.push({
+				message: "Expected a #RRGGBB sRGB eye color string.",
+				path: "$.appearance.eyeColor",
+			});
+		}
+		if (
 			typeof value.appearance.skinColor !== "string" ||
 			!HEX_COLOR_PATTERN.test(value.appearance.skinColor)
 		) {
@@ -156,6 +165,7 @@ export function validateCreatorCompileRequest(value) {
 				ok: true,
 				value: {
 					appearance: {
+						eyeColor: value.appearance.eyeColor.toLowerCase(),
 						skinColor: value.appearance.skinColor.toLowerCase(),
 						skinRoughness: value.appearance.skinRoughness,
 					},
@@ -184,6 +194,12 @@ export async function createRecipeForProportions({
 	const candidate = {
 		...baseRecipe,
 		appearance: {
+			face: {
+				eyeColor:
+					appearance?.eyeColor ??
+					baseRecipe.appearance?.face?.eyeColor ??
+					"#4b5d67",
+			},
 			skin: {
 				color:
 					appearance?.skinColor ??
@@ -266,6 +282,8 @@ export async function compileCreatorMannequin({
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
 			result?.manifest?.recipeHash !== recipeHash ||
+			result?.manifest?.appearance?.face?.authoredEyeColor !==
+				recipe.appearance.face.eyeColor ||
 			result?.manifest?.appearance?.skin?.authoredColor !==
 				recipe.appearance.skin.color ||
 			result?.manifest?.appearance?.skin?.authoredRoughness !==

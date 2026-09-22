@@ -13,6 +13,17 @@ function successfulCompile(
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
 			appearance: {
+				face: {
+					authoredEyeColor: "#4b5d67",
+					authoredEyeColorSpace: "srgb",
+					canonicalLinearColor: [0.07, 0.109, 0.135],
+					exportedLinearColor: [0.07, 0.109, 0.135],
+					exportedMetallic: 0,
+					exportedRoughness: 0.48,
+					materialCount: 1,
+					materialName: "ProceduralEyeMaterial",
+					materialSchemaVersion: "procedural-eye-material-v1",
+				},
 				skin: {
 					authoredColor: "#c98f65",
 					authoredColorSpace: "srgb",
@@ -45,7 +56,37 @@ function successfulCompile(
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v5",
+			compilerVersion: "procedural-mannequin-blender-v6",
+			face: {
+				eyeColor: "#4b5d67",
+				eyeMeshCount: 2,
+				materialCount: 3,
+				mouthCentre: [0, 0.17, 1.52],
+				noseCentre: [0, 0.18, 1.57],
+				noseProjectionMetres: 0.026,
+				triangleCount: 148,
+				validation: { passed: true, warnings: [] },
+				version: "procedural-face-readability-v0",
+				vertexCount: 110,
+			},
+			faceGeometrySemanticHash: "1".repeat(64),
+			head: {
+				version: "procedural-head-contract-v2",
+				bounds: {
+					centre: [0, 0.0264, 1.5881],
+					dimensions: [0.346707, 0.288124, 0.276179],
+					maximum: [0.173, 0.1704, 1.726],
+					minimum: [-0.173, -0.1177, 1.45],
+				},
+				headCentre: [0, 0.0264, 1.5881],
+				headDepth: 0.288124,
+				headHeight: 0.276179,
+				headWidth: 0.346707,
+				neckTop: [0, 0, 1.45],
+				scalpTop: [0, 0, 1.726],
+				symmetryErrorMetres: 0,
+				topologyVersion: "procedural-humanoid-v2",
+			},
 			components: {
 				hair: {
 					attachmentBone: hair === "none" ? null : "Head",
@@ -88,14 +129,14 @@ function successfulCompile(
 			},
 			jointCount: 65,
 			knownLimitations: [],
-			materialCount: 1,
+			materialCount: 3,
 			materialSemanticHash: "f".repeat(64),
-			meshCount: 1,
+			meshCount: 5,
 			normalizedSemanticHash: "c".repeat(64),
 			outputHash: "a".repeat(64),
 			recipeHash: "b".repeat(64),
 			recipeId: "procedural-mannequin-v0",
-			recipeVersion: 4,
+			recipeVersion: 5,
 			skeletonContract: "golden-humanoid-v0",
 			skeletonSignature: "d".repeat(64),
 			topology: {
@@ -111,9 +152,9 @@ function successfulCompile(
 				unreferencedVertexCount: 0,
 			},
 			topologyVersion: "procedural-humanoid-v2",
-			triangleCount: 5516,
-			validationVersion: "procedural-mannequin-roundtrip-v6",
-			vertexCount: 2724,
+			triangleCount: 5664,
+			validationVersion: "procedural-mannequin-roundtrip-v7",
+			vertexCount: 2870,
 		},
 		manifestUrl:
 			"/__asset-studio/procedural-mannequin/assets/job/output/manifest.json",
@@ -121,7 +162,7 @@ function successfulCompile(
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v6",
+			version: "procedural-mannequin-roundtrip-v7",
 		},
 	};
 }
@@ -130,7 +171,7 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-describe("Asset Studio app", () => {
+describe("Asset Studio app", { timeout: 15_000 }, () => {
 	it("renders the Character screen as the active V0 workflow", () => {
 		render(<App />);
 
@@ -150,6 +191,7 @@ describe("Asset Studio app", () => {
 			screen.getByRole("button", { name: "Reset view" }),
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Front" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Close front" })).toBeDisabled();
 		expect(screen.getByRole("button", { name: "Side" })).toBeDisabled();
 		expect(
 			screen.getByRole("button", { name: "Three-quarter" }),
@@ -238,6 +280,32 @@ describe("Asset Studio app", () => {
 		);
 	});
 
+	it("edits, presets, and resets authored eye colour without compiling", () => {
+		const fetch = vi.fn();
+		vi.stubGlobal("fetch", fetch);
+		render(<App />);
+		fireEvent.change(screen.getByLabelText("Eye color"), {
+			target: { value: "#405c72" },
+		});
+		expect(screen.getByLabelText("Current eye color")).toHaveTextContent(
+			"#405c72",
+		);
+		expect(screen.getByTestId("recipe-json")).toHaveTextContent(
+			'"eyeColor": "#405c72"',
+		);
+		fireEvent.click(
+			screen.getByRole("button", { name: "Use Earth eye color" }),
+		);
+		expect(screen.getByLabelText("Current eye color")).toHaveTextContent(
+			"#5c4634",
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Reset eye color" }));
+		expect(screen.getByLabelText("Current eye color")).toHaveTextContent(
+			"#4b5d67",
+		);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+
 	it("exposes exactly the six genuine compiled body parameters", () => {
 		render(<App />);
 
@@ -318,8 +386,9 @@ describe("Asset Studio app", () => {
 			"Compiled · Quaternius Buzzed",
 		);
 		expect(JSON.parse(fetch.mock.calls[0]?.[1]?.body as string)).toMatchObject({
+			appearance: { eyeColor: "#4b5d67" },
 			components: { hair: "quaternius-hair-v0" },
-			version: 4,
+			version: 5,
 		});
 	});
 

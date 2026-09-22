@@ -83,7 +83,7 @@
 				"name": "MI_Hair_1",
 				"textures": ["T_Hair_1_BaseColor.png", "T_Hair_1_Normal.png"]
 			},
-			"compilerCompatibilityVersion": "procedural-mannequin-blender-v5",
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v6",
 			"knownLimitations": [
 				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
 				"Fixed vendor-authored brown material; hair colour authoring is not implemented.",

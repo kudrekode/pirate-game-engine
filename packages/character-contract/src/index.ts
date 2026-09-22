@@ -61,6 +61,10 @@ export type CharacterSkinAppearance = {
 	roughness: number;
 };
 
+export type CharacterFaceAppearance = {
+	eyeColor: string;
+};
+
 export type CharacterRecipeV1 = {
 	version: typeof CHARACTER_RECIPE_VERSION;
 	id: string;
@@ -75,6 +79,7 @@ export type CharacterRecipeV1 = {
 	};
 	palette: Record<CharacterPaletteRegion, string>;
 	appearance: {
+		face: CharacterFaceAppearance;
 		skin: CharacterSkinAppearance;
 	};
 	animationSetId: string;
@@ -320,6 +325,14 @@ export const CHARACTER_SKIN_APPEARANCE_LIMITS = {
 	},
 } as const;
 
+export const CHARACTER_FACE_APPEARANCE_LIMITS = {
+	eyeColor: {
+		defaultValue: "#4b5d67",
+		units: "sRGB #RRGGBB",
+		validation: "canonical six-digit sRGB hexadecimal color",
+	},
+} as const;
+
 const COMPONENT_SLOT_SET = new Set<string>(CHARACTER_COMPONENT_SLOTS);
 const HAIR_COMPONENT_ID_SET = new Set<string>(CHARACTER_HAIR_COMPONENT_IDS);
 const PALETTE_REGION_SET = new Set<string>(CHARACTER_PALETTE_REGIONS);
@@ -487,6 +500,9 @@ export function createDefaultCharacterRecipe(
 			metal: "#8a949e",
 		},
 		appearance: {
+			face: {
+				eyeColor: CHARACTER_FACE_APPEARANCE_LIMITS.eyeColor.defaultValue,
+			},
 			skin: {
 				roughness: CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.defaultValue,
 			},
@@ -581,12 +597,25 @@ export function validateCharacterRecipe(
 		}
 	}
 	const appearance = isRecord(value.appearance) ? value.appearance : undefined;
+	const faceAppearance =
+		appearance && isRecord(appearance.face) ? appearance.face : undefined;
 	const skinAppearance =
 		appearance && isRecord(appearance.skin) ? appearance.skin : undefined;
 	if (!appearance) {
 		issues.push(issue("$.appearance", "Expected an appearance object."));
-	} else if (!skinAppearance) {
-		issues.push(issue("$.appearance.skin", "Expected skin appearance."));
+	} else {
+		if (!faceAppearance) {
+			issues.push(issue("$.appearance.face", "Expected face appearance."));
+		}
+		if (!skinAppearance) {
+			issues.push(issue("$.appearance.skin", "Expected skin appearance."));
+		}
+	}
+	const eyeColor = faceAppearance?.eyeColor;
+	if (typeof eyeColor !== "string" || !HEX_COLOR_PATTERN.test(eyeColor)) {
+		issues.push(
+			issue("$.appearance.face.eyeColor", "Expected a #RRGGBB color string."),
+		);
 	}
 	const roughness = skinAppearance?.roughness;
 	if (typeof roughness !== "number" || !Number.isFinite(roughness)) {
@@ -668,6 +697,12 @@ export function validateCharacterRecipe(
 		components: parsedComponents,
 		palette: parsedPalette,
 		appearance: {
+			face: {
+				eyeColor:
+					typeof eyeColor === "string" && HEX_COLOR_PATTERN.test(eyeColor)
+						? eyeColor.toLowerCase()
+						: CHARACTER_FACE_APPEARANCE_LIMITS.eyeColor.defaultValue,
+			},
 			skin: {
 				roughness:
 					typeof roughness === "number" && Number.isFinite(roughness)
@@ -697,16 +732,23 @@ export function migrateCharacterRecipe(
 	const parameters = isRecord(value.body.parameters)
 		? value.body.parameters
 		: {};
+	const appearance = isRecord(value.appearance) ? value.appearance : {};
 	return validateCharacterRecipe({
 		...value,
-		appearance: isRecord(value.appearance)
-			? value.appearance
-			: {
-					skin: {
+		appearance: {
+			...appearance,
+			face: isRecord(appearance.face)
+				? appearance.face
+				: {
+						eyeColor: CHARACTER_FACE_APPEARANCE_LIMITS.eyeColor.defaultValue,
+					},
+			skin: isRecord(appearance.skin)
+				? appearance.skin
+				: {
 						roughness:
 							CHARACTER_SKIN_APPEARANCE_LIMITS.skinRoughness.defaultValue,
 					},
-				},
+		},
 		body: {
 			...value.body,
 			parameters: {

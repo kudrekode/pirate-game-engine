@@ -414,6 +414,36 @@ def import_hair_component(
         vertex.co = fitted_centre + rotation @ scaled + correction_translation
     hair.matrix_world = Matrix.Identity(4)
     hair.data.update()
+
+    # The registered buzzed source is a closed cap. Its fitted front surface
+    # otherwise sits in front of the generated eyes, so carve a deterministic
+    # central hairline from the authored head/face landmarks. Temple and crown
+    # coverage remain intact, while the forehead, eyes, nose, and mouth stay
+    # visible in front and three-quarter views.
+    head_width = head_contract["headWidth"]
+    head_depth = head_contract["headDepth"]
+    head_height = head_contract["headHeight"]
+    head_centre_x = head_contract["headCentre"][0]
+    face_plane_y = head_contract["facePlane"]["centre"][1]
+    forehead_z = head_contract["foreheadReference"][2]
+    hairline_min_y = face_plane_y - head_depth * 0.25
+    hairline_max_z = forehead_z + head_height * 0.08
+    hairline_half_width = head_width * 0.40
+    adjusted_hairline_vertices = 0
+    for vertex in hair.data.vertices:
+        lateral_distance = abs(vertex.co.x - head_centre_x)
+        if (
+            vertex.co.y >= hairline_min_y
+            and vertex.co.z <= hairline_max_z
+            and lateral_distance <= hairline_half_width
+        ):
+            lateral_ratio = min(1.0, lateral_distance / hairline_half_width)
+            target_z = forehead_z + head_height * (0.065 + lateral_ratio * 0.015)
+            vertex.co.z = max(vertex.co.z, target_z)
+            adjusted_hairline_vertices += 1
+    hair.data.update()
+    if adjusted_hairline_vertices < 1:
+        raise RuntimeError("Hairstyle face-clearance fit adjusted no vertices.")
     hair.name = "Hair_quaternius_hair_v0"
     hair.data.name = "Hair_quaternius_hair_v0_Mesh"
     hair["characterComponentId"] = component["id"]
@@ -445,6 +475,12 @@ def import_hair_component(
             "scale": rounded(fit_scale),
             "translationMetres": rounded(correction_translation),
         },
+		"faceClearance": {
+			"hairlineHalfWidthMetres": round(hairline_half_width, 9),
+			"hairlineMaximumZ": round(hairline_max_z, 9),
+			"hairlineMinimumY": round(hairline_min_y, 9),
+			"adjustedVertexCount": adjusted_hairline_vertices,
+		},
         "fitValidation": fit_validation,
         "fittingProfile": profile,
         "materialCount": len(materials),
@@ -734,6 +770,256 @@ def assign_analytic_weights(mesh_object, weight_segments):
     }
 
 
+def ellipsoid_geometry(center, radius_x, radius_y, radius_z, rings=5, segments=8):
+    vertices = [(center.x, center.y, center.z + radius_z)]
+    faces = []
+    ring_indices = []
+    for ring in range(1, rings):
+        theta = math.pi * ring / rings
+        indices = []
+        for segment in range(segments):
+            phi = math.tau * segment / segments
+            indices.append(len(vertices))
+            vertices.append(
+                (
+                    center.x + math.sin(theta) * math.cos(phi) * radius_x,
+                    center.y + math.sin(theta) * math.sin(phi) * radius_y,
+                    center.z + math.cos(theta) * radius_z,
+                )
+            )
+        ring_indices.append(indices)
+    bottom = len(vertices)
+    vertices.append((center.x, center.y, center.z - radius_z))
+    for segment in range(segments):
+        next_segment = (segment + 1) % segments
+        faces.append((0, ring_indices[0][next_segment], ring_indices[0][segment]))
+    for upper, lower in zip(ring_indices, ring_indices[1:]):
+        for segment in range(segments):
+            next_segment = (segment + 1) % segments
+            faces.append(
+                (upper[segment], upper[next_segment], lower[next_segment], lower[segment])
+            )
+    for segment in range(segments):
+        next_segment = (segment + 1) % segments
+        faces.append((ring_indices[-1][segment], ring_indices[-1][next_segment], bottom))
+    return vertices, faces
+
+
+def box_geometry(center, half_width, half_depth, half_height):
+    vertices = [
+        (
+            center.x + width_sign * half_width,
+            center.y + depth_sign * half_depth,
+            center.z + height_sign * half_height,
+        )
+        for height_sign in (-1.0, 1.0)
+        for depth_sign in (-1.0, 1.0)
+        for width_sign in (-1.0, 1.0)
+    ]
+    return vertices, [
+        (0, 1, 3, 2),
+        (4, 6, 7, 5),
+        (0, 4, 5, 1),
+        (2, 3, 7, 6),
+        (0, 2, 6, 4),
+        (1, 5, 7, 3),
+    ]
+
+
+def nose_wedge_geometry(center, base_y, tip_y, half_width, half_height):
+    vertices = [
+        (center.x - half_width, base_y, center.z + half_height),
+        (center.x + half_width, base_y, center.z + half_height),
+        (center.x - half_width, base_y, center.z - half_height),
+        (center.x + half_width, base_y, center.z - half_height),
+        (center.x, tip_y, center.z + half_height * 0.28),
+        (center.x, tip_y, center.z - half_height * 0.28),
+    ]
+    return vertices, [
+        (0, 2, 3, 1),
+        (0, 1, 4),
+        (2, 5, 3),
+        (0, 4, 5, 2),
+        (1, 3, 5, 4),
+    ]
+
+
+def create_head_skinned_feature(name, feature_type, vertices, faces, material, armature):
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(vertices, [], faces)
+    mesh.validate(clean_customdata=False)
+    mesh.update(calc_edges=True)
+    feature = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(feature)
+    mesh.materials.append(material)
+    for polygon in mesh.polygons:
+        polygon.use_smooth = feature_type.startswith("eye")
+    group = feature.vertex_groups.new(name="Head")
+    group.add(list(range(len(mesh.vertices))), 1.0, "REPLACE")
+    modifier = feature.modifiers.new(f"{name}Armature", "ARMATURE")
+    modifier.object = armature
+    feature.parent = armature
+    feature.matrix_parent_inverse = armature.matrix_world.inverted()
+    feature["faceFeatureType"] = feature_type
+    feature["faceFeatureVersion"] = "procedural-face-readability-v0"
+    return feature
+
+
+def create_face_features(recipe, armature, head_contract, skin_material):
+    head_width = head_contract["headWidth"]
+    head_height = head_contract["headHeight"]
+    head_depth = head_contract["headDepth"]
+    face_y = head_contract["facePlane"]["centre"][1]
+    eye_line = Vector(head_contract["eyeLine"]["centre"])
+    eye_offset = head_contract["eyeLine"]["separationMetres"] * 0.5
+    eye_radii = Vector(
+        (head_width * 0.052, head_depth * 0.025, head_height * 0.052)
+    )
+    eye_linear = canonical_srgb_hex_to_linear(
+        recipe["appearance"]["face"]["eyeColor"]
+    )
+    eye_material = bpy.data.materials.new("ProceduralEyeMaterial")
+    eye_material.diffuse_color = eye_linear + (1.0,)
+    eye_material.use_nodes = True
+    eye_principled = eye_material.node_tree.nodes.get("Principled BSDF")
+    eye_principled.inputs["Base Color"].default_value = eye_material.diffuse_color
+    eye_principled.inputs["Roughness"].default_value = 0.48
+    eye_principled.inputs["Metallic"].default_value = 0.0
+
+    mouth_linear = canonical_srgb_hex_to_linear("#512b2f")
+    mouth_material = bpy.data.materials.new("ProceduralMouthMaterial")
+    mouth_material.diffuse_color = mouth_linear + (1.0,)
+    mouth_material.use_nodes = True
+    mouth_principled = mouth_material.node_tree.nodes.get("Principled BSDF")
+    mouth_principled.inputs["Base Color"].default_value = mouth_material.diffuse_color
+    mouth_principled.inputs["Roughness"].default_value = 0.72
+    mouth_principled.inputs["Metallic"].default_value = 0.0
+
+    objects = []
+    eye_centres = []
+    for side, sign in (("L", 1.0), ("R", -1.0)):
+        centre = Vector(
+            (
+                eye_line.x + sign * eye_offset,
+                face_y - head_depth * 0.006,
+                eye_line.z,
+            )
+        )
+        vertices, faces = ellipsoid_geometry(
+            centre, eye_radii.x, eye_radii.y, eye_radii.z
+        )
+        objects.append(
+            create_head_skinned_feature(
+                f"FaceEye.{side}", f"eye-{side.lower()}", vertices, faces,
+                eye_material, armature,
+            )
+        )
+        eye_centres.append(centre)
+
+    nose_centre = Vector(head_contract["noseCentre"])
+    nose_projection = head_depth * 0.09
+    nose_vertices, nose_faces = nose_wedge_geometry(
+        nose_centre,
+        face_y - head_depth * 0.035,
+        face_y + nose_projection,
+        head_width * 0.05,
+        head_height * 0.095,
+    )
+    objects.append(
+        create_head_skinned_feature(
+            "FaceNose", "nose", nose_vertices, nose_faces, skin_material, armature
+        )
+    )
+
+    mouth_centre = Vector(head_contract["mouthLine"]["centre"])
+    mouth_vertices, mouth_faces = box_geometry(
+        Vector((mouth_centre.x, face_y + head_depth * 0.002, mouth_centre.z)),
+        head_width * 0.105,
+        head_depth * 0.012,
+        head_height * 0.008,
+    )
+    objects.append(
+        create_head_skinned_feature(
+            "FaceMouth", "mouth", mouth_vertices, mouth_faces,
+            mouth_material, armature,
+        )
+    )
+
+    feature_points = [vertex.co.copy() for obj in objects for vertex in obj.data.vertices]
+    eye_bounds = []
+    for eye in objects[:2]:
+        minimum, maximum = vector_bounds([vertex.co for vertex in eye.data.vertices])
+        eye_bounds.append(bounds_report(minimum, maximum))
+    feature_minimum, feature_maximum = vector_bounds(feature_points)
+    head_minimum = Vector(head_contract["bounds"]["minimum"])
+    head_maximum = Vector(head_contract["bounds"]["maximum"])
+    chin = Vector(head_contract["chinReference"])
+    forehead = Vector(head_contract["foreheadReference"])
+    separation = abs(eye_centres[0].x - eye_centres[1].x)
+    checks = {
+        "eyeDepth": all(
+            centre.y <= face_y and centre.y - eye_radii.y > head_contract["headCentre"][1]
+            for centre in eye_centres
+        ),
+        "eyeSeparation": head_width * 0.28 <= separation <= head_width * 0.46,
+        "eyeSymmetry": (
+            abs((eye_centres[0].x + eye_centres[1].x) * 0.5 - head_contract["headCentre"][0])
+            <= 0.000001
+            and abs(eye_centres[0].y - eye_centres[1].y) <= 0.000001
+            and abs(eye_centres[0].z - eye_centres[1].z) <= 0.000001
+        ),
+        "eyesWithinHead": all(
+            head_minimum.x <= centre.x <= head_maximum.x
+            and chin.z < centre.z < forehead.z
+            for centre in eye_centres
+        ),
+        "finiteGeometry": all(
+            math.isfinite(coordinate) for point in feature_points for coordinate in point
+        ),
+        "mouthCentred": abs(mouth_centre.x - head_contract["headCentre"][0]) <= 0.000001,
+        "mouthVerticalPlacement": chin.z < mouth_centre.z < nose_centre.z,
+        "noseCentred": abs(nose_centre.x - head_contract["headCentre"][0]) <= 0.000001,
+        "noseProjection": head_depth * 0.075 <= nose_projection <= head_depth * 0.13,
+        "verticalBounds": feature_minimum.z > head_minimum.z and feature_maximum.z < forehead.z,
+    }
+    report = {
+        "eyeColor": recipe["appearance"]["face"]["eyeColor"],
+        "eyeMaterial": {
+            "canonicalLinearColor": rounded(eye_linear),
+            "metallic": 0.0,
+            "name": eye_material.name,
+            "roughness": 0.48,
+            "schemaVersion": "procedural-eye-material-v1",
+        },
+        "eyeMeshCount": 2,
+        "eyeBounds": eye_bounds,
+        "eyeCentres": [rounded(centre) for centre in eye_centres],
+        "featureBounds": bounds_report(feature_minimum, feature_maximum),
+        "materialCount": 2,
+        "mouthCentre": rounded(mouth_centre),
+        "mouthMaterial": mouth_material.name,
+        "noseCentre": rounded(nose_centre),
+        "noseProjectionMetres": round(nose_projection, 9),
+        "objectNames": [obj.name for obj in objects],
+        "triangleCount": sum(
+            len(polygon.vertices) - 2
+            for obj in objects
+            for polygon in obj.data.polygons
+        ),
+        "validation": {
+            "checks": checks,
+            "passed": all(checks.values()),
+            "warnings": [],
+        },
+        "version": "procedural-face-readability-v0",
+        "vertexCount": sum(len(obj.data.vertices) for obj in objects),
+    }
+    if not report["validation"]["passed"]:
+        failed = [name for name, passed in checks.items() if not passed]
+        raise RuntimeError(f"Generated face feature validation failed: {failed}")
+    return objects, report
+
+
 def measure_head_contract(mesh_object, anchors, measurements, topology_version):
     head_bone = anchors["head"]
     neck_bone = anchors["neck"]
@@ -750,6 +1036,7 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
     minimum, maximum = vector_bounds(head_vertices)
     centre = (minimum + maximum) * 0.5
     dimensions = maximum - minimum
+    face_plane_y = maximum.y - dimensions.y * 0.07
     scalp_floor = centre.z + dimensions.z * 0.05
     scalp_vertices = [point for point in head_vertices if point.z >= scalp_floor]
     shoulder_vertices = [
@@ -783,14 +1070,29 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
         },
         "bounds": bounds_report(minimum, maximum),
         "coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+		"version": "procedural-head-contract-v2",
         "foreheadReference": rounded(
             [centre.x, maximum.y, centre.z + dimensions.z * 0.16]
         ),
+		"facePlane": {
+			"centre": rounded([centre.x, face_plane_y, centre.z]),
+			"forward": [0.0, 1.0, 0.0],
+		},
         "headBonePosition": rounded(head_bone),
         "headCentre": rounded(centre),
         "headDepth": round(dimensions.y, 9),
         "headHeight": round(dimensions.z, 9),
         "headWidth": round(dimensions.x, 9),
+		"eyeLine": {
+			"centre": rounded([centre.x, face_plane_y, centre.z + dimensions.z * 0.1]),
+			"separationMetres": round(dimensions.x * 0.36, 9),
+		},
+		"noseCentre": rounded([centre.x, face_plane_y, centre.z - dimensions.z * 0.025]),
+		"mouthLine": {
+			"centre": rounded([centre.x, face_plane_y, centre.z - dimensions.z * 0.205]),
+			"widthMetres": round(dimensions.x * 0.25, 9),
+		},
+		"chinReference": rounded([centre.x, face_plane_y, minimum.z + dimensions.z * 0.08]),
         "neckConnectionVertexCount": neck_connection_vertices,
         "neckTop": rounded([head_bone.x, head_bone.y, neck_top]),
         "rearCraniumReference": rounded(
@@ -1117,6 +1419,9 @@ def create_geometry(armature, recipe):
         measurements,
         recipe["geometry"]["topologyVersion"],
     )
+    face_objects, face_report = create_face_features(
+        recipe, armature, head_contract, material
+    )
     return (
         mesh_object,
         builder,
@@ -1127,6 +1432,8 @@ def create_geometry(armature, recipe):
         head_contract,
         scalp_vertices,
         shoulder_vertices,
+        face_objects,
+        face_report,
     )
 
 
@@ -1167,6 +1474,8 @@ def compile_mannequin(args, recipe):
         head_contract,
         scalp_vertices,
         shoulder_vertices,
+        face_objects,
+        face_report,
     ) = create_geometry(armature, recipe)
     local_min_z = min(vertex.co.z for vertex in mesh_object.data.vertices)
     local_max_z = max(vertex.co.z for vertex in mesh_object.data.vertices)
@@ -1191,7 +1500,7 @@ def compile_mannequin(args, recipe):
 
     for obj in bpy.context.selected_objects:
         obj.select_set(False)
-    for obj in (root, armature, mesh_object, hair_object):
+    for obj in (root, armature, mesh_object, hair_object, *face_objects):
         if obj is None:
             continue
         obj.select_set(True)
@@ -1242,6 +1551,7 @@ def compile_mannequin(args, recipe):
             "vertexCount": len(mesh_object.data.vertices),
         },
         "head": head_contract,
+		"face": face_report,
         "material": {
             "authoredColor": recipe["appearance"]["skin"]["color"],
             "canonicalLinearColor": rounded(
@@ -1271,6 +1581,8 @@ def compile_mannequin(args, recipe):
         "templateHash": sha256(args.template),
         "warnings": [
             "Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+            "Face Readability V0 uses fixed compiler-generated eye, nose, and mouth geometry; only eye colour is authored.",
+            "Face features are fully Head-weighted and intentionally exclude expressions, eyelids, brows, and facial animation.",
             "Finger bones remain present for animation compatibility but the generated hands have no fingers.",
             "The Golden skeleton is a compatibility template, not the future canonical generated rig.",
             *(

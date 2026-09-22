@@ -33,9 +33,14 @@ import {
 	GOLDEN_HUMANOID_SKELETON_CONTRACT,
 	GOLDEN_REFERENCE_ANIMATION_SET,
 	hashProceduralMannequinRecipe,
+	PROCEDURAL_EYE_MATERIAL_NAME,
+	PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION,
+	PROCEDURAL_FACE_FEATURE_VERSION,
+	PROCEDURAL_HEAD_CONTRACT_VERSION,
 	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 	PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
+	PROCEDURAL_MOUTH_MATERIAL_NAME,
 	PROCEDURAL_SKIN_COLOR_SPACE,
 	PROCEDURAL_SKIN_MATERIAL_NAME,
 	PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION,
@@ -81,6 +86,19 @@ function expectedSkinMaterial(recipe) {
 		linearColor: canonicalSrgbHexToLinear(recipe.appearance.skin.color),
 		name: PROCEDURAL_SKIN_MATERIAL_NAME,
 		roughness: recipe.appearance.skin.roughness,
+	};
+}
+
+function expectedFace(recipe) {
+	return {
+		eyeMaterial: {
+			linearColor: canonicalSrgbHexToLinear(recipe.appearance.face.eyeColor),
+			name: PROCEDURAL_EYE_MATERIAL_NAME,
+			roughness: 0.48,
+		},
+		mouthMaterialName: PROCEDURAL_MOUTH_MATERIAL_NAME,
+		skinMaterialName: PROCEDURAL_SKIN_MATERIAL_NAME,
+		version: PROCEDURAL_FACE_FEATURE_VERSION,
 	};
 }
 
@@ -200,6 +218,7 @@ export async function validateInstalledProceduralMannequin({
 	const [validation, manifest, outputHash] = await Promise.all([
 		validateProceduralMannequinArtifact({
 			artifactPath,
+			expectedFace: expectedFace(parsed.value),
 			expectedHeightMetres: parsed.value.proportions.height,
 			expectedHairComponent: expectedHairComponent(parsed.value),
 			expectedSkinMaterial: expectedSkinMaterial(parsed.value),
@@ -213,6 +232,9 @@ export async function validateInstalledProceduralMannequin({
 	]);
 	const checks = {
 		manifestAppearance:
+			manifest.appearance?.face?.authoredEyeColor ===
+				parsed.value.appearance.face.eyeColor &&
+			manifest.appearance?.face?.materialCount === 1 &&
 			manifest.appearance?.skin?.authoredColor ===
 				parsed.value.appearance.skin.color &&
 			manifest.appearance?.skin?.authoredRoughness ===
@@ -235,6 +257,14 @@ export async function validateInstalledProceduralMannequin({
 				validation.hair.attachmentBone &&
 			(parsed.value.components.hair === NO_HAIR_COMPONENT_ID ||
 				manifest.components?.hair?.fitValidation?.passed === true),
+		manifestFace:
+			manifest.face?.version === PROCEDURAL_FACE_FEATURE_VERSION &&
+			manifest.face?.validation?.passed === true &&
+			manifest.face?.eyeMeshCount === 2 &&
+			manifest.face?.vertexCount === validation.face.vertexCount &&
+			manifest.face?.triangleCount === validation.face.triangleCount,
+		manifestFaceGeometryHash:
+			manifest.faceGeometrySemanticHash === validation.faceGeometrySemanticHash,
 		manifestArtifactStatistics:
 			manifest.meshCount === validation.artifact.meshCount &&
 			manifest.materialCount === validation.artifact.materialCount &&
@@ -351,6 +381,7 @@ export async function compileProceduralMannequin({
 		const [firstValidation, secondValidation] = await Promise.all([
 			validateProceduralMannequinArtifact({
 				artifactPath: first.outputPath,
+				expectedFace: expectedFace(recipe),
 				expectedHeightMetres: recipe.proportions.height,
 				expectedHairComponent: hairComponent,
 				expectedSkinMaterial: expectedSkinMaterial(recipe),
@@ -359,6 +390,7 @@ export async function compileProceduralMannequin({
 			}),
 			validateProceduralMannequinArtifact({
 				artifactPath: second.outputPath,
+				expectedFace: expectedFace(recipe),
 				expectedHeightMetres: recipe.proportions.height,
 				expectedHairComponent: hairComponent,
 				expectedSkinMaterial: expectedSkinMaterial(recipe),
@@ -368,7 +400,7 @@ export async function compileProceduralMannequin({
 		]);
 		if (!firstValidation.passed || !secondValidation.passed) {
 			throw new Error(
-				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstHair: firstValidation.hair, second: secondValidation.checks, secondHair: secondValidation.hair })}`,
+				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstFace: firstValidation.face, firstHair: firstValidation.hair, second: secondValidation.checks, secondFace: secondValidation.face, secondHair: secondValidation.hair })}`,
 			);
 		}
 		if (
@@ -383,6 +415,7 @@ export async function compileProceduralMannequin({
 		}
 		for (const pass of [first, second]) {
 			const expectedMaterial = expectedSkinMaterial(recipe);
+			const expectedFaceDefinition = expectedFace(recipe);
 			if (
 				pass.report.material?.name !== expectedMaterial.name ||
 				pass.report.material?.schemaVersion !==
@@ -396,6 +429,25 @@ export async function compileProceduralMannequin({
 				)
 			) {
 				throw new Error("Blender skin material did not match the recipe.");
+			}
+			if (
+				pass.report.head?.version !== PROCEDURAL_HEAD_CONTRACT_VERSION ||
+				pass.report.face?.version !== PROCEDURAL_FACE_FEATURE_VERSION ||
+				pass.report.face?.validation?.passed !== true ||
+				pass.report.face?.eyeMeshCount !== 2 ||
+				pass.report.face?.eyeColor !== recipe.appearance.face.eyeColor ||
+				pass.report.face?.eyeMaterial?.name !==
+					expectedFaceDefinition.eyeMaterial.name ||
+				pass.report.face?.eyeMaterial?.schemaVersion !==
+					PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION ||
+				pass.report.face?.eyeMaterial?.canonicalLinearColor?.some(
+					(value, index) =>
+						Math.abs(
+							value - expectedFaceDefinition.eyeMaterial.linearColor[index],
+						) > 0.000001,
+				)
+			) {
+				throw new Error("Blender face features did not match the recipe.");
 			}
 			for (const [key, expected] of Object.entries(anatomy)) {
 				if (Math.abs(pass.report.anatomy?.[key] - expected) > 0.000001) {
@@ -477,6 +529,12 @@ export async function compileProceduralMannequin({
 					JSON.stringify(second.report.components?.hair?.derivedTransform) &&
 				JSON.stringify(first.report.components?.hair?.fitValidation) ===
 					JSON.stringify(second.report.components?.hair?.fitValidation),
+			faceGeometryDeterministic:
+				firstValidation.faceGeometrySemanticHash ===
+				secondValidation.faceGeometrySemanticHash,
+			facePlacementDeterministic:
+				JSON.stringify(first.report.face) ===
+				JSON.stringify(second.report.face),
 			skeletonDeterministic:
 				firstValidation.skeletonSignature ===
 				secondValidation.skeletonSignature,
@@ -488,6 +546,8 @@ export async function compileProceduralMannequin({
 			!determinism.nodeHierarchyDeterministic ||
 			!determinism.headContractDeterministic ||
 			!determinism.hairstyleFitDeterministic ||
+			!determinism.faceGeometryDeterministic ||
+			!determinism.facePlacementDeterministic ||
 			!determinism.geometryAndSkinningDeterministic ||
 			!determinism.materialDeterministic ||
 			!determinism.normalizedSemanticDeterministic ||
@@ -607,6 +667,18 @@ export async function compileProceduralMannequin({
 			jointCount: firstValidation.inspection.jointCount,
 			knownLimitations: warnings,
 			appearance: {
+				face: {
+					authoredEyeColor: recipe.appearance.face.eyeColor,
+					authoredEyeColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
+					canonicalLinearColor: expectedFace(recipe).eyeMaterial.linearColor,
+					exportedLinearColor:
+						firstValidation.face.eyeMaterial.exportedLinearColor,
+					exportedMetallic: firstValidation.face.eyeMaterial.exportedMetallic,
+					exportedRoughness: firstValidation.face.eyeMaterial.exportedRoughness,
+					materialCount: firstValidation.face.eyeMaterial.materialCount,
+					materialName: firstValidation.face.eyeMaterial.materialName,
+					materialSchemaVersion: PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION,
+				},
 				skin: {
 					authoredColor: recipe.appearance.skin.color,
 					authoredColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
@@ -621,6 +693,15 @@ export async function compileProceduralMannequin({
 				},
 			},
 			artifactStatistics: firstValidation.artifact,
+			face: {
+				...first.report.face,
+				materialCount: firstValidation.face.materialCount,
+				sourceTriangleCount: first.report.face.triangleCount,
+				sourceVertexCount: first.report.face.vertexCount,
+				triangleCount: firstValidation.face.triangleCount,
+				vertexCount: firstValidation.face.vertexCount,
+			},
+			faceGeometrySemanticHash: firstValidation.faceGeometrySemanticHash,
 			bodyStatistics: {
 				materialCount: geometry.materialCount,
 				meshCount: geometry.meshCount,

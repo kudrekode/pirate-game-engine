@@ -1,5 +1,6 @@
 import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
+	CHARACTER_FACE_APPEARANCE_LIMITS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	type CharacterBodyParameters,
 	type CharacterHairComponentId,
@@ -11,6 +12,16 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v2";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
+export const PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION =
+	"procedural-eye-material-v1";
+export const PROCEDURAL_FACE_FEATURE_VERSION = "procedural-face-readability-v0";
+export const PROCEDURAL_HEAD_CONTRACT_VERSION = "procedural-head-contract-v2";
+export const PROCEDURAL_FACE_APPEARANCE = {
+	eyeColor: {
+		...CHARACTER_FACE_APPEARANCE_LIMITS.eyeColor,
+		label: "Eye color",
+	},
+} as const;
 export const PROCEDURAL_SKIN_APPEARANCE = {
 	color: {
 		...CHARACTER_SKIN_APPEARANCE_LIMITS.skinColor,
@@ -62,6 +73,17 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 
 export type ProceduralMannequinManifest = {
 	appearance: {
+		face: {
+			authoredEyeColor: string;
+			authoredEyeColorSpace: "srgb";
+			canonicalLinearColor: [number, number, number];
+			exportedLinearColor: [number, number, number];
+			exportedMetallic: number;
+			exportedRoughness: number;
+			materialCount: number;
+			materialName: string;
+			materialSchemaVersion: string;
+		};
 		skin: {
 			authoredColor: string;
 			authoredColorSpace: "srgb";
@@ -96,6 +118,7 @@ export type ProceduralMannequinManifest = {
 	};
 	compilerVersion: string;
 	head?: {
+		version?: string;
 		bounds: {
 			centre: [number, number, number];
 			dimensions: [number, number, number];
@@ -111,6 +134,19 @@ export type ProceduralMannequinManifest = {
 		symmetryErrorMetres: number;
 		topologyVersion: string;
 	};
+	face?: {
+		eyeColor: string;
+		eyeMeshCount: number;
+		materialCount: number;
+		mouthCentre: [number, number, number];
+		noseCentre: [number, number, number];
+		noseProjectionMetres: number;
+		triangleCount: number;
+		validation: { passed: boolean; warnings: string[] };
+		version: string;
+		vertexCount: number;
+	};
+	faceGeometrySemanticHash?: string;
 	components: {
 		hair: {
 			attachmentBone: "Head" | null;
@@ -300,6 +336,12 @@ export function validateProceduralMannequinAppearance(
 			path: "$.palette.skin",
 		});
 	}
+	if (!/^#[0-9a-fA-F]{6}$/.test(recipe.appearance.face.eyeColor)) {
+		issues.push({
+			message: "Eye color must be a six-digit sRGB hexadecimal color.",
+			path: "$.appearance.face.eyeColor",
+		});
+	}
 	const roughness = recipe.appearance.skin.roughness;
 	if (
 		!Number.isFinite(roughness) ||
@@ -360,12 +402,13 @@ export function createProceduralMannequinCompileRequest(
 ) {
 	return {
 		appearance: {
+			eyeColor: recipe.appearance.face.eyeColor.toLowerCase(),
 			skinColor: recipe.palette.skin.toLowerCase(),
 			skinRoughness: recipe.appearance.skin.roughness,
 		},
 		components: { hair: recipe.components.hair },
 		proportions: { ...recipe.body.parameters },
-		version: 4 as const,
+		version: 5 as const,
 	};
 }
 
@@ -416,6 +459,14 @@ export async function requestProceduralMannequinCompile(
 			compileRequest.appearance.skinColor ||
 		payload.manifest.appearance?.skin?.authoredRoughness !==
 			compileRequest.appearance.skinRoughness ||
+		payload.manifest.appearance?.face?.authoredEyeColor !==
+			compileRequest.appearance.eyeColor ||
+		payload.manifest.appearance?.face?.materialSchemaVersion !==
+			PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION ||
+		payload.manifest.face?.version !== PROCEDURAL_FACE_FEATURE_VERSION ||
+		payload.manifest.face?.eyeMeshCount !== 2 ||
+		payload.manifest.face?.validation?.passed !== true ||
+		payload.manifest.head?.version !== PROCEDURAL_HEAD_CONTRACT_VERSION ||
 		payload.manifest.appearance?.skin?.exportedMetallic !== 0 ||
 		payload.manifest.appearance?.skin?.materialCount !== 1 ||
 		payload.manifest.appearance?.skin?.materialSchemaVersion !==

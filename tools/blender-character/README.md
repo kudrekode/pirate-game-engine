@@ -69,7 +69,8 @@ npm run validate:procedural-topology-matrix
 
 Hairstyle Slot V1 extends the same compiler with exactly `none` and the
 registry-backed `quaternius-hair-v0` component. Compile and validate the haired
-reference plus its ten-body fit matrix with:
+reference with the commands below. The current matrix covers six body shapes,
+each bald and haired (12 artifacts); the older ten-body run is historical evidence:
 
 ```powershell
 npm run compile:procedural-mannequin -- --recipe tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json --blender "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --output-dir public/assets/derived/procedural-humanoids/mannequin-hair-v0 --clean
@@ -90,6 +91,22 @@ plane, records a geometry-derived head/scalp contract, and
 bounds. The compiler rejects low neck placement, weak scalp coverage,
 off-centre fits, and inadequate shoulder clearance. See
 `docs/assets/procedural-head-hair-fit-v1.md`.
+
+Face Readability V0 extends the measured head contract with face plane, eye
+line, nose, mouth, and chin landmarks. Blender generates two Head-skinned eyes,
+a skin-material nose wedge, and a fixed dark mouth mesh. Eye colour is authored
+at `appearance.face.eyeColor`; older recipes migrate to `#4b5d67`. The buzzed
+fit also derives a central hairline clearance from the same landmarks so the
+eyes remain visible. Validate the paired bald/haired body matrix and the skin/
+eye appearance matrix with:
+
+```powershell
+npm run validate:procedural-hairstyle-matrix
+npm run validate:procedural-appearance-matrix
+```
+
+See `docs/assets/face-readability-v0.md` for geometry counts, versioning,
+validation gates, fixed-camera evidence, limitations, and the next milestone.
 
 See `docs/assets/generated-body-topology-v1.md` for the method decision,
 version/migration policy, topology and skeleton gates, matrix results, and

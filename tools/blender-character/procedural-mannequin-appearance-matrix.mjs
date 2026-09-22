@@ -7,12 +7,16 @@ import {
 } from "./procedural-mannequin-compiler.mjs";
 import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
 
-const DEFAULT_OUTPUT = "test-results/material-skin-appearance-v1/matrix";
+const DEFAULT_OUTPUT = "test-results/face-readability-v0/appearance-matrix";
 const APPEARANCES = [
-	["tone-1-matte", "#f1c7a5", 0.82],
-	["tone-3-balanced", "#c98f65", 0.62],
-	["tone-5-balanced", "#7d4f38", 0.62],
-	["tone-6-smooth", "#503126", 0.36],
+	["tone-1-matte", "#f1c7a5", 0.82, "#4b5d67"],
+	["tone-3-balanced", "#c98f65", 0.62, "#4b5d67"],
+	["tone-5-balanced", "#7d4f38", 0.62, "#4b5d67"],
+	["tone-6-smooth", "#503126", 0.36, "#4b5d67"],
+	["eye-charcoal", "#c98f65", 0.72, "#30343b"],
+	["eye-earth", "#c98f65", 0.72, "#5c4634"],
+	["eye-moss", "#c98f65", 0.72, "#53624b"],
+	["eye-ocean", "#c98f65", 0.72, "#405c72"],
 ];
 
 export async function runProceduralMannequinAppearanceMatrix({
@@ -28,10 +32,11 @@ export async function runProceduralMannequinAppearanceMatrix({
 	const root = path.resolve(workspaceRoot, outputRoot);
 	await mkdir(root, { recursive: true });
 	const cases = [];
-	for (const [name, color, roughness] of APPEARANCES) {
+	for (const [name, color, roughness, eyeColor] of APPEARANCES) {
 		const parsed = validateProceduralMannequinRecipe({
 			...baseRecipe,
 			appearance: {
+				face: { eyeColor },
 				skin: { color, colorSpace: "srgb", roughness },
 			},
 		});
@@ -53,12 +58,17 @@ export async function runProceduralMannequinAppearanceMatrix({
 			manifest.appearance.skin.authoredColor !== color ||
 			manifest.appearance.skin.authoredRoughness !== roughness ||
 			manifest.appearance.skin.exportedMetallic !== 0 ||
-			manifest.appearance.skin.materialCount !== 1
+			manifest.appearance.skin.materialCount !== 1 ||
+			manifest.appearance.face.authoredEyeColor !== eyeColor ||
+			manifest.appearance.face.materialCount !== 1 ||
+			manifest.face.eyeMeshCount !== 2 ||
+			manifest.face.validation.passed !== true
 		) {
 			throw new Error(`${name} did not preserve its authored material.`);
 		}
 		cases.push({
 			appearance: manifest.appearance,
+			faceGeometrySemanticHash: manifest.faceGeometrySemanticHash,
 			geometryAndSkinningSemanticHash: manifest.geometryAndSkinningSemanticHash,
 			materialSemanticHash: manifest.materialSemanticHash,
 			name,
@@ -72,6 +82,7 @@ export async function runProceduralMannequinAppearanceMatrix({
 	const variant = (key) =>
 		new Set(cases.map((entry) => entry[key])).size === cases.length;
 	const checks = {
+		faceGeometryStable: invariant("faceGeometrySemanticHash"),
 		geometryAndSkinningStable: invariant("geometryAndSkinningSemanticHash"),
 		materialChanges: variant("materialSemanticHash"),
 		outputChanges: variant("outputHash"),

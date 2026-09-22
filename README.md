@@ -71,13 +71,20 @@ diagnostics now record the head/scalp contract, derived transform, fit metrics,
 and warnings. See
 [`docs/assets/procedural-head-hair-fit-v1.md`](docs/assets/procedural-head-hair-fit-v1.md).
 
-Asset Studio now has its first complete creator loop. Editing height and pressing
-Compile submits the existing CharacterRecipe height to a local development
-endpoint, runs the real two-pass Blender compiler and validation pipeline, and
-reloads the returned GLB without browser scaling. Repeated identical heights
-retain identical recipe/asset hashes; failed jobs leave the previous preview
-active. See
-[`docs/assets/asset-studio-height-authoring-v0.md`](docs/assets/asset-studio-height-authoring-v0.md).
+Face Readability V0 now generates two Head-skinned eyes, a low-poly nose, and a
+fixed mouth line from the measured head contract. Eye colour is authored recipe
+data and compiled into a shared eye material; bald and haired artifacts retain
+one skin and the unchanged 65-joint skeleton. Asset Studio includes focused
+Face controls and close head cameras. This checkpoint has a confirmed defect:
+the face points opposite the feet. Orientation correction is the next task;
+see the [diagnosis](docs/assets/face-readability-v0.md#known-blocking-defect).
+
+Asset Studio compiles six body proportions, skin colour/roughness, eye colour,
+and the selected hairstyle through a local development endpoint and the real
+two-pass Blender compiler. Successful validated GLBs replace the preview;
+failed jobs preserve it, and Recent Compilations restores prior recipes and
+artifacts. Start with the [Asset Studio quick resume](docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume)
+for current versions, exact files, checks, and remaining work.
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
@@ -104,6 +111,15 @@ Start the Vite dev server:
 ```bash
 npm run dev
 ```
+
+Start the separate Asset Studio app:
+
+```bash
+npm run dev:asset-studio
+```
+
+Previewing checked-in assets does not require Blender; compiling recipes needs
+local Blender. See the [compiler guide](tools/blender-character/README.md).
 
 Run Vitest in watch mode:
 
@@ -134,6 +150,11 @@ npm run typecheck
 npm run test:run
 npm run build
 ```
+
+`npm run ci` uses root Vitest discovery, which also finds workspace tests, but
+its typecheck/build target the root app. For Asset Studio changes also run
+`npm run check:asset-studio` (contract and app checks) and
+`npm run test:blender-bake` (Node compiler/API tests and installed GLB round trips).
 
 GitHub Actions is configured for pull requests to `release/staging` and `main`. The workflow installs dependencies with `npm ci`, then runs typecheck, tests, and build. Playwright browser smoke coverage is opt-in through `npm run test:e2e:three-perf`; it is not part of `npm run ci`.
 

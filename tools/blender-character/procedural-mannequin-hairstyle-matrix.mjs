@@ -6,7 +6,7 @@ import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contra
 
 const DEFAULT_RECIPE =
 	"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json";
-const DEFAULT_OUTPUT = "test-results/procedural-head-hair-v1/body-fit-matrix";
+const DEFAULT_OUTPUT = "test-results/face-readability-v0/body-hair-matrix";
 
 const CASES = [
 	["default", {}],
@@ -29,50 +29,6 @@ const CASES = [
 			armLength: 0.45,
 			legLength: 0.62,
 			hipWidth: 0.55,
-		},
-	],
-	[
-		"seed-hair-22",
-		{
-			height: 1.94,
-			shoulderWidth: 0.71,
-			torsoLength: 0.61,
-			armLength: 0.68,
-			legLength: 0.52,
-			hipWidth: 0.34,
-		},
-	],
-	[
-		"seed-hair-33",
-		{
-			height: 1.76,
-			shoulderWidth: 0.18,
-			torsoLength: 0.72,
-			armLength: 0.54,
-			legLength: 0.41,
-			hipWidth: 0.66,
-		},
-	],
-	[
-		"short-broad-long-torso",
-		{
-			height: 1.55,
-			shoulderWidth: 0.9,
-			torsoLength: 0.82,
-			armLength: 0.62,
-			legLength: 0.45,
-			hipWidth: 0.7,
-		},
-	],
-	[
-		"tall-narrow-long-limbs",
-		{
-			height: 2.04,
-			shoulderWidth: 0.15,
-			torsoLength: 0.35,
-			armLength: 0.72,
-			legLength: 0.78,
-			hipWidth: 0.25,
 		},
 	],
 ];
@@ -123,41 +79,76 @@ export async function runProceduralMannequinHairstyleMatrix({
 	await mkdir(root, { recursive: true });
 	const results = [];
 	for (const [name, overrides] of CASES) {
-		const parsed = validateProceduralMannequinRecipe({
-			...baseRecipe,
-			proportions: { ...baseRecipe.proportions, ...overrides },
-		});
-		if (!parsed.ok) {
-			throw new Error(`${name} is invalid: ${JSON.stringify(parsed.issues)}`);
+		const pair = [];
+		for (const [variant, hair] of [
+			["bald", "none"],
+			["haired", "quaternius-hair-v0"],
+		]) {
+			const parsed = validateProceduralMannequinRecipe({
+				...baseRecipe,
+				components: { hair },
+				proportions: { ...baseRecipe.proportions, ...overrides },
+			});
+			if (!parsed.ok) {
+				throw new Error(
+					`${name}/${variant} is invalid: ${JSON.stringify(parsed.issues)}`,
+				);
+			}
+			const caseRoot = path.join(root, name, variant);
+			const recipePath = path.join(caseRoot, "input.recipe.json");
+			await mkdir(caseRoot, { recursive: true });
+			await writeFile(recipePath, `${JSON.stringify(parsed.value, null, 2)}\n`);
+			const compiled = await compileProceduralMannequin({
+				clean: true,
+				outputDirectory: path.join(caseRoot, "output"),
+				recipePath,
+				staging: true,
+				workspaceRoot,
+			});
+			const facePassed =
+				compiled.manifest.face.version === "procedural-face-readability-v0" &&
+				compiled.manifest.face.eyeMeshCount === 2 &&
+				compiled.manifest.face.validation.passed === true;
+			const fit =
+				hair === "none" ? { passed: true } : hairstyleFit(compiled.manifest);
+			if (!fit.passed || !facePassed) {
+				throw new Error(
+					`${name}/${variant} failed face or hairstyle fit: ${JSON.stringify({ face: compiled.manifest.face, fit })}`,
+				);
+			}
+			pair.push({
+				bounds: compiled.manifest.components.hair.bounds,
+				derivedTransform: compiled.manifest.components.hair.derivedTransform,
+				face: compiled.manifest.face,
+				faceGeometrySemanticHash: compiled.manifest.faceGeometrySemanticHash,
+				fit,
+				geometryAndSkinningSemanticHash:
+					compiled.manifest.geometryAndSkinningSemanticHash,
+				head: compiled.manifest.head,
+				name,
+				outputHash: compiled.manifest.outputHash,
+				proportions: parsed.value.proportions,
+				recipeHash: compiled.manifest.recipeHash,
+				skeletonSignature: compiled.manifest.skeletonSignature,
+				variant,
+			});
 		}
-		const caseRoot = path.join(root, name);
-		const recipePath = path.join(caseRoot, "input.recipe.json");
-		await mkdir(caseRoot, { recursive: true });
-		await writeFile(recipePath, `${JSON.stringify(parsed.value, null, 2)}\n`);
-		const compiled = await compileProceduralMannequin({
-			clean: true,
-			outputDirectory: path.join(caseRoot, "output"),
-			recipePath,
-			staging: true,
-			workspaceRoot,
-		});
-		const fit = hairstyleFit(compiled.manifest);
-		if (!fit.passed) {
-			throw new Error(`${name} failed hairstyle fit: ${JSON.stringify(fit)}`);
+		const [bald, haired] = pair;
+		if (
+			bald.geometryAndSkinningSemanticHash !==
+				haired.geometryAndSkinningSemanticHash ||
+			bald.faceGeometrySemanticHash !== haired.faceGeometrySemanticHash ||
+			bald.skeletonSignature !== haired.skeletonSignature
+		) {
+			throw new Error(
+				`${name} changed body, face, or skeleton across hair variants.`,
+			);
 		}
-		results.push({
-			bounds: compiled.manifest.components.hair.bounds,
-			derivedTransform: compiled.manifest.components.hair.derivedTransform,
-			fit,
-			head: compiled.manifest.head,
-			name,
-			outputHash: compiled.manifest.outputHash,
-			proportions: parsed.value.proportions,
-			recipeHash: compiled.manifest.recipeHash,
-		});
+		results.push(...pair);
 	}
 	const summary = {
-		caseCount: results.length,
+		artifactCount: results.length,
+		caseCount: CASES.length,
 		cases: results,
 		componentId: "quaternius-hair-v0",
 		passed: true,

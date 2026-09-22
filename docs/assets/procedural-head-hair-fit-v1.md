@@ -46,8 +46,9 @@ and symmetric source volumes for:
 - a simple forward face plane;
 - neck/head continuity.
 
-No eyes, mouth, detailed nose, ears, facial rig, blend shapes, or textures are
-generated.
+At this milestone no eyes, mouth, detailed nose, ears, facial rig, blend shapes,
+or textures were generated. Face Readability V0 now supersedes that visual
+limitation; see [`face-readability-v0.md`](face-readability-v0.md).
 
 The compiler measures the remeshed result rather than publishing raw vertex
 indices. `manifest.head` and `diagnostics.blenderReport.head` record:
@@ -134,8 +135,8 @@ materials, topology, and normalized semantic hashes.
 ## Versioning and Compatibility
 
 - body/head topology: `procedural-humanoid-v2`;
-- compiler: `procedural-mannequin-blender-v5`;
-- round-trip validation: `procedural-mannequin-roundtrip-v6`;
+- compiler at this milestone: `procedural-mannequin-blender-v5`;
+- round-trip validation at this milestone: `procedural-mannequin-roundtrip-v6`;
 - hairstyle fitting profile: `quaternius-buzzed-fit-v2`.
 
 Recipes authored with `procedural-humanoid-v1` remain accepted and canonicalize
@@ -162,8 +163,7 @@ The head is deliberately low-detail and the voxel-union face plane remains
 coarse. The Quaternius Buzzed source has a sparse crown and fixed vendor
 material; there is no hair colour authoring or secondary motion.
 
-The recommended next milestone is a simple face-feature milestone. The scalp
-and hair attachment are now usable, while minimal eye/nose/mouth presentation
-would improve character readability more than adding several hairstyles to the
-still featureless engineering face. Hairstyle Library V2 should follow that
-small readability pass through the same fit-profile contract.
+The recommended face-feature follow-up was completed by Face Readability V0.
+The later side-view audit found that this head's +Y face assumption opposes
+the Golden feet. Correct the head/face orientation before Hair Colour V1 and
+Hairstyle Library V2; see the [blocking diagnosis](face-readability-v0.md#known-blocking-defect).

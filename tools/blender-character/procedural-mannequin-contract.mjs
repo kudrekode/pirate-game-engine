@@ -4,17 +4,23 @@ import {
 	NO_HAIR_COMPONENT_ID,
 } from "./character-component-registry.mjs";
 
-export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 4;
+export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 5;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v5";
+	"procedural-mannequin-blender-v6";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v6";
+	"procedural-mannequin-roundtrip-v7";
 export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v2";
 export const LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION =
 	"procedural-humanoid-v1";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
 export const PROCEDURAL_SKIN_MATERIAL_NAME = "ProceduralSkinMaterial";
+export const PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION =
+	"procedural-eye-material-v1";
+export const PROCEDURAL_EYE_MATERIAL_NAME = "ProceduralEyeMaterial";
+export const PROCEDURAL_MOUTH_MATERIAL_NAME = "ProceduralMouthMaterial";
+export const PROCEDURAL_FACE_FEATURE_VERSION = "procedural-face-readability-v0";
+export const PROCEDURAL_HEAD_CONTRACT_VERSION = "procedural-head-contract-v2";
 export const PROCEDURAL_SKIN_COLOR_SPACE = "srgb";
 export const GOLDEN_HUMANOID_SKELETON_CONTRACT = "golden-humanoid-v0";
 export const GOLDEN_HUMANOID_BLENDER_REST_SIGNATURE =
@@ -82,6 +88,7 @@ export const PROCEDURAL_MANNEQUIN_LIMITS = Object.freeze({
 		validation: "finite normalized offset centred under the shoulders",
 	},
 	radialSegments: { max: 16, min: 6 },
+	eyeColor: { defaultValue: "#4b5d67" },
 	skinRoughness: { defaultValue: 0.72, max: 1, min: 0 },
 });
 
@@ -288,7 +295,9 @@ export function validateProceduralMannequinRecipe(value) {
 		};
 	}
 	if (
-		![0, 1, 2, 3, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(value.version)
+		![0, 1, 2, 3, 4, PROCEDURAL_MANNEQUIN_RECIPE_VERSION].includes(
+			value.version,
+		)
 	) {
 		issues.push({ message: "Unsupported recipe version.", path: "$.version" });
 	}
@@ -310,6 +319,7 @@ export function validateProceduralMannequinRecipe(value) {
 		value.version === 0 || value.version === 1 || value.version === 2;
 	const material = isRecord(value.material) ? value.material : {};
 	const appearance = isRecord(value.appearance) ? value.appearance : {};
+	const face = isRecord(appearance.face) ? appearance.face : {};
 	const skin = isRecord(appearance.skin) ? appearance.skin : {};
 	const components = isRecord(value.components) ? value.components : {};
 	const hairComponentId = components.hair ?? NO_HAIR_COMPONENT_ID;
@@ -343,6 +353,15 @@ export function validateProceduralMannequinRecipe(value) {
 		issues.push({
 			message: "Expected skin appearance.",
 			path: "$.appearance.skin",
+		});
+	}
+	if (
+		value.version === PROCEDURAL_MANNEQUIN_RECIPE_VERSION &&
+		!isRecord(appearance.face)
+	) {
+		issues.push({
+			message: "Expected face appearance.",
+			path: "$.appearance.face",
 		});
 	}
 	const skeleton = isRecord(value.skeleton) ? value.skeleton : {};
@@ -379,6 +398,10 @@ export function validateProceduralMannequinRecipe(value) {
 		});
 	}
 	const authoredSkinColor = legacyMaterial ? material.baseColor : skin.color;
+	const authoredEyeColor =
+		value.version === PROCEDURAL_MANNEQUIN_RECIPE_VERSION
+			? face.eyeColor
+			: PROCEDURAL_MANNEQUIN_LIMITS.eyeColor.defaultValue;
 	const authoredSkinRoughness = legacyMaterial
 		? material.roughness
 		: skin.roughness;
@@ -389,6 +412,15 @@ export function validateProceduralMannequinRecipe(value) {
 		issues.push({
 			message: "Expected a #RRGGBB color string.",
 			path: legacyMaterial ? "$.material.baseColor" : "$.appearance.skin.color",
+		});
+	}
+	if (
+		typeof authoredEyeColor !== "string" ||
+		!HEX_COLOR_PATTERN.test(authoredEyeColor)
+	) {
+		issues.push({
+			message: "Expected a #RRGGBB color string.",
+			path: "$.appearance.face.eyeColor",
 		});
 	}
 	if (!legacyMaterial && skin.colorSpace !== PROCEDURAL_SKIN_COLOR_SPACE) {
@@ -446,6 +478,13 @@ export function validateProceduralMannequinRecipe(value) {
 		},
 		id: readString(value, "id", "$.id", issues),
 		appearance: {
+			face: {
+				eyeColor:
+					typeof authoredEyeColor === "string" &&
+					HEX_COLOR_PATTERN.test(authoredEyeColor)
+						? authoredEyeColor.toLowerCase()
+						: PROCEDURAL_MANNEQUIN_LIMITS.eyeColor.defaultValue,
+			},
 			skin: {
 				color:
 					typeof authoredSkinColor === "string" &&
@@ -488,7 +527,7 @@ export function canonicalizeProceduralMannequinRecipe(recipe) {
 	const parsed = validateProceduralMannequinRecipe(recipe);
 	if (!parsed.ok) {
 		throw new Error(
-			`Invalid ProceduralMannequinRecipeV4: ${parsed.issues
+			`Invalid ProceduralMannequinRecipeV5: ${parsed.issues
 				.map((entry) => `${entry.path} ${entry.message}`)
 				.join("; ")}`,
 		);

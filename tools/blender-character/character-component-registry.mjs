@@ -65,7 +65,7 @@ export async function validateCharacterComponentRegistry({
 			component.expectedAttachmentBone !== "Head" ||
 			component.attachmentStrategy !== "main-skeleton-head-surface-skinning" ||
 			component.compilerCompatibilityVersion !==
-				"procedural-mannequin-blender-v5"
+				"procedural-mannequin-blender-v6"
 		) {
 			throw new Error(`Component "${component.id}" has incompatible metadata.`);
 		}

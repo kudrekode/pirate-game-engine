@@ -65,6 +65,7 @@ describe("shared Three asset preview", () => {
 			category: "character",
 			id: "procedural-mannequin-v0",
 			kind: "glb",
+			tags: expect.arrayContaining(["face-readability-v0"]),
 			url: expect.stringMatching(
 				/procedural-humanoids\/mannequin-v0\/mannequin\.glb$/u,
 			),

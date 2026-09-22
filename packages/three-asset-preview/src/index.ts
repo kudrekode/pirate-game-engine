@@ -113,6 +113,7 @@ export const PROCEDURAL_MANNEQUIN_V0_ASSET: ThreeVisualAssetDefinition = {
 	tags: [
 		"character",
 		"compiler-generated",
+		"face-readability-v0",
 		"golden-skeleton",
 		"procedural",
 		"procedural-head-v1",

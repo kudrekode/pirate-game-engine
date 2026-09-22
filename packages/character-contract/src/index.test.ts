@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	CHARACTER_BODY_PARAMETER_LIMITS,
 	CHARACTER_COMPONENT_REGISTRY,
+	CHARACTER_FACE_APPEARANCE_LIMITS,
 	CHARACTER_HAIR_COMPONENT_IDS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	createDefaultCharacterRecipe,
@@ -34,24 +35,30 @@ describe("CharacterRecipeV1", () => {
 				},
 			},
 			components: { hair: "none" },
-			appearance: { skin: { roughness: 0.72 } },
+			appearance: {
+				face: { eyeColor: "#4b5d67" },
+				skin: { roughness: 0.72 },
+			},
 			animationSetId: "humanoid-basic-v1",
 		});
 	});
 
-	it("defines and validates exactly the two compiled skin appearance controls", () => {
+	it("defines and validates the compiled skin and face appearance controls", () => {
 		expect(Object.keys(CHARACTER_SKIN_APPEARANCE_LIMITS)).toEqual([
 			"skinColor",
 			"skinRoughness",
 		]);
+		expect(Object.keys(CHARACTER_FACE_APPEARANCE_LIMITS)).toEqual(["eyeColor"]);
 		const recipe = createDefaultCharacterRecipe();
 		recipe.palette.skin = "#C98F65";
 		recipe.appearance.skin.roughness = 0.43;
+		recipe.appearance.face.eyeColor = "#405C72";
 		const parsed = parseCharacterRecipe(recipe);
 		expect(parsed.ok).toBe(true);
 		if (parsed.ok) {
 			expect(parsed.value.palette.skin).toBe("#c98f65");
 			expect(parsed.value.appearance.skin.roughness).toBe(0.43);
+			expect(parsed.value.appearance.face.eyeColor).toBe("#405c72");
 		}
 	});
 
@@ -59,10 +66,15 @@ describe("CharacterRecipeV1", () => {
 		const malformed = createDefaultCharacterRecipe();
 		malformed.palette.skin = "skin";
 		malformed.appearance.skin.roughness = Number.NaN;
+		malformed.appearance.face.eyeColor = "blue";
 		const parsed = parseCharacterRecipe(malformed);
 		expect(parsed.ok).toBe(false);
 		expect(parsed.issues.map((entry) => entry.path)).toEqual(
-			expect.arrayContaining(["$.palette.skin", "$.appearance.skin.roughness"]),
+			expect.arrayContaining([
+				"$.palette.skin",
+				"$.appearance.skin.roughness",
+				"$.appearance.face.eyeColor",
+			]),
 		);
 	});
 
@@ -154,6 +166,7 @@ describe("CharacterRecipeV1", () => {
 				hipWidth: 0.5,
 			});
 			expect(parsed.value.appearance.skin.roughness).toBe(0.72);
+			expect(parsed.value.appearance.face.eyeColor).toBe("#4b5d67");
 			expect(parsed.value.components.hair).toBe("none");
 		}
 	});

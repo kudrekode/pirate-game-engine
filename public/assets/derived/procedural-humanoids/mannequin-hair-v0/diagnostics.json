@@ -20,16 +20,16 @@
 			"buildHash": "fbe6228777e7",
 			"version": "5.2.0 LTS"
 		},
-		"compilerVersion": "procedural-mannequin-blender-v5",
+		"compilerVersion": "procedural-mannequin-blender-v6",
 		"components": {
 			"hair": {
 				"attachmentBone": "Head",
 				"attachmentStrategy": "main-skeleton-head-surface-skinning",
 				"bounds": {
-					"centre": [0, 0.028381154, 1.633749247],
-					"dimensions": [0.324640006, 0.288123578, 0.208912611],
+					"centre": [0, 0.028381154, 1.644979954],
+					"dimensions": [0.324640006, 0.288123578, 0.186451316],
 					"maximum": [0.162320003, 0.172442943, 1.738205552],
-					"minimum": [-0.162320003, -0.115680635, 1.529292941]
+					"minimum": [-0.162320003, -0.115680635, 1.551754236]
 				},
 				"componentId": "quaternius-hair-v0",
 				"derivedTransform": {
@@ -37,6 +37,12 @@
 					"rotationDegrees": [0, 0, 0],
 					"scale": [2.099999905, 1.509102583, 1.233511209],
 					"translationMetres": [0, 0, 0]
+				},
+				"faceClearance": {
+					"adjustedVertexCount": 81,
+					"hairlineHalfWidthMetres": 0.138682985,
+					"hairlineMaximumZ": 1.654398995,
+					"hairlineMinimumY": 0.078243394
 				},
 				"fitValidation": {
 					"checks": {
@@ -52,16 +58,16 @@
 						"widthCoverage": true
 					},
 					"metrics": {
-						"centreOffset": [-7e-9, 0.002, 0.045633316],
-						"closeToScalpRatio": 0.536481,
+						"centreOffset": [-7e-9, 0.002, 0.056864023],
+						"closeToScalpRatio": 0.645923,
 						"depthRatio": 1,
 						"frontGapMetres": -0.002000004,
-						"maximumScalpDistanceMetres": 0.090364498,
-						"minimumScalpDistanceMetres": 0.005299055,
+						"maximumScalpDistanceMetres": 0.075999413,
+						"minimumScalpDistanceMetres": 0.00399112,
 						"rearGapMetres": 0.001999997,
-						"scalpVerticalRangeRatio": 0.774678,
+						"scalpVerticalRangeRatio": 0.892704,
 						"shoulderClearanceMetres": 0.048570316,
-						"verticesAboveNeckRatio": 0.929185,
+						"verticesAboveNeckRatio": 0.991416,
 						"widthRatio": 0.936351
 					},
 					"passed": true,
@@ -115,9 +121,69 @@
 				"vertexCount": 466
 			}
 		},
-		"geometry": {
+		"face": {
+			"eyeBounds": [
+				{
+					"centre": [0.062407352, 0.148545548, 1.615733862],
+					"dimensions": [0.034292791, 0.013701081, 0.028722763],
+					"maximum": [0.079553746, 0.155396089, 1.630095243],
+					"minimum": [0.045260955, 0.141695008, 1.60137248]
+				},
+				{
+					"centre": [-0.062407337, 0.148545548, 1.615733862],
+					"dimensions": [0.034292791, 0.013701081, 0.028722763],
+					"maximum": [-0.04526094, 0.155396089, 1.630095243],
+					"minimum": [-0.079553731, 0.141695008, 1.60137248]
+				}
+			],
+			"eyeCentres": [
+				[0.062407352, 0.148545548, 1.615733862],
+				[-0.062407337, 0.148545548, 1.615733862]
+			],
+			"eyeColor": "#4b5d67",
+			"eyeMaterial": {
+				"canonicalLinearColor": [0.070360096, 0.109461711, 0.13563333],
+				"metallic": 0,
+				"name": "ProceduralEyeMaterial",
+				"roughness": 0.48,
+				"schemaVersion": "procedural-eye-material-v1"
+			},
+			"eyeMeshCount": 2,
+			"featureBounds": {
+				"centre": [7e-9, 0.158197686, 1.579692483],
+				"dimensions": [0.159107476, 0.036015451, 0.100805521],
+				"maximum": [0.079553746, 0.176205412, 1.630095243],
+				"minimum": [-0.079553731, 0.140189961, 1.529289722]
+			},
 			"materialCount": 2,
-			"meshCount": 1,
+			"mouthCentre": [7e-9, 0.150274292, 1.531499147],
+			"mouthMaterial": "ProceduralMouthMaterial",
+			"noseCentre": [7e-9, 0.150274292, 1.581211448],
+			"noseProjectionMetres": 0.025931122,
+			"objectNames": ["FaceEye.L", "FaceEye.R", "FaceNose", "FaceMouth"],
+			"triangleCount": 148,
+			"validation": {
+				"checks": {
+					"eyeDepth": true,
+					"eyeSeparation": true,
+					"eyeSymmetry": true,
+					"eyesWithinHead": true,
+					"finiteGeometry": true,
+					"mouthCentred": true,
+					"mouthVerticalPlacement": true,
+					"noseCentred": true,
+					"noseProjection": true,
+					"verticalBounds": true
+				},
+				"passed": true,
+				"warnings": []
+			},
+			"version": "procedural-face-readability-v0",
+			"vertexCount": 82
+		},
+		"geometry": {
+			"materialCount": 4,
+			"meshCount": 5,
 			"parts": [
 				{
 					"bone": "pelvis",
@@ -398,15 +464,29 @@
 				"maximum": [0.173353732, 0.170442939, 1.726205587],
 				"minimum": [-0.173353717, -0.117680632, 1.450026155]
 			},
+			"chinReference": [7e-9, 0.150274288, 1.472120509],
 			"coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+			"eyeLine": {
+				"centre": [7e-9, 0.150274288, 1.615733874],
+				"separationMetres": 0.124814687
+			},
+			"facePlane": {
+				"centre": [7e-9, 0.150274288, 1.588115931],
+				"forward": [0, 1, 0]
+			},
 			"foreheadReference": [7e-9, 0.170442939, 1.63230464],
 			"headBonePosition": [0, 0.017400054, 1.59980011],
 			"headCentre": [7e-9, 0.026381154, 1.588115931],
 			"headDepth": 0.288123578,
 			"headHeight": 0.276179433,
 			"headWidth": 0.346707463,
+			"mouthLine": {
+				"centre": [7e-9, 0.150274288, 1.531499147],
+				"widthMetres": 0.086676866
+			},
 			"neckConnectionVertexCount": 46,
 			"neckTop": [0, 0.017400054, 1.55372011],
+			"noseCentre": [7e-9, 0.150274288, 1.581211445],
 			"rearCraniumReference": [7e-9, -0.117680632, 1.648875406],
 			"scalpBack": [7e-9, -0.117680632, 1.588115931],
 			"scalpBounds": {
@@ -420,7 +500,8 @@
 			"scalpRight": [0.117022052, 0.026381154, 1.588115931],
 			"scalpTop": [7e-9, 0.026381154, 1.726205587],
 			"symmetryErrorMetres": 0,
-			"topologyVersion": "procedural-humanoid-v2"
+			"topologyVersion": "procedural-humanoid-v2",
+			"version": "procedural-head-contract-v2"
 		},
 		"material": {
 			"authoredColor": "#c98f65",
@@ -456,7 +537,7 @@
 			"waistHalfWidth": 0.17,
 			"wristRadius": 0.052
 		},
-		"outputHash": "387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316",
+		"outputHash": "b0e96889e3fb2f60828c0b68e036da9cf478c99bf0000ab3fbaed1a63f841b64",
 		"recipeId": "procedural-mannequin-quaternius-hair-v0",
 		"removedVendorMeshNames": [
 			"Eyebrows",
@@ -1156,6 +1237,8 @@
 		"templateHash": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"warnings": [
 			"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+			"Face Readability V0 uses fixed compiler-generated eye, nose, and mouth geometry; only eye colour is authored.",
+			"Face features are fully Head-weighted and intentionally exclude expressions, eyelids, brows, and facial animation.",
 			"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
 			"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
 			"Hairstyle Fit V2 reuses the generated Head-led body-surface blend and has no secondary motion.",
@@ -1165,14 +1248,16 @@
 	"buildMode": "derived-artifact",
 	"determinism": {
 		"binaryDeterministic": true,
-		"firstOutputHash": "387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316",
+		"firstOutputHash": "b0e96889e3fb2f60828c0b68e036da9cf478c99bf0000ab3fbaed1a63f841b64",
 		"geometryAndSkinningDeterministic": true,
 		"materialDeterministic": true,
 		"nodeHierarchyDeterministic": true,
 		"normalizedSemanticDeterministic": true,
-		"secondOutputHash": "387a6ec273f191b57d578f72ec6bc4eeeabedc10db22729f49b876bee4470316",
+		"secondOutputHash": "b0e96889e3fb2f60828c0b68e036da9cf478c99bf0000ab3fbaed1a63f841b64",
 		"headContractDeterministic": true,
 		"hairstyleFitDeterministic": true,
+		"faceGeometryDeterministic": true,
+		"facePlacementDeterministic": true,
 		"skeletonDeterministic": true,
 		"topologyAndWeightsDeterministic": true
 	},
@@ -1181,8 +1266,8 @@
 			"idle": {
 				"finiteKeyframes": true,
 				"maximumBoneLengthRelativeError": 1.5682782539272466e-7,
-				"maximumBoundsExpansion": 0.8165351947307989,
-				"minimumBoundsExpansion": 0.8129248374646494,
+				"maximumBoundsExpansion": 0.8163634297741897,
+				"minimumBoundsExpansion": 0.8127538319766622,
 				"missingTrackTargets": [],
 				"passed": true,
 				"poseAdvancement": 0.013084739979887829,
@@ -1194,8 +1279,8 @@
 			"walk": {
 				"finiteKeyframes": true,
 				"maximumBoneLengthRelativeError": 8.781435600901943e-7,
-				"maximumBoundsExpansion": 0.9045246560632706,
-				"minimumBoundsExpansion": 0.8177992719676485,
+				"maximumBoundsExpansion": 0.904334381793033,
+				"minimumBoundsExpansion": 0.8176272411018989,
 				"missingTrackTargets": [],
 				"passed": true,
 				"poseAdvancement": 0.8744218157020109,
@@ -1206,15 +1291,16 @@
 			}
 		},
 		"artifact": {
-			"materialCount": 2,
-			"meshCount": 2,
+			"materialCount": 4,
+			"meshCount": 6,
 			"textureCount": 2,
-			"triangleCount": 6346,
-			"vertexCount": 3226
+			"triangleCount": 6494,
+			"vertexCount": 3336
 		},
 		"checks": {
 			"animationBinding": true,
 			"cloneIndependence": true,
+			"face": true,
 			"geometry": true,
 			"hair": true,
 			"material": true,
@@ -1234,6 +1320,106 @@
 			"separateMixers": true,
 			"separateSkeletons": true
 		},
+		"face": {
+			"checks": {
+				"animationAttachment": true,
+				"eyeMaterial": true,
+				"eyeMeshCount": true,
+				"finiteGeometry": true,
+				"headWeights": true,
+				"materialAssignments": true,
+				"mouth": true,
+				"nose": true
+			},
+			"eyeMaterial": {
+				"exportedLinearColor": [0.0703601, 0.1094617, 0.1356333],
+				"exportedMetallic": 0,
+				"exportedRoughness": 0.48,
+				"finite": true,
+				"materialCount": 1,
+				"materialName": "ProceduralEyeMaterial",
+				"materialType": "MeshStandardMaterial",
+				"maximumColorError": 0,
+				"passed": true
+			},
+			"eyeMeshCount": 2,
+			"features": [
+				{
+					"animationAttachment": {
+						"maximumRelativeVertexDifference": 8.951173136040325e-16,
+						"passed": true
+					},
+					"bounds": {
+						"maximum": [0.0850045, 1.8142587, -0.1514034],
+						"minimum": [0.0483621, 1.783568, -0.1660433]
+					},
+					"featureType": "eye-l",
+					"finite": true,
+					"fullHeadWeight": true,
+					"materialNames": ["ProceduralEyeMaterial"],
+					"name": "FaceEyeL",
+					"triangleCount": 64,
+					"vertexCount": 34
+				},
+				{
+					"animationAttachment": {
+						"maximumRelativeVertexDifference": 6.739663028547715e-16,
+						"passed": true
+					},
+					"bounds": {
+						"maximum": [-0.0483621, 1.8142587, -0.1514034],
+						"minimum": [-0.0850045, 1.783568, -0.1660433]
+					},
+					"featureType": "eye-r",
+					"finite": true,
+					"fullHeadWeight": true,
+					"materialNames": ["ProceduralEyeMaterial"],
+					"name": "FaceEyeR",
+					"triangleCount": 64,
+					"vertexCount": 34
+				},
+				{
+					"animationAttachment": {
+						"maximumRelativeVertexDifference": 8.89586765947378e-16,
+						"passed": true
+					},
+					"bounds": {
+						"maximum": [0.0388986, 1.711268, -0.1574919],
+						"minimum": [-0.0388986, 1.7065464, -0.1648806]
+					},
+					"featureType": "mouth",
+					"finite": true,
+					"fullHeadWeight": true,
+					"materialNames": ["ProceduralMouthMaterial"],
+					"name": "FaceMouth",
+					"triangleCount": 12,
+					"vertexCount": 24
+				},
+				{
+					"animationAttachment": {
+						"maximumRelativeVertexDifference": 8.942297608701942e-16,
+						"passed": true
+					},
+					"bounds": {
+						"maximum": [0.0185231, 1.7900603, -0.1497953],
+						"minimum": [-0.0185231, 1.7339909, -0.1882784]
+					},
+					"featureType": "nose",
+					"finite": true,
+					"fullHeadWeight": true,
+					"materialNames": ["ProceduralSkinMaterial"],
+					"name": "FaceNose",
+					"triangleCount": 8,
+					"vertexCount": 18
+				}
+			],
+			"materialCount": 3,
+			"passed": true,
+			"triangleCount": 148,
+			"version": "procedural-face-readability-v0",
+			"vertexCount": 110
+		},
+		"faceGeometrySemanticHash": "b390838f36b07456326f626c8765dfba3ad53fcd040aa1b872363d116aabfbc1",
 		"geometry": {
 			"bounds": {
 				"dimensions": [1.5942612, 1.8199999, 0.3208103],
@@ -1291,13 +1477,18 @@
 				"upperarm_r"
 			]
 		},
-		"geometrySemanticHash": "7c570237574ba297088fa863d46bfd86e0f834cdb9d549eddc657458f7dd146b",
+		"geometrySemanticHash": "0ba3c0340d579f9b310e2fbe9aa53fe1a5c80ad708fb6fd449d8b5650ad7b8ab",
 		"glbResources": {
 			"imageCount": 2,
 			"imageNames": ["T_Hair_1_Normal", "T_Hair_1_BaseColor"],
-			"materialNames": ["ProceduralSkinMaterial", "MI_Hair_1"],
-			"meshCount": 1,
-			"nodeCount": 68,
+			"materialNames": [
+				"ProceduralEyeMaterial",
+				"ProceduralMouthMaterial",
+				"ProceduralSkinMaterial",
+				"MI_Hair_1"
+			],
+			"meshCount": 5,
+			"nodeCount": 72,
 			"skinCount": 1
 		},
 		"hair": {
@@ -1308,9 +1499,9 @@
 			"attachmentBone": "Head",
 			"attachmentWeightBones": ["Head", "spine_03"],
 			"bounds": {
-				"dimensions": [0.3468832, 0.2232265, 0.3078648],
+				"dimensions": [0.3468832, 0.1992262, 0.3078648],
 				"maximum": [0.1734416, 1.9297763, 0.1236067],
-				"minimum": [-0.1734416, 1.7065498, -0.1842581]
+				"minimum": [-0.1734416, 1.7305501, -0.1842581]
 			},
 			"cloneIndependent": true,
 			"componentId": "quaternius-hair-v0",
@@ -1328,7 +1519,7 @@
 			"embeddedAnimationCount": 0,
 			"jointCount": 65,
 			"missingRequiredBones": [],
-			"nodeCount": 68,
+			"nodeCount": 72,
 			"skeletonCount": 1,
 			"warnings": []
 		},
@@ -1344,8 +1535,8 @@
 			"maximumColorError": 0,
 			"passed": true
 		},
-		"materialSemanticHash": "47910204fab5b9005c6845ae61b5002087e4a7831f7fd98b0c2aca967bc61df5",
-		"semanticHash": "e82e42638661619a3239cc2ed6b90f62d25b9450a48a1607bd2e2ac8770bdde4",
+		"materialSemanticHash": "9ae2fd2f1a3a384678633ef1487760c2ebc98fadab4b14393e4838bf220c2e12",
+		"semanticHash": "cf1388c5c2e4dd871e005d09faedcf347d890d16b3c8db7b0b7995da7f92c215",
 		"skeletonContract": {
 			"hierarchyMismatches": [],
 			"maximumRestRotationDegrees": 0.03575552834529974,
@@ -1382,6 +1573,38 @@
 					"quaternion": [0, 0, 0, 1],
 					"scale": [1, 1, 1],
 					"type": "Object3D"
+				},
+				{
+					"name": "FaceEyeL",
+					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "FaceEyeR",
+					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "FaceMouth",
+					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "FaceNose",
+					"parent": "ProceduralMannequinArmature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
 				},
 				{
 					"name": "ProceduralMannequinMesh",
@@ -1938,6 +2161,22 @@
 					"type": "MeshStandardMaterial"
 				},
 				{
+					"color": "4b5d67",
+					"name": "ProceduralEyeMaterial",
+					"linearColor": [0.0703601, 0.1094617, 0.1356333],
+					"metallic": 0,
+					"roughness": 0.48,
+					"type": "MeshStandardMaterial"
+				},
+				{
+					"color": "512b2f",
+					"name": "ProceduralMouthMaterial",
+					"linearColor": [0.0822827, 0.0241576, 0.028426],
+					"metallic": 0,
+					"roughness": 0.72,
+					"type": "MeshStandardMaterial"
+				},
+				{
 					"color": "c98f65",
 					"name": "ProceduralSkinMaterial",
 					"linearColor": [0.5840784, 0.2746773, 0.1301365],
@@ -1947,6 +2186,122 @@
 				}
 			],
 			"meshes": [
+				{
+					"attributes": {
+						"normal": {
+							"count": 34,
+							"hash": "8345f5ddfeaf7b99b6fd7af75f26753131b7acd623777d06acc60031311077da",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 34,
+							"hash": "21ab5c39c27de9170304637138c50e61a8ea2e5c9ea1e3b8e6da61735585d40e",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 34,
+							"hash": "0db447c174c2e404202cfb1a38a2b619fd32caa2eb576832308158b484d3d53d",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 34,
+							"hash": "e8fa3bb9712740c1c41fee09546a51994c604625c91de8bea5847c15fed59b0b",
+							"itemSize": 4
+						}
+					},
+					"index": {
+						"count": 192,
+						"hash": "14d5bf8f1a53e6aa7aa3ddbe21fa24b98a12adc1a3204c4f86865ab3fde19eaf"
+					},
+					"name": "FaceEyeL"
+				},
+				{
+					"attributes": {
+						"normal": {
+							"count": 34,
+							"hash": "8345f5ddfeaf7b99b6fd7af75f26753131b7acd623777d06acc60031311077da",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 34,
+							"hash": "aa07bf19b74cf42da4e3b2e6150870eba72af3851fcf64484593371f3bc98d39",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 34,
+							"hash": "0db447c174c2e404202cfb1a38a2b619fd32caa2eb576832308158b484d3d53d",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 34,
+							"hash": "e8fa3bb9712740c1c41fee09546a51994c604625c91de8bea5847c15fed59b0b",
+							"itemSize": 4
+						}
+					},
+					"index": {
+						"count": 192,
+						"hash": "14d5bf8f1a53e6aa7aa3ddbe21fa24b98a12adc1a3204c4f86865ab3fde19eaf"
+					},
+					"name": "FaceEyeR"
+				},
+				{
+					"attributes": {
+						"normal": {
+							"count": 24,
+							"hash": "aba0fb574c2b7a75e2c93083c80901b89a44ea1036997329ad342273e45b76aa",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 24,
+							"hash": "86023bca8764e833d25fddc586002a1b5142cab4066fe4ea749b4ad73280ac0c",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 24,
+							"hash": "6afaaca8ec1d7b4e686ba06242eddf786ab126cc60dc6ab799b1260c80c16336",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 24,
+							"hash": "af3229f9aba840cccc6eb15b21afd6ddddf486a548c9abcffbb332ef579fa4a2",
+							"itemSize": 4
+						}
+					},
+					"index": {
+						"count": 36,
+						"hash": "8c66067644e97544a6b24e364eff1de841d759a9062e276d6bab6433e4f90a72"
+					},
+					"name": "FaceMouth"
+				},
+				{
+					"attributes": {
+						"normal": {
+							"count": 18,
+							"hash": "2d75877c60813d6d488d9512cdc0243a9103de20f147ac672e83d5f1958f2466",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 18,
+							"hash": "941e079891d8492df02b2bb33181a68fcd1e5fe5739e72a24053f8f02dd4404d",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 18,
+							"hash": "780fcb28735ece2665739f5ff2bf4a4489a463a3311fb7f6e125f91789c49682",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 18,
+							"hash": "49816502167cc9a8e768d1c4b9fe7a58ddad0ebfe43d48c7ca67a23c128c9330",
+							"itemSize": 4
+						}
+					},
+					"index": {
+						"count": 24,
+						"hash": "ac03410b0ff25e6e62455e73374636f9198dfe42049574765349c96f7ebc781c"
+					},
+					"name": "FaceNose"
+				},
 				{
 					"attributes": {
 						"normal": {
@@ -1985,12 +2340,12 @@
 					"attributes": {
 						"normal": {
 							"count": 466,
-							"hash": "72a9362d69356dafe2712a2b5ac25edaf471ce50e97eb4dcc4d5607ccd0711aa",
+							"hash": "ebdc8c922a5864bf639b3c23971c6929d20ee73fb6bc4ef36fedd18e083372f6",
 							"itemSize": 3
 						},
 						"position": {
 							"count": 466,
-							"hash": "843da391b016db423cb978978b36f5b87891292daad873cb4b0b17aae1a54af6",
+							"hash": "dd302371d93017a17b72bac30e262583e697d5f871d16be7e499bb4b94409f8e",
 							"itemSize": 3
 						},
 						"skinIndex": {
@@ -2022,6 +2377,7 @@
 		"checks": {
 			"animationBinding": true,
 			"cloneIndependence": true,
+			"face": true,
 			"geometry": true,
 			"hair": true,
 			"material": true,
@@ -2033,14 +2389,14 @@
 			"symmetry": true
 		},
 		"passed": true,
-		"semanticHash": "e82e42638661619a3239cc2ed6b90f62d25b9450a48a1607bd2e2ac8770bdde4",
+		"semanticHash": "cf1388c5c2e4dd871e005d09faedcf347d890d16b3c8db7b0b7995da7f92c215",
 		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840"
 	},
 	"sourceHashesAfter": {
-		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "bc30524dd008170d02235d1d3bb05eb36bac10ce554c93769e0e8509a1ec09a6",
+		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "637f81b77418b50e1e87f7b06ae5eec4e9cccd7d9a0fba03df6e7a60a89b0372",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
-		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "0254494a7858f5870edb3774afbd6cce25faa7783b3bd13132355487d868150a",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "88fe1d530a0179e79dcb44aaa1791192f00b6378a96d42a591ee8cbf7baea6ae",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
@@ -2048,10 +2404,10 @@
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
 	},
 	"sourceHashesBefore": {
-		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "bc30524dd008170d02235d1d3bb05eb36bac10ce554c93769e0e8509a1ec09a6",
+		"tools/blender-character/recipes/procedural-mannequin-hair-v0.recipe.json": "637f81b77418b50e1e87f7b06ae5eec4e9cccd7d9a0fba03df6e7a60a89b0372",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
-		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "0254494a7858f5870edb3774afbd6cce25faa7783b3bd13132355487d868150a",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "88fe1d530a0179e79dcb44aaa1791192f00b6378a96d42a591ee8cbf7baea6ae",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
 		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",

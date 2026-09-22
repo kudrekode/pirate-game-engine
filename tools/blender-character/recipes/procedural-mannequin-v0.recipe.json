@@ -1,5 +1,5 @@
 {
-	"version": 4,
+	"version": 5,
 	"id": "procedural-mannequin-v0",
 	"name": "Procedural Mannequin Body Proportions V1",
 	"proportions": {
@@ -16,6 +16,9 @@
 		"topologyVersion": "procedural-humanoid-v2"
 	},
 	"appearance": {
+		"face": {
+			"eyeColor": "#4b5d67"
+		},
 		"skin": {
 			"color": "#c98f65",
 			"colorSpace": "srgb",

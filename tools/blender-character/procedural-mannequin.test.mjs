@@ -54,6 +54,7 @@ test("validates and stably hashes all six authored V1 parameters", async () => {
 		);
 	}
 	for (const [path, mutate] of [
+		["eyeColor", (changed) => (changed.appearance.face.eyeColor = "#405c72")],
 		["skinColor", (changed) => (changed.appearance.skin.color = "#7d4f38")],
 		["skinRoughness", (changed) => (changed.appearance.skin.roughness = 0.41)],
 	]) {
@@ -89,6 +90,7 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 	invalid.geometry.radialSegments = 7.5;
 	invalid.appearance.skin.roughness = -1;
 	invalid.appearance.skin.color = "invalid";
+	invalid.appearance.face.eyeColor = "invalid";
 	invalid.skeleton.contract = "parallel-rig-v0";
 	invalid.components.hair = "local-file.glb";
 	const parsed = validateProceduralMannequinRecipe(invalid);
@@ -99,6 +101,7 @@ test("rejects unsupported contracts and invalid numeric ranges", async () => {
 		"$.geometry.radialSegments",
 		"$.appearance.skin.color",
 		"$.appearance.skin.roughness",
+		"$.appearance.face.eyeColor",
 		"$.skeleton.contract",
 		"$.components.hair",
 	]) {
@@ -200,6 +203,17 @@ test("canonicalizes a current recipe carrying the previous head topology version
 	);
 });
 
+test("migrates pre-face recipes to the historical eye colour default", async () => {
+	const recipe = await loadRecipe();
+	const legacy = structuredClone(recipe);
+	legacy.version = 4;
+	delete legacy.appearance.face;
+	const parsed = validateProceduralMannequinRecipe(legacy);
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.value.version, PROCEDURAL_MANNEQUIN_RECIPE_VERSION);
+	assert.equal(parsed.value.appearance.face.eyeColor, "#4b5d67");
+});
+
 test("builds a narrow headless Blender invocation and parses compiler modes", () => {
 	const arguments_ = buildProceduralMannequinScriptArguments({
 		outputPath: "stage/mannequin.glb",
@@ -253,21 +267,36 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.passed, true);
 	assert.equal(result.manifest.deterministicBuild, true);
 	assert.equal(result.manifest.sourceImmutable, true);
-	assert.equal(result.manifest.meshCount, 1);
-	assert.equal(result.manifest.materialCount, 1);
+	assert.equal(result.manifest.meshCount, 5);
+	assert.equal(result.manifest.materialCount, 3);
 	assert.equal(result.manifest.jointCount, 65);
 	assert.equal(result.manifest.influenceStatistics.unweightedVertexCount, 0);
 	assert.equal(result.manifest.heightMetres, 1.82);
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v6",
+		"procedural-mannequin-roundtrip-v7",
 	);
-	assert.equal(result.manifest.recipeVersion, 4);
+	assert.equal(result.manifest.recipeVersion, 5);
 	assert.equal(result.manifest.components.hair.componentId, "none");
 	assert.equal(result.manifest.appearance.skin.authoredColor, "#c98f65");
 	assert.equal(result.manifest.appearance.skin.authoredRoughness, 0.72);
 	assert.equal(result.manifest.appearance.skin.exportedMetallic, 0);
+	assert.equal(result.manifest.appearance.face.authoredEyeColor, "#4b5d67");
+	assert.equal(
+		result.manifest.appearance.face.materialSchemaVersion,
+		"procedural-eye-material-v1",
+	);
+	assert.equal(result.manifest.face.version, "procedural-face-readability-v0");
+	assert.equal(result.manifest.face.eyeMeshCount, 2);
+	assert.equal(result.manifest.face.validation.passed, true);
+	assert.equal(result.manifest.face.vertexCount, 110);
+	assert.equal(result.manifest.face.triangleCount, 148);
+	assert.equal(result.manifest.head.version, "procedural-head-contract-v2");
+	assert.equal(result.validation.face.passed, true);
+	assert.equal(result.validation.face.checks.headWeights, true);
+	assert.equal(result.validation.face.checks.animationAttachment, true);
+	assert.equal(result.validation.inspection.skeletonCount, 1);
 	assert.equal(
 		result.manifest.topologyVersion,
 		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
@@ -348,5 +377,7 @@ test("round-trips the committed haired artifact with one shared-skeleton Head at
 	);
 	assert.equal(result.manifest.determinism.headContractDeterministic, true);
 	assert.equal(result.manifest.determinism.hairstyleFitDeterministic, true);
+	assert.equal(result.manifest.determinism.faceGeometryDeterministic, true);
+	assert.equal(result.manifest.determinism.facePlacementDeterministic, true);
 	assert.equal(result.manifest.determinism.binaryDeterministic, true);
 });

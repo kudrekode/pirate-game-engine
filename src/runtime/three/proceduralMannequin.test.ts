@@ -10,6 +10,7 @@ import {
 const ASSET_ID = "procedural-mannequin-v0";
 const HAIR_ASSET_ID = "procedural-mannequin-quaternius-hair-v0";
 const manifest = JSON.parse(manifestSource) as {
+	appearance: { face: { authoredEyeColor: string; materialName: string } };
 	animationSet: string;
 	deterministicBuild: boolean;
 	influenceStatistics: {
@@ -18,6 +19,13 @@ const manifest = JSON.parse(manifestSource) as {
 		unweightedVertexCount: number;
 	};
 	jointCount: number;
+	face: {
+		eyeMeshCount: number;
+		triangleCount: number;
+		validation: { passed: boolean };
+		version: string;
+		vertexCount: number;
+	};
 	materialCount: number;
 	meshCount: number;
 	recipeHash: string;
@@ -53,13 +61,26 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 				unweightedVertexCount: 0,
 			},
 			jointCount: 65,
-			materialCount: 1,
-			meshCount: 1,
+			materialCount: 3,
+			meshCount: 5,
 			skeletonContract: "golden-humanoid-v0",
 			topology: { connectedComponentCount: 1, manifold: true },
 			topologyVersion: "procedural-humanoid-v2",
-			triangleCount: 5516,
-			vertexCount: 2760,
+			triangleCount: 5664,
+			vertexCount: 2870,
+		});
+		expect(manifest.appearance.face).toEqual(
+			expect.objectContaining({
+				authoredEyeColor: "#4b5d67",
+				materialName: "ProceduralEyeMaterial",
+			}),
+		);
+		expect(manifest.face).toMatchObject({
+			eyeMeshCount: 2,
+			triangleCount: 148,
+			validation: { passed: true },
+			version: "procedural-face-readability-v0",
+			vertexCount: 110,
 		});
 		expect(manifest.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
 		expect(manifest.skeletonSignature).toBe(
@@ -123,10 +144,10 @@ describe("Procedural Mannequin V0 compiled artifact", () => {
 				},
 			},
 			jointCount: 65,
-			materialCount: 2,
-			meshCount: 2,
-			triangleCount: 6346,
-			vertexCount: 3226,
+			materialCount: 4,
+			meshCount: 6,
+			triangleCount: 6494,
+			vertexCount: 3336,
 		});
 		expect(hairManifest.skeletonSignature).toBe(manifest.skeletonSignature);
 		const definition = getThreeVisualAssetDefinition(HAIR_ASSET_ID);

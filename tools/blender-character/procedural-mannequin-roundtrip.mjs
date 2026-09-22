@@ -473,6 +473,116 @@ function analyzeHair(root, expected, clips, glbResources) {
 	};
 }
 
+function analyzeFace(root, expected, clips, glbResources) {
+	const features = [];
+	root.traverse((object) => {
+		if (!(object instanceof THREE.SkinnedMesh)) return;
+		const featureType =
+			object.userData.faceFeatureType ??
+			(object.name.startsWith("FaceEye")
+				? object.name.endsWith("R")
+					? "eye-r"
+					: "eye-l"
+				: object.name.startsWith("FaceNose")
+					? "nose"
+					: object.name.startsWith("FaceMouth")
+						? "mouth"
+						: undefined);
+		if (!featureType) return;
+		const position = object.geometry.getAttribute("position");
+		const skinIndex = object.geometry.getAttribute("skinIndex");
+		const skinWeight = object.geometry.getAttribute("skinWeight");
+		let finite = Boolean(position);
+		let fullHeadWeight = Boolean(position && skinIndex && skinWeight);
+		for (let vertex = 0; vertex < (position?.count ?? 0); vertex += 1) {
+			finite &&=
+				Number.isFinite(position.getX(vertex)) &&
+				Number.isFinite(position.getY(vertex)) &&
+				Number.isFinite(position.getZ(vertex));
+			let sum = 0;
+			for (
+				let component = 0;
+				component < (skinWeight?.itemSize ?? 0);
+				component += 1
+			) {
+				const weight = skinWeight.getComponent(vertex, component);
+				if (weight <= 0.000001) continue;
+				sum += weight;
+				const jointIndex = skinIndex.getComponent(vertex, component);
+				fullHeadWeight &&= object.skeleton.bones[jointIndex]?.name === "Head";
+			}
+			fullHeadWeight &&= Math.abs(sum - 1) <= 0.000001;
+		}
+		const materials = Array.isArray(object.material)
+			? object.material
+			: [object.material];
+		const bounds = new THREE.Box3().setFromObject(object, true);
+		features.push({
+			animationAttachment: validateHairAttachmentAnimation(
+				root,
+				clips,
+				object.name,
+				0,
+			),
+			bounds: {
+				maximum: bounds.max.toArray().map((value) => rounded(value)),
+				minimum: bounds.min.toArray().map((value) => rounded(value)),
+			},
+			featureType,
+			finite,
+			fullHeadWeight,
+			materialNames: materials.map((material) => material.name).sort(),
+			name: object.name,
+			triangleCount: object.geometry.index
+				? Math.floor(object.geometry.index.count / 3)
+				: Math.floor((position?.count ?? 0) / 3),
+			vertexCount: position?.count ?? 0,
+		});
+	});
+	const eyes = features.filter((feature) =>
+		feature.featureType.startsWith("eye"),
+	);
+	const nose = features.find((feature) => feature.featureType === "nose");
+	const mouth = features.find((feature) => feature.featureType === "mouth");
+	const eyeMaterial = analyzeSkinMaterial(root, expected.eyeMaterial);
+	const eyeNames = new Set(eyes.flatMap((feature) => feature.materialNames));
+	const materialNames = glbResources.materialNames.slice().sort();
+	const checks = {
+		animationAttachment: features.every(
+			(feature) => feature.animationAttachment.passed,
+		),
+		eyeMaterial: eyeMaterial.passed && eyeNames.has(expected.eyeMaterial.name),
+		eyeMeshCount: eyes.length === 2,
+		finiteGeometry: features.every((feature) => feature.finite),
+		headWeights: features.every((feature) => feature.fullHeadWeight),
+		materialAssignments:
+			materialNames.includes(expected.eyeMaterial.name) &&
+			materialNames.includes(expected.mouthMaterialName) &&
+			nose?.materialNames.includes(expected.skinMaterialName) === true &&
+			mouth?.materialNames.includes(expected.mouthMaterialName) === true,
+		mouth: Boolean(mouth),
+		nose: Boolean(nose),
+	};
+	return {
+		checks,
+		eyeMaterial,
+		eyeMeshCount: eyes.length,
+		features,
+		materialCount: new Set(features.flatMap((feature) => feature.materialNames))
+			.size,
+		passed: Object.values(checks).every(Boolean),
+		triangleCount: features.reduce(
+			(total, feature) => total + feature.triangleCount,
+			0,
+		),
+		version: expected.version,
+		vertexCount: features.reduce(
+			(total, feature) => total + feature.vertexCount,
+			0,
+		),
+	};
+}
+
 async function inspectGlbResources(filePath) {
 	const buffer = await readFile(filePath);
 	if (buffer.toString("utf8", 0, 4) !== "glTF") {
@@ -663,6 +773,14 @@ function analyzeGeometry(root, expectedHeight) {
 	let bodyObject;
 	root.traverse((object) => {
 		if (!(object instanceof THREE.Mesh)) return;
+		if (
+			object.userData.faceFeatureType ||
+			object.name.startsWith("FaceEye") ||
+			object.name.startsWith("FaceNose") ||
+			object.name.startsWith("FaceMouth")
+		) {
+			return;
+		}
 		const objectMaterials = Array.isArray(object.material)
 			? object.material
 			: [object.material];
@@ -980,6 +1098,7 @@ function validateSymmetry(root) {
 
 export async function validateProceduralMannequinArtifact({
 	artifactPath,
+	expectedFace,
 	expectedHeightMetres,
 	expectedHairComponent = { componentId: "none", definition: undefined },
 	expectedSkinMaterial,
@@ -1036,14 +1155,16 @@ export async function validateProceduralMannequinArtifact({
 		clips,
 		glbResources,
 	);
+	const face = analyzeFace(gltf.scene, expectedFace, clips, glbResources);
 	const cloneIndependence = validateCloneAndRest(gltf.scene, clips.walk);
 	const symmetry = validateSymmetry(gltf.scene);
 	const noVendorPresentation = ![...names].some((name) =>
-		/Face|Retopology|Sphere\.005|mixamo/iu.test(name),
+		/^Face$|Retopology|Sphere\.005|mixamo/iu.test(name),
 	);
 	const checks = {
 		animationBinding: animations.idle.passed && animations.walk.passed,
 		cloneIndependence: cloneIndependence.passed,
+		face: face.passed,
 		geometry: geometry.passed,
 		hair: hair.passed,
 		material: material.passed,
@@ -1060,6 +1181,14 @@ export async function validateProceduralMannequinArtifact({
 	let bodyGeometry;
 	gltf.scene.traverse((object) => {
 		if (!(object instanceof THREE.Mesh)) return;
+		if (
+			object.userData.faceFeatureType ||
+			object.name.startsWith("FaceEye") ||
+			object.name.startsWith("FaceNose") ||
+			object.name.startsWith("FaceMouth")
+		) {
+			return;
+		}
 		const objectMaterials = Array.isArray(object.material)
 			? object.material
 			: [object.material];
@@ -1074,12 +1203,24 @@ export async function validateProceduralMannequinArtifact({
 	const bodySemantic = bodyGeometry
 		? semanticMeshSnapshot("ProceduralMannequinMesh", bodyGeometry)
 		: undefined;
-	if (bodySemantic) delete bodySemantic.attributes.uv;
+	if (bodySemantic) {
+		// UVs and smooth normals are exporter-derived presentation data. Textured
+		// components can make Blender emit or recalculate them for otherwise
+		// identical body geometry, so the body/skinning contract hashes only
+		// positions, topology, joint indices, and weights.
+		delete bodySemantic.attributes.normal;
+		delete bodySemantic.attributes.uv;
+	}
+	const faceSemantic = semantic.meshes.filter((mesh) =>
+		/^Face(Eye|Nose|Mouth)/u.test(mesh.name),
+	);
 	return {
 		animations,
 		artifact,
 		checks,
 		cloneIndependence,
+		face,
+		faceGeometrySemanticHash: sha256(JSON.stringify(faceSemantic)),
 		geometry,
 		geometrySemanticHash: sha256(
 			JSON.stringify({
@@ -1102,7 +1243,10 @@ export async function validateProceduralMannequinArtifact({
 		materialSemanticHash: sha256(
 			JSON.stringify(
 				semantic.materials.filter(
-					(candidate) => candidate.name === expectedSkinMaterial?.name,
+					(candidate) =>
+						candidate.name === expectedSkinMaterial?.name ||
+						candidate.name === expectedFace?.eyeMaterial?.name ||
+						candidate.name === expectedFace?.mouthMaterialName,
 				),
 			),
 		),

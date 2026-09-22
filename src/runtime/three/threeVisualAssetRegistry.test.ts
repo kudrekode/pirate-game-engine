@@ -234,6 +234,7 @@ describe("Three visual asset registry", () => {
 			materialProfile: "standard",
 			tags: expect.arrayContaining([
 				"compiler-generated",
+				"face-readability-v0",
 				"procedural",
 				"skinned",
 			]),
@@ -247,6 +248,7 @@ describe("Three visual asset registry", () => {
 			materialProfile: "standard",
 			tags: expect.arrayContaining([
 				"compiler-generated",
+				"face-readability-v0",
 				"hairstyle-fit-v2",
 				"hairstyle-slot-v1",
 				"procedural-head-v1",

@@ -79,16 +79,16 @@ npm run test:e2e:asset-studio
 npm run ci
 ```
 
-The four-case matrix is written to
-`test-results/material-skin-appearance-v1/matrix/summary.json`. It proves that
-color/roughness changes alter recipe, output, and material hashes while the
+The current expanded eight-case matrix is written to
+`test-results/face-readability-v0/appearance-matrix/summary.json`. It proves that
+skin and eye-colour changes alter recipe, output, and material hashes while the
 geometry/skinning hash and Golden 65-joint skeleton signature remain identical.
 Playwright captures several tones at two roughness levels under the fixed Asset
 Studio preview lighting and camera and rechecks Idle/Walk animation, recent
 compilations, and game-engine runtime loading.
 
-## Next milestone
+## Historical next milestone
 
-The next creator milestone is Hairstyle Slot V1. Arbitrary textures, shader
+The next creator milestone at the time was Hairstyle Slot V1. Arbitrary textures, shader
 graphs, eyes, hair geometry, subsurface controls, and extra appearance sliders
 remain out of scope here.

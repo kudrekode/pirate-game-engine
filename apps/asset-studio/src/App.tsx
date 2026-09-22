@@ -25,6 +25,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
+	PROCEDURAL_FACE_APPEARANCE,
+	PROCEDURAL_FACE_FEATURE_VERSION,
 	PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS,
 	PROCEDURAL_MANNEQUIN_BODY_PARAMETERS,
 	PROCEDURAL_SKIN_APPEARANCE,
@@ -75,6 +77,14 @@ const SKIN_COLOR_PRESETS = [
 	{ color: "#a96f4c", label: "Tone 4" },
 	{ color: "#7d4f38", label: "Tone 5" },
 	{ color: "#503126", label: "Tone 6" },
+] as const;
+
+const EYE_COLOR_PRESETS = [
+	{ color: "#30343b", label: "Charcoal" },
+	{ color: "#4b5d67", label: "Slate" },
+	{ color: "#5c4634", label: "Earth" },
+	{ color: "#53624b", label: "Moss" },
+	{ color: "#405c72", label: "Ocean" },
 ] as const;
 
 function replaceHairComponent(
@@ -151,6 +161,8 @@ type RecentCompilation = {
 type PreviewAnimationState = "idle" | "rest" | "walk";
 type PreviewCameraPreset =
 	| "back"
+	| "close-front"
+	| "close-three-quarter"
 	| "front"
 	| "right-side"
 	| "scalp"
@@ -159,6 +171,8 @@ type PreviewCameraPreset =
 	| "three-quarter-rear";
 const PREVIEW_CAMERA_LABELS: Record<PreviewCameraPreset, string> = {
 	back: "Back",
+	"close-front": "Close front",
+	"close-three-quarter": "Close three-quarter",
 	front: "Front",
 	"right-side": "Right side",
 	scalp: "Scalp",
@@ -548,16 +562,24 @@ function HumanoidPreview({
 			controls.minDistance = radius * 0.75;
 			controls.maxDistance = radius * 3.5;
 			setCameraPresetRef.current = (preset) => {
+				const closeView =
+					preset === "close-front" || preset === "close-three-quarter";
 				const target = new THREE.Vector3(
 					center.x,
-					preset === "scalp"
+					preset === "scalp" || closeView
 						? bounds.max.y - radius * 0.08
 						: Math.max(center.y, 0.8),
 					center.z,
 				);
 				const offsets: Record<PreviewCameraPreset, THREE.Vector3> = {
-					back: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
-					front: new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
+					back: new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
+					"close-front": new THREE.Vector3(0, radius * 0.02, radius * 0.88),
+					"close-three-quarter": new THREE.Vector3(
+						radius * 0.62,
+						radius * 0.12,
+						radius * 0.62,
+					),
+					front: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
 					"right-side": new THREE.Vector3(-radius * 2.45, radius * 0.08, 0),
 					scalp: new THREE.Vector3(
 						radius * 0.72,
@@ -568,12 +590,12 @@ function HumanoidPreview({
 					"three-quarter": new THREE.Vector3(
 						radius * 1.7,
 						radius * 0.28,
-						-radius * 1.7,
+						radius * 1.7,
 					),
 					"three-quarter-rear": new THREE.Vector3(
 						radius * 1.7,
 						radius * 0.28,
-						radius * 1.7,
+						-radius * 1.7,
 					),
 				};
 				const offset = offsets[preset];
@@ -728,6 +750,16 @@ function HumanoidPreview({
 							manifest.appearance.skin.exportedMetallic,
 						);
 					}
+					if (manifest.appearance?.face) {
+						host.dataset.eyeColor = manifest.appearance.face.authoredEyeColor;
+						host.dataset.faceMaterial =
+							manifest.appearance.face.materialSchemaVersion;
+					}
+					host.dataset.faceVersion = manifest.face?.version ?? "legacy";
+					host.dataset.faceEyeMeshes = String(manifest.face?.eyeMeshCount ?? 0);
+					host.dataset.faceValidation = String(
+						manifest.face?.validation?.passed ?? false,
+					);
 					host.dataset.hairComponent =
 						manifest.components?.hair?.componentId ?? "none";
 					host.dataset.hairAttachment =
@@ -806,9 +838,11 @@ function HumanoidPreview({
 				{(
 					[
 						"front",
+						"close-front",
 						"side",
 						"right-side",
 						"three-quarter",
+						"close-three-quarter",
 						"three-quarter-rear",
 						"back",
 						"scalp",
@@ -1165,6 +1199,8 @@ export default function App() {
 					recipe.palette.skin.toLowerCase() ||
 				compileResult.manifest.appearance.skin.authoredRoughness !==
 					recipe.appearance.skin.roughness ||
+				compileResult.manifest.appearance.face.authoredEyeColor !==
+					recipe.appearance.face.eyeColor.toLowerCase() ||
 				compileResult.manifest.components.hair.componentId !==
 					recipe.components.hair),
 	);
@@ -1212,6 +1248,7 @@ export default function App() {
 			components: { ...compilation.recipe.components },
 			palette: { ...compilation.recipe.palette },
 			appearance: {
+				face: { ...compilation.recipe.appearance.face },
 				skin: { ...compilation.recipe.appearance.skin },
 			},
 		});
@@ -1263,7 +1300,10 @@ export default function App() {
 					},
 					components: { ...recipe.components },
 					palette: { ...recipe.palette },
-					appearance: { skin: { ...recipe.appearance.skin } },
+					appearance: {
+						face: { ...recipe.appearance.face },
+						skin: { ...recipe.appearance.skin },
+					},
 				},
 				result,
 				seed: randomSeed,
@@ -1552,6 +1592,7 @@ export default function App() {
 											updateRecipe((current) => ({
 												...current,
 												appearance: {
+													...current.appearance,
 													skin: {
 														...current.appearance.skin,
 														roughness: Number(event.target.value),
@@ -1573,6 +1614,7 @@ export default function App() {
 											updateRecipe((current) => ({
 												...current,
 												appearance: {
+													...current.appearance,
 													skin: {
 														...current.appearance.skin,
 														roughness:
@@ -1632,6 +1674,110 @@ export default function App() {
 							<p className="creator-note">
 								Appearance edits are draft recipe values. Compile regenerates
 								the GLB; the 3D preview is never recolored in the browser.
+							</p>
+						</section>
+
+						<div className="section-heading">Face</div>
+						<section aria-label="Face" className="appearance-panel">
+							<div className="appearance-control">
+								<label>
+									Eye color
+									<input
+										aria-label="Eye color"
+										onChange={(event) =>
+											updateRecipe((current) => ({
+												...current,
+												appearance: {
+													...current.appearance,
+													face: {
+														...current.appearance.face,
+														eyeColor: event.target.value.toLowerCase(),
+													},
+												},
+											}))
+										}
+										type="color"
+										value={recipe.appearance.face.eyeColor}
+									/>
+								</label>
+								<div className="body-creator-value">
+									<output aria-label="Current eye color">
+										{recipe.appearance.face.eyeColor.toLowerCase()}
+									</output>
+									<button
+										onClick={() =>
+											updateRecipe((current) => ({
+												...current,
+												appearance: {
+													...current.appearance,
+													face: {
+														...current.appearance.face,
+														eyeColor:
+															PROCEDURAL_FACE_APPEARANCE.eyeColor.defaultValue,
+													},
+												},
+											}))
+										}
+										type="button"
+									>
+										Reset eye color
+									</button>
+								</div>
+							</div>
+							<fieldset className="skin-presets">
+								<legend>Eye color presets</legend>
+								{EYE_COLOR_PRESETS.map((preset) => (
+									<button
+										aria-label={`Use ${preset.label} eye color`}
+										key={preset.color}
+										onClick={() =>
+											updateRecipe((current) => ({
+												...current,
+												appearance: {
+													...current.appearance,
+													face: {
+														...current.appearance.face,
+														eyeColor: preset.color,
+													},
+												},
+											}))
+										}
+										style={{ backgroundColor: preset.color }}
+										title={`${preset.label} ${preset.color}`}
+										type="button"
+									/>
+								))}
+							</fieldset>
+							<div className="appearance-comparison">
+								<div>
+									<span
+										aria-label="Draft eye swatch"
+										className="appearance-swatch"
+										role="img"
+										style={{ backgroundColor: recipe.appearance.face.eyeColor }}
+									/>
+									Draft · {recipe.appearance.face.eyeColor.toLowerCase()}
+								</div>
+								<div>
+									<span
+										aria-label="Compiled eye swatch"
+										className="appearance-swatch"
+										role="img"
+										style={{
+											backgroundColor:
+												activeManifest?.appearance?.face.authoredEyeColor ??
+												"transparent",
+										}}
+									/>
+									Compiled ·{" "}
+									{activeManifest?.appearance?.face.authoredEyeColor ?? "—"}
+								</div>
+							</div>
+							<p className="creator-note">
+								Eye colour is authored recipe data. Compile regenerates the two
+								embedded eye meshes and their shared material; nose and mouth
+								remain fixed readability geometry in{" "}
+								{PROCEDURAL_FACE_FEATURE_VERSION}.
 							</p>
 						</section>
 
@@ -1870,6 +2016,26 @@ export default function App() {
 											? `${activeManifest.appearance.skin.authoredColor} · roughness ${activeManifest.appearance.skin.authoredRoughness.toFixed(2)} · metallic ${activeManifest.appearance.skin.exportedMetallic.toFixed(2)}`
 											: "—"}
 									</dd>
+								</div>
+								<div>
+									<dt>Face readability</dt>
+									<dd>
+										{activeManifest?.face
+											? `${activeManifest.face.version} · ${activeManifest.face.eyeMeshCount} eyes · ${activeManifest.face.triangleCount} triangles`
+											: "—"}
+									</dd>
+								</div>
+								<div>
+									<dt>Compiled eye material</dt>
+									<dd>
+										{activeManifest?.appearance?.face
+											? `${activeManifest.appearance.face.authoredEyeColor} · ${activeManifest.appearance.face.materialSchemaVersion}`
+											: "—"}
+									</dd>
+								</div>
+								<div>
+									<dt>Head contract</dt>
+									<dd>{activeManifest?.head?.version ?? "—"}</dd>
 								</div>
 								<div>
 									<dt>Generated timestamp</dt>
