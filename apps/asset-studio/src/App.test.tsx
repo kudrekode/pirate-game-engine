@@ -236,12 +236,14 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(json).toHaveTextContent('"hair": "quaternius-hair-v0"');
 	});
 
-	it("offers only no hair and the registered Quaternius hairstyle", () => {
+	it("offers no hair and all three registered Quaternius hairstyles", () => {
 		render(<App />);
 		const hair = screen.getByLabelText("Hair component");
 		expect(hair).toHaveTextContent("No hair");
 		expect(hair).toHaveTextContent("Quaternius Buzzed");
-		expect(hair.querySelectorAll("option")).toHaveLength(2);
+		expect(hair).toHaveTextContent("Quaternius Short Crop");
+		expect(hair).toHaveTextContent("Quaternius Simple Parted");
+		expect(hair.querySelectorAll("option")).toHaveLength(4);
 	});
 
 	it("resets the authored height to the procedural default", () => {
@@ -476,5 +478,34 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 			screen.queryByLabelText("Golden Reference Humanoid preview"),
 		).not.toBeInTheDocument();
 		expect(document.querySelectorAll("canvas")).toHaveLength(1);
+	});
+	it("selects library styles and shows their own provenance without compiling", () => {
+		const fetch = vi.fn();
+		vi.stubGlobal("fetch", fetch);
+		render(<App />);
+		for (const [id, label, fit] of [
+			[
+				"quaternius-hair-short-crop-v1",
+				"Quaternius Short Crop",
+				"quaternius-short-crop-fit-v3",
+			],
+			[
+				"quaternius-hair-simple-parted-v1",
+				"Quaternius Simple Parted",
+				"quaternius-simple-parted-fit-v3",
+			],
+		]) {
+			fireEvent.change(screen.getByLabelText("Hair component"), {
+				target: { value: id },
+			});
+			expect(screen.getByLabelText("Hair")).toHaveTextContent(
+				`Draft \u00b7 ${label}`,
+			);
+			expect(screen.getByLabelText("Hair source status")).toHaveTextContent(
+				fit,
+			);
+			expect(screen.getByLabelText("Hair component")).toHaveValue(id);
+		}
+		expect(fetch).not.toHaveBeenCalled();
 	});
 });

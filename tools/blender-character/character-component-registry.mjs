@@ -12,7 +12,9 @@ export const CHARACTER_COMPONENT_REGISTRY_PATH =
 	"packages/character-contract/src/character-component-registry.json";
 export const CHARACTER_HAIR_COMPONENT_IDS = Object.freeze([
 	NO_HAIR_COMPONENT_ID,
-	QUATERNIUS_HAIR_V0_COMPONENT_ID,
+	...registry.components
+		.filter((component) => component.slot === "hair")
+		.map((component) => component.id),
 ]);
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;

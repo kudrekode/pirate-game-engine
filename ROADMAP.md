@@ -9,9 +9,9 @@ This roadmap records likely follow-up work. It is not a commitment to implement 
   - Sky / Atmosphere Presentation V1.
   - Model Normalisation / Asset Transform Defaults V1.
   - Pirate Vertical Slice Dressing V1.
-  - Asset Studio: Hairstyle Library V2. Face orientation correction and Hair
-    Colour V1 are implemented; current contracts, evidence, and limits are in
-    `docs/assets/hair-colour-v1.md`. Shirt Slot V1 remains deferred.
+  - Asset Studio: length-aware Long/Buns fitting. Hairstyle Library V2 now
+    supports Buzzed, Short Crop, and Simple Parted; current contracts, checks,
+    and limits are in `docs/assets/hairstyle-library-v2.md`. Shirt Slot V1 remains deferred.
   - Runtime contract tests that prove Phaser and Three.js adapters use the same gameplay semantics.
   - Keep using the Playwright Three perf harness for browser/performance-sensitive 3D work.
 - Expand map overlay filters for event blocks, collision, quest markers, and NPC movement.

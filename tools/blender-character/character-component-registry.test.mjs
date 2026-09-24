@@ -18,7 +18,7 @@ test("validates the immutable Quaternius hairstyle source and provenance", async
 
 	assert.equal(validation.passed, true);
 	assert.equal(validation.version, 1);
-	assert.equal(validation.components.length, 1);
+	assert.equal(validation.components.length, 3);
 	assert.deepEqual(after, before);
 	assert.equal(
 		validation.sourceHashes[
@@ -54,4 +54,15 @@ test("rejects unsupported or unsafe geometry-aware fitting profiles", async () =
 		validateCharacterComponentRegistry({ registryData: unsafeScale }),
 		/invalid width fit limits/u,
 	);
+});
+
+test("every library entry resolves and has distinct source geometry and fit identity", async () => {
+	const result = await validateCharacterComponentRegistry();
+	assert.equal(new Set(result.components.map((c) => c.sourceHash)).size, 3);
+	assert.equal(
+		new Set(result.components.map((c) => c.fittingProfile.id)).size,
+		3,
+	);
+	for (const component of result.components)
+		assert.equal(resolveCharacterComponent(component.id), component);
 });

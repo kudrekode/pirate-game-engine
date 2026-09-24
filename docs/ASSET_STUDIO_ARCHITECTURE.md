@@ -2,11 +2,11 @@
 
 ## Quick Resume
 
-Read this section and the [Hair Colour V1 milestone](assets/hair-colour-v1.md)
+Read this section and the [Hairstyle Library V2 milestone](assets/hairstyle-library-v2.md)
 for current creator work; older milestone documents are historical evidence.
 
 - Current creator: six body proportions, skin colour/roughness, eye and hair colour,
-  none/Quaternius Buzzed hair, seeded body randomisation, local Compile, and
+  No Hair/Buzzed/Short Crop/Simple Parted, seeded body randomisation, local Compile, and
   ten in-session Recent Compilations. Preview supports Rest/Idle/Walk and
   whole-body/close-head cameras.
 - Data flow: CharacterRecipeV1 -> creator request -> Vite development middleware
@@ -24,8 +24,10 @@ for current creator work; older milestone documents are historical evidence.
   `procedural-mannequin-roundtrip-v8`; topology is `procedural-humanoid-v3`;
   head contract is V3 and hair fit is `quaternius-buzzed-fit-v3`.
   Legacy procedural recipes receive hair colour `#3b2a1f`; V5 eye colour survives.
-- Next: Hairstyle Library V2 using the existing component registry and fit
-  profiles. Shirt Slot V1 remains deferred.
+- Hairstyle Library V2 adds two registry-backed short styles without a schema
+  change. Validate all four choices with `npm run validate:procedural-hairstyle-matrix -- --library`.
+- Next: length-aware Long/Buns profiles and shoulder/neck clearance review.
+  Shirt Slot V1 remains deferred.
 - Generated fixtures live in
   `public/assets/derived/procedural-humanoids/{mannequin-v0,mannequin-hair-v0}/`.
   GLBs, manifests, diagnostics, recipe snapshots, and build logs form one
@@ -60,7 +62,7 @@ Playwright and does not typecheck/build the separate Asset Studio app.
 `test:blender-bake` includes fresh validation of both installed mannequin GLBs;
 it does not rebuild the Blender matrices. Use the
 [compiler guide](../tools/blender-character/README.md) for regeneration and
-[current validation](assets/hair-colour-v1.md#validation) for
+[current validation](assets/hairstyle-library-v2.md#validation) for
 matrix evidence and browser-suite limitations. Test artifacts under
 `test-results/` are ignored/local, not portable checked-in proof.
 
@@ -381,10 +383,10 @@ crowd-budget default.
 
 ## Next Milestone
 
-Hair Colour V1 and the face orientation correction are implemented. Next is
-Hairstyle Library V2 through existing registry/fit profiles; see the
-[current milestone](assets/hair-colour-v1.md). Preserve the shared skeleton,
-source provenance, and round-trip gates when adding styles.
+Hairstyle Library V2 supports Buzzed, Short Crop, and Simple Parted plus No Hair.
+Next is length-aware fitting for Long/Buns through existing registry/fit profiles;
+see the [current milestone](assets/hairstyle-library-v2.md). Preserve source
+provenance, skeleton compatibility, and visual/round-trip gates.
 
 ## Future Deployment Models
 

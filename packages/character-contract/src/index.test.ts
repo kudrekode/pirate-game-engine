@@ -197,13 +197,15 @@ describe("CharacterRecipeV1", () => {
 		);
 	});
 
-	it("exposes exactly none and one validated V1 hairstyle registry entry", () => {
+	it("exposes the validated hairstyle library and preserves the original ids", () => {
 		expect(CHARACTER_HAIR_COMPONENT_IDS).toEqual([
 			"none",
 			"quaternius-hair-v0",
+			"quaternius-hair-short-crop-v1",
+			"quaternius-hair-simple-parted-v1",
 		]);
 		expect(CHARACTER_COMPONENT_REGISTRY.version).toBe(1);
-		expect(CHARACTER_COMPONENT_REGISTRY.components).toHaveLength(1);
+		expect(CHARACTER_COMPONENT_REGISTRY.components).toHaveLength(3);
 		expect(getCharacterComponentDefinition("quaternius-hair-v0")).toMatchObject(
 			{
 				attachmentStrategy: "main-skeleton-head-surface-skinning",

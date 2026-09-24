@@ -402,3 +402,82 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 	await expect(page.locator("canvas")).toHaveCount(1);
 	expect(consoleErrors).toEqual([]);
 });
+
+test("compiles and visually validates the Hairstyle Library V2", async ({
+	page,
+}, testInfo) => {
+	test.setTimeout(240_000);
+	const errors = collectErrors(page);
+	await page.goto("/");
+	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
+	const styles = [
+		["quaternius-hair-short-crop-v1", "#bd955b", "Short Crop"],
+		["quaternius-hair-simple-parted-v1", "#8b3f27", "Simple Parted"],
+	];
+	for (const [id, color, name] of styles) {
+		await page.getByLabel("Hair component").selectOption(id);
+		await page.getByLabel("Hair color", { exact: true }).fill(color);
+		await page.getByRole("button", { exact: true, name: "Compile" }).click();
+		await expect(page.locator("[data-compile-status]")).toHaveAttribute(
+			"data-compile-status",
+			"succeeded",
+			{ timeout: 90_000 },
+		);
+		await expect(page.locator(".preview-status")).toHaveAttribute(
+			"data-status",
+			"loaded",
+			{ timeout: 60_000 },
+		);
+		await expect(host).toHaveAttribute("data-hair-component", id);
+		await expect(host).toHaveAttribute("data-hair-fit-status", "true");
+		await expect(host).toHaveAttribute("data-face-validation", "true");
+		await expect(host).toHaveAttribute("data-hair-color", color);
+		await expect(
+			page.getByRole("region", { exact: true, name: "Hair" }),
+		).toContainText(`Compiled \u00b7 Quaternius ${name}`);
+		await verifyAnimations(page);
+		for (const state of ["Rest", "Idle", "Walk"]) {
+			await page.getByRole("button", { exact: true, name: state }).click();
+			if (state !== "Rest")
+				await page.getByLabel("Animation sample time").fill("0.25");
+			for (const view of [
+				"Side",
+				"Close front",
+				"Close three-quarter",
+				"Back",
+			]) {
+				await page.getByRole("button", { exact: true, name: view }).click();
+				const chrome = page.locator(
+					".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
+				);
+				await chrome.evaluateAll((elements) =>
+					elements.forEach((element) => {
+						(element as HTMLElement).style.visibility = "hidden";
+					}),
+				);
+				await page.locator("canvas").screenshot({
+					path: testInfo.outputPath(
+						`${id}-${state}-${view.replaceAll(" ", "-")}.png`,
+					),
+				});
+				await chrome.evaluateAll((elements) =>
+					elements.forEach((element) => {
+						(element as HTMLElement).style.visibility = "";
+					}),
+				);
+			}
+		}
+	}
+	const recent = page.getByLabel("Recent Compilations").getByRole("button");
+	await expect(recent).toHaveCount(2);
+	for (const [index, style] of styles.entries()) {
+		await recent.nth(1 - index).click();
+		await expect(page.getByLabel("Hair component")).toHaveValue(style[0]);
+		await expect(page.getByLabel("Hair color", { exact: true })).toHaveValue(
+			style[1],
+		);
+		await expect(host).toHaveAttribute("data-hair-component", style[0]);
+	}
+	await expect(page.locator("canvas")).toHaveCount(1);
+	expect(errors).toEqual([]);
+});

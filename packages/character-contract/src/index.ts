@@ -21,6 +21,8 @@ export type CharacterComponentSlot = (typeof CHARACTER_COMPONENT_SLOTS)[number];
 export const CHARACTER_HAIR_COMPONENT_IDS = [
 	"none",
 	"quaternius-hair-v0",
+	"quaternius-hair-short-crop-v1",
+	"quaternius-hair-simple-parted-v1",
 ] as const;
 export type CharacterHairComponentId =
 	(typeof CHARACTER_HAIR_COMPONENT_IDS)[number];

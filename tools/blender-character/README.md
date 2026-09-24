@@ -132,3 +132,13 @@ the manifest includes authored proportions, derived anatomy, recipe/asset
 hashes, generation duration, compiler version, and validation version. See
 `docs/assets/asset-studio-body-proportions-v1.md` for the complete boundary and
 measured validation evidence.
+
+## Hairstyle Library V2
+
+The registry supports No Hair, Buzzed, Short Crop, and Simple Parted. New source
+recipes are `recipes/procedural-mannequin-short-crop-v1.recipe.json` and
+`recipes/procedural-mannequin-simple-parted-v1.recipe.json`; use the same compiler
+with `--recipe` and a distinct `--output-dir` (use `--staging` for test outputs).
+Run `npm run validate:procedural-hairstyle-matrix -- --library` for all 24
+body/style combinations. See `docs/assets/hairstyle-library-v2.md` for fit
+calibration, current evidence, compatibility, and remaining scope.

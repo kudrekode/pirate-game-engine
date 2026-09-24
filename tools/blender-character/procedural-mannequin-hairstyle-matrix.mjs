@@ -1,3 +1,4 @@
+import { CHARACTER_HAIR_COMPONENT_IDS } from "./character-component-registry.mjs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -69,21 +70,30 @@ function hairstyleFit(manifest) {
 }
 
 export async function runProceduralMannequinHairstyleMatrix({
-	outputRoot = DEFAULT_OUTPUT,
+	outputRoot,
+	library = false,
 	workspaceRoot = process.cwd(),
 } = {}) {
 	const baseRecipe = JSON.parse(
 		await readFile(path.resolve(workspaceRoot, DEFAULT_RECIPE), "utf8"),
 	);
-	const root = path.resolve(workspaceRoot, outputRoot);
+	const root = path.resolve(
+		workspaceRoot,
+		outputRoot ??
+			(library
+				? "test-results/hairstyle-library-v2/body-matrix"
+				: DEFAULT_OUTPUT),
+	);
 	await mkdir(root, { recursive: true });
 	const results = [];
 	for (const [name, overrides] of CASES) {
 		const pair = [];
-		for (const [variant, hair] of [
-			["bald", "none"],
-			["haired", "quaternius-hair-v0"],
-		]) {
+		for (const [variant, hair] of library
+			? CHARACTER_HAIR_COMPONENT_IDS.map((id) => [id, id])
+			: [
+					["bald", "none"],
+					["haired", "quaternius-hair-v0"],
+				]) {
 			const parsed = validateProceduralMannequinRecipe({
 				...baseRecipe,
 				components: { hair },
@@ -108,7 +118,8 @@ export async function runProceduralMannequinHairstyleMatrix({
 			const facePassed =
 				compiled.manifest.face.version === "procedural-face-readability-v0" &&
 				compiled.manifest.face.eyeMeshCount === 2 &&
-				compiled.manifest.face.validation.passed === true;
+				compiled.manifest.face.validation.passed === true &&
+				compiled.manifest.face.orientation.passed === true;
 			const fit =
 				hair === "none" ? { passed: true } : hairstyleFit(compiled.manifest);
 			if (!fit.passed || !facePassed) {
@@ -133,16 +144,18 @@ export async function runProceduralMannequinHairstyleMatrix({
 				variant,
 			});
 		}
-		const [bald, haired] = pair;
-		if (
-			bald.geometryAndSkinningSemanticHash !==
-				haired.geometryAndSkinningSemanticHash ||
-			bald.faceGeometrySemanticHash !== haired.faceGeometrySemanticHash ||
-			bald.skeletonSignature !== haired.skeletonSignature
-		) {
-			throw new Error(
-				`${name} changed body, face, or skeleton across hair variants.`,
-			);
+		const [bald, ...hairstyles] = pair;
+		for (const haired of hairstyles) {
+			if (
+				bald.geometryAndSkinningSemanticHash !==
+					haired.geometryAndSkinningSemanticHash ||
+				bald.faceGeometrySemanticHash !== haired.faceGeometrySemanticHash ||
+				bald.skeletonSignature !== haired.skeletonSignature
+			) {
+				throw new Error(
+					`${name} changed body, face, or skeleton across hair variants.`,
+				);
+			}
 		}
 		results.push(...pair);
 	}
@@ -150,7 +163,9 @@ export async function runProceduralMannequinHairstyleMatrix({
 		artifactCount: results.length,
 		caseCount: CASES.length,
 		cases: results,
-		componentId: "quaternius-hair-v0",
+		componentIds: library
+			? CHARACTER_HAIR_COMPONENT_IDS
+			: ["none", "quaternius-hair-v0"],
 		passed: true,
 	};
 	await writeFile(
@@ -166,7 +181,10 @@ if (path.resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
 		outputIndex >= 0 ? process.argv[outputIndex + 1] : DEFAULT_OUTPUT;
 	console.log(
 		JSON.stringify(
-			await runProceduralMannequinHairstyleMatrix({ outputRoot }),
+			await runProceduralMannequinHairstyleMatrix({
+				outputRoot: outputIndex >= 0 ? outputRoot : undefined,
+				library: process.argv.includes("--library"),
+			}),
 			null,
 			2,
 		),

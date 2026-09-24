@@ -59,8 +59,6 @@ const HAIR_COMPONENT_OPTIONS = CHARACTER_HAIR_COMPONENT_IDS.map((id) => ({
 			? "No hair"
 			: (getCharacterComponentDefinition(id)?.name ?? id),
 }));
-const QUATERNIUS_HAIR_COMPONENT =
-	getCharacterComponentDefinition("quaternius-hair-v0");
 
 const PALETTE_LABELS: Record<CharacterPaletteRegion, string> = {
 	skin: "Skin color",
@@ -1198,6 +1196,13 @@ export default function App() {
 			? compiledPreviewSource
 			: PREVIEW_SOURCES[previewSourceId];
 	const activeManifest = compileResult?.manifest ?? currentManifest;
+	const draftHairComponent = getCharacterComponentDefinition(
+		recipe.components.hair,
+	);
+	const matchingHairManifest =
+		activeManifest?.components.hair.componentId === recipe.components.hair
+			? activeManifest
+			: undefined;
 	const compileDirty = Boolean(
 		compileResult &&
 			(!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
@@ -1908,40 +1913,37 @@ export default function App() {
 									Draft ·{" "}
 									{recipe.components.hair === "none"
 										? "No hair"
-										: QUATERNIUS_HAIR_COMPONENT?.name}
+										: draftHairComponent?.name}
 								</div>
 								<div>
 									Compiled ·{" "}
-									{activeManifest?.components?.hair?.componentId ===
-									"quaternius-hair-v0"
-										? QUATERNIUS_HAIR_COMPONENT?.name
-										: "No hair"}
+									{getCharacterComponentDefinition(
+										activeManifest?.components.hair.componentId ?? "none",
+									)?.name ?? "No hair"}
 								</div>
 							</div>
-							{recipe.components.hair === "quaternius-hair-v0" ? (
+							{draftHairComponent ? (
 								<dl aria-label="Hair source status">
 									<div>
 										<dt>Provider</dt>
-										<dd>{QUATERNIUS_HAIR_COMPONENT?.provider}</dd>
+										<dd>{draftHairComponent?.provider}</dd>
 									</div>
 									<div>
 										<dt>Provenance</dt>
-										<dd>
-											Validated · {QUATERNIUS_HAIR_COMPONENT?.license.spdx}
-										</dd>
+										<dd>Validated · {draftHairComponent?.license.spdx}</dd>
 									</div>
 									<div>
 										<dt>Fit profile</dt>
 										<dd>
-											{activeManifest?.components.hair.fittingProfile?.id ??
-												QUATERNIUS_HAIR_COMPONENT?.fittingProfile.id}
+											{matchingHairManifest?.components.hair.fittingProfile
+												?.id ?? draftHairComponent?.fittingProfile.id}
 										</dd>
 									</div>
 									<div>
 										<dt>Source bounds</dt>
 										<dd>
-											{activeManifest?.components.hair.sourceBounds
-												? activeManifest.components.hair.sourceBounds.dimensions
+											{matchingHairManifest?.components.hair.sourceBounds
+												? matchingHairManifest.components.hair.sourceBounds.dimensions
 														.map((value) => value.toFixed(3))
 														.join(" × ")
 												: "Compile to inspect"}
@@ -1950,8 +1952,8 @@ export default function App() {
 									<div>
 										<dt>Fitted bounds</dt>
 										<dd>
-											{activeManifest?.components.hair.bounds
-												? activeManifest.components.hair.bounds.dimensions
+											{matchingHairManifest?.components.hair.bounds
+												? matchingHairManifest.components.hair.bounds.dimensions
 														.map((value) => value.toFixed(3))
 														.join(" × ")
 												: "Compile to inspect"}
@@ -1960,27 +1962,28 @@ export default function App() {
 									<div>
 										<dt>Derived fit transform</dt>
 										<dd>
-											{activeManifest?.components.hair.derivedTransform
-												? `Scale ${activeManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${activeManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
+											{matchingHairManifest?.components.hair.derivedTransform
+												? `Scale ${matchingHairManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${matchingHairManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
 												: "Compile to inspect"}
 										</dd>
 									</div>
 									<div>
 										<dt>Fit validation</dt>
 										<dd>
-											{activeManifest?.components.hair.fitValidation
-												? activeManifest.components.hair.fitValidation.passed
+											{matchingHairManifest?.components.hair.fitValidation
+												? matchingHairManifest.components.hair.fitValidation
+														.passed
 													? "Pass"
-													: `Warnings: ${activeManifest.components.hair.fitValidation.warnings.join(", ")}`
+													: `Warnings: ${matchingHairManifest.components.hair.fitValidation.warnings.join(", ")}`
 												: "Compile to inspect"}
 										</dd>
 									</div>
 									<div>
 										<dt>Compiled geometry</dt>
 										<dd>
-											{activeManifest?.components?.hair?.componentId ===
-											"quaternius-hair-v0"
-												? `${activeManifest.components.hair.meshCount} mesh · ${activeManifest.components.hair.triangleCount} triangles · ${activeManifest.components.hair.materialCount} material`
+											{matchingHairManifest?.components?.hair?.componentId ===
+											recipe.components.hair
+												? `${matchingHairManifest.components.hair.meshCount} mesh · ${matchingHairManifest.components.hair.triangleCount} triangles · ${matchingHairManifest.components.hair.materialCount} material`
 												: "Compile to inspect"}
 										</dd>
 									</div>

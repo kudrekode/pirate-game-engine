@@ -78,7 +78,8 @@ one skin and the unchanged 65-joint skeleton. Asset Studio includes focused
 Face controls and close head cameras. The backwards face is now corrected,
 with an independent exported face-versus-feet gate and surface-fitted features.
 Hair Colour V1 adds compiled hair colour, presets, reset, and recent-job restore;
-see the [current milestone](docs/assets/hair-colour-v1.md).
+Hairstyle Library V2 adds Short Crop and Simple Parted alongside Buzzed and
+No Hair; see the [current milestone](docs/assets/hairstyle-library-v2.md).
 
 Asset Studio compiles six body proportions, skin colour/roughness, eye and hair colour,
 and the selected hairstyle through a local development endpoint and the real

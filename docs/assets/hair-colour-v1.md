@@ -74,6 +74,5 @@ no facial animation, and one coarse Buzzed hairstyle. Hair colour replaces the
 vendor base-colour texture rather than recolouring its baked highlights.
 The local compiler requires Blender; there is no deployed compilation backend.
 
-Next is Hairstyle Library V2 using existing registry, provenance, and fit
-profiles. Shirt Slot V1 remains deferred. Start with the
+Hairstyle Library V2 is now implemented; see [the current milestone](hairstyle-library-v2.md). Shirt Slot V1 remains deferred. Start with the
 [quick resume](../ASSET_STUDIO_ARCHITECTURE.md#quick-resume) for exact files.
