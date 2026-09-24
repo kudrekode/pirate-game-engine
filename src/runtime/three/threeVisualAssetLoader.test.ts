@@ -9,6 +9,7 @@ import {
 	getThreeVisualAssetCloneType,
 	requestThreeVisualAsset,
 	requestThreeVisualAssetAnimationClip,
+	resolveThreeVisualAssetResourceUrl,
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
@@ -32,6 +33,28 @@ describe("Three visual asset loader cache", () => {
 
 	afterEach(() => {
 		clearThreeVisualAssetCacheForTests();
+	});
+
+	it("resolves registry-scoped dependent resource aliases without changing the glTF URL", () => {
+		const definition: ThreeVisualAssetDefinition = {
+			...assetDefinition,
+			resourceUrlAliases: {
+				"T_Eye_Normal_png.png": "T_Eye_Normal.png",
+			},
+		};
+
+		expect(
+			resolveThreeVisualAssetResourceUrl(
+				definition,
+				"/assets/source/quaternius/T_Eye_Normal_png.png",
+			),
+		).toBe("/assets/source/quaternius/T_Eye_Normal.png");
+		expect(
+			resolveThreeVisualAssetResourceUrl(
+				definition,
+				"/assets/source/quaternius/Superhero_Male_FullBody.bin",
+			),
+		).toBe("/assets/source/quaternius/Superhero_Male_FullBody.bin");
 	});
 
 	it("loads a repeated asset request once and returns cloned instances", async () => {

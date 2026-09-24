@@ -133,14 +133,14 @@ export function resolveCharacterAnimationState(
 
 function getSourceAssetId(
 	asset: ThreeVisualAssetDefinition,
-	state: Exclude<CharacterAnimationSemanticState, "idle">,
+	state: CharacterAnimationSemanticState,
 ): string | undefined {
 	return asset.animations?.[state]?.assetId ?? asset.id;
 }
 
 function getAnimationMapping(
 	asset: ThreeVisualAssetDefinition,
-	state: Exclude<CharacterAnimationSemanticState, "idle">,
+	state: CharacterAnimationSemanticState,
 ) {
 	return asset.animations?.[state];
 }
@@ -199,8 +199,7 @@ export function createThreeCharacterAnimationController({
 		}
 		semanticState = nextState;
 		if (!nextAction) {
-			// V1 idle intentionally has no action: Patchbeard's 0.033s base clip
-			// is treated as its bind/rest pose rather than a stationary walk loop.
+			// Assets without an authored idle mapping keep their bind/rest pose.
 			activeAction?.fadeOut(TRANSITION_SECONDS);
 			activeAction = undefined;
 			return;
@@ -243,7 +242,7 @@ export function createThreeCharacterAnimationController({
 		if (disposed) {
 			return;
 		}
-		for (const state of ["walk", "attack", "defeated"] as const) {
+		for (const state of ["idle", "walk", "attack", "defeated"] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
@@ -309,7 +308,10 @@ export function createThreeCharacterAnimationController({
 		},
 		getStats: () => ({
 			activeLoopingActions:
-				semanticState === "walk" && activeAction?.enabled ? 1 : 0,
+				(semanticState === "idle" || semanticState === "walk") &&
+				activeAction?.enabled
+					? 1
+					: 0,
 			incompatibleClipCount,
 			loadingSourceCount: loadingSourceIds.size,
 			missingClipCount,

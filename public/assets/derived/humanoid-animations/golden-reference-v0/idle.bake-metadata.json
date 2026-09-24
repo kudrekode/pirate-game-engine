@@ -1,0 +1,102 @@
+{
+	"artifactFormat": "full-target-glb-per-clip",
+	"artifactStatus": "offline-baked-validated",
+	"blender": {
+		"buildHash": "fbe6228777e7",
+		"version": "5.2.0 LTS"
+	},
+	"clipId": "idle",
+	"clipName": "GoldenReference_Idle",
+	"compilerVersion": "golden-reference-blender-bake-v1",
+	"durationSeconds": 8.333333333333334,
+	"frameCount": 251,
+	"frameRate": 30,
+	"mappedBoneCount": 22,
+	"normalizedAnimationHash": "5b9ee52ba5c6760d2a9a180b8ff5864623c0e6bc2e5e8d94ac23417b9187358f",
+	"outputHash": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+	"outputPath": "public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+	"profileVersion": "mixamo-to-quaternius-v2",
+	"rootMotion": {
+		"policy": "freeze target-world pelvis X/Z to the first sampled pose; preserve target-world pelvis Y",
+		"prePolicyDisplacementBlenderWorld": {
+			"x": 0,
+			"y": 0,
+			"z": 0
+		},
+		"preservedVerticalBlenderWorld": 0,
+		"residualHorizontalBlenderWorld": {
+			"x": 0,
+			"y": 0
+		}
+	},
+	"source": {
+		"hash": "42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0",
+		"path": "public/assets/source/humanoid-animations/retarget-spike/idle/source.fbx",
+		"skeleton": {
+			"clipHashes": {
+				"idle": "42f1b0d7b82337ded5d93412afdd2fff8a04727393a086afc4432a2c8ed102a0",
+				"walk": "17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e"
+			},
+			"id": "mixamo-67-fbx",
+			"jointCount": 67,
+			"rootBone": "mixamorigHips"
+		}
+	},
+	"target": {
+		"bufferHash": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"hash": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"path": "public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+		"skeleton": {
+			"bufferHash": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+			"gltfHash": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+			"id": "golden-reference-quaternius-superhero-male",
+			"jointCount": 65,
+			"pelvisBone": "pelvis",
+			"rootBone": "root"
+		}
+	},
+	"warnings": [
+		"Finger/helper bones remain in the target rest pose.",
+		"Full target GLB duplicates mesh and embedded textures per clip."
+	],
+	"blenderExecutable": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+	"compilerCommand": [
+		"C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+		"--background",
+		"--factory-startup",
+		"--python-exit-code",
+		"1",
+		"--python",
+		"tools/blender-character/retarget_golden_reference.py",
+		"--",
+		"--source",
+		"public/assets/source/humanoid-animations/retarget-spike/idle/source.fbx",
+		"--target",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf",
+		"--clip",
+		"idle",
+		"--output",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+		"--profile",
+		"tools/blender-character/profiles/mixamo-to-quaternius-v2.json",
+		"--profile-version",
+		"mixamo-to-quaternius-v2",
+		"--frame-rate",
+		"30",
+		"--root-motion-policy",
+		"freeze target-world pelvis X/Z to the first sampled pose; preserve target-world pelvis Y",
+		"--metadata",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.bake-metadata.json",
+		"--diagnostics",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.bake-diagnostics.json"
+	],
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+		"metadataSemanticallyDeterministic": true,
+		"normalizedAnimationDeterministic": true,
+		"secondOutputHash": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af"
+	},
+	"provenanceValidated": true,
+	"sourceImmutable": true
+}

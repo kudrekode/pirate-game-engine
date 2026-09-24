@@ -105,6 +105,7 @@ describe("Three character animation", () => {
 			animations: {
 				attack: { assetId: "character-source", clipName: "Attack" },
 				defeated: { assetId: "character-source", clipName: "Dead" },
+				idle: { assetId: "character-source", clipName: "Idle" },
 				walk: { assetId: "character-source", clipName: "Walk" },
 			},
 			category: "character",
@@ -127,6 +128,7 @@ describe("Three character animation", () => {
 		]);
 		const loadAsync = vi.fn(async () => ({
 			animations: [
+				createRootMotionClip("Idle"),
 				createRootMotionClip("Walk"),
 				createRootMotionClip("Attack"),
 				createRootMotionClip("Dead"),
@@ -143,11 +145,19 @@ describe("Three character animation", () => {
 				asset: character,
 				root: renderedCharacter,
 			});
-			controller.sync({ defeated: false, moving: true });
 			await flushAssetPromises();
 			controller.update(0.5);
 
 			expect(loadAsync).toHaveBeenCalledTimes(1);
+			expect(controller.getStats()).toMatchObject({
+				activeLoopingActions: 1,
+				loadingSourceCount: 0,
+				semanticState: "idle",
+				sourceAssetIds: ["character-source"],
+			});
+
+			controller.sync({ defeated: false, moving: true });
+			controller.update(0.5);
 			expect(controller.getStats()).toMatchObject({
 				activeLoopingActions: 1,
 				loadingSourceCount: 0,

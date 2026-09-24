@@ -1,0 +1,172 @@
+{
+	"artifactFormatDecision": "Full Golden target GLB per clip: proven reliable through the production GLTFLoader and skeleton-safe clone path; animation-only reuse remains unproven.",
+	"idle": {
+		"analysis": {
+			"materialCount": 3,
+			"meshCount": 3,
+			"skeletonCount": 1,
+			"skinnedMeshCount": 3,
+			"textureCount": 7
+		},
+		"artifact": "public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+		"checks": {
+			"clipDuration": true,
+			"clipName": true,
+			"finiteKeyframes": true,
+			"goldenJointCount": true,
+			"materialAndTextureStructure": true,
+			"noMixamoRig": true,
+			"rootMotion": true,
+			"targetOnlyTracks": true
+		},
+		"cloneValidation": {
+			"passed": true,
+			"restRestored": true,
+			"secondUnaffected": true,
+			"separateBones": true,
+			"separateMixers": true,
+			"separateSkeletons": true
+		},
+		"clip": {
+			"duration": 8.333333015441895,
+			"name": "GoldenReference_Idle",
+			"trackCount": 23
+		},
+		"inspection": {
+			"nodeCount": 69,
+			"skeletonCount": 1,
+			"targetJointCount": 65,
+			"warnings": []
+		},
+		"passed": true,
+		"poseComparison": {
+			"maxAngularDifferenceDegrees": 9.54843014439972,
+			"maxAngularJoint": {
+				"name": "neck_01",
+				"normalizedTime": 0.5
+			},
+			"maxPositionDifferenceMetres": 0.013718715334442673,
+			"maxPositionJoint": {
+				"name": "Head",
+				"normalizedTime": 0
+			},
+			"passed": true,
+			"samples": [
+				{
+					"maxAngularDifferenceDegrees": 9.548409745808641,
+					"maxPositionDifferenceMetres": 0.013718715334442673,
+					"normalizedTime": 0
+				},
+				{
+					"maxAngularDifferenceDegrees": 9.548138205025364,
+					"maxPositionDifferenceMetres": 0.013716854053542383,
+					"normalizedTime": 0.25
+				},
+				{
+					"maxAngularDifferenceDegrees": 9.54843014439972,
+					"maxPositionDifferenceMetres": 0.01371587105908317,
+					"normalizedTime": 0.5
+				},
+				{
+					"maxAngularDifferenceDegrees": 9.54822101686386,
+					"maxPositionDifferenceMetres": 0.013715316006625518,
+					"normalizedTime": 0.75
+				}
+			],
+			"tolerances": {
+				"maxAngularDifferenceDegrees": 10,
+				"maxPositionDifferenceMetres": 0.02
+			}
+		},
+		"rootMotionResidual": {
+			"x": 0,
+			"z": 0
+		}
+	},
+	"passed": true,
+	"profileVersion": "mixamo-to-quaternius-v2",
+	"textureValidation": "Node validation uses one-pixel createImageBitmap stand-ins; real embedded texture decode is validated in browser Playwright.",
+	"walk": {
+		"analysis": {
+			"materialCount": 3,
+			"meshCount": 3,
+			"skeletonCount": 1,
+			"skinnedMeshCount": 3,
+			"textureCount": 7
+		},
+		"artifact": "public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+		"checks": {
+			"clipDuration": true,
+			"clipName": true,
+			"finiteKeyframes": true,
+			"goldenJointCount": true,
+			"materialAndTextureStructure": true,
+			"noMixamoRig": true,
+			"rootMotion": true,
+			"targetOnlyTracks": true
+		},
+		"cloneValidation": {
+			"passed": true,
+			"restRestored": true,
+			"secondUnaffected": true,
+			"separateBones": true,
+			"separateMixers": true,
+			"separateSkeletons": true
+		},
+		"clip": {
+			"duration": 1.0333333015441895,
+			"name": "GoldenReference_Walk_InPlace",
+			"trackCount": 23
+		},
+		"inspection": {
+			"nodeCount": 69,
+			"skeletonCount": 1,
+			"targetJointCount": 65,
+			"warnings": []
+		},
+		"passed": true,
+		"poseComparison": {
+			"maxAngularDifferenceDegrees": 9.693279062165548,
+			"maxAngularJoint": {
+				"name": "neck_01",
+				"normalizedTime": 0.25
+			},
+			"maxPositionDifferenceMetres": 0.014510878399484,
+			"maxPositionJoint": {
+				"name": "Head",
+				"normalizedTime": 0.5
+			},
+			"passed": true,
+			"samples": [
+				{
+					"maxAngularDifferenceDegrees": 9.548432211032674,
+					"maxPositionDifferenceMetres": 0.013764536581473839,
+					"normalizedTime": 0
+				},
+				{
+					"maxAngularDifferenceDegrees": 9.693279062165548,
+					"maxPositionDifferenceMetres": 0.013413117268974081,
+					"normalizedTime": 0.25
+				},
+				{
+					"maxAngularDifferenceDegrees": 9.50352048499639,
+					"maxPositionDifferenceMetres": 0.014510878399484,
+					"normalizedTime": 0.5
+				},
+				{
+					"maxAngularDifferenceDegrees": 9.533839885698677,
+					"maxPositionDifferenceMetres": 0.013425660071104203,
+					"normalizedTime": 0.75
+				}
+			],
+			"tolerances": {
+				"maxAngularDifferenceDegrees": 10,
+				"maxPositionDifferenceMetres": 0.02
+			}
+		},
+		"rootMotionResidual": {
+			"x": 0,
+			"z": -3.725294253631439e-9
+		}
+	}
+}
