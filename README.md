@@ -135,6 +135,19 @@ npm run dev
 
 Start the separate Asset Studio app:
 
+The main editor's **Asset Creator** button links to this app and reports whether it
+is reachable. Studio uses port **5174**; set `VITE_ASSET_STUDIO_URL` in the root
+`.env.local` and restart the editor for a different address. See the
+[Human Foundation report](ASSET_CREATOR_HUMAN_FOUNDATION_RESULT.md) for the improved
+base mesh, proportions and acceptance evidence.
+
+Studio has a persistent **Back to Game Engine** link; use `VITE_GAME_ENGINE_URL`
+in Studio's `.env.local` to override the launching editor's address. **Generate
+Preview** runs one Blender build for iteration. **Finalise Character** retains
+the two-build assurance and offers GLB/manifest/recipe downloads. See the
+[workflow report](ASSET_CREATOR_WORKFLOW_RESULT.md) for anatomy validation,
+timings and acceptance evidence.
+
 ```bash
 npm run dev:asset-studio
 ```

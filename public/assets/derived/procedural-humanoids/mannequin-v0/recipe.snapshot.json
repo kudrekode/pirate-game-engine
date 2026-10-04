@@ -21,7 +21,7 @@
 	"geometry": {
 		"profile": "voxel-union",
 		"radialSegments": 8,
-		"topologyVersion": "procedural-humanoid-v3"
+		"topologyVersion": "procedural-humanoid-v4"
 	},
 	"id": "procedural-mannequin-v0",
 	"name": "Procedural Mannequin Body Proportions V1",

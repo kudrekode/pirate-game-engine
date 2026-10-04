@@ -3,7 +3,11 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import * as THREE from "three";
-import { validateFaceOrientation } from "./procedural-mannequin-roundtrip.mjs";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import {
+	validateAnimation,
+	validateFaceOrientation,
+} from "./procedural-mannequin-roundtrip.mjs";
 import {
 	buildProceduralMannequinScriptArguments,
 	PROCEDURAL_MANNEQUIN_PATHS,
@@ -83,6 +87,21 @@ test("converts canonical authored sRGB skin colors to stable linear values", () 
 	const linear = canonicalSrgbHexToLinear("#c98f65");
 	assert.ok(Math.abs(linear[0] - 0.5840784178911641) < 1e-12);
 	assert.throws(() => canonicalSrgbHexToLinear("c98f65"), /#RRGGBB/u);
+});
+
+test("upgrades the previous body topology without replacing authored choices", async () => {
+	const recipe = await loadRecipe();
+	recipe.geometry.topologyVersion = "procedural-humanoid-v3";
+	recipe.proportions.height = 1.73;
+	recipe.proportions.hipWidth = 0.7;
+	recipe.components.hair = "none";
+	recipe.appearance.face.eyeColor = "#405c72";
+	const parsed = validateProceduralMannequinRecipe(recipe);
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.value.geometry.topologyVersion, "procedural-humanoid-v4");
+	assert.deepEqual(parsed.value.proportions, recipe.proportions);
+	assert.deepEqual(parsed.value.components, recipe.components);
+	assert.deepEqual(parsed.value.appearance, recipe.appearance);
 });
 
 test("rejects unsupported contracts and invalid numeric ranges", async () => {
@@ -185,7 +204,7 @@ test("migrates the disconnected V1 recipe and derives deterministic topology mea
 		measurements.topologyVersion,
 		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	);
-	assert.equal(measurements.voxelSizeMetres, 0.035);
+	assert.equal(measurements.voxelSizeMetres, 0.018);
 	assert.ok(measurements.chestHalfWidth > measurements.pelvisHalfWidth);
 });
 
@@ -277,7 +296,7 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.equal(result.manifest.proportions.shoulderWidth, 0.5);
 	assert.equal(
 		result.manifest.validationVersion,
-		"procedural-mannequin-roundtrip-v8",
+		"procedural-mannequin-roundtrip-v9",
 	);
 	assert.equal(result.manifest.recipeVersion, 6);
 	assert.equal(result.manifest.components.hair.componentId, "none");
@@ -303,13 +322,13 @@ test("round-trips the committed artifact and its canonical animations", async ()
 		result.manifest.topologyVersion,
 		PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	);
-	assert.deepEqual(result.manifest.topology, {
+	const { edgeCount, faceCount, ...topology } = result.manifest.topology;
+	assert.ok(edgeCount > 10_000 && faceCount > 8_000);
+	assert.deepEqual(topology, {
 		boundaryEdgeCount: 0,
 		connectedComponentCount: 1,
 		degenerateFaceCount: 0,
-		edgeCount: 8292,
 		eulerCharacteristic: 2,
-		faceCount: 5528,
 		genus: 0,
 		manifold: true,
 		nonManifoldEdgeCount: 0,
@@ -324,9 +343,15 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	assert.ok(result.manifest.triangleCount >= 4_000);
 	assert.ok(result.manifest.triangleCount <= 15_000);
 	assert.ok(result.manifest.generationDurationMs > 0);
-	assert.equal(result.manifest.head.topologyVersion, "procedural-humanoid-v3");
-	assert.ok(result.manifest.head.headWidth > 0.3);
-	assert.ok(result.manifest.head.headDepth > 0.25);
+	assert.equal(result.manifest.head.topologyVersion, "procedural-humanoid-v4");
+	assert.ok(
+		result.manifest.head.headWidth > 0.16 &&
+			result.manifest.head.headWidth < 0.22,
+	);
+	assert.ok(
+		result.manifest.head.headDepth > 0.2 &&
+			result.manifest.head.headDepth < 0.27,
+	);
 	assert.ok(result.manifest.head.headHeight > 0.24);
 	assert.ok(result.manifest.head.neckConnectionVertexCount >= 3);
 	assert.ok(result.manifest.head.symmetryErrorMetres <= 0.000001);
@@ -335,6 +360,11 @@ test("round-trips the committed artifact and its canonical animations", async ()
 	);
 	assert.equal(result.validation.animations.idle.passed, true);
 	assert.equal(result.validation.animations.walk.passed, true);
+	assert.ok(result.validation.animations.walk.maximumSurfaceStretch <= 3);
+	assert.equal(result.validation.animations.walk.finiteSurface, true);
+	const anatomy = result.manifest.anatomy;
+	assert.ok(anatomy.surfaceNeckWidth < result.manifest.head.headWidth * 0.85);
+	assert.ok(anatomy.surfaceWaistWidth < anatomy.surfaceRibcageWidth * 0.9);
 	assert.equal(result.validation.cloneIndependence.passed, true);
 	assert.ok(
 		Math.hypot(
@@ -342,6 +372,50 @@ test("round-trips the committed artifact and its canonical animations", async ()
 			result.validation.animations.walk.rootMotionResidual.z,
 		) <= 0.00001,
 	);
+});
+
+test("rejects a surface spike even when animation bones remain valid", async (t) => {
+	const savedGlobals = ["self", "createImageBitmap"].map((key) => [
+		key,
+		Object.getOwnPropertyDescriptor(globalThis, key),
+	]);
+	globalThis.self ??= globalThis;
+	globalThis.createImageBitmap ??= async () => ({
+		close() {},
+		height: 1,
+		width: 1,
+	});
+	t.after(() => {
+		for (const [key, descriptor] of savedGlobals) {
+			if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+			else Reflect.deleteProperty(globalThis, key);
+		}
+	});
+	const load = async (file) => {
+		const bytes = await readFile(file);
+		return new GLTFLoader().parseAsync(
+			bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+			"",
+		);
+	};
+	const body = await load(
+		"public/assets/derived/procedural-humanoids/mannequin-v0/mannequin.glb",
+	);
+	const baked = await load(
+		"public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+	);
+	const mesh = body.scene.getObjectByName("ProceduralMannequinMesh");
+	const position = mesh.geometry.attributes.position;
+	let highest = 0;
+	for (let i = 1; i < position.count; i += 1)
+		if (position.getY(i) > position.getY(highest)) highest = i;
+	const foot = mesh.skeleton.bones.findIndex((bone) => bone.name === "foot_l");
+	mesh.geometry.attributes.skinIndex.setXYZW(highest, foot, 0, 0, 0);
+	mesh.geometry.attributes.skinWeight.setXYZW(highest, 1, 0, 0, 0);
+	const validation = validateAnimation(body.scene, baked.animations[0]);
+	assert.equal(validation.passed, false);
+	assert.ok(validation.maximumSurfaceStretch > 3);
+	assert.ok(validation.maximumBoneLengthRelativeError < 0.00001);
 });
 
 test("round-trips the committed haired artifact with one shared-skeleton Head attachment", async () => {
@@ -353,6 +427,8 @@ test("round-trips the committed haired artifact with one shared-skeleton Head at
 	});
 	assert.equal(result.passed, true);
 	assert.equal(result.validation.hair.passed, true);
+	assert.ok(result.validation.animations.walk.maximumSurfaceStretch > 1.5);
+	assert.ok(result.validation.animations.walk.maximumSurfaceStretch <= 3);
 	assert.equal(result.validation.hair.attachmentBone, "Head");
 	assert.equal(result.validation.hair.meshCount, 1);
 	assert.equal(result.validation.hair.triangleCount, 830);
@@ -369,6 +445,14 @@ test("round-trips the committed haired artifact with one shared-skeleton Head at
 		"quaternius-buzzed-fit-v3",
 	);
 	assert.equal(result.manifest.components.hair.fitValidation.passed, true);
+	assert.equal(
+		result.manifest.components.hair.fitValidation.checks.surfaceClearance,
+		true,
+	);
+	assert.ok(
+		result.manifest.components.hair.fitValidation.metrics
+			.minimumSurfaceClearanceMetres >= -0.002,
+	);
 	assert.ok(
 		result.manifest.components.hair.fitValidation.metrics
 			.verticesAboveNeckRatio >= 0.9,
@@ -430,7 +514,7 @@ test("migrates V5 hair colour without losing authored eyes and accepts old topol
 	assert.equal(parsed.ok, true);
 	assert.equal(parsed.value.appearance.face.eyeColor, "#405c72");
 	assert.equal(parsed.value.appearance.hair.color, "#3b2a1f");
-	assert.equal(parsed.value.geometry.topologyVersion, "procedural-humanoid-v3");
+	assert.equal(parsed.value.geometry.topologyVersion, "procedural-humanoid-v4");
 	const changed = structuredClone(parsed.value);
 	changed.appearance.hair.color = "#BD955B";
 	assert.equal(

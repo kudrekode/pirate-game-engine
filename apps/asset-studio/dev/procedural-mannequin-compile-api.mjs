@@ -25,6 +25,8 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
 export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 6;
+export const PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT =
+	"/__asset-studio/procedural-mannequin/preview";
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -250,6 +252,7 @@ export async function createRecipeForProportions({
 }
 
 export async function compileCreatorMannequin({
+	mode = "full",
 	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
@@ -285,6 +288,7 @@ export async function compileCreatorMannequin({
 	const startedAt = performance.now();
 	try {
 		const result = await compileImpl({
+			mode,
 			clean: true,
 			outputDirectory,
 			recipePath,
@@ -313,7 +317,9 @@ export async function compileCreatorMannequin({
 					result?.manifest?.proportions?.[key] === recipe.proportions[key],
 			) ||
 			result?.manifest?.outputHash?.length !== 64 ||
-			result?.manifest?.deterministicBuild !== true
+			(mode === "full"
+				? result?.manifest?.deterministicBuild !== true
+				: result?.manifest?.validationLevel !== "preview")
 		) {
 			throw new Error("Compiler returned an invalid or mismatched manifest.");
 		}
@@ -333,6 +339,14 @@ export async function compileCreatorMannequin({
 			},
 		};
 	} catch (error) {
+		error.technicalDetails = [
+			error.message,
+			error.stdout,
+			error.stderr,
+			`Recipe: ${canonicalizeProceduralMannequinRecipe(recipe)}`,
+		]
+			.filter(Boolean)
+			.join("\n");
 		await rm(stagingDirectory, { force: true, recursive: true });
 		throw error;
 	}
@@ -373,6 +387,16 @@ export function createProceduralMannequinCompileMiddleware({
 		const requestUrl = new URL(request.url ?? "/", "http://asset-studio.local");
 		if (
 			request.method === "GET" &&
+			requestUrl.pathname === "/__asset-studio/health"
+		) {
+			// Public identity only; compilation and generated files gain no CORS access.
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Cache-Control", "no-store");
+			jsonResponse(response, 200, { app: "asset-studio" });
+			return;
+		}
+		if (
+			request.method === "GET" &&
 			requestUrl.pathname.startsWith(`${PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT}/`)
 		) {
 			const asset = resolveAssetRequest(generatedRoot, requestUrl.pathname);
@@ -394,7 +418,12 @@ export function createProceduralMannequinCompileMiddleware({
 			stream.pipe(response);
 			return;
 		}
-		if (requestUrl.pathname !== PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT) {
+		if (
+			![
+				PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT,
+				PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT,
+			].includes(requestUrl.pathname)
+		) {
 			next();
 			return;
 		}
@@ -420,6 +449,10 @@ export function createProceduralMannequinCompileMiddleware({
 			}
 			compileActive = true;
 			const result = await compileJob({
+				mode:
+					requestUrl.pathname === PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT
+						? "preview"
+						: "full",
 				appearance: parsed.value.appearance,
 				generatedRoot,
 				hairComponentId: parsed.value.components.hair,
@@ -428,7 +461,14 @@ export function createProceduralMannequinCompileMiddleware({
 			jsonResponse(response, 200, result);
 		} catch (error) {
 			jsonResponse(response, 500, {
-				error: error instanceof Error ? error.message : String(error),
+				error: /Human foundation|Anatomical slice/.test(String(error))
+					? "Character generation failed because the selected body proportions produced an invalid torso shape."
+					: "Character generation failed. Check the technical details and try again.",
+				technicalDetails:
+					error?.technicalDetails ??
+					[error?.message ?? String(error), error?.stdout, error?.stderr]
+						.filter(Boolean)
+						.join("\n"),
 				issues: error?.validationIssues ?? [],
 				status: "failed",
 			});

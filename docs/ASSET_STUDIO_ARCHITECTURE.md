@@ -6,11 +6,11 @@ Read this section and the [Hairstyle Library V2 milestone](assets/hairstyle-libr
 for current creator work; older milestone documents are historical evidence.
 
 - Current creator: six body proportions, skin colour/roughness, eye and hair colour,
-  No Hair/Buzzed/Short Crop/Simple Parted, seeded body randomisation, local Compile, and
+  No Hair/Buzzed/Short Crop/Simple Parted/Long/Buns, seeded body randomisation, Generate Preview / Finalise Character, and
   ten in-session Recent Compilations. Preview supports Rest/Idle/Walk and
   whole-body/close-head cameras.
 - Data flow: CharacterRecipeV1 -> creator request -> Vite development middleware
-  -> procedural recipe -> two isolated Blender builds -> Three.js validation
+  -> procedural recipe -> one Blender build for preview, two for finalisation -> Three.js validation
   -> shared preview/registry. Preserve this boundary and the unchanged
   65-joint Golden skeleton; game-session semantics are outside this work.
 - Orientation is corrected: compiler forward is -Y, exported anatomical forward
@@ -20,13 +20,15 @@ for current creator work; older milestone documents are historical evidence.
 - Hair Colour V1 compiles `palette.hair` into a solid hair base colour while
   preserving the source normal map. Vendor files remain immutable.
 - Version map: CharacterRecipe remains V1; compile request and procedural
-  recipe are V6; compiler is `procedural-mannequin-blender-v7`; validator is
-  `procedural-mannequin-roundtrip-v8`; topology is `procedural-humanoid-v3`;
+  recipe are V6; compiler is `procedural-mannequin-blender-v8`; validator is
+  `procedural-mannequin-roundtrip-v9`; topology is `procedural-humanoid-v4`;
   head contract is V3 and hair fit is `quaternius-buzzed-fit-v3`.
   Legacy procedural recipes receive hair colour `#3b2a1f`; V5 eye colour survives.
 - Hairstyle Library V2 adds two registry-backed short styles without a schema
   change. The current registry has six choices including Long/Buns; `--library` covers 36 body/style artifacts (72 Blender passes). Use `--style` and `--case` for relevant subsets and `--list` before building.
-- Next: length-aware Long/Buns profiles and shoulder/neck clearance review.
+- Human Foundation replaces the coarse body volumes with anatomical lofts;
+  see [body generation](#human-foundation-body-generation) and the
+  [acceptance report](../ASSET_CREATOR_HUMAN_FOUNDATION_RESULT.md).
   Shirt Slot V1 remains deferred.
 - Generated fixtures live in
   `public/assets/derived/procedural-humanoids/{mannequin-v0,mannequin-hair-v0}/`.
@@ -54,6 +56,22 @@ renderer/animation/observer cleanup remains in one component; creator draft edit
 must not acquire scene resources. App intentionally keeps compile result, captured
 recipe, recent history and preview selection together so restoration stays atomic.
 
+### Interactive workflow
+
+`Generate Preview` posts to `/__asset-studio/procedural-mannequin/preview` and
+executes one Blender pass plus one exported GLB round trip. `Finalise Character`
+uses the existing `/compile` endpoint and default full compiler mode, retaining
+both builds, both round trips and determinism comparisons. CI and matrices keep
+that full default. Preview manifests have `validationLevel: "preview"`, null
+determinism and `deterministicBuild: false` (not tested, not a failed test).
+Full results have `validationLevel: "full"`. No compiled-result cache is used.
+Finalisation offers GLB/manifest/compiler-recipe downloads from the existing
+local output folders; Save Recipe JSON preserves the editable CharacterRecipe.
+Recent results remain in-session only. No character library or game assignment
+is created. Failures retain the working preview and expose logs plus the captured
+recipe in expandable technical details. Timing evidence and current acceptance
+are in [the workflow report](../ASSET_CREATOR_WORKFLOW_RESULT.md).
+
 For iteration, run the affected creator/contract Vitest file or Node compiler
 test first. `npm run check:asset-studio` is a focused contract/Studio gate;
 `npm run test:compiler` checks the compiler API, provenance and installed GLB
@@ -74,6 +92,21 @@ records prior evidence, not a current pass. Test artifacts under
 
 ## Product Boundary
 
+The main editor's **Asset Creator** button opens a connection dialog and checks
+the development-only Studio identity endpoint before offering a new-tab link.
+Run `npm run dev:asset-studio` (fixed port 5174; an occupied port fails explicitly).
+The editor defaults to its current host on that port. Set `VITE_ASSET_STUDIO_URL`
+in the root `.env.local` and restart the editor to use another HTTP(S) address.
+An unavailable server produces setup guidance; the editor neither starts processes
+nor imports Studio or compiler code. Only the public health response allows CORS.
+
+The launcher passes its URL as `returnTo`. Studio's persistent **Back to Game
+Engine** link uses `VITE_GAME_ENGINE_URL` if configured in Studio's `.env.local`,
+otherwise that launching URL, otherwise the same host on port 5173. Only HTTP(S)
+targets without credentials are accepted. Connection help remains available if
+the engine is stopped; navigating to an offline target uses normal browser error
+handling. The return link does not require a CORS probe or start a server.
+
 Asset Studio is a separate browser application for authoring constrained, game-ready source data for assets. The current workflow authors humanoid recipes, compiles them locally during development, and previews validated artifacts. It does not replace the Adventure Game Builder editor, runtime, or map schema. Validated compiled fixtures may be promoted through the shared built-in Three.js registry without importing Asset Studio into the game app.
 
 The root game editor remains the existing application. Asset Studio lives under `apps/asset-studio`, and shared contracts live under `packages/`.
@@ -89,6 +122,54 @@ The root app is not moved in V0. The repository uses npm workspaces only so pack
 `CharacterRecipeV1` is editable source data. It is JSON serializable, versioned, renderer-independent, and contains no Three.js objects, Blender objects, meshes, skeleton instances, materials, or runtime state.
 
 Compiled GLB files are artifacts. They are not the source of truth for editing a character.
+
+## Human Foundation body generation
+
+`generate_procedural_mannequin.py` owns `MeshBuilder.add_profile`, the anatomical
+stations in `create_geometry`, fused-surface measurements, head/face generation,
+`assign_analytic_weights`, and the skeleton import/export. Torso sections describe
+pelvis, waist, ribcage and a narrowing trapezius/neck connection. Bone-relative limb
+sections preserve deltoid/thigh volume, elbow/knee narrowing, forearm/calf bulges,
+wrist/ankle taper and simple palms/thumbs/feet. An 18 mm voxel union welds those
+volumes; five smoothing iterations and symmetric 70% decimation precede weighting.
+This remains a deterministic triangle base, not a clothing-ready quad cage.
+
+The intended default is roughly 7–7.5 heads tall, with a compact stylised reach:
+the pelvis is about halfway up, knees about 29% up, shoulder joints about 80% up,
+and elbows/wrists follow the Golden rig. Head volume sits above the Head pivot,
+leaving a visible neck instead of burying it inside the jaw. The actual surface
+must retain a narrower neck than head and a waist narrower than the ribcage.
+Anatomy slices now intersect edges and select the unique contour spanning the
+body centre. Separate raised-arm contours at neck height are excluded. The
+neck station is proportional to the neck-to-head interval. Scale-independent
+ratios require neck/head between 0.30 and 0.85, neck/shoulder below 0.65, and
+waist/ribcage below 0.95. Generation geometry and slider ranges are unchanged.
+Default output is approximately 14,700 triangles, depending on the profile.
+
+The existing 65-joint hierarchy, rest signature, exported +Z anatomical forward,
+and shared presentation rotation remain unchanged. Height scales the whole result;
+the other five controls move mesh anchors around the unchanged rest skeleton within
+the existing bounded range. This preserves baked clips but limits extreme body edits.
+Weights are normalized to at most four influences, reject opposite limbs, and fade
+limb influence continuously near the midline. The skull and facial features are
+Head-bound. The validator checks actual skinned surface edge stretch in idle/walk
+in addition to bone lengths, grounding, topology and independent clones.
+
+Parameter ownership stays in `packages/character-contract/src/index.ts`; compiler
+ranges/derived dimensions are mirrored and cross-checked in
+`procedural-mannequin-contract.mjs`. Future waist, chest depth, limb thickness,
+head size and neck controls should drive the existing measurement/profile stations.
+Add recipe defaults/migration, mirror the derivation, and test round trips before
+exposing a UI control. Do not independently resize meshes in the preview. Longer
+necks or larger range changes eventually require a deliberately proportioned rig.
+
+Existing hair uses the same registry and source assets. Short caps now fit the
+narrower head; Long/Buns use updated width limits and head-relative profiles.
+Every style seats outside the actual scalp surface; Long also clears the neck.
+Signed vertex and face-centre samples reject scalp penetration. An updo may
+end above the neck. Clearance gates remain in force; no new hairstyle is introduced.
+Long's generated front collar is opened below the chin so seating cannot create a
+hair band around the neck; its immutable vendor source remains unchanged.
 
 ## CharacterRecipeV1
 

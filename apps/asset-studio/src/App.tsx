@@ -15,6 +15,7 @@ import {
 	type ThreeVisualAssetDefinition,
 } from "@adventure-game-builder/three-asset-preview";
 import { useMemo, useRef, useState } from "react";
+import { GameEngineNavigation } from "./GameEngineNavigation";
 import { HumanoidPreview } from "./HumanoidPreview";
 import {
 	GOLDEN_REFERENCE_FIXTURE_ID,
@@ -136,6 +137,8 @@ export default function App() {
 		"idle" | "compiling" | "succeeded" | "failed"
 	>("idle");
 	const [compileError, setCompileError] = useState("");
+	const [technicalDetails, setTechnicalDetails] = useState("");
+	const [operation, setOperation] = useState<"preview" | "full">("preview");
 	const [compileResult, setCompileResult] =
 		useState<ProceduralMannequinCompileResult>();
 	const [currentManifest, setCurrentManifest] =
@@ -146,6 +149,7 @@ export default function App() {
 		GOLDEN_REFERENCE_FIXTURE_ID,
 	);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const generationActive = useRef(false);
 
 	const validation = useMemo(() => parseCharacterRecipe(recipe), [recipe]);
 	const recipeJson = useMemo(() => JSON.stringify(recipe, null, 2), [recipe]);
@@ -213,11 +217,12 @@ export default function App() {
 			...current,
 			body: { ...current.body, parameters },
 		}));
-		setCompileStatus("idle");
+		if (!generationActive.current) setCompileStatus("idle");
 		setCompileError("");
 	}
 
 	function selectRecentCompilation(compilation: RecentCompilation) {
+		if (generationActive.current) return;
 		setRecipe({
 			...compilation.recipe,
 			body: {
@@ -232,6 +237,12 @@ export default function App() {
 			},
 		});
 		setRandomSeed(compilation.seed);
+		setOperation(
+			compilation.result.manifest.validationLevel === "preview"
+				? "preview"
+				: "full",
+		);
+		setTechnicalDetails("");
 		setCompileResult(compilation.result);
 		setCurrentManifest(compilation.result.manifest);
 		setCompiledPreviewSource(compilation.source);
@@ -240,17 +251,24 @@ export default function App() {
 		setCompileError("");
 	}
 
-	async function handleCompile() {
+	async function handleCompile(mode: "preview" | "full" = "preview") {
 		if (
 			!bodyValidation.ok ||
 			!appearanceValidation.ok ||
-			compileStatus === "compiling"
+			generationActive.current
 		)
 			return;
+		generationActive.current = true;
+		setOperation(mode);
+		setTechnicalDetails("");
 		setCompileStatus("compiling");
 		setCompileError("");
 		try {
-			const result = await requestProceduralMannequinCompile(recipe);
+			const result = await requestProceduralMannequinCompile(
+				recipe,
+				fetch,
+				mode,
+			);
 			const definition: ThreeVisualAssetDefinition = {
 				...PROCEDURAL_MANNEQUIN_V0_ASSET,
 				id: `procedural-mannequin-creator-${result.requestId}`,
@@ -302,10 +320,23 @@ export default function App() {
 			setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
 			setCompileStatus("succeeded");
 		} catch (error) {
+			setTechnicalDetails(
+				error instanceof Error
+					? String(
+							(error as Error & { technicalDetails?: string })
+								.technicalDetails ?? error.message,
+						)
+					: String(error),
+			);
 			setCompileError(
-				error instanceof Error ? error.message : "Compilation failed.",
+				error instanceof Error &&
+					error.message.startsWith("Character generation failed")
+					? error.message
+					: "Character generation failed. Check the technical details and try again.",
 			);
 			setCompileStatus("failed");
+		} finally {
+			generationActive.current = false;
 		}
 	}
 
@@ -340,6 +371,7 @@ export default function App() {
 	return (
 		<div className="asset-studio-shell">
 			<header className="top-bar">
+				<GameEngineNavigation />
 				<div className="brand-lockup">
 					<span className="brand-mark">AS</span>
 					<div>
@@ -651,8 +683,9 @@ export default function App() {
 								</div>
 							)}
 							<p className="creator-note">
-								Appearance edits are draft recipe values. Compile regenerates
-								the GLB; the 3D preview is never recolored in the browser.
+								Appearance edits are draft recipe values. Generate Preview
+								regenerates the GLB; the 3D preview is never recolored in the
+								browser.
 							</p>
 						</section>
 
@@ -753,9 +786,9 @@ export default function App() {
 								</div>
 							</div>
 							<p className="creator-note">
-								Eye colour is authored recipe data. Compile regenerates the two
-								embedded eye meshes and their shared material; nose and mouth
-								remain fixed readability geometry in{" "}
+								Eye colour is authored recipe data. Generate Preview regenerates
+								the two embedded eye meshes and their shared material; nose and
+								mouth remain fixed readability geometry in{" "}
 								{PROCEDURAL_FACE_FEATURE_VERSION}.
 							</p>
 						</section>
@@ -776,10 +809,15 @@ export default function App() {
 											compileResult?.requestId === entry.result.requestId
 										}
 										key={entry.result.requestId}
+										disabled={compileStatus === "compiling"}
 										onClick={() => selectRecentCompilation(entry)}
 										type="button"
 									>
 										{entry.parameters.height.toFixed(2)} m · {entry.seed}
+										{" · "}
+										{entry.result.manifest.validationLevel === "preview"
+											? "Preview"
+											: "Finalised"}
 									</button>
 								))
 							)}
@@ -846,8 +884,8 @@ export default function App() {
 									: (activeManifest?.appearance?.hair?.authoredColor ?? "?")}
 							</p>
 							<p className="creator-note">
-								Choose a hairstyle and Compile to apply the colour. The colour
-								is saved even when No hair is selected.
+								Choose a hairstyle and Generate Preview to apply the colour. The
+								colour is saved even when No hair is selected.
 							</p>
 							<label>
 								Hairstyle
@@ -908,7 +946,7 @@ export default function App() {
 												? matchingHairManifest.components.hair.sourceBounds.dimensions
 														.map((value) => value.toFixed(3))
 														.join(" × ")
-												: "Compile to inspect"}
+												: "Generate Preview to inspect"}
 										</dd>
 									</div>
 									<div>
@@ -918,7 +956,7 @@ export default function App() {
 												? matchingHairManifest.components.hair.bounds.dimensions
 														.map((value) => value.toFixed(3))
 														.join(" × ")
-												: "Compile to inspect"}
+												: "Generate Preview to inspect"}
 										</dd>
 									</div>
 									<div>
@@ -926,7 +964,7 @@ export default function App() {
 										<dd>
 											{matchingHairManifest?.components.hair.derivedTransform
 												? `Scale ${matchingHairManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${matchingHairManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
-												: "Compile to inspect"}
+												: "Generate Preview to inspect"}
 										</dd>
 									</div>
 									<div>
@@ -937,7 +975,7 @@ export default function App() {
 														.passed
 													? "Pass"
 													: `Warnings: ${matchingHairManifest.components.hair.fitValidation.warnings.join(", ")}`
-												: "Compile to inspect"}
+												: "Generate Preview to inspect"}
 										</dd>
 									</div>
 									<div>
@@ -946,14 +984,14 @@ export default function App() {
 											{matchingHairManifest?.components?.hair?.componentId ===
 											recipe.components.hair
 												? `${matchingHairManifest.components.hair.meshCount} mesh · ${matchingHairManifest.components.hair.triangleCount} triangles · ${matchingHairManifest.components.hair.materialCount} material`
-												: "Compile to inspect"}
+												: "Generate Preview to inspect"}
 										</dd>
 									</div>
 								</dl>
 							) : null}
 							<p className="creator-note">
-								Hair edits are draft recipe values. Compile embeds the selected
-								hairstyle in the complete GLB.
+								Hair edits are draft recipe values. Generate Preview embeds the
+								selected hairstyle in the complete GLB.
 							</p>
 						</section>
 					</aside>
@@ -987,17 +1025,21 @@ export default function App() {
 						/>
 						<div className="compile-status" data-compile-status={compileStatus}>
 							<div className="compile-summary">
-								<strong>Compilation status</strong>
-								<span>
+								<strong>Character status</strong>
+								<span role="status">
 									{compileStatus === "compiling"
-										? "Running the local headless Blender compiler and validation pipeline…"
+										? operation === "preview"
+											? "Generating preview…"
+											: "Finalising…"
 										: compileStatus === "succeeded"
 											? compileDirty
-												? "Recipe changed. Compile again to update the preview."
-												: "Compilation and validation succeeded; the generated GLB is active."
+												? "Recipe changed. Generate Preview to see your changes."
+												: compileResult?.manifest.validationLevel === "preview"
+													? "Preview ready"
+													: "Character finalised"
 											: compileStatus === "failed"
-												? `Compilation failed. The previous preview remains active. ${compileError}`
-												: "Ready to compile body proportions through the local Blender development endpoint."}
+												? `Generation failed. ${compileError} The previous preview remains active.`
+												: "Ready"}
 								</span>
 							</div>
 							<button
@@ -1006,11 +1048,67 @@ export default function App() {
 									!appearanceValidation.ok ||
 									compileStatus === "compiling"
 								}
-								onClick={handleCompile}
+								onClick={() => handleCompile("preview")}
 								type="button"
 							>
-								{compileStatus === "compiling" ? "Compiling…" : "Compile"}
+								Generate Preview
 							</button>
+							<button
+								type="button"
+								disabled={
+									!bodyValidation.ok ||
+									!appearanceValidation.ok ||
+									compileStatus === "compiling"
+								}
+								onClick={() => handleCompile("full")}
+							>
+								Finalise Character
+							</button>
+							<p>
+								Generate Preview for fast iteration. Finalise Character runs the
+								full validation and creates a reusable local asset.
+							</p>
+							{technicalDetails && (
+								<details>
+									<summary>Technical details</summary>
+									<pre
+										style={{
+											whiteSpace: "pre-wrap",
+											maxHeight: "18rem",
+											overflow: "auto",
+										}}
+									>
+										{technicalDetails}
+									</pre>
+								</details>
+							)}
+							{compileStatus === "succeeded" &&
+								!compileDirty &&
+								compileResult?.manifest.validationLevel !== "preview" &&
+								compileResult && (
+									<p>
+										<a href={compileResult.assetUrl} download="character.glb">
+											Download character GLB
+										</a>
+										{" · "}
+										<a
+											href={compileResult.manifestUrl}
+											download="manifest.json"
+										>
+											Manifest
+										</a>
+										{" · "}
+										<a
+											href={compileResult.manifestUrl.replace(
+												"manifest.json",
+												"recipe.snapshot.json",
+											)}
+											download="recipe.snapshot.json"
+										>
+											Compiler recipe
+										</a>
+									</p>
+								)}
 							<dl aria-label="Creator compilation diagnostics">
 								<div>
 									<dt>Recipe hash</dt>
@@ -1084,7 +1182,7 @@ export default function App() {
 									<dt>Validation status</dt>
 									<dd>
 										{activeManifest
-											? `Pass · ${activeManifest.validationVersion}`
+											? `${activeManifest.validationLevel === "preview" ? "Preview checked; determinism not tested" : "Full validation passed"} · ${activeManifest.validationVersion}`
 											: "—"}
 									</dd>
 								</div>

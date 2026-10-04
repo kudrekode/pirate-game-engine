@@ -87,6 +87,24 @@ label {
 	padding: 10px 14px;
 }
 
+.game-engine-navigation {
+	grid-column: 1 / -1;
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.game-engine-navigation > a {
+	font-weight: 750;
+	color: #17465b;
+}
+
+.game-engine-navigation details {
+	max-width: 450px;
+	font-size: 12px;
+}
+
 .brand-lockup {
 	display: grid;
 	grid-template-columns: 42px minmax(0, 1fr);
@@ -353,11 +371,25 @@ h1 {
 
 .compile-status {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	max-height: 40vh;
+	overflow: auto;
 	border: 1px solid #e2e8f0;
 	border-radius: 8px;
 	background: #f8fafc;
 	padding: 10px;
+}
+
+.compile-status > .compile-summary,
+.compile-status > p,
+.compile-status > details {
+	grid-column: 1 / -1;
+	min-width: 0;
+}
+
+.compile-status > p {
+	margin: 0;
+	font-size: 12px;
 }
 
 .compile-summary {

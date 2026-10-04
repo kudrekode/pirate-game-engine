@@ -13,6 +13,7 @@ import {
 	projectPresets,
 } from "./data/projectPresets";
 import { validateProject } from "./data/validateProject";
+import { AssetCreatorLauncher } from "./editor/AssetCreatorLauncher";
 import { type EditorSectionId, editorSections } from "./editor/sections";
 import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
 import { RuntimePanel } from "./runtime/RuntimePanel";
@@ -477,6 +478,7 @@ export default function App() {
 					<button onClick={handleLoad} type="button">
 						Load
 					</button>
+					<AssetCreatorLauncher />
 					<button onClick={() => downloadJson(project)} type="button">
 						Export JSON
 					</button>

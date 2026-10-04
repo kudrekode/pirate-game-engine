@@ -412,7 +412,8 @@ export function HumanoidPreview({
 			animationMixer?.stopAllAction();
 			if (animationRoot)
 				animationMixer = new THREE.AnimationMixer(animationRoot);
-			const bounds = new THREE.Box3().setFromObject(group),
+			// Evaluate the skinned surface, including its exported root height scale.
+			const bounds = new THREE.Box3().setFromObject(group, true),
 				center = bounds.getCenter(new THREE.Vector3()),
 				radius = Math.max(
 					bounds.getSize(new THREE.Vector3()).length() / 2,
@@ -977,7 +978,11 @@ export function HumanoidPreview({
 						<div>
 							<dt>Deterministic build</dt>
 							<dd>
-								{mannequinManifest.deterministicBuild ? "Pass" : "Failed"}
+								{mannequinManifest.validationLevel === "preview"
+									? "Not tested for previews"
+									: mannequinManifest.deterministicBuild
+										? "Pass"
+										: "Failed"}
 							</dd>
 						</div>
 						<div>

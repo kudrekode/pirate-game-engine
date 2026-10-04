@@ -9,7 +9,7 @@ import {
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v3";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v4";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
 export const PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION =
@@ -72,6 +72,7 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 ) as Array<keyof CharacterBodyParameters>;
 
 export type ProceduralMannequinManifest = {
+	validationLevel?: "preview" | "full";
 	appearance: {
 		hair: {
 			authoredColor: string;
@@ -254,6 +255,7 @@ export type ProceduralMannequinCompileResult = {
 };
 
 export type ProceduralMannequinCompileFailure = {
+	technicalDetails?: string;
 	error: string;
 	issues?: Array<{ message: string; path: string }>;
 	status: "failed";
@@ -434,6 +436,7 @@ export async function requestProceduralMannequinCompile(
 		"appearance" | "body" | "components" | "palette"
 	>,
 	request: typeof fetch = fetch,
+	mode: "preview" | "full" = "full",
 ): Promise<ProceduralMannequinCompileResult> {
 	const validation = validateProceduralMannequinBody(recipe.body.parameters);
 	if (!validation.ok) throw new Error(validation.issues[0]?.message);
@@ -441,11 +444,16 @@ export async function requestProceduralMannequinCompile(
 	if (!appearanceValidation.ok)
 		throw new Error(appearanceValidation.issues[0]?.message);
 	const compileRequest = createProceduralMannequinCompileRequest(recipe);
-	const response = await request(PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT, {
-		body: JSON.stringify(compileRequest),
-		headers: { "Content-Type": "application/json" },
-		method: "POST",
-	});
+	const response = await request(
+		mode === "preview"
+			? PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT.replace(/compile$/, "preview")
+			: PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT,
+		{
+			body: JSON.stringify(compileRequest),
+			headers: { "Content-Type": "application/json" },
+			method: "POST",
+		},
+	);
 	const payload = (await response.json()) as
 		| ProceduralMannequinCompileResult
 		| ProceduralMannequinCompileFailure;
@@ -454,8 +462,14 @@ export async function requestProceduralMannequinCompile(
 			payload.status === "failed" && payload.issues?.length
 				? ` ${payload.issues.map((issue) => `${issue.path} ${issue.message}`).join("; ")}`
 				: "";
-		throw new Error(
-			`${payload.status === "failed" ? payload.error : `Compile failed with HTTP ${response.status}.`}${details}`,
+		throw Object.assign(
+			new Error(
+				`${payload.status === "failed" ? payload.error : `Compile failed with HTTP ${response.status}.`}${details}`,
+			),
+			{
+				technicalDetails:
+					payload.status === "failed" ? payload.technicalDetails : undefined,
+			},
 		);
 	}
 	if (
@@ -493,6 +507,12 @@ export async function requestProceduralMannequinCompile(
 		payload.manifest.appearance?.skin?.materialCount !== 1 ||
 		payload.manifest.appearance?.skin?.materialSchemaVersion !==
 			PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION ||
+		(mode === "full" &&
+			(!payload.manifest.deterministicBuild ||
+				payload.manifest.validationLevel === "preview")) ||
+		(mode === "preview" &&
+			(payload.manifest.validationLevel !== "preview" ||
+				payload.manifest.deterministicBuild !== false)) ||
 		payload.manifest.outputHash.length !== 64 ||
 		payload.manifest.recipeHash.length !== 64 ||
 		payload.manifest.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION ||

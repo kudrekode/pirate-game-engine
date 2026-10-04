@@ -3,9 +3,11 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { Readable } from "node:stream";
 import {
 	compileCreatorMannequin,
 	createRecipeForProportions,
+	createProceduralMannequinCompileMiddleware,
 	validateCreatorCompileRequest,
 } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
 import { hashProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
@@ -18,6 +20,32 @@ const DEFAULT_PROPORTIONS = Object.freeze({
 	legLength: 0.5,
 	hipWidth: 0.5,
 });
+
+test("identifies the local Studio without invoking compilation", async () => {
+	const headers = {};
+	let body;
+	const middleware = createProceduralMannequinCompileMiddleware({
+		compileJob: () => {
+			throw new Error("health must not compile");
+		},
+	});
+	await middleware(
+		{ method: "GET", url: "/__asset-studio/health" },
+		{
+			setHeader: (name, value) => {
+				headers[name] = value;
+			},
+			end: (value) => {
+				body = JSON.parse(value);
+			},
+		},
+		() => {
+			throw new Error("health must be handled");
+		},
+	);
+	assert.deepEqual(body, { app: "asset-studio" });
+	assert.equal(headers["Access-Control-Allow-Origin"], "*");
+});
 const DEFAULT_APPEARANCE = Object.freeze({
 	hairColor: "#3b2a1f",
 	eyeColor: "#4b5d67",
@@ -25,6 +53,51 @@ const DEFAULT_APPEARANCE = Object.freeze({
 	skinRoughness: 0.72,
 });
 const DEFAULT_COMPONENTS = Object.freeze({ hair: "none" });
+
+test("routes preview and full requests separately and exposes concise failures with logs", async () => {
+	const modes = [];
+	const middleware = createProceduralMannequinCompileMiddleware({
+		compileJob: async ({ mode }) => {
+			modes.push(mode);
+			throw Object.assign(
+				new Error("Human foundation lost its neck or waist taper"),
+				{ stderr: "Blender traceback" },
+			);
+		},
+	});
+	for (const endpoint of ["preview", "compile"]) {
+		const request = Readable.from([
+			Buffer.from(
+				JSON.stringify({
+					version: 6,
+					proportions: DEFAULT_PROPORTIONS,
+					appearance: DEFAULT_APPEARANCE,
+					components: DEFAULT_COMPONENTS,
+				}),
+			),
+		]);
+		request.method = "POST";
+		request.url = `/__asset-studio/procedural-mannequin/${endpoint}`;
+		let payload;
+		await middleware(
+			request,
+			{
+				setHeader() {},
+				end(body) {
+					payload = JSON.parse(body);
+				},
+			},
+			() => assert.fail("Endpoint was not handled"),
+		);
+		assert.match(
+			payload.error,
+			/selected body proportions produced an invalid torso shape/,
+		);
+		assert.doesNotMatch(payload.error, /traceback/);
+		assert.match(payload.technicalDetails, /Blender traceback/);
+	}
+	assert.deepEqual(modes, ["preview", "full"]);
+});
 
 async function fakeCompiler({ outputDirectory, recipePath }) {
 	const recipe = JSON.parse(await readFile(recipePath, "utf8"));
@@ -40,7 +113,7 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 				authoredRoughness: recipe.appearance.skin.roughness,
 			},
 		},
-		compilerVersion: "procedural-mannequin-blender-v7",
+		compilerVersion: "procedural-mannequin-blender-v8",
 		face: { version: "procedural-face-readability-v0" },
 		components: { hair: { componentId: recipe.components.hair } },
 		deterministicBuild: true,
@@ -49,7 +122,7 @@ async function fakeCompiler({ outputDirectory, recipePath }) {
 		proportions: recipe.proportions,
 		outputHash,
 		recipeHash,
-		validationVersion: "procedural-mannequin-roundtrip-v8",
+		validationVersion: "procedural-mannequin-roundtrip-v9",
 	};
 	await mkdir(outputDirectory, { recursive: true });
 	await Promise.all([

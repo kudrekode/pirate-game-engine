@@ -14,6 +14,7 @@ function successfulCompile(
 		compilationDurationMs: 1234,
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
+			validationLevel: "preview",
 			appearance: {
 				hair: {
 					authoredColor: "#3b2a1f",
@@ -68,7 +69,7 @@ function successfulCompile(
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v7",
+			compilerVersion: "procedural-mannequin-blender-v8",
 			face: {
 				eyeColor: "#4b5d67",
 				eyeMeshCount: 2,
@@ -97,7 +98,7 @@ function successfulCompile(
 				neckTop: [0, 0, 1.45],
 				scalpTop: [0, 0, 1.726],
 				symmetryErrorMetres: 0,
-				topologyVersion: "procedural-humanoid-v3",
+				topologyVersion: "procedural-humanoid-v4",
 			},
 			components: {
 				hair: {
@@ -121,7 +122,7 @@ function successfulCompile(
 					vertexCount: hair === "none" ? 0 : 466,
 				},
 			},
-			deterministicBuild: true,
+			deterministicBuild: false,
 			generationDurationMs: 1200,
 			geometryAndSkinningSemanticHash: "e".repeat(64),
 			heightMetres,
@@ -163,9 +164,9 @@ function successfulCompile(
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v3",
+			topologyVersion: "procedural-humanoid-v4",
 			triangleCount: 5676,
-			validationVersion: "procedural-mannequin-roundtrip-v8",
+			validationVersion: "procedural-mannequin-roundtrip-v9",
 			vertexCount: 2876,
 		},
 		manifestUrl:
@@ -174,7 +175,7 @@ function successfulCompile(
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v8",
+			version: "procedural-mannequin-roundtrip-v9",
 		},
 	};
 }
@@ -360,7 +361,9 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		}
 		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
 		expect(screen.getByRole("button", { name: "Reset arms" })).toBeEnabled();
-		expect(screen.getByRole("button", { name: "Compile" })).toBeEnabled();
+		expect(
+			screen.getByRole("button", { name: "Generate Preview" }),
+		).toBeEnabled();
 		expect(screen.queryByLabelText("Build")).not.toBeInTheDocument();
 	});
 
@@ -398,12 +401,10 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		fireEvent.change(screen.getByLabelText("Hair component"), {
 			target: { value: "quaternius-hair-v0" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+		fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
 
 		await waitFor(() =>
-			expect(
-				screen.getByText(/Compilation and validation succeeded/u),
-			).toBeInTheDocument(),
+			expect(screen.getByText(/Preview ready/u)).toBeInTheDocument(),
 		);
 		expect(
 			screen.getByLabelText("Procedural Mannequin V1 preview"),
@@ -449,7 +450,7 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		fireEvent.change(screen.getByLabelText("Hair component"), {
 			target: { value: "quaternius-hair-v0" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+		fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
 
 		await waitFor(() =>
 			expect(
@@ -537,11 +538,9 @@ it("keeps distinct request snapshots and restores recent results without compili
 		});
 		fireEvent.click(screen.getByRole("button", { name: "Randomise" }));
 		snapshots.push(screen.getByTestId("recipe-json").textContent ?? "");
-		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+		fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
 		await waitFor(() =>
-			expect(
-				screen.getByText(/Compilation and validation succeeded/u),
-			).toBeInTheDocument(),
+			expect(screen.getByText(/Preview ready/u)).toBeInTheDocument(),
 		);
 		expect(
 			screen.getByLabelText("Creator compilation diagnostics"),
@@ -581,7 +580,7 @@ it("keeps distinct request snapshots and restores recent results without compili
 				{ status: 500 },
 			),
 	);
-	fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+	fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
 	await waitFor(() =>
 		expect(screen.getByText(/synthetic compile failure/u)).toBeInTheDocument(),
 	);
@@ -591,4 +590,49 @@ it("keeps distinct request snapshots and restores recent results without compili
 	expect(
 		screen.getByLabelText("Recent Compilations").querySelectorAll("button"),
 	).toHaveLength(3);
+});
+
+it("separates preview assurance from finalisation and preserves the captured draft", async () => {
+	let finish: (value: Response) => void = () => {};
+	const fetch = vi.fn(
+		() =>
+			new Promise<Response>((resolve) => {
+				finish = resolve;
+			}),
+	);
+	vi.stubGlobal("fetch", fetch);
+	render(<App />);
+	fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
+	expect(screen.getByText("Generating preview…")).toBeInTheDocument();
+	expect(
+		screen.getByRole("button", { name: "Finalise Character" }),
+	).toBeDisabled();
+	finish(new Response(JSON.stringify(successfulCompile(1.82))));
+	await screen.findByText("Preview ready");
+	expect(fetch.mock.calls[0]).toEqual(
+		expect.arrayContaining(["/__asset-studio/procedural-mannequin/preview"]),
+	);
+	expect(
+		screen.queryByRole("link", { name: "Download character GLB" }),
+	).toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: "Finalise Character" }));
+	expect(screen.getByText("Finalising…")).toBeInTheDocument();
+	const result = successfulCompile(1.82);
+	result.manifest.validationLevel = "full";
+	result.manifest.deterministicBuild = true;
+	finish(new Response(JSON.stringify(result)));
+	await screen.findByText("Character finalised");
+	expect(fetch.mock.calls[1]).toEqual(
+		expect.arrayContaining(["/__asset-studio/procedural-mannequin/compile"]),
+	);
+	expect(
+		screen.getByRole("link", { name: "Download character GLB" }),
+	).toHaveAttribute("download");
+	fireEvent.change(screen.getByLabelText("Height"), {
+		target: { value: "1.9" },
+	});
+	expect(screen.getByText(/Recipe changed/)).toBeInTheDocument();
+	expect(
+		screen.queryByRole("link", { name: "Download character GLB" }),
+	).toBeNull();
 });

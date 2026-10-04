@@ -37,12 +37,12 @@ config and CLI filters).
 
 | Command | Selected boundary | Cases; real compiles / Blender passes; success images |
 | --- | --- | --- |
-| `npm run test:e2e` | Root default: Golden/mannequin editor-runtime integration and keyboard animation | 3; 0 / 0; 0 |
+| `npm run test:e2e` | Root default: Asset Creator launcher, Golden/mannequin editor-runtime integration and keyboard animation | 4; 0 / 0; 0 |
 | `npm run test:e2e:assets` | Root GLTF loading/registry/player/NPC integration | 2; 0 / 0; 0 |
 | `npm run test:e2e:three-animation` | Actual move and walk/idle/attack RAF observations | 1; 0 / 0; 0 |
 | `npm run test:e2e:three-perf` | Settled renderer/RAF timing windows and asset diagnostics | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio` or `:asset-studio:preview` | Fixture mount, animation, source-switch/resource ownership; asserts no historical-report fetch | 1; 0 / 0; 0 |
-| `npm run test:e2e:asset-studio:compile` | Real browser request → Vite API → two Blender builds → validated GLB → served preview | 1; 1 / 2; 0; retains JSON identity evidence |
+| `npm run test:e2e:asset-studio:compile` | Preview then finalisation through real Vite API, served GLB, failure preservation | 1; 2 / 3; 0; retains JSON identity evidence |
 | `npm run test:e2e:asset-studio:visual` | Current Golden deformation gallery | 1; 0 / 0; 9 (27 in explicit full mode) |
 | `npm run test:e2e:asset-studio -- --grep "captures the checked-in"` | Checked-in mannequin appearance gallery | 1; 0 / 0; 9 |
 | `npm run test:e2e:asset-studio -- --grep "isolated skin"` | Three material appearances, numerical isolation and rendered review | 1; 3 / 6; 3 |
@@ -62,6 +62,19 @@ images are optional with `CAPTURE_VISUALS=1`; normal summaries omit uncaptured p
 ## Screenshot selection and inspection
 
 The ordinary integration and compiler cases produce no success screenshots.
+
+For the explicit two-app return trip, start Studio, configure
+`VITE_ASSET_STUDIO_URL` if needed, and run
+`node node_modules/@playwright/test/cli.js test e2e/asset-creator.spec.ts --grep '@workflow-navigation'`.
+This case requires both real servers; the default launcher integration retains
+deterministic unavailable-target coverage. Standalone return URL and alternate
+origins are also covered by `GameEngineNavigation.test.ts`.
+
+Fast compiler CLI: add `--mode preview --staging --output-dir test-results/preview`
+to the existing compiler command. Omit `--mode` for full validation. Use
+`python tools/blender-character/test_anatomy_invariants.py` for cheap central
+surface-contour and proportional-invariant tests. `HUMAN_FOUNDATION_ROOT` can
+point the existing visual case at a freshly generated targeted body selection.
 The mannequin's previous nine integration images are preserved in its explicit
 appearance case. Current Golden review captures three Rest views, frontal Idle
 at 25%, all four quarter-cycle Walk samples from the side, and frontal Walk at
@@ -92,6 +105,24 @@ reviewed and for which criterion. Screenshots without inspection are evidence,
 not visual approval. Numeric hashes/bounds do not replace that review.
 
 ## Matrix routing: targeted, relevant, full
+
+Human Foundation acceptance uses three explicit recipes rather than the historical
+body matrix: `procedural-mannequin-v0`, `human-foundation-short-wide`, and
+`human-foundation-tall-slim` under `tools/blender-character/recipes/`. Compile each
+with the existing CLI into `test-results/human-foundation/{default,short-wide,tall-slim}`.
+Each is still two Blender passes plus exported GLB/skeleton/idle/walk validation.
+Then run:
+
+```powershell
+node node_modules/@playwright/test/cli.js test -c apps/asset-studio/playwright.config.ts human-foundation.spec.ts --grep @human-foundation
+```
+
+This opt-in spec previews those exact GLBs (hash checked against their manifests),
+without compiling again: three Rest silhouettes, frontal Idle, side Walk at 25%,
+frontal Walk at 75% per body. It does not establish compiler freshness; freshly
+compile after generation changes. `HUMAN_FOUNDATION_CASES` narrows the comma-separated
+artifact folder names. For fitting-only inspection use `HUMAN_FOUNDATION_HAIR=1`
+with explicitly built hair folders for close front, side and rear views.
 
 A matrix is a deliberate compiler acceptance run, never a generic response to an
 asset-related edit. Each artifact still receives two isolated builds and the

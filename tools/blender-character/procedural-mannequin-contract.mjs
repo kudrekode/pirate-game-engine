@@ -6,10 +6,10 @@ import {
 
 export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 6;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
-	"procedural-mannequin-blender-v7";
+	"procedural-mannequin-blender-v8";
 export const PROCEDURAL_MANNEQUIN_VALIDATION_VERSION =
-	"procedural-mannequin-roundtrip-v8";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v3";
+	"procedural-mannequin-roundtrip-v9";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v4";
 export const LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION =
 	"procedural-humanoid-v1";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
@@ -184,30 +184,30 @@ export function deriveProceduralMannequinMeasurements(proportions) {
 			anatomy.hipWidthMultiplier *
 			(0.94 + anatomy.legLengthMultiplier * 0.06),
 		chestDepth: 0.13,
-		chestHalfWidth: 0.245 * anatomy.shoulderWidthMultiplier,
-		elbowRadius: 0.07,
+		chestHalfWidth: 0.205 * anatomy.shoulderWidthMultiplier,
+		elbowRadius: 0.052,
 		footDepth: 0.06,
 		footHalfWidth: 0.062 * anatomy.hipWidthMultiplier,
 		forearmRadius: 0.064,
-		handDepth: 0.035,
-		handHalfWidth: 0.064,
+		handDepth: 0.025,
+		handHalfWidth: 0.047,
 		headDepth: 0.112,
-		headHalfWidth: 0.12,
+		headHalfWidth: 0.092,
 		hipJointRadius: 0.105 * anatomy.hipWidthMultiplier,
-		kneeRadius: 0.068 * anatomy.hipWidthMultiplier,
-		neckRadius: 0.064,
+		kneeRadius: 0.058 * anatomy.hipWidthMultiplier,
+		neckRadius: 0.052,
 		pelvisDepth: 0.13,
 		pelvisHalfWidth: 0.195 * anatomy.hipWidthMultiplier,
 		shoulderJointRadius: 0.08,
-		thighRadius: 0.082 * anatomy.hipWidthMultiplier,
+		thighRadius: 0.105 * anatomy.hipWidthMultiplier,
 		topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 		upperArmRadius: 0.076 * (0.96 + anatomy.shoulderWidthMultiplier * 0.04),
-		voxelSizeMetres: 0.035,
-		waistDepth: 0.112,
+		voxelSizeMetres: 0.018,
+		waistDepth: 0.1,
 		waistHalfWidth:
-			0.17 *
+			0.145 *
 			((anatomy.hipWidthMultiplier + anatomy.shoulderWidthMultiplier) * 0.5),
-		wristRadius: 0.052,
+		wristRadius: 0.036,
 	};
 }
 
@@ -394,6 +394,7 @@ export function validateProceduralMannequinRecipe(value) {
 	if (
 		!legacyRecipe &&
 		geometry.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION &&
+		geometry.topologyVersion !== "procedural-humanoid-v3" &&
 		geometry.topologyVersion !== "procedural-humanoid-v2" &&
 		geometry.topologyVersion !== LEGACY_PROCEDURAL_HUMANOID_TOPOLOGY_VERSION
 	) {

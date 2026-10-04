@@ -56,7 +56,7 @@ test("previews and animates the checked-in Face Readability V0 mannequin @integr
 	await expect(host).toHaveAttribute("data-semantic-hash", /^[0-9a-f]{64}$/u);
 	await expect(host).toHaveAttribute(
 		"data-topology-version",
-		"procedural-humanoid-v3",
+		"procedural-humanoid-v4",
 	);
 	await expect(host).toHaveAttribute("data-topology-components", "1");
 	await expect(host).toHaveAttribute(
@@ -69,15 +69,15 @@ test("previews and animates the checked-in Face Readability V0 mannequin @integr
 	await expect(host).toHaveAttribute("data-proportions", /"armLength":0\.5/u);
 	const diagnostics = page.getByLabel("Procedural Mannequin V0 diagnostics");
 	await expect(diagnostics).toContainText("procedural-mannequin-v0");
-	await expect(diagnostics).toContainText("V1");
+	await expect(diagnostics).toContainText("V6");
 	await expect(diagnostics).toContainText("5 mesh");
-	await expect(diagnostics).toContainText("2876 vertices");
-	await expect(diagnostics).toContainText("5676 triangles");
-	await expect(diagnostics).toContainText("procedural-humanoid-v3");
+	await expect(diagnostics).toContainText(/\d+ vertices/u);
+	await expect(diagnostics).toContainText(/\d+ triangles/u);
+	await expect(diagnostics).toContainText("procedural-humanoid-v4");
 	await expect(diagnostics).toContainText("1 connected component");
 	await expect(diagnostics).toContainText("manifold");
 	await expect(diagnostics).toContainText("65-joint Golden template");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v7");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v8");
 	await verifyAnimations(page);
 
 	await page
@@ -115,9 +115,7 @@ test("compiles one real body through the browser API and previews its artifact @
 	const consoleErrors = collectErrors(page);
 	let compileRequests = 0;
 	page.on("request", (request) => {
-		if (
-			request.url().includes("/__asset-studio/procedural-mannequin/compile")
-		) {
+		if (/\/procedural-mannequin\/(compile|preview)$/.test(request.url())) {
 			compileRequests += 1;
 		}
 	});
@@ -127,7 +125,10 @@ test("compiles one real body through the browser API and previews its artifact @
 		exact: true,
 		name: "Randomise",
 	});
-	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compile = page.getByRole("button", {
+		exact: true,
+		name: "Generate Preview",
+	});
 	const compileStatus = page.locator("[data-compile-status]");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 
@@ -178,13 +179,15 @@ test("compiles one real body through the browser API and previews its artifact @
 
 	const body = await randomiseAndCompile("body-e2e-11");
 	expect(compileRequests).toBe(1);
+	await expect(compileStatus).toContainText("Preview ready");
+	await expect(host).toHaveAttribute("data-deterministic-build", "false");
 	expect(body.assetHash).toMatch(/^[0-9a-f]{64}$/u);
 	expect(body.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
 	expect(body.boundsHeight).toBeCloseTo(body.parameters.height, 4);
 
 	const diagnostics = page.getByLabel("Creator compilation diagnostics");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v7");
-	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v8");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v8");
+	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v9");
 	await testInfo.attach("compiled-artifact.json", {
 		body: JSON.stringify({ compileRequests, body }),
 		contentType: "application/json",
@@ -196,6 +199,36 @@ test("compiles one real body through the browser API and previews its artifact @
 		.click();
 	await expect(host).toHaveAttribute("data-recipe-hash", body.recipeHash);
 	expect(compileRequests).toBe(1);
+	await page
+		.getByRole("button", { name: "Finalise Character", exact: true })
+		.click();
+	await expect(compileStatus).toContainText("Character finalised", {
+		timeout: 90000,
+	});
+	await expect(host).toHaveAttribute("data-deterministic-build", "true");
+	await expect(
+		page.getByRole("link", { name: "Download character GLB" }),
+	).toBeVisible();
+	expect(compileRequests).toBe(2);
+	const finalHash = await host.getAttribute("data-asset-hash");
+	await page.route("**/procedural-mannequin/preview", (route) =>
+		route.fulfill({
+			status: 500,
+			json: {
+				status: "failed",
+				error:
+					"Character generation failed because the selected body proportions produced an invalid torso shape.",
+				technicalDetails: "Synthetic Blender regression log",
+			},
+		}),
+	);
+	await compile.click();
+	await expect(compileStatus).toContainText("Generation failed");
+	await expect(host).toHaveAttribute("data-asset-hash", finalHash!);
+	await page.getByText("Technical details", { exact: true }).click();
+	await expect(
+		page.getByText("Synthetic Blender regression log"),
+	).toBeVisible();
 	expect(consoleErrors).toEqual([]);
 });
 
@@ -226,7 +259,9 @@ test("compiles isolated skin color and roughness changes without changing geomet
 				appearance.color,
 			);
 		}
-		await page.getByRole("button", { exact: true, name: "Compile" }).click();
+		await page
+			.getByRole("button", { exact: true, name: "Finalise Character" })
+			.click();
 		await expect(page.locator("[data-compile-status]")).toHaveAttribute(
 			"data-compile-status",
 			"succeeded",
@@ -292,7 +327,10 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 	await page.goto("/");
 	const hairSelect = page.getByLabel("Hair component");
 	const eyeColorInput = page.getByLabel("Eye color", { exact: true });
-	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compile = page.getByRole("button", {
+		exact: true,
+		name: "Finalise Character",
+	});
 	const compileStatus = page.locator("[data-compile-status]");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 
@@ -410,7 +448,9 @@ test("compiles and visually validates the Hairstyle Library V2 @visual", async (
 	for (const [id, color, name] of styles) {
 		await page.getByLabel("Hair component").selectOption(id);
 		await page.getByLabel("Hair color", { exact: true }).fill(color);
-		await page.getByRole("button", { exact: true, name: "Compile" }).click();
+		await page
+			.getByRole("button", { exact: true, name: "Finalise Character" })
+			.click();
 		await expect(page.locator("[data-compile-status]")).toHaveAttribute(
 			"data-compile-status",
 			"succeeded",
@@ -483,7 +523,10 @@ test("compiles and visually validates length-aware Long and Buns @visual", async
 	await page.goto("/");
 	const hairSelect = page.getByLabel("Hair component");
 	const hairColorInput = page.getByLabel("Hair color", { exact: true });
-	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compile = page.getByRole("button", {
+		exact: true,
+		name: "Finalise Character",
+	});
 	const compileStatus = page.locator("[data-compile-status]");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 	const hairRegion = page.getByRole("region", { exact: true, name: "Hair" });

@@ -64,6 +64,7 @@ export const PROCEDURAL_MANNEQUIN_PATHS = Object.freeze({
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin",
 });
 const COMPILER_SOURCE_PATHS = [
+	"tools/blender-character/anatomy_invariants.py",
 	"tools/blender-character/generate_procedural_mannequin.py",
 	"tools/blender-character/procedural-mannequin-compiler.mjs",
 	"tools/blender-character/procedural-mannequin-contract.mjs",
@@ -171,6 +172,7 @@ async function runPass({
 	templatePath,
 	workspaceRoot = process.cwd(),
 }) {
+	const startedAt = performance.now();
 	const outputPath = path.join(directory, OUTPUT_NAMES.glb);
 	const reportPath = path.join(directory, "blender-report.json");
 	const scriptArguments = buildProceduralMannequinScriptArguments({
@@ -192,6 +194,7 @@ async function runPass({
 		windowsHide: true,
 	});
 	return {
+		durationMs: performance.now() - startedAt,
 		blenderArguments,
 		outputHash: await hashFile(outputPath),
 		outputPath,
@@ -305,6 +308,7 @@ export async function validateInstalledProceduralMannequin({
 }
 
 export async function compileProceduralMannequin({
+	mode = "full",
 	blender: requestedBlender,
 	clean = false,
 	execFileImpl = execFileAsync,
@@ -314,6 +318,8 @@ export async function compileProceduralMannequin({
 	templatePath = PROCEDURAL_MANNEQUIN_PATHS.template,
 	workspaceRoot = process.cwd(),
 } = {}) {
+	if (!["preview", "full"].includes(mode))
+		throw new Error("Unknown generation mode.");
 	const compilationStartedAt = performance.now();
 	const rawRecipe = JSON.parse(await readFile(recipePath, "utf8"));
 	const parsed = validateProceduralMannequinRecipe(rawRecipe);
@@ -381,14 +387,18 @@ export async function compileProceduralMannequin({
 			templatePath,
 			workspaceRoot,
 		});
-		const second = await runPass({
-			blender,
-			directory: secondDirectory,
-			execFileImpl,
-			recipePath: canonicalRecipePath,
-			templatePath,
-			workspaceRoot,
-		});
+		const second =
+			mode === "full"
+				? await runPass({
+						blender,
+						directory: secondDirectory,
+						execFileImpl,
+						recipePath: canonicalRecipePath,
+						templatePath,
+						workspaceRoot,
+					})
+				: null;
+		const validationStarted = performance.now();
 		const [firstValidation, secondValidation] = await Promise.all([
 			validateProceduralMannequinArtifact({
 				artifactPath: first.outputPath,
@@ -399,32 +409,39 @@ export async function compileProceduralMannequin({
 				templatePath,
 				workspaceRoot,
 			}),
-			validateProceduralMannequinArtifact({
-				artifactPath: second.outputPath,
-				expectedFace: expectedFace(recipe),
-				expectedHeightMetres: recipe.proportions.height,
-				expectedHairComponent: hairComponent,
-				expectedSkinMaterial: expectedSkinMaterial(recipe),
-				templatePath,
-				workspaceRoot,
-			}),
+			second
+				? validateProceduralMannequinArtifact({
+						artifactPath: second.outputPath,
+						expectedFace: expectedFace(recipe),
+						expectedHeightMetres: recipe.proportions.height,
+						expectedHairComponent: hairComponent,
+						expectedSkinMaterial: expectedSkinMaterial(recipe),
+						templatePath,
+						workspaceRoot,
+					})
+				: null,
 		]);
-		if (!firstValidation.passed || !secondValidation.passed) {
+		const validationMs = performance.now() - validationStarted;
+		if (
+			!firstValidation.passed ||
+			(secondValidation && !secondValidation.passed)
+		) {
 			throw new Error(
-				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstFace: firstValidation.face, firstHair: firstValidation.hair, second: secondValidation.checks, secondFace: secondValidation.face, secondHair: secondValidation.hair })}`,
+				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstFace: firstValidation.face, firstHair: firstValidation.hair, second: secondValidation?.checks, secondFace: secondValidation?.face, secondHair: secondValidation?.hair })}`,
 			);
 		}
 		if (
 			firstValidation.skeletonSignature !==
 				GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE ||
-			secondValidation.skeletonSignature !==
-				GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE
+			(secondValidation &&
+				secondValidation.skeletonSignature !==
+					GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE)
 		) {
 			throw new Error(
 				"Generated GLB changed the Golden exported rest signature.",
 			);
 		}
-		for (const pass of [first, second]) {
+		for (const pass of [first, second].filter(Boolean)) {
 			const expectedMaterial = expectedSkinMaterial(recipe);
 			const expectedFaceDefinition = expectedFace(recipe);
 			if (
@@ -517,53 +534,58 @@ export async function compileProceduralMannequin({
 				);
 			}
 		}
-		const determinism = {
-			binaryDeterministic: first.outputHash === second.outputHash,
-			firstOutputHash: first.outputHash,
-			geometryAndSkinningDeterministic:
-				firstValidation.geometrySemanticHash ===
-				secondValidation.geometrySemanticHash,
-			materialDeterministic:
-				firstValidation.materialSemanticHash ===
-				secondValidation.materialSemanticHash,
-			nodeHierarchyDeterministic:
-				JSON.stringify(firstValidation.semanticSnapshot.hierarchy) ===
-				JSON.stringify(secondValidation.semanticSnapshot.hierarchy),
-			normalizedSemanticDeterministic:
-				firstValidation.semanticHash === secondValidation.semanticHash,
-			secondOutputHash: second.outputHash,
-			headContractDeterministic:
-				JSON.stringify(first.report.head) ===
-				JSON.stringify(second.report.head),
-			hairstyleFitDeterministic:
-				JSON.stringify(first.report.components?.hair?.derivedTransform) ===
-					JSON.stringify(second.report.components?.hair?.derivedTransform) &&
-				JSON.stringify(first.report.components?.hair?.fitValidation) ===
-					JSON.stringify(second.report.components?.hair?.fitValidation),
-			faceGeometryDeterministic:
-				firstValidation.faceGeometrySemanticHash ===
-				secondValidation.faceGeometrySemanticHash,
-			facePlacementDeterministic:
-				JSON.stringify(first.report.face) ===
-				JSON.stringify(second.report.face),
-			skeletonDeterministic:
-				firstValidation.skeletonSignature ===
-				secondValidation.skeletonSignature,
-			topologyAndWeightsDeterministic:
-				JSON.stringify(firstValidation.semanticSnapshot.meshes) ===
-				JSON.stringify(secondValidation.semanticSnapshot.meshes),
-		};
+		const determinism = second
+			? {
+					binaryDeterministic: first.outputHash === second.outputHash,
+					firstOutputHash: first.outputHash,
+					geometryAndSkinningDeterministic:
+						firstValidation.geometrySemanticHash ===
+						secondValidation.geometrySemanticHash,
+					materialDeterministic:
+						firstValidation.materialSemanticHash ===
+						secondValidation.materialSemanticHash,
+					nodeHierarchyDeterministic:
+						JSON.stringify(firstValidation.semanticSnapshot.hierarchy) ===
+						JSON.stringify(secondValidation.semanticSnapshot.hierarchy),
+					normalizedSemanticDeterministic:
+						firstValidation.semanticHash === secondValidation.semanticHash,
+					secondOutputHash: second.outputHash,
+					headContractDeterministic:
+						JSON.stringify(first.report.head) ===
+						JSON.stringify(second.report.head),
+					hairstyleFitDeterministic:
+						JSON.stringify(first.report.components?.hair?.derivedTransform) ===
+							JSON.stringify(
+								second.report.components?.hair?.derivedTransform,
+							) &&
+						JSON.stringify(first.report.components?.hair?.fitValidation) ===
+							JSON.stringify(second.report.components?.hair?.fitValidation),
+					faceGeometryDeterministic:
+						firstValidation.faceGeometrySemanticHash ===
+						secondValidation?.faceGeometrySemanticHash,
+					facePlacementDeterministic:
+						JSON.stringify(first.report.face) ===
+						JSON.stringify(second.report.face),
+					skeletonDeterministic:
+						firstValidation.skeletonSignature ===
+						secondValidation.skeletonSignature,
+					topologyAndWeightsDeterministic:
+						JSON.stringify(firstValidation.semanticSnapshot.meshes) ===
+						JSON.stringify(secondValidation.semanticSnapshot.meshes),
+				}
+			: null;
 		if (
-			!determinism.nodeHierarchyDeterministic ||
-			!determinism.headContractDeterministic ||
-			!determinism.hairstyleFitDeterministic ||
-			!determinism.faceGeometryDeterministic ||
-			!determinism.facePlacementDeterministic ||
-			!determinism.geometryAndSkinningDeterministic ||
-			!determinism.materialDeterministic ||
-			!determinism.normalizedSemanticDeterministic ||
-			!determinism.skeletonDeterministic ||
-			!determinism.topologyAndWeightsDeterministic
+			determinism &&
+			(!determinism.nodeHierarchyDeterministic ||
+				!determinism.headContractDeterministic ||
+				!determinism.hairstyleFitDeterministic ||
+				!determinism.faceGeometryDeterministic ||
+				!determinism.facePlacementDeterministic ||
+				!determinism.geometryAndSkinningDeterministic ||
+				!determinism.materialDeterministic ||
+				!determinism.normalizedSemanticDeterministic ||
+				!determinism.skeletonDeterministic ||
+				!determinism.topologyAndWeightsDeterministic)
 		) {
 			throw new Error(
 				`Repeated builds were not semantically deterministic: ${JSON.stringify(determinism)}`,
@@ -591,7 +613,7 @@ export async function compileProceduralMannequin({
 		const compilerSourceHash = await compilerHash(workspaceRoot);
 		const warnings = [
 			...first.report.warnings,
-			...(determinism.binaryDeterministic
+			...(!determinism || determinism.binaryDeterministic
 				? []
 				: [
 						"Blender GLB bytes differed between builds; normalized scene, topology, weights, skeleton, and material data matched.",
@@ -599,7 +621,20 @@ export async function compileProceduralMannequin({
 		];
 		const geometry = firstValidation.geometry;
 		const manifest = {
-			anatomy,
+			validationLevel: mode,
+			timingsMs: {
+				firstBlender: first.durationMs,
+				secondBlender: second?.durationMs ?? 0,
+				roundTrips: validationMs,
+				firstStages: first.report.timingsMs,
+			},
+			anatomy: {
+				...anatomy,
+				surfaceNeckWidth: first.report.anatomy.surfaceNeckWidth,
+				surfaceWaistWidth: first.report.anatomy.surfaceWaistWidth,
+				surfaceRibcageWidth: first.report.anatomy.surfaceRibcageWidth,
+				surfaceRatios: first.report.anatomy.surfaceRatios,
+			},
 			animationProfile: "mixamo-to-quaternius-v2",
 			animationSet: GOLDEN_REFERENCE_ANIMATION_SET,
 			assetId: recipe.id,
@@ -661,9 +696,10 @@ export async function compileProceduralMannequin({
 						},
 			},
 			determinism,
-			deterministicBuild:
-				determinism.binaryDeterministic &&
-				determinism.normalizedSemanticDeterministic,
+			deterministicBuild: Boolean(
+				determinism?.binaryDeterministic &&
+					determinism.normalizedSemanticDeterministic,
+			),
 			engineForward: "-Z after registry 180-degree Y rotation",
 			geometryProfile: recipe.geometry.profile,
 			measurements,
@@ -771,17 +807,22 @@ export async function compileProceduralMannequin({
 			performance.now() - compilationStartedAt,
 		);
 		const diagnostics = {
-			artifactStatus: "procedural-compiled-validated",
+			artifactStatus:
+				mode === "preview"
+					? "preview-validated"
+					: "procedural-compiled-validated",
 			blenderReport: first.report,
 			buildMode: staging ? "staging" : "derived-artifact",
 			determinism,
 			roundTrip: stripSemanticSnapshot(firstValidation),
-			secondRoundTrip: {
-				checks: secondValidation.checks,
-				passed: secondValidation.passed,
-				semanticHash: secondValidation.semanticHash,
-				skeletonSignature: secondValidation.skeletonSignature,
-			},
+			secondRoundTrip: secondValidation
+				? {
+						checks: secondValidation?.checks,
+						passed: secondValidation.passed,
+						semanticHash: secondValidation.semanticHash,
+						skeletonSignature: secondValidation.skeletonSignature,
+					}
+				: null,
 			sourceHashesAfter: immutableAfter,
 			sourceHashesBefore: immutableBefore,
 			sourceImmutable,
@@ -794,13 +835,17 @@ export async function compileProceduralMannequin({
 			`heightMetres=${recipe.proportions.height}`,
 			`proportions=${JSON.stringify(recipe.proportions)}`,
 			`firstOutputHash=${first.outputHash}`,
-			`secondOutputHash=${second.outputHash}`,
-			`binaryDeterministic=${determinism.binaryDeterministic}`,
+			`secondOutputHash=${second?.outputHash ?? "not run"}`,
+			`binaryDeterministic=${determinism?.binaryDeterministic ?? "not tested"}`,
 			`semanticHash=${firstValidation.semanticHash}`,
-			`semanticDeterministic=${determinism.normalizedSemanticDeterministic}`,
+			`semanticDeterministic=${determinism?.normalizedSemanticDeterministic ?? "not tested"}`,
 			`roundTripPassed=${firstValidation.passed}`,
 			`validationVersion=${PROCEDURAL_MANNEQUIN_VALIDATION_VERSION}`,
 			`sourceImmutable=${sourceImmutable}`,
+			first.stdout,
+			first.stderr,
+			second?.stdout ?? "",
+			second?.stderr ?? "",
 		].join("\n");
 		await Promise.all([
 			writeFile(
@@ -866,6 +911,7 @@ if (
 		: await compileProceduralMannequin({
 				...common,
 				blender: options.blender,
+				mode: options.mode ?? "full",
 				clean: Boolean(options.clean),
 				staging: Boolean(options.staging),
 			});
