@@ -37,7 +37,9 @@ for current creator work; older milestone documents are historical evidence.
 | --- | --- |
 | Recipe types, defaults, migration | `packages/character-contract/src/index.ts` |
 | Hair source/provenance/fit metadata | `packages/character-contract/src/character-component-registry.json` |
-| Creator UI, cameras, recent jobs | `apps/asset-studio/src/App.tsx` |
+| Creator UI/state, compile lifecycle and recent-job restoration | `apps/asset-studio/src/App.tsx`; request/response boundary in `proceduralMannequinCreator.ts` |
+| Preview scene, cameras, animation, loaded-result diagnostics and cleanup | `apps/asset-studio/src/HumanoidPreview.tsx`; shared loader in `packages/three-asset-preview/src/index.ts` |
+| Preview fixture descriptors/source contract | `apps/asset-studio/src/previewSources.ts` |
 | Request adapter and response checks | `apps/asset-studio/src/proceduralMannequinCreator.ts` |
 | Local compile endpoint | `apps/asset-studio/dev/procedural-mannequin-compile-api.mjs` |
 | Procedural schema, versions, hashes | `tools/blender-character/procedural-mannequin-contract.mjs` |
@@ -46,6 +48,11 @@ for current creator work; older milestone documents are historical evidence.
 | Exported geometry/material/animation gates | `tools/blender-character/procedural-mannequin-roundtrip.mjs` |
 | Shared asset definitions and loader | `packages/three-asset-preview/src/index.ts` |
 | Focused browser checks | `apps/asset-studio/e2e/procedural-mannequin.spec.ts`, `e2e/procedural-mannequin.spec.ts` |
+
+The preview accepts a source descriptor and a manifest callback. Its complete
+renderer/animation/observer cleanup remains in one component; creator draft edits
+must not acquire scene resources. App intentionally keeps compile result, captured
+recipe, recent history and preview selection together so restoration stays atomic.
 
 For iteration, run the affected creator/contract Vitest file or Node compiler
 test first. `npm run check:asset-studio` is a focused contract/Studio gate;

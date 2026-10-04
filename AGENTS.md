@@ -35,11 +35,23 @@ Keep diffs focused; architecture redesign and unrelated cleanup require an expli
 | Movement, rules, inventory, quests, shops, combat, vehicles | Matching helper and test in `src/runtime/`: `movement`, `ruleEngine`, `inventory`, `questEngine`, `shopRuntime`, `combat`, `vehicleRuntime`; transaction/orchestration helpers alongside them |
 | NPC/object resolution and behaviour | `src/runtime/npcResolver.ts`, `npcMovement.ts`, `objectBehaviour.ts`; matching `NpcsEditor`/`ObjectsEditor` sections and tests |
 | Schema, defaults, migration | `src/types/game.ts`, `src/data/migrateProject.ts`, `projectDefaults.ts`, `defaultProject.ts`, `projectPresets.ts` and their tests |
-| Editor/map UI and state | `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`; `src/test/editorSmoke.test.tsx` |
+| Map painting/placement and tools | `src/editor/sections/MapEditor.tsx` (gesture/tool orchestration), `terrainBrush.ts` (pure terrain operations), `src/store/useProjectStore.ts` (mutations); `src/test/editorSmoke.test.tsx` |
+| Map inspector fields, objects, interactions/links | `src/editor/sections/MapInspector.tsx`, `mapEditorSelection.ts`, `src/editor/ObjectBehaviourEditor.tsx`; store mutations stay shared |
+| Placed NPC attributes, patrol and override reset | `src/editor/sections/MapNpcInspector.tsx`, `MapInspector.tsx` (interaction/deletion), `src/runtime/npcResolver.ts` |
+| Map history/undo | `src/editor/sections/useMapEditHistory.ts`; callers in `MapEditor.tsx` and `MapInspector.tsx`; `src/test/mapEditHistory.test.tsx` |
+| Map layout/palette/pixels | `src/editor/sections/MapEditor.tsx`, `src/styles.css`; workspace state stays with its gesture owner |
+| Other editor tabs and app state | `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts` |
 | Three presentation | `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`; `src/runtime/three/threeVisuals.ts`, `threeVisualAssetRegistry.ts`, `threeVisualAssetLoader.ts`, `threeVisualRenderer.ts`, `cameraControls.ts`, `visualSmoothing.ts`, `waterPresentation.ts` |
 | 3D editing/terrain | `src/editor/sections/ThreeDPreview.tsx`, `ThreeVisualControls.tsx`, `terrainBrush.ts`, `terrainBlocks.ts`; `src/runtime/three/terrainMeshGeometry.ts` |
 | Asset Studio/creator/compiler | Start with [Quick Resume](docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume), then only the linked milestone relevant to the change; it maps exact implementation files/versions |
 | Browser/performance | [Validation and Playwright guide](docs/PLAYWRIGHT_SMOKE.md), `e2e/`, `apps/asset-studio/e2e/` |
+
+Asset Studio creator forms, compilation and recent-result restoration stay together
+in `apps/asset-studio/src/App.tsx`; `HumanoidPreview.tsx` owns the full scene,
+RAF/animation and disposal lifetime; `previewSources.ts` owns fixture descriptors.
+The root Three editor/runtime scene effects remain in `ThreeDPreview.tsx` and
+`ThreeRuntimePanel.tsx`; keep their input, animation refs and cleanup together.
+`AdventureScene.ts` and `migrateProject.ts` remain intentionally centralized.
 
 Use targeted searches and bounded reads for large components. Do not open full
 generated diagnostics, manifests, GLBs or historical milestone documents by default.

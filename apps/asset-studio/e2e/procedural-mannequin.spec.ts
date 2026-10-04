@@ -86,6 +86,24 @@ test("previews and animates the checked-in Face Readability V0 mannequin @integr
 	await expect(page.locator("canvas")).toHaveCount(1);
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	await expect(page.locator("canvas")).toHaveCount(1);
+	// Exercise the extracted preview's unmount/remount boundary without compiling.
+	await page
+		.getByRole("navigation", { name: "Asset Studio sections" })
+		.getByRole("button", { name: "Components", exact: true })
+		.click();
+	await expect(page.locator("canvas")).toHaveCount(0);
+	await page
+		.getByRole("navigation", { name: "Asset Studio sections" })
+		.getByRole("button", { name: "Character", exact: true })
+		.click();
+	await expect(page.locator("canvas")).toHaveCount(1);
+	await expect(page.locator(".preview-status")).toHaveAttribute(
+		"data-status",
+		"loaded",
+		{ timeout: 60_000 },
+	);
+	await expect(host).toHaveAttribute("data-animation-state", "idle");
+	await verifyAnimations(page);
 	expect(historicalRequests).toEqual([]);
 	expect(consoleErrors).toEqual([]);
 });

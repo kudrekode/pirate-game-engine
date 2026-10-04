@@ -109,6 +109,17 @@ It should call shared helpers for movement, interactions, rules, progression, ob
 
 The adapter must not import editor store/live editor state for gameplay. It may use Three-specific helpers for presentation, camera math, visual smoothing, GLTF loading/cache/clone, terrain mesh generation, water/coast rendering, and diagnostics.
 
+### Scene lifetime ownership
+
+The root editor scene is owned by `src/editor/sections/ThreeDPreview.tsx`;
+the play scene and session bridge are owned by `src/runtime/three/ThreeRuntimePanel.tsx`.
+Each retains its renderer effect with input listeners, RAF, animation/resource refs
+and disposal. Domain helpers handle camera math, terrain, loading, visuals and
+smoothing; they do not acquire a second render loop. These effects remain together
+because splitting them currently requires a large mutable interface. Phaser's
+`AdventureScene.ts` likewise remains one scene adapter. Asset Studio's separate
+preview lifetime is in `apps/asset-studio/src/HumanoidPreview.tsx`.
+
 ## Presentation-Only Systems
 
 These systems are visual/editor presentation and must not be mistaken for gameplay semantics:
