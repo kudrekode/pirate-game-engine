@@ -203,9 +203,11 @@ describe("CharacterRecipeV1", () => {
 			"quaternius-hair-v0",
 			"quaternius-hair-short-crop-v1",
 			"quaternius-hair-simple-parted-v1",
+			"quaternius-hair-long-v1",
+			"quaternius-hair-buns-v1",
 		]);
 		expect(CHARACTER_COMPONENT_REGISTRY.version).toBe(1);
-		expect(CHARACTER_COMPONENT_REGISTRY.components).toHaveLength(3);
+		expect(CHARACTER_COMPONENT_REGISTRY.components).toHaveLength(5);
 		expect(getCharacterComponentDefinition("quaternius-hair-v0")).toMatchObject(
 			{
 				attachmentStrategy: "main-skeleton-head-surface-skinning",
@@ -217,6 +219,28 @@ describe("CharacterRecipeV1", () => {
 					"43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
 			},
 		);
+		expect(
+			getCharacterComponentDefinition("quaternius-hair-long-v1"),
+		).toMatchObject({
+			fittingProfile: {
+				fitClass: "long",
+				id: "quaternius-long-fit-v3",
+				verticalScaleMode: "head-height",
+			},
+			provider: "Quaternius",
+			slot: "hair",
+		});
+		expect(
+			getCharacterComponentDefinition("quaternius-hair-buns-v1"),
+		).toMatchObject({
+			fittingProfile: {
+				fitClass: "updo",
+				id: "quaternius-buns-fit-v3",
+				verticalScaleMode: "head-height",
+			},
+			provider: "Quaternius",
+			slot: "hair",
+		});
 	});
 });
 

@@ -23,6 +23,8 @@ export const CHARACTER_HAIR_COMPONENT_IDS = [
 	"quaternius-hair-v0",
 	"quaternius-hair-short-crop-v1",
 	"quaternius-hair-simple-parted-v1",
+	"quaternius-hair-long-v1",
+	"quaternius-hair-buns-v1",
 ] as const;
 export type CharacterHairComponentId =
 	(typeof CHARACTER_HAIR_COMPONENT_IDS)[number];
@@ -126,9 +128,11 @@ export type CharacterComponentRegistryEntry = CharacterComponentDefinition & {
 		attachmentBone: "Head";
 		coverageRatios: {
 			depth: number;
-			heightFromWidth: number;
+			heightFromHead?: number;
+			heightFromWidth?: number;
 			width: number;
 		};
+		fitClass: "short-cap" | "long" | "updo";
 		frontOffsetMetres: number;
 		id: string;
 		mode: "geometry-aware-scalp";
@@ -145,7 +149,23 @@ export type CharacterComponentRegistryEntry = CharacterComponentDefinition & {
 			forwardAxis: "-Y";
 			upAxis: "+Z";
 		};
+		validation: {
+			crownSeatingMetres: [number, number];
+			depthRatio: [number, number];
+			heightRatio: [number, number];
+			maximumFrontGapHeadDepthRatio: number;
+			maximumRearGapHeadDepthRatio: number;
+			minimumCloseToScalpRatio: number;
+			minimumNeckClearanceMetres: number;
+			minimumScalpVerticalRangeRatio: number;
+			minimumShoulderClearanceMetres: number;
+			minimumVerticesAboveNeckRatio: number;
+			neckExtensionMetres: [number, number];
+			requireVerticalCentreAtOrAboveHeadCentre: boolean;
+			widthRatio: [number, number];
+		};
 		version: 3;
+		verticalScaleMode: "head-width" | "head-height";
 		verticalSeatingOffsetMetres: number;
 	};
 	material: {

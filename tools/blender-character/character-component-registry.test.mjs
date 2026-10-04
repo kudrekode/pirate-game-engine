@@ -18,7 +18,7 @@ test("validates the immutable Quaternius hairstyle source and provenance", async
 
 	assert.equal(validation.passed, true);
 	assert.equal(validation.version, 1);
-	assert.equal(validation.components.length, 3);
+	assert.equal(validation.components.length, 5);
 	assert.deepEqual(after, before);
 	assert.equal(
 		validation.sourceHashes[
@@ -52,16 +52,72 @@ test("rejects unsupported or unsafe geometry-aware fitting profiles", async () =
 	unsafeScale.components[0].fittingProfile.scaleLimits.width = [2, 1];
 	await assert.rejects(
 		validateCharacterComponentRegistry({ registryData: unsafeScale }),
-		/invalid width fit limits/u,
+		/width fit limits.*ordered finite interval/u,
+	);
+	const missingCoverage = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	delete missingCoverage.components[0].fittingProfile.coverageRatios
+		.heightFromWidth;
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: missingCoverage }),
+		/height-from-width coverage ratio/u,
+	);
+	const unsafeProportion = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	unsafeProportion.components[0].fittingProfile.validation.minimumCloseToScalpRatio = 1.1;
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: unsafeProportion }),
+		/minimumCloseToScalpRatio validation/u,
+	);
+	const negativeClearance = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	negativeClearance.components[0].fittingProfile.validation.minimumShoulderClearanceMetres =
+		-0.01;
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: negativeClearance }),
+		/minimumShoulderClearanceMetres validation/u,
+	);
+	const negativeOffset = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	negativeOffset.components[0].fittingProfile.verticalSeatingOffsetMetres =
+		-0.01;
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: negativeOffset }),
+		/vertical seating offset/u,
+	);
+	const mismatchedScaleMode = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	mismatchedScaleMode.components[0].fittingProfile.verticalScaleMode =
+		"head-height";
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: mismatchedScaleMode }),
+		/incompatible fit class and vertical scale mode/u,
+	);
+
+	const unsafeLong = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	const longProfile = unsafeLong.components.find(
+		(component) => component.fittingProfile.fitClass === "long",
+	)?.fittingProfile;
+	assert.ok(longProfile, "expected a registered long-hair profile");
+	longProfile.validation.neckExtensionMetres = [0, 0.2];
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: unsafeLong }),
+		/neck extension validation.*ordered finite interval/u,
+	);
+
+	const unsafeUpdo = structuredClone(CHARACTER_COMPONENT_REGISTRY);
+	const updoProfile = unsafeUpdo.components.find(
+		(component) => component.fittingProfile.fitClass === "updo",
+	)?.fittingProfile;
+	assert.ok(updoProfile, "expected a registered updo profile");
+	updoProfile.validation.widthRatio = [1, 1.4];
+	await assert.rejects(
+		validateCharacterComponentRegistry({ registryData: unsafeUpdo }),
+		/updo width validation must start above one/u,
 	);
 });
 
 test("every library entry resolves and has distinct source geometry and fit identity", async () => {
 	const result = await validateCharacterComponentRegistry();
-	assert.equal(new Set(result.components.map((c) => c.sourceHash)).size, 3);
+	assert.equal(new Set(result.components.map((c) => c.sourceHash)).size, 5);
 	assert.equal(
 		new Set(result.components.map((c) => c.fittingProfile.id)).size,
-		3,
+		5,
 	);
 	for (const component of result.components)
 		assert.equal(resolveCharacterComponent(component.id), component);

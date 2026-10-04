@@ -18,6 +18,8 @@ export const CHARACTER_HAIR_COMPONENT_IDS = Object.freeze([
 ]);
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
+const HAIR_FIT_CLASSES = new Set(["short-cap", "long", "updo"]);
+const HAIR_VERTICAL_SCALE_MODES = new Set(["head-width", "head-height"]);
 const sha256 = (input) => createHash("sha256").update(input).digest("hex");
 
 export function resolveCharacterComponent(componentId, slot = "hair") {
@@ -43,6 +45,203 @@ function assertVector(value, label, { positive = false } = {}) {
 		)
 	) {
 		throw new Error(`${label} must contain three finite numbers.`);
+	}
+}
+
+function assertFiniteNumber(
+	value,
+	label,
+	{
+		maximum = Number.POSITIVE_INFINITY,
+		minimum = Number.NEGATIVE_INFINITY,
+	} = {},
+) {
+	if (
+		typeof value !== "number" ||
+		!Number.isFinite(value) ||
+		value < minimum ||
+		value > maximum
+	) {
+		throw new Error(
+			`${label} must be a finite number between ${minimum} and ${maximum}.`,
+		);
+	}
+}
+
+function assertPositiveNumber(value, label) {
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		throw new Error(`${label} must be a positive finite number.`);
+	}
+}
+
+function assertOrderedInterval(
+	value,
+	label,
+	{ minimum = Number.NEGATIVE_INFINITY, strictlyPositiveMinimum = false } = {},
+) {
+	if (
+		!Array.isArray(value) ||
+		value.length !== 2 ||
+		!value.every(
+			(entry) => typeof entry === "number" && Number.isFinite(entry),
+		) ||
+		value[0] < minimum ||
+		value[1] < value[0] ||
+		(strictlyPositiveMinimum && value[0] <= 0)
+	) {
+		throw new Error(`${label} must be an ordered finite interval.`);
+	}
+}
+
+function validateHairFittingProfile(component) {
+	const profile = component.fittingProfile;
+	if (
+		profile?.version !== 3 ||
+		profile.mode !== "geometry-aware-scalp" ||
+		profile.attachmentBone !== component.expectedAttachmentBone ||
+		profile.sourceReferenceFrame?.centreMode !== "bounds-centre" ||
+		profile.sourceReferenceFrame?.crownMode !== "maximum-z" ||
+		profile.sourceReferenceFrame?.upAxis !== "+Z" ||
+		profile.sourceReferenceFrame?.forwardAxis !== "-Y" ||
+		!profile.allowNonUniformScaling ||
+		!HAIR_FIT_CLASSES.has(profile.fitClass) ||
+		!HAIR_VERTICAL_SCALE_MODES.has(profile.verticalScaleMode)
+	) {
+		throw new Error(
+			`Component "${component.id}" has an invalid fitting profile.`,
+		);
+	}
+
+	const expectedVerticalScaleMode =
+		profile.fitClass === "short-cap" ? "head-width" : "head-height";
+	if (profile.verticalScaleMode !== expectedVerticalScaleMode) {
+		throw new Error(
+			`Component "${component.id}" has an incompatible fit class and vertical scale mode.`,
+		);
+	}
+
+	for (const axis of ["width", "depth", "height"]) {
+		assertOrderedInterval(
+			profile.scaleLimits?.[axis],
+			`Component "${component.id}" ${axis} fit limits`,
+			{ strictlyPositiveMinimum: true },
+		);
+	}
+
+	assertPositiveNumber(
+		profile.coverageRatios?.width,
+		`Component "${component.id}" width coverage ratio`,
+	);
+	assertPositiveNumber(
+		profile.coverageRatios?.depth,
+		`Component "${component.id}" depth coverage ratio`,
+	);
+	if (profile.verticalScaleMode === "head-width") {
+		assertPositiveNumber(
+			profile.coverageRatios?.heightFromWidth,
+			`Component "${component.id}" height-from-width coverage ratio`,
+		);
+		if (profile.coverageRatios?.heightFromHead !== undefined) {
+			throw new Error(
+				`Component "${component.id}" has an ambiguous vertical coverage ratio.`,
+			);
+		}
+	} else {
+		assertPositiveNumber(
+			profile.coverageRatios?.heightFromHead,
+			`Component "${component.id}" height-from-head coverage ratio`,
+		);
+		if (profile.coverageRatios?.heightFromWidth !== undefined) {
+			throw new Error(
+				`Component "${component.id}" has an ambiguous vertical coverage ratio.`,
+			);
+		}
+	}
+
+	assertFiniteNumber(
+		profile.frontOffsetMetres,
+		`Component "${component.id}" front fit offset`,
+		{ minimum: 0 },
+	);
+	assertFiniteNumber(
+		profile.rearOffsetMetres,
+		`Component "${component.id}" rear fit offset`,
+		{ minimum: 0 },
+	);
+	assertFiniteNumber(
+		profile.verticalSeatingOffsetMetres,
+		`Component "${component.id}" vertical seating offset`,
+		{ minimum: 0 },
+	);
+	assertFiniteNumber(
+		profile.scalpOffsetMetres,
+		`Component "${component.id}" scalp offset`,
+		{ minimum: 0 },
+	);
+
+	const validation = profile.validation;
+	assertOrderedInterval(
+		validation?.crownSeatingMetres,
+		`Component "${component.id}" crown seating validation`,
+		{ minimum: 0 },
+	);
+	for (const key of ["depthRatio", "heightRatio", "widthRatio"]) {
+		assertOrderedInterval(
+			validation?.[key],
+			`Component "${component.id}" ${key} validation`,
+			{ strictlyPositiveMinimum: true },
+		);
+	}
+	assertFiniteNumber(
+		validation?.maximumFrontGapHeadDepthRatio,
+		`Component "${component.id}" maximum front gap ratio`,
+		{ maximum: 1, minimum: 0 },
+	);
+	assertFiniteNumber(
+		validation?.maximumRearGapHeadDepthRatio,
+		`Component "${component.id}" maximum rear gap ratio`,
+		{ maximum: 1, minimum: 0 },
+	);
+	for (const key of [
+		"minimumCloseToScalpRatio",
+		"minimumScalpVerticalRangeRatio",
+		"minimumVerticesAboveNeckRatio",
+	]) {
+		assertFiniteNumber(
+			validation?.[key],
+			`Component "${component.id}" ${key} validation`,
+			{ maximum: 1, minimum: 0 },
+		);
+	}
+	for (const key of [
+		"minimumNeckClearanceMetres",
+		"minimumShoulderClearanceMetres",
+	]) {
+		assertFiniteNumber(
+			validation?.[key],
+			`Component "${component.id}" ${key} validation`,
+			{ minimum: 0 },
+		);
+	}
+	assertOrderedInterval(
+		validation?.neckExtensionMetres,
+		`Component "${component.id}" neck extension validation`,
+		{
+			minimum: 0,
+			strictlyPositiveMinimum: profile.fitClass === "long",
+		},
+	);
+	if (
+		typeof validation?.requireVerticalCentreAtOrAboveHeadCentre !== "boolean"
+	) {
+		throw new Error(
+			`Component "${component.id}" vertical centre validation must be boolean.`,
+		);
+	}
+	if (profile.fitClass === "updo" && validation.widthRatio[0] <= 1) {
+		throw new Error(
+			`Component "${component.id}" updo width validation must start above one.`,
+		);
 	}
 }
 
@@ -104,39 +303,7 @@ export async function validateCharacterComponentRegistry({
 			`${component.id} normalized scale`,
 			{ positive: true },
 		);
-		for (const axis of ["width", "depth", "height"]) {
-			const limits = component.fittingProfile.scaleLimits?.[axis];
-			if (
-				!Array.isArray(limits) ||
-				limits.length !== 2 ||
-				!limits.every(Number.isFinite) ||
-				limits[0] <= 0 ||
-				limits[1] < limits[0]
-			) {
-				throw new Error(
-					`Component "${component.id}" has invalid ${axis} fit limits.`,
-				);
-			}
-		}
-		if (
-			component.fittingProfile.version !== 3 ||
-			component.fittingProfile.mode !== "geometry-aware-scalp" ||
-			component.fittingProfile.attachmentBone !==
-				component.expectedAttachmentBone ||
-			component.fittingProfile.sourceReferenceFrame?.upAxis !== "+Z" ||
-			component.fittingProfile.sourceReferenceFrame?.forwardAxis !== "-Y" ||
-			!component.fittingProfile.allowNonUniformScaling ||
-			!Number.isFinite(component.fittingProfile.frontOffsetMetres) ||
-			!Number.isFinite(component.fittingProfile.rearOffsetMetres) ||
-			!Number.isFinite(component.fittingProfile.verticalSeatingOffsetMetres) ||
-			!Object.values(component.fittingProfile.coverageRatios ?? {}).every(
-				(value) => Number.isFinite(value) && value > 0,
-			)
-		) {
-			throw new Error(
-				`Component "${component.id}" has an invalid fitting profile.`,
-			);
-		}
+		validateHairFittingProfile(component);
 		const recordedPaths = new Set();
 		for (const source of component.sourceFiles) {
 			if (

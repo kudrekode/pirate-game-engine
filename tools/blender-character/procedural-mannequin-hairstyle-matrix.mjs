@@ -1,7 +1,7 @@
-import { CHARACTER_HAIR_COMPONENT_IDS } from "./character-component-registry.mjs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CHARACTER_HAIR_COMPONENT_IDS } from "./character-component-registry.mjs";
 import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
 import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
 
@@ -37,25 +37,61 @@ const CASES = [
 function hairstyleFit(manifest) {
 	const hair = manifest.components.hair;
 	const head = manifest.head;
+	const profile = hair.fittingProfile;
+	const thresholds = profile.validation;
 	const width = hair.bounds.dimensions[0];
 	const depth = hair.bounds.dimensions[1];
+	const height = hair.bounds.dimensions[2];
 	const centreX = (hair.bounds.minimum[0] + hair.bounds.maximum[0]) / 2;
+	const centreZ = (hair.bounds.minimum[2] + hair.bounds.maximum[2]) / 2;
 	const crownSeating = hair.bounds.maximum[2] - head.scalpTop[2];
-	const neckClearance = hair.bounds.minimum[2] - head.neckTop[2];
+	const neckExtension = Math.max(0, head.neckTop[2] - hair.bounds.minimum[2]);
 	const validation = hair.fitValidation;
 	const checks = {
 		animationAttachmentValidated: hair.attachmentBone === "Head",
+		aboveNeck:
+			validation?.metrics.verticesAboveNeckRatio >=
+			thresholds.minimumVerticesAboveNeckRatio,
 		centred: Math.abs(centreX - head.headCentre[0]) <= 0.01,
+		closeToScalp:
+			validation?.metrics.closeToScalpRatio >=
+			thresholds.minimumCloseToScalpRatio,
 		compilerFitGate: validation?.passed === true,
-		crownSeating: crownSeating >= 0.006 && crownSeating <= 0.02,
-		depth: depth / head.headDepth >= 0.82 && depth / head.headDepth <= 1.12,
+		crownSeating:
+			crownSeating >= thresholds.crownSeatingMetres[0] &&
+			crownSeating <= thresholds.crownSeatingMetres[1],
+		depth:
+			depth / head.headDepth >= thresholds.depthRatio[0] &&
+			depth / head.headDepth <= thresholds.depthRatio[1],
+		height:
+			height / head.headHeight >= thresholds.heightRatio[0] &&
+			height / head.headHeight <= thresholds.heightRatio[1],
 		neckClearance:
-			validation?.metrics.verticesAboveNeckRatio >= 0.9 &&
-			neckClearance >= -0.025,
+			validation?.metrics.neckClearanceMetres >=
+			thresholds.minimumNeckClearanceMetres,
+		neckExtension:
+			neckExtension >= thresholds.neckExtensionMetres[0] &&
+			neckExtension <= thresholds.neckExtensionMetres[1],
+		profileClass:
+			(profile.fitClass === "short-cap" &&
+				profile.verticalScaleMode === "head-width") ||
+			(["long", "updo"].includes(profile.fitClass) &&
+				profile.verticalScaleMode === "head-height"),
 		rearCoverage: validation?.checks.rearCoverage === true,
-		scalpRange: validation?.metrics.scalpVerticalRangeRatio >= 0.68,
-		shoulderClearance: validation?.metrics.shoulderClearanceMetres >= 0.025,
-		width: width / head.headWidth >= 0.86 && width / head.headWidth <= 1.08,
+		scalpRange:
+			validation?.metrics.scalpVerticalRangeRatio >=
+			thresholds.minimumScalpVerticalRangeRatio,
+		shoulderClearance:
+			validation?.metrics.shoulderClearanceMetres >=
+			thresholds.minimumShoulderClearanceMetres,
+		thresholdsRecorded:
+			JSON.stringify(validation?.thresholds) === JSON.stringify(thresholds),
+		verticalCentre:
+			!thresholds.requireVerticalCentreAtOrAboveHeadCentre ||
+			centreZ >= head.headCentre[2],
+		width:
+			width / head.headWidth >= thresholds.widthRatio[0] &&
+			width / head.headWidth <= thresholds.widthRatio[1],
 	};
 	return {
 		centreX,
@@ -63,8 +99,11 @@ function hairstyleFit(manifest) {
 		crownSeating,
 		depth,
 		fitValidation: validation,
-		neckClearance,
+		height,
+		neckClearance: validation?.metrics.neckClearanceMetres,
+		neckExtension,
 		passed: Object.values(checks).every(Boolean),
+		profileId: profile.id,
 		width,
 	};
 }
@@ -81,7 +120,7 @@ export async function runProceduralMannequinHairstyleMatrix({
 		workspaceRoot,
 		outputRoot ??
 			(library
-				? "test-results/hairstyle-library-v2/body-matrix"
+				? "test-results/length-aware-hairstyle-fitting-v1/body-matrix"
 				: DEFAULT_OUTPUT),
 	);
 	await mkdir(root, { recursive: true });

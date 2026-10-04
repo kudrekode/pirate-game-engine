@@ -236,14 +236,16 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(json).toHaveTextContent('"hair": "quaternius-hair-v0"');
 	});
 
-	it("offers no hair and all three registered Quaternius hairstyles", () => {
+	it("offers no hair and all five registered Quaternius hairstyles", () => {
 		render(<App />);
 		const hair = screen.getByLabelText("Hair component");
 		expect(hair).toHaveTextContent("No hair");
 		expect(hair).toHaveTextContent("Quaternius Buzzed");
 		expect(hair).toHaveTextContent("Quaternius Short Crop");
 		expect(hair).toHaveTextContent("Quaternius Simple Parted");
-		expect(hair.querySelectorAll("option")).toHaveLength(4);
+		expect(hair).toHaveTextContent("Quaternius Long");
+		expect(hair).toHaveTextContent("Quaternius Buns");
+		expect(hair.querySelectorAll("option")).toHaveLength(6);
 	});
 
 	it("resets the authored height to the procedural default", () => {
@@ -494,6 +496,8 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 				"Quaternius Simple Parted",
 				"quaternius-simple-parted-fit-v3",
 			],
+			["quaternius-hair-long-v1", "Quaternius Long", "quaternius-long-fit-v3"],
+			["quaternius-hair-buns-v1", "Quaternius Buns", "quaternius-buns-fit-v3"],
 		]) {
 			fireEvent.change(screen.getByLabelText("Hair component"), {
 				target: { value: id },

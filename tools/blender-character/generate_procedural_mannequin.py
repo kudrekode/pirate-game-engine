@@ -179,7 +179,14 @@ def nearest_distance(point, candidates):
     return min((point - candidate).length for candidate in candidates)
 
 
-def validate_hair_fit(coordinates, head_contract, scalp_vertices, shoulder_vertices):
+def validate_hair_fit(
+    coordinates,
+    head_contract,
+    scalp_vertices,
+    neck_vertices,
+    shoulder_vertices,
+    profile,
+):
     minimum, maximum = vector_bounds(coordinates)
     centre = (minimum + maximum) * 0.5
     head_bounds = head_contract["bounds"]
@@ -192,6 +199,14 @@ def validate_hair_fit(coordinates, head_contract, scalp_vertices, shoulder_verti
     scalp_floor = head_centre.z + head_dimensions.z * 0.02
     scalp_ceiling = scalp_top + head_dimensions.z * 0.12
     scalp_distances = [nearest_distance(point, scalp_vertices) for point in coordinates]
+    lower_hair_coordinates = [point for point in coordinates if point.z <= neck_top]
+    neck_clearance = min(
+        (
+            nearest_distance(point, neck_vertices)
+            for point in lower_hair_coordinates
+        ),
+        default=1.0,
+    )
     shoulder_clearance = min(
         (nearest_distance(point, shoulder_vertices) for point in coordinates),
         default=1.0,
@@ -206,22 +221,48 @@ def validate_hair_fit(coordinates, head_contract, scalp_vertices, shoulder_verti
     )
     width_ratio = (maximum.x - minimum.x) / head_dimensions.x
     depth_ratio = (maximum.y - minimum.y) / head_dimensions.y
+    height_ratio = (maximum.z - minimum.z) / head_dimensions.z
+    crown_seating = maximum.z - scalp_top
+    neck_extension = max(0.0, neck_top - minimum.z)
     centre_offset = centre - head_centre
     front_gap = minimum.y - head_minimum.y
     rear_gap = head_maximum.y - maximum.y
+    validation = profile["validation"]
     checks = {
-        # A buzzed cap may retain a small nape fringe, but at least 90% of its
-        # vertices must remain above the measured neck-top plane.
-        "aboveNeck": above_neck >= 0.9,
+        "aboveNeck": above_neck
+        >= validation["minimumVerticesAboveNeckRatio"],
         "centred": abs(centre_offset.x) <= max(0.008, head_dimensions.x * 0.04),
-        "closeToScalp": close_to_scalp >= 0.12,
-        "depthCoverage": 0.82 <= depth_ratio <= 1.12,
-        "frontCoverage": front_gap <= head_dimensions.y * 0.16,
-        "rearCoverage": rear_gap <= head_dimensions.y * 0.16,
-        "scalpVerticalRange": in_scalp_range >= 0.68,
-        "shoulderClearance": shoulder_clearance >= 0.025,
-        "verticalCentre": centre.z >= head_centre.z,
-        "widthCoverage": 0.86 <= width_ratio <= 1.08,
+        "closeToScalp": close_to_scalp
+        >= validation["minimumCloseToScalpRatio"],
+        "crownSeating": validation["crownSeatingMetres"][0]
+        <= crown_seating
+        <= validation["crownSeatingMetres"][1],
+        "depthCoverage": validation["depthRatio"][0]
+        <= depth_ratio
+        <= validation["depthRatio"][1],
+        "frontCoverage": front_gap
+        <= head_dimensions.y * validation["maximumFrontGapHeadDepthRatio"],
+        "heightRange": validation["heightRatio"][0]
+        <= height_ratio
+        <= validation["heightRatio"][1],
+        "neckClearance": neck_clearance
+        >= validation["minimumNeckClearanceMetres"],
+        "neckExtension": validation["neckExtensionMetres"][0]
+        <= neck_extension
+        <= validation["neckExtensionMetres"][1],
+        "rearCoverage": rear_gap
+        <= head_dimensions.y * validation["maximumRearGapHeadDepthRatio"],
+        "scalpVerticalRange": in_scalp_range
+        >= validation["minimumScalpVerticalRangeRatio"],
+        "shoulderClearance": shoulder_clearance
+        >= validation["minimumShoulderClearanceMetres"],
+        "verticalCentre": not validation[
+            "requireVerticalCentreAtOrAboveHeadCentre"
+        ]
+        or centre.z >= head_centre.z,
+        "widthCoverage": validation["widthRatio"][0]
+        <= width_ratio
+        <= validation["widthRatio"][1],
     }
     passed = all(checks.values())
     return {
@@ -229,23 +270,22 @@ def validate_hair_fit(coordinates, head_contract, scalp_vertices, shoulder_verti
         "metrics": {
             "centreOffset": rounded(centre_offset),
             "closeToScalpRatio": round(close_to_scalp, 6),
+            "crownSeatingMetres": round(crown_seating, 9),
             "depthRatio": round(depth_ratio, 6),
             "frontGapMetres": round(front_gap, 9),
             "maximumScalpDistanceMetres": round(max(scalp_distances), 9),
             "minimumScalpDistanceMetres": round(min(scalp_distances), 9),
+            "neckClearanceMetres": round(neck_clearance, 9),
+            "neckExtensionMetres": round(neck_extension, 9),
             "rearGapMetres": round(rear_gap, 9),
             "scalpVerticalRangeRatio": round(in_scalp_range, 6),
             "shoulderClearanceMetres": round(shoulder_clearance, 9),
             "verticesAboveNeckRatio": round(above_neck, 6),
+            "heightRatio": round(height_ratio, 6),
             "widthRatio": round(width_ratio, 6),
         },
         "passed": passed,
-        "thresholds": {
-            "minimumCloseToScalpRatio": 0.12,
-            "minimumScalpVerticalRangeRatio": 0.68,
-            "minimumShoulderClearanceMetres": 0.025,
-            "minimumVerticesAboveNeckRatio": 0.9,
-        },
+        "thresholds": validation,
         "warnings": [] if passed else [
             name for name, value in checks.items() if not value
         ],
@@ -259,6 +299,7 @@ def import_hair_component(
     body_mesh_object,
     head_contract,
     scalp_vertices,
+    neck_vertices,
     shoulder_vertices,
 ):
     component = load_component_definition(args, recipe)
@@ -379,6 +420,21 @@ def import_hair_component(
     target_dimensions = target_maximum - target_minimum
     coverage = profile["coverageRatios"]
     scale_limits = profile["scaleLimits"]
+    if profile["verticalScaleMode"] == "head-width":
+        height_scale = (
+            (target_dimensions.x / source_dimensions.x)
+            * coverage["heightFromWidth"]
+        )
+    elif profile["verticalScaleMode"] == "head-height":
+        height_scale = (
+            target_dimensions.z
+            * coverage["heightFromHead"]
+            / source_dimensions.z
+        )
+    else:
+        raise RuntimeError(
+            f'Unsupported hairstyle vertical scale mode "{profile["verticalScaleMode"]}".'
+        )
     fit_scale = Vector(
         (
             max(
@@ -399,8 +455,7 @@ def import_hair_component(
                 scale_limits["height"][0],
                 min(
                     scale_limits["height"][1],
-                    (target_dimensions.x / source_dimensions.x)
-                    * coverage["heightFromWidth"],
+                    height_scale,
                 ),
             ),
         )
@@ -431,11 +486,9 @@ def import_hair_component(
     hair.matrix_world = Matrix.Identity(4)
     hair.data.update()
 
-    # The registered buzzed source is a closed cap. Its fitted front surface
-    # otherwise sits in front of the generated eyes, so carve a deterministic
-    # central hairline from the authored head/face landmarks. Temple and crown
-    # coverage remain intact, while the forehead, eyes, nose, and mouth stay
-    # visible in front and three-quarter views.
+    # The registered meshes include a closed front surface. Carve a deterministic
+    # central hairline from the authored head/face landmarks so the forehead,
+    # eyes, nose, and mouth stay visible in front and three-quarter views.
     head_width = head_contract["headWidth"]
     head_depth = head_contract["headDepth"]
     head_height = head_contract["headHeight"]
@@ -460,8 +513,9 @@ def import_hair_component(
     hair.data.update()
     if adjusted_hairline_vertices < 1:
         raise RuntimeError("Hairstyle face-clearance fit adjusted no vertices.")
-    hair.name = "Hair_quaternius_hair_v0"
-    hair.data.name = "Hair_quaternius_hair_v0_Mesh"
+    object_name = "Hair_" + component["id"].replace("-", "_")
+    hair.name = object_name
+    hair.data.name = object_name + "_Mesh"
     hair["characterComponentId"] = component["id"]
     hair["attachmentBone"] = component["expectedAttachmentBone"]
     hair["fittingProfile"] = profile["id"]
@@ -472,7 +526,12 @@ def import_hair_component(
     coordinates = [hair.matrix_world @ vertex.co for vertex in hair.data.vertices]
     fitted_minimum, fitted_maximum = vector_bounds(coordinates)
     fit_validation = validate_hair_fit(
-        coordinates, head_contract, scalp_vertices, shoulder_vertices
+        coordinates,
+        head_contract,
+        scalp_vertices,
+        neck_vertices,
+        shoulder_vertices,
+        profile,
     )
     if not fit_validation["passed"]:
         raise RuntimeError(
@@ -1084,6 +1143,14 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
     face_plane_y = minimum.y + dimensions.y * 0.07
     scalp_floor = centre.z + dimensions.z * 0.05
     scalp_vertices = [point for point in head_vertices if point.z >= scalp_floor]
+    neck_vertices = [
+        mesh_object.matrix_world @ vertex.co
+        for vertex in mesh_object.data.vertices
+        if vertex.co.z >= neck_bone.z - 0.08
+        and vertex.co.z <= neck_top + 0.02
+        and abs(vertex.co.x - head_bone.x) <= measurements["neckRadius"] * 1.7
+        and abs(vertex.co.y - head_bone.y) <= measurements["neckRadius"] * 1.7
+    ]
     shoulder_vertices = [
         mesh_object.matrix_world @ vertex.co
         for vertex in mesh_object.data.vertices
@@ -1093,6 +1160,8 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
     ]
     if len(scalp_vertices) < 12:
         raise RuntimeError("Generated scalp contract has too few geometry samples.")
+    if len(neck_vertices) < 8:
+        raise RuntimeError("Generated neck contract has too few geometry samples.")
     scalp_minimum, scalp_maximum = vector_bounds(scalp_vertices)
     symmetry_error = abs(abs(minimum.x - centre.x) - abs(maximum.x - centre.x))
     neck_connection_vertices = sum(
@@ -1152,7 +1221,7 @@ def measure_head_contract(mesh_object, anchors, measurements, topology_version):
         "symmetryErrorMetres": round(symmetry_error, 9),
         "topologyVersion": topology_version,
     }
-    return contract, scalp_vertices, shoulder_vertices
+    return contract, scalp_vertices, neck_vertices, shoulder_vertices
 
 
 def create_geometry(armature, recipe):
@@ -1463,7 +1532,7 @@ def create_geometry(armature, recipe):
     )
 
     topology = mesh_topology_statistics(mesh)
-    head_contract, scalp_vertices, shoulder_vertices = measure_head_contract(
+    head_contract, scalp_vertices, neck_vertices, shoulder_vertices = measure_head_contract(
         mesh_object,
         {"head": torso_heads["Head"], "neck": torso_heads["neck_01"]},
         measurements,
@@ -1481,6 +1550,7 @@ def create_geometry(armature, recipe):
         topology,
         head_contract,
         scalp_vertices,
+        neck_vertices,
         shoulder_vertices,
         face_objects,
         face_report,
@@ -1523,6 +1593,7 @@ def compile_mannequin(args, recipe):
         topology,
         head_contract,
         scalp_vertices,
+        neck_vertices,
         shoulder_vertices,
         face_objects,
         face_report,
@@ -1539,6 +1610,7 @@ def compile_mannequin(args, recipe):
         mesh_object,
         head_contract,
         scalp_vertices,
+        neck_vertices,
         shoulder_vertices,
     )
     root = bpy.data.objects.new("ProceduralMannequinRoot", None)
@@ -1639,8 +1711,8 @@ def compile_mannequin(args, recipe):
                 []
                 if hair_report["componentId"] == "none"
                 else [
-                    "Hairstyle Fit V2 reuses the generated Head-led body-surface blend and has no secondary motion.",
-                    "The vendor-authored hair material is fixed; hair colour authoring is not implemented.",
+                    "Registry-backed hairstyles reuse the generated Head-led body-surface blend and have no secondary motion.",
+                    "Hair colour is compiled as an authored solid colour with the source normal map; the vendor base colour texture is not exported.",
                 ]
             ),
         ],

@@ -56,6 +56,8 @@
 				"id": "quaternius-buzzed-fit-v3",
 				"version": 3,
 				"mode": "geometry-aware-scalp",
+				"fitClass": "short-cap",
+				"verticalScaleMode": "head-width",
 				"attachmentBone": "Head",
 				"sourceReferenceFrame": {
 					"forwardAxis": "-Y",
@@ -77,6 +79,21 @@
 					"width": [1, 2.1],
 					"depth": [0.8, 1.8],
 					"height": [0.85, 1.25]
+				},
+				"validation": {
+					"crownSeatingMetres": [0.006, 0.02],
+					"depthRatio": [0.82, 1.12],
+					"heightRatio": [0.6, 0.9],
+					"maximumFrontGapHeadDepthRatio": 0.16,
+					"maximumRearGapHeadDepthRatio": 0.16,
+					"minimumCloseToScalpRatio": 0.12,
+					"minimumNeckClearanceMetres": 0,
+					"minimumScalpVerticalRangeRatio": 0.68,
+					"minimumShoulderClearanceMetres": 0.025,
+					"minimumVerticesAboveNeckRatio": 0.9,
+					"neckExtensionMetres": [0, 0.04],
+					"requireVerticalCentreAtOrAboveHeadCentre": true,
+					"widthRatio": [0.86, 1.08]
 				}
 			},
 			"material": {
@@ -147,6 +164,8 @@
 				"id": "quaternius-short-crop-fit-v3",
 				"version": 3,
 				"mode": "geometry-aware-scalp",
+				"fitClass": "short-cap",
+				"verticalScaleMode": "head-width",
 				"attachmentBone": "Head",
 				"sourceReferenceFrame": {
 					"forwardAxis": "-Y",
@@ -168,6 +187,21 @@
 					"width": [1, 2.1],
 					"depth": [0.8, 1.8],
 					"height": [0.85, 1.25]
+				},
+				"validation": {
+					"crownSeatingMetres": [0.006, 0.02],
+					"depthRatio": [0.82, 1.12],
+					"heightRatio": [0.6, 0.9],
+					"maximumFrontGapHeadDepthRatio": 0.16,
+					"maximumRearGapHeadDepthRatio": 0.16,
+					"minimumCloseToScalpRatio": 0.12,
+					"minimumNeckClearanceMetres": 0,
+					"minimumScalpVerticalRangeRatio": 0.68,
+					"minimumShoulderClearanceMetres": 0.025,
+					"minimumVerticesAboveNeckRatio": 0.9,
+					"neckExtensionMetres": [0, 0.04],
+					"requireVerticalCentreAtOrAboveHeadCentre": true,
+					"widthRatio": [0.86, 1.08]
 				}
 			},
 			"material": {
@@ -238,6 +272,8 @@
 				"id": "quaternius-simple-parted-fit-v3",
 				"version": 3,
 				"mode": "geometry-aware-scalp",
+				"fitClass": "short-cap",
+				"verticalScaleMode": "head-width",
 				"attachmentBone": "Head",
 				"sourceReferenceFrame": {
 					"forwardAxis": "-Y",
@@ -259,6 +295,21 @@
 					"width": [1, 2.1],
 					"depth": [0.8, 1.8],
 					"height": [0.85, 1.25]
+				},
+				"validation": {
+					"crownSeatingMetres": [0.006, 0.02],
+					"depthRatio": [0.82, 1.12],
+					"heightRatio": [0.6, 0.9],
+					"maximumFrontGapHeadDepthRatio": 0.16,
+					"maximumRearGapHeadDepthRatio": 0.16,
+					"minimumCloseToScalpRatio": 0.12,
+					"minimumNeckClearanceMetres": 0,
+					"minimumScalpVerticalRangeRatio": 0.68,
+					"minimumShoulderClearanceMetres": 0.025,
+					"minimumVerticesAboveNeckRatio": 0.9,
+					"neckExtensionMetres": [0, 0.04],
+					"requireVerticalCentreAtOrAboveHeadCentre": true,
+					"widthRatio": [0.86, 1.08]
 				}
 			},
 			"material": {
@@ -272,6 +323,222 @@
 				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
 				"Compiled solid hair colour with the source normal map; vendor base colour texture is not exported.",
 				"Geometry-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
+			]
+		},
+		{
+			"id": "quaternius-hair-long-v1",
+			"name": "Quaternius Long",
+			"slot": "hair",
+			"skeletonId": "humanoid-v1",
+			"compatibleBodyBaseIds": ["humanoid-default"],
+			"materialRegions": ["hair"],
+			"provider": "Quaternius",
+			"packName": "Universal Base Characters Kit",
+			"sourceAsset": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Long.gltf",
+			"sourceMeshName": "Hair_Long",
+			"sourceHash": "94500e2e37e09efc8b8b920b8c6437ef1c76ca35863992b82d0d5de6e77122e9",
+			"sourceFiles": [
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Long.gltf",
+					"role": "mesh",
+					"sha256": "94500e2e37e09efc8b8b920b8c6437ef1c76ca35863992b82d0d5de6e77122e9"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Long.bin",
+					"role": "buffer",
+					"sha256": "13996da35c7afbf8cb5097da37207ee5b7c2e2904d4ab9e2ace9843030fff8d5"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_2_BaseColor.png",
+					"role": "baseColorTexture",
+					"sha256": "f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_2_Normal.png",
+					"role": "normalTexture",
+					"sha256": "172f230aae0d4366c3cfc0402b2e6d1811b11f8487344bff28605eeacac1558d"
+				}
+			],
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+				"spdx": "CC0-1.0"
+			},
+			"expectedAttachmentBone": "Head",
+			"attachmentStrategy": "main-skeleton-head-surface-skinning",
+			"sourceTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"normalizedTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"fittingProfile": {
+				"id": "quaternius-long-fit-v3",
+				"version": 3,
+				"mode": "geometry-aware-scalp",
+				"fitClass": "long",
+				"verticalScaleMode": "head-height",
+				"attachmentBone": "Head",
+				"sourceReferenceFrame": {
+					"forwardAxis": "-Y",
+					"upAxis": "+Z",
+					"centreMode": "bounds-centre",
+					"crownMode": "maximum-z"
+				},
+				"coverageRatios": {
+					"width": 0.95,
+					"depth": 1.1,
+					"heightFromHead": 1.35
+				},
+				"frontOffsetMetres": 0.002,
+				"rearOffsetMetres": 0.024,
+				"verticalSeatingOffsetMetres": 0.012,
+				"scalpOffsetMetres": 0.012,
+				"allowNonUniformScaling": true,
+				"scaleLimits": {
+					"width": [0.8, 2.1],
+					"depth": [0.8, 1.8],
+					"height": [0.9, 1.8]
+				},
+				"validation": {
+					"crownSeatingMetres": [0.006, 0.02],
+					"depthRatio": [0.95, 1.2],
+					"heightRatio": [1.3, 1.4],
+					"maximumFrontGapHeadDepthRatio": 0.2,
+					"maximumRearGapHeadDepthRatio": 0.2,
+					"minimumCloseToScalpRatio": 0.08,
+					"minimumNeckClearanceMetres": 0.005,
+					"minimumScalpVerticalRangeRatio": 0.3,
+					"minimumShoulderClearanceMetres": 0.025,
+					"minimumVerticesAboveNeckRatio": 0.45,
+					"neckExtensionMetres": [0.14, 0.23],
+					"requireVerticalCentreAtOrAboveHeadCentre": false,
+					"widthRatio": [0.92, 1.02]
+				}
+			},
+			"material": {
+				"name": "MI_Hair_2",
+				"textures": ["T_Hair_2_BaseColor.png", "T_Hair_2_Normal.png"],
+				"compiledTextures": ["T_Hair_2_Normal.png"],
+				"colorMode": "authored-solid-with-source-normal"
+			},
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v7",
+			"knownLimitations": [
+				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
+				"Compiled solid hair colour with the source normal map; vendor base colour texture is not exported.",
+				"Length-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
+			]
+		},
+		{
+			"id": "quaternius-hair-buns-v1",
+			"name": "Quaternius Buns",
+			"slot": "hair",
+			"skeletonId": "humanoid-v1",
+			"compatibleBodyBaseIds": ["humanoid-default"],
+			"materialRegions": ["hair"],
+			"provider": "Quaternius",
+			"packName": "Universal Base Characters Kit",
+			"sourceAsset": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buns.gltf",
+			"sourceMeshName": "Hair_Buns",
+			"sourceHash": "2bb3593575e21c9af39a53e48c42c1314b0a894e9577f3f14abffcb145cd56c5",
+			"sourceFiles": [
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buns.gltf",
+					"role": "mesh",
+					"sha256": "2bb3593575e21c9af39a53e48c42c1314b0a894e9577f3f14abffcb145cd56c5"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buns.bin",
+					"role": "buffer",
+					"sha256": "4f6d4c010201278483da8d6d46ec40e3beb8d9e679ec2139bed216c561bccd38"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_2_BaseColor.png",
+					"role": "baseColorTexture",
+					"sha256": "f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_2_Normal.png",
+					"role": "normalTexture",
+					"sha256": "172f230aae0d4366c3cfc0402b2e6d1811b11f8487344bff28605eeacac1558d"
+				}
+			],
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+				"spdx": "CC0-1.0"
+			},
+			"expectedAttachmentBone": "Head",
+			"attachmentStrategy": "main-skeleton-head-surface-skinning",
+			"sourceTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"normalizedTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"fittingProfile": {
+				"id": "quaternius-buns-fit-v3",
+				"version": 3,
+				"mode": "geometry-aware-scalp",
+				"fitClass": "updo",
+				"verticalScaleMode": "head-height",
+				"attachmentBone": "Head",
+				"sourceReferenceFrame": {
+					"forwardAxis": "-Y",
+					"upAxis": "+Z",
+					"centreMode": "bounds-centre",
+					"crownMode": "maximum-z"
+				},
+				"coverageRatios": {
+					"width": 1.12,
+					"depth": 1.02,
+					"heightFromHead": 0.82
+				},
+				"frontOffsetMetres": 0.002,
+				"rearOffsetMetres": 0.006,
+				"verticalSeatingOffsetMetres": 0.012,
+				"scalpOffsetMetres": 0.012,
+				"allowNonUniformScaling": true,
+				"scaleLimits": {
+					"width": [0.8, 2.1],
+					"depth": [0.8, 1.8],
+					"height": [0.8, 1.4]
+				},
+				"validation": {
+					"crownSeatingMetres": [0.006, 0.02],
+					"depthRatio": [0.92, 1.12],
+					"heightRatio": [0.78, 0.86],
+					"maximumFrontGapHeadDepthRatio": 0.2,
+					"maximumRearGapHeadDepthRatio": 0.2,
+					"minimumCloseToScalpRatio": 0.08,
+					"minimumNeckClearanceMetres": 0.004,
+					"minimumScalpVerticalRangeRatio": 0.55,
+					"minimumShoulderClearanceMetres": 0.025,
+					"minimumVerticesAboveNeckRatio": 0.9,
+					"neckExtensionMetres": [0.025, 0.06],
+					"requireVerticalCentreAtOrAboveHeadCentre": true,
+					"widthRatio": [1.08, 1.16]
+				}
+			},
+			"material": {
+				"name": "MI_Hair_2",
+				"textures": ["T_Hair_2_BaseColor.png", "T_Hair_2_Normal.png"],
+				"compiledTextures": ["T_Hair_2_Normal.png"],
+				"colorMode": "authored-solid-with-source-normal"
+			},
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v7",
+			"knownLimitations": [
+				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
+				"Compiled solid hair colour with the source normal map; vendor base colour texture is not exported.",
+				"Length-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
 			]
 		}
 	]
