@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import type { EventBlock, GameArea, GameProject } from "../types/game";
+import { runActions } from "./ruleEngine";
 import {
 	checkRuntimeWaitingTrigger,
 	completeRuntimeProgressionCutscene,
 	markRuntimeAreaEntered,
 	processRuntimeProgression,
 	type RuntimeProgressionEvent,
+	startRuntimeSession,
+	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "./runtimeProgression";
 import progressionSource from "./runtimeProgression.ts?raw";
+import { createRuntimeRuleContext } from "./runtimeRuleActionDispatcher";
 import { createRuntimeSession } from "./runtimeSession";
 
 function makeEventBlock(id: string, x: number, y: number): EventBlock {
@@ -317,4 +321,136 @@ describe("runtime progression", () => {
 			/from\s+["'][^"']*(phaser|three|react|editor|store)/i,
 		);
 	});
+});
+
+describe("shared startup order", () => {
+	it("defers automatic rewards through game-start actions and an intro before committing the real spawn", () => {
+		const project = makeProject({
+			cutscenes: [
+				{ id: "intro", name: "Intro", text: "Wait", backgroundImageId: "" },
+			],
+			progression: [
+				{ id: "intro", action: { type: "play_cutscene", cutsceneId: "intro" } },
+				{
+					id: "spawn",
+					action: {
+						type: "spawn_player",
+						areaId: "area_two",
+						eventBlockId: "entry",
+					},
+				},
+			],
+			quests: ["area_one", "area_two"].map((areaId) => ({
+				id: areaId,
+				name: areaId,
+				status: "active",
+				objectives: [
+					{
+						id: "visit",
+						description: "Visit",
+						condition: { type: "enter_area", areaId },
+					},
+				],
+				rewards: [
+					{
+						type: "item",
+						itemId: "coin",
+						quantity: areaId === "area_two" ? 1 : 50,
+					},
+				],
+			})),
+		});
+		project.quests.push({
+			id: "flag",
+			name: "Flag",
+			status: "active",
+			objectives: [
+				{
+					id: "ready",
+					description: "Ready",
+					condition: { type: "flag", flag: "ready", value: true },
+				},
+			],
+			rewards: [{ type: "item", itemId: "coin", quantity: 2 }],
+		});
+		const session = createRuntimeSession(project);
+		const { emit, events } = collectEvents();
+		let finishRules = () => {};
+		startRuntimeSession(
+			session,
+			(onDone) => {
+				runActions(
+					[{ type: "set_flag", flag: "ready", value: true }],
+					createRuntimeRuleContext(session, () => {}),
+					() => {},
+				);
+				finishRules = onDone;
+			},
+			emit,
+		);
+		expect(session.runtimeState.inventory.items.coin).toBeUndefined();
+		expect(events).toEqual([]);
+		finishRules();
+		expect(session.startupPending).toBe(true);
+		expect(events.map((event) => event.type)).toEqual(["cutsceneRequested"]);
+		expect(session.runtimeQuestState.enteredAreaIds.size).toBe(0);
+		completeRuntimeProgressionCutscene(session, emit);
+		expect(session.startupPending).toBe(false);
+		expect(session.currentAreaId).toBe("area_two");
+		expect(session.runtimeQuestState.enteredAreaIds).toEqual(
+			new Set(["area_two"]),
+		);
+		expect(session.runtimeState.inventory.items.coin).toBe(3);
+		expect(
+			events.filter((event) => event.type === "areaEnterTriggerRequested"),
+		).toEqual([{ type: "areaEnterTriggerRequested", areaId: "area_two" }]);
+		expect(
+			events.findIndex((event) => event.type === "spawnPlayer"),
+		).toBeLessThan(events.findIndex((event) => event.type === "questSync"));
+		syncRuntimeQuestProgress(session, emit);
+		processRuntimeProgression(session, emit);
+		expect(session.runtimeState.inventory.items.coin).toBe(3);
+		expect(
+			events.filter((event) => event.type === "areaEnterTriggerRequested"),
+		).toHaveLength(1);
+		expect(project.gameState.inventory).toEqual({});
+	});
+	it("commits the fallback area once when no progression spawn is authored", () => {
+		const session = createRuntimeSession(makeProject());
+		const { emit, events } = collectEvents();
+		startRuntimeSession(session, (done) => done(), emit);
+		expect(session.runtimeQuestState.enteredAreaIds).toEqual(
+			new Set(["area_one"]),
+		);
+		expect(
+			events.filter((event) => event.type === "areaEnterTriggerRequested"),
+		).toEqual([{ type: "areaEnterTriggerRequested", areaId: "area_one" }]);
+	});
+});
+
+it("establishes the startup trigger wait before dispatching actual-area entry rules", () => {
+	const session = createRuntimeSession(
+		makeProject({
+			progression: [
+				{
+					id: "wait",
+					action: {
+						type: "wait_for_trigger",
+						areaId: "area_one",
+						eventBlockId: "goal",
+					},
+				},
+			],
+		}),
+	);
+	let waitingAtEntry: unknown;
+	startRuntimeSession(
+		session,
+		(done) => done(),
+		(event) => {
+			if (event.type === "areaEnterTriggerRequested")
+				waitingAtEntry = session.waitingForTrigger;
+		},
+	);
+	expect(waitingAtEntry).toEqual({ areaId: "area_one", eventBlockId: "goal" });
 });

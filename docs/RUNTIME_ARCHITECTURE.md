@@ -148,3 +148,52 @@ Useful checks:
 - Interaction priority and rule/object/quest/shop/pickup/vehicle transactions use shared helpers.
 - NPC tick/contact, combat defeat flags, and trigger requests match expected session state.
 - Three adapter tests prove it calls shared helper paths and does not import editor store state for gameplay.
+
+## Startup and input contract (Phase 2)
+
+Both adapters call `startRuntimeSession` after creating their presentation and
+isolated session. Startup runs `on_game_start` rules to completion, then initial
+progression. Cutscenes suspend that sequence; player input and NPC ticks remain
+paused until progression reaches a trigger wait, completion, or end-game boundary.
+Initial spawn/teleport steps may update presentation, but do not mark provisional
+areas entered or automatically evaluate quests. At the boundary the actual current
+area is recorded, automatic quests synchronize and grant once-only rewards, then
+`on_area_enter` is dispatched for that area exactly once. With no authored spawn,
+the editor-active/fallback area remains the actual area. Later transitions retain
+their normal entry/sync behaviour. Explicit quest completion actions still take
+effect where authored; only automatic startup evaluation is deferred.
+
+`RuntimeSession.nextMoveAt` is the gameplay deadline. A successful
+`attemptPlayerMove(session, direction, nowMs)` commits its grid position and sets
+`nextMoveAt = nowMs + moveDurationMs`. Repeated input before that deadline is
+ignored; input at the deadline is eligible. Blocked collision attempts do not
+consume a step. Duration uses the existing speed clamp and vehicle multiplier.
+Each adapter supplies its monotonic clock consistently: Phaser scene time or
+Three `performance.now()`. Tweens, RAF and interpolation never release the gate.
+Phaser now dispatches touch/trigger work on the accepted grid step, without
+waiting for tween completion. Area spawn/teleport resets the movement deadline.
+
+`runtimeInput` blocks movement, interaction and attack during startup, a shop,
+a dialogue, a cutscene, or game over/end. It also holds those inputs during a
+movement interval; attack eligibility additionally uses the existing combat
+cooldown. NPC simulation pauses for the modal/startup/end states, but not for a
+normal player movement interval. Modal buttons can still advance/close the modal.
+Inputs are not buffered by the Three handler; held/repeated input only moves when
+an eligible event arrives. Phaser polls held directions on its update clock.
+
+## Dialogue contract (Phase 2)
+
+Both adapters use `dialogueEngine` for authored nodes, condition-filtered choices,
+node transitions and once-per-conversation node actions. Session `dialogue` owns
+the active dialogue id, node id and entered-node set; adapter UI only presents it.
+The current schema places effects on nodes reached by choices, not on separate
+choice-action fields. Actions use `createRuntimeRuleContext`, including quests,
+teleports and asynchronous cutscenes. A node appears after its actions finish;
+cutscene-end rules run before the suspended action sequence resumes.
+
+Missing definitions/start/next nodes terminate or reject the conversation safely.
+An authored choice node with no available choices offers End conversation in both
+adapters. Completing a conversation clears its session state and restores input,
+subject to any remaining modal, deadline or end state. Phaser retains its canvas
+panel and portrait presets; Three uses a React text/choice overlay. Portrait and
+layout parity are presentation work, outside this correctness pass.

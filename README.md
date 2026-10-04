@@ -27,6 +27,25 @@ Long-term goal: become a lightweight builder for classic 2D adventure/RPG-style 
 - Shops / Economy: buy-only shops using an inventory item as currency, with runtime stock separate from editor defaults.
 - Combat: simple melee combat against hostile NPCs, enemy contact damage, NPC defeat, and player Game Over state.
 
+## Saving and recovery
+
+The browser keeps one manual save and one autosave draft. If both are valid and
+different, startup asks which to open; neither copy is written while this choice
+is pending or merely because a copy was loaded. A valid save is used when the
+draft is corrupt, and a valid draft is used when the save is corrupt or absent.
+Identical copies open without prompting. With neither valid, choose a starter.
+
+Raw historical saves, including the old single-map format, still pass through
+migration. These records have no reliable timestamp or project identity, so the
+app never guesses which different copy is newer. Choosing the saved copy leaves
+the other draft available until the next edit autosaves; manual Save replaces the
+manual slot. A recovered draft remains unsaved until Save succeeds. Export/import
+JSON is unchanged. This remains a single save/draft pair, not a project library.
+
+Storage failures appear in the status bar; a failed autosave does not display a
+success time, and a failed manual save does not mark changes saved. Export a copy
+if browser storage is unavailable. Autosave retries after another edit.
+
 ## Architecture Overview
 
 The central schema is `GameProject` in `src/types/game.ts`. Editor sections modify this object. Play mode creates a cloned runtime snapshot and then a shared `RuntimeSession` for play-session state.

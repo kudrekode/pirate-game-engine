@@ -17,6 +17,7 @@ import {
 } from "../../editor/sections/terrainBlocks";
 import type {
 	Cutscene,
+	DialogueNode,
 	GameArea,
 	GameProject,
 	Interaction,
@@ -24,6 +25,13 @@ import type {
 	RuleTrigger,
 	ThreeRuntimeCameraConfig,
 } from "../../types/game";
+import {
+	advanceDialogue,
+	createRuntimeDialogueState,
+	enterDialogueNode,
+	getAvailableDialogueChoices,
+	getDialogueNode,
+} from "../dialogueEngine";
 import {
 	canInteractActivate,
 	canTouchActivate,
@@ -39,6 +47,10 @@ import {
 	attemptRuntimeCombatAttack,
 	type RuntimeCombatEvent,
 } from "../runtimeCombat";
+import {
+	canAcceptRuntimeInput,
+	isRuntimeGameplayBlocked,
+} from "../runtimeInput";
 import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "../runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
@@ -52,9 +64,8 @@ import {
 import {
 	checkRuntimeWaitingTrigger,
 	completeRuntimeProgressionCutscene,
-	markRuntimeAreaEntered,
-	processRuntimeProgression,
 	type RuntimeProgressionEvent,
+	startRuntimeSession,
 	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "../runtimeProgression";
@@ -440,9 +451,103 @@ export function ThreeRuntimePanel({
 		Array<{ id: string; name: string; status: string }>
 	>([]);
 	const [shopMessage, setShopMessage] = useState<string | undefined>();
-	const [pendingCutscene, setPendingCutscene] =
+	const [pendingCutscene, setPendingCutsceneState] =
 		useState<PendingCutscene | null>(null);
 	const [gameOver, setGameOver] = useState(false);
+	const [dialogueNode, setDialogueNode] = useState<DialogueNode | null>(null);
+
+	function setPendingCutscene(value: PendingCutscene | null) {
+		pendingCutsceneRef.current = value;
+		setPendingCutsceneState(value);
+	}
+
+	function gameplayBlocked(session: RuntimeSessionState): boolean {
+		return Boolean(
+			pendingCutsceneRef.current || session.dialogue || gameOverRef.current,
+		);
+	}
+
+	function closeDialogue() {
+		const session = getSession();
+		if (session) session.dialogue = undefined;
+		setDialogueNode(null);
+	}
+
+	function renderDialogueNode() {
+		const session = getSession();
+		const state = session?.dialogue;
+		const definition = session?.project.dialogues.find(
+			(entry) => entry.id === state?.dialogueId,
+		);
+		const node =
+			state && definition
+				? getDialogueNode(definition, state.nodeId)
+				: undefined;
+		if (!session || !state || !node) {
+			closeDialogue();
+			return;
+		}
+		setDialogueNode(null);
+		enterDialogueNode(
+			state,
+			node,
+			createRuntimeRuleContext(session, handleRuleEvent),
+			() => {
+				if (getSession() !== session || session.dialogue !== state) return;
+				if (gameOverRef.current) {
+					closeDialogue();
+					return;
+				}
+				setDialogueNode(node);
+			},
+		);
+	}
+
+	function showDialogue(dialogueId: string | undefined) {
+		const session = getSession();
+		const definition = session?.project.dialogues.find(
+			(entry) => entry.id === dialogueId,
+		);
+		if (
+			!session ||
+			!definition ||
+			!getDialogueNode(definition, definition.startNodeId)
+		) {
+			setStatus("Dialogue missing or invalid.");
+			return;
+		}
+		closeRuntimeShop(session, handleObjectEvent);
+		setMouseLookActive(false);
+		session.dialogue = createRuntimeDialogueState(definition);
+		renderDialogueNode();
+	}
+
+	function advanceConversation(choiceId?: string) {
+		const session = getSession();
+		const state = session?.dialogue;
+		const definition = session?.project.dialogues.find(
+			(entry) => entry.id === state?.dialogueId,
+		);
+		if (
+			!session ||
+			!state ||
+			!definition ||
+			!dialogueNode ||
+			pendingCutsceneRef.current
+		)
+			return;
+		if (
+			dialogueNode.type === "choice" &&
+			!getAvailableDialogueChoices(
+				dialogueNode,
+				session.runtimeState,
+				session.runtimeQuestState,
+			).some((choice) => choice.id === choiceId)
+		)
+			return;
+		if (advanceDialogue(definition, state, choiceId)) renderDialogueNode();
+		else closeDialogue();
+	}
 	const [mountError, setMountError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -535,6 +640,7 @@ export function ThreeRuntimePanel({
 		const session = getSession();
 		return Boolean(
 			pendingCutsceneRef.current ||
+				sessionRef.current?.dialogue ||
 				gameOverRef.current ||
 				session?.activeShopId,
 		);
@@ -796,13 +902,16 @@ export function ThreeRuntimePanel({
 				cutscene,
 				onContinue: () => {
 					setPendingCutscene(null);
-					event.onDone();
+					fireRuntimeTrigger(
+						{ type: "on_cutscene_end", cutsceneId: event.cutsceneId },
+						event.onDone,
+					);
 				},
 			});
 			return;
 		}
 		if (event.type === "dialogueRequested") {
-			setStatus(`Dialogue requested: ${event.dialogueId}.`);
+			showDialogue(event.dialogueId);
 			return;
 		}
 		if (event.type === "movementModeChanged") {
@@ -1068,7 +1177,7 @@ export function ThreeRuntimePanel({
 		}
 
 		if (interaction.type === "start_dialogue") {
-			setStatus(`Dialogue requested: ${interaction.dialogueId ?? label}.`);
+			showDialogue(interaction.dialogueId);
 			return;
 		}
 
@@ -1138,11 +1247,18 @@ export function ThreeRuntimePanel({
 
 	function handleMove(direction: RuntimeGridPosition): void {
 		const session = getSession();
-		if (!session || pendingCutscene || gameOver) {
+		if (
+			!session ||
+			!canAcceptRuntimeInput(
+				session,
+				performance.now(),
+				gameplayBlocked(session),
+			)
+		) {
 			return;
 		}
 
-		const move = attemptPlayerMove(session, direction);
+		const move = attemptPlayerMove(session, direction, performance.now());
 		if (move.type === "blocked") {
 			playerVisualRef.current = playerVisualRef.current
 				? { ...playerVisualRef.current, facing: move.facing }
@@ -1182,7 +1298,15 @@ export function ThreeRuntimePanel({
 	function handleInteract(): void {
 		const session = getSession();
 		const area = session ? getArea(session) : undefined;
-		if (!session || !area || pendingCutscene || gameOver) {
+		if (
+			!session ||
+			!area ||
+			!canAcceptRuntimeInput(
+				session,
+				performance.now(),
+				gameplayBlocked(session),
+			)
+		) {
 			return;
 		}
 
@@ -1259,12 +1383,11 @@ export function ThreeRuntimePanel({
 			setQuests([]);
 			setStatus("3D runtime started.");
 
-			const area = getArea(session);
-			if (area) {
-				markRuntimeAreaEntered(session, area.id, handleProgressionEvent);
-			}
-			fireRuntimeTrigger({ type: "on_game_start" }, () =>
-				processRuntimeProgression(session, handleProgressionEvent),
+			setDialogueNode(null);
+			startRuntimeSession(
+				session,
+				(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
+				handleProgressionEvent,
 			);
 			nextRebuildReasonRef.current = "initial runtime start";
 		} catch (error) {
@@ -1291,6 +1414,16 @@ export function ThreeRuntimePanel({
 				return;
 			}
 
+			const session = getSession();
+			if (
+				!session ||
+				!canAcceptRuntimeInput(
+					session,
+					performance.now(),
+					gameplayBlocked(session),
+				)
+			)
+				return;
 			const direction = keyToDirection(event);
 			if (direction) {
 				event.preventDefault();
@@ -1332,7 +1465,11 @@ export function ThreeRuntimePanel({
 		const interval = window.setInterval(() => {
 			const session = getSession();
 			const area = session ? getArea(session) : undefined;
-			if (session && area) {
+			if (
+				session &&
+				area &&
+				!isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+			) {
 				const tickStartedAt = performance.now();
 				tickRuntimeNpcs(session, area, performance.now(), handleNpcEvent);
 				diagnostics.recordRuntimeTick(performance.now() - tickStartedAt);
@@ -2180,6 +2317,52 @@ export function ThreeRuntimePanel({
 							</button>
 						);
 					})}
+				</div>
+			) : null}
+			{dialogueNode && session?.dialogue ? (
+				<div
+					className="three-runtime-modal"
+					role="dialog"
+					aria-label="Conversation"
+				>
+					<strong>
+						{dialogueNode.speaker ??
+							session.project.dialogues.find(
+								(entry) => entry.id === session.dialogue?.dialogueId,
+							)?.name}
+					</strong>
+					<p>{dialogueNode.text}</p>
+					{dialogueNode.type === "choice" ? (
+						getAvailableDialogueChoices(
+							dialogueNode,
+							session.runtimeState,
+							session.runtimeQuestState,
+						).length ? (
+							getAvailableDialogueChoices(
+								dialogueNode,
+								session.runtimeState,
+								session.runtimeQuestState,
+							).map((choice) => (
+								<button
+									key={choice.id}
+									type="button"
+									onClick={() => advanceConversation(choice.id)}
+								>
+									{choice.text}
+								</button>
+							))
+						) : (
+							<button type="button" onClick={closeDialogue}>
+								End conversation
+							</button>
+						)
+					) : (
+						<button type="button" onClick={() => advanceConversation()}>
+							{dialogueNode.type === "text" && dialogueNode.nextNodeId
+								? "Next"
+								: "End conversation"}
+						</button>
+					)}
 				</div>
 			) : null}
 			{pendingCutscene ? (
