@@ -1,6 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	matrixSelectionArgument,
+	selectMatrixCases,
+} from "./matrix-selection.mjs";
 import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
 import {
 	GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE,
@@ -123,12 +127,23 @@ export function proceduralMannequinTopologyMatrixCases(defaults) {
 
 export async function runProceduralMannequinTopologyMatrix({
 	outputRoot = DEFAULT_OUTPUT,
+	caseNames,
+	listOnly = false,
 	workspaceRoot = process.cwd(),
 } = {}) {
 	const baseRecipe = JSON.parse(
 		await readFile(path.resolve(workspaceRoot, DEFAULT_RECIPE), "utf8"),
 	);
-	const cases = proceduralMannequinTopologyMatrixCases(baseRecipe.proportions);
+	const cases = selectMatrixCases(
+		proceduralMannequinTopologyMatrixCases(baseRecipe.proportions),
+		caseNames,
+	);
+	if (listOnly)
+		return {
+			caseNames: cases.map(([name]) => name),
+			artifactCount: cases.length,
+			blenderPasses: cases.length * 2,
+		};
 	await mkdir(path.resolve(workspaceRoot, outputRoot), { recursive: true });
 	const results = [];
 	for (const [name, proportions] of cases) {
@@ -187,6 +202,10 @@ if (path.resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
 	const outputIndex = process.argv.indexOf("--output-root");
 	const outputRoot =
 		outputIndex >= 0 ? process.argv[outputIndex + 1] : DEFAULT_OUTPUT;
-	const summary = await runProceduralMannequinTopologyMatrix({ outputRoot });
+	const summary = await runProceduralMannequinTopologyMatrix({
+		outputRoot,
+		caseNames: matrixSelectionArgument(process.argv, "--case"),
+		listOnly: process.argv.includes("--list"),
+	});
 	console.log(JSON.stringify(summary, null, 2));
 }

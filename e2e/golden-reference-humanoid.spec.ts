@@ -73,7 +73,7 @@ async function waitForGoldenReference(
 	);
 }
 
-test("loads the Golden Reference Humanoid for a player and NPC through shared Three presentation", async ({
+test("loads the Golden Reference Humanoid for a player and NPC through shared Three presentation @integration", async ({
 	context,
 	page,
 }, testInfo) => {
@@ -104,10 +104,11 @@ test("loads the Golden Reference Humanoid for a player and NPC through shared Th
 	await page.getByRole("button", { exact: true, name: "Perf" }).click();
 	await expect(page.getByLabel("3D Preview Perf diagnostics")).toBeVisible();
 	const editorSnapshot = await waitForGoldenReference(page, EDITOR_LABEL);
-	await page.screenshot({
-		fullPage: true,
-		path: testInfo.outputPath("golden-reference-editor.png"),
-	});
+	if (process.env.CAPTURE_VISUALS === "1")
+		await page.screenshot({
+			fullPage: true,
+			path: testInfo.outputPath("golden-reference-editor.png"),
+		});
 
 	await page.getByRole("button", { exact: true, name: "Play" }).click();
 	await page.getByRole("button", { name: "Play 3D Experimental" }).click();
@@ -121,10 +122,11 @@ test("loads the Golden Reference Humanoid for a player and NPC through shared Th
 	await page.getByRole("button", { exact: true, name: "Perf" }).click();
 	await expect(page.getByLabel("3D Runtime Perf diagnostics")).toBeVisible();
 	const runtimeSnapshot = await waitForGoldenReference(page, RUNTIME_LABEL);
-	await page.screenshot({
-		fullPage: true,
-		path: testInfo.outputPath("golden-reference-runtime.png"),
-	});
+	if (process.env.CAPTURE_VISUALS === "1")
+		await page.screenshot({
+			fullPage: true,
+			path: testInfo.outputPath("golden-reference-runtime.png"),
+		});
 
 	expect(editorSnapshot.asset.loadFailureCount).toBe(0);
 	expect(runtimeSnapshot.asset.loadFailureCount).toBe(0);

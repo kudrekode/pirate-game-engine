@@ -697,9 +697,11 @@ function HumanoidPreview({
 		Promise.all([
 			idleClipPromise,
 			walkClipPromise,
-			fetchJson<RuntimeRetargetReport>(
-				`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`,
-			),
+			offlineBaked
+				? Promise.resolve(undefined)
+				: fetchJson<RuntimeRetargetReport>(
+						`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`,
+					),
 			offlineBakePromise,
 			mannequinManifestPromise,
 		])
@@ -708,7 +710,7 @@ function HumanoidPreview({
 				animationClips.set("idle", idleClip);
 				animationClips.set("walk", walkClip);
 				host.dataset.retargetProfile =
-					baked?.idle.profileVersion ?? report.boneMapVersion;
+					baked?.idle.profileVersion ?? report?.boneMapVersion ?? "unknown";
 				if (baked) {
 					host.dataset.artifactPaths = `${baked.idle.outputPath},${baked.walk.outputPath}`;
 					host.dataset.compilerVersion = baked.idle.compilerVersion;
@@ -718,16 +720,22 @@ function HumanoidPreview({
 							baked.roundTrip.walk.poseComparison.passed,
 					);
 				}
-				host.dataset.idleQuality = JSON.stringify(
-					failedBaseline
-						? report.legacyFailedBaseline.idleQuality
-						: report.idle.quality.summary,
-				);
-				host.dataset.walkQuality = JSON.stringify(
-					failedBaseline
-						? report.legacyFailedBaseline.walkQuality
-						: report.walk.quality.summary,
-				);
+				// Historical runtime metrics must not be presented as offline artifact quality.
+				if (report) {
+					host.dataset.idleQuality = JSON.stringify(
+						failedBaseline
+							? report.legacyFailedBaseline.idleQuality
+							: report.idle.quality.summary,
+					);
+					host.dataset.walkQuality = JSON.stringify(
+						failedBaseline
+							? report.legacyFailedBaseline.walkQuality
+							: report.walk.quality.summary,
+					);
+				} else {
+					delete host.dataset.idleQuality;
+					delete host.dataset.walkQuality;
+				}
 				setRetargetReport(report);
 				setOfflineBake(baked);
 				setMannequinManifest(manifest);

@@ -515,3 +515,80 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(fetch).not.toHaveBeenCalled();
 	});
 });
+
+it("keeps distinct request snapshots and restores recent results without compiling again", async () => {
+	const requests: Record<string, unknown>[] = [];
+	const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+		const request = JSON.parse(String(init?.body));
+		requests.push(request);
+		const result = successfulCompile(request.proportions.height);
+		result.requestId = `11111111-1111-4111-8111-${String(requests.length).padStart(12, "0")}`;
+		result.manifest.proportions = request.proportions;
+		result.manifest.recipeHash = String(requests.length).repeat(64);
+		result.manifest.outputHash = String(requests.length + 3).repeat(64);
+		return new Response(JSON.stringify(result), { status: 200 });
+	});
+	vi.stubGlobal("fetch", fetch);
+	render(<App />);
+	const snapshots: string[] = [];
+	for (const seed of ["body-e2e-11", "body-e2e-22", "body-e2e-33"]) {
+		fireEvent.change(screen.getByLabelText("Random seed"), {
+			target: { value: seed },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Randomise" }));
+		snapshots.push(screen.getByTestId("recipe-json").textContent ?? "");
+		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+		await waitFor(() =>
+			expect(
+				screen.getByText(/Compilation and validation succeeded/u),
+			).toBeInTheDocument(),
+		);
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent(String(requests.length).repeat(64));
+	}
+	expect(fetch).toHaveBeenCalledTimes(3);
+	expect(
+		new Set(requests.map((request) => JSON.stringify(request.proportions)))
+			.size,
+	).toBe(3);
+	for (const [index, seed] of [
+		"body-e2e-11",
+		"body-e2e-22",
+		"body-e2e-33",
+	].entries()) {
+		fireEvent.click(screen.getByRole("button", { name: new RegExp(seed) }));
+		expect(screen.getByTestId("recipe-json").textContent).toBe(
+			snapshots[index],
+		);
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent(String(index + 1).repeat(64));
+		expect(requests[index]).toMatchObject({
+			version: 6,
+			proportions: JSON.parse(snapshots[index]).body.parameters,
+		});
+	}
+	expect(fetch).toHaveBeenCalledTimes(3);
+	expect(document.querySelectorAll("canvas")).toHaveLength(1);
+	fetch.mockImplementationOnce(
+		async () =>
+			new Response(
+				JSON.stringify({
+					status: "failed",
+					error: "synthetic compile failure",
+				}),
+				{ status: 500 },
+			),
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+	await waitFor(() =>
+		expect(screen.getByText(/synthetic compile failure/u)).toBeInTheDocument(),
+	);
+	expect(
+		screen.getByLabelText("Creator compilation diagnostics"),
+	).toHaveTextContent("3".repeat(64));
+	expect(
+		screen.getByLabelText("Recent Compilations").querySelectorAll("button"),
+	).toHaveLength(3);
+});

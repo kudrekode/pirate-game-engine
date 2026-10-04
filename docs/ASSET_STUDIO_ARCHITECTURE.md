@@ -25,7 +25,7 @@ for current creator work; older milestone documents are historical evidence.
   head contract is V3 and hair fit is `quaternius-buzzed-fit-v3`.
   Legacy procedural recipes receive hair colour `#3b2a1f`; V5 eye colour survives.
 - Hairstyle Library V2 adds two registry-backed short styles without a schema
-  change. Validate all four choices with `npm run validate:procedural-hairstyle-matrix -- --library`.
+  change. The current registry has six choices including Long/Buns; `--library` covers 36 body/style artifacts (72 Blender passes). Use `--style` and `--case` for relevant subsets and `--list` before building.
 - Next: length-aware Long/Buns profiles and shoulder/neck clearance review.
   Shirt Slot V1 remains deferred.
 - Generated fixtures live in
@@ -59,6 +59,8 @@ Browser previews, real compiler integration, visual acceptance and Blender
 matrices remain opt-in. Select the smallest category in the
 [validation routing guide](PLAYWRIGHT_SMOKE.md), then consult the
 [compiler guide](../tools/blender-character/README.md) for regeneration.
+Default browser commands now select integration only; real compile, visual and historical galleries have explicit commands in that guide. Recent-history UI uses fake responses in component tests, while one real browser/compiler/preview boundary remains. Current previews do not load runtime-retarget history unless a diagnostic mode is requested.
+
 Historical [milestone validation](assets/hairstyle-library-v2.md#validation)
 records prior evidence, not a current pass. Test artifacts under
 `test-results/` are ignored/local, not portable checked-in proof.

@@ -112,7 +112,7 @@ async function expectIdle(page: Page): Promise<void> {
 	);
 }
 
-test("observes Three runtime movement and animation transitions", async ({
+test("observes Three runtime movement and animation transitions @integration", async ({
 	context,
 	page,
 }, testInfo) => {

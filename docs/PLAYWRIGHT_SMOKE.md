@@ -1,73 +1,161 @@
 # Validation and Playwright Routing
 
-Start with deterministic evidence. Browser and Blender validation are opt-in and
-are not included in `npm run ci`. Do not run all browser scenarios for an ordinary
-helper, label or layout edit.
+Choose the cheapest layer that can detect the changed failure. Browser and Blender
+work is opt-in; neither runs in `npm run ci`. Passing a numerical gate does not
+approve silhouette, anatomy, hair fit, materials or deformation.
 
 ## Deterministic ownership and final gate
 
-`npm run test:run -- <test-file>` is the normal iteration command.
-Root Vitest uses disjoint `root-node`/`root-dom` projects plus each workspace's
-own config. Pure helpers/contracts/creator requests run in Node; mounted React
-and browser-global diagnostics run in jsdom with cleanup. Files remain isolated,
-with one worker and no file parallelism.
+Run `npm run test:run -- <affected-file>` during iteration. Pure helpers/contracts
+run in Node; mounted React boundaries use jsdom. Root and workspace owners remain
+disjoint, isolated and single-worker. `npm run ci` runs all owned Vitest tests,
+type-safe root/Studio builds, three package builds/typechecks and cheap Node
+compiler/provenance/installed-GLB tests. Run it once at completion, followed by
+`git diff --check`; do not repeat overlapping gates afterward.
 
-| Scope | Command |
-| --- | --- |
-| Root pure helpers | `npm run test:run -- --project root-node`, or a single helper file |
-| Root DOM/component boundaries | `npm run test:run -- --project root-dom`, or a single component file |
-| Studio request/UI boundary | `npm run test:asset-studio -- src/proceduralMannequinCreator.test.ts` or `src/App.test.tsx` |
-| Contracts | `npm run test:run -- --project character-contract --project asset-compiler-contract` |
-| Shared preview | `npm run test:run -- --project three-asset-preview` |
-| Cheap compiler/API, provenance, installed GLB round trips | `npm run test:compiler` (Node tests; no Blender invocation) |
-| Final integration | `npm run ci`, then `git diff --check` |
-
-CI runs all 71 Vitest files once, safe root/Asset Studio builds, all three shared
-package typechecks, and the Node tests in `tools/blender-character` and
-`tools/animation-retargeting`. `npm run build` remains a safe standalone
-typecheck + Vite build; CI no longer runs a redundant root typecheck before it.
-`check:asset-studio` remains a focused convenience command, not an extra CI step.
-Node 22 is used in CI (local benchmark: 22.12.0, npm 10.9.0).
-
-## Select browser work by acceptance criterion
-
-Install Chromium once if missing: `npx playwright install chromium`.
-**Windows PowerShell:** use `npm.cmd` / `npx.cmd` when forwarding arguments;
-the `npm.ps1` shim can swallow `--list` or `--grep` and execute the broader suite.
-For example: `npm.cmd run test:e2e:asset-studio:compile -- --list`.
-Confirm the echoed command includes the requested flags before continuing.
-
-Use `-- --list` on an npm browser script to inspect its selection without running it.
-Use `-- --grep "specific test title"` to narrow a category further.
-
-| Category | Command | Cost / when to use |
+| Changed criterion | Cheapest correct command | Escalate only for |
 | --- | --- | --- |
-| Root asset integration smoke | `npm run test:e2e:assets` | Two real WebGL/GLTF editor-to-runtime cases (Golden and haired mannequin), four screenshots, no compiler. Use for loader/registry/browser integration. |
-| Studio fixture preview smoke | `npm run test:e2e:asset-studio:preview` | One checked-in mannequin preview/animation/source-switch case, nine screenshots, no compiler. Cheaper than compile workflows; not a unit test. |
-| Runtime input/animation boundary | `npm run test:e2e:three-animation` | One real runtime, actual movement plus walk/idle/attack transitions. No timing benchmark or Blender. |
-| Performance smoke | `npm run test:e2e:three-perf` | Editor and runtime, smooth terrain, collapsed/expanded overlays, settled timing windows and a verified move. Diagnostic measurements, no universal FPS threshold. |
-| Real compiler integration | `npm run test:e2e:asset-studio:compile` | Existing randomise/compile/preview/restore case; **three compiles, six Blender passes**. Retains the real boundary. Not a cheap preview command. |
-| Animation visual acceptance | `npm run test:e2e:asset-studio:visual` | Golden current/historical comparison gallery; about 30 images. Use only for changed deformation/animation acceptance. |
-| Hair visual/compiler acceptance | `npm run test:e2e:asset-studio:hair` | Library V2 and Long/Buns cases; two compiles/four Blender passes and 24 captures each. Narrow with `--grep` to the affected case. |
-| Appearance/bald-hair workflows | `npm run test:e2e:asset-studio -- --grep "isolated skin"` or `--grep "bald and Quaternius"` | Respectively three/two compiles; visual acceptance only for changed materials/fitting. |
-| Broad browser sweeps | `npm run test:e2e`, `npm run test:e2e:asset-studio` | Explicit all-root/all-Studio selections. Studio includes expensive real compiles and galleries; never the default validation step. |
+| Gameplay/helper | `npm run test:run -- src/runtime/movement.test.ts` (substitute affected file) | Final CI; no browser |
+| Editor copy/control | `npm run test:run -- src/test/editorSmoke.test.tsx` | Targeted browser view if layout needs inspection; no compiler |
+| Creator request/history/failure/metadata UI | `npm run test:run -- apps/asset-studio/src/App.test.tsx apps/asset-studio/src/proceduralMannequinCreator.test.ts` | Optional preview integration; fake responses cover UI without Blender |
+| Compile endpoint/recipe/hash | `node --test tools/blender-character/procedural-mannequin-creator-api.test.mjs` | One real compiler boundary if HTTP, publication or integration changes |
+| Geometry/material/rig/provenance | `npm run test:compiler` or affected Node test | Fresh affected compile, relevant matrix, rendered inspection |
+| Shared loader/clone | `npm run test:run -- --project three-asset-preview` | Root asset or Studio preview integration |
+| Matrix selection | `node --test tools/blender-character/matrix-selection.test.mjs` | `--list` inspection; no Blender required |
 
-Screenshots are evidence for review, not automatic visual approval. Complete cheap
-checks before compiling, then inspect the relevant views in one batch. Keep the
-real compile boundary and legitimate visual coverage; do not mock them away.
-Converting repetitive compile/UI cases and reusing matrix artifacts is deferred.
+## Browser commands and costs
 
-### Expensive compiler matrices
+Install Chromium once if needed: `npx playwright install chromium`.
+On Windows use `npm.cmd`/`npx.cmd` when forwarding flags; the PowerShell shim can
+swallow them. For regex arguments containing `|`, prefer an existing quoted npm
+script or direct `node node_modules/@playwright/test/cli.js ... --grep 'a|b'`;
+a `.cmd` forwarding layer may interpret an unpreserved pipe as a shell pipeline.
+Append `-- --list` to an npm selection first. Never interpret no tests found as a
+pass. Configs default to `@integration` only when no explicit CLI grep is supplied.
+An explicit grep selects its purpose independently (Playwright otherwise intersects
+config and CLI filters).
 
-The existing `validate:procedural-topology-matrix`,
-`validate:procedural-appearance-matrix` and
-`validate:procedural-hairstyle-matrix` scripts can run real two-pass Blender
-builds. Use them only for affected geometry/material/fitting/compiler invariants.
-Topology covers 21 bodies; hairstyle `-- --library` covers 24 body/style artifacts
-(48 Blender passes). Check the [compiler guide](../tools/blender-character/README.md)
-and [Asset Studio Quick Resume](ASSET_STUDIO_ARCHITECTURE.md#quick-resume) for current
-options and versions. `test:blender-bake` is the legacy cheap Node test name,
-not a matrix rebuild; `test:compiler` also includes retarget/provenance tests.
+| Command | Selected boundary | Cases; real compiles / Blender passes; success images |
+| --- | --- | --- |
+| `npm run test:e2e` | Root default: Golden/mannequin editor-runtime integration and keyboard animation | 3; 0 / 0; 0 |
+| `npm run test:e2e:assets` | Root GLTF loading/registry/player/NPC integration | 2; 0 / 0; 0 |
+| `npm run test:e2e:three-animation` | Actual move and walk/idle/attack RAF observations | 1; 0 / 0; 0 |
+| `npm run test:e2e:three-perf` | Settled renderer/RAF timing windows and asset diagnostics | 1; 0 / 0; 0 |
+| `npm run test:e2e:asset-studio` or `:asset-studio:preview` | Fixture mount, animation, source-switch/resource ownership; asserts no historical-report fetch | 1; 0 / 0; 0 |
+| `npm run test:e2e:asset-studio:compile` | Real browser request → Vite API → two Blender builds → validated GLB → served preview | 1; 1 / 2; 0; retains JSON identity evidence |
+| `npm run test:e2e:asset-studio:visual` | Current Golden deformation gallery | 1; 0 / 0; 9 (27 in explicit full mode) |
+| `npm run test:e2e:asset-studio -- --grep "captures the checked-in"` | Checked-in mannequin appearance gallery | 1; 0 / 0; 9 |
+| `npm run test:e2e:asset-studio -- --grep "isolated skin"` | Three material appearances, numerical isolation and rendered review | 1; 3 / 6; 3 |
+| `npm run test:e2e:asset-studio -- --grep "bald and Quaternius"` | Bald/Buzzed face/hair fit and deformation | 1; 2 / 4; 30 |
+| `npm run test:e2e:asset-studio:hair` | Short Crop/Parted plus Long/Buns; narrow further by title when possible | 2; 4 / 8; 24 + 30 |
+| `npm run test:e2e:asset-studio:historical` | Rejected runtime-v1 diagnostic gallery only | 1; 0 / 0; 3 |
+| `npm run test:e2e:all-current` | Explicit root sweep including performance | 4; 0 / 0; 0 |
+| `npm run test:e2e:asset-studio:all-current` | Explicit broad current sweep; excludes historical | 8; 10 / 20; 105 |
+
+The expensive material/hair cases remain real compiles because they accept generated
+geometry/appearance, not simulated UI responses. Their numbers are structural
+counts, not runtime predictions. The six registered hair choices include Long/Buns;
+coverage existing in a gallery is not a declaration that the style is visually
+accepted. All cases retain failure screenshots and traces. Root perf/asset success
+images are optional with `CAPTURE_VISUALS=1`; normal summaries omit uncaptured paths.
+
+## Screenshot selection and inspection
+
+The ordinary integration and compiler cases produce no success screenshots.
+The mannequin's previous nine integration images are preserved in its explicit
+appearance case. Current Golden review captures three Rest views, frontal Idle
+at 25%, all four quarter-cycle Walk samples from the side, and frontal Walk at
+25%: nine complementary images. All original joint/sample assertions and JSON
+observations still run. Set `FULL_VISUAL_GALLERY=1` for all 27 current pose/views
+when deformation changes warrant checking every angle. Historical-v1's three
+images are a separate command; no default preview downloads its diagnostic report.
+`?retarget=failed-v1` and `?retarget=runtime-v2` remain available for investigation.
+
+Hair views remain deliberately unchanged: front/close views expose face and scalp,
+side/rear views expose crown/neck/shoulder clearance, and Rest/Idle/Walk distinguish
+static fit from deformation. No evidence justifies deleting those views for a new
+style or fitting change. Skin/roughness review retains its three distinct materials.
+
+For Windows PowerShell, scope optional image modes and restore the prior setting:
+
+```powershell
+$previousGalleryMode = $env:FULL_VISUAL_GALLERY
+try {
+  $env:FULL_VISUAL_GALLERY = '1'
+  npm.cmd run test:e2e:asset-studio:visual
+} finally { $env:FULL_VISUAL_GALLERY = $previousGalleryMode }
+```
+
+Apply the same pattern to `CAPTURE_VISUALS` for root asset/performance appearance
+review. Inspect the relevant image batch once and record which artifact/views were
+reviewed and for which criterion. Screenshots without inspection are evidence,
+not visual approval. Numeric hashes/bounds do not replace that review.
+
+## Matrix routing: targeted, relevant, full
+
+A matrix is a deliberate compiler acceptance run, never a generic response to an
+asset-related edit. Each artifact still receives two isolated builds and the
+existing exported geometry/material/rig gates. Run cheap tests first.
+
+| Change | Selection | Maximum structural compile / pass count |
+| --- | --- | --- |
+| One recipe or local fit adjustment | One fresh artifact via compiler CLI; selected views | 1 / 2 |
+| One hairstyle's fitting profile across body extremes | `--style <id>`; includes a bald control for each body | 12 / 24 across six bodies |
+| One style on one problematic body | `--style <id> --case <name>` | 2 / 4, including bald control |
+| Body/topology local issue | `--case default,height-max` (choose relevant exact cases) | 2 / 4 |
+| Shared head/fit algorithm | Hair `--library` for all six bodies × six choices | 36 / 72 |
+| Core body topology/skinning/parameter algorithm | Full topology default/extrema/seed/challenge set, plus relevant hair matrix if head changed | 21 / 42 topology |
+| Skin/eye material encoding | Appearance matrix | 8 / 16 |
+| Shared hair material encoding | Appearance `--hair-colors` | 4 / 8 |
+
+List case names/cost without creating outputs or invoking Blender:
+
+```powershell
+npm.cmd run validate:procedural-topology-matrix -- --list
+npm.cmd run validate:procedural-hairstyle-matrix -- --library --list
+npm.cmd run validate:procedural-hairstyle-matrix -- --style quaternius-hair-long-v1 --case default --list
+```
+
+Run the inspected selection only when required, using a distinct output root:
+
+```powershell
+npm.cmd run validate:procedural-topology-matrix -- --case default,height-max --output-root test-results/topology-targeted
+npm.cmd run validate:procedural-hairstyle-matrix -- --style quaternius-hair-long-v1 --case default --output-root test-results/long-targeted
+npm.cmd run validate:procedural-hairstyle-matrix -- --style quaternius-hair-long-v1 --output-root test-results/long-body-matrix
+```
+
+Selectors use exact comma-separated names and reject unknown/empty selections.
+A hairstyle selection always includes bald geometry/face/skeleton comparison.
+Partial summaries report only selected cases; they are not full-matrix evidence.
+Appearance matrices remain their small fixed comparative sets. For one recipe:
+
+```powershell
+npm.cmd run compile:procedural-mannequin -- --recipe tools/blender-character/recipes/procedural-mannequin-long-v1.recipe.json --output-dir test-results/long-review --staging
+npm.cmd run compile:procedural-mannequin -- --validate-only --recipe tools/blender-character/recipes/procedural-mannequin-long-v1.recipe.json --output-dir test-results/long-review
+```
+
+Full matrices are justified by foundational/shared geometry changes, followed by
+representative visual inspection and one real compiler/browser integration if its
+boundary changed. Do not run every browser gallery after a full matrix merely to
+reproduce numerical assertions. See the [compiler guide](../tools/blender-character/README.md).
+
+## Artifact identity and reuse limits
+
+No new cross-run compile cache is introduced. The existing source/compiler,
+recipe, semantic/output hashes and version/provenance fields are useful evidence,
+but `--validate-only` proves installed artifact/recipe/round-trip consistency; it
+does **not** compare every current compiler/source/Blender input against the build.
+It must not be used as a current-source cache hit. A cache would also need exact
+compiler and validator source hashes, source assets/profile/registry dependencies,
+Blender build identity, recipe and output hashes; recipe equality alone is unsafe.
+
+Within a successful creator session, Recent Compilations reuses that exact result
+and URL without another compile (now covered below browser level). The explicit
+fixture gallery also reuses checked-in output without Blender, labelled as fixture
+acceptance, not proof of today's compiler. Retain manifest, recipe snapshot,
+diagnostics, GLB and build log together. Rebuild affected artifacts after compiler,
+geometry, source, fitting or validator changes. Cross-run matrix-to-browser replay
+is deferred rather than introducing an unverified freshness shortcut.
 
 ## Performance benchmark and artifacts
 
@@ -82,7 +170,7 @@ before resetting sample windows. Timing samples are read before screenshots.
 - `three-editor-snapshot.json`
 - `three-runtime-collapsed-snapshot.json`, `three-runtime-snapshot.json`
 - `three-runtime-after-move-snapshot.json`
-- `three-editor.png`, `three-runtime.png`
+- Optional `three-editor.png`, `three-runtime.png` when `CAPTURE_VISUALS=1`
 
 The dev/test global `window.__THREE_PERF_DIAGNOSTICS__` exposes snapshots for
 `ThreeDPreview` and `ThreeRuntimePanel`. They include scene identity/rebuilds,

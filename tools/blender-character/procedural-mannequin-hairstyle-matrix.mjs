@@ -2,6 +2,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHARACTER_HAIR_COMPONENT_IDS } from "./character-component-registry.mjs";
+import {
+	matrixSelectionArgument,
+	selectMatrixCases,
+} from "./matrix-selection.mjs";
 import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
 import { validateProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
 
@@ -111,6 +115,9 @@ function hairstyleFit(manifest) {
 export async function runProceduralMannequinHairstyleMatrix({
 	outputRoot,
 	library = false,
+	caseNames,
+	styleIds,
+	listOnly = false,
 	workspaceRoot = process.cwd(),
 } = {}) {
 	const baseRecipe = JSON.parse(
@@ -123,16 +130,37 @@ export async function runProceduralMannequinHairstyleMatrix({
 				? "test-results/length-aware-hairstyle-fitting-v1/body-matrix"
 				: DEFAULT_OUTPUT),
 	);
-	await mkdir(root, { recursive: true });
-	const results = [];
-	for (const [name, overrides] of CASES) {
-		const pair = [];
-		for (const [variant, hair] of library
+	const cases = selectMatrixCases(CASES, caseNames);
+	// Always retain a bald control so targeted fits still prove body/rig isolation.
+	const variants = styleIds
+		? [
+				["none", "none"],
+				...selectMatrixCases(
+					CHARACTER_HAIR_COMPONENT_IDS.filter((id) => id !== "none").map(
+						(id) => [id, id],
+					),
+					styleIds,
+					"style",
+				),
+			]
+		: library
 			? CHARACTER_HAIR_COMPONENT_IDS.map((id) => [id, id])
 			: [
 					["bald", "none"],
 					["haired", "quaternius-hair-v0"],
-				]) {
+				];
+	if (listOnly)
+		return {
+			caseNames: cases.map(([name]) => name),
+			componentIds: variants.map(([, id]) => id),
+			artifactCount: cases.length * variants.length,
+			blenderPasses: cases.length * variants.length * 2,
+		};
+	await mkdir(root, { recursive: true });
+	const results = [];
+	for (const [name, overrides] of cases) {
+		const pair = [];
+		for (const [variant, hair] of variants) {
 			const parsed = validateProceduralMannequinRecipe({
 				...baseRecipe,
 				components: { hair },
@@ -200,11 +228,9 @@ export async function runProceduralMannequinHairstyleMatrix({
 	}
 	const summary = {
 		artifactCount: results.length,
-		caseCount: CASES.length,
+		caseCount: cases.length,
 		cases: results,
-		componentIds: library
-			? CHARACTER_HAIR_COMPONENT_IDS
-			: ["none", "quaternius-hair-v0"],
+		componentIds: variants.map(([, id]) => id),
 		passed: true,
 	};
 	await writeFile(
@@ -223,6 +249,9 @@ if (path.resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
 			await runProceduralMannequinHairstyleMatrix({
 				outputRoot: outputIndex >= 0 ? outputRoot : undefined,
 				library: process.argv.includes("--library"),
+				caseNames: matrixSelectionArgument(process.argv, "--case"),
+				styleIds: matrixSelectionArgument(process.argv, "--style"),
+				listOnly: process.argv.includes("--list"),
 			}),
 			null,
 			2,

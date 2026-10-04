@@ -1,6 +1,12 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
+	// Playwright combines config and CLI grep; allow explicit purpose selections.
+	grep: process.argv.some(
+		(arg) => arg === "--grep" || arg === "-g" || arg.startsWith("--grep="),
+	)
+		? undefined
+		: /@integration/,
 	testDir: "./e2e",
 	forbidOnly: Boolean(process.env.CI),
 	timeout: 90_000,

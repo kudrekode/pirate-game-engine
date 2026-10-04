@@ -62,6 +62,10 @@ Inspect selected summary fields first. Existing milestone evidence is not a fres
 Do not rerun unchanged expensive suites for reassurance. If a test fails, inspect
 its first error/artifact, make a relevant correction, and rerun only the affected check.
 Browser and Blender checks are opt-in; ordinary labels/helper edits do not need them.
+Browser defaults select integration only. Compile, visual, performance and historical
+cases require explicit selectors. Inspect matrix `--list` before a build; use exact
+`--case` / hairstyle `--style` selections. Installed-artifact validation is not a
+current-source cache check. See the validation guide for costs and concrete commands.
 
 | Change | Focused command (from repository root) |
 | --- | --- |

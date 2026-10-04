@@ -427,7 +427,7 @@ function validateRuntimeCharacterAnimation(
 	}
 }
 
-test("captures Three editor and runtime perf diagnostics", async ({
+test("captures Three editor and runtime perf diagnostics @performance", async ({
 	context,
 	page,
 }) => {
@@ -525,8 +525,13 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			"three-editor-snapshot.json",
 			editorSnapshot,
 		);
-		artifacts.editorScreenshot = path.join(ARTIFACT_DIR, "three-editor.png");
-		await page.screenshot({ fullPage: true, path: artifacts.editorScreenshot });
+		if (process.env.CAPTURE_VISUALS === "1") {
+			artifacts.editorScreenshot = path.join(ARTIFACT_DIR, "three-editor.png");
+			await page.screenshot({
+				fullPage: true,
+				path: artifacts.editorScreenshot,
+			});
+		}
 
 		await page.getByRole("button", { exact: true, name: "Play" }).click();
 		await page.getByRole("button", { name: "Play 3D Experimental" }).click();
@@ -581,11 +586,16 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			"three-runtime-after-move-snapshot.json",
 			runtimeAfterMoveSnapshot,
 		);
-		artifacts.runtimeScreenshot = path.join(ARTIFACT_DIR, "three-runtime.png");
-		await page.screenshot({
-			fullPage: true,
-			path: artifacts.runtimeScreenshot,
-		});
+		if (process.env.CAPTURE_VISUALS === "1") {
+			artifacts.runtimeScreenshot = path.join(
+				ARTIFACT_DIR,
+				"three-runtime.png",
+			);
+			await page.screenshot({
+				fullPage: true,
+				path: artifacts.runtimeScreenshot,
+			});
+		}
 	} catch (error) {
 		fatalError = error;
 	} finally {

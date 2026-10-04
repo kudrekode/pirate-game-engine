@@ -31,11 +31,17 @@ async function verifyAnimations(page: Page) {
 	}
 }
 
-test("previews and animates the checked-in Face Readability V0 mannequin", async ({
+test("previews and animates the checked-in Face Readability V0 mannequin @integration", async ({
 	page,
-}, testInfo) => {
+}) => {
 	test.setTimeout(180_000);
 	const consoleErrors = collectErrors(page);
+	const historicalRequests: string[] = [];
+	page.on("request", (request) => {
+		if (request.url().includes("runtime-retarget-report"))
+			historicalRequests.push(request.url());
+	});
+	await page.route("**/runtime-retarget-report.json", (route) => route.abort());
 	await page.goto("/");
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
@@ -73,28 +79,6 @@ test("previews and animates the checked-in Face Readability V0 mannequin", async
 	await expect(diagnostics).toContainText("65-joint Golden template");
 	await expect(diagnostics).toContainText("procedural-mannequin-blender-v7");
 	await verifyAnimations(page);
-	for (const state of ["Rest", "Idle", "Walk"]) {
-		await page.getByRole("button", { exact: true, name: state }).click();
-		if (state !== "Rest")
-			await page.getByLabel("Animation sample time").fill("0.25");
-		for (const view of ["Front", "Side", "Three-quarter"]) {
-			await page.getByRole("button", { exact: true, name: view }).click();
-			const chrome = page.locator(
-				".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
-			);
-			await chrome.evaluateAll((elements) => {
-				for (const element of elements)
-					(element as HTMLElement).style.visibility = "hidden";
-			});
-			await page.locator("canvas").screenshot({
-				path: testInfo.outputPath(`oriented-bald-${state}-${view}.png`),
-			});
-			await chrome.evaluateAll((elements) => {
-				for (const element of elements)
-					(element as HTMLElement).style.visibility = "";
-			});
-		}
-	}
 
 	await page
 		.getByLabel("Preview source")
@@ -102,10 +86,11 @@ test("previews and animates the checked-in Face Readability V0 mannequin", async
 	await expect(page.locator("canvas")).toHaveCount(1);
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	await expect(page.locator("canvas")).toHaveCount(1);
+	expect(historicalRequests).toEqual([]);
 	expect(consoleErrors).toEqual([]);
 });
 
-test("randomises, compiles, animates, validates, and revisits several body shapes", async ({
+test("compiles one real body through the browser API and previews its artifact @compiler", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(360_000);
@@ -173,40 +158,30 @@ test("randomises, compiles, animates, validates, and revisits several body shape
 		};
 	}
 
-	const seeds = ["body-e2e-11", "body-e2e-22", "body-e2e-33"];
-	const bodies = [];
-	for (const seed of seeds) bodies.push(await randomiseAndCompile(seed));
-	expect(compileRequests).toBe(seeds.length);
-	expect(new Set(bodies.map((body) => body.recipeHash)).size).toBe(
-		seeds.length,
-	);
-	expect(new Set(bodies.map((body) => body.assetHash)).size).toBe(seeds.length);
-	expect(new Set(bodies.map((body) => body.boundsHeight)).size).toBeGreaterThan(
-		1,
-	);
-	for (const body of bodies) {
-		expect(body.assetHash).toMatch(/^[0-9a-f]{64}$/u);
-		expect(body.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
-		expect(body.boundsHeight).toBeCloseTo(body.parameters.height, 4);
-	}
+	const body = await randomiseAndCompile("body-e2e-11");
+	expect(compileRequests).toBe(1);
+	expect(body.assetHash).toMatch(/^[0-9a-f]{64}$/u);
+	expect(body.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
+	expect(body.boundsHeight).toBeCloseTo(body.parameters.height, 4);
 
 	const diagnostics = page.getByLabel("Creator compilation diagnostics");
 	await expect(diagnostics).toContainText("procedural-mannequin-blender-v7");
 	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v8");
-	await page.screenshot({
-		path: testInfo.outputPath("creator-random-body.png"),
+	await testInfo.attach("compiled-artifact.json", {
+		body: JSON.stringify({ compileRequests, body }),
+		contentType: "application/json",
 	});
 
 	await page
 		.getByLabel("Recent Compilations")
-		.getByRole("button", { name: new RegExp(seeds[0], "u") })
+		.getByRole("button", { name: /body-e2e-11/u })
 		.click();
-	await expect(host).toHaveAttribute("data-recipe-hash", bodies[0].recipeHash);
-	expect(compileRequests).toBe(seeds.length);
+	await expect(host).toHaveAttribute("data-recipe-hash", body.recipeHash);
+	expect(compileRequests).toBe(1);
 	expect(consoleErrors).toEqual([]);
 });
 
-test("compiles isolated skin color and roughness changes without changing geometry or rig", async ({
+test("compiles isolated skin color and roughness changes without changing geometry or rig @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(360_000);
@@ -291,7 +266,7 @@ test("compiles isolated skin color and roughness changes without changing geomet
 	expect(consoleErrors).toEqual([]);
 });
 
-test("compiles, animates, captures, and revisits bald and Quaternius hairstyle variants", async ({
+test("compiles, animates, captures, and revisits bald and Quaternius hairstyle variants @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(600_000);
@@ -403,7 +378,7 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 	expect(consoleErrors).toEqual([]);
 });
 
-test("compiles and visually validates the Hairstyle Library V2", async ({
+test("compiles and visually validates the Hairstyle Library V2 @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(240_000);
@@ -482,7 +457,7 @@ test("compiles and visually validates the Hairstyle Library V2", async ({
 	expect(errors).toEqual([]);
 });
 
-test("compiles and visually validates length-aware Long and Buns", async ({
+test("compiles and visually validates length-aware Long and Buns @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(360_000);
@@ -578,5 +553,44 @@ test("compiles and visually validates length-aware Long and Buns", async ({
 		await expect(host).toHaveAttribute("data-recipe-hash", result.recipeHash);
 	}
 	await expect(page.locator("canvas")).toHaveCount(1);
+	expect(errors).toEqual([]);
+});
+
+// Appearance acceptance is explicit; the integration smoke above produces no success images.
+test("captures the checked-in mannequin fixture for appearance review @visual", async ({
+	page,
+}, testInfo) => {
+	const errors = collectErrors(page);
+	await page.goto("/");
+	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
+	await expect(page.locator(".preview-status")).toHaveAttribute(
+		"data-status",
+		"loaded",
+		{ timeout: 60000 },
+	);
+	await verifyAnimations(page);
+	for (const state of ["Rest", "Idle", "Walk"]) {
+		await page.getByRole("button", { exact: true, name: state }).click();
+		if (state !== "Rest")
+			await page.getByLabel("Animation sample time").fill("0.25");
+		for (const view of ["Front", "Side", "Three-quarter"]) {
+			await page.getByRole("button", { exact: true, name: view }).click();
+			const chrome = page.locator(
+				".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
+			);
+			await chrome.evaluateAll((elements) => {
+				for (const element of elements)
+					(element as HTMLElement).style.visibility = "hidden";
+			});
+			await page.locator("canvas").screenshot({
+				path: testInfo.outputPath(`oriented-bald-${state}-${view}.png`),
+			});
+			await chrome.evaluateAll((elements) => {
+				for (const element of elements)
+					(element as HTMLElement).style.visibility = "";
+			});
+		}
+	}
+
 	expect(errors).toEqual([]);
 });
