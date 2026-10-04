@@ -1,4 +1,4 @@
-﻿# Adventure Game Builder
+# Adventure Game Builder
 
 Adventure Game Builder is a browser-based adventure game editor and runtime built with Vite, React, TypeScript, Phaser 3, Three.js, and Zustand. It is designed as a small game-building tool rather than a full engine: authors edit one schema-driven `GameProject`, then press Play to test that project in the default Phaser 2D runtime or the experimental Three.js 3D runtime.
 
@@ -143,22 +143,27 @@ npm run build
 
 ## Testing
 
-The project uses Vitest with React Testing Library for focused engine, migration, editor smoke, and UI tests.
+Use Node 22 (CI uses the latest Node 22 release; local measurements use 22.12.0).
+Vitest assigns pure logic/contracts to Node and mounted UI/browser-global tests
+to jsdom with React cleanup. Each workspace owns its own tests.
 
-`npm run ci` runs:
+For iteration, select the affected file, for example:
 
 ```bash
-npm run typecheck
-npm run test:run
-npm run build
+npm run test:run -- src/runtime/movement.test.ts
 ```
 
-`npm run ci` uses root Vitest discovery, which also finds workspace tests, but
-its typecheck/build target the root app. For Asset Studio changes also run
-`npm run check:asset-studio` (contract and app checks) and
-`npm run test:blender-bake` (Node compiler/API tests and installed GLB round trips).
+Run `npm run ci` once for the final deterministic gate. It runs all Vitest owners
+once, type-safe root and Asset Studio builds, all three shared package typechecks,
+and cheap Node compiler/API/provenance/installed-asset tests. Standalone
+`npm run build` still typechecks before bundling; CI does not typecheck it twice.
+`check:asset-studio` and legacy `test:blender-bake` remain useful focused commands
+but need not be repeated after CI.
 
-GitHub Actions is configured for pull requests to `release/staging` and `main`. The workflow installs dependencies with `npm ci`, then runs typecheck, tests, and build. Playwright browser smoke coverage is opt-in through `npm run test:e2e:three-perf`; it is not part of `npm run ci`.
+GitHub Actions runs this same gate on PRs to `release/staging` and `main`.
+Browser tests, real Blender compilation and geometry matrices stay opt-in.
+See [validation routing and browser categories](docs/PLAYWRIGHT_SMOKE.md) before
+selecting a smoke, visual gallery, performance run or compiler matrix.
 
 ## Project Structure
 

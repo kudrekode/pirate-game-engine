@@ -17,18 +17,13 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Run tests
-        run: npm run test:run
-
-      - name: Build
-        run: npm run build
-
+      # One owner per Vitest suite; safe builds typecheck each app/package once.
+      # Compiler tests use checked-in artifacts/fakes, never Blender regeneration.
+      - name: Validate application, workspaces, and compiler
+        run: npm run ci

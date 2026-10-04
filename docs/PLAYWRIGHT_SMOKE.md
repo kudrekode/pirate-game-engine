@@ -1,113 +1,120 @@
-# Playwright Browser Smoke
+# Validation and Playwright Routing
 
-This repo has an opt-in Playwright smoke harness for the Three.js editor preview and experimental 3D runtime. It is diagnostic infrastructure only; it is not a gameplay E2E suite or a performance gate.
+Start with deterministic evidence. Browser and Blender validation are opt-in and
+are not included in `npm run ci`. Do not run all browser scenarios for an ordinary
+helper, label or layout edit.
 
-`npm run ci` does not include Playwright. Run the browser smoke explicitly when a task changes browser-mounted Three rendering, imported assets, diagnostics, screenshots, or performance-sensitive code.
+## Deterministic ownership and final gate
 
-## Run
+`npm run test:run -- <test-file>` is the normal iteration command.
+Root Vitest uses disjoint `root-node`/`root-dom` projects plus each workspace's
+own config. Pure helpers/contracts/creator requests run in Node; mounted React
+and browser-global diagnostics run in jsdom with cleanup. Files remain isolated,
+with one worker and no file parallelism.
 
-Install the Chromium browser once if Playwright reports that it is missing:
+| Scope | Command |
+| --- | --- |
+| Root pure helpers | `npm run test:run -- --project root-node`, or a single helper file |
+| Root DOM/component boundaries | `npm run test:run -- --project root-dom`, or a single component file |
+| Studio request/UI boundary | `npm run test:asset-studio -- src/proceduralMannequinCreator.test.ts` or `src/App.test.tsx` |
+| Contracts | `npm run test:run -- --project character-contract --project asset-compiler-contract` |
+| Shared preview | `npm run test:run -- --project three-asset-preview` |
+| Cheap compiler/API, provenance, installed GLB round trips | `npm run test:compiler` (Node tests; no Blender invocation) |
+| Final integration | `npm run ci`, then `git diff --check` |
 
-```bash
-npx playwright install chromium
-```
+CI runs all 71 Vitest files once, safe root/Asset Studio builds, all three shared
+package typechecks, and the Node tests in `tools/blender-character` and
+`tools/animation-retargeting`. `npm run build` remains a safe standalone
+typecheck + Vite build; CI no longer runs a redundant root typecheck before it.
+`check:asset-studio` remains a focused convenience command, not an extra CI step.
+Node 22 is used in CI (local benchmark: 22.12.0, npm 10.9.0).
 
-Run the Three performance smoke:
+## Select browser work by acceptance criterion
 
-```bash
-npm run test:e2e:three-perf
-```
+Install Chromium once if missing: `npx playwright install chromium`.
+**Windows PowerShell:** use `npm.cmd` / `npx.cmd` when forwarding arguments;
+the `npm.ps1` shim can swallow `--list` or `--grep` and execute the broader suite.
+For example: `npm.cmd run test:e2e:asset-studio:compile -- --list`.
+Confirm the echoed command includes the requested flags before continuing.
 
-Useful variants:
+Use `-- --list` on an npm browser script to inspect its selection without running it.
+Use `-- --grep "specific test title"` to narrow a category further.
 
-```bash
-npm run test:e2e
-npm run test:e2e:headed
-```
+| Category | Command | Cost / when to use |
+| --- | --- | --- |
+| Root asset integration smoke | `npm run test:e2e:assets` | Two real WebGL/GLTF editor-to-runtime cases (Golden and haired mannequin), four screenshots, no compiler. Use for loader/registry/browser integration. |
+| Studio fixture preview smoke | `npm run test:e2e:asset-studio:preview` | One checked-in mannequin preview/animation/source-switch case, nine screenshots, no compiler. Cheaper than compile workflows; not a unit test. |
+| Runtime input/animation boundary | `npm run test:e2e:three-animation` | One real runtime, actual movement plus walk/idle/attack transitions. No timing benchmark or Blender. |
+| Performance smoke | `npm run test:e2e:three-perf` | Editor and runtime, smooth terrain, collapsed/expanded overlays, settled timing windows and a verified move. Diagnostic measurements, no universal FPS threshold. |
+| Real compiler integration | `npm run test:e2e:asset-studio:compile` | Existing randomise/compile/preview/restore case; **three compiles, six Blender passes**. Retains the real boundary. Not a cheap preview command. |
+| Animation visual acceptance | `npm run test:e2e:asset-studio:visual` | Golden current/historical comparison gallery; about 30 images. Use only for changed deformation/animation acceptance. |
+| Hair visual/compiler acceptance | `npm run test:e2e:asset-studio:hair` | Library V2 and Long/Buns cases; two compiles/four Blender passes and 24 captures each. Narrow with `--grep` to the affected case. |
+| Appearance/bald-hair workflows | `npm run test:e2e:asset-studio -- --grep "isolated skin"` or `--grep "bald and Quaternius"` | Respectively three/two compiles; visual acceptance only for changed materials/fitting. |
+| Broad browser sweeps | `npm run test:e2e`, `npm run test:e2e:asset-studio` | Explicit all-root/all-Studio selections. Studio includes expensive real compiles and galleries; never the default validation step. |
 
-## Benchmark Scene
+Screenshots are evidence for review, not automatic visual approval. Complete cheap
+checks before compiling, then inspect the relevant views in one batch. Keep the
+real compile boundary and legitimate visual coverage; do not mock them away.
+Converting repetitive compile/UI cases and reusing matrix artifacts is deferred.
 
-The harness uses a deterministic benchmark:
+### Expensive compiler matrices
 
-- Project: `Demo Adventure`
-- Area id/name: `area_main` / `Main Area`
-- Editor surface: Map Workspace `3D View`
-- Runtime surface: `Play 3D Experimental`
-- Required imported assets: `pirate-chest`, `pirate-small-ship`
+The existing `validate:procedural-topology-matrix`,
+`validate:procedural-appearance-matrix` and
+`validate:procedural-hairstyle-matrix` scripts can run real two-pass Blender
+builds. Use them only for affected geometry/material/fitting/compiler invariants.
+Topology covers 21 bodies; hairstyle `-- --library` covers 24 body/style artifacts
+(48 Blender passes). Check the [compiler guide](../tools/blender-character/README.md)
+and [Asset Studio Quick Resume](ASSET_STUDIO_ARCHITECTURE.md#quick-resume) for current
+options and versions. `test:blender-bake` is the legacy cheap Node test name,
+not a matrix rebuild; `test:compiler` also includes retarget/provenance tests.
 
-The smoke starts or reuses the Vite dev server, opens Chromium, clears `localStorage` and `sessionStorage` before app boot, chooses the Demo Project through the normal startup chooser, selects the pirate demo `Main Area`, opens the editor 3D view, then opens Play mode and selects `Play 3D Experimental`.
+## Performance benchmark and artifacts
 
-It waits for the real pirate benchmark scene before sampling. It fails if either Three surface is still on the blank demo area, has too few scene entities, has active GLB loads still pending, or is missing the required imported pirate assets.
+The benchmark uses Demo Adventure, `area_main` / Main Area. It clears browser
+storage, chooses Demo Project, mounts the editor 3D view and experimental runtime,
+and requires loaded pirate assets (including chest, ship and three characters).
+It waits for the expected scene identity, loaded clones/clips and smooth terrain
+before resetting sample windows. Timing samples are read before screenshots.
 
-## Captured Artifacts
-
-Artifacts are written to:
-
-```text
-test-results/perf/
-```
-
-Key files:
-
-- `summary.json`
-- `console.json`
-- `network-failures.json`
+`test-results/perf/` contains:
+- `summary.json`, `console.json`, `network-failures.json`
 - `three-editor-snapshot.json`
-- `three-runtime-collapsed-snapshot.json`
-- `three-runtime-snapshot.json`
-- `three-runtime-walk-snapshot.json`
-- `three-runtime-idle-snapshot.json`
-- `three-runtime-attack-snapshot.json`
-- `three-runtime-after-attack-snapshot.json`
+- `three-runtime-collapsed-snapshot.json`, `three-runtime-snapshot.json`
 - `three-runtime-after-move-snapshot.json`
-- `three-editor.png`
-- `three-runtime.png`
+- `three-editor.png`, `three-runtime.png`
 
-The harness captures:
+The dev/test global `window.__THREE_PERF_DIAGNOSTICS__` exposes snapshots for
+`ThreeDPreview` and `ThreeRuntimePanel`. They include scene identity/rebuilds,
+asset load/cache/clone/fallback state, RAF intervals, render/animation/camera/
+water/runtime phases, draw calls/geometry/triangles, terrain/coast counts and hitches.
+Failures include missing scene/assets/frames/render metrics, missing water/coast
+data or uncaught page errors. Console/network warnings remain diagnostic evidence;
+inspect them rather than inferring success from an existing screenshot.
 
-- console warnings and errors
-- uncaught page errors
-- failed requests and non-OK local asset responses
-- editor/runtime Three performance snapshots as JSON
-- editor/runtime screenshots
+### Former walk-state failure
 
-## Perf Snapshots
+The old performance case pressed ArrowUp and only then polled transient walk state
+from the driver every 50 ms. It did not assert player position or move acceptance.
+A failed walk poll aborted attack/movement sampling and produced secondary missing
+snapshot errors. Historical artifacts establish a timeout with ready assets and
+idle state; they alone do not establish a gameplay defect.
 
-Snapshots are read from `window.__THREE_PERF_DIAGNOSTICS__`, a dev/test-only global registered by mounted Three diagnostics objects. Labels include `ThreeDPreview` and `ThreeRuntimePanel`.
+Walk lasts only the visual move duration (216 ms at demo speed 6). Driver round trips
+and render hitches can miss it. The separate animation smoke now installs a per-frame
+observer **before** input, retains observed states, and asserts the HUD movement
+from (2,2) to traversable grass (2,1). It records `animation-observation.json` as a
+Playwright attachment, including observed frames/states, latest snapshot and HUD.
+No arbitrary sleep, fake clock, extended movement or production behavior change is used.
 
-Snapshots include:
+On failure, first check the HUD move assertion (input/overlay/collision), then the
+observed states and RAF evidence (presentation/sampling). A successful move with
+no rendered walk must be investigated in adapter correctness, not repeatedly rerun
+or accepted as normal noise. Performance sampling now runs independently and
+reports the primary failure without cascading missing-snapshot assertions.
+See [Phase 1 results](../VALIDATION_OPTIMISATION_RESULT.md) for this checkout's run.
 
-- scene identity and rebuild reasons
-- active imported asset ids, cache hits, clones, loads, failures, fallbacks, and stuck loading counts
-- frame/FPS data
-- RAF interval timing, separated from `renderer.render` timing
-- frame callback, visual update, camera update, water update, runtime tick, and render phase stats
-- character animation state, mixer/action counts, source asset ids, clip issues, and animation-update timing
-- hitch counts and recent hitches
-- renderer draw calls, triangles, geometries, textures, and programs
-- terrain mode, tile count, mesh count, water mesh count, and coastline edge count
-- RAF loop starts/cancels/restarts
-
-The smoke resets diagnostics sample windows after the scene and imported assets settle. Idle and movement snapshots are read before screenshots so browser screenshot/readback work does not pollute the sample window.
-
-## Assertions
-
-V1 intentionally keeps assertions conservative:
-
-- fail if the main app cannot load
-- fail if either Three surface cannot mount
-- fail if the benchmark does not use project `Demo Adventure`, area `area_main` / `Main Area`, and the expected imported pirate assets
-- fail if imported pirate assets are still loading or missing from active asset diagnostics
-- fail if required snapshots are missing or record no frames/FPS
-- fail if renderer draw calls or triangles are unavailable
-- fail if water/coast diagnostics are absent for the benchmark
-- in the Three runtime, wait for three character mixers with settled clip sources and verify player walk, idle/rest, attack, and post-attack idle states
-- fail on uncaught page errors
-
-Console warnings, console errors, and asset/network failures are captured in artifacts. They are not broad failure gates yet, except for explicit local asset response failures.
-
-## Known Current Artifact Noise
-
-Current pirate assets may log `THREE.GLTFLoader: Couldn't load texture Textures/colormap.png`. Current screenshots can also trigger WebGL `ReadPixels` performance warnings. These are captured for diagnosis and should be mentioned when relevant, but they are not currently fail conditions.
-
-Future optimisation work can compare snapshots before and after changes, then promote stable checks such as idle scene rebuild counts, stuck loading assets, repeated missing asset requests, or large post-settle hitches into explicit thresholds.
+Current assets can log missing `Textures/colormap.png`; screenshots can produce
+WebGL ReadPixels warnings. Record relevant warnings separately from test failures.
+Both Playwright configs preserve failure screenshots and traces. Do not rerun a
+failed unchanged matrix/smoke without inspecting its first error and artifacts.

@@ -1,11 +1,15 @@
 import react from "@vitejs/plugin-react";
-import { configDefaults, defineConfig } from "vitest/config";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
 	plugins: [react()],
 	test: {
-		exclude: [...configDefaults.exclude, "e2e/**"],
-		environment: "jsdom",
-		setupFiles: "./src/testSetup.ts",
+		name: "asset-studio",
+		include: ["src/**/*.test.{ts,tsx}"],
+		environment: "node",
+		fileParallelism: false,
+		maxWorkers: 1,
+		isolate: true,
+		// App.test.tsx opts into jsdom and imports testSetup; creator tests are pure.
 	},
 });

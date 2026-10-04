@@ -47,23 +47,20 @@ for current creator work; older milestone documents are historical evidence.
 | Shared asset definitions and loader | `packages/three-asset-preview/src/index.ts` |
 | Focused browser checks | `apps/asset-studio/e2e/procedural-mannequin.spec.ts`, `e2e/procedural-mannequin.spec.ts` |
 
-Run from the repository root:
+For iteration, run the affected creator/contract Vitest file or Node compiler
+test first. `npm run check:asset-studio` is a focused contract/Studio gate;
+`npm run test:compiler` checks the compiler API, provenance and installed GLB
+round trips without launching Blender. For final validation run `npm run ci`
+once and `git diff --check`: CI now includes all workspace tests/typechecks,
+the Studio build and cheap Node compiler tests, so separate overlapping gates
+are unnecessary afterward.
 
-```bash
-npm run dev:asset-studio
-npm run check:asset-studio
-npm run test:blender-bake
-npm run ci
-git diff --check
-```
-
-Root CI discovers workspace Vitest tests, but excludes Node compiler tests and
-Playwright and does not typecheck/build the separate Asset Studio app.
-`test:blender-bake` includes fresh validation of both installed mannequin GLBs;
-it does not rebuild the Blender matrices. Use the
-[compiler guide](../tools/blender-character/README.md) for regeneration and
-[current validation](assets/hairstyle-library-v2.md#validation) for
-matrix evidence and browser-suite limitations. Test artifacts under
+Browser previews, real compiler integration, visual acceptance and Blender
+matrices remain opt-in. Select the smallest category in the
+[validation routing guide](PLAYWRIGHT_SMOKE.md), then consult the
+[compiler guide](../tools/blender-character/README.md) for regeneration.
+Historical [milestone validation](assets/hairstyle-library-v2.md#validation)
+records prior evidence, not a current pass. Test artifacts under
 `test-results/` are ignored/local, not portable checked-in proof.
 
 ## Product Boundary
