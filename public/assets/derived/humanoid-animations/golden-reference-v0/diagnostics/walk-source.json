@@ -1,0 +1,2088 @@
+{
+	"asset": {
+		"byteLength": 28426960,
+		"fileHash": "17c86280998e4a948b37485d08a156b36798a82d22a3f3a34fa0de774926d56e",
+		"sourcePath": "public/assets/source/humanoid-animations/retarget-spike/walk/source.fbx",
+		"sourceFormat": "fbx",
+		"axis": {
+			"loaderOutputUp": "+Y",
+			"sourceAxisMetadata": "not exposed by Three.js FBXLoader"
+		},
+		"unitScaleFactor": 1
+	},
+	"animations": [
+		{
+			"duration": 1.0333333015441895,
+			"frameRate": 30,
+			"frameCount": 32,
+			"name": "mixamo.com",
+			"rootMotion": {
+				"candidates": [
+					{
+						"displacement": {
+							"x": -0.000002205371856689453,
+							"y": -0.0000457763671875,
+							"z": 363.79096496105194
+						},
+						"horizontalExcursion": 363.8825062558414,
+						"netHorizontalDisplacement": 363.79096496105194,
+						"node": "mixamorigHips",
+						"returnsToHorizontalStart": false,
+						"verticalExcursion": 15.394973754882812
+					}
+				],
+				"hasHorizontalExcursion": true,
+				"hasLocomotionDisplacement": true
+			},
+			"trackCount": 53,
+			"trackPropertyCounts": {
+				"rotation": 52,
+				"scale": 0,
+				"translation": 1
+			},
+			"tracks": [
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigHips.position",
+					"property": "position",
+					"target": "mixamorigHips",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigHips.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigHips",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigSpine.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigSpine",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigSpine1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigSpine1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigSpine2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigSpine2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigNeck.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigNeck",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigHead.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigHead",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftShoulder.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftShoulder",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftArm.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftArm",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftForeArm.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftForeArm",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHand.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHand",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandMiddle1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandMiddle1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandMiddle2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandMiddle2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandMiddle3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandMiddle3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandThumb1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandThumb1",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandThumb2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandThumb2",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandThumb3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandThumb3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandIndex1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandIndex1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandIndex2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandIndex2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandIndex3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandIndex3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandRing1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandRing1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandRing2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandRing2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandRing3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandRing3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandPinky1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandPinky1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftHandPinky2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandPinky2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigLeftHandPinky3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftHandPinky3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightShoulder.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightShoulder",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightArm.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightArm",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightForeArm.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightForeArm",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHand.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHand",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandMiddle1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandMiddle1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandMiddle2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandMiddle2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigRightHandMiddle3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandMiddle3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandThumb1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandThumb1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandThumb2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandThumb2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigRightHandThumb3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandThumb3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandIndex1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandIndex1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandIndex2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandIndex2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigRightHandIndex3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandIndex3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandRing1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandRing1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandRing2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandRing2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigRightHandRing3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandRing3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandPinky1.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandPinky1",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightHandPinky2.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandPinky2",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 1,
+					"name": "mixamorigRightHandPinky3.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightHandPinky3",
+					"timeRange": [0, 0]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftUpLeg.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftUpLeg",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftLeg.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftLeg",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftFoot.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftFoot",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigLeftToeBase.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigLeftToeBase",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightUpLeg.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightUpLeg",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightLeg.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightLeg",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightFoot.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightFoot",
+					"timeRange": [0, 1.0333333015441895]
+				},
+				{
+					"keyframeCount": 32,
+					"name": "mixamorigRightToeBase.quaternion",
+					"property": "quaternion",
+					"target": "mixamorigRightToeBase",
+					"timeRange": [0, 1.0333333015441895]
+				}
+			]
+		},
+		{
+			"duration": 0,
+			"frameRate": null,
+			"frameCount": 0,
+			"name": "Take 001",
+			"rootMotion": {
+				"candidates": [],
+				"hasHorizontalExcursion": false,
+				"hasLocomotionDisplacement": false
+			},
+			"trackCount": 0,
+			"trackPropertyCounts": {
+				"rotation": 0,
+				"scale": 0,
+				"translation": 0
+			},
+			"tracks": []
+		}
+	],
+	"nodeCount": 122,
+	"skeletons": [
+		{
+			"index": 0,
+			"jointCount": 67,
+			"joints": [
+				{
+					"index": 0,
+					"name": "mixamorigHips",
+					"originalName": "mixamorig:Hips",
+					"parent": null,
+					"parentIsJoint": false,
+					"rest": {
+						"matrixWorld": [
+							1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.04192013666033745,
+							209.15078735351562, -1.416406273841858, 1
+						],
+						"rotation": [0, 0, 0, 1],
+						"scale": [1, 1, 1],
+						"translation": [
+							-0.04192013666033745, 209.15078735351562, -1.416406273841858
+						]
+					}
+				},
+				{
+					"index": 1,
+					"name": "mixamorigSpine",
+					"originalName": "mixamorig:Spine",
+					"parent": "mixamorigHips",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.9999337876055616, 0.011507406519089335, -2.168404344971009e-19,
+							0, -0.011449809074608575, 0.9949288691888439, -0.0999272091412707,
+							0, -0.0011499030179066621, 0.09992059272148393,
+							0.9949947501737065, 0, -0.23672253804678858, 228.95557577649268,
+							-5.306156245567006, 1
+						],
+						"rotation": [
+							-0.05002541414873821, -0.0002878409177658583,
+							0.005746594193541855, 0.9987313711614488
+						],
+						"scale": [1, 1, 1],
+						"translation": [
+							-0.19480240138645114, 19.804788422977055, -3.8897499717251485
+						]
+					}
+				},
+				{
+					"index": 2,
+					"name": "mixamorigSpine1",
+					"originalName": "mixamorig:Spine1",
+					"parent": "mixamorigSpine",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.9999923003678848, 0.003924182073521332, 1.9578869775438434e-13,
+							0, -0.00392056144560261, 0.9990696622320961, -0.04294693476134985,
+							0, -0.0001685315916987863, 0.04294660408575098,
+							0.9990773547601828, 0, -0.5071678562186539, 252.45586760082165,
+							-7.666444150294477, 1
+						],
+						"rotation": [
+							0.028562967325962717, 0.0002709803010675453, -0.00378202972757183,
+							0.999584803665178
+						],
+						"scale": [1, 0.9999999999999997, 0.9999999999999999],
+						"translation": [
+							4.440892098500626e-16, 23.62007230073496, 7.105427357601002e-15
+						]
+					}
+				},
+				{
+					"index": 3,
+					"name": "mixamorigSpine2",
+					"originalName": "mixamorig:Spine2",
+					"parent": "mixamorigSpine1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.9998298797359606, -0.018444825485074097, 3.3353723428997117e-13,
+							0, 0.018311085752016634, 0.9925803136564716, 0.12020409760155146,
+							0, -0.0022171436031824944, -0.12018364844872259,
+							0.9927492004125699, 0, -0.6162908043907891, 280.26347334422513,
+							-8.861807671856248, 1
+						],
+						"rotation": [
+							0.08163174926468532, -0.000433499865093779, -0.011176394667848274,
+							0.9965997982099348
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							-1.1102230246251565e-16, 27.833500299945513,
+							-4.440892098500626e-16
+						]
+					}
+				},
+				{
+					"index": 4,
+					"name": "mixamorigNeck",
+					"originalName": "mixamorig:Neck",
+					"parent": "mixamorigSpine2",
+					"parentIsJoint": false,
+					"rest": {
+						"matrixWorld": [
+							0.9989036437557481, -0.04681357165917355, 2.2586273129565626e-13,
+							0, 0.04492890784408666, 0.9586888623289488, 0.28088620202203374,
+							0, -0.013149286346648118, -0.28057825068051256,
+							0.9597410804553678, 0, -0.04326176456940689, 311.32538588087164,
+							-5.10012802248718, 1
+						],
+						"rotation": [0, 0, 0, 1],
+						"scale": [1, 1, 1],
+						"translation": [0, 0, 0]
+					}
+				},
+				{
+					"index": 5,
+					"name": "mixamorigHead",
+					"originalName": "mixamorig:Head",
+					"parent": "mixamorigNeck",
+					"parentIsJoint": false,
+					"rest": {
+						"matrixWorld": [
+							0.9989036437557486, -0.046813571659173575, 2.2586326493560698e-13,
+							0, 0.044928907844086687, 0.9586888623289492, 0.28088620202203385,
+							0, -0.013149286346648126, -0.2805782506805127, 0.9597410804553682,
+							0, 0.9985928543685825, 333.556382966488, 1.4133307063147127, 1
+						],
+						"rotation": [0, 0, 0, 1],
+						"scale": [1, 1, 1],
+						"translation": [0, 0, 0]
+					}
+				},
+				{
+					"index": 6,
+					"name": "mixamorigHeadTop_End",
+					"originalName": "mixamorig:HeadTop_End",
+					"parent": "mixamorigHead",
+					"parentIsJoint": false,
+					"rest": {
+						"matrixWorld": [
+							0.9989036437557477, -0.04681357165917353, 2.2586389108502782e-13,
+							0, 0.044928907844086645, 0.9586888623289483, 0.2808862020220336,
+							0, -0.013149286346648121, -0.2805782506805125, 0.9597410804553677,
+							0, 1.1524933566855255, 371.8686617140482, 12.23971620438132, 1
+						],
+						"rotation": [0, 0, 0, 1],
+						"scale": [1, 1, 1],
+						"translation": [0, 0, 0]
+					}
+				},
+				{
+					"index": 7,
+					"name": "mixamorigRightEye",
+					"originalName": "mixamorig:RightEye",
+					"parent": "mixamorigHead",
+					"parentIsJoint": false,
+					"rest": {
+						"matrixWorld": [
+							0.9989036437557477, -0.04681357165917353, 2.2586389108502782e-13,
+							0, 0.044928907844086645, 0.9586888623289483, 0.2808862020220336,
+							0, -0.013149286346648121, -0.2805782506805125, 0.9597410804553677,
+							0, -5.118292331647945, 350.0322550059882, 17.870354326927206, 1
+						],
+						"rotation": [0, 0, 0, 1],
+						"scale": [1, 1, 1],
+						"translation": [0, 0, 0]
+					}
+				},
+				{
+					"index": 8,
+					"name": "mixamorigLeftEye",
+					"originalName": "mixamorig:LeftEye",
+					"parent": "mixamorigHead",
+					"parentIsJoint": false,
+					"rest": {
+						"matrixWorld": [
+							0.9989036437557477, -0.04681357165917353, 2.2586389108502782e-13,
+							0, 0.044928907844086645, 0.9586888623289483, 0.2808862020220336,
+							0, -0.013149286346648121, -0.2805782506805125, 0.9597410804553677,
+							0, 7.084101676976271, 350.2926557786537, 18.173758181300293, 1
+						],
+						"rotation": [0, 0, 0, 1],
+						"scale": [1, 1, 1],
+						"translation": [0, 0, 0]
+					}
+				},
+				{
+					"index": 9,
+					"name": "mixamorigLeftShoulder",
+					"originalName": "mixamorig:LeftShoulder",
+					"parent": "mixamorigSpine2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.1524433901755771, -0.004493413834516, -0.9883019892845959, 0,
+							0.9878729348162993, 0.02911849380239246, -0.15250959961953647, 0,
+							0.02946315409470304, -0.9995658670396825, 3.6637359812630166e-15,
+							0, 12.337797405775142, 299.1582563648557, -6.183657018003829, 1
+						],
+						"rotation": [
+							-0.4180131828395541, -0.5150067034625269, 0.557615802775276,
+							-0.4990968752219266
+						],
+						"scale": [
+							0.9999999999999999, 0.9999999999999994, 0.9999999999999997
+						],
+						"translation": [
+							12.603373481866248, 19.313717759731276, 0.3591668863198052
+						]
+					}
+				},
+				{
+					"index": 10,
+					"name": "mixamorigLeftArm",
+					"originalName": "mixamorig:LeftArm",
+					"parent": "mixamorigLeftShoulder",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421543e-7, -1.2626907143140076e-8,
+							-0.9999999999999083, 0, 0.9999999999998012,
+							-4.6218274430201434e-7, -4.283798303892029e-7, 0,
+							-4.621827383970156e-7, -0.9999999999998932, 1.262710453660117e-8,
+							0, 38.598710003170325, 299.9323217266671, -10.237863915186578, 1
+						],
+						"rotation": [
+							0.014690256402021871, 0.0011267900140481569, 0.07647027541342882,
+							0.9969630001606387
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999998, 0.9999999999999999
+						],
+						"translation": [
+							2.531308496145357e-14, 26.58328988664777, 1.1368683772161603e-13
+						]
+					}
+				},
+				{
+					"index": 11,
+					"name": "mixamorigLeftForeArm",
+					"originalName": "mixamorig:LeftForeArm",
+					"parent": "mixamorigLeftArm",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.2837983674215435e-7, -1.262690714314008e-8,
+							-0.9999999999999085, 0, 0.9999999999998014, -4.621827443020145e-7,
+							-4.2837983038920295e-7, 0, -4.621827383970158e-7,
+							-0.9999999999998934, 1.2627104536601174e-8, 0, 93.72637511175488,
+							299.93229624761153, -10.237887551284924, 1
+						],
+						"rotation": [
+							1.7180035647108914e-23, 4.1359030627651375e-25,
+							3.9704669402545317e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000002, 1.0000000000000002
+						],
+						"translation": [
+							2.0518516663514674e-8, 55.12766510859552, 5.684341886080802e-14
+						]
+					}
+				},
+				{
+					"index": 12,
+					"name": "mixamorigLeftHand",
+					"originalName": "mixamorig:LeftHand",
+					"parent": "mixamorigLeftForeArm",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.2837983674215414e-7, -1.2626907143140073e-8,
+							-0.9999999999999082, 0, 0.9999999999998009,
+							-4.6218274430201434e-7, -4.283798303892027e-7, 0,
+							-4.621827383970157e-7, -0.9999999999998931, 1.2627104536601167e-8,
+							0, 146.4997229239028, 299.9322758027467, -10.23786730045186, 1
+						],
+						"rotation": [
+							1.7180035647108926e-23, 8.27180612553028e-25,
+							3.9704669402545346e-23, 1
+						],
+						"scale": [
+							0.9999999999999997, 0.9999999999999996, 0.9999999999999997
+						],
+						"translation": [
+							-0.000042857870898416195, 52.77334781213821,
+							-0.000003946065305626689
+						]
+					}
+				},
+				{
+					"index": 13,
+					"name": "mixamorigLeftHandMiddle1",
+					"originalName": "mixamorig:LeftHandMiddle1",
+					"parent": "mixamorigLeftHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.2837983674215424e-7, -1.2626907143140074e-8,
+							-0.9999999999999084, 0, 0.9999999999998014, -4.621827443020146e-7,
+							-4.283798303892029e-7, 0, -4.6218273839701594e-7,
+							-0.9999999999998935, 1.262710453660117e-8, 0, 174.24428297395087,
+							299.93225969459047, -10.23783619097463, 1
+						],
+						"rotation": [
+							1.7180035449893688e-23, 8.271806125530272e-25,
+							1.3234889800848437e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000004, 1.0000000000000004
+						],
+						"translation": [
+							-0.00004299468711721488, 27.74456005003671,
+							0.0000032850998650246765
+						]
+					}
+				},
+				{
+					"index": 14,
+					"name": "mixamorigLeftHandMiddle2",
+					"originalName": "mixamorig:LeftHandMiddle2",
+					"parent": "mixamorigLeftHandMiddle1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421541e-7, -1.262690714314007e-8, -0.9999999999999081,
+							0, 0.9999999999998007, -4.6218274430201434e-7,
+							-4.2837983038920263e-7, 0, -4.6218273839701573e-7,
+							-0.999999999999893, 1.2627104536601165e-8, 0, 181.17590748516582,
+							299.93222365893155, -10.237833354248963, 1
+						],
+						"rotation": [
+							3.041492564517261e-23, -4.135903062765139e-25,
+							1.3234889800848452e-23, 1
+						],
+						"scale": [
+							0.9999999999999997, 0.9999999999999993, 0.9999999999999994
+						],
+						"translation": [
+							-0.000005806093383853295, 6.931624511229018, 0.0000328319817413103
+						]
+					}
+				},
+				{
+					"index": 15,
+					"name": "mixamorigLeftHandMiddle3",
+					"originalName": "mixamorig:LeftHandMiddle3",
+					"parent": "mixamorigLeftHandMiddle2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421542e-7, -1.2626907143140073e-8,
+							-0.9999999999999083, 0, 0.9999999999998014, -4.621827443020147e-7,
+							-4.283798303892029e-7, 0, -4.62182738397016e-7,
+							-0.9999999999998934, 1.2627104536601172e-8, 0, 187.9995049240026,
+							299.9322203129152, -10.237864540199, 1
+						],
+						"rotation": [
+							1.7180035844324135e-23, -4.1359030627651384e-25,
+							1.3234889800848434e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000007, 1.0000000000000004
+						],
+						"translation": [
+							0.000028262858526417745, 6.823597438850328, 1.9226700942454045e-7
+						]
+					}
+				},
+				{
+					"index": 16,
+					"name": "mixamorigLeftHandMiddle4",
+					"originalName": "mixamorig:LeftHandMiddle4",
+					"parent": "mixamorigLeftHandMiddle3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421539e-7, -1.2626907143140066e-8,
+							-0.9999999999999079, 0, 0.9999999999998005,
+							-4.6218274430201434e-7, -4.283798303892025e-7, 0,
+							-4.621827383970158e-7, -0.9999999999998929, 1.2627104536601164e-8,
+							0, 195.3922090219596, 299.93226389768205, -10.23790205213434, 1
+						],
+						"rotation": [
+							1.7180036041539387e-23, 1.2407709188295422e-24,
+							2.646977960169691e-23, 1
+						],
+						"scale": [
+							0.9999999999999996, 0.9999999999999991, 0.9999999999999994
+						],
+						"translation": [
+							0.00003434504941779437, 7.392704097951452, -0.00004700154755710173
+						]
+					}
+				},
+				{
+					"index": 17,
+					"name": "mixamorigLeftHandThumb1",
+					"originalName": "mixamorig:LeftHandThumb1",
+					"parent": "mixamorigLeftHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.38730008944140104, -0.22360714589536443, -0.8944263441017442, 0,
+							0.7745965117102119, -0.4472121745542978, 0.44721528929229193, 0,
+							-0.49999888476381016, -0.8660260476653957,
+							-1.3802566962561116e-13, 0, 157.62282306791167, 296.6407616933562,
+							-4.109052092275856, 1
+						],
+						"rotation": [
+							0.2518945093841988, -0.059464415947820426, 0.22192542154785858,
+							0.9400862974476778
+						],
+						"scale": [1, 1.0000000000000002, 1.0000000000000004],
+						"translation": [
+							-6.1288199315256175, 11.123099039826883, 3.291509045874477
+						]
+					}
+				},
+				{
+					"index": 18,
+					"name": "mixamorigLeftHandThumb2",
+					"originalName": "mixamorig:LeftHandThumb2",
+					"parent": "mixamorigLeftHandThumb1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.387300089441401, -0.2236071458953644, -0.894426344101744, 0,
+							0.7745965117102117, -0.4472121745542976, 0.4472152892922918, 0,
+							-0.4999988847638099, -0.8660260476653954, -1.380125583940914e-13,
+							0, 166.31713871804183, 291.6211111406168, 0.9106334212655316, 1
+						],
+						"rotation": [-2.513587467484752e-17, 5.238588661175567e-18, 0, 1],
+						"scale": [
+							0.9999999999999999, 0.9999999999999998, 0.9999999999999996
+						],
+						"translation": [2.042810365310288e-14, 11.224315522586327, 0]
+					}
+				},
+				{
+					"index": 19,
+					"name": "mixamorigLeftHandThumb3",
+					"originalName": "mixamorig:LeftHandThumb3",
+					"parent": "mixamorigLeftHandThumb2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.3873000894414011, -0.22360714589536448, -0.8944263441017443, 0,
+							0.7745965117102119, -0.4472121745542978, 0.44721528929229193, 0,
+							-0.49999888476381016, -0.8660260476653957, -1.380126265541687e-13,
+							0, 173.25404689589504, 287.6160383874312, 4.915702806601669, 1
+						],
+						"rotation": [
+							1.666889659465759e-17, -8.296385077511512e-18,
+							1.3877787807814454e-17, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000002, 1.0000000000000004
+						],
+						"translation": [
+							-0.000011523027569682043, 8.955550435618227,
+							0.00005097441754742249
+						]
+					}
+				},
+				{
+					"index": 20,
+					"name": "mixamorigLeftHandThumb4",
+					"originalName": "mixamorig:LeftHandThumb4",
+					"parent": "mixamorigLeftHandThumb3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.38730008944140093, -0.22360714589536437, -0.8944263441017438, 0,
+							0.7745965117102118, -0.44721217455429774, 0.4472152892922919, 0,
+							-0.49999888476380994, -0.8660260476653954,
+							-1.3801276281555798e-13, 0, 177.74246977557956,
+							285.02465393587715, 7.507059394097265, 1
+						],
+						"rotation": [2.8063499011916253e-18, -1.3270090892057624e-18, 0, 1],
+						"scale": [
+							0.9999999999999996, 0.9999999999999999, 0.9999999999999996
+						],
+						"translation": [
+							0.00004106506462142612, 5.794509667305956, 3.6993696994613856e-10
+						]
+					}
+				},
+				{
+					"index": 21,
+					"name": "mixamorigLeftHandIndex1",
+					"originalName": "mixamorig:LeftHandIndex1",
+					"parent": "mixamorigLeftHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.2837983674215424e-7, -1.2626907143140074e-8,
+							-0.9999999999999084, 0, 0.9999999999998014, -4.621827443020146e-7,
+							-4.283798303892029e-7, 0, -4.6218273839701594e-7,
+							-0.9999999999998935, 1.262710453660117e-8, 0, 174.9899380148278,
+							299.4775367236943, -5.085820064372683, 1
+						],
+						"rotation": [
+							1.7180035449893688e-23, 8.271806125530272e-25,
+							1.3234889800848437e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000004, 1.0000000000000004
+						],
+						"translation": [
+							-5.152059434970431, 28.490213094058788, 0.4547259764221394
+						]
+					}
+				},
+				{
+					"index": 22,
+					"name": "mixamorigLeftHandIndex2",
+					"originalName": "mixamorig:LeftHandIndex2",
+					"parent": "mixamorigLeftHandIndex1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421541e-7, -1.262690714314007e-8, -0.9999999999999081,
+							0, 0.9999999999998007, -4.6218274430201434e-7,
+							-4.2837983038920263e-7, 0, -4.6218273839701573e-7,
+							-0.999999999999893, 1.2627104536601165e-8, 0, 182.0528047682375,
+							299.4775869270684, -5.085822218818699, 1
+						],
+						"rotation": [
+							3.041492564517261e-23, -4.135903062765139e-25,
+							1.3234889800848452e-23, 1
+						],
+						"scale": [
+							0.9999999999999997, 0.9999999999999993, 0.9999999999999994
+						],
+						"translation": [
+							-8.711443220121851e-7, 7.062866753386032, -0.00005346770922187716
+						]
+					}
+				},
+				{
+					"index": 23,
+					"name": "mixamorigLeftHandIndex3",
+					"originalName": "mixamorig:LeftHandIndex3",
+					"parent": "mixamorigLeftHandIndex2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421542e-7, -1.2626907143140073e-8,
+							-0.9999999999999083, 0, 0.9999999999998014, -4.621827443020147e-7,
+							-4.283798303892029e-7, 0, -4.62182738397016e-7,
+							-0.9999999999998934, 1.2627104536601172e-8, 0, 188.5480928287001,
+							299.4776218476423, -5.0857929793521475, 1
+						],
+						"rotation": [
+							1.7180035844324135e-23, -4.1359030627651384e-25,
+							1.3234889800848434e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000007, 1.0000000000000004
+						],
+						"translation": [
+							-0.00003202191742790461, 6.495288060432642,
+							-0.000037922583544514055
+						]
+					}
+				},
+				{
+					"index": 24,
+					"name": "mixamorigLeftHandIndex4",
+					"originalName": "mixamorig:LeftHandIndex4",
+					"parent": "mixamorigLeftHandIndex3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421539e-7, -1.2626907143140066e-8,
+							-0.9999999999999079, 0, 0.9999999999998005,
+							-4.6218274430201434e-7, -4.283798303892025e-7, 0,
+							-4.621827383970158e-7, -0.9999999999998929, 1.2627104536601164e-8,
+							0, 195.14149229908338, 299.47759957807295, -5.085760424028063, 1
+						],
+						"rotation": [
+							1.7180036041539387e-23, 1.2407709188295422e-24,
+							2.646977960169691e-23, 1
+						],
+						"scale": [
+							0.9999999999999996, 0.9999999999999991, 0.9999999999999994
+						],
+						"translation": [
+							-0.00003537980318846223, 6.593399470378301, 0.00001922221434824678
+						]
+					}
+				},
+				{
+					"index": 25,
+					"name": "mixamorigLeftHandRing1",
+					"originalName": "mixamorig:LeftHandRing1",
+					"parent": "mixamorigLeftHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.2837983674215424e-7, -1.2626907143140074e-8,
+							-0.9999999999999084, 0, 0.9999999999998014, -4.621827443020146e-7,
+							-4.283798303892029e-7, 0, -4.6218273839701594e-7,
+							-0.9999999999998935, 1.262710453660117e-8, 0, 171.98383437910854,
+							300.01153173338844, -14.478896440806503, 1
+						],
+						"rotation": [
+							1.7180035449893688e-23, 8.271806125530272e-25,
+							1.3234889800848437e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000004, 1.0000000000000004
+						],
+						"translation": [
+							4.241018222474004, 25.48411323534131, -0.07926776251008505
+						]
+					}
+				},
+				{
+					"index": 26,
+					"name": "mixamorigLeftHandRing2",
+					"originalName": "mixamorig:LeftHandRing2",
+					"parent": "mixamorigLeftHandRing1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421541e-7, -1.262690714314007e-8, -0.9999999999999081,
+							0, 0.9999999999998007, -4.6218274430201434e-7,
+							-4.2837983038920263e-7, 0, -4.6218273839701573e-7,
+							-0.999999999999893, 1.2627104536601165e-8, 0, 178.29365841544978,
+							300.0114901470271, -14.478861341138327, 1
+						],
+						"rotation": [
+							3.041492564517261e-23, -4.135903062765139e-25,
+							1.3234889800848452e-23, 1
+						],
+						"scale": [
+							0.9999999999999997, 0.9999999999999993, 0.9999999999999994
+						],
+						"translation": [
+							-0.00003780266903774532, 6.3098240363441676,
+							0.00003867007006874701
+						]
+					}
+				},
+				{
+					"index": 27,
+					"name": "mixamorigLeftHandRing3",
+					"originalName": "mixamorig:LeftHandRing3",
+					"parent": "mixamorigLeftHandRing2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421542e-7, -1.2626907143140073e-8,
+							-0.9999999999999083, 0, 0.9999999999998014, -4.621827443020147e-7,
+							-4.283798303892029e-7, 0, -4.62182738397016e-7,
+							-0.9999999999998934, 1.2627104536601172e-8, 0, 184.65319623872355,
+							300.01149238959334, -14.47886986019775, 1
+						],
+						"rotation": [
+							1.7180035844324135e-23, -4.1359030627651384e-25,
+							1.3234889800848434e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000007, 1.0000000000000004
+						],
+						"translation": [
+							0.000005794761625210754, 6.359537823275133,
+							-0.000005181834978884581
+						]
+					}
+				},
+				{
+					"index": 28,
+					"name": "mixamorigLeftHandRing4",
+					"originalName": "mixamorig:LeftHandRing4",
+					"parent": "mixamorigLeftHandRing3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421539e-7, -1.2626907143140066e-8,
+							-0.9999999999999079, 0, 0.9999999999998005,
+							-4.6218274430201434e-7, -4.283798303892025e-7, 0,
+							-4.621827383970158e-7, -0.9999999999998929, 1.2627104536601164e-8,
+							0, 191.6910090809799, 300.0114509920692, -14.47882875351127, 1
+						],
+						"rotation": [
+							1.7180036041539387e-23, 1.2407709188295422e-24,
+							2.646977960169691e-23, 1
+						],
+						"scale": [
+							0.9999999999999996, 0.9999999999999991, 0.9999999999999994
+						],
+						"translation": [
+							-0.00004412154307154026, 7.037812842256471, 0.00003814476906427444
+						]
+					}
+				},
+				{
+					"index": 29,
+					"name": "mixamorigLeftHandPinky1",
+					"originalName": "mixamorig:LeftHandPinky1",
+					"parent": "mixamorigLeftHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.2837983674215424e-7, -1.2626907143140074e-8,
+							-0.9999999999999084, 0, 0.9999999999998014, -4.621827443020146e-7,
+							-4.283798303892029e-7, 0, -4.6218273839701594e-7,
+							-0.9999999999998935, 1.262710453660117e-8, 0, 168.4055349471006,
+							299.49126849234335, -19.01880597315548, 1
+						],
+						"rotation": [
+							1.7180035449893688e-23, 8.271806125530272e-25,
+							1.3234889800848437e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000004, 1.0000000000000004
+						],
+						"translation": [
+							8.780929294263204, 21.90581598859646, 0.4409970750372736
+						]
+					}
+				},
+				{
+					"index": 30,
+					"name": "mixamorigLeftHandPinky2",
+					"originalName": "mixamorig:LeftHandPinky2",
+					"parent": "mixamorigLeftHandPinky1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421541e-7, -1.262690714314007e-8, -0.9999999999999081,
+							0, 0.9999999999998007, -4.6218274430201434e-7,
+							-4.2837983038920263e-7, 0, -4.6218273839701573e-7,
+							-0.999999999999893, 1.2627104536601165e-8, 0, 174.94222902445074,
+							299.4912488566986, -19.018796625111964, 1
+						],
+						"rotation": [
+							3.041492564517261e-23, -4.135903062765139e-25,
+							1.3234889800848452e-23, 1
+						],
+						"scale": [
+							0.9999999999999997, 0.9999999999999993, 0.9999999999999994
+						],
+						"translation": [
+							-0.000012148231206765558, 6.536694077353928,
+							0.00001661449772427659
+						]
+					}
+				},
+				{
+					"index": 31,
+					"name": "mixamorigLeftHandPinky3",
+					"originalName": "mixamorig:LeftHandPinky3",
+					"parent": "mixamorigLeftHandPinky2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421542e-7, -1.2626907143140073e-8,
+							-0.9999999999999083, 0, 0.9999999999998014, -4.621827443020147e-7,
+							-4.283798303892029e-7, 0, -4.62182738397016e-7,
+							-0.9999999999998934, 1.2627104536601172e-8, 0, 179.09129647512452,
+							299.4912404896957, -19.018765871878358, 1
+						],
+						"rotation": [
+							1.7180035844324135e-23, -4.1359030627651384e-25,
+							1.3234889800848434e-23, 1
+						],
+						"scale": [
+							1.0000000000000002, 1.0000000000000007, 1.0000000000000004
+						],
+						"translation": [
+							-0.00003253061033703375, 4.149067450663665,
+							0.000006449375916872668
+						]
+					}
+				},
+				{
+					"index": 32,
+					"name": "mixamorigLeftHandPinky4",
+					"originalName": "mixamorig:LeftHandPinky4",
+					"parent": "mixamorigLeftHandPinky3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-4.283798367421539e-7, -1.2626907143140066e-8,
+							-0.9999999999999079, 0, 0.9999999999998005,
+							-4.6218274430201434e-7, -4.283798303892025e-7, 0,
+							-4.621827383970158e-7, -0.9999999999998929, 1.2627104536601164e-8,
+							0, 184.6548229682899, 299.49122854364725, -19.01878604206206, 1
+						],
+						"rotation": [
+							1.7180036041539387e-23, 1.2407709188295422e-24,
+							2.646977960169691e-23, 1
+						],
+						"scale": [
+							0.9999999999999996, 0.9999999999999991, 0.9999999999999994
+						],
+						"translation": [
+							0.00001778688128695194, 5.563526493178415, 0.000009374682292673242
+						]
+					}
+				},
+				{
+					"index": 33,
+					"name": "mixamorigRightShoulder",
+					"originalName": "mixamorig:RightShoulder",
+					"parent": "mixamorigSpine2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.20162898935619925, 0.0035290295642115416, 0.979455612369204, 0,
+							-0.9793056232887151, 0.017140384961644092, -0.20165987057039206,
+							0, -0.017499909894009118, -0.999846864851664,
+							-8.354428260304303e-15, 0, -13.253590342958121,
+							299.47872908093154, -6.680893746679066, 1
+						],
+						"rotation": [
+							0.41931356372464323, -0.5138814195083918, 0.5803066232094414,
+							0.472595223230023
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999994, 0.9999999999999997
+						],
+						"translation": [
+							-12.989571716546973, 19.103436680927302, -0.11624027709090257
+						]
+					}
+				},
+				{
+					"index": 34,
+					"name": "mixamorigRightArm",
+					"originalName": "mixamorig:RightArm",
+					"parent": "mixamorigRightShoulder",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317483e-7, 1.413148879836876e-8, 0.9999999999996738,
+							0, -0.9999999999996555, 1.9522604986083048e-7,
+							-8.073946042094053e-7, 0, -1.952260613898027e-7,
+							-0.9999999999999811, 1.4131330821633637e-8, 0, -39.58900687507825,
+							299.93966708307397, -12.10391651198287, 1
+						],
+						"rotation": [
+							0.008705134851208534, -0.0008868445075847607,
+							-0.10134755004618015, 0.9948125995551517
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							-2.6201263381153694e-14, 26.891928225307478,
+							2.2737367544323206e-13
+						]
+					}
+				},
+				{
+					"index": 35,
+					"name": "mixamorigRightForeArm",
+					"originalName": "mixamorig:RightForeArm",
+					"parent": "mixamorigRightArm",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317479e-7, 1.4131488798368756e-8, 0.9999999999996736,
+							0, -0.9999999999996548, 1.9522604986083037e-7,
+							-8.073946042094047e-7, 0, -1.9522606138980267e-7,
+							-0.9999999999999809, 1.4131330821633634e-8, 0, -95.43168529857977,
+							299.9396779850196, -12.103961612871718, 1
+						],
+						"rotation": [
+							-1.0555216869373151e-23, 4.135903062765139e-25,
+							-5.29395592033938e-23, 1
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							-1.3811604304692082e-8, 55.842678423520766,
+							-1.1368683772161603e-13
+						]
+					}
+				},
+				{
+					"index": 36,
+					"name": "mixamorigRightHand",
+					"originalName": "mixamorig:RightHand",
+					"parent": "mixamorigRightForeArm",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317479e-7, 1.4131488798368756e-8, 0.9999999999996736,
+							0, -0.9999999999996555, 1.952260498608305e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980272e-7,
+							-0.9999999999999811, 1.4131330821633636e-8, 0, -145.7453722471879,
+							299.9396618244403, -12.103964850043667, 1
+						],
+						"rotation": [-3.93777315224028e-24, -4.1359030627651365e-25, 0, 1],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							0.00003738582704393423, 50.31368694859026, 0.000025983122213801835
+						]
+					}
+				},
+				{
+					"index": 37,
+					"name": "mixamorigRightHandMiddle1",
+					"originalName": "mixamorig:RightHandMiddle1",
+					"parent": "mixamorigRightHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368753e-8, 0.9999999999996734,
+							0, -0.9999999999996548, 1.9522604986083037e-7,
+							-8.073946042094047e-7, 0, -1.9522606138980267e-7,
+							-0.9999999999999809, 1.4131330821633634e-8, 0, -171.8109136300194,
+							299.9397037597135, -12.103968435628685, 1
+						],
+						"rotation": [
+							2.6796725370448446e-24, 4.135903062765139e-25,
+							-2.6469779601696903e-23, 1
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							0.000017459592971391658, 26.065541382833572,
+							-0.000036846600266926544
+						]
+					}
+				},
+				{
+					"index": 38,
+					"name": "mixamorigRightHandMiddle2",
+					"originalName": "mixamorig:RightHandMiddle2",
+					"parent": "mixamorigRightHandMiddle1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368751e-8, 0.9999999999996734,
+							0, -0.9999999999996555, 1.952260498608305e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980272e-7,
+							-0.9999999999999811, 1.4131330821633636e-8, 0,
+							-177.97087966539488, 299.9397049620046, -12.103923455336076, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							2.6469779601696886e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							0.000049953815947745284, 6.159966035337277, 2.9541524781961925e-10
+						]
+					}
+				},
+				{
+					"index": 39,
+					"name": "mixamorigRightHandMiddle3",
+					"originalName": "mixamorig:RightHandMiddle3",
+					"parent": "mixamorigRightHandMiddle2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368748e-8, 0.9999999999996732,
+							0, -0.9999999999996548, 1.952260498608304e-7,
+							-8.073946042094047e-7, 0, -1.952260613898027e-7,
+							-0.9999999999999809, 1.4131330821633632e-8, 0,
+							-185.25000285285932, 299.9396892972805, -12.103882421146524, 1
+						],
+						"rotation": [-1.0555217263803604e-23, 0, 2.646977960169689e-23, 1],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							0.00004691131409551019, 7.279123187425739, 0.000017085799242977373
+						]
+					}
+				},
+				{
+					"index": 40,
+					"name": "mixamorigRightHandMiddle4",
+					"originalName": "mixamorig:RightHandMiddle4",
+					"parent": "mixamorigRightHandMiddle3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368746e-8, 0.9999999999996732,
+							0, -0.9999999999996555, 1.9522604986083053e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980275e-7,
+							-0.9999999999999811, 1.4131330821633634e-8, 0, -192.7099558264223,
+							299.9396907540153, -12.103929446441136, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							-2.6469779601696868e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							-0.00004100216883351493, 7.459952973598632, -3.582272256608121e-10
+						]
+					}
+				},
+				{
+					"index": 41,
+					"name": "mixamorigRightHandThumb1",
+					"originalName": "mixamorig:RightHandThumb1",
+					"parent": "mixamorigRightHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.3873017092977714, 0.22361078247952362, 0.8944247335208918, 0,
+							-0.7745927774819116, -0.4472154212533117, 0.4472185104242442, 0,
+							0.5000034150362196, -0.8660234321033803, -1.317955894686658e-14,
+							0, -155.2473380247933, 296.0096474817645, -5.946906838448024, 1
+						],
+						"rotation": [
+							0.25189718160086993, 0.059465474493232036, -0.22192711721570282,
+							0.9400851141727331
+						],
+						"scale": [
+							0.9999999999999997, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							6.157065627892558, 9.50196003918552, 3.9300162847144975
+						]
+					}
+				},
+				{
+					"index": 42,
+					"name": "mixamorigRightHandThumb2",
+					"originalName": "mixamorig:RightHandThumb2",
+					"parent": "mixamorigRightHandThumb1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.3873017092977716, 0.22361078247952373, 0.8944247335208922, 0,
+							-0.7745927774819122, -0.4472154212533121, 0.4472185104242446, 0,
+							0.5000034150362198, -0.8660234321033806, -1.3174657175802198e-14,
+							0, -163.2636878866272, 291.38136358267036, -1.3185909691682927, 1
+						],
+						"rotation": [
+							7.231117495004845e-18, 6.3557892732180446e-18,
+							1.387778780781445e-17, 1
+						],
+						"scale": [
+							1.0000000000000004, 1.0000000000000009, 1.0000000000000004
+						],
+						"translation": [
+							-1.887379141862766e-15, 10.349115167190153, 1.7053025658242404e-13
+						]
+					}
+				},
+				{
+					"index": 43,
+					"name": "mixamorigRightHandThumb3",
+					"originalName": "mixamorig:RightHandThumb3",
+					"parent": "mixamorigRightHandThumb2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.3873017092977714, 0.22361078247952365, 0.8944247335208919, 0,
+							-0.7745927774819115, -0.4472154212533116, 0.4472185104242441, 0,
+							0.5000034150362196, -0.8660234321033803, -1.311520240494227e-14,
+							0, -169.90563648379813, 287.5466256682085, 2.51615974053858, 1
+						],
+						"rotation": [
+							-3.827394587459888e-17, 1.409908279059244e-17,
+							4.163336342344338e-17, 1
+						],
+						"scale": [
+							0.9999999999999997, 0.999999999999999, 0.9999999999999996
+						],
+						"translation": [
+							-0.00003090876031874856, 8.574730843830237,
+							-0.00002409118133073207
+						]
+					}
+				},
+				{
+					"index": 44,
+					"name": "mixamorigRightHandThumb4",
+					"originalName": "mixamorig:RightHandThumb4",
+					"parent": "mixamorigRightHandThumb3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							0.3873017092977715, 0.2236107824795237, 0.8944247335208924, 0,
+							-0.7745927774819124, -0.44721542125331204, 0.44721851042424454, 0,
+							0.5000034150362198, -0.8660234321033806, -1.3110937236512948e-14,
+							0, -174.66079218919947, 284.80127543536713, 5.261576784245117, 1
+						],
+						"rotation": [
+							-2.315761205859503e-17, -9.194656908457666e-18,
+							4.1633363423443333e-17, 1
+						],
+						"scale": [
+							1.0000000000000004, 1.000000000000001, 1.0000000000000004
+						],
+						"translation": [
+							-9.387040452724094e-7, 6.138873546853576, -0.00005646075857157484
+						]
+					}
+				},
+				{
+					"index": 45,
+					"name": "mixamorigRightHandIndex1",
+					"originalName": "mixamorig:RightHandIndex1",
+					"parent": "mixamorigRightHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368753e-8, 0.9999999999996734,
+							0, -0.9999999999996548, 1.9522604986083037e-7,
+							-8.073946042094047e-7, 0, -1.9522606138980267e-7,
+							-0.9999999999999809, 1.4131330821633634e-8, 0,
+							-172.34839914662228, 299.39332439954205, -6.997336300531288, 1
+						],
+						"rotation": [
+							2.6796725370448446e-24, 4.135903062765139e-25,
+							-2.6469779601696903e-23, 1
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							5.106650020930456, 26.603022669701545, 0.5463426906658242
+						]
+					}
+				},
+				{
+					"index": 46,
+					"name": "mixamorigRightHandIndex2",
+					"originalName": "mixamorig:RightHandIndex2",
+					"parent": "mixamorigRightHandIndex1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368751e-8, 0.9999999999996734,
+							0, -0.9999999999996555, 1.952260498608305e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980272e-7,
+							-0.9999999999999811, 1.4131330821633636e-8, 0,
+							-179.44053184839896, 299.39331380306953, -6.997352278608613, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							2.6469779601696886e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							-0.000010251927818671902, 7.0921327017850615,
+							0.000011981041438957618
+						]
+					}
+				},
+				{
+					"index": 47,
+					"name": "mixamorigRightHandIndex3",
+					"originalName": "mixamorig:RightHandIndex3",
+					"parent": "mixamorigRightHandIndex2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368748e-8, 0.9999999999996732,
+							0, -0.9999999999996548, 1.952260498608304e-7,
+							-8.073946042094047e-7, 0, -1.952260613898027e-7,
+							-0.9999999999999809, 1.4131330821633632e-8, 0,
+							-186.85495472291046, 299.3933163650047, -6.997333752828057, 1
+						],
+						"rotation": [-1.0555217263803604e-23, 0, 2.646977960169689e-23, 1],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							0.000024512145594179913, 7.414422874494477,
+							-0.000001114446320116258
+						]
+					}
+				},
+				{
+					"index": 48,
+					"name": "mixamorigRightHandIndex4",
+					"originalName": "mixamorig:RightHandIndex4",
+					"parent": "mixamorigRightHandIndex3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368746e-8, 0.9999999999996732,
+							0, -0.9999999999996555, 1.9522604986083053e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980275e-7,
+							-0.9999999999999811, 1.4131330821633634e-8, 0, -192.3774573733498,
+							299.3933174428825, -6.997290649905726, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							-2.6469779601696868e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							0.000047561761172154604, 5.522502650402856, 2.5926283342414536e-10
+						]
+					}
+				},
+				{
+					"index": 49,
+					"name": "mixamorigRightHandRing1",
+					"originalName": "mixamorig:RightHandRing1",
+					"parent": "mixamorigRightHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368753e-8, 0.9999999999996734,
+							0, -0.9999999999996548, 1.9522604986083037e-7,
+							-8.073946042094047e-7, 0, -1.9522606138980267e-7,
+							-0.9999999999999809, 1.4131330821633634e-8, 0,
+							-169.83259714963765, 299.9410275475734, -16.087916621847132, 1
+						],
+						"rotation": [
+							2.6796725370448446e-24, 4.135903062765139e-25,
+							-2.6469779601696903e-23, 1
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							-3.983932323887519, 24.08722811932921, -0.0013610769776164489
+						]
+					}
+				},
+				{
+					"index": 50,
+					"name": "mixamorigRightHandRing2",
+					"originalName": "mixamorig:RightHandRing2",
+					"parent": "mixamorigRightHandRing1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368751e-8, 0.9999999999996734,
+							0, -0.9999999999996555, 1.952260498608305e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980272e-7,
+							-0.9999999999999811, 1.4131330821633636e-8, 0, -176.6900970712426,
+							299.9410650487417, -16.087912336664502, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							2.6469779601696886e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							0.000009821891577388442, 6.857499921606461,
+							-0.00003616240547898997
+						]
+					}
+				},
+				{
+					"index": 51,
+					"name": "mixamorigRightHandRing3",
+					"originalName": "mixamorig:RightHandRing3",
+					"parent": "mixamorigRightHandRing2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368748e-8, 0.9999999999996732,
+							0, -0.9999999999996548, 1.952260498608304e-7,
+							-8.073946042094047e-7, 0, -1.952260613898027e-7,
+							-0.9999999999999809, 1.4131330821633632e-8, 0,
+							-183.52557655122285, 299.9410360033505, -16.087883940723998, 1
+						],
+						"rotation": [-1.0555217263803604e-23, 0, 2.646977960169689e-23, 1],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							0.00003391486932358134, 6.835479479949299, 0.000030379855274986767
+						]
+					}
+				},
+				{
+					"index": 52,
+					"name": "mixamorigRightHandRing4",
+					"originalName": "mixamorig:RightHandRing4",
+					"parent": "mixamorigRightHandRing3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368746e-8, 0.9999999999996732,
+							0, -0.9999999999996555, 1.9522604986083053e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980275e-7,
+							-0.9999999999999811, 1.4131330821633634e-8, 0, -189.5427399081299,
+							299.94108334586565, -16.087867245134756, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							-2.6469779601696868e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							0.00002155381512025656, 6.017163356900738, -0.00004616780779542751
+						]
+					}
+				},
+				{
+					"index": 53,
+					"name": "mixamorigRightHandPinky1",
+					"originalName": "mixamorig:RightHandPinky1",
+					"parent": "mixamorigRightHand",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368753e-8, 0.9999999999996734,
+							0, -0.9999999999996548, 1.9522604986083037e-7,
+							-8.073946042094047e-7, 0, -1.9522606138980267e-7,
+							-0.9999999999999809, 1.4131330821633634e-8, 0, -166.7347237741829,
+							299.4419178759303, -20.64506588469301, 1
+						],
+						"rotation": [
+							2.6796725370448446e-24, 4.135903062765139e-25,
+							-2.6469779601696903e-23, 1
+						],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							-8.541084094991312, 20.989358325854056, 0.497747925481292
+						]
+					}
+				},
+				{
+					"index": 54,
+					"name": "mixamorigRightHandPinky2",
+					"originalName": "mixamorig:RightHandPinky2",
+					"parent": "mixamorigRightHandPinky1",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317477e-7, 1.4131488798368751e-8, 0.9999999999996734,
+							0, -0.9999999999996555, 1.952260498608305e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980272e-7,
+							-0.9999999999999811, 1.4131330821633636e-8, 0,
+							-172.67430927251712, 299.44191903524353, -20.645016024003546, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							2.6469779601696886e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							0.000054656278749121157, 5.939585498292132, 2.4937207854236476e-10
+						]
+					}
+				},
+				{
+					"index": 55,
+					"name": "mixamorigRightHandPinky3",
+					"originalName": "mixamorig:RightHandPinky3",
+					"parent": "mixamorigRightHandPinky2",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368748e-8, 0.9999999999996732,
+							0, -0.9999999999996548, 1.952260498608304e-7,
+							-8.073946042094047e-7, 0, -1.952260613898027e-7,
+							-0.9999999999999809, 1.4131330821633632e-8, 0,
+							-176.43901789431789, 299.441919770303, -20.645036869351095, 1
+						],
+						"rotation": [-1.0555217263803604e-23, 0, 2.646977960169689e-23, 1],
+						"scale": [
+							0.9999999999999998, 0.9999999999999993, 0.9999999999999998
+						],
+						"translation": [
+							-0.00001780574212162378, 3.7647086218164247,
+							-9.055156624526717e-11
+						]
+					}
+				},
+				{
+					"index": 56,
+					"name": "mixamorigRightHandPinky4",
+					"originalName": "mixamorig:RightHandPinky4",
+					"parent": "mixamorigRightHandPinky3",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-8.073946017317475e-7, 1.4131488798368746e-8, 0.9999999999996732,
+							0, -0.9999999999996555, 1.9522604986083053e-7,
+							-8.073946042094052e-7, 0, -1.9522606138980275e-7,
+							-0.9999999999999811, 1.4131330821633634e-8, 0, -182.8094819763442,
+							299.44185785640195, -20.645042012788785, 1
+						],
+						"rotation": [
+							-3.93777315224028e-24, -8.271806125530273e-25,
+							-2.6469779601696868e-23, 1
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000002],
+						"translation": [
+							3.9744207924741204e-11, 6.370464082016184, 0.00006315758156461015
+						]
+					}
+				},
+				{
+					"index": 57,
+					"name": "mixamorigLeftUpLeg",
+					"originalName": "mixamorig:LeftUpLeg",
+					"parent": "mixamorigHips",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9999886328323381, 0.0047672912158245005,
+							0.00008450192141133327, 0, -0.004768040070217495,
+							-0.9998315775497466, -0.01772236802106724, 0,
+							2.351431224213718e-16, -0.01772256947648588, 0.9998429429321143,
+							0, 18.482476281204143, 195.31225297590208, 1.2456091500277275, 1
+						],
+						"rotation": [
+							0.00002112636991508149, -0.008861607507633967, 0.9999578932777868,
+							0.0023839332011235735
+						],
+						"scale": [0.9999999999999999, 1, 1],
+						"translation": [
+							18.52439641786448, -13.838534377613541, 2.6620154238695855
+						]
+					}
+				},
+				{
+					"index": 58,
+					"name": "mixamorigLeftLeg",
+					"originalName": "mixamorig:LeftLeg",
+					"parent": "mixamorigLeftUpLeg",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9999861249767066, -0.0052582840635562195,
+							-0.00031670613718768936, 0, 0.005267813025381746,
+							-0.9981772471109167, -0.06012015881549781, 0,
+							1.2836860790943296e-11, -0.06012099299560856, 0.9981910970356433,
+							0, 18.07602172347718, 110.08098485111122, -0.2651451955308328, 1
+						],
+						"rotation": [
+							-0.02121529400780254, 0.000005301475584121012,
+							0.005016797321388939, 0.9997623432679854
+						],
+						"scale": [1, 0.9999999999999994, 0.9999999999999997],
+						"translation": [
+							-2.1316282072803006e-14, 85.24562540189443,
+							-1.4921397450962104e-13
+						]
+					}
+				},
+				{
+					"index": 59,
+					"name": "mixamorigLeftFoot",
+					"originalName": "mixamorig:LeftFoot",
+					"parent": "mixamorigLeftLeg",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9965583743714239, -0.05478948372007159, 0.062205457508749264,
+							0, 0.0828939471263422, -0.6586840260544212, 0.74783951978386, 0,
+							-3.755112813841515e-15, 0.7504221920322097, 0.6609587987957896, 0,
+							18.52679452686318, 24.665812788569355, -5.409696150299863, 1
+						],
+						"rotation": [
+							0.4385219597824794, -0.01936388988109248, 0.03490798345395587,
+							0.8978334830292223
+						],
+						"scale": [1, 1.0000000000000007, 1.0000000000000004],
+						"translation": [
+							-2.842170943040401e-14, 85.5711471181737, -9.947598300641403e-14
+						]
+					}
+				},
+				{
+					"index": 60,
+					"name": "mixamorigLeftToeBase",
+					"originalName": "mixamorig:LeftToeBase",
+					"parent": "mixamorigLeftFoot",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9998506067941729, -0.00022714152408413388,
+							-0.017283301190823133, 0, -0.01728479370211481,
+							0.013139155410101355, 0.9997642714669213, 0,
+							-1.3440326946484049e-16, 0.9999136517729099,
+							-0.013141118603938351, 0, 21.2192918193753, 3.27094599486443,
+							18.881050666022652, 1
+						],
+						"rotation": [
+							0.3592002547604347, -0.01180460759640687, -0.046767926236406084,
+							0.9320131915885524
+						],
+						"scale": [
+							1.0000000000000002, 0.9999999999999996, 0.9999999999999993
+						],
+						"translation": [
+							-3.552713678800501e-15, 32.48122915908886, -1.4210854715202004e-14
+						]
+					}
+				},
+				{
+					"index": 61,
+					"name": "mixamorigLeftToe_End",
+					"originalName": "mixamorig:LeftToe_End",
+					"parent": "mixamorigLeftToeBase",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9998506067941728, -0.00022714152408413385,
+							-0.01728330119082313, 0, -0.01728479370211482,
+							0.013139155410101362, 0.9997642714669219, 0,
+							-1.3439260229475129e-16, 0.9999136517729106,
+							-0.013141118603938358, 0, 20.88976080481119, 3.521441273397985,
+							37.94134958420565, 1
+						],
+						"rotation": [
+							-8.67361737988403e-19, -2.0328790734103202e-20,
+							-8.673617379884022e-19, 1
+						],
+						"scale": [
+							0.9999999999999999, 1.0000000000000007, 1.0000000000000007
+						],
+						"translation": [
+							7.105427357601002e-15, 19.06479303387833, 9.769962616701378e-15
+						]
+					}
+				},
+				{
+					"index": 62,
+					"name": "mixamorigRightUpLeg",
+					"originalName": "mixamorig:RightUpLeg",
+					"parent": "mixamorigHips",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9999790336821173, -0.006475054918069903,
+							0.00007655055446098124, 0, 0.006475507407100198,
+							-0.9999091581473032, 0.011821305214400972, 0,
+							2.7663418430967646e-16, 0.011821553068840486, 0.9999301230001227,
+							0, -18.48219329444748, 194.73909972397084, -1.2560659942567942, 1
+						],
+						"rotation": [
+							0.000019138073258262804, 0.005910848811531462, 0.9999772890958003,
+							-0.003237714112707565
+						],
+						"scale": [1, 1, 1],
+						"translation": [
+							-18.440273157787143, -14.411687629544787, 0.1603402795850637
+						]
+					}
+				},
+				{
+					"index": 63,
+					"name": "mixamorigRightLeg",
+					"originalName": "mixamorig:RightLeg",
+					"parent": "mixamorigRightUpLeg",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9999758230463145, 0.006940967649401655, 0.00041987014169092557,
+							0, -0.006953655358581122, -0.9981512571552036,
+							-0.06037975253875104, 0, 7.203822873816909e-13,
+							-0.06038121237253106, 0.998175389995377, 0, -17.93294264379336,
+							109.92709640435442, -0.25338633189305404, 1
+						],
+						"rotation": [
+							-0.03611204136829012, -0.000008633644537310971,
+							-0.0067102019719750645, 0.9993252191269719
+						],
+						"scale": [0.9999999999999998, 1, 0.9999999999999999],
+						"translation": [
+							-2.3803181647963356e-13, 84.81970849908168,
+							-4.2454928461665986e-13
+						]
+					}
+				},
+				{
+					"index": 64,
+					"name": "mixamorigRightFoot",
+					"originalName": "mixamorig:RightFoot",
+					"parent": "mixamorigRightLeg",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9954178360786824, 0.06259507459341768, -0.07228546363604467, 0,
+							-0.09562076979628151, -0.6516184071066601, 0.7524959268350534, 0,
+							-2.7154254458367156e-15, 0.7559598588261308, 0.6546179739692275,
+							0, -18.526919713243107, 24.66561477786354, -5.410988573829051, 1
+						],
+						"rotation": [
+							0.44226038225102426, 0.02273466404554438, -0.03980188634854491,
+							0.8957146304404164
+						],
+						"scale": [1, 1.0000000000000002, 0.9999999999999999],
+						"translation": [
+							1.4210854715202004e-14, 85.41940013129042, -1.234568003383174e-13
+						]
+					}
+				},
+				{
+					"index": 65,
+					"name": "mixamorigRightToeBase",
+					"originalName": "mixamorig:RightToeBase",
+					"parent": "mixamorigRightFoot",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9903450909112955, -0.0015974809808638052, -0.13861475016178262,
+							0, -0.13862395502905567, 0.011412583394348641, 0.9902793303065399,
+							0, 9.238368713447927e-16, 0.9999335982927983,
+							-0.01152384507086035, 0, -21.680605248482614, 3.17447274495348,
+							19.407212794370352, 1
+						],
+						"rotation": [
+							0.35226453708631367, 0.04155385742878329, -0.020242893301460854,
+							0.9347583634902333
+						],
+						"scale": [
+							0.9999999999999999, 0.9999999999999998, 1.0000000000000002
+						],
+						"translation": [0, 32.981177017905026, 0]
+					}
+				},
+				{
+					"index": 66,
+					"name": "mixamorigRightToe_End",
+					"originalName": "mixamorig:RightToe_End",
+					"parent": "mixamorigRightToeBase",
+					"parentIsJoint": true,
+					"rest": {
+						"matrixWorld": [
+							-0.9903450909112957, -0.0015974809808638058, -0.13861475016178265,
+							0, -0.13862395502905572, 0.011412583394348646, 0.9902793303065404,
+							0, 9.235018873704164e-16, 0.9999335982927982,
+							-0.011523845070860348, 0, -24.411819190289535, 3.399327149606326,
+							38.918016050918204, 1
+						],
+						"rotation": [-4.336808689942019e-19, 1.0842021724855042e-19, 0, 1],
+						"scale": [
+							1.0000000000000002, 1.0000000000000004, 0.9999999999999999
+						],
+						"translation": [0, 19.702323030925328, 1.4654943925052066e-14]
+					}
+				}
+			],
+			"name": "Body",
+			"skeletonRoot": "mixamorigHips"
+		}
+	],
+	"warnings": [
+		"THREE.FBXLoader: %s map is not supported in three.js, skipping texture. ShininessExponent",
+		"THREE.FBXLoader: Vertex has more than 4 skinning weights assigned to vertex. Deleting additional weights."
+	]
+}

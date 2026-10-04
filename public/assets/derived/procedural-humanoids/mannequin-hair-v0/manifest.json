@@ -1,0 +1,497 @@
+{
+	"anatomy": {
+		"armLengthMultiplier": 1,
+		"heightScale": 1,
+		"hipWidthMultiplier": 1,
+		"legLengthMultiplier": 1,
+		"shoulderWidthMultiplier": 1,
+		"torsoLengthMultiplier": 1,
+		"armToLegRatio": 1,
+		"armToTorsoRatio": 1,
+		"legToTorsoRatio": 1,
+		"shoulderToHipRatio": 1
+	},
+	"animationProfile": "mixamo-to-quaternius-v2",
+	"animationSet": "golden-reference-v0",
+	"assetId": "procedural-mannequin-quaternius-hair-v0",
+	"blender": {
+		"buildHash": "fbe6228777e7",
+		"version": "5.2.0 LTS"
+	},
+	"bounds": {
+		"dimensions": {
+			"x": 1.5942439,
+			"y": 1.8200001,
+			"z": 0.3022452
+		},
+		"maxY": 1.8200001,
+		"minY": 0
+	},
+	"head": {
+		"axes": {
+			"forward": [0, -1, 0],
+			"right": [1, 0, 0],
+			"up": [0, 0, 1]
+		},
+		"bounds": {
+			"centre": [1.5e-8, 0.0082478, 1.588037133],
+			"dimensions": [0.346710086, 0.288476646, 0.276375294],
+			"maximum": [0.173355058, 0.152486131, 1.72622478],
+			"minimum": [-0.173355028, -0.13599053, 1.449849486]
+		},
+		"chinReference": [1.5e-8, -0.115797165, 1.47195951],
+		"coordinateSpace": "compiler-local-head-bone-compatible-z-up",
+		"eyeLine": {
+			"centre": [1.5e-8, -0.115797165, 1.615674663],
+			"separationMetres": 0.124815631
+		},
+		"facePlane": {
+			"centre": [1.5e-8, -0.115797165, 1.588037133],
+			"forward": [0, -1, 0]
+		},
+		"foreheadReference": [1.5e-8, -0.13599053, 1.63225718],
+		"headBonePosition": [0, 0.017400054, 1.59980011],
+		"headCentre": [1.5e-8, 0.0082478, 1.588037133],
+		"headDepth": 0.288476646,
+		"headHeight": 0.276375294,
+		"headWidth": 0.346710086,
+		"mouthLine": {
+			"centre": [1.5e-8, -0.115797165, 1.531380198],
+			"widthMetres": 0.086677521
+		},
+		"neckConnectionVertexCount": 50,
+		"neckTop": [0, 0.017400054, 1.55372011],
+		"noseCentre": [1.5e-8, -0.115797165, 1.581127751],
+		"rearCraniumReference": [1.5e-8, 0.152486131, 1.648839698],
+		"scalpBack": [1.5e-8, 0.152486131, 1.588037133],
+		"scalpBounds": {
+			"centre": [0, 0.028540984, 1.66515255],
+			"dimensions": [0.234109923, 0.247890294, 0.122144461],
+			"maximum": [0.117054962, 0.152486131, 1.72622478],
+			"minimum": [-0.117054962, -0.095404163, 1.604080319]
+		},
+		"scalpFront": [1.5e-8, -0.095404163, 1.588037133],
+		"scalpLeft": [-0.117054962, 0.0082478, 1.588037133],
+		"scalpRight": [0.117054962, 0.0082478, 1.588037133],
+		"scalpTop": [1.5e-8, 0.0082478, 1.72622478],
+		"symmetryErrorMetres": 0,
+		"topologyVersion": "procedural-humanoid-v3",
+		"version": "procedural-head-contract-v3"
+	},
+	"compilerHash": "081116107d1f4459818ff4cd7257f5f87e4bfbe2a3d98e214e380e35b279576f",
+	"compilerVersion": "procedural-mannequin-blender-v7",
+	"components": {
+		"hair": {
+			"attachmentBone": "Head",
+			"attachmentStrategy": "main-skeleton-head-surface-skinning",
+			"compilerCompatibilityVersion": "procedural-mannequin-blender-v7",
+			"componentId": "quaternius-hair-v0",
+			"fittingProfile": {
+				"id": "quaternius-buzzed-fit-v3",
+				"version": 3,
+				"mode": "geometry-aware-scalp",
+				"attachmentBone": "Head",
+				"sourceReferenceFrame": {
+					"forwardAxis": "-Y",
+					"upAxis": "+Z",
+					"centreMode": "bounds-centre",
+					"crownMode": "maximum-z"
+				},
+				"coverageRatios": {
+					"width": 0.96,
+					"depth": 1,
+					"heightFromWidth": 0.55
+				},
+				"frontOffsetMetres": 0.002,
+				"rearOffsetMetres": 0,
+				"verticalSeatingOffsetMetres": 0.012,
+				"scalpOffsetMetres": 0.012,
+				"allowNonUniformScaling": true,
+				"scaleLimits": {
+					"width": [1, 2.1],
+					"depth": [0.8, 1.8],
+					"height": [0.85, 1.25]
+				}
+			},
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+				"spdx": "CC0-1.0"
+			},
+			"knownLimitations": [
+				"Skinned to the generated Head-led body-surface blend; no secondary motion.",
+				"Compiled solid hair colour with the source normal map; vendor base colour texture is not exported.",
+				"Geometry-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
+			],
+			"bounds": {
+				"centre": [1.5e-8, 0.006247804, 1.633767605],
+				"dimensions": [0.324640006, 0.288476646, 0.20891428],
+				"maximum": [0.162320018, 0.150486127, 1.738224745],
+				"minimum": [-0.162319988, -0.137990519, 1.529310465]
+			},
+			"derivedTransform": {
+				"fittedCrown": [1.5e-8, 0.0062478, 1.738224745],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [2.099999905, 1.510951877, 1.233520627],
+				"translationMetres": [0, 0, 0]
+			},
+			"exportedBounds": {
+				"dimensions": [0.3468757, 0.2232235, 0.3082354],
+				"maximum": [0.1734378, 1.9297554, 0.147442],
+				"minimum": [-0.1734378, 1.706532, -0.1607934]
+			},
+			"fitValidation": {
+				"checks": {
+					"aboveNeck": true,
+					"centred": true,
+					"closeToScalp": true,
+					"depthCoverage": true,
+					"frontCoverage": true,
+					"rearCoverage": true,
+					"scalpVerticalRange": true,
+					"shoulderClearance": true,
+					"verticalCentre": true,
+					"widthCoverage": true
+				},
+				"metrics": {
+					"centreOffset": [0, -0.001999997, 0.045730472],
+					"closeToScalpRatio": 0.390558,
+					"depthRatio": 1,
+					"frontGapMetres": -0.001999989,
+					"maximumScalpDistanceMetres": 0.102649573,
+					"minimumScalpDistanceMetres": 0.009139984,
+					"rearGapMetres": 0.002000004,
+					"scalpVerticalRangeRatio": 0.787554,
+					"shoulderClearanceMetres": 0.058390674,
+					"verticesAboveNeckRatio": 0.929185,
+					"widthRatio": 0.936344
+				},
+				"passed": true,
+				"thresholds": {
+					"minimumCloseToScalpRatio": 0.12,
+					"minimumScalpVerticalRangeRatio": 0.68,
+					"minimumShoulderClearanceMetres": 0.025,
+					"minimumVerticesAboveNeckRatio": 0.9
+				},
+				"warnings": []
+			},
+			"materialCount": 1,
+			"materialNames": ["MI_Hair_1"],
+			"meshCount": 1,
+			"objectName": "ProceduralMannequinMesh_2",
+			"normalizedTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"provider": "Quaternius",
+			"packName": "Universal Base Characters Kit",
+			"sourceAsset": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf",
+			"sourceBounds": {
+				"centre": [-4.1e-8, 0.012570329, 1.728831053],
+				"dimensions": [0.154590487, 0.19092378, 0.169364214],
+				"maximum": [0.077295206, 0.108032219, 1.81351316],
+				"minimum": [-0.077295288, -0.082891561, 1.644148946]
+			},
+			"sourceFiles": [
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf",
+					"role": "mesh",
+					"sha256": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin",
+					"role": "buffer",
+					"sha256": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png",
+					"role": "baseColorTexture",
+					"sha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e"
+				},
+				{
+					"path": "public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png",
+					"role": "normalTexture",
+					"sha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
+				}
+			],
+			"sourceTransform": {
+				"translationMetres": [0, 0, 0],
+				"rotationDegrees": [0, 0, 0],
+				"scale": [1, 1, 1]
+			},
+			"textureCount": 1,
+			"textureNames": ["T_Hair_1_Normal"],
+			"triangleCount": 830,
+			"vertexCount": 466
+		}
+	},
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "8a191daa0dad0552dec63b78a15e53b149935331647bcf2b591e3a091cf977f3",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "8a191daa0dad0552dec63b78a15e53b149935331647bcf2b591e3a091cf977f3",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
+		"faceGeometryDeterministic": true,
+		"facePlacementDeterministic": true,
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"deterministicBuild": true,
+	"engineForward": "-Z after registry 180-degree Y rotation",
+	"geometryProfile": "voxel-union",
+	"measurements": {
+		"calfRadius": 0.068,
+		"chestDepth": 0.13,
+		"chestHalfWidth": 0.245,
+		"elbowRadius": 0.07,
+		"footDepth": 0.06,
+		"footHalfWidth": 0.062,
+		"forearmRadius": 0.064,
+		"handDepth": 0.035,
+		"handHalfWidth": 0.064,
+		"headDepth": 0.112,
+		"headHalfWidth": 0.12,
+		"hipJointRadius": 0.105,
+		"kneeRadius": 0.068,
+		"neckRadius": 0.064,
+		"pelvisDepth": 0.13,
+		"pelvisHalfWidth": 0.195,
+		"shoulderJointRadius": 0.08,
+		"thighRadius": 0.082,
+		"topologyVersion": "procedural-humanoid-v3",
+		"upperArmRadius": 0.076,
+		"voxelSizeMetres": 0.035,
+		"waistDepth": 0.112,
+		"waistHalfWidth": 0.17,
+		"wristRadius": 0.052
+	},
+	"heightMetres": 1.82,
+	"influenceStatistics": {
+		"maximumInfluences": 4,
+		"maximumWeightSumError": 4.0978193283081055e-8,
+		"outOfRangeJointCount": 0,
+		"strategy": "analytic-sided-segments-v2",
+		"unweightedVertexCount": 0
+	},
+	"jointCount": 65,
+	"knownLimitations": [
+		"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+		"Face Readability V0 uses fixed compiler-generated eye, nose, and mouth geometry; only eye colour is authored.",
+		"Face features are fully Head-weighted and intentionally exclude expressions, eyelids, brows, and facial animation.",
+		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
+		"Hairstyle Fit V2 reuses the generated Head-led body-surface blend and has no secondary motion.",
+		"The vendor-authored hair material is fixed; hair colour authoring is not implemented."
+	],
+	"appearance": {
+		"hair": {
+			"authoredColor": "#3b2a1f",
+			"authoredColorSpace": "srgb",
+			"materialSchemaVersion": "procedural-hair-material-v1",
+			"materialCount": 1,
+			"exportedLinearColor": [0.043735, 0.0231534, 0.0137021],
+			"exportedRoughness": 0.72,
+			"exportedMetallic": 0
+		},
+		"face": {
+			"authoredEyeColor": "#4b5d67",
+			"authoredEyeColorSpace": "srgb",
+			"canonicalLinearColor": [
+				0.07036009569659588, 0.10946171077829933, 0.13563332965520566
+			],
+			"exportedLinearColor": [0.0703601, 0.1094617, 0.1356333],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.48,
+			"materialCount": 1,
+			"materialName": "ProceduralEyeMaterial",
+			"materialSchemaVersion": "procedural-eye-material-v1"
+		},
+		"skin": {
+			"authoredColor": "#c98f65",
+			"authoredColorSpace": "srgb",
+			"authoredRoughness": 0.72,
+			"canonicalLinearColor": [
+				0.5840784178911641, 0.27467731206038465, 0.1301364766903643
+			],
+			"exportedLinearColor": [0.5840784, 0.2746773, 0.1301365],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialName": "ProceduralSkinMaterial",
+			"materialSchemaVersion": "procedural-skin-material-v1"
+		}
+	},
+	"artifactStatistics": {
+		"materialCount": 4,
+		"meshCount": 6,
+		"textureCount": 1,
+		"triangleCount": 6506,
+		"vertexCount": 3342
+	},
+	"face": {
+		"eyeBounds": [
+			{
+				"centre": [0.062407829, -0.089585632, 1.615674615],
+				"dimensions": [0.034293052, 0.013717875, 0.028743029],
+				"maximum": [0.079554357, -0.082726695, 1.630046129],
+				"minimum": [0.045261305, -0.09644457, 1.601303101]
+			},
+			{
+				"centre": [-0.062407799, -0.089585632, 1.615674615],
+				"dimensions": [0.034293052, 0.013717875, 0.028743029],
+				"maximum": [-0.045261275, -0.082726695, 1.630046129],
+				"minimum": [-0.079554327, -0.09644457, 1.601303101]
+			}
+		],
+		"eyeCentres": [
+			[0.062407829, -0.089585632, 1.615674615],
+			[-0.062407799, -0.089585632, 1.615674615]
+		],
+		"eyeColor": "#4b5d67",
+		"eyeMaterial": {
+			"canonicalLinearColor": [0.070360096, 0.109461711, 0.13563333],
+			"metallic": 0,
+			"name": "ProceduralEyeMaterial",
+			"roughness": 0.48,
+			"schemaVersion": "procedural-eye-material-v1"
+		},
+		"eyeMeshCount": 2,
+		"featureBounds": {
+			"centre": [1.5e-8, -0.101251163, 1.579607725],
+			"dimensions": [0.159108683, 0.037048936, 0.100876927],
+			"maximum": [0.079554357, -0.082726695, 1.630046129],
+			"minimum": [-0.079554327, -0.119775631, 1.529169202]
+		},
+		"materialCount": 3,
+		"mouthCentre": [1.5e-8, -0.093061425, 1.531380177],
+		"mouthMaterial": "ProceduralMouthMaterial",
+		"noseCentre": [1.5e-8, -0.093812734, 1.581127763],
+		"noseProjectionMetres": 0.025962898,
+		"objectNames": ["FaceEye.L", "FaceEye.R", "FaceNose", "FaceMouth"],
+		"triangleCount": 148,
+		"validation": {
+			"checks": {
+				"eyeDepth": true,
+				"eyeSeparation": true,
+				"eyeSymmetry": true,
+				"eyesWithinHead": true,
+				"finiteGeometry": true,
+				"mouthCentred": true,
+				"mouthVerticalPlacement": true,
+				"noseCentred": true,
+				"noseProjection": true,
+				"verticalBounds": true
+			},
+			"passed": true,
+			"warnings": []
+		},
+		"version": "procedural-face-readability-v0",
+		"vertexCount": 110,
+		"orientation": {
+			"passed": true,
+			"footForward": [0, 0, 1],
+			"features": [
+				{
+					"name": "FaceEyeL",
+					"forwardDistanceMetres": 0.1143135,
+					"alignment": 0.8637806
+				},
+				{
+					"name": "FaceEyeR",
+					"forwardDistanceMetres": 0.1143135,
+					"alignment": 0.8637807
+				},
+				{
+					"name": "FaceMouth",
+					"forwardDistanceMetres": 0.1180273,
+					"alignment": 1
+				},
+				{
+					"name": "FaceNose",
+					"forwardDistanceMetres": 0.1297669,
+					"alignment": 1
+				}
+			]
+		},
+		"sourceTriangleCount": 148,
+		"sourceVertexCount": 82
+	},
+	"allMeshGeometrySemanticHash": "f7b661bb9744b8bf498810ce0e5efafa9a63d1677cdcf589e5051359e490e836",
+	"faceGeometrySemanticHash": "a1f0dacb2f34e09db113a6121dab8ef6df946ade7f39557cfff1b9359ecab2c8",
+	"bodyStatistics": {
+		"materialCount": 1,
+		"meshCount": 1,
+		"triangleCount": 5528,
+		"vertexCount": 2766
+	},
+	"materialCount": 4,
+	"meshCount": 6,
+	"meshNames": [
+		"FaceEyeL",
+		"FaceEyeR",
+		"FaceMouth",
+		"FaceNose",
+		"ProceduralMannequinMesh_1",
+		"ProceduralMannequinMesh_2"
+	],
+	"normalizedSemanticHash": "b59959c0404665a686c05251cb255bef92232b78d6bf2d832740100821eb1ed5",
+	"geometryAndSkinningSemanticHash": "d99d7dec0f94d2ab58b735011ff897c297f43afb8e0a0ecbe432aa8e5a83fc26",
+	"materialSemanticHash": "e70c2c4d975686c263ace5d0d9198adcc0c8ca14ee8b428a4a2033051daa400e",
+	"outputFile": "mannequin.glb",
+	"outputHash": "8a191daa0dad0552dec63b78a15e53b149935331647bcf2b591e3a091cf977f3",
+	"proportions": {
+		"height": 1.82,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5,
+		"armLength": 0.5,
+		"legLength": 0.5,
+		"hipWidth": 0.5
+	},
+	"recipeHash": "f49f513d46cf019fb7b505d97a7e62c947eda807fc4d4683b73df3ee92ae927a",
+	"recipeId": "procedural-mannequin-quaternius-hair-v0",
+	"recipeVersion": 6,
+	"skeletonContract": "golden-humanoid-v0",
+	"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+	"sourceImmutable": true,
+	"componentRegistry": {
+		"path": "packages/character-contract/src/character-component-registry.json",
+		"validated": true,
+		"version": 1
+	},
+	"templateHashes": {
+		"buffer": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4"
+	},
+	"triangleCount": 6506,
+	"topology": {
+		"boundaryEdgeCount": 0,
+		"connectedComponentCount": 1,
+		"degenerateFaceCount": 0,
+		"edgeCount": 8292,
+		"eulerCharacteristic": 2,
+		"faceCount": 5528,
+		"genus": 0,
+		"manifold": true,
+		"nonManifoldEdgeCount": 0,
+		"unreferencedVertexCount": 0
+	},
+	"topologyVersion": "procedural-humanoid-v3",
+	"units": "metres",
+	"validationVersion": "procedural-mannequin-roundtrip-v8",
+	"vertexCount": 3342,
+	"warnings": [
+		"Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+		"Face Readability V0 uses fixed compiler-generated eye, nose, and mouth geometry; only eye colour is authored.",
+		"Face features are fully Head-weighted and intentionally exclude expressions, eyelids, brows, and facial animation.",
+		"Finger bones remain present for animation compatibility but the generated hands have no fingers.",
+		"The Golden skeleton is a compatibility template, not the future canonical generated rig.",
+		"Hairstyle Fit V2 reuses the generated Head-led body-surface blend and has no secondary motion.",
+		"The vendor-authored hair material is fixed; hair colour authoring is not implemented."
+	],
+	"generationDurationMs": 34230
+}

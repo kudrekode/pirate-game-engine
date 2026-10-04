@@ -1,44 +1,19 @@
-export type ThreeVisualAssetCategory =
-	| "character"
-	| "object"
-	| "vehicle"
-	| "environment"
-	| "item";
+import {
+	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+	PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET,
+	PROCEDURAL_MANNEQUIN_V0_ASSET,
+} from "@adventure-game-builder/three-asset-preview";
 
-export type ThreeCharacterAnimationState =
-	| "idle"
-	| "walk"
-	| "attack"
-	| "defeated";
+export type {
+	ThreeCharacterAnimationMapping,
+	ThreeCharacterAnimationState,
+	ThreeVisualAssetCategory,
+	ThreeVisualAssetDefinition,
+} from "@adventure-game-builder/three-asset-preview";
 
-export type ThreeCharacterAnimationMapping = {
-	assetId?: string;
-	clipName: string;
-};
-
-export type ThreeVisualAssetDefinition = {
-	id: string;
-	name: string;
-	kind: "gltf" | "glb";
-	url: string;
-	category?: ThreeVisualAssetCategory;
-	/** Animation-only registry sources are never offered as character visuals. */
-	animationOnly?: boolean;
-	animations?: Partial<
-		Record<ThreeCharacterAnimationState, ThreeCharacterAnimationMapping>
-	>;
-	/**
-	 * Optional presentation-only material preparation for this cached source.
-	 * It never changes authored project data or gameplay state.
-	 */
-	materialProfile?: "preserve" | "standard";
-	defaultScale?: number;
-	defaultHeightOffset?: number;
-	defaultRotationOffset?: number;
-	castShadow?: boolean;
-	receiveShadow?: boolean;
-	tags?: string[];
-};
+import type { ThreeVisualAssetDefinition } from "@adventure-game-builder/three-asset-preview";
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
@@ -137,6 +112,11 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		tags: ["decoration", "flag"],
 		url: "/assets/pirate-demo/flag-pirate.glb",
 	},
+	GOLDEN_REFERENCE_HUMANOID_ASSET,
+	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
+	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
+	PROCEDURAL_MANNEQUIN_V0_ASSET,
+	PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET,
 	{
 		category: "character",
 		animations: {

@@ -41,7 +41,52 @@ The Phaser runtime remains the default and reference 2D playable runtime. Pressi
 
 Both runtime adapters use shared runtime helpers and `RuntimeSession` state for gameplay semantics. Movement, interaction discovery, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, and progression should stay in shared runtime code rather than being reimplemented inside Phaser or Three.js render adapters.
 
-The Three.js runtime is experimental. It now supports placeholder and registry-backed GLB presentation, visual movement smoothing, multiple camera modes, water/coastline visuals, and diagnostics, but still needs animation, model normalisation, UI polish, camera collision/framing polish, and broader parity/contract testing before it can be considered production-quality.
+The Three.js runtime is experimental. It now supports placeholder and registry-backed GLB presentation, offline-baked Golden Reference animation playback, visual movement smoothing, multiple camera modes, water/coastline visuals, and diagnostics. It still needs model normalisation, UI polish, camera collision/framing polish, and broader parity/contract testing before it can be considered production-quality.
+
+Character animation currently follows the documented offline pipeline: immutable
+Mixamo source/provenance records are retargeted by a versioned headless Blender
+profile into deterministic Golden-target GLBs, validated through Three.js, and
+registered for Asset Studio, the editor, and runtime presentation. See
+[`docs/ASSET_STUDIO_ARCHITECTURE.md`](docs/ASSET_STUDIO_ARCHITECTURE.md) and the
+[Golden Reference retargeting spike](docs/assets/golden-reference-animation-retargeting-spike.md).
+
+The first procedural compiler milestone is also complete: project-owned Blender
+Python generates Procedural Mannequin V0 geometry, binds explicit deterministic
+weights to the Golden compatibility skeleton, validates two isolated GLB builds,
+and promotes the artifact through Asset Studio and the same root registry,
+clone, and animation path. See
+[`docs/assets/procedural-mannequin-v0.md`](docs/assets/procedural-mannequin-v0.md).
+
+The checked-in mannequin now uses Generated Body Topology V1: a deterministic
+voxel-unioned, closed genus-zero body with blended max-four skin weights, strict
+exported topology checks, the unchanged Golden rest signature, and a 21-body
+extrema/seed/challenge matrix. See
+[`docs/assets/generated-body-topology-v1.md`](docs/assets/generated-body-topology-v1.md).
+
+Procedural Head and Hair Fit V1 advances new builds to
+`procedural-humanoid-v2`, replaces the crude head pill with a symmetric
+stylised cranium/jaw/chin/face-plane volume, and fits Quaternius Buzzed from
+measured scalp/source geometry through `quaternius-buzzed-fit-v2`. Compiler
+diagnostics now record the head/scalp contract, derived transform, fit metrics,
+and warnings. See
+[`docs/assets/procedural-head-hair-fit-v1.md`](docs/assets/procedural-head-hair-fit-v1.md).
+
+Face Readability V0 now generates two Head-skinned eyes, a low-poly nose, and a
+fixed mouth line from the measured head contract. Eye colour is authored recipe
+data and compiled into a shared eye material; bald and haired artifacts retain
+one skin and the unchanged 65-joint skeleton. Asset Studio includes focused
+Face controls and close head cameras. The backwards face is now corrected,
+with an independent exported face-versus-feet gate and surface-fitted features.
+Hair Colour V1 adds compiled hair colour, presets, reset, and recent-job restore;
+Hairstyle Library V2 adds Short Crop and Simple Parted alongside Buzzed and
+No Hair; see the [current milestone](docs/assets/hairstyle-library-v2.md).
+
+Asset Studio compiles six body proportions, skin colour/roughness, eye and hair colour,
+and the selected hairstyle through a local development endpoint and the real
+two-pass Blender compiler. Successful validated GLBs replace the preview;
+failed jobs preserve it, and Recent Compilations restores prior recipes and
+artifacts. Start with the [Asset Studio quick resume](docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume)
+for current versions, exact files, checks, and remaining work.
 
 Runtime state is copied from editor defaults at play start. Flags, variables, inventory, NPC attributes, quest state, shop stock, player health, and combat state are runtime-owned and should not mutate the editor defaults.
 
@@ -68,6 +113,15 @@ Start the Vite dev server:
 ```bash
 npm run dev
 ```
+
+Start the separate Asset Studio app:
+
+```bash
+npm run dev:asset-studio
+```
+
+Previewing checked-in assets does not require Blender; compiling recipes needs
+local Blender. See the [compiler guide](tools/blender-character/README.md).
 
 Run Vitest in watch mode:
 
@@ -98,6 +152,11 @@ npm run typecheck
 npm run test:run
 npm run build
 ```
+
+`npm run ci` uses root Vitest discovery, which also finds workspace tests, but
+its typecheck/build target the root app. For Asset Studio changes also run
+`npm run check:asset-studio` (contract and app checks) and
+`npm run test:blender-bake` (Node compiler/API tests and installed GLB round trips).
 
 GitHub Actions is configured for pull requests to `release/staging` and `main`. The workflow installs dependencies with `npm ci`, then runs typecheck, tests, and build. Playwright browser smoke coverage is opt-in through `npm run test:e2e:three-perf`; it is not part of `npm run ci`.
 

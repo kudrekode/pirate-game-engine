@@ -1,0 +1,40 @@
+{
+	"animations": {
+		"set": "golden-reference-v0"
+	},
+	"appearance": {
+		"face": {
+			"eyeColor": "#4b5d67"
+		},
+		"hair": {
+			"color": "#3b2a1f"
+		},
+		"skin": {
+			"color": "#c98f65",
+			"colorSpace": "srgb",
+			"roughness": 0.72
+		}
+	},
+	"components": {
+		"hair": "none"
+	},
+	"geometry": {
+		"profile": "voxel-union",
+		"radialSegments": 8,
+		"topologyVersion": "procedural-humanoid-v3"
+	},
+	"id": "procedural-mannequin-v0",
+	"name": "Procedural Mannequin Body Proportions V1",
+	"proportions": {
+		"armLength": 0.5,
+		"height": 1.82,
+		"hipWidth": 0.5,
+		"legLength": 0.5,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5
+	},
+	"skeleton": {
+		"contract": "golden-humanoid-v0"
+	},
+	"version": 6
+}
