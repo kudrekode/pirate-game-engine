@@ -2464,3 +2464,14 @@ label {
 		display: none;
 	}
 }
+.character-asset-card {
+	border: 1px solid #435366;
+	border-radius: 8px;
+	padding: 12px;
+	margin-bottom: 12px;
+	overflow-wrap: anywhere;
+}
+.character-asset-card > button {
+	display: block;
+	margin: 8px 0;
+}

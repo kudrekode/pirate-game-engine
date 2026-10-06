@@ -1,0 +1,70 @@
+{
+	"animations": {
+		"set": "golden-reference-v0"
+	},
+	"appearance": {
+		"face": {
+			"eyeColor": "#4b5d67"
+		},
+		"hair": {
+			"color": "#3b2a1f"
+		},
+		"skin": {
+			"color": "#ffffff",
+			"colorSpace": "srgb",
+			"roughness": 0.72
+		}
+	},
+	"clothing": {
+		"bottoms": {
+			"color": "#303948",
+			"componentId": "everyday-bottoms",
+			"revision": "1"
+		},
+		"footwear": {
+			"color": "#322b27",
+			"componentId": "everyday-footwear",
+			"revision": "1"
+		},
+		"top": {
+			"color": "#56616b",
+			"componentId": "everyday-top",
+			"revision": "1"
+		}
+	},
+	"components": {
+		"hair": "quaternius-hair-v0"
+	},
+	"geometry": {
+		"profile": "voxel-union",
+		"radialSegments": 8,
+		"topologyVersion": "procedural-humanoid-v4"
+	},
+	"geometrySource": {
+		"baseRevision": "authored-human-canonical-v1",
+		"family": "authored-human",
+		"rigProfile": "golden-humanoid-v0",
+		"values": {
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"mass": 0,
+			"nose": 0
+		}
+	},
+	"id": "authored-human-everyday-v1",
+	"name": "Everyday authored human",
+	"proportions": {
+		"armLength": 0.5,
+		"height": 1.82,
+		"hipWidth": 0.5,
+		"legLength": 0.5,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5
+	},
+	"skeleton": {
+		"contract": "golden-humanoid-v0"
+	},
+	"version": 6
+}

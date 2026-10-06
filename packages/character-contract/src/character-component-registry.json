@@ -541,5 +541,118 @@
 				"Length-aware fit is tuned for Procedural Head V1 and has no user-facing fit controls."
 			]
 		}
+	],
+	"clothingComponents": [
+		{
+			"id": "everyday-top",
+			"name": "Everyday T-shirt",
+			"slot": "top",
+			"revision": "1",
+			"compatibilityFamily": "authored-human-canonical-v1",
+			"rigProfile": "golden-humanoid-v0",
+			"sourceIdentity": "project-authored-everyday-v1",
+			"sourceMeshName": "Everyday_Top",
+			"sourceFiles": [
+				{
+					"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+					"role": "mesh",
+					"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+				},
+				{
+					"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+					"role": "coverage",
+					"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+				},
+				{
+					"path": "tools/blender-character/author_everyday_outfit.py",
+					"role": "authoring",
+					"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+				}
+			],
+			"provenance": {
+				"path": "tools/blender-character/clothing/everyday-v1/PROVENANCE.txt",
+				"role": "provenance",
+				"sha256": "106aeb765ef518d96ab5d55666536ddc45b76cc945aacd148a488124e055b3a1"
+			},
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"role": "derived-fit-CC0-1.0",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e"
+			}
+		},
+		{
+			"id": "everyday-bottoms",
+			"name": "Everyday trousers",
+			"slot": "bottoms",
+			"revision": "1",
+			"compatibilityFamily": "authored-human-canonical-v1",
+			"rigProfile": "golden-humanoid-v0",
+			"sourceIdentity": "project-authored-everyday-v1",
+			"sourceMeshName": "Everyday_Trousers",
+			"sourceFiles": [
+				{
+					"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+					"role": "mesh",
+					"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+				},
+				{
+					"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+					"role": "coverage",
+					"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+				},
+				{
+					"path": "tools/blender-character/author_everyday_outfit.py",
+					"role": "authoring",
+					"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+				}
+			],
+			"provenance": {
+				"path": "tools/blender-character/clothing/everyday-v1/PROVENANCE.txt",
+				"role": "provenance",
+				"sha256": "106aeb765ef518d96ab5d55666536ddc45b76cc945aacd148a488124e055b3a1"
+			},
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"role": "derived-fit-CC0-1.0",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e"
+			}
+		},
+		{
+			"id": "everyday-footwear",
+			"name": "Everyday ankle boots",
+			"slot": "footwear",
+			"revision": "1",
+			"compatibilityFamily": "authored-human-canonical-v1",
+			"rigProfile": "golden-humanoid-v0",
+			"sourceIdentity": "project-authored-everyday-v1",
+			"sourceMeshName": "Everyday_Boots",
+			"sourceFiles": [
+				{
+					"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+					"role": "mesh",
+					"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+				},
+				{
+					"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+					"role": "coverage",
+					"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+				},
+				{
+					"path": "tools/blender-character/author_everyday_outfit.py",
+					"role": "authoring",
+					"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+				}
+			],
+			"provenance": {
+				"path": "tools/blender-character/clothing/everyday-v1/PROVENANCE.txt",
+				"role": "provenance",
+				"sha256": "106aeb765ef518d96ab5d55666536ddc45b76cc945aacd148a488124e055b3a1"
+			},
+			"license": {
+				"path": "public/assets/source/quaternius/License_Standard.txt",
+				"role": "derived-fit-CC0-1.0",
+				"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e"
+			}
+		}
 	]
 }

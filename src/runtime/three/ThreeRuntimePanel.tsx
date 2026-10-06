@@ -549,6 +549,7 @@ export function ThreeRuntimePanel({
 		else closeDialogue();
 	}
 	const [mountError, setMountError] = useState<string | null>(null);
+	const [missingAssets, setMissingAssets] = useState(false);
 
 	useEffect(() => {
 		const unregisterDiagnostics =
@@ -1736,6 +1737,7 @@ export function ThreeRuntimePanel({
 			session.project.npcs,
 			true,
 			terrainRenderMode,
+			session.project.characterAssets,
 		);
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
@@ -1774,11 +1776,14 @@ export function ThreeRuntimePanel({
 			return renderResult;
 		});
 
-		const playerRenderVisual = resolveThreeCharacterVisual({
-			kind: "player",
-			name: session.project.player.name,
-			threeVisual: session.project.player.threeVisual,
-		});
+		const playerRenderVisual = resolveThreeCharacterVisual(
+			{
+				kind: "player",
+				name: session.project.player.name,
+				threeVisual: session.project.player.threeVisual,
+			},
+			session.project.characterAssets,
+		);
 		const playerRenderResult = createThreeVisualMarkerGroup(
 			createRuntimePlayerMarker(
 				area,
@@ -1814,6 +1819,12 @@ export function ThreeRuntimePanel({
 		addRenderObject(playerMesh, {
 			disposeResources: !playerRenderResult.usedAsset,
 		});
+		setMissingAssets(
+			[...markerRenderResults, playerRenderResult].some(
+				(result) =>
+					result.assetStatus === "error" || result.assetStatus === "missing",
+			),
+		);
 		diagnostics.setSceneEntityCounts({
 			assetStatuses: [...markerRenderResults, playerRenderResult].map(
 				(result) => ({
@@ -2185,6 +2196,12 @@ export function ThreeRuntimePanel({
 
 	return (
 		<div className="three-runtime-panel">
+			{missingAssets && (
+				<p role="alert">
+					A visual asset is unavailable. Restore its project asset files or
+					reimport it through Asset Creator. Saved assignments are preserved.
+				</p>
+			)}
 			<div className="three-runtime-host" ref={hostRef}>
 				{mountError ? (
 					<div className="three-runtime-error">{mountError}</div>

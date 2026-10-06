@@ -995,3 +995,8 @@ h1 {
 		max-height: 560px;
 	}
 }
+
+.outfit-presets img {
+	height: 185px;
+	object-fit: contain;
+}

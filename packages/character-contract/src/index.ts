@@ -1,4 +1,12 @@
 import {
+	type CharacterClothing,
+	clothingIssues,
+	everydayClothing,
+} from "./clothing";
+
+export * from "./clothing";
+
+import {
 	type CharacterGeometry,
 	defaultAuthoredHumanGeometry,
 	validateCharacterGeometry,
@@ -79,6 +87,7 @@ export type CharacterFaceAppearance = {
 
 export type CharacterRecipeV1 = {
 	geometry?: CharacterGeometry;
+	clothing?: CharacterClothing;
 	version: typeof CHARACTER_RECIPE_VERSION;
 	id: string;
 	name: string;
@@ -190,6 +199,7 @@ export type CharacterComponentRegistryEntry = CharacterComponentDefinition & {
 export type CharacterComponentRegistry = {
 	version: 1;
 	components: CharacterComponentRegistryEntry[];
+	clothingComponents: typeof componentRegistryData.clothingComponents;
 };
 
 export const CHARACTER_COMPONENT_REGISTRY =
@@ -700,7 +710,15 @@ export function validateCharacterRecipe(
 				),
 			);
 	}
+	issues.push(
+		...clothingIssues(value.clothing, value.geometry as CharacterGeometry).map(
+			(message) => issue("$.clothing", message),
+		),
+	);
 	const recipe: CharacterRecipeV1 = {
+		...(value.clothing === undefined
+			? {}
+			: { clothing: structuredClone(value.clothing) as CharacterClothing }),
 		...(validateCharacterGeometry(value.geometry)
 			? { geometry: structuredClone(value.geometry) }
 			: {}),
@@ -844,6 +862,7 @@ export const parseCharacterRecipe = migrateCharacterRecipe;
 export function createAuthoredHumanRecipe(): CharacterRecipeV1 {
 	const recipe = createDefaultCharacterRecipe();
 	recipe.geometry = defaultAuthoredHumanGeometry();
+	recipe.clothing = everydayClothing();
 	recipe.body.baseId = "authored-human-canonical-v1";
 	recipe.components.hair = "quaternius-hair-v0";
 	recipe.palette.skin = "#ffffff";

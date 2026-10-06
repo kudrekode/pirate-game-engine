@@ -20,6 +20,12 @@
 
 ## Implemented Visual Systems
 
+- Finalised Asset Creator characters are project-scoped visual assets, using the
+  same marker renderer, GLTF cache, skeleton-safe clones and Golden idle/walk
+  controller as built-ins. Player assignments and NPC instance transforms survive
+  project save/reload. Missing assets retain references and show an explicit error
+  marker/message. See [integration evidence](../AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
+
 - Placeholder meshes cover terrain, structures, objects, NPCs, pickups, vehicles, event blocks, and the player.
 - Object and NPC definitions can author 3D visual settings through `threeVisual`.
 - `resolveThreeVisual` selects authored placeholder/asset config, inferred fallback placeholders, and transform defaults.

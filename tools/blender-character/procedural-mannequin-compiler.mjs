@@ -1,3 +1,4 @@
+import { clothingSourcePaths } from "./clothing-contract.mjs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
@@ -67,6 +68,8 @@ export const PROCEDURAL_MANNEQUIN_PATHS = Object.freeze({
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin",
 });
 const COMPILER_SOURCE_PATHS = [
+	"tools/blender-character/authored_human_clothing.py",
+	"tools/blender-character/clothing-contract.mjs",
 	"tools/blender-character/generate_authored_human.py",
 	"tools/blender-character/authored-human-contract.mjs",
 	"tools/blender-character/authored-human-roundtrip.mjs",
@@ -251,6 +254,7 @@ export async function validateInstalledProceduralMannequin({
 		);
 		const checks = {
 			artifact: validation.passed,
+			clothing: isDeepStrictEqual(manifest.clothing, parsed.value.clothing),
 			outputHash: manifest.outputHash === validation.outputHash,
 			recipeHash:
 				manifest.recipeHash === hashProceduralMannequinRecipe(parsed.value),
@@ -388,7 +392,11 @@ export async function compileProceduralMannequin({
 		path.basename(PROCEDURAL_MANNEQUIN_PATHS.templateBuffer),
 	);
 	const immutablePaths = [
-		...(authored ? [path.resolve(workspaceRoot, AUTHORED_HUMAN_SOURCE)] : []),
+		...(authored
+			? [AUTHORED_HUMAN_SOURCE, ...clothingSourcePaths()].map((p) =>
+					path.resolve(workspaceRoot, p),
+				)
+			: []),
 		recipePath,
 		templatePath,
 		templateBufferPath,

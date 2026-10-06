@@ -1,3 +1,4 @@
+import { clothingProvenance } from "./clothing-contract.mjs";
 import {
 	canonicalSrgbHexToLinear,
 	GOLDEN_REFERENCE_ANIMATION_SET,
@@ -24,6 +25,11 @@ export function authoredHumanManifest({
 		hair = recipe.appearance.hair;
 	return {
 		geometrySource: recipe.geometrySource,
+		...(recipe.clothing === undefined ? {} : { clothing: recipe.clothing }),
+		clothingProvenance: {
+			...first.report.clothing,
+			sources: clothingProvenance(recipe.clothing),
+		},
 		geometryFamily: "authored-human",
 		canonicalSource: {
 			path: AUTHORED_HUMAN_SOURCE,
@@ -31,8 +37,8 @@ export function authoredHumanManifest({
 			revision: AUTHORED_HUMAN_REVISION,
 		},
 		validationLevel: mode,
-		compilerVersion: "authored-human-blender-v1",
-		validationVersion: "authored-human-roundtrip-v1",
+		compilerVersion: "authored-human-blender-v2",
+		validationVersion: "authored-human-roundtrip-v2",
 		compilerHash: compilerSourceHash,
 		blender: {
 			version: blenderVersion.version,

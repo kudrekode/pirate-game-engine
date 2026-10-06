@@ -43,6 +43,7 @@ config and CLI filters).
 | `npm run test:e2e:three-perf` | Settled renderer/RAF timing windows and asset diagnostics | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio` or `:asset-studio:preview` | Fixture mount, animation, source-switch/resource ownership; asserts no historical-report fetch | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio:compile` | Preview then finalisation through real Vite API, served GLB, failure preservation | 1; 2 / 3; 0; retains JSON identity evidence |
+| `npm.cmd run test:e2e -- --grep @first-outfit` | Engine to dressed creator: Athletic/Square/Hair/Clothing, tint, front/back/walk, Fuller, finalise, downloads and recipe reopen, return | 1; 3 / 4; 4; requires Studio on 5174 |
 | `npm.cmd run test:e2e -- --grep @canonical-human` | Authored default: engine launcher, preset/custom edits, cameras, body preview, face preview, hair, finalise, return | 1; 3 / 4; 3; requires Studio on 5174 |
 | `npm.cmd run test:e2e:asset-studio -- --grep @canonical-preview` | Authored fixture framing and idle/walk observations | 1; 0 / 0; 3 |
 | `npm run test:e2e:asset-studio:visual` | Current Golden deformation gallery | 1; 0 / 0; 9 (27 in explicit full mode) |
@@ -62,6 +63,18 @@ accepted. All cases retain failure screenshots and traces. Root perf/asset succe
 images are optional with `CAPTURE_VISUALS=1`; normal summaries omit uncaptured paths.
 
 ## Screenshot selection and inspection
+
+Finalised character game integration is opt-in:
+`node node_modules/@playwright/test/cli.js test e2e/asset-creator.spec.ts --grep '@game-character'`.
+It requires the two local servers and performs two compile requests / three Blender
+passes: preview, full finalisation, scoped import, player assignment, NPC placement,
+duplication/transforms/deletion, idle/walk, save/reload, five instances and a missing
+artifact response. It captures four success screenshots and compact observations.
+The runtime-only follow-up uses an already imported character without Blender:
+`node node_modules/@playwright/test/cli.js test e2e/asset-creator.spec.ts --grep '@character-runtime-observation' --output=test-results/character-runtime-observation`.
+It records two/three/five-instance metrics and checks collision and camera controls.
+Keep its output separate from the primary screenshots. These are integration and
+runtime observations, not character-art matrices or hardware performance budgets.
 
 The ordinary integration and compiler cases produce no success screenshots.
 

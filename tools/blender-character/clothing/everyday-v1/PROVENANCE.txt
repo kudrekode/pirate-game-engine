@@ -1,0 +1,11 @@
+Everyday Outfit v1
+
+Original garment panels, meshes and UVs authored specifically for this project
+by its Codex assistant, October 2026. No third-party clothing asset was used.
+The project owner may use, modify and redistribute this generated output.
+
+Fit targets and starting skin weights derive from the project canonical human,
+whose Quaternius source is CC0 1.0 Universal. The unchanged source licence is
+recorded below. This statement does not relicense the rest of the repository.
+Canonical source: tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend
+Source licence: public/assets/source/quaternius/License_Standard.txt

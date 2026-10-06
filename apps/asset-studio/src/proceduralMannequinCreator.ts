@@ -3,9 +3,11 @@ import {
 	CHARACTER_FACE_APPEARANCE_LIMITS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	type CharacterBodyParameters,
+	type CharacterClothing,
 	type CharacterGeometry,
 	type CharacterHairComponentId,
 	type CharacterRecipeV1,
+	sameClothing,
 } from "@adventure-game-builder/character-contract";
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
@@ -74,6 +76,7 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 
 export type ProceduralMannequinManifest = {
 	geometrySource?: CharacterGeometry;
+	clothing?: CharacterClothing;
 	geometryFamily?: "authored-human";
 	validationLevel?: "preview" | "full";
 	appearance: {
@@ -417,10 +420,13 @@ export function randomizeProceduralMannequinBody(seed: string) {
 export function createProceduralMannequinCompileRequest(
 	recipe: Pick<
 		CharacterRecipeV1,
-		"appearance" | "body" | "components" | "palette" | "geometry"
+		"appearance" | "body" | "components" | "palette" | "geometry" | "clothing"
 	>,
 ) {
 	return {
+		...(recipe.clothing === undefined
+			? {}
+			: { clothing: structuredClone(recipe.clothing) }),
 		...(recipe.geometry
 			? { geometrySource: structuredClone(recipe.geometry) }
 			: {}),
@@ -439,7 +445,7 @@ export function createProceduralMannequinCompileRequest(
 export async function requestProceduralMannequinCompile(
 	recipe: Pick<
 		CharacterRecipeV1,
-		"appearance" | "body" | "components" | "palette" | "geometry"
+		"appearance" | "body" | "components" | "palette" | "geometry" | "clothing"
 	>,
 	request: typeof fetch = fetch,
 	mode: "preview" | "full" = "full",
@@ -487,6 +493,8 @@ export async function requestProceduralMannequinCompile(
 		);
 	}
 	if (recipe.geometry?.family === "authored-human") {
+		if (!sameClothing(recipe.clothing, payload.manifest.clothing))
+			throw new Error("Compile endpoint returned different clothing choices.");
 		const source = payload.manifest.geometrySource;
 		if (
 			source?.family !== "authored-human" ||

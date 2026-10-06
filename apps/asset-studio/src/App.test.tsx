@@ -744,6 +744,10 @@ it("separates preview assurance from finalisation and preserves the captured dra
 	result.manifest.deterministicBuild = true;
 	finish(new Response(JSON.stringify(result)));
 	await screen.findByText("Character finalised");
+	expect(screen.getByRole("button", { name: "Use in Game" })).toBeDisabled();
+	expect(
+		screen.getByText(/Open Asset Creator from a local Game Engine project/),
+	).toBeVisible();
 	expect(fetch.mock.calls[1]).toEqual(
 		expect.arrayContaining(["/__asset-studio/procedural-mannequin/compile"]),
 	);
@@ -757,4 +761,48 @@ it("separates preview assurance from finalisation and preserves the captured dra
 	expect(
 		screen.queryByRole("link", { name: "Download character GLB" }),
 	).toBeNull();
+});
+
+it("keeps outfit and swatch edits local, restores saved choices and blocks unsupported fits", async () => {
+	window.history.replaceState({}, "", "/");
+	const fetch = vi.fn();
+	vi.stubGlobal("fetch", fetch);
+	const { container } = render(<App />);
+	const category = (name: string) =>
+		within(
+			screen.getByRole("navigation", { name: "Character categories" }),
+		).getByRole("button", { name });
+	fireEvent.click(category("Clothing"));
+	fireEvent.click(screen.getByRole("button", { name: /Everyday Outfit/ }));
+	fireEvent.click(screen.getByRole("button", { name: "White top" }));
+	expect(screen.getByText(/Changes not previewed/)).toBeVisible();
+	const recipeJson = screen.getByTestId("recipe-json").textContent;
+	if (!recipeJson) throw new Error("Expected the recipe JSON.");
+	const saved = JSON.parse(recipeJson);
+	expect(saved.clothing.top.color).toBe("#dddcd5");
+	fireEvent.click(screen.getByRole("button", { name: /No outfit/ }));
+	const input = container.querySelector('input[type="file"]');
+	if (!input) throw new Error("Expected the recipe file input.");
+	fireEvent.change(input, {
+		target: {
+			files: [{ name: "outfit.json", text: async () => JSON.stringify(saved) }],
+		},
+	});
+	await screen.findByText(/Loaded outfit.json/);
+	fireEvent.click(category("Clothing"));
+	expect(screen.getByRole("button", { name: "White top" })).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	fireEvent.click(category("Body"));
+	for (const label of ["Build", "Muscle", "Frame"])
+		fireEvent.change(screen.getByLabelText(label, { exact: true }), {
+			target: { value: "1" },
+		});
+	expect(
+		screen.getByRole("button", { name: "Generate Preview" }),
+	).toBeDisabled();
+	fireEvent.click(category("Clothing"));
+	expect(screen.getByRole("alert")).toHaveTextContent("supported fit");
+	expect(fetch).not.toHaveBeenCalled();
 });

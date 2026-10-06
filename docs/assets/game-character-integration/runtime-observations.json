@@ -1,0 +1,782 @@
+{
+	"2": {
+		"loadMs": 4720,
+		"snapshot": {
+			"asset": {
+				"activeImportedAssetInstances": 2,
+				"activeImportedAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"character": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 2,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 2,
+						"activeMixers": 2,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 20
+				},
+				"activeCloneInstances": 2,
+				"cacheHitCount": 1,
+				"cloneCount": 2,
+				"errorFallbackCount": 0,
+				"fallbackPlaceholderCount": 0,
+				"hasStuckLoadingAssets": false,
+				"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"loadingFallbackCount": 0,
+				"loadFailureCount": 0,
+				"loadStartedCount": 1,
+				"loadSuccessCount": 0,
+				"missingFallbackCount": 0,
+				"statusCounts": {
+					"error": 0,
+					"loaded": 2,
+					"loading": 0,
+					"missing": 0,
+					"not_requested": 1
+				},
+				"stuckLoadingCount": 0
+			},
+			"frame": {
+				"averageFrameMs": 178.7,
+				"averageFrameIntervalMs": 178.7,
+				"frameCount": 42,
+				"fps": 3.4,
+				"lastFrameMs": 291.3,
+				"lastFrameIntervalMs": 291.3,
+				"lastRenderMs": 1.4,
+				"worstFrameMs": 1083.1,
+				"worstFrameIntervalMs": 1083.1
+			},
+			"hitches": {
+				"lastDurationMs": 291.3,
+				"lastPhase": "raf_interval",
+				"over1000MsCount": 1,
+				"over100MsCount": 28,
+				"over500MsCount": 1,
+				"over50MsCount": 43,
+				"recent": [
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 214.5,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 200.9,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 210.3,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 210.2,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 236,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 244.2,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 225.7,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 291.3,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					}
+				]
+			},
+			"label": "ThreeRuntimePanel",
+			"phases": {
+				"animationUpdate": {
+					"averageMs": 0.1,
+					"count": 42,
+					"lastMs": 1,
+					"worstMs": 1
+				},
+				"cameraUpdate": {
+					"averageMs": 0.3,
+					"count": 42,
+					"lastMs": 0.2,
+					"worstMs": 2.1
+				},
+				"frameCallback": {
+					"averageMs": 11.8,
+					"count": 42,
+					"lastMs": 3.1,
+					"worstMs": 264.5
+				},
+				"render": {
+					"averageMs": 10.8,
+					"count": 42,
+					"lastMs": 1.4,
+					"worstMs": 263.7
+				},
+				"runtimeTick": {
+					"averageMs": 0.1,
+					"count": 13,
+					"lastMs": 0.3,
+					"worstMs": 0.3
+				},
+				"visualUpdate": {
+					"averageMs": 0.7,
+					"count": 42,
+					"lastMs": 1.4,
+					"worstMs": 5.5
+				},
+				"waterUpdate": {
+					"averageMs": 0,
+					"count": 0,
+					"lastMs": 0,
+					"worstMs": 0
+				}
+			},
+			"pointer": {
+				"lastPickMs": 0,
+				"pickCount": 0,
+				"pointerMoveCount": 0,
+				"pointerMovesPerSecond": 0
+			},
+			"recentEvents": [
+				"raf cancel: initial runtime build",
+				"scene build: initial runtime build",
+				"raf start: initial runtime build",
+				"raf cancel: initial runtime build",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"scene build: asset state changed",
+				"raf start: asset state changed"
+			],
+			"renderer": {
+				"drawCalls": 23,
+				"geometries": 13,
+				"lines": 0,
+				"points": 0,
+				"programs": 12,
+				"textures": 29,
+				"triangles": 108428
+			},
+			"raf": {
+				"activeLoopCount": 1,
+				"lastCancelReason": "initial runtime build",
+				"lastStartReason": "asset state changed",
+				"loopCancelCount": 2,
+				"loopRestartCount": 2,
+				"loopStartCount": 3
+			},
+			"runtime": {
+				"averageTickMs": 0.1,
+				"lastTickMs": 0.3,
+				"tickCount": 13,
+				"worstTickMs": 0.3
+			},
+			"scene": {
+				"areaId": "area_main",
+				"areaName": "Main Area",
+				"buildCount": 3,
+				"cleanupCount": 2,
+				"entityCount": 3,
+				"lastBuildMs": 41.9,
+				"lastRebuildReason": "asset state changed",
+				"projectName": "Blank Project",
+				"reasonCounts": {
+					"initial runtime build": 2,
+					"asset state changed": 1
+				},
+				"timeSinceLastRebuildMs": 5705.9
+			},
+			"terrain": {
+				"coastlineEdgeCount": 0,
+				"lastDurationMs": 7.6,
+				"meshCount": 1,
+				"mode": "smooth",
+				"rebuildCount": 3,
+				"tileCount": 300,
+				"triangleCount": 600,
+				"vertexCount": 336,
+				"waterMeshCount": 0
+			}
+		}
+	},
+	"3": {
+		"loadMs": 4486,
+		"snapshot": {
+			"asset": {
+				"activeImportedAssetInstances": 3,
+				"activeImportedAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"character": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 3,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 3,
+						"activeMixers": 3,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 30
+				},
+				"activeCloneInstances": 3,
+				"cacheHitCount": 3,
+				"cloneCount": 6,
+				"errorFallbackCount": 0,
+				"fallbackPlaceholderCount": 0,
+				"hasStuckLoadingAssets": false,
+				"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"loadingFallbackCount": 0,
+				"loadFailureCount": 0,
+				"loadStartedCount": 0,
+				"loadSuccessCount": 0,
+				"missingFallbackCount": 0,
+				"statusCounts": {
+					"error": 0,
+					"loaded": 3,
+					"loading": 0,
+					"missing": 0,
+					"not_requested": 1
+				},
+				"stuckLoadingCount": 0
+			},
+			"frame": {
+				"averageFrameMs": 334.4,
+				"averageFrameIntervalMs": 334.4,
+				"frameCount": 40,
+				"fps": 3.2,
+				"lastFrameMs": 310.4,
+				"lastFrameIntervalMs": 310.4,
+				"lastRenderMs": 1.9,
+				"worstFrameMs": 1432.1,
+				"worstFrameIntervalMs": 1432.1
+			},
+			"hitches": {
+				"lastDurationMs": 310.4,
+				"lastPhase": "raf_interval",
+				"over1000MsCount": 1,
+				"over100MsCount": 45,
+				"over500MsCount": 3,
+				"over50MsCount": 45,
+				"recent": [
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 310.6,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 415.8,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 383.6,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 344.8,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 334.6,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 289.5,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 321.1,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 310.4,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					}
+				]
+			},
+			"label": "ThreeRuntimePanel",
+			"phases": {
+				"animationUpdate": {
+					"averageMs": 0.1,
+					"count": 40,
+					"lastMs": 0.1,
+					"worstMs": 0.3
+				},
+				"cameraUpdate": {
+					"averageMs": 0.2,
+					"count": 40,
+					"lastMs": 0.2,
+					"worstMs": 0.5
+				},
+				"frameCallback": {
+					"averageMs": 34.4,
+					"count": 40,
+					"lastMs": 2.9,
+					"worstMs": 552.3
+				},
+				"render": {
+					"averageMs": 33.2,
+					"count": 40,
+					"lastMs": 1.9,
+					"worstMs": 551.7
+				},
+				"runtimeTick": {
+					"averageMs": 0.1,
+					"count": 17,
+					"lastMs": 0,
+					"worstMs": 0.2
+				},
+				"visualUpdate": {
+					"averageMs": 0.9,
+					"count": 40,
+					"lastMs": 0.6,
+					"worstMs": 1.7
+				},
+				"waterUpdate": {
+					"averageMs": 0,
+					"count": 0,
+					"lastMs": 0,
+					"worstMs": 0
+				}
+			},
+			"pointer": {
+				"lastPickMs": 0,
+				"pickCount": 0,
+				"pointerMoveCount": 0,
+				"pointerMovesPerSecond": 0
+			},
+			"recentEvents": [
+				"scene build: initial runtime build",
+				"raf start: initial runtime build",
+				"raf cancel: initial runtime build",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"scene build: initial runtime build",
+				"raf start: initial runtime build"
+			],
+			"renderer": {
+				"drawCalls": 33,
+				"geometries": 13,
+				"lines": 0,
+				"points": 0,
+				"programs": 12,
+				"textures": 39,
+				"triangles": 162224
+			},
+			"raf": {
+				"activeLoopCount": 1,
+				"lastCancelReason": "initial runtime build",
+				"lastStartReason": "initial runtime build",
+				"loopCancelCount": 1,
+				"loopRestartCount": 1,
+				"loopStartCount": 2
+			},
+			"runtime": {
+				"averageTickMs": 0.1,
+				"lastTickMs": 0,
+				"tickCount": 17,
+				"worstTickMs": 0.2
+			},
+			"scene": {
+				"areaId": "area_main",
+				"areaName": "Main Area",
+				"buildCount": 2,
+				"cleanupCount": 1,
+				"entityCount": 4,
+				"lastBuildMs": 273.6,
+				"lastRebuildReason": "initial runtime build",
+				"projectName": "Blank Project",
+				"reasonCounts": {
+					"initial runtime build": 2
+				},
+				"timeSinceLastRebuildMs": 13665.1
+			},
+			"terrain": {
+				"coastlineEdgeCount": 0,
+				"lastDurationMs": 4.9,
+				"meshCount": 1,
+				"mode": "smooth",
+				"rebuildCount": 2,
+				"tileCount": 300,
+				"triangleCount": 600,
+				"vertexCount": 336,
+				"waterMeshCount": 0
+			}
+		}
+	},
+	"5": {
+		"loadMs": 5445,
+		"snapshot": {
+			"asset": {
+				"activeImportedAssetInstances": 5,
+				"activeImportedAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"character": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 5,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 5,
+						"activeMixers": 5,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 50
+				},
+				"activeCloneInstances": 5,
+				"cacheHitCount": 5,
+				"cloneCount": 10,
+				"errorFallbackCount": 0,
+				"fallbackPlaceholderCount": 0,
+				"hasStuckLoadingAssets": false,
+				"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"loadingFallbackCount": 0,
+				"loadFailureCount": 0,
+				"loadStartedCount": 0,
+				"loadSuccessCount": 0,
+				"missingFallbackCount": 0,
+				"statusCounts": {
+					"error": 0,
+					"loaded": 5,
+					"loading": 0,
+					"missing": 0,
+					"not_requested": 1
+				},
+				"stuckLoadingCount": 0
+			},
+			"frame": {
+				"averageFrameMs": 428.9,
+				"averageFrameIntervalMs": 428.9,
+				"frameCount": 43,
+				"fps": 2.4,
+				"lastFrameMs": 412.4,
+				"lastFrameIntervalMs": 412.4,
+				"lastRenderMs": 3,
+				"worstFrameMs": 1704.5,
+				"worstFrameIntervalMs": 1704.5
+			},
+			"hitches": {
+				"lastDurationMs": 412.4,
+				"lastPhase": "raf_interval",
+				"over1000MsCount": 1,
+				"over100MsCount": 48,
+				"over500MsCount": 7,
+				"over50MsCount": 48,
+				"recent": [
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 413.9,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 385.8,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 390.8,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 439,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 583.1,
+						"phase": "raf_interval",
+						"thresholdMs": 500
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 458.3,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 414.8,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					},
+					{
+						"detail": "requestAnimationFrame interval",
+						"durationMs": 412.4,
+						"phase": "raf_interval",
+						"thresholdMs": 100
+					}
+				]
+			},
+			"label": "ThreeRuntimePanel",
+			"phases": {
+				"animationUpdate": {
+					"averageMs": 0.2,
+					"count": 43,
+					"lastMs": 0.3,
+					"worstMs": 0.4
+				},
+				"cameraUpdate": {
+					"averageMs": 0.6,
+					"count": 43,
+					"lastMs": 0.1,
+					"worstMs": 17.1
+				},
+				"frameCallback": {
+					"averageMs": 38.7,
+					"count": 43,
+					"lastMs": 4,
+					"worstMs": 631.2
+				},
+				"render": {
+					"averageMs": 36.6,
+					"count": 43,
+					"lastMs": 3,
+					"worstMs": 629.8
+				},
+				"runtimeTick": {
+					"averageMs": 0.1,
+					"count": 19,
+					"lastMs": 0,
+					"worstMs": 0.2
+				},
+				"visualUpdate": {
+					"averageMs": 1.4,
+					"count": 43,
+					"lastMs": 0.9,
+					"worstMs": 12.5
+				},
+				"waterUpdate": {
+					"averageMs": 0,
+					"count": 0,
+					"lastMs": 0,
+					"worstMs": 0
+				}
+			},
+			"pointer": {
+				"lastPickMs": 0,
+				"pickCount": 0,
+				"pointerMoveCount": 0,
+				"pointerMovesPerSecond": 0
+			},
+			"recentEvents": [
+				"raf cancel: initial runtime build",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"scene build: initial runtime build",
+				"raf start: initial runtime build"
+			],
+			"renderer": {
+				"drawCalls": 53,
+				"geometries": 13,
+				"lines": 0,
+				"points": 0,
+				"programs": 12,
+				"textures": 59,
+				"triangles": 269816
+			},
+			"raf": {
+				"activeLoopCount": 1,
+				"lastCancelReason": "initial runtime build",
+				"lastStartReason": "initial runtime build",
+				"loopCancelCount": 1,
+				"loopRestartCount": 1,
+				"loopStartCount": 2
+			},
+			"runtime": {
+				"averageTickMs": 0.1,
+				"lastTickMs": 0,
+				"tickCount": 19,
+				"worstTickMs": 0.2
+			},
+			"scene": {
+				"areaId": "area_main",
+				"areaName": "Main Area",
+				"buildCount": 2,
+				"cleanupCount": 1,
+				"entityCount": 6,
+				"lastBuildMs": 283.9,
+				"lastRebuildReason": "initial runtime build",
+				"projectName": "Blank Project",
+				"reasonCounts": {
+					"initial runtime build": 2
+				},
+				"timeSinceLastRebuildMs": 18889.4
+			},
+			"terrain": {
+				"coastlineEdgeCount": 0,
+				"lastDurationMs": 2.1,
+				"meshCount": 1,
+				"mode": "smooth",
+				"rebuildCount": 2,
+				"tileCount": 300,
+				"triangleCount": 600,
+				"vertexCount": 336,
+				"waterMeshCount": 0
+			}
+		}
+	},
+	"asset": {
+		"id": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+		"name": "New Character",
+		"kind": "character",
+		"state": "finalised",
+		"geometryFamily": "authored-human",
+		"glbUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.glb",
+		"artifactHash": "a801c1d810412c9d0cea7ac71bef370da02cc40514befe4a4c54778ed1c69237",
+		"recipeHash": "89240819f9873f28202dc441eabbd34cfba5e732bafcff240cbcc6b1edb4cb92",
+		"manifestUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/manifest.json",
+		"recipeUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.recipe.json",
+		"rigProfile": "golden-humanoid-v0",
+		"animationSet": "golden-idle-walk-v1"
+	},
+	"collisionAndCamera": "passed",
+	"renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+	"characterGetRequests": 1
+}

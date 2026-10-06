@@ -1,3 +1,4 @@
+import { validateClothing } from "../../../tools/blender-character/clothing-contract.mjs";
 import { randomUUID } from "node:crypto";
 import { validateAuthoredGeometry } from "../../../tools/blender-character/authored-human-contract.mjs";
 import { createReadStream } from "node:fs";
@@ -171,6 +172,7 @@ export function validateCreatorCompileRequest(value) {
 			path: "$.components.hair",
 		});
 	}
+	issues.push(...validateClothing(value.clothing, value.geometrySource));
 	issues.push(
 		...validateAuthoredGeometry(
 			value.geometrySource,
@@ -184,6 +186,9 @@ export function validateCreatorCompileRequest(value) {
 				issues: [],
 				ok: true,
 				value: {
+					...(value.clothing === undefined
+						? {}
+						: { clothing: structuredClone(value.clothing) }),
 					...(value.geometrySource === undefined
 						? {}
 						: { geometrySource: structuredClone(value.geometrySource) }),
@@ -207,6 +212,7 @@ export function validateCreatorCompileRequest(value) {
 
 export async function createRecipeForProportions({
 	geometrySource,
+	clothing,
 	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
@@ -218,6 +224,7 @@ export async function createRecipeForProportions({
 	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
 	const candidate = {
 		...baseRecipe,
+		...(clothing === undefined ? {} : { clothing }),
 		...(geometrySource === undefined ? {} : { geometrySource }),
 		appearance: {
 			hair: {
@@ -267,6 +274,7 @@ export async function createRecipeForProportions({
 
 export async function compileCreatorMannequin({
 	geometrySource,
+	clothing,
 	mode = "full",
 	appearance,
 	baseRecipePath = path.resolve(
@@ -285,6 +293,7 @@ export async function compileCreatorMannequin({
 } = {}) {
 	const recipe = await createRecipeForProportions({
 		geometrySource,
+		clothing,
 		appearance,
 		baseRecipePath,
 		proportions,
@@ -317,6 +326,7 @@ export async function compileCreatorMannequin({
 		});
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
+			!isDeepStrictEqual(result?.manifest?.clothing, recipe.clothing) ||
 			!isDeepStrictEqual(
 				result?.manifest?.geometrySource,
 				recipe.geometrySource,
@@ -476,6 +486,7 @@ export function createProceduralMannequinCompileMiddleware({
 						: "full",
 				appearance: parsed.value.appearance,
 				geometrySource: parsed.value.geometrySource,
+				clothing: parsed.value.clothing,
 				generatedRoot,
 				hairComponentId: parsed.value.components.hair,
 				proportions: parsed.value.proportions,

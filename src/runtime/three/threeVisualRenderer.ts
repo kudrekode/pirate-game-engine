@@ -84,10 +84,22 @@ function createFallbackGroup(
 	return {
 		assetDefinitionId,
 		assetStatus,
-		group: createPlaceholderMeshGroup(marker, {
-			metadata: options.metadata,
-			selected: options.selected,
-		}),
+		group: createPlaceholderMeshGroup(
+			assetStatus === "missing" || assetStatus === "error"
+				? {
+						...marker,
+						color: 0xff00aa,
+						visualType: "genericObject",
+						visual: marker.visual
+							? { ...marker.visual, placeholderType: "genericObject" }
+							: undefined,
+					}
+				: marker,
+			{
+				metadata: options.metadata,
+				selected: options.selected,
+			},
+		),
 		usedAsset: false,
 	};
 }
@@ -97,7 +109,12 @@ export function createThreeVisualMarkerGroup(
 	options: ThreeVisualRenderOptions = {},
 ): ThreeVisualRenderResult {
 	if (marker.visual?.mode !== "asset") {
-		return createFallbackGroup(marker, options, "not_requested");
+		return createFallbackGroup(
+			marker,
+			options,
+			marker.visual?.requestedMode === "asset" ? "missing" : "not_requested",
+			marker.visual?.assetId,
+		);
 	}
 
 	const assetRequest = requestThreeVisualAsset(marker.visual.asset, {

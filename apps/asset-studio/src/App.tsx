@@ -9,12 +9,18 @@ import {
 	type CharacterHairComponentId,
 	type CharacterPaletteRegion,
 	type CharacterRecipeV1,
+	CLOTHING_SLOTS,
+	CLOTHING_SWATCHES,
+	clothingIssues,
 	createAuthoredHumanRecipe,
 	createDefaultCharacterRecipe,
+	everydayClothing,
 	getCharacterComponentDefinition,
 	matchingAuthoredPreset,
+	noClothing,
 	parseCharacterRecipe,
 	sameCharacterGeometry,
+	sameClothing,
 	serializeCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
 import {
@@ -45,6 +51,7 @@ import {
 	validateProceduralMannequinAppearance,
 	validateProceduralMannequinBody,
 } from "./proceduralMannequinCreator";
+import { UseInGame } from "./UseInGame";
 
 const NAV_SECTIONS = [
 	"Character",
@@ -58,6 +65,7 @@ const CREATOR_SECTIONS = [
 	"Body",
 	"Face",
 	"Hair",
+	"Clothing",
 	"Appearance",
 ] as const;
 type CreatorSection = (typeof CREATOR_SECTIONS)[number];
@@ -206,10 +214,11 @@ export default function App() {
 	const compileDirty = Boolean(
 		(!activeManifest &&
 			isAuthored &&
-			(!sameCharacterGeometry(
-				recipe.geometry,
-				INITIAL_AUTHORED_RECIPE.geometry,
-			) ||
+			(!sameClothing(recipe.clothing, INITIAL_AUTHORED_RECIPE.clothing) ||
+				!sameCharacterGeometry(
+					recipe.geometry,
+					INITIAL_AUTHORED_RECIPE.geometry,
+				) ||
 				recipe.body.parameters.height !==
 					INITIAL_AUTHORED_RECIPE.body.parameters.height ||
 				recipe.components.hair !== INITIAL_AUTHORED_RECIPE.components.hair ||
@@ -220,10 +229,11 @@ export default function App() {
 				recipe.appearance.skin.roughness !==
 					INITIAL_AUTHORED_RECIPE.appearance.skin.roughness)) ||
 			(activeManifest &&
-				(!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
-					(key) =>
-						activeManifest.proportions[key] === recipe.body.parameters[key],
-				) ||
+				(!sameClothing(recipe.clothing, activeManifest.clothing) ||
+					!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
+						(key) =>
+							activeManifest.proportions[key] === recipe.body.parameters[key],
+					) ||
 					activeManifest.appearance.skin.authoredColor !==
 						recipe.palette.skin.toLowerCase() ||
 					activeManifest.appearance.skin.authoredRoughness !==
@@ -303,6 +313,8 @@ export default function App() {
 				...replaceHairComponent(current, "quaternius-hair-v0"),
 				palette: { ...current.palette, hair: defaults.palette.hair },
 			}));
+		} else if (creatorSection === "Clothing") {
+			updateRecipe((current) => ({ ...current, clothing: everydayClothing() }));
 		} else if (creatorSection === "Appearance") {
 			updateRecipe((current) => ({
 				...current,
@@ -447,6 +459,7 @@ export default function App() {
 
 	async function handleCompile(mode: "preview" | "full" = "preview") {
 		if (
+			!validation.ok ||
 			!bodyValidation.ok ||
 			!appearanceValidation.ok ||
 			generationActive.current
@@ -870,11 +883,96 @@ export default function App() {
 										</p>
 									</>
 								)}
+								{creatorSection === "Clothing" && (
+									<>
+										<p className="creator-note">
+											One everyday outfit. Choose its colours, then generate a
+											preview.
+										</p>
+										<fieldset
+											className="preset-grid outfit-presets"
+											aria-label="Outfit"
+										>
+											<button
+												type="button"
+												aria-pressed={CLOTHING_SLOTS.every(
+													(slot) =>
+														recipe.clothing?.[slot] &&
+														recipe.clothing[slot] !== "none",
+												)}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														clothing: everydayClothing(),
+													}))
+												}
+											>
+												<img
+													src="/assets/creator-presets/everyday-outfit.jpg"
+													alt="Grey T-shirt, dark trousers and brown ankle boots"
+												/>
+												<strong>Everyday Outfit</strong>
+											</button>
+											<button
+												type="button"
+												aria-pressed={sameClothing(
+													recipe.clothing,
+													noClothing(),
+												)}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														clothing: noClothing(),
+													}))
+												}
+											>
+												<img
+													src="/assets/creator-presets/body-athletic.jpg"
+													alt="Base character without an outfit"
+												/>
+												<strong>No outfit</strong>
+											</button>
+										</fieldset>
+										{CLOTHING_SLOTS.map((slot) => {
+											const chosen = recipe.clothing?.[slot];
+											if (!chosen || chosen === "none") return null;
+											const label =
+												slot === "top"
+													? "Top"
+													: slot === "bottoms"
+														? "Trousers"
+														: "Shoes";
+											return (
+												<fieldset className="skin-presets" key={slot}>
+													<legend>{label} colour</legend>
+													{CLOTHING_SWATCHES[slot].map((swatch) => (
+														<button
+															type="button"
+															key={swatch.color}
+															title={swatch.name}
+															aria-label={`${swatch.name} ${label.toLowerCase()}`}
+															aria-pressed={chosen.color === swatch.color}
+															style={{ backgroundColor: swatch.color }}
+															onClick={() =>
+																updateRecipe((current) => ({
+																	...current,
+																	clothing: {
+																		...(current.clothing ?? noClothing()),
+																		[slot]: { ...chosen, color: swatch.color },
+																	},
+																}))
+															}
+														/>
+													))}
+												</fieldset>
+											);
+										})}
+									</>
+								)}
 								{creatorSection === "Appearance" && (
 									<>
 										<p className="creator-note">
-											A subtle tint over the original painted skin. It also
-											tints the painted shorts.
+											A subtle tint over the original painted skin.
 										</p>
 										<fieldset className="skin-presets">
 											<legend>Tint</legend>
@@ -1592,7 +1690,7 @@ export default function App() {
 							source={previewSource}
 							creatorCamera={isAuthored ? creatorCamera : undefined}
 							suggestedCamera={
-								creatorSection === "Body"
+								creatorSection === "Body" || creatorSection === "Clothing"
 									? "full-body"
 									: creatorSection === "Face" || creatorSection === "Hair"
 										? "face"
@@ -1601,6 +1699,11 @@ export default function App() {
 											: "three-quarter"
 							}
 						/>
+						{clothingIssues(recipe.clothing, recipe.geometry).map((message) => (
+							<p role="alert" key={message}>
+								{message}
+							</p>
+						))}
 						<div
 							className="compile-status"
 							data-compile-status={compileStatus}
@@ -1629,6 +1732,7 @@ export default function App() {
 							</div>
 							<button
 								disabled={
+									!validation.ok ||
 									!bodyValidation.ok ||
 									!appearanceValidation.ok ||
 									compileStatus === "compiling"
@@ -1642,6 +1746,7 @@ export default function App() {
 							<button
 								type="button"
 								disabled={
+									!validation.ok ||
 									!bodyValidation.ok ||
 									!appearanceValidation.ok ||
 									compileStatus === "compiling"
@@ -1673,7 +1778,8 @@ export default function App() {
 								!compileDirty &&
 								compileResult?.manifest.validationLevel !== "preview" &&
 								compileResult && (
-									<p>
+									<div>
+										<UseInGame recipe={recipe} result={compileResult} />
 										<a href={compileResult.assetUrl} download="character.glb">
 											Download character GLB
 										</a>
@@ -1696,7 +1802,7 @@ export default function App() {
 										>
 											Compiler recipe
 										</a>
-									</p>
+									</div>
 								)}
 							<dl
 								aria-label="Creator compilation diagnostics"

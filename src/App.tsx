@@ -160,7 +160,8 @@ export default function App() {
 			if (saved && draft && JSON.stringify(saved) !== JSON.stringify(draft)) {
 				setRecoveryChoice({ saved, draft });
 			} else if (saved || draft) {
-				const selected = (saved ?? draft)!;
+				const selected = saved ?? draft;
+				if (!selected) return;
 				setProject(selected);
 				savedProjectSnapshotRef.current = saved ? JSON.stringify(saved) : "";
 				autosavedProjectSnapshotRef.current = JSON.stringify(selected);
@@ -478,7 +479,14 @@ export default function App() {
 					<button onClick={handleLoad} type="button">
 						Load
 					</button>
-					<AssetCreatorLauncher />
+					<AssetCreatorLauncher
+						onImported={() => {
+							setActiveSectionId("character");
+							setStatusMessage(
+								"Character added. Set it as the player or add it to the NPC palette in Character.",
+							);
+						}}
+					/>
 					<button onClick={() => downloadJson(project)} type="button">
 						Export JSON
 					</button>

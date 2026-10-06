@@ -2,13 +2,24 @@
 
 ## Quick Resume
 
+**Finalised characters can now be used in game.** Launch Creator from the local
+Game Engine project, finalise, then choose **Use in Game**. The launch is scoped
+to its originating project tab; standalone/remote creators do not guess a target.
+`tools/blender-character/game-character-import.mjs` validates and promotes full
+results into immutable `public/assets/project-characters/<content-id>/` folders.
+`GameProject.characterAssets` stores references; player/NPC visuals retain the
+existing `threeVisual.assetId` contract, Golden clips and shared loader/clone path.
+The Character tab offers Set as Player Character and Add to NPC palette.
+Changed output imports as a separate asset. Keep the asset folders with exported
+project JSON. See [the game integration result](../AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
+
 **New-character default: Canonical Authored Human v1 (experimental).** See the
 [integration result](../CANONICAL_AUTHORED_HUMAN_INTEGRATION_RESULT.md) and
 [source package](../tools/blender-character/experimental/authored-human-canonical-v1/README.md).
 `CharacterRecipeV1.geometry` selects the family/revision/rig and six identity
 values; missing geometry keeps legacy semantics. The UI offers height, three
 body and three face controls, short hair/none, hair colour and skin tint.
-The creator has Character / Body / Face / Hair / Appearance categories, three
+The creator has Character / Body / Face / Hair / Clothing / Appearance categories, three
 curated body presets and five face presets with actual compiled thumbnails.
 Presets live in `packages/character-contract/src/authoredHumanPresets.ts`; recipes
 persist only resolved numeric values, with no schema change. See the
@@ -17,13 +28,26 @@ ranges, visual evidence, browser flow and limitations. The viewport has Full Bod
 Upper Body / Face / Three-quarter / Back cameras; category framing respects manual
 camera choices and retains them across compilation. Dirty state covers the default
 fixture and reopened recipes as well as generated results.
-The tank and eye-colour editing are not exposed for this family.
+New authored characters wear the **Everyday Outfit v1**: a T-shirt, trousers and
+ankle boots, with curated colour swatches and explicit No outfit. Older recipes
+without clothing remain unchanged. `CharacterRecipeV1.clothing` stores stable
+component IDs, revisions and tints; the existing API/compiler carries the field.
+`packages/character-contract/src/clothing.ts` owns the typed contract;
+`tools/blender-character/clothing-contract.mjs` mirrors compiler validation.
+The shared component registry includes `clothingComponents` with source hashes,
+licence/provenance and compatibility. `authored_human_clothing.py` appends the
+saved garment source, applies independent targets, rebinds Golden skinning and
+removes garment-specific body faces. No garment generation occurs during compile.
+See [the source package](../tools/blender-character/clothing/everyday-v1/README.md)
+and [first outfit result](../CHARACTER_CREATOR_FIRST_OUTFIT_RESULT.md).
+The old tank and eye-colour editing remain excluded.
 
 The existing compiler dispatches authored geometry to `generate_authored_human.py`
 and `authored-human-roundtrip.mjs`, retaining preview/full orchestration and
 publication. Contracts are in `packages/character-contract/src/authoredHuman.ts`
 and `tools/blender-character/authored-human-contract.mjs`. The checked-in default
-is under `public/assets/derived/authored-humans/canonical-v1/`. Identity is baked;
+is under `public/assets/derived/authored-humans/everyday-v1/`; the unclothed
+`canonical-v1/` remains a preserved reference. Identity is baked;
 Golden's rig and the shared Three loader/clone path remain unchanged.
 
 The details below describe the preserved **legacy procedural** family.

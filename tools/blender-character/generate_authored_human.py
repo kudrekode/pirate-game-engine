@@ -6,6 +6,8 @@ from pathlib import Path
 import struct
 import sys
 import bpy
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from authored_human_clothing import load_outfit
 
 
 def export_baked_identity(path):
@@ -64,6 +66,7 @@ def compile_character(args):
                 key.value = revision['values'].get(key.name, 0)
         if obj.name.startswith(('V2_Buzzed', 'Eyebrows')):
             hair_materials.update(m.name for m in obj.data.materials)
+    clothing=load_outfit(root,body,rig,recipe.get('clothing',{}),revision['values'])
     bpy.context.view_layer.update()
     evaluated = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
     # Identity preserves crown/sole, but measure the actual baked shape.
@@ -94,6 +97,12 @@ def compile_character(args):
             pbr['baseColorFactor'] = [*linear(recipe['appearance']['hair']['color']), 1]
             pbr['roughnessFactor'] = .72
             pbr['metallicFactor'] = 0
+        for slot,component in clothing['components'].items():
+            if material['name'] in component['materialNames']:
+                factor=.70 if material['name'].endswith('_edge') else 1
+                pbr['baseColorFactor']=[*[v*factor for v in linear(component['color'])],1]
+                pbr['roughnessFactor']=(.86 if slot!='footwear' else .70)
+                pbr['metallicFactor']=0
     encoded = json.dumps(data, separators=(',', ':')).encode()
     encoded += b' ' * ((-len(encoded)) % 4)
     binary_chunks = raw[20 + length:]
@@ -101,9 +110,9 @@ def compile_character(args):
                                   struct.pack('<II', len(encoded), 0x4e4f534a) + encoded + binary_chunks)
     assert hashlib.sha256(source.read_bytes()).hexdigest() == source_hash
     report = {'geometrySource': revision, 'sourceHash': source_hash, 'heightScale': scale,
-              'bodyMaterials': sorted(body_materials), 'hairMaterials': sorted(hair_materials),
-              'warnings': ['Experimental muscular male base; clothing and eye-colour editing are not yet available.',
-                           'Skin tint multiplies the authored texture, including its painted shorts.'],
+              'clothing': clothing, 'bodyMaterials': sorted(body_materials), 'hairMaterials': sorted(hair_materials),
+              'warnings': ['Experimental muscular male base; eye-colour editing is not available.',
+                           'Clothing uses bounded authored fitting; extreme combined builds are rejected.'],
               'head': {'version': 'authored-head-v1'}, 'face': {'version': 'authored-face-v1'},
               'components': {'hair': {'derivedTransform': 'preserved-authored-fit', 'fitValidation': {'passed': True}}}}
     Path(args.report).write_text(json.dumps(report, indent=2))

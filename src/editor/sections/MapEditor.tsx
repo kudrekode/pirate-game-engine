@@ -260,6 +260,14 @@ export function MapEditor() {
 	const setMapPaletteSelection = useProjectStore(
 		(state) => state.setMapPaletteSelection,
 	);
+	const initialNpcPalette = useRef(
+		useProjectStore.getState().mapPaletteSelection,
+	).current;
+	const incomingNpcId =
+		initialNpcPalette.type === "npc" &&
+		project.npcs.some((npc) => npc.id === initialNpcPalette.npcDefinitionId)
+			? initialNpcPalette.npcDefinitionId
+			: undefined;
 
 	const mapStageRef = useRef<HTMLDivElement>(null);
 	const paintedCellsRef = useRef<Set<string>>(new Set());
@@ -276,9 +284,13 @@ export function MapEditor() {
 	const { recordMapEdit, undoMapEdit, redoMapEdit, canUndo, canRedo } =
 		useMapEditHistory(activeArea.id);
 
-	const [activeTool, setActiveTool] = useState<MapEditorTool>("select");
+	const [activeTool, setActiveTool] = useState<MapEditorTool>(
+		incomingNpcId ? "paint" : "select",
+	);
 	const [mapView, setMapView] = useState<MapWorkspaceView>("2d");
-	const [paintTarget, setPaintTarget] = useState<PaintTarget>("terrain");
+	const [paintTarget, setPaintTarget] = useState<PaintTarget>(
+		incomingNpcId ? "npc" : "terrain",
+	);
 	const [selectedTerrainId, setSelectedTerrainId] = useState("grass");
 	const [isTerrainPaintArmed, setIsTerrainPaintArmed] = useState(false);
 	const [selectedOverlayId, setSelectedOverlayId] = useState("dirt_path");
@@ -287,7 +299,7 @@ export function MapEditor() {
 		project.objects[0]?.id ?? "",
 	);
 	const [selectedNpcDefinitionId, setSelectedNpcDefinitionId] = useState(
-		project.npcs[0]?.id ?? "",
+		incomingNpcId ?? project.npcs[0]?.id ?? "",
 	);
 	const [isPainting, setIsPainting] = useState(false);
 	const [isPanning, setIsPanning] = useState(false);

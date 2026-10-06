@@ -28,6 +28,7 @@ export type ThreeVisualConfig = {
 };
 
 export type GameProject = {
+	characterAssets?: CharacterGameAsset[];
 	metadata: ProjectMetadata;
 	areas: GameArea[];
 	activeAreaId: string;
@@ -47,6 +48,22 @@ export type GameProject = {
 	objects: ObjectDefinition[];
 	ruleGroups: RuleGroup[];
 	rules: GameRule[];
+};
+
+// Finalised source records only; renderer objects and preview URLs never enter a project.
+export type CharacterGameAsset = {
+	id: string;
+	name: string;
+	kind: "character";
+	state: "finalised";
+	geometryFamily: string;
+	glbUrl: string;
+	artifactHash: string;
+	recipeHash: string;
+	manifestUrl: string;
+	recipeUrl: string;
+	rigProfile: string;
+	animationSet: string;
 };
 
 export type ProjectMetadata = {
@@ -315,6 +332,7 @@ export type EnemyBehaviour = {
 };
 
 export type NPCInstance = {
+	threeVisual?: ThreeVisualConfig;
 	id: string;
 	npcDefinitionId: string;
 	areaId: string;

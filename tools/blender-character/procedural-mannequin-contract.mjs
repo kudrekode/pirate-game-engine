@@ -1,3 +1,4 @@
+import { validateClothing } from "./clothing-contract.mjs";
 import { createHash } from "node:crypto";
 import { validateAuthoredGeometry } from "./authored-human-contract.mjs";
 import {
@@ -477,6 +478,7 @@ export function validateProceduralMannequinRecipe(value) {
 		const anatomy = validateProceduralMannequinAnatomy(parsedProportions);
 		if (!anatomy.ok) issues.push(...anatomy.issues);
 	}
+	issues.push(...validateClothing(value.clothing, value.geometrySource));
 	issues.push(
 		...validateAuthoredGeometry(
 			value.geometrySource,
@@ -485,6 +487,7 @@ export function validateProceduralMannequinRecipe(value) {
 		),
 	);
 	const recipe = {
+		...(value.clothing === undefined ? {} : { clothing: structuredClone(value.clothing) }),
 		...(value.geometrySource === undefined
 			? {}
 			: { geometrySource: structuredClone(value.geometrySource) }),

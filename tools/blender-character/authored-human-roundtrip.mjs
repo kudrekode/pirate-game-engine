@@ -1,3 +1,4 @@
+import { CLOTHING_SLOTS } from "./clothing-contract.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -82,7 +83,59 @@ export async function validateAuthoredHumanArtifact({
 	assert(body);
 	const hair = meshes.filter((m) => m.name.startsWith("V2_Buzzed"));
 	assert.equal(hair.length, recipe.components.hair === "none" ? 0 : 1);
-	assert.equal(meshes.length, hair.length + 3);
+	const activeSlots = CLOTHING_SLOTS.filter(
+		(slot) => recipe.clothing?.[slot] && recipe.clothing[slot] !== "none",
+	);
+	const garmentNames = {
+		top: "Everyday_Top",
+		bottoms: "Everyday_Trousers",
+		footwear: "Everyday_Boots",
+	};
+	const garments = meshes.filter((m) => m.name.startsWith("Everyday_"));
+	assert.equal(meshes.length, hair.length + 3 + garments.length);
+	for (const slot of CLOTHING_SLOTS) {
+		const pieces = garments.filter((m) =>
+			m.name.startsWith(garmentNames[slot]),
+		);
+		assert.equal(
+			pieces.length,
+			activeSlots.includes(slot) ? 2 : 0,
+			`Garment primitives: ${slot}`,
+		);
+		for (const m of pieces) {
+			const factor = m.material.name.endsWith("_edge") ? 0.7 : 1;
+			assert(
+				difference(
+					m.material.color.toArray(),
+					canonicalSrgbHexToLinear(recipe.clothing[slot].color).map(
+						(v) => v * factor,
+					),
+				) < 1e-6,
+				`Garment tint: ${slot}`,
+			);
+			assert.equal(m.material.metalness, 0);
+			assert(
+				Math.abs(m.material.roughness - (slot === "footwear" ? 0.7 : 0.86)) <
+					1e-6,
+			);
+			assert(m.geometry.index.count > 300, `Missing garment surface: ${slot}`);
+		}
+	}
+	const coverage = JSON.parse(
+		await readFile(
+			path.join(
+				workspaceRoot,
+				"tools/blender-character/clothing/everyday-v1/coverage.json",
+			),
+			"utf8",
+		),
+	);
+	const hidden = new Set(activeSlots.flatMap((slot) => coverage.masks[slot]));
+	assert.equal(
+		body.geometry.index.count / 3,
+		coverage.bodyPolygonCount - hidden.size,
+		"Body coverage differs from the garment-specific masks",
+	);
 	let weightError = 0;
 	for (const mesh of meshes) {
 		const { position, skinWeight, skinIndex, uv } = mesh.geometry.attributes;
@@ -126,10 +179,14 @@ export async function validateAuthoredHumanArtifact({
 	const signature = skeletonSignature(inspection).hash;
 	assert.equal(signature, GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE);
 	root.updateMatrixWorld(true);
-	const bounds = new THREE.Box3().setFromObject(body, true),
+	const bounds = new THREE.Box3().setFromObject(
+			activeSlots.includes("footwear") ? root : body,
+			true,
+		),
 		size = bounds.getSize(new THREE.Vector3());
 	assert(
-		Math.abs(size.y - recipe.proportions.height) < 0.002,
+		Math.abs(size.y - recipe.proportions.height) <
+			(activeSlots.includes("footwear") ? 0.01 : 0.002),
 		`Height ${size.y}`,
 	);
 	const bodyMat = body.material;
@@ -203,6 +260,8 @@ export async function validateAuthoredHumanArtifact({
 	return {
 		passed: true,
 		checks: {
+			clothing: true,
+			coverage: true,
 			rig: true,
 			binds: true,
 			weights: true,

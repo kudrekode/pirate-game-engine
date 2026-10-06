@@ -24,12 +24,12 @@ export type PreviewSource = {
 };
 export const PREVIEW_SOURCES = {
 	[AUTHORED_HUMAN_FIXTURE_ID]: {
-		artifactUrl: "/assets/derived/authored-humans/canonical-v1/mannequin.glb",
+		artifactUrl: "/assets/derived/authored-humans/everyday-v1/mannequin.glb",
 		definition: {
 			...PROCEDURAL_MANNEQUIN_V0_ASSET,
 			id: AUTHORED_HUMAN_FIXTURE_ID,
 			name: "Authored Human",
-			url: "/assets/derived/authored-humans/canonical-v1/mannequin.glb",
+			url: "/assets/derived/authored-humans/everyday-v1/mannequin.glb",
 		},
 		description: "Experimental canonical authored human",
 		displayName: "Authored Human",
@@ -37,8 +37,8 @@ export const PREVIEW_SOURCES = {
 		kindLabel: "Experimental human",
 		mannequin: true,
 		authoredHuman: true,
-		manifestUrl: "/assets/derived/authored-humans/canonical-v1/manifest.json",
-		revision: "canonical-v1",
+		manifestUrl: "/assets/derived/authored-humans/everyday-v1/manifest.json",
+		revision: "everyday-v1",
 	},
 	[GOLDEN_REFERENCE_FIXTURE_ID]: {
 		artifactUrl: GOLDEN_REFERENCE_HUMANOID_ASSET.url,

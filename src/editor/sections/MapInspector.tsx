@@ -84,6 +84,7 @@ export function MapInspector({
 	const updatePickup = useProjectStore((state) => state.updatePickup);
 	const deletePickup = useProjectStore((state) => state.deletePickup);
 	const updateNpc = useProjectStore((state) => state.updateNpc);
+	const addNpc = useProjectStore((state) => state.addNpc);
 	const deleteNpc = useProjectStore((state) => state.deleteNpc);
 	const updateEventBlock = useProjectStore((state) => state.updateEventBlock);
 	const deleteEventBlock = useProjectStore((state) => state.deleteEventBlock);
@@ -727,6 +728,20 @@ export function MapInspector({
 		const before = cloneCurrentProject();
 		deleteNpc(selectedNpc.id);
 		setSelection({ type: "area", areaId: activeArea.id });
+		recordMapEdit(before);
+	}
+
+	function duplicateSelectedNpc() {
+		if (!selectedNpc) return;
+		const before = cloneCurrentProject();
+		const id = addNpc(
+			selectedNpc.x,
+			selectedNpc.y,
+			selectedNpc.npcDefinitionId,
+		);
+		const { id: _id, ...copy } = structuredClone(selectedNpc);
+		updateNpc(id, copy);
+		setSelection({ type: "npc", areaId: activeArea.id, id });
 		recordMapEdit(before);
 	}
 
@@ -1446,6 +1461,7 @@ export function MapInspector({
 					selectedNpc={selectedNpc}
 					updateSelectedNpc={updateSelectedNpc}
 					deleteSelectedNpc={deleteSelectedNpc}
+					duplicateSelectedNpc={duplicateSelectedNpc}
 					interactionEditor={renderInteractionEditor(
 						selectedResolvedNpc?.interaction,
 						selectedNpc.id,

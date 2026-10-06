@@ -10,12 +10,14 @@ import type {
 	NPCInstance,
 	NPCMovementConfig,
 } from "../../types/game";
+import { ThreeVisualControls } from "./ThreeVisualControls";
 
 type MapNpcInspectorProps = {
 	project: GameProject;
 	selectedNpc: NPCInstance;
 	updateSelectedNpc: (patch: Partial<NPCInstance>) => void;
 	deleteSelectedNpc: () => void;
+	duplicateSelectedNpc?: () => void;
 	interactionEditor: ReactNode;
 };
 
@@ -25,6 +27,7 @@ export function MapNpcInspector({
 	selectedNpc,
 	updateSelectedNpc,
 	deleteSelectedNpc,
+	duplicateSelectedNpc,
 	interactionEditor,
 }: MapNpcInspectorProps) {
 	const selectedNpcDefinition = project.npcs.find(
@@ -617,6 +620,22 @@ export function MapNpcInspector({
 					{hasInteractionOverride ? "instance override" : "definition default"}
 				</div>
 				{interactionEditor}
+				<ThreeVisualControls
+					projectAssets={project.characterAssets}
+					assetCategories={["character"]}
+					inferredPlaceholderType="npc"
+					title="3D instance visual"
+					value={selectedResolvedNpc.threeVisual}
+					onChange={(threeVisual) => updateSelectedNpc({ threeVisual })}
+				/>
+				{selectedNpc.threeVisual && (
+					<button
+						type="button"
+						onClick={() => updateSelectedNpc({ threeVisual: undefined })}
+					>
+						Reset visual to definition default
+					</button>
+				)}
 				{hasInteractionOverride ? (
 					<button
 						onClick={() => resetSelectedNpcSection("interaction")}
@@ -625,6 +644,11 @@ export function MapNpcInspector({
 						Reset interaction to definition default
 					</button>
 				) : null}
+				{duplicateSelectedNpc && (
+					<button type="button" onClick={duplicateSelectedNpc}>
+						Duplicate NPC instance
+					</button>
+				)}
 				<button
 					className="danger-button"
 					onClick={deleteSelectedNpc}

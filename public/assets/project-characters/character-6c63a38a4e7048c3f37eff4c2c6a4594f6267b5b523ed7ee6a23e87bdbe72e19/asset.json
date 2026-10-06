@@ -1,0 +1,14 @@
+{
+	"id": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+	"name": "New Character",
+	"kind": "character",
+	"state": "finalised",
+	"geometryFamily": "authored-human",
+	"glbUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.glb",
+	"artifactHash": "a801c1d810412c9d0cea7ac71bef370da02cc40514befe4a4c54778ed1c69237",
+	"recipeHash": "89240819f9873f28202dc441eabbd34cfba5e732bafcff240cbcc6b1edb4cb92",
+	"manifestUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/manifest.json",
+	"recipeUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.recipe.json",
+	"rigProfile": "golden-humanoid-v0",
+	"animationSet": "golden-idle-walk-v1"
+}
