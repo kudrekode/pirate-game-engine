@@ -1,0 +1,92 @@
+{
+	"family": "authored-human-prototype-v2",
+	"status": "partial-visual-fail",
+	"date": "2026-10-06",
+	"blender": "5.2.0 LTS fbe6228777e7",
+	"productionIntegration": false,
+	"continuousRangesApproved": false,
+	"sourceFiles": {
+		"candidate.blend": "ebd603dc9ae51d121d53acfc60d5fb79eac29dbcb14348e0efc887e3471735a4",
+		"canonical-neutral.blend": "c9031dcf5aca1a643804b6872a18352f6d5a1e8d5df953a01b5d02163d7b8c5b",
+		"deformation-evidence.json": "dd2bd16355110e6facda610077d2c53ce05c51c10cf7beee0d31c10843560d3c",
+		"License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+		"README.md": "82bc1e7450cfd86a77b53ae02b5ab4a7c17dd248049e07c12dbfc5777b78401a",
+		"roundtrip.json": "2c90cc65626a229a79237ab43edcfe73c4353b058c399c532aad0af9640a48e0",
+		"source-reopen.json": "1d0d11bc8cc88637323ffa0a7ab64a4bf475c60e8a5aae61f87599b96f0c6f53",
+		"targets.json": "1600fc3f6cd4d64b10c1dbbd7a914d9918f10a758d22cc3a094a7d3151c2849f",
+		"vendor-hashes.json": "9dfcf67cd85f2a6467ca11a98b164177ce30aa4b5b02de92d4f304b2f7f8389f"
+	},
+	"authoringFiles": {
+		"authored_human_v2.py": "2ccbb5c709f0334a09b89d3902bb894964a75b16ef9e6aca3fa96115d9302da8",
+		"authored_human_v2_shapes.py": "ffc9e6cc39b7911f7b2d360ccf78c1c743189320ea5f464d41026125d78a8c47",
+		"authored_human_v2_shapes_test.py": "75cdfb51cfd00ed85ee6935c0698cfa042be5b632ac4e4d14e7b6ad763f35d8e",
+		"render_authored_human_v2.py": "bbb2110617e2a2bcb63080f955c3de5e40569ebdd564fc6a962ab77b14f2f2d8",
+		"validate-authored-human-v2.mjs": "451681c6369a98f8446ba5136af934e6361c1b2b8873096a76048508c2aa1f3d"
+	},
+	"localExports": {
+		"athletic.glb": {
+			"sha256": "4c50c4beb4ee2f84987cc4743093a2d6058e3d987b0b59f1fe1056648e8bc83e",
+			"bytes": 14651232
+		},
+		"broad.glb": {
+			"sha256": "dbf095c79dc0c0dcfcb43864055e3dc67fe08e2641055faebb8cec7425922647",
+			"bytes": 14651232
+		},
+		"combined.glb": {
+			"sha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"bytes": 14651312
+		},
+		"dressed-neutral.glb": {
+			"sha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"bytes": 14651232
+		},
+		"fuller.glb": {
+			"sha256": "0c0b168fe08eeedafb7ef1c93aa7ab1ff7b72c166b832f541a35e79391ec5535",
+			"bytes": 14651316
+		},
+		"head-narrow.glb": {
+			"sha256": "bbb9de9483cd44caaaa7237485006e41b85827a87a0883c4b3a2beab1f2e5163",
+			"bytes": 14651232
+		},
+		"head-wide.glb": {
+			"sha256": "91e0eee7c2704fcd606942aebf937439b78200a743cc320bfedb0db664347e42",
+			"bytes": 14651232
+		},
+		"jaw.glb": {
+			"sha256": "1716dc376bca34f25f9dcaf4eada3341954a6af3d4e7bba77e934e1b42e66d50",
+			"bytes": 14651228
+		},
+		"neutral.glb": {
+			"sha256": "21795103f9d988c877053a724fb47f5710c01da9c78afdddf99ff65a0b093897",
+			"bytes": 15582652
+		},
+		"nose.glb": {
+			"sha256": "9e03c6c54f33908d9424186a280344645d5c43ff01df38a4f4aa0ce35d0522da",
+			"bytes": 14651232
+		}
+	},
+	"imageEvidence": {
+		"body-targets.jpg": "895c0f7bd0021ad2595f636296aebf67d7160ef70342f866b548a03d8a4c244f",
+		"combined-face.png": "f0007fad5f1991b2735bb13f0bff430bf1ff7f894ad7fbc32a862cd921b7d3e8",
+		"combined-poses.jpg": "61f49ccfd715a45c936ebac867a19fdde31401b837813c017ac8f6078ea19a10",
+		"comparison.jpg": "3adbfdb9f498a5d5dd705a0d04143116be7709d929cc2c32560917b7e40ee712",
+		"face-targets.jpg": "2e7a876722f81eaa186fbbf17382b8e14c0c0a4dbba2cf8ffcdb9788a9b8cb21",
+		"garment-failure.png": "cb10f3d22d511476f8b52211e99739318e507f68fad460711f264b397728e72f",
+		"garment-review.jpg": "e482303ed2bd7bff0e4868b680f63bfc8f5e57ab676bbb819c2cbd5e0b0b0576",
+		"head-profile-review.jpg": "6d142e8f6db3958b6fc9e57e0c147d42d5db8897e67f0361364b09e44d97c39a",
+		"neutral-poses.jpg": "b8c1635557310d035bc6eccce0e58b771b8706728e9a8920648177e5f8dae168",
+		"neutral-preservation.jpg": "b2807a4b07c4c1cea57736ea35dc1a7bd91617053fdd77787fa4756967cba8db"
+	},
+	"neutralRenderMeanAbsoluteRgbDifference": {
+		"front": 0.0004392636684303351,
+		"face-front": 0.0011292989417989417,
+		"channelRange": 255
+	},
+	"validation": {
+		"ci": "passed once: 623 Vitest tests, root/Studio/three-package builds, 50 Node checks",
+		"sculptConstraints": "3 passed",
+		"sourceReopen": "both passed; all candidate keys zero",
+		"sourceDefaultFix": "all 10 exported GLBs byte-identical after targeted rebuild",
+		"visualAcceptance": "failed; garment motion and stressed deformation not approved"
+	}
+}

@@ -1,0 +1,60 @@
+{
+	"cases": {
+		"dressed-neutral": {},
+		"head-wide": {
+			"headWidth": 1
+		},
+		"head-narrow": {
+			"headWidth": -1
+		},
+		"jaw": {
+			"jaw": 1
+		},
+		"nose": {
+			"nose": 1
+		},
+		"fuller": {
+			"mass": 1
+		},
+		"athletic": {
+			"athletic": 1
+		},
+		"broad": {
+			"broadFrame": 1
+		},
+		"combined": {
+			"headWidth": 1,
+			"jaw": 1,
+			"nose": 1,
+			"mass": 1,
+			"athletic": 1,
+			"broadFrame": 1
+		}
+	},
+	"targets": {
+		"headWidth": {
+			"maxDisplacementMm": 6.040198262191057,
+			"movedVertices": 1410
+		},
+		"jaw": {
+			"maxDisplacementMm": 4.820317305560225,
+			"movedVertices": 1186
+		},
+		"nose": {
+			"maxDisplacementMm": 2.964199598009315,
+			"movedVertices": 609
+		},
+		"mass": {
+			"maxDisplacementMm": 23.697409024499308,
+			"movedVertices": 3949
+		},
+		"athletic": {
+			"maxDisplacementMm": 6.79822449914778,
+			"movedVertices": 1761
+		},
+		"broadFrame": {
+			"maxDisplacementMm": 9.186832058449,
+			"movedVertices": 2295
+		}
+	}
+}
