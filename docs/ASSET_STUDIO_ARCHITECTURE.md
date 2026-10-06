@@ -8,7 +8,15 @@
 `CharacterRecipeV1.geometry` selects the family/revision/rig and six identity
 values; missing geometry keeps legacy semantics. The UI offers height, three
 body and three face controls, short hair/none, hair colour and skin tint.
-The two-column creator has Full Body / Upper Body / Face / Back cameras.
+The creator has Character / Body / Face / Hair / Appearance categories, three
+curated body presets and five face presets with actual compiled thumbnails.
+Presets live in `packages/character-contract/src/authoredHumanPresets.ts`; recipes
+persist only resolved numeric values, with no schema change. See the
+[product pass result](../CHARACTER_CREATOR_PRODUCT_PASS_RESULT.md) for accepted
+ranges, visual evidence, browser flow and limitations. The viewport has Full Body /
+Upper Body / Face / Three-quarter / Back cameras; category framing respects manual
+camera choices and retains them across compilation. Dirty state covers the default
+fixture and reopened recipes as well as generated results.
 The tank and eye-colour editing are not exposed for this family.
 
 The existing compiler dispatches authored geometry to `generate_authored_human.py`

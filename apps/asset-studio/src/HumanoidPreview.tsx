@@ -7,7 +7,7 @@ import {
 	type ThreeVisualAssetAnalysis,
 	type ThreeVisualAssetDefinition,
 } from "@adventure-game-builder/three-asset-preview";
-import { useEffect, useRef, useState } from "react";
+import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { MANNEQUIN_ARTIFACT_ROOT, type PreviewSource } from "./previewSources";
@@ -31,6 +31,13 @@ type PreviewCameraPreset =
 	| "side"
 	| "three-quarter"
 	| "three-quarter-rear";
+export type CreatorCameraState = {
+	preset: PreviewCameraPreset;
+	manual: boolean;
+	custom?: boolean;
+	position?: [number, number, number];
+	target?: [number, number, number];
+};
 const PREVIEW_CAMERA_LABELS: Record<PreviewCameraPreset, string> = {
 	"full-body": "Full Body",
 	"upper-body": "Upper Body",
@@ -149,10 +156,20 @@ function loadRegisteredAnimationClip(
 export function HumanoidPreview({
 	onManifestLoaded,
 	source,
+	suggestedCamera = "three-quarter",
+	creatorCamera,
+	busy = false,
 }: {
 	onManifestLoaded?: (manifest: ProceduralMannequinManifest) => void;
 	source: PreviewSource;
+	suggestedCamera?: PreviewCameraPreset;
+	creatorCamera?: MutableRefObject<CreatorCameraState>;
+	busy?: boolean;
 }) {
+	const busyRef = useRef(busy);
+	busyRef.current = busy;
+	const suggestedCameraRef = useRef(suggestedCamera);
+	suggestedCameraRef.current = suggestedCamera;
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const hostRef = useRef<HTMLDivElement>(null);
 	const resetViewRef = useRef<() => void>(() => undefined);
@@ -172,8 +189,9 @@ export function HumanoidPreview({
 		useState<PreviewAnimationState>("rest");
 	const [animationPlaying, setAnimationPlaying] = useState(true);
 	const [animationSample, setAnimationSample] = useState(0);
-	const [cameraPreset, setCameraPreset] =
-		useState<PreviewCameraPreset>("three-quarter");
+	const [cameraPreset, setCameraPreset] = useState<PreviewCameraPreset | null>(
+		creatorCamera?.current.preset ?? "three-quarter",
+	);
 	const [clipStatus, setClipStatus] = useState<"loading" | "loaded" | "error">(
 		"loading",
 	);
@@ -187,6 +205,12 @@ export function HumanoidPreview({
 		() => undefined,
 	);
 	useEffect(() => {
+		if (!creatorCamera || creatorCamera.current.manual) return;
+		creatorCamera.current.preset = suggestedCamera;
+		setCameraPreset(suggestedCamera);
+		setCameraPresetRef.current(suggestedCamera);
+	}, [suggestedCamera, creatorCamera]);
+	useEffect(() => {
 		animationPlayingRef.current = animationPlaying;
 	}, [animationPlaying]);
 	useEffect(() => {
@@ -198,6 +222,9 @@ export function HumanoidPreview({
 	useEffect(() => {
 		const canvas = canvasRef.current,
 			host = hostRef.current;
+		const savedCamera = creatorCamera
+			? { ...creatorCamera.current }
+			: undefined;
 		if (!canvas || !host || typeof WebGLRenderingContext === "undefined")
 			return;
 		setStatus("loading");
@@ -255,7 +282,20 @@ export function HumanoidPreview({
 				.toArray()
 				.map((value) => value.toFixed(3))
 				.join(",");
+			if (creatorCamera) {
+				creatorCamera.current.position = camera.position.toArray();
+				creatorCamera.current.target = controls.target.toArray();
+			}
 		};
+		const onCameraStart = () => {
+			if (creatorCamera) {
+				creatorCamera.current.manual = true;
+				creatorCamera.current.custom = true;
+			}
+			setCameraPreset(null);
+			host.dataset.cameraPreset = "custom";
+		};
+		controls.addEventListener("start", onCameraStart);
 		controls.addEventListener("change", updateCameraMetadata);
 		scene.add(new THREE.HemisphereLight(0xffffff, 0xaab7c4, 1.8));
 		const key = new THREE.DirectionalLight(0xffffff, 2.1);
@@ -268,6 +308,7 @@ export function HumanoidPreview({
 		}
 		key.castShadow = true;
 		const grid = new THREE.GridHelper(4, 16, 0x94a3b8, 0xd3dae2);
+		grid.visible = !source.authoredHuman;
 		const ground = new THREE.Mesh(
 			new THREE.PlaneGeometry(8, 8),
 			new THREE.MeshStandardMaterial({ color: 0xe8edf2, roughness: 0.9 }),
@@ -276,8 +317,14 @@ export function HumanoidPreview({
 		ground.receiveShadow = true;
 		scene.add(key, grid, ground);
 		const resize = () => {
-			const width = Math.max(1, host.clientWidth),
-				height = Math.max(1, host.clientHeight);
+			const width = Math.max(
+					1,
+					source.authoredHuman ? canvas.clientWidth : host.clientWidth,
+				),
+				height = Math.max(
+					1,
+					source.authoredHuman ? canvas.clientHeight : host.clientHeight,
+				);
 			renderer.setSize(width, height, false);
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
@@ -383,9 +430,18 @@ export function HumanoidPreview({
 			);
 			updateAnimationMetadata(true);
 		};
+		let lastRenderTime = 0;
 		const render = () => {
+			// Give compilation CPU headroom; retain the current pose and orbit controls.
+			const now = performance.now();
+			if (busyRef.current && now - lastRenderTime < 100) {
+				frame = window.requestAnimationFrame(render);
+				return;
+			}
+			lastRenderTime = now;
 			const deltaSeconds = Math.min(clock.getDelta(), 0.1);
-			if (animationPlayingRef.current) animationMixer?.update(deltaSeconds);
+			if (animationPlayingRef.current && !busyRef.current)
+				animationMixer?.update(deltaSeconds);
 			updateAnimationMetadata();
 			controls.update();
 			renderer.render(scene, camera);
@@ -481,6 +537,17 @@ export function HumanoidPreview({
 					),
 				};
 				const offset = offsets[preset];
+				if (
+					source.authoredHuman &&
+					["full-body", "three-quarter", "back"].includes(preset)
+				) {
+					// Preserve useful scale, while fitting narrow windows by horizontal FOV.
+					const size = bounds.getSize(new THREE.Vector3());
+					const fit =
+						Math.max(size.y * 1.13, (size.x / camera.aspect) * 1.13) /
+						(2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+					offset.setLength(fit);
+				}
 				const damping = controls.enableDamping;
 				controls.enableDamping = false;
 				camera.position.copy(target).add(offset);
@@ -490,7 +557,19 @@ export function HumanoidPreview({
 				host.dataset.cameraPreset = preset;
 				updateCameraMetadata();
 			};
-			setCameraPresetRef.current("three-quarter");
+			const saved = savedCamera;
+			const initialPreset = saved?.manual
+				? saved.preset
+				: suggestedCameraRef.current;
+			setCameraPresetRef.current(initialPreset);
+			setCameraPreset(initialPreset);
+			if (saved?.manual && saved.position && saved.target) {
+				camera.position.fromArray(saved.position);
+				controls.target.fromArray(saved.target);
+				controls.update();
+				host.dataset.cameraPreset = saved.custom ? "custom" : saved.preset;
+				setCameraPreset(saved.custom ? null : saved.preset);
+			}
 			initialCameraPosition = camera.position.clone();
 			initialCameraTarget = controls.target.clone();
 			controls.saveState();
@@ -700,6 +779,7 @@ export function HumanoidPreview({
 			window.cancelAnimationFrame(frame);
 			observer?.disconnect();
 			controls.removeEventListener("change", updateCameraMetadata);
+			controls.removeEventListener("start", onCameraStart);
 			controls.dispose();
 			animationMixer?.stopAllAction();
 			if (animationRoot) animationMixer?.uncacheRoot(animationRoot);
@@ -717,7 +797,7 @@ export function HumanoidPreview({
 			renderer.renderLists.dispose();
 			renderer.dispose();
 		};
-	}, [isMannequin, onManifestLoaded, source]);
+	}, [creatorCamera, isMannequin, onManifestLoaded, source]);
 	return (
 		<div
 			className="preview-host"
@@ -752,6 +832,8 @@ export function HumanoidPreview({
 						disabled={!canResetView}
 						key={preset}
 						onClick={() => {
+							if (creatorCamera)
+								creatorCamera.current = { preset, manual: true };
 							setCameraPreset(preset);
 							setCameraPresetRef.current(preset);
 						}}
@@ -763,12 +845,17 @@ export function HumanoidPreview({
 				<button
 					disabled={!canResetView}
 					onClick={() => {
+						if (creatorCamera)
+							creatorCamera.current = {
+								preset: "three-quarter",
+								manual: false,
+							};
 						setCameraPreset("three-quarter");
 						resetViewRef.current();
 					}}
 					type="button"
 				>
-					Reset view
+					{source.authoredHuman ? "Reset Camera" : "Reset view"}
 				</button>
 			</fieldset>
 			<fieldset
@@ -813,7 +900,7 @@ export function HumanoidPreview({
 					/>
 				</label>
 			</fieldset>
-			<div className="preview-label">
+			<div className="preview-label" hidden={source.authoredHuman}>
 				{source.displayName} · {source.kindLabel}
 			</div>
 			<div className="preview-status" data-status={status}>

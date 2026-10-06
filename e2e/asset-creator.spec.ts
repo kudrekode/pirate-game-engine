@@ -44,7 +44,10 @@ test("opens Asset Creator and explains an unavailable Studio @integration", asyn
 test("edits and finalises the canonical human from Game Engine and returns @workflow-navigation @canonical-human", async ({
 	page,
 }) => {
-	test.setTimeout(180_000);
+	// Three real compile requests (four Blender passes), plus software WebGL on CI.
+	test.setTimeout(300_000);
+	const timings: Record<string, number> = {};
+	const openedAt = Date.now();
 	await page.goto("/");
 	await page.getByRole("button", { name: /Blank Project/ }).click();
 	await page
@@ -70,17 +73,26 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 	await expect(host).toHaveAttribute("data-animation-state", "idle", {
 		timeout: 30_000,
 	});
+	timings.initialLoadMs = Date.now() - openedAt;
+	const category = (name: string) =>
+		studio
+			.getByRole("navigation", { name: "Character categories" })
+			.getByRole("button", { name, exact: true });
+	const cameras = studio.getByRole("group", { name: "3D preview controls" });
 	const canvas = host.locator("canvas");
 	const box = await canvas.boundingBox();
 	expect(box?.width).toBeGreaterThan(650);
 	expect(box?.height).toBeGreaterThan(400);
+	if (!box) {
+		throw new Error("The 3D preview canvas has no bounding box.");
+	}
 	for (const [label, preset] of [
 		["Full Body", "full-body"],
 		["Upper Body", "upper-body"],
 		["Face", "face"],
 		["Back", "back"],
 	]) {
-		await studio.getByRole("button", { name: label, exact: true }).click();
+		await cameras.getByRole("button", { name: label, exact: true }).click();
 		await expect(host).toHaveAttribute("data-camera-preset", preset);
 	}
 	await studio.getByRole("button", { name: "Full Body", exact: true }).click();
@@ -91,21 +103,20 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 		.poll(() => host.getAttribute("data-camera-position"))
 		.not.toBe(initialCamera);
 	const zoomed = await host.getAttribute("data-camera-position");
-	await studio.mouse.move(
-		box!.x + box!.width * 0.5,
-		box!.y + box!.height * 0.55,
-	);
+	await studio.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.55);
 	await studio.mouse.down();
-	await studio.mouse.move(
-		box!.x + box!.width * 0.65,
-		box!.y + box!.height * 0.6,
-		{ steps: 8 },
-	);
+	await studio.mouse.move(box.x + box.width * 0.65, box.y + box.height * 0.6, {
+		steps: 8,
+	});
 	await studio.mouse.up();
 	await expect
 		.poll(() => host.getAttribute("data-camera-position"))
 		.not.toBe(zoomed);
-	await studio.getByRole("button", { name: "Reset view", exact: true }).click();
+	await category("Face").click();
+	await expect(host).toHaveAttribute("data-camera-preset", "custom");
+	await studio
+		.getByRole("button", { name: "Reset Camera", exact: true })
+		.click();
 	let requests = 0;
 	studio.on("request", (request) => {
 		if (
@@ -114,10 +125,17 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 		)
 			requests++;
 	});
-	await studio.getByLabel("Mass / Build", { exact: true }).fill("0.75");
-	await studio.getByLabel("Head Width", { exact: true }).fill("0.6");
-	await studio.getByLabel("Hair color", { exact: true }).fill("#8b3f27");
+
+	await category("Body").click();
+	await expect(host).toHaveAttribute("data-camera-preset", "full-body");
+	const switchAt = Date.now();
+	await studio.getByRole("button", { name: "Fuller body preset" }).click();
+	timings.presetSwitchMs = Date.now() - switchAt;
+	await studio.getByLabel("Build", { exact: true }).fill("0.85");
+	await expect(studio.getByText("Custom", { exact: true })).toBeVisible();
+	await expect(studio.getByText(/Changes not previewed/)).toBeVisible();
 	expect(requests).toBe(0);
+	const previewAt = Date.now();
 	const previewResponse = studio.waitForResponse(
 		(r) => r.url().endsWith("/preview") && r.request().method() === "POST",
 	);
@@ -126,8 +144,9 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 		.click();
 	const preview = await (await previewResponse).json();
 	expect(preview.status, JSON.stringify(preview)).toBe("succeeded");
-	expect(preview.manifest.geometrySource.values.mass).toBe(0.75);
-	expect(preview.manifest.geometrySource.values.headWidth).toBe(0.6);
+	timings.bodyPreviewMs = Date.now() - previewAt;
+	expect(preview.manifest.geometrySource.values.mass).toBe(0.85);
+	expect(preview.manifest.geometrySource.values.headWidth).toBe(0);
 	expect(preview.manifest.validationLevel).toBe("preview");
 	expect(preview.manifest.deterministicBuild).toBe(false);
 	await expect(
@@ -144,8 +163,42 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 	await studio.screenshot({
 		path: "test-results/canonical-creator-full-body.png",
 	});
-	await studio.getByRole("button", { name: "Face", exact: true }).click();
+
+	await category("Face").click();
+	await expect(host).toHaveAttribute("data-camera-preset", "face");
+	await studio.getByRole("button", { name: "Square face preset" }).click();
+	await studio.getByLabel("Head Width", { exact: true }).fill("0.7");
+	await cameras.getByRole("button", { name: "Face", exact: true }).click();
+	const chosenFaceCamera = await host.getAttribute("data-camera-position");
+	if (!chosenFaceCamera) {
+		throw new Error("The face camera position was not recorded.");
+	}
+	const faceResponse = studio.waitForResponse(
+		(r) => r.url().endsWith("/preview") && r.request().method() === "POST",
+	);
+	const faceAt = Date.now();
+	await studio
+		.getByRole("button", { name: "Generate Preview", exact: true })
+		.click();
+	const facePreview = await (await faceResponse).json();
+	timings.facePreviewMs = Date.now() - faceAt;
+	expect(facePreview.status, JSON.stringify(facePreview)).toBe("succeeded");
+	expect(facePreview.manifest.geometrySource.values.headWidth).toBe(0.7);
+	await expect(host.locator(".preview-status")).toHaveAttribute(
+		"data-status",
+		"loaded",
+	);
+	await expect(host).toHaveAttribute("data-camera-preset", "face");
+	await expect(host).toHaveAttribute("data-camera-position", chosenFaceCamera);
 	await studio.screenshot({ path: "test-results/canonical-creator-face.png" });
+	await category("Hair").click();
+	await studio.getByRole("button", { name: "No hair", exact: true }).click();
+	await studio.getByRole("button", { name: "Short hair", exact: true }).click();
+	await studio
+		.getByRole("button", { name: "Auburn hair", exact: true })
+		.click();
+	await expect(studio.getByText(/Changes not previewed/)).toBeVisible();
+	const finaliseAt = Date.now();
 	const fullResponse = studio.waitForResponse(
 		(r) => r.url().endsWith("/compile") && r.request().method() === "POST",
 	);
@@ -155,14 +208,29 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 	const full = await (await fullResponse).json();
 	expect(full.status, JSON.stringify(full)).toBe("succeeded");
 	expect(full.manifest.deterministicBuild).toBe(true);
-	expect(full.manifest.outputHash).toBe(preview.manifest.outputHash);
+	timings.finaliseMs = Date.now() - finaliseAt;
+	expect(full.manifest.appearance.hair.authoredColor).toBe("#8b3f27");
+	expect(full.manifest.geometrySource.values.mass).toBe(0.85);
+	expect(full.manifest.geometrySource.values.headWidth).toBe(0.7);
 	await expect(
 		studio.getByText("Character finalised", { exact: true }),
 	).toBeVisible();
 	await expect(
 		studio.getByRole("link", { name: "Download character GLB" }),
 	).toBeVisible();
-	expect(requests).toBe(2);
+	expect(requests).toBe(3);
+	await expect(host.locator(".preview-status")).toHaveAttribute(
+		"data-status",
+		"loaded",
+	);
+	await cameras.getByRole("button", { name: "Full Body", exact: true }).click();
+	await category("Body").click();
+	await studio.screenshot({ path: "test-results/creator-product-final.png" });
+	await test.info().attach("creator timings", {
+		body: JSON.stringify(timings),
+		contentType: "application/json",
+	});
+	console.log("CREATOR_TIMINGS", JSON.stringify(timings));
 	expect(errors).toEqual([]);
 	const back = studio.getByRole("link", { name: "Back to Game Engine" });
 	await expect(back).toHaveAttribute("href", page.url());

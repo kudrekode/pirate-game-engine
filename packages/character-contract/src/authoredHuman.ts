@@ -1,10 +1,10 @@
 /** Bounded identity controls for the canonical authored source, not legacy proportions. */
 export const AUTHORED_HUMAN_REVISION = "authored-human-canonical-v1" as const;
 export const AUTHORED_HUMAN_CONTROLS = {
-	mass: { label: "Mass / Build", min: 0, max: 1, section: "Body" },
-	athletic: { label: "Athletic / Muscle", min: 0, max: 1, section: "Body" },
+	mass: { label: "Build", min: 0, max: 1, section: "Body" },
+	athletic: { label: "Muscle", min: 0, max: 1, section: "Body" },
 	broadFrame: {
-		label: "Broad Frame / Shoulders",
+		label: "Frame",
 		min: 0,
 		max: 1,
 		section: "Body",

@@ -6,6 +6,7 @@ import {
 import componentRegistryData from "./character-component-registry.json";
 
 export * from "./authoredHuman";
+export * from "./authoredHumanPresets";
 
 export const CHARACTER_RECIPE_VERSION = 1 as const;
 export const HUMANOID_V1_SKELETON_ID = "humanoid-v1" as const;

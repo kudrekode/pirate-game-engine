@@ -4,7 +4,13 @@ import {
 	createAuthoredHumanRecipe,
 	createDefaultCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
@@ -195,7 +201,9 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 	it("loads each recipe family with visible feedback and rejects an invalid identity without losing the draft", async () => {
 		window.history.replaceState({}, "", "/");
 		const { container } = render(<App />);
-		const input = container.querySelector('input[type="file"]')!;
+		const input = container.querySelector('input[type="file"]');
+		if (!input)
+			throw new Error("Expected the recipe file input to be rendered.");
 		const load = (recipe: unknown) =>
 			fireEvent.change(input, {
 				target: {
@@ -221,8 +229,10 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		authored.geometry.values.mass = 0.7;
 		load(authored);
 		await waitFor(() =>
-			expect(screen.getByLabelText("Mass / Build")).toHaveValue("0.7"),
+			expect(screen.getByText(/Loaded saved.json/)).toBeVisible(),
 		);
+		fireEvent.click(screen.getByRole("button", { name: "Body" }));
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
 		expect(
 			container.querySelector(
 				'[data-preview-source="authored-human-canonical-v1"]',
@@ -234,38 +244,65 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		await waitFor(() =>
 			expect(screen.getByText(/Recipe rejected/)).toBeVisible(),
 		);
-		expect(screen.getByLabelText("Mass / Build")).toHaveValue("0.7");
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
 	});
-	it("opens the authored human with bounded identity controls and useful camera presets", () => {
+
+	it("offers section presets, preserves unrelated choices, and resets without compiling", () => {
 		window.history.replaceState({}, "", "/");
 		render(<App />);
-		expect(screen.getByLabelText("Character type")).toHaveValue("authored");
-		for (const label of [
-			"Mass / Build",
-			"Athletic / Muscle",
-			"Broad Frame / Shoulders",
-			"Head Width",
-			"Jaw / Chin",
-			"Nose",
-		])
-			expect(screen.getByLabelText(label)).toBeVisible();
-		for (const name of ["Full Body", "Upper Body", "Face"])
-			expect(screen.getByRole("button", { name })).toBeInTheDocument();
-		expect(screen.queryByLabelText("Random seed")).not.toBeInTheDocument();
-		fireEvent.change(screen.getByLabelText("Mass / Build"), {
+		const section = (name: string) =>
+			fireEvent.click(
+				screen
+					.getByRole("navigation", { name: "Character categories" })
+					.querySelectorAll("button")[
+					["Character", "Body", "Face", "Hair", "Appearance"].indexOf(name)
+				],
+			);
+		section("Body");
+		for (const name of ["Build", "Muscle", "Frame", "Height"])
+			expect(screen.getByLabelText(name)).toBeVisible();
+		fireEvent.change(screen.getByLabelText("Height"), {
+			target: { value: "1.7" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Broad body preset" }));
+		expect(screen.getByText(/Changes not previewed/)).toBeVisible();
+		expect(screen.getByLabelText("Height")).toHaveValue("1.7");
+		expect(screen.getByLabelText("Frame")).toHaveValue("1");
+		expect(
+			screen.getByRole("button", { name: "Broad body preset" }),
+		).toHaveAttribute("aria-pressed", "true");
+		fireEvent.change(screen.getByLabelText("Build"), {
 			target: { value: "0.7" },
 		});
-		fireEvent.change(screen.getByLabelText("Head Width"), {
-			target: { value: "-0.5" },
-		});
-		expect(screen.getByLabelText("Mass / Build")).toHaveValue("0.7");
+		expect(screen.getByText("Custom")).toBeVisible();
+		section("Face");
+		fireEvent.click(
+			screen.getByRole("button", { name: "Angular face preset" }),
+		);
+		expect(screen.getByLabelText("Head Width")).toHaveValue("-0.65");
+		section("Hair");
+		fireEvent.click(screen.getByRole("button", { name: "Auburn hair" }));
+		section("Face");
+		fireEvent.click(screen.getByRole("button", { name: "Reset face" }));
+		expect(screen.getByLabelText("Head Width")).toHaveValue("0");
+		section("Body");
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
+		section("Hair");
+		expect(screen.getByLabelText("Hair color")).toHaveValue("#8b3f27");
+		section("Character");
 		fireEvent.click(screen.getByRole("button", { name: "Reset character" }));
-		expect(screen.getByLabelText("Mass / Build")).toHaveValue("0");
+		fireEvent.click(
+			screen.getByRole("button", { name: "Undo character reset" }),
+		);
+		section("Body");
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
+		fireEvent.click(screen.getByRole("button", { name: "Recipe details" }));
 		fireEvent.change(screen.getByLabelText("Character type"), {
 			target: { value: "legacy" },
 		});
 		expect(screen.getByLabelText("Shoulders")).toBeVisible();
 	});
+
 	it("renders the Character screen as the active V0 workflow", () => {
 		render(<App />);
 
@@ -611,13 +648,15 @@ it("keeps distinct request snapshots and restores recent results without compili
 	vi.stubGlobal("fetch", fetch);
 	render(<App />);
 	const snapshots: string[] = [];
+	const randomise = screen.getByRole("button", { name: "Randomise" });
+	const generate = screen.getByRole("button", { name: "Generate Preview" });
 	for (const seed of ["body-e2e-11", "body-e2e-22", "body-e2e-33"]) {
 		fireEvent.change(screen.getByLabelText("Random seed"), {
 			target: { value: seed },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Randomise" }));
+		fireEvent.click(randomise);
 		snapshots.push(screen.getByTestId("recipe-json").textContent ?? "");
-		fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
+		fireEvent.click(generate);
 		await waitFor(() =>
 			expect(screen.getByText(/Preview ready/u)).toBeInTheDocument(),
 		);
@@ -635,7 +674,11 @@ it("keeps distinct request snapshots and restores recent results without compili
 		"body-e2e-22",
 		"body-e2e-33",
 	].entries()) {
-		fireEvent.click(screen.getByRole("button", { name: new RegExp(seed) }));
+		fireEvent.click(
+			within(screen.getByLabelText("Recent Compilations")).getByRole("button", {
+				name: new RegExp(seed),
+			}),
+		);
 		expect(screen.getByTestId("recipe-json").textContent).toBe(
 			snapshots[index],
 		);
@@ -710,7 +753,7 @@ it("separates preview assurance from finalisation and preserves the captured dra
 	fireEvent.change(screen.getByLabelText("Height"), {
 		target: { value: "1.9" },
 	});
-	expect(screen.getByText(/Recipe changed/)).toBeInTheDocument();
+	expect(screen.getByText(/Changes not previewed/)).toBeInTheDocument();
 	expect(
 		screen.queryByRole("link", { name: "Download character GLB" }),
 	).toBeNull();

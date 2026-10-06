@@ -43,7 +43,7 @@ config and CLI filters).
 | `npm run test:e2e:three-perf` | Settled renderer/RAF timing windows and asset diagnostics | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio` or `:asset-studio:preview` | Fixture mount, animation, source-switch/resource ownership; asserts no historical-report fetch | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio:compile` | Preview then finalisation through real Vite API, served GLB, failure preservation | 1; 2 / 3; 0; retains JSON identity evidence |
-| `npm.cmd run test:e2e -- --grep @canonical-human` | Authored default: engine launcher, camera controls, body/face/hair edits, preview, finalise, return | 1; 2 / 3; 2; requires Studio on 5174 |
+| `npm.cmd run test:e2e -- --grep @canonical-human` | Authored default: engine launcher, preset/custom edits, cameras, body preview, face preview, hair, finalise, return | 1; 3 / 4; 3; requires Studio on 5174 |
 | `npm.cmd run test:e2e:asset-studio -- --grep @canonical-preview` | Authored fixture framing and idle/walk observations | 1; 0 / 0; 3 |
 | `npm run test:e2e:asset-studio:visual` | Current Golden deformation gallery | 1; 0 / 0; 9 (27 in explicit full mode) |
 | `npm run test:e2e:asset-studio -- --grep "captures the checked-in"` | Checked-in mannequin appearance gallery | 1; 0 / 0; 9 |
