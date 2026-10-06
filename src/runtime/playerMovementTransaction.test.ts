@@ -251,3 +251,41 @@ describe("player movement transaction", () => {
 		expect(session.playerPosition).toEqual({ x: 1, y: 0 });
 	});
 });
+
+describe("movement cadence", () => {
+	it("rejects immediate repeats and accepts the exact movement deadline", () => {
+		const session = createRuntimeSession(makeProject(makeArea()));
+		const first = attemptPlayerMove(session, { x: 1, y: 0 }, 1000);
+		expect(first.type).toBe("moved");
+		expect(attemptPlayerMove(session, { x: 1, y: 0 }, 1000).type).toBe(
+			"blocked",
+		);
+		expect(session.playerPosition).toEqual({ x: 1, y: 0 });
+		expect(attemptPlayerMove(session, { x: 1, y: 0 }, 1215).type).toBe(
+			"blocked",
+		);
+		expect(attemptPlayerMove(session, { x: 1, y: 0 }, 1216).type).toBe("moved");
+	});
+	it.each([
+		1, 6, 12, 20,
+	])("uses the authored speed %i instead of a fixed repeat delay", (speed) => {
+		const project = makeProject(makeArea());
+		project.player.speed = speed;
+		const session = createRuntimeSession(project);
+		const duration = getPlayerMoveDurationMs(speed);
+		attemptPlayerMove(session, { x: 1, y: 0 }, 100);
+		expect(
+			attemptPlayerMove(session, { x: 1, y: 0 }, 100 + duration - 1).type,
+		).toBe("blocked");
+		expect(
+			attemptPlayerMove(session, { x: 1, y: 0 }, 100 + duration).type,
+		).toBe("moved");
+	});
+	it("does not consume a movement interval on collision", () => {
+		const session = createRuntimeSession(makeProject(makeArea()));
+		expect(attemptPlayerMove(session, { x: -1, y: 0 }, 100).type).toBe(
+			"blocked",
+		);
+		expect(attemptPlayerMove(session, { x: 1, y: 0 }, 100).type).toBe("moved");
+	});
+});

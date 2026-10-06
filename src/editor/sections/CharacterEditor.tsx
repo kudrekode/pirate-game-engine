@@ -6,17 +6,24 @@ import {
 import { getPlayerCombatStats } from "../../runtime/combat";
 import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
 import { useProjectStore } from "../../store/useProjectStore";
+import { CharacterAssets } from "./CharacterAssets";
 import { ThreeVisualControls } from "./ThreeVisualControls";
 
 export function CharacterEditor() {
 	const player = useProjectStore((state) => state.project.player);
+	const projectAssets = useProjectStore(
+		(state) => state.project.characterAssets,
+	);
 	const updatePlayer = useProjectStore((state) => state.updatePlayer);
 	const combat = getPlayerCombatStats(player);
-	const threeVisual = resolveThreeCharacterVisual({
-		kind: "player",
-		name: player.name,
-		threeVisual: player.threeVisual,
-	});
+	const threeVisual = resolveThreeCharacterVisual(
+		{
+			kind: "player",
+			name: player.name,
+			threeVisual: player.threeVisual,
+		},
+		projectAssets,
+	);
 
 	function toggleWalkable(tileId: string) {
 		const canWalkOn = player.canWalkOn.includes(tileId)
@@ -86,6 +93,7 @@ export function CharacterEditor() {
 					</div>
 
 					<ThreeVisualControls
+						projectAssets={projectAssets}
 						assetCategories={["character"]}
 						inferredPlaceholderType={threeVisual.placeholderType}
 						onChange={(nextThreeVisual) =>
@@ -198,6 +206,7 @@ export function CharacterEditor() {
 				</div>
 
 				<aside className="inspector-panel wide">
+					<CharacterAssets />
 					<div className="panel-title">Walkable tiles</div>
 					<div className="checkbox-list">
 						{tilePresets.map((tile) => (

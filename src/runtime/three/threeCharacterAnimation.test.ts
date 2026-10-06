@@ -1,3 +1,4 @@
+import { PROCEDURAL_MANNEQUIN_V0_ASSET } from "@adventure-game-builder/three-asset-preview";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -8,6 +9,7 @@ import {
 } from "./threeCharacterAnimation";
 import {
 	clearThreeVisualAssetCacheForTests,
+	requestThreeVisualAsset,
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
 import {
@@ -41,6 +43,97 @@ async function flushAssetPromises(): Promise<void> {
 afterEach(() => {
 	clearThreeCharacterAnimationClipCacheForTests();
 	clearThreeVisualAssetCacheForTests();
+});
+
+it("shares a character load but isolates skeletons, transforms and Golden idle/walk mixers", async () => {
+	const source = createRenderedCharacter();
+	const bone = source.getObjectByName("Hips") as THREE.Bone;
+	const geometry = new THREE.BoxGeometry();
+	const count = geometry.getAttribute("position").count;
+	geometry.setAttribute(
+		"skinIndex",
+		new THREE.Uint16BufferAttribute(new Uint16Array(count * 4), 4),
+	);
+	const weights = new Float32Array(count * 4);
+	for (let index = 0; index < count; index++) weights[index * 4] = 1;
+	geometry.setAttribute(
+		"skinWeight",
+		new THREE.Float32BufferAttribute(weights, 4),
+	);
+	const material = new THREE.MeshStandardMaterial();
+	const mesh = new THREE.SkinnedMesh(geometry, material);
+	mesh.bind(new THREE.Skeleton([bone]));
+	source.add(mesh);
+	const asset = {
+		...PROCEDURAL_MANNEQUIN_V0_ASSET,
+		id: "character-independent",
+		url: "/assets/project-characters/example/character.glb",
+	};
+	const loadAsync = vi.fn(async (url: string) => ({
+		scene: url === asset.url ? source : new THREE.Group(),
+		animations: [
+			createRootMotionClip("GoldenReference_Idle"),
+			createRootMotionClip("GoldenReference_Walk_InPlace"),
+		],
+	}));
+	const restore = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync,
+	}));
+	const controllers: ReturnType<
+		typeof createThreeCharacterAnimationController
+	>[] = [];
+	try {
+		requestThreeVisualAsset(asset);
+		requestThreeVisualAsset(asset);
+		await flushAssetPromises();
+		const first = requestThreeVisualAsset(asset),
+			second = requestThreeVisualAsset(asset);
+		if (first.status !== "loaded" || second.status !== "loaded")
+			throw new Error("Expected clones");
+		const a = first.object.getObjectByProperty(
+			"isSkinnedMesh",
+			true,
+		) as THREE.SkinnedMesh;
+		const b = second.object.getObjectByProperty(
+			"isSkinnedMesh",
+			true,
+		) as THREE.SkinnedMesh;
+		expect(first.cloneType).toBe("skeleton-utils");
+		expect(a.skeleton).not.toBe(b.skeleton);
+		expect(a.skeleton.bones[0]).not.toBe(b.skeleton.bones[0]);
+		expect(a.geometry).toBe(b.geometry);
+		expect(a.material).toBe(b.material);
+		first.object.position.x = 5;
+		expect(second.object.position.x).toBe(0);
+		const one = createThreeCharacterAnimationController({
+			asset,
+			root: first.object,
+		});
+		const two = createThreeCharacterAnimationController({
+			asset,
+			root: second.object,
+		});
+		controllers.push(one, two);
+		await flushAssetPromises();
+		one.sync({ moving: true, defeated: false });
+		one.update(0.5);
+		two.update(0.1);
+		expect(one.getStats().semanticState).toBe("walk");
+		expect(two.getStats().semanticState).toBe("idle");
+		expect(a.skeleton.bones[0].position.y).not.toBe(
+			b.skeleton.bones[0].position.y,
+		);
+		expect(bone.position.y).toBe(0);
+		expect(
+			loadAsync.mock.calls.filter(([url]) => url === asset.url),
+		).toHaveLength(1);
+		expect(loadAsync).toHaveBeenCalledTimes(3); // one character, two shared clip sources
+	} finally {
+		controllers.forEach((controller) => {
+			controller.dispose();
+		});
+		restore();
+	}
 });
 
 describe("Three character animation", () => {
@@ -105,6 +198,7 @@ describe("Three character animation", () => {
 			animations: {
 				attack: { assetId: "character-source", clipName: "Attack" },
 				defeated: { assetId: "character-source", clipName: "Dead" },
+				idle: { assetId: "character-source", clipName: "Idle" },
 				walk: { assetId: "character-source", clipName: "Walk" },
 			},
 			category: "character",
@@ -127,6 +221,7 @@ describe("Three character animation", () => {
 		]);
 		const loadAsync = vi.fn(async () => ({
 			animations: [
+				createRootMotionClip("Idle"),
 				createRootMotionClip("Walk"),
 				createRootMotionClip("Attack"),
 				createRootMotionClip("Dead"),
@@ -143,11 +238,19 @@ describe("Three character animation", () => {
 				asset: character,
 				root: renderedCharacter,
 			});
-			controller.sync({ defeated: false, moving: true });
 			await flushAssetPromises();
 			controller.update(0.5);
 
 			expect(loadAsync).toHaveBeenCalledTimes(1);
+			expect(controller.getStats()).toMatchObject({
+				activeLoopingActions: 1,
+				loadingSourceCount: 0,
+				semanticState: "idle",
+				sourceAssetIds: ["character-source"],
+			});
+
+			controller.sync({ defeated: false, moving: true });
+			controller.update(0.5);
 			expect(controller.getStats()).toMatchObject({
 				activeLoopingActions: 1,
 				loadingSourceCount: 0,

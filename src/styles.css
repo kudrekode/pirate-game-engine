@@ -161,6 +161,14 @@ label {
 	padding: 18px;
 }
 
+.asset-creator-dialog::backdrop {
+	background: rgba(31, 41, 51, 0.55);
+}
+
+.asset-creator-dialog p {
+	overflow-wrap: anywhere;
+}
+
 .preset-chooser-heading {
 	display: flex;
 	justify-content: space-between;
@@ -2455,4 +2463,15 @@ label {
 	.preview-portrait {
 		display: none;
 	}
+}
+.character-asset-card {
+	border: 1px solid #435366;
+	border-radius: 8px;
+	padding: 12px;
+	margin-bottom: 12px;
+	overflow-wrap: anywhere;
+}
+.character-asset-card > button {
+	display: block;
+	margin: 8px 0;
 }

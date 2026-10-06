@@ -1,0 +1,53 @@
+{
+	"geometrySource": {
+		"family": "authored-human",
+		"baseRevision": "authored-human-canonical-v1",
+		"rigProfile": "golden-humanoid-v0",
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"animations": {
+		"set": "golden-reference-v0"
+	},
+	"components": {
+		"hair": "quaternius-hair-v0"
+	},
+	"geometry": {
+		"profile": "voxel-union",
+		"radialSegments": 8,
+		"topologyVersion": "procedural-humanoid-v4"
+	},
+	"id": "procedural-mannequin-v0",
+	"appearance": {
+		"hair": {
+			"color": "#3b2a1f"
+		},
+		"face": {
+			"eyeColor": "#4b5d67"
+		},
+		"skin": {
+			"color": "#ffffff",
+			"colorSpace": "srgb",
+			"roughness": 0.72
+		}
+	},
+	"name": "Procedural Mannequin Body Proportions V1",
+	"proportions": {
+		"height": 1.82,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5,
+		"armLength": 0.5,
+		"legLength": 0.5,
+		"hipWidth": 0.5
+	},
+	"skeleton": {
+		"contract": "golden-humanoid-v0"
+	},
+	"version": 6
+}

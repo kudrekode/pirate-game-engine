@@ -1,0 +1,16 @@
+{
+	"passed": true,
+	"sourceSha256": "ebd603dc9ae51d121d53acfc60d5fb79eac29dbcb14348e0efc887e3471735a4",
+	"candidateSha256": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+	"checks": [
+		"Golden rest unchanged",
+		"triangles and UVs exact",
+		"six migrated targets",
+		"face hands ankles exact in all targets",
+		"hair eyes brows tank exact",
+		"normalized max-four weights",
+		"coincident seam continuity",
+		"zero source key values"
+	],
+	"maxWeightError": 1.2293457984924316e-7
+}

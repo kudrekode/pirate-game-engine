@@ -1,0 +1,22 @@
+{
+	"family": "authored-human-prototype-v1",
+	"version": 1,
+	"baseId": "quaternius-superhero-male-cc0-revision-e7fcea21",
+	"rigProfileId": "golden-humanoid-v0",
+	"height": 1.82,
+	"bodyMorphs": {
+		"mass": 0,
+		"muscle": 0,
+		"shoulders": 0
+	},
+	"faceMorphs": {
+		"headWidth": 0,
+		"jaw": 0,
+		"nose": 0
+	},
+	"hairId": "quaternius-hair-v0",
+	"garmentId": "prototype-vest-v1",
+	"appearance": {
+		"vestColor": "#375269"
+	}
+}

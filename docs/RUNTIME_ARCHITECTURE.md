@@ -17,6 +17,40 @@ Adapters are not separate engines. They translate input, rendering, camera, anim
 
 `GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 
+### Animation Asset Boundary
+
+The current animation pipeline is an offline compilation and presentation path:
+
+```text
+vendor Mixamo FBX
+  -> immutable source/provenance records
+  -> versioned retarget profile
+  -> headless Blender bake
+  -> deterministic Golden-target GLB
+  -> Three.js round-trip validation
+  -> shared animation registry
+  -> Asset Studio / editor / runtime
+```
+
+Blender is an offline compiler implementation detail; it is not a runtime
+dependency. Production/default playback uses offline-baked artifacts. Runtime
+retargeting V2 remains an experimental comparison path only. The current
+`mixamo-to-quaternius-v2` profile is specific to this verified source/target
+skeleton pair. Walk artifacts are in-place: horizontal root motion is
+neutralized while vertical hip movement is retained, and gameplay movement
+remains authoritative. Vendor assets are immutable; derived assets are
+reproducible compiled artifacts. Full per-clip GLBs currently duplicate
+mesh/material/texture data as a proven but temporary format choice. The
+[detailed spike](assets/golden-reference-animation-retargeting-spike.md)
+contains the measurements and validation evidence.
+
+Procedural Mannequin V0 reuses that presentation contract. Its Blender-generated
+body and explicit weights compile to a separate deterministic GLB using the
+exact Golden compatibility rest skeleton; its registry definition maps Idle and
+Walk to the existing offline-baked sources. The asset adds no gameplay state or
+runtime retargeting. See
+[`generated-body-topology-v1.md`](assets/generated-body-topology-v1.md).
+
 ### Dual Character Presentation
 
 Player and NPC gameplay data remains renderer-independent. `mapAvatarId` and
@@ -75,6 +109,17 @@ It should call shared helpers for movement, interactions, rules, progression, ob
 
 The adapter must not import editor store/live editor state for gameplay. It may use Three-specific helpers for presentation, camera math, visual smoothing, GLTF loading/cache/clone, terrain mesh generation, water/coast rendering, and diagnostics.
 
+### Scene lifetime ownership
+
+The root editor scene is owned by `src/editor/sections/ThreeDPreview.tsx`;
+the play scene and session bridge are owned by `src/runtime/three/ThreeRuntimePanel.tsx`.
+Each retains its renderer effect with input listeners, RAF, animation/resource refs
+and disposal. Domain helpers handle camera math, terrain, loading, visuals and
+smoothing; they do not acquire a second render loop. These effects remain together
+because splitting them currently requires a large mutable interface. Phaser's
+`AdventureScene.ts` likewise remains one scene adapter. Asset Studio's separate
+preview lifetime is in `apps/asset-studio/src/HumanoidPreview.tsx`.
+
 ## Presentation-Only Systems
 
 These systems are visual/editor presentation and must not be mistaken for gameplay semantics:
@@ -114,3 +159,52 @@ Useful checks:
 - Interaction priority and rule/object/quest/shop/pickup/vehicle transactions use shared helpers.
 - NPC tick/contact, combat defeat flags, and trigger requests match expected session state.
 - Three adapter tests prove it calls shared helper paths and does not import editor store state for gameplay.
+
+## Startup and input contract (Phase 2)
+
+Both adapters call `startRuntimeSession` after creating their presentation and
+isolated session. Startup runs `on_game_start` rules to completion, then initial
+progression. Cutscenes suspend that sequence; player input and NPC ticks remain
+paused until progression reaches a trigger wait, completion, or end-game boundary.
+Initial spawn/teleport steps may update presentation, but do not mark provisional
+areas entered or automatically evaluate quests. At the boundary the actual current
+area is recorded, automatic quests synchronize and grant once-only rewards, then
+`on_area_enter` is dispatched for that area exactly once. With no authored spawn,
+the editor-active/fallback area remains the actual area. Later transitions retain
+their normal entry/sync behaviour. Explicit quest completion actions still take
+effect where authored; only automatic startup evaluation is deferred.
+
+`RuntimeSession.nextMoveAt` is the gameplay deadline. A successful
+`attemptPlayerMove(session, direction, nowMs)` commits its grid position and sets
+`nextMoveAt = nowMs + moveDurationMs`. Repeated input before that deadline is
+ignored; input at the deadline is eligible. Blocked collision attempts do not
+consume a step. Duration uses the existing speed clamp and vehicle multiplier.
+Each adapter supplies its monotonic clock consistently: Phaser scene time or
+Three `performance.now()`. Tweens, RAF and interpolation never release the gate.
+Phaser now dispatches touch/trigger work on the accepted grid step, without
+waiting for tween completion. Area spawn/teleport resets the movement deadline.
+
+`runtimeInput` blocks movement, interaction and attack during startup, a shop,
+a dialogue, a cutscene, or game over/end. It also holds those inputs during a
+movement interval; attack eligibility additionally uses the existing combat
+cooldown. NPC simulation pauses for the modal/startup/end states, but not for a
+normal player movement interval. Modal buttons can still advance/close the modal.
+Inputs are not buffered by the Three handler; held/repeated input only moves when
+an eligible event arrives. Phaser polls held directions on its update clock.
+
+## Dialogue contract (Phase 2)
+
+Both adapters use `dialogueEngine` for authored nodes, condition-filtered choices,
+node transitions and once-per-conversation node actions. Session `dialogue` owns
+the active dialogue id, node id and entered-node set; adapter UI only presents it.
+The current schema places effects on nodes reached by choices, not on separate
+choice-action fields. Actions use `createRuntimeRuleContext`, including quests,
+teleports and asynchronous cutscenes. A node appears after its actions finish;
+cutscene-end rules run before the suspended action sequence resumes.
+
+Missing definitions/start/next nodes terminate or reject the conversation safely.
+An authored choice node with no available choices offers End conversation in both
+adapters. Completing a conversation clears its session state and restores input,
+subject to any remaining modal, deadline or end state. Phaser retains its canvas
+panel and portrait presets; Three uses a React text/choice overlay. Portrait and
+layout parity are presentation work, outside this correctness pass.

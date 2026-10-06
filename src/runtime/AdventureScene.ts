@@ -51,6 +51,10 @@ import {
 	attemptRuntimeCombatAttack,
 	type RuntimeCombatEvent,
 } from "./runtimeCombat";
+import {
+	canAcceptRuntimeInput,
+	isRuntimeGameplayBlocked,
+} from "./runtimeInput";
 import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "./runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
@@ -67,6 +71,7 @@ import {
 	markRuntimeAreaEntered,
 	processRuntimeProgression,
 	type RuntimeProgressionEvent,
+	startRuntimeSession,
 	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "./runtimeProgression";
@@ -137,7 +142,6 @@ export class AdventureScene extends Phaser.Scene {
 	private wasd?: WasdKeys;
 	private interactKeys?: InteractKeys;
 	private combatKeys?: CombatKeys;
-	private nextMoveAt = 0;
 	private isMoving = false;
 
 	// React/Phaser overlay callbacks and presentation-only modal state.
@@ -354,34 +358,34 @@ export class AdventureScene extends Phaser.Scene {
 		this.updateDebugPanel();
 		this.notifyInventoryChanged();
 		this.notifyCombatChanged();
-		markRuntimeAreaEntered(this.session, this.currentArea.id, (event) =>
-			this.handleRuntimeProgressionEvent(event),
+		startRuntimeSession(
+			this.session,
+			(onDone) => this.fireRuleTrigger({ type: "on_game_start" }, onDone),
+			(event) => this.handleRuntimeProgressionEvent(event),
 		);
-
-		this.fireRuleTrigger({ type: "on_game_start" }, () => {
-			this.processProgression();
-			this.markRuntimeAreaEntered(this.currentArea);
-			this.syncQuestProgress();
-		});
 	}
 
 	// Input translation into shared runtime transactions.
 	update(time: number) {
-		if (!this.isCutsceneOpen && !this.isDialogueOpen && !this.isFinished) {
+		if (
+			!isRuntimeGameplayBlocked(
+				this.session,
+				this.isCutsceneOpen || this.isDialogueOpen || this.isFinished,
+			)
+		) {
 			this.updateNpcMovement(time);
 		}
 
 		if (
 			!this.playerMarker ||
-			this.isCutsceneOpen ||
-			this.isDialogueOpen ||
-			this.isFinished ||
-			this.isMoving ||
-			time < this.nextMoveAt
+			!canAcceptRuntimeInput(
+				this.session,
+				time,
+				this.isCutsceneOpen || this.isDialogueOpen || this.isFinished,
+			)
 		) {
 			return;
 		}
-
 		const interactPressed = this.wasInteractPressed();
 		if (this.playerVehicleState.active) {
 			this.promptText?.setText("Press E to dismount");
@@ -1339,9 +1343,10 @@ export class AdventureScene extends Phaser.Scene {
 		this.promptText?.setText("");
 		this.closeShop();
 		this.isDialogueOpen = true;
+		this.session.dialogue = createRuntimeDialogueState(dialogue);
 		this.activeDialogue = {
 			definition: dialogue,
-			state: createRuntimeDialogueState(dialogue),
+			state: this.session.dialogue,
 		};
 		this.renderActiveDialogueNode();
 	}
@@ -1349,6 +1354,7 @@ export class AdventureScene extends Phaser.Scene {
 	private closeDialogue() {
 		this.activeDialogue?.container?.destroy(true);
 		this.activeDialogue = undefined;
+		this.session.dialogue = undefined;
 		this.isDialogueOpen = false;
 		this.updatePrompt(this.findNearestInteractable());
 	}
@@ -1478,7 +1484,7 @@ export class AdventureScene extends Phaser.Scene {
 					}),
 				);
 			}
-			return;
+			if (choices.length > 0) return;
 		}
 
 		const buttonLabel =
@@ -1903,7 +1909,11 @@ export class AdventureScene extends Phaser.Scene {
 
 	// Runtime movement transaction plus Phaser tween/animation.
 	private tryMove(deltaX: number, deltaY: number, time: number) {
-		const move = attemptPlayerMove(this.session, { x: deltaX, y: deltaY });
+		const move = attemptPlayerMove(
+			this.session,
+			{ x: deltaX, y: deltaY },
+			time,
+		);
 		if (move.type === "blocked") {
 			if (move.reason) {
 				this.setStatus(move.reason);
@@ -1915,7 +1925,6 @@ export class AdventureScene extends Phaser.Scene {
 		const destinationY = move.to.y * this.tileSize + this.tileSize / 2;
 
 		this.isMoving = true;
-		this.nextMoveAt = time + move.moveDurationMs;
 		this.tweens.add({
 			targets: this.playerMarker,
 			x: destinationX,
@@ -1924,17 +1933,13 @@ export class AdventureScene extends Phaser.Scene {
 			ease: "Sine.easeInOut",
 			onComplete: () => {
 				this.isMoving = false;
-				if (
-					this.checkTouchInteractions(
-						() => this.checkTrigger(),
-						move.touchTargets,
-					)
-				) {
-					return;
-				}
-				this.checkTrigger(move.triggerTargets);
 			},
 		});
+		if (
+			!this.checkTouchInteractions(() => this.checkTrigger(), move.touchTargets)
+		) {
+			this.checkTrigger(move.triggerTargets);
+		}
 	}
 
 	private checkTouchInteractions(

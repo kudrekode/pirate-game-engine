@@ -1,0 +1,61 @@
+{
+	"note": "Weight-only transport preservation. Image decoding stubbed; visual acceptance is separate.",
+	"cases": {
+		"dressed-neutral": {
+			"sha256": "c64f8ec62335c1b078acaf9399253ccbfb53ec6f2fe1a632a125080bc690f38e",
+			"meshes": 5,
+			"joints": 65,
+			"triangles": 32940,
+			"changedBodyVertices": 236,
+			"preservedNonWeightAttributes": true,
+			"identicalWeightsAcrossIdentities": true,
+			"weightError": 4.7963112592697144e-8,
+			"restDifference": 3.5762786865234375e-7,
+			"bindDifference": 0,
+			"animation": [
+				{
+					"name": "GoldenReference_Idle",
+					"tracks": 23,
+					"samples": 5,
+					"cloneIsolated": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenReference_Walk_InPlace",
+					"tracks": 23,
+					"samples": 5,
+					"cloneIsolated": true,
+					"restRestored": true
+				}
+			]
+		},
+		"combined": {
+			"sha256": "1dd052db738addf9a8848671b305c63f8701f4786936ef8c90da93413716d450",
+			"meshes": 5,
+			"joints": 65,
+			"triangles": 32940,
+			"changedBodyVertices": 236,
+			"preservedNonWeightAttributes": true,
+			"identicalWeightsAcrossIdentities": true,
+			"weightError": 4.7963112592697144e-8,
+			"restDifference": 3.5762786865234375e-7,
+			"bindDifference": 0,
+			"animation": [
+				{
+					"name": "GoldenReference_Idle",
+					"tracks": 23,
+					"samples": 5,
+					"cloneIsolated": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenReference_Walk_InPlace",
+					"tracks": 23,
+					"samples": 5,
+					"cloneIsolated": true,
+					"restRestored": true
+				}
+			]
+		}
+	}
+}

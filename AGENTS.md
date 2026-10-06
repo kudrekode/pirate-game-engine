@@ -1,325 +1,114 @@
-# Adventure Game Builder Guide
-
-## Fast Start For Agents
-
-Read this file first, then identify the likely files before opening broader repo context. Prefer minimal diffs and avoid scanning unrelated files.
-
-- Read the relevant docs before coding. Start with `README.md`, `ROADMAP.md`, `docs/RUNTIME_ARCHITECTURE.md`, `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`, or `docs/PLAYWRIGHT_SMOKE.md` when the task touches those systems.
-- Run `npm run ci` before the final response.
-- Run `git diff --check` before the final response.
-- Preserve migration compatibility for old saved/imported projects.
-- Keep runtime state separate from editor defaults in `GameProject`.
-- Preserve the `GameProject`/`RuntimeSession` boundary. `GameProject` stores authored defaults; `RuntimeSession` owns play-session state.
-- Do not duplicate gameplay semantics in Phaser or Three.js adapters. Shared runtime helpers remain the renderer-independent source of movement, interaction, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, vehicles, and progression.
-- Three.js presentation helpers may import/use Three.js. Shared gameplay/runtime helpers must not depend on Three.js, Phaser, React, or editor store state.
-- Add or update tests for engine logic changes.
-- Prefer focused helper tests over browser-heavy tests.
-- Do not redesign architecture unless the prompt explicitly asks for it.
-- Check `ROADMAP.md` before adding future-facing TODOs or major systems.
-- Use `docs/PLAYWRIGHT_SMOKE.md` and `npm run test:e2e:three-perf` for browser/performance work. Do not guess at performance fixes without artifacts from the diagnostics or Playwright harness.
-- For 3D visual work, use the existing visual resolver, built-in asset registry, GLTF loader/cache/clone path, and `createThreeVisualMarkerGroup` renderer.
-- GLTF/GLB assets are presentation-only. Store asset ids and transform defaults in authored config; do not store live Three.js objects in `GameProject`, `RuntimeSession`, or persisted project data.
-
-## Common Files By Task
-
-- Rules and logic engine: `src/runtime/ruleEngine.ts`, `src/editor/sections/ProgressionEditor.tsx`, `src/types/game.ts`, `src/runtime/ruleEngine.test.ts`.
-- Inventory and items: `src/runtime/inventory.ts`, `src/editor/sections/ItemsEditor.tsx`, `src/types/game.ts`, `src/runtime/inventory.test.ts`.
-- Shops and economy: `src/runtime/shopRuntime.ts`, `src/editor/sections/ShopsEditor.tsx`, `src/runtime/RuntimePanel.tsx`, `src/runtime/AdventureScene.ts`, `src/types/game.ts`, `src/runtime/shopRuntime.test.ts`.
-- Quests and objectives: `src/runtime/questEngine.ts`, `src/editor/sections/QuestsEditor.tsx`, `src/types/game.ts`, `src/runtime/questEngine.test.ts`.
-- NPCs, enemy NPCs, and combat: `src/editor/sections/NpcsEditor.tsx`, `src/editor/sections/MapEditor.tsx`, `src/runtime/npcMovement.ts`, `src/runtime/combat.ts`, `src/runtime/AdventureScene.ts`, `src/runtime/RuntimePanel.tsx`, `src/types/game.ts`, `src/runtime/npcMovement.test.ts`, `src/runtime/combat.test.ts`, `src/editor/sections/NpcsEditor.test.ts`.
-- Objects and object behaviours: `src/editor/sections/ObjectsEditor.tsx`, `src/editor/ObjectBehaviourEditor.tsx`, `src/runtime/objectBehaviour.ts`, `src/runtime/vehicleRuntime.ts`, `src/types/game.ts`, `src/runtime/objectBehaviour.test.ts`, `src/runtime/vehicleRuntime.test.ts`.
-- Runtime and Phaser: `src/runtime/AdventureScene.ts`, `src/runtime/PhaserGame.tsx`, `src/runtime/movement.ts`, `src/runtime/movement.test.ts`.
-- Three.js runtime and presentation: `src/runtime/three/ThreeRuntimePanel.tsx`, `src/editor/sections/ThreeDPreview.tsx`, `src/runtime/three/threeVisuals.ts`, `src/runtime/three/threeVisualAssetRegistry.ts`, `src/runtime/three/threeVisualAssetLoader.ts`, `src/runtime/three/threeVisualRenderer.ts`, `src/runtime/three/cameraControls.ts`, `src/runtime/three/visualSmoothing.ts`, `src/runtime/three/waterPresentation.ts`, `src/runtime/three/threePerformanceDiagnostics.ts`.
-- 3D visual controls and terrain tools: `src/editor/sections/ThreeVisualControls.tsx`, `src/editor/sections/terrainBrush.ts`, `src/editor/sections/terrainBlocks.ts`, `src/runtime/three/terrainMeshGeometry.ts`.
-- Playwright Three perf smoke: `e2e/three-perf-smoke.spec.ts`, `docs/PLAYWRIGHT_SMOKE.md`, `test-results/perf/*`.
-- Migration and default demo: `src/data/migrateProject.ts`, `src/data/defaultProject.ts`, `src/data/projectDefaults.ts`, `src/data/migrateProject.test.ts`.
-- Editor tabs: `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`.
-- Smoke tests and helpers: `src/test/editorSmoke.test.tsx`, `src/test/testUtils.tsx` if present.
-
-## Current Systems Map
-
-- Areas: Multiple `GameArea` records in `GameProject.areas`; each owns terrain, overlays, structures, objects, pickups, NPCs, and event blocks.
-- Objects: Reusable `ObjectDefinition` records plus placed `ObjectInstance` records; behaviours support containers, doors, signs, and simple boats.
-- NPCs: Reusable definitions with defaults plus placed instances with explicit overrides for attributes, interactions, stationary/patrol/wander movement, hostile enemy behaviour, simple melee combat, and rule targets.
-- Inventory: Item definitions in `GameProject.items`; runtime quantities are copied into play-session state.
-- Shops: Buy-only `ShopDefinition` records use an inventory item as currency; runtime stock is copied per play session.
-- Quests: Quest definitions guide players through objectives that read flags, variables, inventory, and entered areas.
-- Rules: Friendly WHEN/IF/THEN logic with folders, recursive AND/OR conditions, and runtime actions.
-- Game State: Flags, variables, and optional default inventory are editor defaults copied into runtime memory.
-- Movement: Grid movement resolves terrain, overlays, structures, objects, NPCs, and vehicle context through `src/runtime/movement.ts`.
-- Vehicles placeholder: Boats have V1 runtime boarding, sailing, and dismounting. Horses/carts and advanced steering remain future work.
-- Three visuals: Object and NPC definitions can author 3D placeholder or asset presentation through `threeVisual`. Runtime/editor rendering resolves those settings through the shared visual resolver and registry-backed asset renderer.
-- Imported assets: Built-in GLB/GLTF registry entries currently include Demo Box and pirate demo assets. The loader caches source scenes and renderer code clones per active instance with placeholder fallback while loading or on failure.
-- Three cameras: The 3D editor uses orbit/pan/zoom controls. The experimental Three runtime supports follow, inspect, fixed-isometric, third-person follow, camera-relative WASD, and third-person mouse look while keeping movement grid-authoritative.
-- Three terrain presentation: 3D terrain supports blocky and smooth rendering, editor terrain paint/sculpt brush workflows, and V1 water/coastline presentation. Terrain height, water, and coastline visuals are presentation-only until movement helpers explicitly become height/water-depth aware.
-- Diagnostics: The Three performance overlay and Playwright smoke harness capture scene identity, imported asset status, RAF interval, render timing, rebuilds, terrain/water/coast counts, screenshots, console output, and network failures.
-- Runtime UI: React overlays and Phaser UI layers stay camera-independent for inventory, quests, combat health, debug text, prompts, and cutscenes.
-
-## Prompting Guidance
-
-Future implementation prompts should specify:
-
-- The exact subsystem to change.
-- Systems that must not be touched.
-- Expected files when known.
-- Required tests or acceptance checks.
-- Whether migration/default demo updates are expected.
-- That architecture redesign is out of scope unless explicitly requested.
-
-## Architecture
-
-The editor and runtime share one schema-driven `GameProject` object from `src/types/game.ts`.
-
-- React editor sections read and update the project through `src/store/useProjectStore.ts`.
-- Default demo content lives in `src/data/defaultProject.ts`.
-- Imported and saved projects pass through `src/data/migrateProject.ts`.
-- Phaser runtime code reads a cloned project snapshot when the user presses Play.
-- Keep editor-only state, such as map zoom, pan, palette width, and selection, out of `GameProject`.
-- Keep future work scoped against `ROADMAP.md`; avoid adding major gameplay systems during maintenance passes.
-
-## Areas And Maps
-
-`GameProject.areas` contains multiple `GameArea` records. `activeAreaId` controls which area is open in the editor.
-
-Each area owns:
-
-- Terrain tiles
-- Overlay tiles
-- Structures
-- Pickup objects
-- Generic object instances
-- NPC instances
-- Event blocks
-- Optional theme metadata
-
-Terrain remains grid-based. Runtime camera settings live at the project level in `camera`; editor zoom and pan are separate UI concerns.
-
-## Map Workspace and 3D View
-
-`GameProject` remains the source of truth for authored map data. The 2D Map view and Three.js 3D view both edit the same areas, terrain, overlays, entities, selection, palette choices, and inspector state through `src/store/useProjectStore.ts`.
-
-Phaser remains the default/reference gameplay runtime. Three.js also has an experimental Play mode, but it must stay an adapter over the shared runtime session and must not become a second rules engine or a parallel map schema. Pressing Play clones the current project and starts either the default 2D Phaser runtime or the experimental Three.js runtime adapter.
-
-The Map Workspace should stay one shared editor with multiple views. Do not create a second parallel map editor for 3D. New 3D placement or movement behavior should reuse existing store placement/update methods so entities are identical to 2D placements and inspector selection stays synced.
-
-Terrain height/elevation is optional per-tile editor data used for 3D presentation and height sculpting. Missing height means `0`. Runtime movement currently ignores height; future height-aware rules such as cliffs, stairs, ramps, and water depth should be added deliberately in movement helpers, not hidden inside the Three.js view.
-
-## Game State
-
-`GameProject.gameState` contains runtime defaults:
-
-- `flags`: boolean values such as `intro_seen`
-- `variables`: number or string values such as `gold` or `reputation`
-- `inventory`: optional initial item quantities
-
-Each Play session copies these defaults into separate runtime memory. Variables remain general number or text state. Inventory item definitions live in `GameProject.items`; runtime quantities are separate from those definitions.
-
-Variables are abstract numbers/text used by logic. Shop currencies are inventory items with the `currency` category; do not treat variables and currency items as the same state.
-
-## Editor Defaults Versus Runtime State
-
-`GameProject` stores authoring defaults. A Play session must not mutate those editor defaults.
-
-Runtime-owned copies currently include:
-
-- Flags and variables in `RuntimeGameState`
-- Inventory quantities in `RuntimeGameState.inventory`
-- NPC attributes in `RuntimeGameState.npcs`
-- Quest status, objective progress, entered areas, and granted rewards in `RuntimeQuestState`
-
-Map entity positions used by Phaser are read from the cloned play snapshot, not the live editor project.
-
-## Dual Runtime Architecture
-
-`GameProject` is editor/authored data. It remains the schema shared by the editor, migrations, default project data, and runtime startup.
-
-`RuntimeSession` is shared play-session state. It owns runtime copies of flags, variables, inventory quantities, NPC attributes, quest state, shop stock, player health, combat state, area/progression state, vehicle state, collected pickups, opened objects, defeated NPCs, and movement timing.
-
-Phaser and Three.js runtimes should behave as adapters. Adapters translate input, rendering, camera, animation/tweening, audio/visual effects, and UI/cutscene/dialogue presentation. They should not own gameplay semantics that belong in `RuntimeSessionState` or shared helpers.
-
-Runtime helpers are the source of gameplay semantics. Do not duplicate movement, collision, interaction discovery, rule/action dispatch, quests, inventory, shops, object behaviours, pickup collection, vehicle state, NPC movement, enemy contact, or combat logic inside runtime adapters.
-
-`src/runtime/AdventureScene.ts` is the Phaser adapter. It should translate Phaser input, tweens, cameras, rendering, and UI/cutscene/dialogue presentation into calls to shared runtime helpers.
-
-`src/runtime/three/ThreeRuntimePanel.tsx` is the experimental Three.js adapter. It must not import editor store/live editor state for gameplay. It may reuse rendering helpers, but runtime decisions must come from `RuntimeSession` and shared runtime helpers.
-
-Three.js-specific helpers under `src/runtime/three/` may own rendering, materials, GLTF loading, asset cloning, camera math, visual smoothing, terrain mesh generation, water/coast presentation, and diagnostics. They must not become gameplay engines. Keep gameplay decisions in shared runtime helpers and keep imported Three objects out of runtime state.
-
-Phaser remains the reference runtime until runtime contract tests and manual parity checks prove that the Three.js adapter matches Phaser gameplay semantics.
-
-Key shared runtime helpers:
-
-- `src/runtime/runtimeSession.ts`
-- `src/runtime/interactionDiscovery.ts`
-- `src/runtime/playerMovementTransaction.ts`
-- `src/runtime/runtimeRuleActionDispatcher.ts`
-- `src/runtime/runtimeProgression.ts`
-- `src/runtime/runtimeObjectInteractions.ts`
-- `src/runtime/runtimeNpcTick.ts`
-- `src/runtime/runtimeCombat.ts`
-
-## Items And Pickups
-
-`GameProject.items` contains item definitions. V1 supports keys, currency, consumables, quest items, and miscellaneous items without equipment, crafting, or shop behavior.
-
-Each area owns grid-based pickup objects. Pickups can collect on touch or on interact. Runtime inventory helpers live in `src/runtime/inventory.ts`; the React runtime overlay shows collected quantities without being affected by the Phaser world camera.
-
-## Objects
-
-`GameProject.objects` contains reusable generic object definitions. Each area owns placed `ObjectInstance` records.
-
-Objects sit between static structures and NPCs. They are intended for signs, chests, doors, switches, decorative props, and future vehicle markers. They can block movement, expose direct interactions, and target friendly rules by placed instance ID.
-
-Object behaviours are authored as reusable defaults on `ObjectDefinition.defaultBehaviour` and can be overridden per placed `ObjectInstance.behaviourOverride`. Runtime behaviour helpers live in `src/runtime/objectBehaviour.ts`.
-
-Supported behaviour types:
-
-- `none`
-- `container`, which gives configured item contents and can be once-only
-- `door`, which can require an item and teleport to an area spawn
-- `sign`, which displays cutscene-style text
-- `vehicle`, which currently supports simple boat boarding, grid sailing, and dismounting
-
-Direct interactions and rule triggers still run alongside behaviours for compatibility. Horse/cart runtime, advanced vehicle steering, equipment, and advanced enemy behavior remain future work.
-
-## Quests And Objectives
-
-`GameProject.quests` contains player-facing quest definitions. `trackedQuestId` optionally selects the compact play-mode tracker.
-
-Active quests can progress. Tracked quests are a HUD display choice; when no tracked quest is selected, the runtime tracker falls back to the first active quest. Completed quests remain visible in the quest panel.
-
-Quests organise guidance and progress; they do not replace flags, variables, inventory, areas, or friendly rules. Objectives read those existing systems:
-
-- Flag value
-- Item quantity
-- Variable comparison
-- Entered area
-
-Runtime quest state is copied per Play session. Completed objectives stay complete once achieved, and quest rewards are granted once. Pure quest evaluation and reward helpers live in `src/runtime/questEngine.ts`. The React runtime overlay owns the `J` quest panel and tracked quest display, so neither is affected by the Phaser camera.
-
-Friendly rules can activate, complete, or fail quests explicitly. Active quests also complete automatically when all objectives have been achieved.
-
-Runtime startup creates isolated runtime state, renders the initial area/player, fires `on_game_start` rules, processes initial progression/spawn movement, marks the actual runtime area as entered, then performs the first automatic quest sync.
-
-## NPCs
-
-`GameProject.npcs` contains reusable NPC definitions. Each area owns placed `NPCInstance` records.
-
-NPC definitions can provide default attributes, movement, enemy behaviour, and interaction. NPC instances are grid-based world entities that can override those defaults with `attributesOverride`, `movementOverride`, `enemyBehaviourOverride`, and `interactionOverride`. Use `src/runtime/npcResolver.ts` when editor or runtime code needs the effective NPC config.
-
-NPC instances can block movement, render in the Phaser world layer, and participate in the existing interaction and friendly-rule trigger systems. `on_interact` rules target the placed instance ID, not the shared definition ID.
-
-NPC definitions use the existing placeholder avatar and portrait presets. V1 intentionally excludes schedules, pathfinding, shops, full combat, and branching dialogue.
-
-### NPC Attributes
-
-Every placed NPC instance has shared attributes for health, faction, alignment, interaction availability, and movement speed. These fields are data foundations for friendly and future hostile NPCs; there is no separate enemy architecture.
-
-Each Play session copies NPC attributes into `RuntimeGameState.npcs`. Rule conditions can read NPC alignment and health, and rule actions can change those runtime values without mutating editor defaults. Factions remain descriptive data only.
-
-### NPC Movement
-
-Placed NPC instances declare a data-driven movement mode:
-
-- `stationary`
-- `patrol` with an optional looping list of grid points
-- `wander` inside a rectangular grid zone
-
-Pure grid-step decisions live in `src/runtime/npcMovement.ts`. Phaser applies the resulting steps with small tweens and waits. Movement checks bounds, terrain, structures, the player tile, and other blocking NPCs. There is deliberately no pathfinding; blocked destinations wait or recalculate.
-
-The Map editor has a lightweight overlay-filter foundation. `npc_paths` renders only the selected NPC's patrol path or wander zone. Event-block, collision, quest-marker, and enemy-territory filters remain TODOs.
-
-### Enemy NPCs
-
-Enemies are hostile `NPCInstance` records with optional `enemyBehaviour.enabled`. They reuse the shared NPC model and do not have a separate enemy entity architecture.
-
-Enemy V1 uses simple grid chase behaviour in `src/runtime/npcMovement.ts`: detect within a radius, step toward the player without pathfinding, stop or return to origin outside chase radius, and apply contact damage with a runtime cooldown. Player health during Play is runtime-only and does not mutate editor defaults.
-
-Combat V1 adds basic melee player attacks through `src/runtime/combat.ts` and `src/runtime/runtimeCombat.ts`, with Phaser presentation in `src/runtime/AdventureScene.ts`. Pressing Space checks tiles in the player's facing direction, damages hostile NPC runtime attributes, hides defeated NPCs, clears their collision, and sets `npc_defeated_<id>` runtime flags. Contact damage can end the play session with a Game Over overlay. There are no ranged weapons, projectiles, equipment stats, loot drops, XP, or player attack animations.
-
-## Rule Engine
-
-Friendly logic rules live in `GameProject.rules`. Organisational folders live in `GameProject.ruleGroups`.
-
-Folders affect the editor only. They do not change runtime behavior.
-
-Each rule has:
-
-- A trigger such as game start, interact, touch, area enter, or cutscene end
-- An optional recursive `conditionTree`
-- THEN actions
-- Optional ELSE actions
-
-Condition groups support `AND` and `OR`, including nested groups. Missing or empty conditions mean the rule always passes.
-
-Rules can check item quantities and give or remove items. Removing items never drops below zero; stack limits are enforced by the inventory helper.
-
-Rules can also open shops, activate, complete, or fail quests, and read or change runtime NPC health and alignment.
-
-Pure evaluation and action sequencing live in `src/runtime/ruleEngine.ts`. Phaser trigger wiring lives in `src/runtime/AdventureScene.ts`.
-
-Direct interactions on structures and event blocks still work alongside rules for backward compatibility.
-
-Direct interactions and rules targeting the same entity both run. The Map editor warns when a selected target has both so authors can avoid accidental duplicate effects.
-
-Play mode includes a lightweight flow log for meaningful discrete events such as triggers, rules, actions, area entry, quest progress/rewards, purchases, and combat results. It is an authoring/debug aid and must not become gameplay state.
-
-## Movement
-
-Movement resolution lives in `src/runtime/movement.ts`.
-
-Resolution order:
-
-1. Out-of-bounds positions block movement.
-2. Blocking structures block movement.
-3. Overlay movement rules can allow or block movement explicitly.
-4. Terrain movement rules and `player.canWalkOn` decide movement.
-5. Missing terrain blocks movement.
-
-This allows overlays such as wooden planks to make water traversable.
-
-Vehicle movement also resolves through `src/runtime/movement.ts`. A boarded boat uses the object behaviour's allowed terrain and dismount terrain lists, skips collision against the currently boarded boat object, and still respects map bounds, structures, blocking objects, and NPCs.
-
-## Migration
-
-All imported, loaded, and store-updated projects pass through `migrateProject`.
-
-When changing schema:
-
-- Add safe defaults.
-- Preserve older field shapes where practical.
-- Add migration tests.
-- Avoid silently restoring deleted user state.
-
-## Testing
-
-Use:
-
-```bash
-npm run test
-npm run test:run
-npm run typecheck
-npm run build
-npm run ci
-```
-
-- `npm run test` starts Vitest in watch mode.
-- `npm run test:run` runs tests once.
-- `npm run ci` runs typecheck, tests, and build.
-
-Current focused tests cover:
-
-- Rule evaluation and actions
-- Inventory stacking and pickup collection
-- Shop purchases and runtime stock
-- Combat stat defaults, melee targeting, cooldown, damage, defeat, and collision removal
-- Quest objective evaluation and once-only rewards
-- NPC migration, collision, rule targeting, and deletion guards
-- Enemy NPC chase, return, contact, and migration helpers
-- Object migration, behaviours, collision, rule targeting, and deletion guards
-- NPC stationary, patrol, wander, bounds, and terrain movement helpers
-- Movement resolution
-- Project migration
-- Basic React editor smoke rendering
-
-Do not add Playwright, browser end-to-end tests, snapshot-heavy suites, or coverage thresholds unless project requirements change.
+# Adventure Game Builder: Agent Routing
+
+Read this first, identify the affected files, then read only the relevant guide.
+Keep diffs focused; architecture redesign and unrelated cleanup require an explicit request.
+
+## Boundaries to preserve
+
+- One authored schema: `src/types/game.ts`. `GameProject` stores defaults;
+  `RuntimeSession` owns isolated play state. Never mutate editor defaults during Play.
+- Shared helpers own movement, collision, interactions, rules, progression, inventory,
+  shops, quests, objects, NPC ticks, vehicles and combat. Phaser/Three are presentation
+  adapters, not separate gameplay engines. Shared gameplay must not import React,
+  Phaser, Three.js or editor store state.
+- One Map Workspace: 2D/3D views use the same project, selection and store mutations.
+  UI-only selection/pan/zoom stays outside project data. Terrain height/water remain
+  presentation-only until shared movement semantics deliberately support them.
+- Preserve saved/imported project compatibility, legacy direct interactions and
+  definition/instance overrides. Schema changes need safe migration defaults and
+  focused migration tests; do not silently restore deleted user state.
+- Use the existing visual resolver, built-in registry, GLTF cache/clone path and
+  `createThreeVisualMarkerGroup`. Persist asset ids/transforms, never live renderer objects.
+- Asset Studio recipes are source data, separate from compiled GLBs. No Blender or
+  Three objects in recipe contracts. Do not claim an export is valid without a round trip.
+  Preserve game-engine compatibility when changing workspace/package boundaries.
+- Check `ROADMAP.md` before future-facing TODOs or new systems. Add/update focused
+  tests for logic changes. Do not introduce broad snapshots, coverage thresholds,
+  new browser suites or heavy matrices without a changed acceptance criterion.
+
+## Find the relevant code
+
+| Task | Start here |
+| --- | --- |
+| Product/build overview, planned scope | `README.md`, `ROADMAP.md` |
+| Gameplay/session or adapter work | `docs/RUNTIME_ARCHITECTURE.md`; `src/runtime/runtimeSession.ts`, `AdventureScene.ts` (Phaser), `RuntimePanel.tsx` (mode/HUD), `three/ThreeRuntimePanel.tsx` |
+| Movement, rules, inventory, quests, shops, combat, vehicles | Matching helper and test in `src/runtime/`: `movement`, `ruleEngine`, `inventory`, `questEngine`, `shopRuntime`, `combat`, `vehicleRuntime`; transaction/orchestration helpers alongside them |
+| NPC/object resolution and behaviour | `src/runtime/npcResolver.ts`, `npcMovement.ts`, `objectBehaviour.ts`; matching `NpcsEditor`/`ObjectsEditor` sections and tests |
+| Schema, defaults, migration | `src/types/game.ts`, `src/data/migrateProject.ts`, `projectDefaults.ts`, `defaultProject.ts`, `projectPresets.ts` and their tests |
+| Map painting/placement and tools | `src/editor/sections/MapEditor.tsx` (gesture/tool orchestration), `terrainBrush.ts` (pure terrain operations), `src/store/useProjectStore.ts` (mutations); `src/test/editorSmoke.test.tsx` |
+| Map inspector fields, objects, interactions/links | `src/editor/sections/MapInspector.tsx`, `mapEditorSelection.ts`, `src/editor/ObjectBehaviourEditor.tsx`; store mutations stay shared |
+| Placed NPC attributes, patrol and override reset | `src/editor/sections/MapNpcInspector.tsx`, `MapInspector.tsx` (interaction/deletion), `src/runtime/npcResolver.ts` |
+| Map history/undo | `src/editor/sections/useMapEditHistory.ts`; callers in `MapEditor.tsx` and `MapInspector.tsx`; `src/test/mapEditHistory.test.tsx` |
+| Map layout/palette/pixels | `src/editor/sections/MapEditor.tsx`, `src/styles.css`; workspace state stays with its gesture owner |
+| Other editor tabs and app state | `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts` |
+| Three presentation | `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`; `src/runtime/three/threeVisuals.ts`, `threeVisualAssetRegistry.ts`, `threeVisualAssetLoader.ts`, `threeVisualRenderer.ts`, `cameraControls.ts`, `visualSmoothing.ts`, `waterPresentation.ts` |
+| 3D editing/terrain | `src/editor/sections/ThreeDPreview.tsx`, `ThreeVisualControls.tsx`, `terrainBrush.ts`, `terrainBlocks.ts`; `src/runtime/three/terrainMeshGeometry.ts` |
+| Asset Studio/creator/compiler | Start with [Quick Resume](docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume), then only the linked milestone relevant to the change; it maps exact implementation files/versions |
+| Browser/performance | [Validation and Playwright guide](docs/PLAYWRIGHT_SMOKE.md), `e2e/`, `apps/asset-studio/e2e/` |
+
+Asset Studio creator forms, compilation and recent-result restoration stay together
+in `apps/asset-studio/src/App.tsx`; `HumanoidPreview.tsx` owns the full scene,
+RAF/animation and disposal lifetime; `previewSources.ts` owns fixture descriptors.
+The root Three editor/runtime scene effects remain in `ThreeDPreview.tsx` and
+`ThreeRuntimePanel.tsx`; keep their input, animation refs and cleanup together.
+`AdventureScene.ts` and `migrateProject.ts` remain intentionally centralized.
+
+Use targeted searches and bounded reads for large components. Do not open full
+generated diagnostics, manifests, GLBs or historical milestone documents by default.
+Inspect selected summary fields first. Existing milestone evidence is not a fresh pass.
+
+## Validation: cheapest sufficient check first
+
+1. Review the affected contract, code and diff; use `npm run typecheck` for root
+   TypeScript feedback when needed.
+2. Run a focused deterministic test (table below).
+3. Use an existing state/component/boundary test when the change crosses those boundaries.
+4. Before the final response, run **`npm run ci` once** and **`git diff --check`**.
+   CI owns all Vitest suites, type-safe root/Studio builds, all three package
+   typechecks, and cheap Node compiler/asset tests. Do not additionally rerun
+   `check:asset-studio`, `test:contracts` or `test:blender-bake` after that gate.
+5. Run a targeted browser check only for actual browser/WebGL/input/HTTP acceptance.
+6. Run visual/performance or real Blender matrices only when appearance, timing,
+   geometry, fitting or compiler determinism is the changed criterion.
+
+Do not rerun unchanged expensive suites for reassurance. If a test fails, inspect
+its first error/artifact, make a relevant correction, and rerun only the affected check.
+Browser and Blender checks are opt-in; ordinary labels/helper edits do not need them.
+Browser defaults select integration only. Compile, visual, performance and historical
+cases require explicit selectors. Inspect matrix `--list` before a build; use exact
+`--case` / hairstyle `--style` selections. Installed-artifact validation is not a
+current-source cache check. See the validation guide for costs and concrete commands.
+
+| Change | Focused command (from repository root) |
+| --- | --- |
+| Movement helper | `npm run test:run -- src/runtime/movement.test.ts` |
+| Rules/quests/etc. | `npm run test:run -- src/runtime/ruleEngine.test.ts` (substitute affected helper) |
+| Project migration | `npm run test:run -- src/data/migrateProject.test.ts` |
+| Editor label/component/store workflow | `npm run test:run -- src/test/editorSmoke.test.tsx` or the affected component test |
+| Three renderer/loader/animation math | `npm run test:run -- src/runtime/three/threeVisualRenderer.test.ts` (substitute affected helper); then targeted browser only if needed |
+| Creator request logic | `npm run test:run -- apps/asset-studio/src/proceduralMannequinCreator.test.ts` |
+| Creator UI | `npm run test:run -- apps/asset-studio/src/App.test.tsx` |
+| Recipe contract | `npm run test:run -- --project character-contract` |
+| Shared GLTF preview package | `npm run test:run -- --project three-asset-preview` |
+| Compiler/API/hair contract | `node --test tools/blender-character/procedural-mannequin-creator-api.test.mjs` or matching `*.test.mjs`; `npm run test:compiler` for all cheap Node checks |
+| Geometry/hair fitting | Focused contract/Node checks first, then the affected matrix and targeted visual selection in the [guide](docs/PLAYWRIGHT_SMOKE.md) |
+
+In Windows PowerShell use `npm.cmd`/`npx.cmd` for commands with forwarded flags:
+the PowerShell shim can drop flags such as `--list` and accidentally launch a suite.
+Check the echoed command before letting a heavy browser/compiler selection run.
+
+## Test ownership
+
+- Root `vitest.config.ts` assigns `src/**/*.test.{ts,tsx}` to disjoint `root-node`
+  and `root-dom` projects. Its explicit `domTests` list owns mounted React and
+  browser-global tests. Pure helpers default to Node, including helper-only TSX tests.
+- Each workspace's `vitest.config.ts` owns only its `src/` tests. Root Vitest
+  loads those configs; it never rediscovers workspace tests under root DOM settings.
+- Studio defaults to Node. Its mounted `App.test.tsx` uses
+  `@vitest-environment jsdom` and imports `testSetup`; do the same for new Studio
+  DOM tests. Root DOM setup retains React cleanup and localStorage clearing.
+- Keep file isolation and single-worker execution. Tests must restore registry/cache,
+  mocks/timers and store mutations; do not trade cleanup for benchmark numbers.
+- `npm run test` watches all owners; `npm run test:run` runs them once.
+  `npm run test:root` selects only the root app. Workspace scripts remain usable
+  for focused work; they overlap the final gate and are not extra CI steps.

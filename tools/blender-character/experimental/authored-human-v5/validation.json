@@ -1,0 +1,47 @@
+{
+	"verdict": "FAIL",
+	"elbow": "NO",
+	"humanBase": "NO",
+	"nextExperimentStarted": false,
+	"sourceTests": {
+		"passed": 5,
+		"logSha256": "d127a542fa2e9e1d768b12788cd365b61f856eb74e11f04d2d4b9fb34d27e292"
+	},
+	"roundtrip": {
+		"passed": true,
+		"logSha256": "4d75f5082fda63a1769b0de0f94976d0c8a98b85b4b691ebcebd9df8607053eb"
+	},
+	"ci": {
+		"command": "npm.cmd run ci",
+		"invocations": 1,
+		"exitCode": 0,
+		"vitestFiles": 76,
+		"vitestTests": 623,
+		"nodeTests": 50,
+		"rootAndStudioBuilds": true,
+		"threePackageChecks": true,
+		"warnings": ["Existing Vite chunk-size advisories"],
+		"logSha256": "f7b0cc15f29f9025b3d90a4da5b1d3cdd4d5d7dd1821f5f5d6a4040637f09b9e"
+	},
+	"diffCheck": {
+		"command": "git diff --check",
+		"exitCode": 0,
+		"logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	},
+	"visualReview": {
+		"selectedRenders": 94,
+		"reviewedRenders": 94,
+		"contactSheetsAndMaps": 11,
+		"fullResolutionViewsAlsoInspected": true,
+		"accepted": false
+	},
+	"textChecks": {
+		"files": 15,
+		"whitespace": true,
+		"pythonSyntax": true,
+		"localReportLinks": true
+	},
+	"reportSha256": "62c071c84b1527bc0b0d7481b6f27b299b9cb42996d3300d8ea0a974b05c12ae",
+	"candidateSha256": "4498ad8a75ed06635dff4137da4cd8604e9b11cc5a0c5ebe5c950f1e98c088e3",
+	"evidenceSha256": "64893ef9a5488442b275ed6d5ac4c364c726f039d46757512c6d91b4872dd0b7"
+}

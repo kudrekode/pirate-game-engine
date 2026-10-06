@@ -427,7 +427,7 @@ function validateRuntimeCharacterAnimation(
 	}
 }
 
-test("captures Three editor and runtime perf diagnostics", async ({
+test("captures Three editor and runtime perf diagnostics @performance", async ({
 	context,
 	page,
 }) => {
@@ -445,10 +445,6 @@ test("captures Three editor and runtime perf diagnostics", async ({
 	let editorSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeCollapsedSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeSnapshot: ThreePerformanceSnapshot | null = null;
-	let runtimeWalkSnapshot: ThreePerformanceSnapshot | null = null;
-	let runtimeIdleSnapshot: ThreePerformanceSnapshot | null = null;
-	let runtimeAttackSnapshot: ThreePerformanceSnapshot | null = null;
-	let runtimeAfterAttackSnapshot: ThreePerformanceSnapshot | null = null;
 	let runtimeAfterMoveSnapshot: ThreePerformanceSnapshot | null = null;
 	let fatalError: unknown;
 
@@ -529,8 +525,13 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			"three-editor-snapshot.json",
 			editorSnapshot,
 		);
-		artifacts.editorScreenshot = path.join(ARTIFACT_DIR, "three-editor.png");
-		await page.screenshot({ fullPage: true, path: artifacts.editorScreenshot });
+		if (process.env.CAPTURE_VISUALS === "1") {
+			artifacts.editorScreenshot = path.join(ARTIFACT_DIR, "three-editor.png");
+			await page.screenshot({
+				fullPage: true,
+				path: artifacts.editorScreenshot,
+			});
+		}
 
 		await page.getByRole("button", { exact: true, name: "Play" }).click();
 		await page.getByRole("button", { name: "Play 3D Experimental" }).click();
@@ -575,124 +576,67 @@ test("captures Three editor and runtime perf diagnostics", async ({
 		);
 		await resetSampleWindow(page, RUNTIME_SNAPSHOT_LABEL);
 		await runtimeCanvas.focus();
-		await page.keyboard.press("ArrowUp");
-		runtimeWalkSnapshot = await waitForRuntimeCharacterAnimation(page, "walk");
-		artifacts.runtimeWalkSnapshot = await writeJson(
-			"three-runtime-walk-snapshot.json",
-			runtimeWalkSnapshot,
-		);
-		await page.waitForTimeout(500);
-		runtimeIdleSnapshot = await waitForRuntimeCharacterAnimation(page, "idle");
-		artifacts.runtimeIdleSnapshot = await writeJson(
-			"three-runtime-idle-snapshot.json",
-			runtimeIdleSnapshot,
-		);
-		await page.keyboard.press("Space");
-		runtimeAttackSnapshot = await waitForRuntimeCharacterAnimation(
-			page,
-			"attack",
-		);
-		artifacts.runtimeAttackSnapshot = await writeJson(
-			"three-runtime-attack-snapshot.json",
-			runtimeAttackSnapshot,
-		);
-		await page.waitForTimeout(3500);
-		runtimeAfterAttackSnapshot = await waitForRuntimeCharacterAnimation(
-			page,
-			"idle",
-		);
-		artifacts.runtimeAfterAttackSnapshot = await writeJson(
-			"three-runtime-after-attack-snapshot.json",
-			runtimeAfterAttackSnapshot,
-		);
+		// Measure a real move; transient animation acceptance has its own smoke.
+		await expect(page.getByText("Pos: 2, 2", { exact: true })).toBeVisible();
 		await page.keyboard.press("ArrowLeft");
+		await expect(page.getByText("Pos: 1, 2", { exact: true })).toBeVisible();
 		await page.waitForTimeout(4000);
 		runtimeAfterMoveSnapshot = await readSnapshot(page, RUNTIME_SNAPSHOT_LABEL);
 		artifacts.runtimeAfterMoveSnapshot = await writeJson(
 			"three-runtime-after-move-snapshot.json",
 			runtimeAfterMoveSnapshot,
 		);
-		artifacts.runtimeScreenshot = path.join(ARTIFACT_DIR, "three-runtime.png");
-		await page.screenshot({
-			fullPage: true,
-			path: artifacts.runtimeScreenshot,
-		});
+		if (process.env.CAPTURE_VISUALS === "1") {
+			artifacts.runtimeScreenshot = path.join(
+				ARTIFACT_DIR,
+				"three-runtime.png",
+			);
+			await page.screenshot({
+				fullPage: true,
+				path: artifacts.runtimeScreenshot,
+			});
+		}
 	} catch (error) {
 		fatalError = error;
 	} finally {
-		validateSnapshot(editorSnapshot, EDITOR_SNAPSHOT_LABEL, failures);
-		validateSnapshot(
-			runtimeCollapsedSnapshot,
-			RUNTIME_SNAPSHOT_LABEL,
-			failures,
-		);
-		validateSnapshot(runtimeSnapshot, RUNTIME_SNAPSHOT_LABEL, failures);
-		validatePirateBenchmarkSnapshot(
-			editorSnapshot,
-			EDITOR_SNAPSHOT_LABEL,
-			EDITOR_MIN_PIRATE_ENTITY_COUNT,
-			failures,
-		);
-		validatePirateBenchmarkSnapshot(
-			runtimeCollapsedSnapshot,
-			RUNTIME_SNAPSHOT_LABEL,
-			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
-			failures,
-		);
-		validatePirateBenchmarkSnapshot(
-			runtimeSnapshot,
-			RUNTIME_SNAPSHOT_LABEL,
-			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
-			failures,
-		);
-		validatePirateBenchmarkSnapshot(
-			runtimeAfterMoveSnapshot,
-			RUNTIME_SNAPSHOT_LABEL,
-			RUNTIME_MIN_PIRATE_ENTITY_COUNT,
-			failures,
-		);
-		validateRuntimeCharacterAnimation(runtimeSnapshot, "runtime", failures);
-		validateRuntimeCharacterAnimation(
-			runtimeWalkSnapshot,
-			"runtime walk",
-			failures,
-		);
-		validateRuntimeCharacterAnimation(
-			runtimeIdleSnapshot,
-			"runtime idle",
-			failures,
-		);
-		validateRuntimeCharacterAnimation(
-			runtimeAttackSnapshot,
-			"runtime attack",
-			failures,
-		);
-		validateRuntimeCharacterAnimation(
-			runtimeAfterAttackSnapshot,
-			"runtime after attack",
-			failures,
-		);
-		validateRuntimeCharacterAnimation(
-			runtimeAfterMoveSnapshot,
-			"runtime after move",
-			failures,
-		);
-		if (runtimeWalkSnapshot?.asset.character.animation.playerState !== "walk") {
-			failures.push("Runtime player did not enter the walk animation state.");
-		}
-		if (runtimeIdleSnapshot?.asset.character.animation.playerState !== "idle") {
-			failures.push("Runtime player did not return to idle after moving.");
-		}
-		if (
-			runtimeAttackSnapshot?.asset.character.animation.playerState !== "attack"
-		) {
-			failures.push("Runtime player did not enter the attack animation state.");
-		}
-		if (
-			runtimeAfterAttackSnapshot?.asset.character.animation.playerState !==
-			"idle"
-		) {
-			failures.push("Runtime player did not return to idle after attacking.");
+		if (!fatalError) {
+			validateSnapshot(editorSnapshot, EDITOR_SNAPSHOT_LABEL, failures);
+			validateSnapshot(
+				runtimeCollapsedSnapshot,
+				RUNTIME_SNAPSHOT_LABEL,
+				failures,
+			);
+			validateSnapshot(runtimeSnapshot, RUNTIME_SNAPSHOT_LABEL, failures);
+			validatePirateBenchmarkSnapshot(
+				editorSnapshot,
+				EDITOR_SNAPSHOT_LABEL,
+				EDITOR_MIN_PIRATE_ENTITY_COUNT,
+				failures,
+			);
+			validatePirateBenchmarkSnapshot(
+				runtimeCollapsedSnapshot,
+				RUNTIME_SNAPSHOT_LABEL,
+				RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+				failures,
+			);
+			validatePirateBenchmarkSnapshot(
+				runtimeSnapshot,
+				RUNTIME_SNAPSHOT_LABEL,
+				RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+				failures,
+			);
+			validatePirateBenchmarkSnapshot(
+				runtimeAfterMoveSnapshot,
+				RUNTIME_SNAPSHOT_LABEL,
+				RUNTIME_MIN_PIRATE_ENTITY_COUNT,
+				failures,
+			);
+			validateRuntimeCharacterAnimation(runtimeSnapshot, "runtime", failures);
+			validateRuntimeCharacterAnimation(
+				runtimeAfterMoveSnapshot,
+				"runtime after move",
+				failures,
+			);
 		}
 		if (pageErrors.length > 0) {
 			failures.push(`${pageErrors.length} uncaught page error(s) occurred.`);
@@ -724,12 +668,8 @@ test("captures Three editor and runtime perf diagnostics", async ({
 			snapshots: {
 				editor: editorSnapshot,
 				runtime: runtimeSnapshot,
-				runtimeAfterAttack: runtimeAfterAttackSnapshot,
 				runtimeAfterMove: runtimeAfterMoveSnapshot,
-				runtimeAttack: runtimeAttackSnapshot,
 				runtimeCollapsed: runtimeCollapsedSnapshot,
-				runtimeIdle: runtimeIdleSnapshot,
-				runtimeWalk: runtimeWalkSnapshot,
 			},
 		});
 	}

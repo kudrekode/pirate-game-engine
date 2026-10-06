@@ -71,6 +71,7 @@ export function syncRuntimeQuestProgress(
 	session: RuntimeSessionState,
 	emit: RuntimeProgressionEventEmitter,
 ): void {
+	if (session.startupPending) return;
 	const stateChanged = updateQuestProgress(
 		session.runtimeQuestState,
 		session.runtimeState,
@@ -89,6 +90,7 @@ export function markRuntimeAreaEntered(
 	areaId: string,
 	emit: RuntimeProgressionEventEmitter,
 ): void {
+	if (session.startupPending) return;
 	markAreaEntered(session.runtimeQuestState, areaId);
 	syncRuntimeQuestProgress(session, emit);
 }
@@ -118,6 +120,7 @@ export function transitionRuntimeArea(
 	}
 
 	session.playerPosition = { x: eventBlock.x, y: eventBlock.y };
+	session.nextMoveAt = 0;
 	emit({
 		type: "spawnPlayer",
 		areaId: nextArea.id,
@@ -137,9 +140,30 @@ export function transitionRuntimeArea(
 		message: `${session.project.player.name} entered ${nextArea.name}.`,
 	});
 
-	if (enteredNewArea) {
+	if (enteredNewArea && !session.startupPending) {
 		emit({ type: "areaEnterTriggerRequested", areaId: nextArea.id });
 	}
+}
+
+// Startup entry is committed only after game-start rules and initial progression
+// reach a playable boundary. Cutscenes may suspend this sequence before the spawn.
+export function startRuntimeSession(
+	session: RuntimeSessionState,
+	runGameStart: (onDone: () => void) => void,
+	emit: RuntimeProgressionEventEmitter,
+): void {
+	session.startupPending = true;
+	runGameStart(() => processRuntimeProgression(session, emit));
+}
+
+function finishRuntimeStartup(
+	session: RuntimeSessionState,
+	emit: RuntimeProgressionEventEmitter,
+): void {
+	if (!session.startupPending) return;
+	session.startupPending = false;
+	markRuntimeAreaEntered(session, session.currentAreaId, emit);
+	emit({ type: "areaEnterTriggerRequested", areaId: session.currentAreaId });
 }
 
 export function processRuntimeProgression(
@@ -191,14 +215,17 @@ export function processRuntimeProgression(
 					? `Find trigger: ${eventBlock.name}`
 					: "Find the trigger.",
 			});
+			finishRuntimeStartup(session, emit);
 			return;
 		}
 
+		finishRuntimeStartup(session, emit);
 		emit({ type: "endGame" });
 		session.progressionIndex = session.project.progression.length;
 		return;
 	}
 
+	finishRuntimeStartup(session, emit);
 	emit({ type: "status", message: "Progression complete." });
 }
 

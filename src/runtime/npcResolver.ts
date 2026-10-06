@@ -88,6 +88,9 @@ export function resolveNPCInstance(
 	return {
 		...instance,
 		definition,
+		threeVisual: instance.threeVisual
+			? { ...definition?.threeVisual, ...instance.threeVisual }
+			: definition?.threeVisual,
 		name: definition?.name ?? "NPC",
 		attributes,
 		movementMode: movement.movementMode,

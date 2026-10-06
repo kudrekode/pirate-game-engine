@@ -1,0 +1,523 @@
+import { validateClothing } from "../../../tools/blender-character/clothing-contract.mjs";
+import { randomUUID } from "node:crypto";
+import { validateAuthoredGeometry } from "../../../tools/blender-character/authored-human-contract.mjs";
+import { createReadStream } from "node:fs";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
+import { fileURLToPath } from "node:url";
+import {
+	CHARACTER_HAIR_COMPONENT_IDS,
+	NO_HAIR_COMPONENT_ID,
+} from "../../../tools/blender-character/character-component-registry.mjs";
+import {
+	compileProceduralMannequin,
+	PROCEDURAL_MANNEQUIN_PATHS,
+} from "../../../tools/blender-character/procedural-mannequin-compiler.mjs";
+import {
+	canonicalizeProceduralMannequinRecipe,
+	hashProceduralMannequinRecipe,
+	PROCEDURAL_MANNEQUIN_LIMITS,
+	PROCEDURAL_MANNEQUIN_PARAMETER_KEYS,
+	validateProceduralMannequinAnatomy,
+	validateProceduralMannequinRecipe,
+} from "../../../tools/blender-character/procedural-mannequin-contract.mjs";
+
+export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
+	"/__asset-studio/procedural-mannequin/compile";
+export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
+	"/__asset-studio/procedural-mannequin/assets";
+export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 6;
+export const PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT =
+	"/__asset-studio/procedural-mannequin/preview";
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
+const MAX_REQUEST_BYTES = 64 * 1024;
+const WORKSPACE_ROOT = path.resolve(
+	path.dirname(fileURLToPath(import.meta.url)),
+	"../../..",
+);
+const SAFE_ASSET_FILES = new Map([
+	["mannequin.glb", "model/gltf-binary"],
+	["manifest.json", "application/json; charset=utf-8"],
+	["diagnostics.json", "application/json; charset=utf-8"],
+	["recipe.snapshot.json", "application/json; charset=utf-8"],
+	["build.log", "text/plain; charset=utf-8"],
+]);
+
+function jsonResponse(response, statusCode, payload) {
+	response.statusCode = statusCode;
+	response.setHeader("Content-Type", "application/json; charset=utf-8");
+	response.setHeader("Cache-Control", "no-store");
+	response.end(`${JSON.stringify(payload)}\n`);
+}
+
+async function readJsonBody(request) {
+	const chunks = [];
+	let size = 0;
+	for await (const chunk of request) {
+		size += chunk.length;
+		if (size > MAX_REQUEST_BYTES) {
+			throw new Error("Compile request exceeds 64 KiB.");
+		}
+		chunks.push(chunk);
+	}
+	try {
+		return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+	} catch {
+		throw new Error("Compile request must contain valid JSON.");
+	}
+}
+
+export function validateCreatorCompileRequest(value) {
+	const issues = [];
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return {
+			issues: [{ message: "Expected a compile request object.", path: "$" }],
+			ok: false,
+		};
+	}
+	if (value.version !== PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION) {
+		issues.push({ message: "Unsupported request version.", path: "$.version" });
+	}
+	if (
+		typeof value.proportions !== "object" ||
+		value.proportions === null ||
+		Array.isArray(value.proportions)
+	) {
+		issues.push({
+			message: "Expected body proportions.",
+			path: "$.proportions",
+		});
+	} else {
+		for (const key of PROCEDURAL_MANNEQUIN_PARAMETER_KEYS) {
+			const parameter = value.proportions[key];
+			const limits = PROCEDURAL_MANNEQUIN_LIMITS[key];
+			if (
+				typeof parameter !== "number" ||
+				!Number.isFinite(parameter) ||
+				parameter < limits.min ||
+				parameter > limits.max
+			) {
+				issues.push({
+					message: `Expected a finite number between ${limits.min} and ${limits.max} ${limits.units}.`,
+					path: `$.proportions.${key}`,
+				});
+			}
+		}
+		if (issues.length === 0) {
+			const anatomy = validateProceduralMannequinAnatomy(value.proportions);
+			if (!anatomy.ok) issues.push(...anatomy.issues);
+		}
+	}
+	if (
+		typeof value.appearance !== "object" ||
+		value.appearance === null ||
+		Array.isArray(value.appearance)
+	) {
+		issues.push({ message: "Expected skin appearance.", path: "$.appearance" });
+	} else {
+		if (
+			typeof value.appearance.hairColor !== "string" ||
+			!HEX_COLOR_PATTERN.test(value.appearance.hairColor)
+		) {
+			issues.push({
+				message: "Expected a #RRGGBB sRGB hair color string.",
+				path: "$.appearance.hairColor",
+			});
+		}
+		if (
+			typeof value.appearance.eyeColor !== "string" ||
+			!HEX_COLOR_PATTERN.test(value.appearance.eyeColor)
+		) {
+			issues.push({
+				message: "Expected a #RRGGBB sRGB eye color string.",
+				path: "$.appearance.eyeColor",
+			});
+		}
+		if (
+			typeof value.appearance.skinColor !== "string" ||
+			!HEX_COLOR_PATTERN.test(value.appearance.skinColor)
+		) {
+			issues.push({
+				message: "Expected a #RRGGBB sRGB color string.",
+				path: "$.appearance.skinColor",
+			});
+		}
+		const roughness = value.appearance.skinRoughness;
+		if (
+			typeof roughness !== "number" ||
+			!Number.isFinite(roughness) ||
+			roughness < PROCEDURAL_MANNEQUIN_LIMITS.skinRoughness.min ||
+			roughness > PROCEDURAL_MANNEQUIN_LIMITS.skinRoughness.max
+		) {
+			issues.push({
+				message: "Expected a finite roughness between 0 and 1.",
+				path: "$.appearance.skinRoughness",
+			});
+		}
+	}
+	if (
+		typeof value.components !== "object" ||
+		value.components === null ||
+		Array.isArray(value.components)
+	) {
+		issues.push({
+			message: "Expected component selections.",
+			path: "$.components",
+		});
+	} else if (!CHARACTER_HAIR_COMPONENT_IDS.includes(value.components.hair)) {
+		issues.push({
+			message: `Expected one of: ${CHARACTER_HAIR_COMPONENT_IDS.join(", ")}.`,
+			path: "$.components.hair",
+		});
+	}
+	issues.push(...validateClothing(value.clothing, value.geometrySource));
+	issues.push(
+		...validateAuthoredGeometry(
+			value.geometrySource,
+			value.proportions,
+			value.components?.hair,
+		),
+	);
+	return issues.length > 0
+		? { issues, ok: false }
+		: {
+				issues: [],
+				ok: true,
+				value: {
+					...(value.clothing === undefined
+						? {}
+						: { clothing: structuredClone(value.clothing) }),
+					...(value.geometrySource === undefined
+						? {}
+						: { geometrySource: structuredClone(value.geometrySource) }),
+					appearance: {
+						eyeColor: value.appearance.eyeColor.toLowerCase(),
+						hairColor: value.appearance.hairColor.toLowerCase(),
+						skinColor: value.appearance.skinColor.toLowerCase(),
+						skinRoughness: value.appearance.skinRoughness,
+					},
+					components: { hair: value.components.hair },
+					proportions: Object.fromEntries(
+						PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.map((key) => [
+							key,
+							value.proportions[key],
+						]),
+					),
+					version: PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION,
+				},
+			};
+}
+
+export async function createRecipeForProportions({
+	geometrySource,
+	clothing,
+	appearance,
+	baseRecipePath = path.resolve(
+		WORKSPACE_ROOT,
+		PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
+	),
+	proportions,
+	hairComponentId = NO_HAIR_COMPONENT_ID,
+} = {}) {
+	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
+	const candidate = {
+		...baseRecipe,
+		...(clothing === undefined ? {} : { clothing }),
+		...(geometrySource === undefined ? {} : { geometrySource }),
+		appearance: {
+			hair: {
+				color:
+					appearance?.hairColor ??
+					baseRecipe.appearance?.hair?.color ??
+					"#3b2a1f",
+			},
+			face: {
+				eyeColor:
+					appearance?.eyeColor ??
+					baseRecipe.appearance?.face?.eyeColor ??
+					"#4b5d67",
+			},
+			skin: {
+				color:
+					appearance?.skinColor ??
+					baseRecipe.appearance?.skin?.color ??
+					baseRecipe.material?.baseColor ??
+					"#c98f65",
+				colorSpace: "srgb",
+				roughness:
+					appearance?.skinRoughness ??
+					baseRecipe.appearance?.skin?.roughness ??
+					baseRecipe.material?.roughness ??
+					0.72,
+			},
+		},
+		components: { hair: hairComponentId },
+		proportions: {
+			...baseRecipe.proportions,
+			...proportions,
+		},
+	};
+	const parsed = validateProceduralMannequinRecipe(candidate);
+	if (!parsed.ok) {
+		const error = new Error(
+			`Recipe validation failed: ${parsed.issues
+				.map((entry) => `${entry.path} ${entry.message}`)
+				.join("; ")}`,
+		);
+		error.validationIssues = parsed.issues;
+		throw error;
+	}
+	return parsed.value;
+}
+
+export async function compileCreatorMannequin({
+	geometrySource,
+	clothing,
+	mode = "full",
+	appearance,
+	baseRecipePath = path.resolve(
+		WORKSPACE_ROOT,
+		PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe,
+	),
+	compileImpl = compileProceduralMannequin,
+	generatedRoot = path.resolve(
+		WORKSPACE_ROOT,
+		"test-results/asset-studio-creator/procedural-mannequin",
+	),
+	proportions,
+	hairComponentId = NO_HAIR_COMPONENT_ID,
+	now = () => new Date(),
+	requestId = randomUUID(),
+} = {}) {
+	const recipe = await createRecipeForProportions({
+		geometrySource,
+		clothing,
+		appearance,
+		baseRecipePath,
+		proportions,
+		hairComponentId,
+	});
+	const recipeHash = hashProceduralMannequinRecipe(recipe);
+	const stagingDirectory = path.join(generatedRoot, `.staging-${requestId}`);
+	const publishedDirectory = path.join(generatedRoot, requestId);
+	const recipePath = path.join(stagingDirectory, "request.recipe.json");
+	const outputDirectory = path.join(stagingDirectory, "output");
+	await mkdir(stagingDirectory, { recursive: true });
+	await writeFile(
+		recipePath,
+		canonicalizeProceduralMannequinRecipe(recipe),
+		"utf8",
+	);
+	const startedAt = performance.now();
+	try {
+		const result = await compileImpl({
+			mode,
+			clean: true,
+			outputDirectory,
+			recipePath,
+			staging: true,
+			templatePath: path.resolve(
+				WORKSPACE_ROOT,
+				PROCEDURAL_MANNEQUIN_PATHS.template,
+			),
+			workspaceRoot: WORKSPACE_ROOT,
+		});
+		const completionDurationMs = Math.round(performance.now() - startedAt);
+		if (
+			!isDeepStrictEqual(result?.manifest?.clothing, recipe.clothing) ||
+			!isDeepStrictEqual(
+				result?.manifest?.geometrySource,
+				recipe.geometrySource,
+			) ||
+			result?.manifest?.recipeHash !== recipeHash ||
+			result?.manifest?.appearance?.hair?.authoredColor !==
+				recipe.appearance.hair.color ||
+			(recipe.geometrySource?.family !== "authored-human" &&
+				result?.manifest?.appearance?.face?.authoredEyeColor !==
+					recipe.appearance.face.eyeColor) ||
+			result?.manifest?.appearance?.skin?.authoredColor !==
+				recipe.appearance.skin.color ||
+			result?.manifest?.appearance?.skin?.authoredRoughness !==
+				recipe.appearance.skin.roughness ||
+			result?.manifest?.components?.hair?.componentId !==
+				recipe.components.hair ||
+			!PROCEDURAL_MANNEQUIN_PARAMETER_KEYS.every(
+				(key) =>
+					result?.manifest?.proportions?.[key] === recipe.proportions[key],
+			) ||
+			result?.manifest?.outputHash?.length !== 64 ||
+			(mode === "full"
+				? result?.manifest?.deterministicBuild !== true
+				: result?.manifest?.validationLevel !== "preview")
+		) {
+			throw new Error("Compiler returned an invalid or mismatched manifest.");
+		}
+		await rename(stagingDirectory, publishedDirectory);
+		const assetRoot = `${PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT}/${requestId}/output`;
+		return {
+			assetUrl: `${assetRoot}/mannequin.glb`,
+			compilationDurationMs: completionDurationMs,
+			generatedAt: now().toISOString(),
+			manifest: result.manifest,
+			manifestUrl: `${assetRoot}/manifest.json`,
+			requestId,
+			status: "succeeded",
+			validation: {
+				passed: true,
+				version: result.manifest.validationVersion,
+			},
+		};
+	} catch (error) {
+		error.technicalDetails = [
+			error.message,
+			error.stdout,
+			error.stderr,
+			`Recipe: ${canonicalizeProceduralMannequinRecipe(recipe)}`,
+		]
+			.filter(Boolean)
+			.join("\n");
+		await rm(stagingDirectory, { force: true, recursive: true });
+		throw error;
+	}
+}
+
+function resolveAssetRequest(generatedRoot, pathname) {
+	const suffix = pathname.slice(
+		`${PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT}/`.length,
+	);
+	const [requestId, outputSegment, fileName, ...extra] = suffix.split("/");
+	if (
+		!/^[0-9a-f-]{36}$/iu.test(requestId ?? "") ||
+		outputSegment !== "output" ||
+		extra.length > 0 ||
+		!SAFE_ASSET_FILES.has(fileName)
+	) {
+		return undefined;
+	}
+	const resolvedRoot = path.resolve(generatedRoot);
+	const filePath = path.resolve(resolvedRoot, requestId, "output", fileName);
+	if (!filePath.startsWith(`${resolvedRoot}${path.sep}`)) return undefined;
+	return { fileName, filePath };
+}
+
+export function createProceduralMannequinCompileMiddleware({
+	compileJob = compileCreatorMannequin,
+	generatedRoot = path.resolve(
+		WORKSPACE_ROOT,
+		"test-results/asset-studio-creator/procedural-mannequin",
+	),
+} = {}) {
+	let compileActive = false;
+	return async function proceduralMannequinCompileMiddleware(
+		request,
+		response,
+		next,
+	) {
+		const requestUrl = new URL(request.url ?? "/", "http://asset-studio.local");
+		if (
+			request.method === "GET" &&
+			requestUrl.pathname === "/__asset-studio/health"
+		) {
+			// Public identity only; compilation and generated files gain no CORS access.
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Cache-Control", "no-store");
+			jsonResponse(response, 200, { app: "asset-studio" });
+			return;
+		}
+		if (
+			request.method === "GET" &&
+			requestUrl.pathname.startsWith(`${PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT}/`)
+		) {
+			const asset = resolveAssetRequest(generatedRoot, requestUrl.pathname);
+			if (!asset) {
+				jsonResponse(response, 404, { error: "Generated asset not found." });
+				return;
+			}
+			response.statusCode = 200;
+			response.setHeader("Content-Type", SAFE_ASSET_FILES.get(asset.fileName));
+			response.setHeader("Cache-Control", "no-store");
+			const stream = createReadStream(asset.filePath);
+			stream.on("error", () => {
+				if (!response.headersSent) {
+					jsonResponse(response, 404, { error: "Generated asset not found." });
+				} else {
+					response.destroy();
+				}
+			});
+			stream.pipe(response);
+			return;
+		}
+		if (
+			![
+				PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT,
+				PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT,
+			].includes(requestUrl.pathname)
+		) {
+			next();
+			return;
+		}
+		if (request.method !== "POST") {
+			jsonResponse(response, 405, { error: "Use POST for compile requests." });
+			return;
+		}
+		if (compileActive) {
+			jsonResponse(response, 409, {
+				error: "A procedural mannequin compilation is already running.",
+			});
+			return;
+		}
+		try {
+			const parsed = validateCreatorCompileRequest(await readJsonBody(request));
+			if (!parsed.ok) {
+				jsonResponse(response, 400, {
+					error: "Compile request validation failed.",
+					issues: parsed.issues,
+					status: "failed",
+				});
+				return;
+			}
+			compileActive = true;
+			const result = await compileJob({
+				mode:
+					requestUrl.pathname === PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT
+						? "preview"
+						: "full",
+				appearance: parsed.value.appearance,
+				geometrySource: parsed.value.geometrySource,
+				clothing: parsed.value.clothing,
+				generatedRoot,
+				hairComponentId: parsed.value.components.hair,
+				proportions: parsed.value.proportions,
+			});
+			jsonResponse(response, 200, result);
+		} catch (error) {
+			jsonResponse(response, 500, {
+				error: /Human foundation|Anatomical slice/.test(String(error))
+					? "Character generation failed because the selected body proportions produced an invalid torso shape."
+					: "Character generation failed. Check the technical details and try again.",
+				technicalDetails:
+					error?.technicalDetails ??
+					[error?.message ?? String(error), error?.stdout, error?.stderr]
+						.filter(Boolean)
+						.join("\n"),
+				issues: error?.validationIssues ?? [],
+				status: "failed",
+			});
+		} finally {
+			compileActive = false;
+		}
+	};
+}
+
+export function proceduralMannequinCompilePlugin(options = {}) {
+	return {
+		configureServer(server) {
+			server.middlewares.use(
+				createProceduralMannequinCompileMiddleware(options),
+			);
+		},
+		name: "asset-studio-procedural-mannequin-compile",
+	};
+}

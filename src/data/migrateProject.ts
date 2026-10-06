@@ -51,6 +51,7 @@ import type {
 	VariableComparisonOperator,
 } from "../types/game";
 import { THREE_PLACEHOLDER_VISUAL_TYPES } from "../types/game";
+import { migrateCharacterAssets } from "./characterAssets";
 import { defaultProject } from "./defaultProject";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
@@ -727,6 +728,9 @@ function migrateNpcInstances(
 			{
 				id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
 				npcDefinitionId,
+				...(migrateThreeVisualConfig(item.threeVisual)
+					? { threeVisual: migrateThreeVisualConfig(item.threeVisual) }
+					: {}),
 				areaId,
 				x,
 				y,
@@ -2043,6 +2047,9 @@ export function migrateProject(value: unknown): GameProject {
 			),
 		},
 		areas,
+		...(source.characterAssets !== undefined
+			? { characterAssets: migrateCharacterAssets(source.characterAssets) }
+			: {}),
 		activeAreaId,
 		camera: migrateCamera(source.camera),
 		tileStyles: migrateTileStyles(source.tileStyles),

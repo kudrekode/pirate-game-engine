@@ -1,0 +1,68 @@
+compiler=procedural-mannequin-blender-v8
+blender=5.2.0 LTS
+blenderBuild=fbe6228777e7
+recipeHash=5a8676912d32088096026b21ff426512dd678fdc7ac7243ad10f8892d75f94f3
+heightMetres=1.82
+proportions={"height":1.82,"shoulderWidth":0.5,"torsoLength":0.5,"armLength":0.5,"legLength":0.5,"hipWidth":0.5}
+firstOutputHash=3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69
+secondOutputHash=3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69
+binaryDeterministic=true
+semanticHash=de4e9f692c632310f8c0ed275ab90a088245bb2491297ed46c22c78b24909baa
+semanticDeterministic=true
+roundTripPassed=true
+validationVersion=procedural-mannequin-roundtrip-v9
+sourceImmutable=true
+00:03.375  blend            | Read blend: "C:\Users\jadcr\Documents\Code\game-engine\tools\blender-character\experimental\authored-human-canonical-v1\candidate.blend"
+INFO Draco is available, use library at C:\Program Files\Blender Foundation\Blender 5.2\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_draco_bridge.dll
+INFO MeshOptimizer is available, use library at C:\Program Files\Blender Foundation\Blender 5.2\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_meshopt_bridge.dll
+15:26:15 | INFO: Starting glTF 2.0 export
+15:26:15 | INFO: Extracting primitive: Everyday_Boots_sewn_cage.001
+15:26:15 | INFO: Primitives created: 2
+15:26:15 | INFO: Extracting primitive: Everyday_Top_sewn_cage.001
+15:26:15 | INFO: Primitives created: 2
+15:26:15 | INFO: Extracting primitive: Everyday_Trousers_sewn_cage.001
+15:26:15 | INFO: Primitives created: 2
+15:26:15 | INFO: Extracting primitive: Face.002
+15:26:16 | WARNING: The active Vertex Color will not be exported, as it is not used in the node tree of the material
+15:26:16 | INFO: Primitives created: 1
+15:26:16 | INFO: Extracting primitive: Face.003
+15:26:16 | INFO: Primitives created: 1
+15:26:16 | INFO: Extracting primitive: Sphere.005_Retopology.001
+15:26:16 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+15:26:16 | INFO: Primitives created: 1
+15:26:16 | INFO: Extracting primitive: Cylinder.001
+15:26:16 | INFO: Primitives created: 1
+15:26:16 | INFO: Finished glTF 2.0 export in 0.9711434841156006 s
+
+Blender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:35:40)
+
+Blender quit
+
+
+00:02.906  blend            | Read blend: "C:\Users\jadcr\Documents\Code\game-engine\tools\blender-character\experimental\authored-human-canonical-v1\candidate.blend"
+INFO Draco is available, use library at C:\Program Files\Blender Foundation\Blender 5.2\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_draco_bridge.dll
+INFO MeshOptimizer is available, use library at C:\Program Files\Blender Foundation\Blender 5.2\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_meshopt_bridge.dll
+15:26:21 | INFO: Starting glTF 2.0 export
+15:26:21 | INFO: Extracting primitive: Everyday_Boots_sewn_cage.001
+15:26:21 | INFO: Primitives created: 2
+15:26:21 | INFO: Extracting primitive: Everyday_Top_sewn_cage.001
+15:26:21 | INFO: Primitives created: 2
+15:26:21 | INFO: Extracting primitive: Everyday_Trousers_sewn_cage.001
+15:26:21 | INFO: Primitives created: 2
+15:26:21 | INFO: Extracting primitive: Face.002
+15:26:21 | WARNING: The active Vertex Color will not be exported, as it is not used in the node tree of the material
+15:26:21 | INFO: Primitives created: 1
+15:26:21 | INFO: Extracting primitive: Face.003
+15:26:21 | INFO: Primitives created: 1
+15:26:21 | INFO: Extracting primitive: Sphere.005_Retopology.001
+15:26:22 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+15:26:22 | INFO: Primitives created: 1
+15:26:22 | INFO: Extracting primitive: Cylinder.001
+15:26:22 | INFO: Primitives created: 1
+15:26:22 | INFO: Finished glTF 2.0 export in 1.0087664127349854 s
+
+Blender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:35:40)
+
+Blender quit
+
+

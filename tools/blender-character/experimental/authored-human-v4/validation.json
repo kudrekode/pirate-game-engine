@@ -1,0 +1,171 @@
+{
+	"visualVerdict": "FAIL",
+	"revision": "joint-centred-v1",
+	"resumeGarment": false,
+	"rigVerdict": "Golden remains suitable but needs additional local art work",
+	"preservedSourceSha256": "40eee25abb0f4780da4d80d81ddca3f79d0def40781c0020814559d6bcfb19e7",
+	"packagedSourceMatchesTestedSource": true,
+	"originalSourceInputsUnchanged": true,
+	"trackedFilesModified": [],
+	"sourceChecks": {
+		"passed": 4,
+		"results": {
+			"changedByRegion": {
+				"elbow_l": 134,
+				"knee_l": 148,
+				"elbow_r": 134,
+				"knee_r": 148
+			},
+			"maximumWeightSumError": 1.2293457984924316e-7,
+			"maximumMirrorWeightDifference": 2.7418136596679688e-6,
+			"preserved": [
+				"rest geometry",
+				"topology",
+				"UVs",
+				"six identity targets",
+				"packed textures",
+				"all non-body weights",
+				"65-joint rest rig"
+			]
+		}
+	},
+	"roundtrip": {
+		"note": "Weight-only transport preservation. Image decoding stubbed; visual acceptance is separate.",
+		"cases": {
+			"dressed-neutral": {
+				"sha256": "ba8554d89ed67d3fc76472e82d10d61d4b6bb7edafb1a2db33bcf7414337e8bb",
+				"meshes": 5,
+				"joints": 65,
+				"triangles": 32940,
+				"changedBodyVertices": 564,
+				"preservedNonWeightAttributes": true,
+				"identicalWeightsAcrossIdentities": true,
+				"weightError": 4.7963112592697144e-8,
+				"restDifference": 3.5762786865234375e-7,
+				"bindDifference": 0,
+				"animation": [
+					{
+						"name": "GoldenReference_Idle",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					},
+					{
+						"name": "GoldenReference_Walk_InPlace",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					}
+				]
+			},
+			"combined": {
+				"sha256": "f9a61cedaa4242e1460f0a984e5e7f5cfa4fd1db8f2343e52446e76e3b250021",
+				"meshes": 5,
+				"joints": 65,
+				"triangles": 32940,
+				"changedBodyVertices": 564,
+				"preservedNonWeightAttributes": true,
+				"identicalWeightsAcrossIdentities": true,
+				"weightError": 4.7963112592697144e-8,
+				"restDifference": 3.5762786865234375e-7,
+				"bindDifference": 0,
+				"animation": [
+					{
+						"name": "GoldenReference_Idle",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					},
+					{
+						"name": "GoldenReference_Walk_InPlace",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					}
+				]
+			}
+		}
+	},
+	"renders": {
+		"unique": 88,
+		"perRevision": 44,
+		"allRenderHashesVerified": true,
+		"restPixelMeanAbsoluteError255": {
+			"dressed-neutral": {
+				"front": 6.613756613756614e-5,
+				"side": 4.354056437389771e-5,
+				"torso-back": 3.472222222222222e-5
+			},
+			"combined": {
+				"front": 4.35405643738977e-5,
+				"side": 4.6296296296296294e-5,
+				"torso-back": 4.35405643738977e-5
+			}
+		}
+	},
+	"comparisonHeaders": {
+		"checked": 16,
+		"maximumMeanJpegError255": 0.9610416666666667
+	},
+	"ci": {
+		"command": "npm.cmd run ci",
+		"invocations": 1,
+		"exitCode": 0,
+		"vitestFiles": 76,
+		"vitestTests": 623,
+		"nodeCompilerTests": 50,
+		"rootAndStudioBuilds": "PASS",
+		"threePackageTypechecks": "PASS",
+		"warnings": ["Vite chunk-size warnings"]
+	},
+	"gitDiffCheck": {
+		"command": "git diff --check",
+		"exitCode": 0
+	},
+	"additionalChecks": {
+		"newTextWhitespace": "PASS",
+		"reportSections": 12,
+		"localDocumentLinks": "PASS"
+	},
+	"logs": {
+		"ci.log": {
+			"path": "test-results/authored-human-v4/ci.log",
+			"sha256": "ceded477c9e1e59b67c4d83c9e84ead917c07c1cb8df71e6ab520315697e8c14"
+		},
+		"source-tests.log": {
+			"path": "test-results/authored-human-v4/source-tests.log",
+			"sha256": "4af44a8d8fbe521615929da93444aeb59376dd0a67c817c6485764d55e29d64e"
+		},
+		"roundtrip.log": {
+			"path": "test-results/authored-human-v4/roundtrip.log",
+			"sha256": "d4afa3c3e5df470fad7da7c71d7fe6d2ceba1e71ed1011185f13ac284cbbd3d4"
+		},
+		"baseline-render.log": {
+			"path": "test-results/authored-human-v4/baseline-render.log",
+			"sha256": "0a6d51949f8d5264162ea369555f0f48523a5481c0bbc1417c0d053caa4e7d07"
+		},
+		"render-recovery.log": {
+			"path": "test-results/authored-human-v4/render-recovery.log",
+			"sha256": "02d3cbc08df1be06138a8efad1e977e6696642824da471bf8ae00b42206bfd8c"
+		},
+		"joint-centred-v1-render.log": {
+			"path": "test-results/authored-human-v4/joint-centred-v1-render.log",
+			"sha256": "ec0bc8f95d26f4b6cfe78d934939fafeb88fc4ed1da02fbedc2be67faa1836f9"
+		}
+	},
+	"renderLogNote": "An initial baseline measurement-writer error was fixed; the remaining baseline close views and all corrected selections completed. Final counts and hashes above describe the complete 88-image set.",
+	"reportSha256": "3fcb06a80ad50ba78f0217079aee002fdea276b6983b39476e2d99a79e4ece25",
+	"figures": {
+		"combined-baseline.jpg": "95973e09c0cbc52787068de11e6381c88fc607073d8eafe11cb3b5e84be2b404",
+		"combined-joint-centred-v1.jpg": "673f2390c473c98ec19cbc9e78da8aa75497533c6da602cf20ab69759a8b66af",
+		"dressed-neutral-baseline.jpg": "2607eecc21eade80e980a9f79eafdf58b3bba97ae9f8f06b37130a78b875c810",
+		"dressed-neutral-joint-centred-v1.jpg": "a4efa88e97a6a4cdf32510b20f55e660c9ad418968a0c7d8fe5977b5f7870b09",
+		"elbow-comparison.jpg": "28acf31f1c6c61451da77d2e6c55d7e5bb819f3016ebe6e866643c227903ec91",
+		"knee-comparison.jpg": "d2d51e6244c53dec404316ccbc472df933548eba39cd6430b29177156265d845",
+		"weight-circumference.png": "aca3d64324dbd35ff419fe2d4b45d70c1b95db5c3e08b8f803acd89a8e0187bc"
+	}
+}

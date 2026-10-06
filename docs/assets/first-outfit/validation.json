@@ -1,0 +1,148 @@
+{
+	"date": "2026-10-06",
+	"blender": {
+		"version": "5.2.0 LTS",
+		"buildHash": "fbe6228777e7"
+	},
+	"sourceHashes": [
+		{
+			"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+			"role": "mesh",
+			"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+		},
+		{
+			"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+			"role": "coverage",
+			"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+		},
+		{
+			"path": "tools/blender-character/author_everyday_outfit.py",
+			"role": "authoring",
+			"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+		}
+	],
+	"sourceChecks": {
+		"Everyday_Top": {
+			"pairs": 4594,
+			"maximumShellDrift": 1.1790862836308716e-7,
+			"morphMaximumMetres": {
+				"mass": 0.023317808719544322,
+				"athletic": 0.0066807438653090166,
+				"broadFrame": 0.008300220005213337
+			}
+		},
+		"Everyday_Trousers": {
+			"pairs": 3823,
+			"maximumShellDrift": 1.5327456267741346e-8,
+			"morphMaximumMetres": {
+				"mass": 0.020351253816610192,
+				"athletic": 0.004781136631459517,
+				"broadFrame": 2.55523921682498e-5
+			}
+		},
+		"Everyday_Boots": {
+			"pairs": 2434,
+			"maximumShellDrift": 0,
+			"morphMaximumMetres": {
+				"mass": 0.0,
+				"athletic": 0.0,
+				"broadFrame": 0.0
+			}
+		}
+	},
+	"previewCases": {
+		"athletic": {
+			"triangles": 53796,
+			"materials": 10,
+			"bytes": 15530844,
+			"milliseconds": 6749,
+			"outputHash": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+			"roundTrip": true
+		},
+		"fuller": {
+			"triangles": 53796,
+			"materials": 10,
+			"bytes": 15530932,
+			"milliseconds": 7229,
+			"outputHash": "904e67d3a66e5d006c6c3dc6d510a7414d7b48bf5ffbf93bcaab944af6d518a9",
+			"roundTrip": true
+		},
+		"broad": {
+			"triangles": 53796,
+			"materials": 10,
+			"bytes": 15530848,
+			"milliseconds": 6615,
+			"outputHash": "e8c6d9ce95f398f54e3949b857d741d95f003c74a439ff5d7231fc87f09a06c1",
+			"roundTrip": true
+		},
+		"custom": {
+			"triangles": 53796,
+			"materials": 10,
+			"bytes": 15530928,
+			"milliseconds": 6549,
+			"outputHash": "ccb73d092c1fe1f92e8845f63c6d39965fb0b3e32077953d3cabf2c6863bfee5",
+			"roundTrip": true
+		}
+	},
+	"unclothedPreview": {
+		"triangles": 15148,
+		"materials": 4,
+		"bytes": 14045188,
+		"milliseconds": 6766,
+		"outputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+		"roundTrip": true
+	},
+	"fullCompileMs": {
+		"dressed": 13587,
+		"unclothed": 13384
+	},
+	"dressedDefaultHash": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+	"defaultDeterministic": true,
+	"browser": {
+		"passed": true,
+		"requests": 3,
+		"blenderPasses": 4,
+		"previewAthleticMs": 28912,
+		"previewFullerMs": 27725,
+		"finaliseMs": 55386,
+		"finalPreviewAndFullHash": "d3210cc4f4d9fe0f29d59c7238dd115a61e7aa077a8cbb4daac2ebabefee1765"
+	},
+	"reviewedImages": [
+		{
+			"path": "docs/assets/first-outfit/athletic-motion.jpg",
+			"sha256": "2e4b5e06c1e162ac248c58cbcf8262aaba55b107dace5b7d49c19afef462f12a"
+		},
+		{
+			"path": "docs/assets/first-outfit/body-comparison.jpg",
+			"sha256": "fd40fd4b1e59114601aa10c640d60d30203e9e77eff08a4bc7a25d1cde3cf4d3"
+		},
+		{
+			"path": "docs/assets/first-outfit/browser-athletic-back.png",
+			"sha256": "0634dcd00d053c860dc220f887687b28dc48434676a26e83c7e8b0f7c5573772"
+		},
+		{
+			"path": "docs/assets/first-outfit/browser-athletic-front.png",
+			"sha256": "24e6d7f911ef680d3b6f078f6cf11f73a43dec023dc8672cabb704ded90a7f42"
+		},
+		{
+			"path": "docs/assets/first-outfit/browser-athletic-walk.png",
+			"sha256": "fd56f49d71b8a9c9f39e08c91f9797cba99ab8b40eb05149a64bc85dbd717b5d"
+		},
+		{
+			"path": "docs/assets/first-outfit/browser-fuller.png",
+			"sha256": "b7e9eec014414ca1a0cace4e4d6bd7fec3e55f89aa30277b2f54c4a51d7b09b4"
+		},
+		{
+			"path": "docs/assets/first-outfit/fuller-motion.jpg",
+			"sha256": "7cec759867317c052809852a327676db4d995e1d3bb71138a07353ebbf05f32f"
+		}
+	],
+	"ci": {
+		"passed": true,
+		"vitestFiles": 79,
+		"vitestTests": 645,
+		"nodeTests": 55,
+		"rootAndStudioBuilds": true,
+		"workspaceChecks": 3
+	}
+}

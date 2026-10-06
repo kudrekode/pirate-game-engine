@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../../data/defaultProject";
 import { cloneProject } from "../../data/migrateProject";
@@ -21,6 +27,8 @@ import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry"
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
 	createRuntimeSession: vi.fn(),
+	sessionCreated: vi.fn(),
+	tickRuntimeNpcs: vi.fn(),
 	dismountRuntimeVehicle: vi.fn(),
 	runRuntimeObjectBehaviour: vi.fn(),
 }));
@@ -41,7 +49,20 @@ vi.mock("../runtimeSession", async (importOriginal) => {
 			...args: Parameters<typeof actual.createRuntimeSession>
 		) => {
 			runtimeSpies.createRuntimeSession(...args);
-			return actual.createRuntimeSession(...args);
+			const session = actual.createRuntimeSession(...args);
+			runtimeSpies.sessionCreated(session);
+			return session;
+		},
+	};
+});
+
+vi.mock("../runtimeNpcTick", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("../runtimeNpcTick")>();
+	return {
+		...actual,
+		tickRuntimeNpcs: (...args: Parameters<typeof actual.tickRuntimeNpcs>) => {
+			runtimeSpies.tickRuntimeNpcs(...args);
+			return actual.tickRuntimeNpcs(...args);
 		},
 	};
 });
@@ -907,6 +928,7 @@ describe("ThreeRuntimePanel", () => {
 		await waitFor(() =>
 			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument(),
 		);
+		vi.spyOn(performance, "now").mockReturnValue(latestSession().nextMoveAt);
 		runtimeSpies.dismountRuntimeVehicle.mockClear();
 		runtimeSpies.runRuntimeObjectBehaviour.mockClear();
 
@@ -951,6 +973,7 @@ describe("ThreeRuntimePanel", () => {
 		await waitFor(() =>
 			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument(),
 		);
+		vi.spyOn(performance, "now").mockReturnValue(latestSession().nextMoveAt);
 		runtimeSpies.dismountRuntimeVehicle.mockClear();
 
 		fireEvent.keyDown(window, { key: "Enter" });
@@ -1001,4 +1024,336 @@ describe("RuntimePanel play modes", () => {
 		).toHaveClass("selected");
 		expect(screen.getByLabelText("Three runtime viewport")).toBeInTheDocument();
 	});
+});
+
+function latestSession(): import("../runtimeSession").RuntimeSessionState {
+	return runtimeSpies.sessionCreated.mock.calls.slice(-1)[0]![0];
+}
+
+function dialogueProject() {
+	const project = makeProject();
+	project.areas[0].eventBlocks = [
+		{
+			id: "speaker",
+			name: "Speaker",
+			x: 0,
+			y: 0,
+			kind: "trigger",
+			tag: "",
+			interaction: {
+				type: "start_dialogue",
+				dialogueId: "conversation",
+				activationMode: "on_interact",
+			},
+		},
+	];
+	project.dialogues = [
+		{
+			id: "conversation",
+			name: "Conversation",
+			startNodeId: "hello",
+			nodes: [
+				{
+					id: "hello",
+					type: "text",
+					text: "Welcome traveller",
+					nextNodeId: "choice",
+				},
+				{
+					id: "choice",
+					type: "choice",
+					text: "Choose a path",
+					choices: [
+						{ id: "accept", text: "Accept the offer", targetNodeId: "reward" },
+						{
+							id: "hidden",
+							text: "Unavailable offer",
+							targetNodeId: "reward",
+							conditions: [{ type: "flag_is", flag: "hidden", value: true }],
+						},
+					],
+				},
+				{
+					id: "reward",
+					type: "end",
+					text: "A deal is made",
+					actions: [{ type: "set_flag", flag: "accepted", value: true }],
+				},
+			],
+		},
+	];
+	return project;
+}
+
+describe("Three correctness boundaries", () => {
+	it("shows dialogue, advances, filters choices, applies the selected node effect and resumes play", () => {
+		render(
+			<ThreeRuntimePanel project={dialogueProject()} onRestart={vi.fn()} />,
+		);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		fireEvent.keyDown(window, { key: " ", code: "Space" });
+		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+		expect(latestSession().nextAttackAt).toBe(0);
+		fireEvent.click(screen.getByRole("button", { name: "Next" }));
+		expect(screen.getByText("Choose a path")).toBeInTheDocument();
+		expect(screen.queryByText("Unavailable offer")).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Accept the offer" }));
+		expect(screen.getByText("A deal is made")).toBeInTheDocument();
+		expect(latestSession().runtimeState.flags.accepted).toBe(true);
+		fireEvent.click(screen.getByRole("button", { name: "End conversation" }));
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		expect(latestSession().playerPosition).toEqual({ x: 1, y: 0 });
+	});
+	it("fails a missing dialogue safely without blocking movement", () => {
+		const project = dialogueProject();
+		project.dialogues = [];
+		render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(screen.getByText(/Dialogue missing/)).toBeInTheDocument();
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		expect(latestSession().playerPosition).toEqual({ x: 1, y: 0 });
+	});
+	it("gates repeated keydowns by gameplay time without relying on RAF", () => {
+		let now = 1000;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		render(<ThreeRuntimePanel project={makeProject()} onRestart={vi.fn()} />);
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		fireEvent.keyDown(window, { key: "ArrowRight", repeat: true });
+		expect(latestSession().playerPosition).toEqual({ x: 1, y: 0 });
+		now += 216;
+		fireEvent.keyDown(window, { key: "ArrowRight", repeat: true });
+		expect(latestSession().playerPosition).toEqual({ x: 2, y: 0 });
+	});
+	it.each([
+		"cutscene",
+		"ended",
+		"shop",
+	] as const)("blocks movement and attacks during %s", (blocked) => {
+		const project = makeProject();
+		project.cutscenes = [
+			{ id: "intro", name: "Intro", text: "Wait", backgroundImageId: "" },
+		];
+		project.shops = [
+			{ id: "store", name: "Store", currencyItemId: "coin", entries: [] },
+		];
+		project.progression =
+			blocked === "cutscene"
+				? [
+						{
+							id: "intro",
+							action: { type: "play_cutscene", cutsceneId: "intro" },
+						},
+					]
+				: blocked === "ended"
+					? [{ id: "end", action: { type: "end_game" } }]
+					: [];
+		if (blocked === "shop")
+			project.rules = [
+				{
+					id: "open",
+					name: "Open",
+					enabled: true,
+					runPolicy: "always",
+					trigger: { type: "on_game_start" },
+					actions: [{ type: "open_shop", shopId: "store" }],
+				},
+			];
+		render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+		fireEvent.keyDown(window, { key: " ", code: "Space" });
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		expect(latestSession().nextAttackAt).toBe(0);
+		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+	});
+	it("marks only the gameplay spawn area and grants its once-only quest reward", () => {
+		const project = makeProject();
+		const spawn = makeArea({
+			id: "spawn",
+			eventBlocks: [
+				{
+					id: "start",
+					name: "Start",
+					tag: "",
+					kind: "spawn",
+					x: 1,
+					y: 1,
+				},
+			],
+		});
+		project.areas.push(spawn);
+		project.items = [
+			{ id: "coin", name: "Coin", category: "currency", stackable: true },
+		];
+		project.quests = ["area_test", "spawn"].map((areaId) => ({
+			id: areaId,
+			name: areaId,
+			status: "active" as const,
+			objectives: [
+				{
+					id: "visit",
+					description: "Visit",
+					condition: { type: "enter_area" as const, areaId },
+				},
+			],
+			rewards: [
+				{
+					type: "item" as const,
+					itemId: "coin",
+					quantity: areaId === "spawn" ? 1 : 100,
+				},
+			],
+		}));
+		project.progression = [
+			{
+				id: "spawn",
+				action: {
+					type: "spawn_player",
+					areaId: "spawn",
+					eventBlockId: "start",
+				},
+			},
+		];
+		render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+		expect(latestSession().currentAreaId).toBe("spawn");
+		expect(latestSession().runtimeQuestState.enteredAreaIds).toEqual(
+			new Set(["spawn"]),
+		);
+		expect(latestSession().runtimeState.inventory.items.coin).toBe(1);
+		expect(project.gameState.inventory).toEqual({});
+	});
+});
+
+it("runs dialogue node cutscenes and cutscene-end rules before resuming the node", () => {
+	const project = dialogueProject();
+	project.cutscenes = [
+		{ id: "effect", name: "Effect", text: "A vision", backgroundImageId: "" },
+	];
+	project.dialogues[0].nodes[0].actions = [
+		{ type: "play_cutscene", cutsceneId: "effect" },
+		{ type: "set_flag", flag: "after_vision", value: true },
+	];
+	project.rules = [
+		{
+			id: "after",
+			name: "After",
+			enabled: true,
+			runPolicy: "always",
+			trigger: { type: "on_cutscene_end", cutsceneId: "effect" },
+			actions: [{ type: "set_flag", flag: "vision_ended", value: true }],
+		},
+	];
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "e" });
+	expect(screen.getByText("A vision")).toBeInTheDocument();
+	expect(screen.queryByText("Welcome traveller")).not.toBeInTheDocument();
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(latestSession().nextAttackAt).toBe(0);
+	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
+	expect(latestSession().runtimeState.flags).toMatchObject({
+		vision_ended: true,
+		after_vision: true,
+	});
+});
+
+it.each([
+	"missing-start",
+	"missing-next",
+	"no-choices",
+])("safely leaves invalid dialogue path %s", (path) => {
+	const project = dialogueProject();
+	if (path === "missing-start") project.dialogues[0].startNodeId = "missing";
+	if (path === "missing-next")
+		project.dialogues[0].nodes = [
+			{ id: "hello", type: "text", text: "Hello", nextNodeId: "missing" },
+		];
+	if (path === "no-choices")
+		project.dialogues[0].nodes = [
+			{ id: "hello", type: "choice", text: "Hello", choices: [] },
+		];
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "e" });
+	if (path !== "missing-start")
+		fireEvent.click(
+			screen.getByRole("button", {
+				name: path === "missing-next" ? "Next" : "End conversation",
+			}),
+		);
+	expect(latestSession().dialogue).toBeUndefined();
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	expect(latestSession().playerPosition).toEqual({ x: 1, y: 0 });
+});
+
+it("preserves attack cooldown after a shop modal closes", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const project = makeProject();
+	project.shops = [
+		{ id: "store", name: "Store", currencyItemId: "coin", entries: [] },
+	];
+	project.rules = [
+		{
+			id: "open",
+			name: "Open",
+			enabled: true,
+			runPolicy: "always",
+			trigger: { type: "on_game_start" },
+			actions: [{ type: "open_shop", shopId: "store" }],
+		},
+	];
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	fireEvent.click(screen.getByRole("button", { name: "Close" }));
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	const deadline = latestSession().nextAttackAt;
+	expect(deadline).toBeGreaterThan(now);
+	now = deadline - 1;
+	fireEvent.keyDown(window, { key: " ", code: "Space", repeat: true });
+	expect(latestSession().nextAttackAt).toBe(deadline);
+	now = deadline;
+	fireEvent.keyDown(window, { key: " ", code: "Space", repeat: true });
+	expect(latestSession().nextAttackAt).toBeGreaterThan(deadline);
+});
+
+it("waits for the startup cutscene before committing entry and accepting gameplay", () => {
+	const project = makeProject();
+	project.cutscenes = [
+		{ id: "intro", name: "Intro", text: "Welcome", backgroundImageId: "" },
+	];
+	project.progression = [
+		{ id: "intro", action: { type: "play_cutscene", cutsceneId: "intro" } },
+	];
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	expect(latestSession().startupPending).toBe(true);
+	expect(latestSession().runtimeQuestState.enteredAreaIds.size).toBe(0);
+	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	expect(latestSession().startupPending).toBe(false);
+	expect(latestSession().runtimeQuestState.enteredAreaIds).toEqual(
+		new Set(["area_test"]),
+	);
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	expect(latestSession().playerPosition).toEqual({ x: 1, y: 0 });
+});
+
+it.each([
+	"dialogue",
+	"shop",
+])("pauses NPC ticks during a %s modal and resumes after closing", (modal) => {
+	const intervals = vi.spyOn(window, "setInterval");
+	render(<ThreeRuntimePanel project={dialogueProject()} onRestart={vi.fn()} />);
+	const tick = intervals.mock.calls.find(
+		(call) => call[1] === 500,
+	)![0] as () => void;
+	if (modal === "dialogue") fireEvent.keyDown(window, { key: "e" });
+	else latestSession().activeShopId = "store";
+	runtimeSpies.tickRuntimeNpcs.mockClear();
+	act(() => tick());
+	expect(runtimeSpies.tickRuntimeNpcs).not.toHaveBeenCalled();
+	if (modal === "dialogue") {
+		fireEvent.click(screen.getByRole("button", { name: "Next" }));
+		fireEvent.click(screen.getByRole("button", { name: "Accept the offer" }));
+		fireEvent.click(screen.getByRole("button", { name: "End conversation" }));
+	} else latestSession().activeShopId = undefined;
+	act(() => tick());
+	expect(runtimeSpies.tickRuntimeNpcs).toHaveBeenCalledTimes(1);
 });
