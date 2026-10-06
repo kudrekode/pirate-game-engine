@@ -2,6 +2,23 @@
 
 ## Quick Resume
 
+**New-character default: Canonical Authored Human v1 (experimental).** See the
+[integration result](../CANONICAL_AUTHORED_HUMAN_INTEGRATION_RESULT.md) and
+[source package](../tools/blender-character/experimental/authored-human-canonical-v1/README.md).
+`CharacterRecipeV1.geometry` selects the family/revision/rig and six identity
+values; missing geometry keeps legacy semantics. The UI offers height, three
+body and three face controls, short hair/none, hair colour and skin tint.
+The two-column creator has Full Body / Upper Body / Face / Back cameras.
+The tank and eye-colour editing are not exposed for this family.
+
+The existing compiler dispatches authored geometry to `generate_authored_human.py`
+and `authored-human-roundtrip.mjs`, retaining preview/full orchestration and
+publication. Contracts are in `packages/character-contract/src/authoredHuman.ts`
+and `tools/blender-character/authored-human-contract.mjs`. The checked-in default
+is under `public/assets/derived/authored-humans/canonical-v1/`. Identity is baked;
+Golden's rig and the shared Three loader/clone path remain unchanged.
+
+The details below describe the preserved **legacy procedural** family.
 Read this section and the [Hairstyle Library V2 milestone](assets/hairstyle-library-v2.md)
 for current creator work; older milestone documents are historical evidence.
 

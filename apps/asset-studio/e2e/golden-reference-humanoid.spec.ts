@@ -93,7 +93,7 @@ test("visually validates deterministic Golden Reference offline-baked animation 
 	);
 	const diagnosticsLog: Array<Record<string, unknown>> = [];
 
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	await waitForPreview(page, host);
 	await expect(host).toHaveAttribute("data-retarget-mode", "offline-baked");
 	await expect(host).toHaveAttribute("data-playback-method", "Offline baked");
@@ -263,7 +263,7 @@ test("captures the rejected runtime retarget baseline @historical", async ({
 	);
 	const diagnosticsLog: Array<Record<string, unknown>> = [];
 	// Preserve a deterministic visual record of the rejected v1 result.
-	await page.goto("/?retarget=failed-v1");
+	await page.goto("/?retarget=failed-v1&family=legacy");
 	await waitForPreview(page, host);
 	await expect(host).toHaveAttribute("data-retarget-mode", "failed-v1");
 	await page.getByRole("button", { name: "Pause", exact: true }).click();

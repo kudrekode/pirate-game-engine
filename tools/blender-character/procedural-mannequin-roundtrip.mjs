@@ -107,7 +107,7 @@ function toArrayBuffer(input) {
 	);
 }
 
-async function loadGlb(filePath) {
+export async function loadGlb(filePath) {
 	globalThis.self ??= globalThis;
 	globalThis.createImageBitmap ??= async () => ({
 		close() {},
@@ -176,7 +176,7 @@ function semanticMeshSnapshot(name, geometry) {
 	};
 }
 
-function semanticSnapshot(root) {
+export function semanticSnapshot(root) {
 	const materials = new Set();
 	const meshes = [];
 	root.traverse((object) => {
@@ -272,7 +272,7 @@ function analyzeSkinMaterial(root, expected) {
 	};
 }
 
-function analyzeArtifact(root) {
+export function analyzeArtifact(root) {
 	const materials = new Set();
 	const textures = new Set();
 	let meshCount = 0;
@@ -663,7 +663,7 @@ async function inspectGlbResources(filePath) {
 	};
 }
 
-function skeletonSignature(inspection) {
+export function skeletonSignature(inspection) {
 	const joints = inspection.skeletons[0]?.joints ?? [];
 	const normalized = joints
 		.map((joint) => ({

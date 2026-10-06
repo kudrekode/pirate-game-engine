@@ -1,0 +1,234 @@
+{
+	"head-wide": {
+		"passed": true,
+		"outputHash": "0012fd18b2fe13b56181e84131cfdc2a410593cb733c6509e1f2f925f7a5c5a5",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 1,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"head-narrow": {
+		"passed": true,
+		"outputHash": "6b9ad109e98bd927c62a0883cdde976ec7476b14c12e30cf3190a8490291d88c",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": -1,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"jaw": {
+		"passed": true,
+		"outputHash": "89841e377e9188b2e786e4c198c32a3fa8eb5d3d26408ec80ad59f12f3ae918f",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 1,
+			"nose": 0
+		}
+	},
+	"nose": {
+		"passed": true,
+		"outputHash": "8a4f15fb62d5cefb8276fac258520aa572227192bb2863b7b326ca511576a56c",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 1
+		}
+	},
+	"fuller": {
+		"passed": true,
+		"outputHash": "19282eb3e762c7076b8971f44b72af888cf04e3f9d5b7729c4be9b6621a4d3af",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 1,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"athletic": {
+		"passed": true,
+		"outputHash": "588763bac12321ffe2748bbc957b5baec32b104a0048b0978c91824e7a3c609b",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 0,
+			"athletic": 1,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"broad": {
+		"passed": true,
+		"outputHash": "2b2bd9f222d2858fcd774900653ef90025321f2c6ce6ffc20e299fb07a919bc3",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 1,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"combined": {
+		"passed": true,
+		"outputHash": "1de504febd5b225fb06c01de2b8771ebbc60da640a256fc992c1dca55083707c",
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"values": {
+			"mass": 1,
+			"athletic": 1,
+			"broadFrame": 1,
+			"headWidth": 1,
+			"jaw": 1,
+			"nose": 1
+		}
+	}
+}

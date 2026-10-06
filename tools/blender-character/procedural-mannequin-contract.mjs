@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { validateAuthoredGeometry } from "./authored-human-contract.mjs";
 import {
 	CHARACTER_HAIR_COMPONENT_IDS,
 	NO_HAIR_COMPONENT_ID,
@@ -476,7 +477,17 @@ export function validateProceduralMannequinRecipe(value) {
 		const anatomy = validateProceduralMannequinAnatomy(parsedProportions);
 		if (!anatomy.ok) issues.push(...anatomy.issues);
 	}
+	issues.push(
+		...validateAuthoredGeometry(
+			value.geometrySource,
+			parsedProportions,
+			hairComponentId,
+		),
+	);
 	const recipe = {
+		...(value.geometrySource === undefined
+			? {}
+			: { geometrySource: structuredClone(value.geometrySource) }),
 		animations: { set: GOLDEN_REFERENCE_ANIMATION_SET },
 		components: {
 			hair: CHARACTER_HAIR_COMPONENT_IDS.includes(hairComponentId)

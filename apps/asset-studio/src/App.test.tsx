@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import "./testSetup";
+import {
+	createAuthoredHumanRecipe,
+	createDefaultCharacterRecipe,
+} from "@adventure-game-builder/character-contract";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 function successfulCompile(
@@ -183,8 +187,85 @@ function successfulCompile(
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
+beforeEach(() => {
+	window.history.replaceState({}, "", "/?family=legacy");
+});
 
 describe("Asset Studio app", { timeout: 15_000 }, () => {
+	it("loads each recipe family with visible feedback and rejects an invalid identity without losing the draft", async () => {
+		window.history.replaceState({}, "", "/");
+		const { container } = render(<App />);
+		const input = container.querySelector('input[type="file"]')!;
+		const load = (recipe: unknown) =>
+			fireEvent.change(input, {
+				target: {
+					files: [
+						{ name: "saved.json", text: async () => JSON.stringify(recipe) },
+					],
+				},
+			});
+		const legacy = createDefaultCharacterRecipe();
+		legacy.body.parameters.shoulderWidth = 0.8;
+		load(legacy);
+		await waitFor(() =>
+			expect(screen.getByLabelText("Character type")).toHaveValue("legacy"),
+		);
+		expect(
+			container.querySelector(
+				'[data-preview-source="procedural-mannequin-v0"]',
+			),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Loaded saved.json/)).toBeVisible();
+		const authored = createAuthoredHumanRecipe();
+		if (authored.geometry?.family !== "authored-human") throw Error("family");
+		authored.geometry.values.mass = 0.7;
+		load(authored);
+		await waitFor(() =>
+			expect(screen.getByLabelText("Mass / Build")).toHaveValue("0.7"),
+		);
+		expect(
+			container.querySelector(
+				'[data-preview-source="authored-human-canonical-v1"]',
+			),
+		).toBeInTheDocument();
+		expect(screen.getByTestId("recipe-json")).not.toBeVisible();
+		authored.geometry.values.mass = 9;
+		load(authored);
+		await waitFor(() =>
+			expect(screen.getByText(/Recipe rejected/)).toBeVisible(),
+		);
+		expect(screen.getByLabelText("Mass / Build")).toHaveValue("0.7");
+	});
+	it("opens the authored human with bounded identity controls and useful camera presets", () => {
+		window.history.replaceState({}, "", "/");
+		render(<App />);
+		expect(screen.getByLabelText("Character type")).toHaveValue("authored");
+		for (const label of [
+			"Mass / Build",
+			"Athletic / Muscle",
+			"Broad Frame / Shoulders",
+			"Head Width",
+			"Jaw / Chin",
+			"Nose",
+		])
+			expect(screen.getByLabelText(label)).toBeVisible();
+		for (const name of ["Full Body", "Upper Body", "Face"])
+			expect(screen.getByRole("button", { name })).toBeInTheDocument();
+		expect(screen.queryByLabelText("Random seed")).not.toBeInTheDocument();
+		fireEvent.change(screen.getByLabelText("Mass / Build"), {
+			target: { value: "0.7" },
+		});
+		fireEvent.change(screen.getByLabelText("Head Width"), {
+			target: { value: "-0.5" },
+		});
+		expect(screen.getByLabelText("Mass / Build")).toHaveValue("0.7");
+		fireEvent.click(screen.getByRole("button", { name: "Reset character" }));
+		expect(screen.getByLabelText("Mass / Build")).toHaveValue("0");
+		fireEvent.change(screen.getByLabelText("Character type"), {
+			target: { value: "legacy" },
+		});
+		expect(screen.getByLabelText("Shoulders")).toBeVisible();
+	});
 	it("renders the Character screen as the active V0 workflow", () => {
 		render(<App />);
 
@@ -219,9 +300,7 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(screen.getByRole("button", { name: "Walk" })).toBeDisabled();
 		expect(screen.getByRole("button", { name: "Pause" })).toBeDisabled();
 		expect(screen.getByLabelText("Animation sample time")).toBeDisabled();
-		expect(
-			screen.getByText("CharacterRecipeV1 is editable source data."),
-		).toBeInTheDocument();
+		expect(screen.getByText("Your recipe stays editable.")).toBeInTheDocument();
 	});
 
 	it("updates recipe state from controls and reflects it in JSON", () => {

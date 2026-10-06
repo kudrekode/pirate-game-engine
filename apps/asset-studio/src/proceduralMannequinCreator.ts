@@ -3,6 +3,7 @@ import {
 	CHARACTER_FACE_APPEARANCE_LIMITS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	type CharacterBodyParameters,
+	type CharacterGeometry,
 	type CharacterHairComponentId,
 	type CharacterRecipeV1,
 } from "@adventure-game-builder/character-contract";
@@ -72,6 +73,8 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 ) as Array<keyof CharacterBodyParameters>;
 
 export type ProceduralMannequinManifest = {
+	geometrySource?: CharacterGeometry;
+	geometryFamily?: "authored-human";
 	validationLevel?: "preview" | "full";
 	appearance: {
 		hair: {
@@ -414,10 +417,13 @@ export function randomizeProceduralMannequinBody(seed: string) {
 export function createProceduralMannequinCompileRequest(
 	recipe: Pick<
 		CharacterRecipeV1,
-		"appearance" | "body" | "components" | "palette"
+		"appearance" | "body" | "components" | "palette" | "geometry"
 	>,
 ) {
 	return {
+		...(recipe.geometry
+			? { geometrySource: structuredClone(recipe.geometry) }
+			: {}),
 		appearance: {
 			eyeColor: recipe.appearance.face.eyeColor.toLowerCase(),
 			hairColor: recipe.palette.hair.toLowerCase(),
@@ -433,7 +439,7 @@ export function createProceduralMannequinCompileRequest(
 export async function requestProceduralMannequinCompile(
 	recipe: Pick<
 		CharacterRecipeV1,
-		"appearance" | "body" | "components" | "palette"
+		"appearance" | "body" | "components" | "palette" | "geometry"
 	>,
 	request: typeof fetch = fetch,
 	mode: "preview" | "full" = "full",
@@ -480,6 +486,38 @@ export async function requestProceduralMannequinCompile(
 			"Compile endpoint returned a hairstyle component mismatch.",
 		);
 	}
+	if (recipe.geometry?.family === "authored-human") {
+		const source = payload.manifest.geometrySource;
+		if (
+			source?.family !== "authored-human" ||
+			source.baseRevision !== recipe.geometry.baseRevision ||
+			source.rigProfile !== recipe.geometry.rigProfile ||
+			Object.entries(recipe.geometry.values).some(
+				([key, value]) =>
+					source.values[key as keyof typeof source.values] !== value,
+			) ||
+			payload.manifest.heightMetres !== recipe.body.parameters.height ||
+			payload.manifest.appearance.skin.authoredColor !==
+				compileRequest.appearance.skinColor ||
+			payload.manifest.appearance.skin.authoredRoughness !==
+				compileRequest.appearance.skinRoughness ||
+			payload.manifest.appearance.hair.authoredColor !==
+				compileRequest.appearance.hairColor ||
+			payload.manifest.topologyVersion !== recipe.geometry.baseRevision ||
+			payload.manifest.validationLevel !== mode ||
+			payload.manifest.deterministicBuild !== (mode === "full") ||
+			payload.manifest.outputHash.length !== 64 ||
+			payload.manifest.recipeHash.length !== 64 ||
+			!payload.validation.passed
+		) {
+			throw new Error(
+				"Compile endpoint returned mismatched authored-human metadata.",
+			);
+		}
+		return payload;
+	}
+	if (payload.manifest.geometrySource?.family === "authored-human")
+		throw new Error("Compile endpoint returned the wrong geometry family.");
 	if (
 		!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
 			(key) =>

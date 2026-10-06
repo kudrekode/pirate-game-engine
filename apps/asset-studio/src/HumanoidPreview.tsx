@@ -19,6 +19,9 @@ const RETARGET_ARTIFACT_ROOT =
 // This component owns the entire preview lifetime, including animation and disposal.
 type PreviewAnimationState = "idle" | "rest" | "walk";
 type PreviewCameraPreset =
+	| "full-body"
+	| "upper-body"
+	| "face"
 	| "back"
 	| "close-front"
 	| "close-three-quarter"
@@ -29,6 +32,9 @@ type PreviewCameraPreset =
 	| "three-quarter"
 	| "three-quarter-rear";
 const PREVIEW_CAMERA_LABELS: Record<PreviewCameraPreset, string> = {
+	"full-body": "Full Body",
+	"upper-body": "Upper Body",
+	face: "Face",
 	back: "Back",
 	"close-front": "Close front",
 	"close-three-quarter": "Close three-quarter",
@@ -253,7 +259,13 @@ export function HumanoidPreview({
 		controls.addEventListener("change", updateCameraMetadata);
 		scene.add(new THREE.HemisphereLight(0xffffff, 0xaab7c4, 1.8));
 		const key = new THREE.DirectionalLight(0xffffff, 2.1);
-		key.position.set(3, 5, 4);
+		key.position.set(3, 5, source.authoredHuman ? -4 : 4);
+		if (source.authoredHuman) {
+			const fill = new THREE.DirectionalLight(0xffffff, 1.1);
+			fill.position.set(-3, 2, -2);
+			scene.add(fill);
+			renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		}
 		key.castShadow = true;
 		const grid = new THREE.GridHelper(4, 16, 0x94a3b8, 0xd3dae2);
 		const ground = new THREE.Mesh(
@@ -419,19 +431,29 @@ export function HumanoidPreview({
 					bounds.getSize(new THREE.Vector3()).length() / 2,
 					0.8,
 				);
-			controls.minDistance = radius * 0.75;
+			controls.minDistance = radius * 0.22;
 			controls.maxDistance = radius * 3.5;
 			setCameraPresetRef.current = (preset) => {
 				const closeView =
-					preset === "close-front" || preset === "close-three-quarter";
+					preset === "close-front" ||
+					preset === "close-three-quarter" ||
+					preset === "face";
 				const target = new THREE.Vector3(
 					center.x,
 					preset === "scalp" || closeView
-						? bounds.max.y - radius * 0.08
-						: Math.max(center.y, 0.8),
+						? bounds.max.y -
+								(preset === "face"
+									? (bounds.max.y - bounds.min.y) * 0.095
+									: radius * 0.08)
+						: preset === "upper-body"
+							? bounds.max.y - (bounds.max.y - bounds.min.y) * 0.23
+							: Math.max(center.y, 0.8),
 					center.z,
 				);
 				const offsets: Record<PreviewCameraPreset, THREE.Vector3> = {
+					"full-body": new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
+					"upper-body": new THREE.Vector3(0, radius * 0.04, -radius * 1.45),
+					face: new THREE.Vector3(0, 0, -radius * 0.58),
 					back: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
 					"close-front": new THREE.Vector3(0, radius * 0.02, -radius * 0.88),
 					"close-three-quarter": new THREE.Vector3(
@@ -705,18 +727,25 @@ export function HumanoidPreview({
 		>
 			<canvas aria-label={`${source.displayName} preview`} ref={canvasRef} />
 			<fieldset className="preview-controls" aria-label="3D preview controls">
-				{(
-					[
-						"front",
-						"close-front",
-						"side",
-						"right-side",
-						"three-quarter",
-						"close-three-quarter",
-						"three-quarter-rear",
-						"back",
-						"scalp",
-					] as const
+				{(source.authoredHuman
+					? ([
+							"full-body",
+							"upper-body",
+							"face",
+							"three-quarter",
+							"back",
+						] as const)
+					: ([
+							"front",
+							"close-front",
+							"side",
+							"right-side",
+							"three-quarter",
+							"close-three-quarter",
+							"three-quarter-rear",
+							"back",
+							"scalp",
+						] as const)
 				).map((preset) => (
 					<button
 						aria-pressed={cameraPreset === preset}
@@ -800,6 +829,7 @@ export function HumanoidPreview({
 			</div>
 			<dl
 				aria-label={`${source.displayName} diagnostics`}
+				hidden={source.authoredHuman}
 				className="preview-diagnostics"
 			>
 				<div>

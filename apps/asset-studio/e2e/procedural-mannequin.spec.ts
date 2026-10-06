@@ -42,7 +42,7 @@ test("previews and animates the checked-in Face Readability V0 mannequin @integr
 			historicalRequests.push(request.url());
 	});
 	await page.route("**/runtime-retarget-report.json", (route) => route.abort());
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 	await expect(page.locator(".preview-status")).toHaveAttribute(
@@ -119,7 +119,7 @@ test("compiles one real body through the browser API and previews its artifact @
 			compileRequests += 1;
 		}
 	});
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const seedInput = page.getByLabel("Random seed");
 	const randomise = page.getByRole("button", {
 		exact: true,
@@ -237,7 +237,7 @@ test("compiles isolated skin color and roughness changes without changing geomet
 }, testInfo) => {
 	test.setTimeout(360_000);
 	const consoleErrors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const cases = [
 		{ color: "#f1c7a5", name: "tone-1-matte", roughness: 0.82 },
 		{ color: "#7d4f38", name: "tone-5-matte", roughness: 0.82 },
@@ -324,7 +324,7 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 }, testInfo) => {
 	test.setTimeout(600_000);
 	const consoleErrors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const hairSelect = page.getByLabel("Hair component");
 	const eyeColorInput = page.getByLabel("Eye color", { exact: true });
 	const compile = page.getByRole("button", {
@@ -409,7 +409,7 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 	expect(hairHash).not.toBe(baldHash);
 	await expect(
 		page.getByRole("region", { exact: true, name: "Hair" }),
-	).toContainText("Compiled · Quaternius Buzzed");
+	).toContainText("Compiled Â· Quaternius Buzzed");
 	const recent = page.getByLabel("Recent Compilations").getByRole("button");
 	await expect(recent).toHaveCount(2);
 	await recent.nth(1).click();
@@ -439,7 +439,7 @@ test("compiles and visually validates the Hairstyle Library V2 @visual", async (
 }, testInfo) => {
 	test.setTimeout(240_000);
 	const errors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 	const styles = [
 		["quaternius-hair-short-crop-v1", "#bd955b", "Short Crop"],
@@ -520,7 +520,7 @@ test("compiles and visually validates length-aware Long and Buns @visual", async
 }, testInfo) => {
 	test.setTimeout(360_000);
 	const errors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const hairSelect = page.getByLabel("Hair component");
 	const hairColorInput = page.getByLabel("Hair color", { exact: true });
 	const compile = page.getByRole("button", {
@@ -622,7 +622,7 @@ test("captures the checked-in mannequin fixture for appearance review @visual", 
 	page,
 }, testInfo) => {
 	const errors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	await expect(page.locator(".preview-status")).toHaveAttribute(
 		"data-status",

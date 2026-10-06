@@ -6,9 +6,11 @@ import {
 
 export const GOLDEN_REFERENCE_FIXTURE_ID = "golden-reference-humanoid-v0";
 export const PROCEDURAL_MANNEQUIN_FIXTURE_ID = "procedural-mannequin-v0";
+export const AUTHORED_HUMAN_FIXTURE_ID = "authored-human-canonical-v1";
 export const MANNEQUIN_ARTIFACT_ROOT =
 	"/assets/derived/procedural-humanoids/mannequin-v0";
 export type PreviewSource = {
+	authoredHuman?: boolean;
 	artifactUrl: string;
 	definition: ThreeVisualAssetDefinition;
 	description: string;
@@ -21,6 +23,23 @@ export type PreviewSource = {
 	transient?: boolean;
 };
 export const PREVIEW_SOURCES = {
+	[AUTHORED_HUMAN_FIXTURE_ID]: {
+		artifactUrl: "/assets/derived/authored-humans/canonical-v1/mannequin.glb",
+		definition: {
+			...PROCEDURAL_MANNEQUIN_V0_ASSET,
+			id: AUTHORED_HUMAN_FIXTURE_ID,
+			name: "Authored Human",
+			url: "/assets/derived/authored-humans/canonical-v1/mannequin.glb",
+		},
+		description: "Experimental canonical authored human",
+		displayName: "Authored Human",
+		fixtureId: AUTHORED_HUMAN_FIXTURE_ID,
+		kindLabel: "Experimental human",
+		mannequin: true,
+		authoredHuman: true,
+		manifestUrl: "/assets/derived/authored-humans/canonical-v1/manifest.json",
+		revision: "canonical-v1",
+	},
 	[GOLDEN_REFERENCE_FIXTURE_ID]: {
 		artifactUrl: GOLDEN_REFERENCE_HUMANOID_ASSET.url,
 		definition: GOLDEN_REFERENCE_HUMANOID_ASSET,

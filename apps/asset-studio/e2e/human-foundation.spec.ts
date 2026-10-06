@@ -37,7 +37,7 @@ for (const name of cases) {
 				else await route.continue();
 			},
 		);
-		await page.goto("/");
+		await page.goto("/?family=legacy");
 		await page
 			.getByLabel("Preview source")
 			.selectOption("procedural-mannequin-v0");

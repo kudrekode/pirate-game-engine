@@ -43,6 +43,8 @@ config and CLI filters).
 | `npm run test:e2e:three-perf` | Settled renderer/RAF timing windows and asset diagnostics | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio` or `:asset-studio:preview` | Fixture mount, animation, source-switch/resource ownership; asserts no historical-report fetch | 1; 0 / 0; 0 |
 | `npm run test:e2e:asset-studio:compile` | Preview then finalisation through real Vite API, served GLB, failure preservation | 1; 2 / 3; 0; retains JSON identity evidence |
+| `npm.cmd run test:e2e -- --grep @canonical-human` | Authored default: engine launcher, camera controls, body/face/hair edits, preview, finalise, return | 1; 2 / 3; 2; requires Studio on 5174 |
+| `npm.cmd run test:e2e:asset-studio -- --grep @canonical-preview` | Authored fixture framing and idle/walk observations | 1; 0 / 0; 3 |
 | `npm run test:e2e:asset-studio:visual` | Current Golden deformation gallery | 1; 0 / 0; 9 (27 in explicit full mode) |
 | `npm run test:e2e:asset-studio -- --grep "captures the checked-in"` | Checked-in mannequin appearance gallery | 1; 0 / 0; 9 |
 | `npm run test:e2e:asset-studio -- --grep "isolated skin"` | Three material appearances, numerical isolation and rendered review | 1; 3 / 6; 3 |
@@ -66,7 +68,9 @@ The ordinary integration and compiler cases produce no success screenshots.
 For the explicit two-app return trip, start Studio, configure
 `VITE_ASSET_STUDIO_URL` if needed, and run
 `node node_modules/@playwright/test/cli.js test e2e/asset-creator.spec.ts --grep '@workflow-navigation'`.
-This case requires both real servers; the default launcher integration retains
+This case is also tagged `@canonical-human` and now exercises the authored default,
+including preview and deterministic finalisation. It requires both real servers;
+the default launcher integration retains
 deterministic unavailable-target coverage. Standalone return URL and alternate
 origins are also covered by `GameEngineNavigation.test.ts`.
 

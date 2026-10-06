@@ -1,4 +1,11 @@
+import {
+	type CharacterGeometry,
+	defaultAuthoredHumanGeometry,
+	validateCharacterGeometry,
+} from "./authoredHuman";
 import componentRegistryData from "./character-component-registry.json";
+
+export * from "./authoredHuman";
 
 export const CHARACTER_RECIPE_VERSION = 1 as const;
 export const HUMANOID_V1_SKELETON_ID = "humanoid-v1" as const;
@@ -70,6 +77,7 @@ export type CharacterFaceAppearance = {
 };
 
 export type CharacterRecipeV1 = {
+	geometry?: CharacterGeometry;
 	version: typeof CHARACTER_RECIPE_VERSION;
 	id: string;
 	name: string;
@@ -661,7 +669,40 @@ export function validateCharacterRecipe(
 		);
 	}
 
+	if (
+		value.geometry !== undefined &&
+		!validateCharacterGeometry(value.geometry)
+	) {
+		issues.push(
+			issue(
+				"$.geometry",
+				"Unsupported geometry family, revision, rig profile or identity values.",
+			),
+		);
+	}
+	if (isRecord(value.geometry) && value.geometry.family === "authored-human") {
+		if (!["none", "quaternius-hair-v0"].includes(parsedComponents.hair))
+			issues.push(
+				issue(
+					"$.components.hair",
+					"Authored humans support Short hair or No hair.",
+				),
+			);
+		if (
+			parameters &&
+			Object.entries(parameters).some(([k, v]) => k !== "height" && v !== 0.5)
+		)
+			issues.push(
+				issue(
+					"$.body.parameters",
+					"Authored humans use identity controls; legacy proportions must remain neutral.",
+				),
+			);
+	}
 	const recipe: CharacterRecipeV1 = {
+		...(validateCharacterGeometry(value.geometry)
+			? { geometry: structuredClone(value.geometry) }
+			: {}),
 		version: CHARACTER_RECIPE_VERSION,
 		id,
 		name,
@@ -798,6 +839,15 @@ export function migrateCharacterRecipe(
 }
 
 export const parseCharacterRecipe = migrateCharacterRecipe;
+
+export function createAuthoredHumanRecipe(): CharacterRecipeV1 {
+	const recipe = createDefaultCharacterRecipe();
+	recipe.geometry = defaultAuthoredHumanGeometry();
+	recipe.body.baseId = "authored-human-canonical-v1";
+	recipe.components.hair = "quaternius-hair-v0";
+	recipe.palette.skin = "#ffffff";
+	return recipe;
+}
 
 export function serializeCharacterRecipe(recipe: CharacterRecipeV1): string {
 	const parsed = parseCharacterRecipe(recipe);

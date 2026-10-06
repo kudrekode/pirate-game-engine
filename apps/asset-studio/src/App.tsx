@@ -1,13 +1,17 @@
 import {
+	AUTHORED_HUMAN_CONTROLS,
+	type AuthoredHumanValues,
 	CHARACTER_HAIR_COMPONENT_IDS,
 	CHARACTER_PALETTE_REGIONS,
 	type CharacterBodyParameters,
 	type CharacterHairComponentId,
 	type CharacterPaletteRegion,
 	type CharacterRecipeV1,
+	createAuthoredHumanRecipe,
 	createDefaultCharacterRecipe,
 	getCharacterComponentDefinition,
 	parseCharacterRecipe,
+	sameCharacterGeometry,
 	serializeCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
 import {
@@ -18,6 +22,7 @@ import { useMemo, useRef, useState } from "react";
 import { GameEngineNavigation } from "./GameEngineNavigation";
 import { HumanoidPreview } from "./HumanoidPreview";
 import {
+	AUTHORED_HUMAN_FIXTURE_ID,
 	GOLDEN_REFERENCE_FIXTURE_ID,
 	PREVIEW_SOURCES,
 	PROCEDURAL_MANNEQUIN_FIXTURE_ID,
@@ -126,8 +131,15 @@ export default function App() {
 	const [activeSection, setActiveSection] =
 		useState<(typeof NAV_SECTIONS)[number]>("Character");
 	const [recipe, setRecipe] = useState<CharacterRecipeV1>(() => {
-		return createDefaultCharacterRecipe();
+		return new URLSearchParams(window.location.search).get("family") ===
+			"legacy"
+			? createDefaultCharacterRecipe()
+			: createAuthoredHumanRecipe();
 	});
+	const [showDetails, setShowDetails] = useState(
+		new URLSearchParams(window.location.search).get("family") === "legacy",
+	);
+	const isAuthored = recipe.geometry?.family === "authored-human";
 	const [randomSeed, setRandomSeed] = useState("asset-studio-1");
 	const [recentCompilations, setRecentCompilations] = useState<
 		RecentCompilation[]
@@ -146,7 +158,9 @@ export default function App() {
 	const [compiledPreviewSource, setCompiledPreviewSource] =
 		useState<PreviewSource>();
 	const [previewSourceId, setPreviewSourceId] = useState<PreviewSourceId>(
-		GOLDEN_REFERENCE_FIXTURE_ID,
+		new URLSearchParams(window.location.search).get("family") === "legacy"
+			? GOLDEN_REFERENCE_FIXTURE_ID
+			: AUTHORED_HUMAN_FIXTURE_ID,
 	);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const generationActive = useRef(false);
@@ -158,7 +172,8 @@ export default function App() {
 	);
 	const appearanceValidation = validateProceduralMannequinAppearance(recipe);
 	const previewSource =
-		previewSourceId === PROCEDURAL_MANNEQUIN_FIXTURE_ID && compiledPreviewSource
+		previewSourceId === compiledPreviewSource?.fixtureId &&
+		compiledPreviewSource
 			? compiledPreviewSource
 			: PREVIEW_SOURCES[previewSourceId];
 	const activeManifest = compileResult?.manifest ?? currentManifest;
@@ -182,8 +197,13 @@ export default function App() {
 					recipe.appearance.skin.roughness ||
 				compileResult.manifest.appearance.hair.authoredColor !==
 					recipe.palette.hair.toLowerCase() ||
-				compileResult.manifest.appearance.face.authoredEyeColor !==
-					recipe.appearance.face.eyeColor.toLowerCase() ||
+				(!isAuthored &&
+					compileResult.manifest.appearance.face.authoredEyeColor !==
+						recipe.appearance.face.eyeColor.toLowerCase()) ||
+				!sameCharacterGeometry(
+					compileResult.manifest.geometrySource,
+					recipe.geometry,
+				) ||
 				compileResult.manifest.components.hair.componentId !==
 					recipe.components.hair),
 	);
@@ -193,6 +213,64 @@ export default function App() {
 	) {
 		setRecipe((current) => updater(current));
 		setLoadStatus("");
+	}
+
+	function openRecipe(nextRecipe: CharacterRecipeV1) {
+		setRecipe(nextRecipe);
+		setActiveSection("Character");
+		setLoadStatus("");
+		setCompileError("");
+		setCompileResult(undefined);
+		setCompiledPreviewSource(undefined);
+		setCurrentManifest(undefined);
+		setCompileStatus("idle");
+		setPreviewSourceId(
+			nextRecipe.geometry?.family === "authored-human"
+				? AUTHORED_HUMAN_FIXTURE_ID
+				: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+		);
+	}
+	function chooseFamily(authored: boolean) {
+		openRecipe(
+			authored ? createAuthoredHumanRecipe() : createDefaultCharacterRecipe(),
+		);
+	}
+	function identityControls(section: "Body" | "Face") {
+		if (recipe.geometry?.family !== "authored-human") return null;
+		const values = recipe.geometry.values;
+		return Object.entries(AUTHORED_HUMAN_CONTROLS)
+			.filter(([, control]) => control.section === section)
+			.map(([name, control]) => {
+				const key = name as keyof AuthoredHumanValues;
+				return (
+					<label key={name}>
+						{control.label}
+						<input
+							aria-label={control.label}
+							type="range"
+							min={control.min}
+							max={control.max}
+							step={0.01}
+							value={values[key]}
+							onChange={(event) => {
+								const value = Number(event.target.value);
+								updateRecipe((current) =>
+									current.geometry?.family === "authored-human"
+										? {
+												...current,
+												geometry: {
+													...current.geometry,
+													values: { ...current.geometry.values, [key]: value },
+												},
+											}
+										: current,
+								);
+							}}
+						/>
+						<output>{values[key].toFixed(2)}</output>
+					</label>
+				);
+			});
 	}
 
 	function updateBodyParameter(
@@ -246,7 +324,7 @@ export default function App() {
 		setCompileResult(compilation.result);
 		setCurrentManifest(compilation.result.manifest);
 		setCompiledPreviewSource(compilation.source);
-		setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
+		setPreviewSourceId(compilation.source.fixtureId as PreviewSourceId);
 		setCompileStatus("succeeded");
 		setCompileError("");
 	}
@@ -272,15 +350,18 @@ export default function App() {
 			const definition: ThreeVisualAssetDefinition = {
 				...PROCEDURAL_MANNEQUIN_V0_ASSET,
 				id: `procedural-mannequin-creator-${result.requestId}`,
-				name: `Procedural Mannequin ${result.manifest.heightMetres.toFixed(2)} m`,
+				name: `${isAuthored ? "Authored Human" : "Procedural Mannequin"} ${result.manifest.heightMetres.toFixed(2)} m`,
 				url: result.assetUrl,
 			};
 			const source: PreviewSource = {
 				artifactUrl: result.assetUrl,
 				definition,
 				description: `Locally compiled ${result.manifest.heightMetres.toFixed(2)} m creator artifact`,
-				displayName: "Procedural Mannequin V1",
-				fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+				displayName: isAuthored ? "Authored Human" : "Procedural Mannequin V1",
+				fixtureId: isAuthored
+					? AUTHORED_HUMAN_FIXTURE_ID
+					: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+				authoredHuman: isAuthored,
 				kindLabel: "Creator compile",
 				manifestUrl: result.manifestUrl,
 				mannequin: true,
@@ -317,7 +398,7 @@ export default function App() {
 					),
 				].slice(0, 10),
 			);
-			setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
+			setPreviewSourceId(source.fixtureId as PreviewSourceId);
 			setCompileStatus("succeeded");
 		} catch (error) {
 			setTechnicalDetails(
@@ -341,6 +422,7 @@ export default function App() {
 	}
 
 	function handleLoadRecipe(event: React.ChangeEvent<HTMLInputElement>) {
+		if (generationActive.current) return;
 		const file = event.target.files?.[0];
 		if (!file) {
 			return;
@@ -348,6 +430,7 @@ export default function App() {
 		file
 			.text()
 			.then((raw) => {
+				if (generationActive.current) return;
 				const parsed = parseCharacterRecipe(JSON.parse(raw));
 				if (!parsed.ok) {
 					setLoadStatus(
@@ -355,8 +438,10 @@ export default function App() {
 					);
 					return;
 				}
-				setRecipe(parsed.value);
-				setLoadStatus(`Loaded ${file.name}.`);
+				openRecipe(parsed.value);
+				setLoadStatus(
+					`Loaded ${file.name}. Generate Preview to view your saved values.`,
+				);
 			})
 			.catch((error) => {
 				setLoadStatus(
@@ -380,7 +465,9 @@ export default function App() {
 					</div>
 				</div>
 				<nav aria-label="Asset Studio sections" className="top-nav">
-					{NAV_SECTIONS.map((section) => (
+					{NAV_SECTIONS.filter(
+						(section) => !isAuthored || section === "Character",
+					).map((section) => (
 						<button
 							className={section === activeSection ? "active" : ""}
 							key={section}
@@ -393,13 +480,24 @@ export default function App() {
 				</nav>
 				<div className="top-actions">
 					<button
+						type="button"
+						onClick={() => setShowDetails((value) => !value)}
+						aria-pressed={showDetails}
+					>
+						Recipe details
+					</button>
+					<button
 						disabled={!validation.ok}
 						onClick={() => downloadRecipe(recipe)}
 						type="button"
 					>
 						Save Recipe JSON
 					</button>
-					<button onClick={() => fileInputRef.current?.click()} type="button">
+					<button
+						disabled={compileStatus === "compiling"}
+						onClick={() => fileInputRef.current?.click()}
+						type="button"
+					>
 						Load Recipe JSON
 					</button>
 					<input
@@ -413,9 +511,35 @@ export default function App() {
 			</header>
 
 			{activeSection === "Character" ? (
-				<main className="workspace">
+				<main
+					className={`workspace ${showDetails ? "with-details" : "creator-workspace"}`}
+				>
 					<aside className="panel creation-panel">
 						<h1>Character</h1>
+						{loadStatus ? (
+							<p className="load-status" role="status">
+								{loadStatus}
+							</p>
+						) : null}
+						<label>
+							Character type
+							<select
+								aria-label="Character type"
+								disabled={compileStatus === "compiling"}
+								value={isAuthored ? "authored" : "legacy"}
+								onChange={(e) => chooseFamily(e.target.value === "authored")}
+							>
+								<option value="authored">Authored Human · Experimental</option>
+								<option value="legacy">Legacy Procedural Mannequin</option>
+							</select>
+						</label>
+						<button
+							type="button"
+							disabled={compileStatus === "compiling"}
+							onClick={() => chooseFamily(isAuthored)}
+						>
+							Reset character
+						</button>
 						<label>
 							Recipe name
 							<input
@@ -428,581 +552,732 @@ export default function App() {
 								value={recipe.name}
 							/>
 						</label>
-						<label>
-							Recipe id
-							<input
-								onChange={(event) =>
-									updateRecipe((current) => ({
-										...current,
-										id: event.target.value,
-									}))
-								}
-								value={recipe.id}
-							/>
-						</label>
-						<label>
-							Body preset
-							<select
-								onChange={(event) =>
-									updateRecipe((current) => ({
-										...current,
-										body: {
-											...current.body,
-											baseId: event.target.value,
-										},
-									}))
-								}
-								value={recipe.body.baseId}
-							>
-								{BODY_BASE_OPTIONS.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</select>
-						</label>
-
-						<div className="section-heading">Body</div>
-						<div className="body-creator-panel">
-							{PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.map((key) => {
-								const parameter = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
-								const value = recipe.body.parameters[key];
-								return (
-									<div className="body-creator-control" key={key}>
-										<label>
-											{parameter.label}
-											<input
-												aria-label={parameter.label}
-												max={parameter.max}
-												min={parameter.min}
-												onChange={(event) =>
-													updateBodyParameter(key, Number(event.target.value))
-												}
-												step={parameter.step}
-												type="range"
-												value={value}
-											/>
-										</label>
-										<div className="body-creator-value">
-											<output
-												aria-label={`Current ${parameter.label.toLowerCase()}`}
-											>
-												{value.toFixed(2)}
-												{parameter.units === "metres" ? " m" : ""}
-											</output>
-											<button
-												onClick={() =>
-													updateBodyParameter(key, parameter.defaultValue)
-												}
-												type="button"
-											>
-												Reset {parameter.label.toLowerCase()}
-											</button>
-										</div>
-									</div>
-								);
-							})}
-							<div className="randomise-control">
+						{isAuthored ? (
+							<>
+								<div className="section-heading">Body</div>
 								<label>
-									Random seed
+									Height
 									<input
-										aria-label="Random seed"
-										onChange={(event) => setRandomSeed(event.target.value)}
-										value={randomSeed}
+										aria-label="Height"
+										type="range"
+										min={1.5}
+										max={2.1}
+										step={0.01}
+										value={recipe.body.parameters.height}
+										onChange={(e) =>
+											updateBodyParameter("height", Number(e.target.value))
+										}
 									/>
+									<output>{recipe.body.parameters.height.toFixed(2)} m</output>
 								</label>
-								<button onClick={handleRandomise} type="button">
-									Randomise
-								</button>
-							</div>
-							{bodyValidation.ok ? (
-								<p className="creator-note">
-									Body proportions pass compiler anatomy validation.
-								</p>
-							) : (
-								<div
-									className="validation-list"
-									aria-label="Body validation errors"
-									role="alert"
-								>
-									{bodyValidation.issues.map((issue) => (
-										<p key={`${issue.path}:${issue.message}`}>
-											{issue.message}
-										</p>
-									))}
-								</div>
-							)}
-						</div>
-
-						<div className="section-heading">Appearance</div>
-						<section aria-label="Skin appearance" className="appearance-panel">
-							<div className="appearance-control">
+								{identityControls("Body")}
+								<div className="section-heading">Face</div>
+								{identityControls("Face")}
+								<div className="section-heading">Hair</div>
 								<label>
-									Skin color
+									Hairstyle
+									<select
+										aria-label="Hairstyle"
+										value={recipe.components.hair}
+										onChange={(e) =>
+											updateRecipe((current) =>
+												replaceHairComponent(
+													current,
+													e.target.value as CharacterHairComponentId,
+												),
+											)
+										}
+									>
+										<option value="quaternius-hair-v0">Short hair</option>
+										<option value="none">No hair</option>
+									</select>
+								</label>
+								<label>
+									Hair color
 									<input
-										aria-label="Skin color"
-										onChange={(event) =>
+										aria-label="Hair color"
+										type="color"
+										value={recipe.palette.hair}
+										onChange={(e) => {
+											const value = e.target.value;
 											updateRecipe((current) => ({
 												...current,
-												palette: {
-													...current.palette,
-													skin: event.target.value.toLowerCase(),
-												},
-											}))
-										}
+												palette: { ...current.palette, hair: value },
+											}));
+										}}
+									/>
+								</label>
+								<div className="section-heading">Appearance</div>
+								<label>
+									Skin tint
+									<input
+										aria-label="Skin tint"
 										type="color"
 										value={recipe.palette.skin}
+										onChange={(e) => {
+											const value = e.target.value;
+											updateRecipe((current) => ({
+												...current,
+												palette: { ...current.palette, skin: value },
+											}));
+										}}
 									/>
 								</label>
-								<div className="body-creator-value">
-									<output aria-label="Current skin color">
-										{recipe.palette.skin.toLowerCase()}
-									</output>
-									<button
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												palette: {
-													...current.palette,
-													skin: PROCEDURAL_SKIN_APPEARANCE.color.defaultValue,
-												},
-											}))
-										}
-										type="button"
-									>
-										Reset skin color
-									</button>
-								</div>
-							</div>
-							<fieldset className="skin-presets">
-								<legend>Skin tone presets</legend>
-								{SKIN_COLOR_PRESETS.map((preset) => (
-									<button
-										aria-label={`${preset.label} ${preset.color}`}
-										key={preset.color}
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												palette: { ...current.palette, skin: preset.color },
-											}))
-										}
-										style={{ backgroundColor: preset.color }}
-										title={`${preset.label} ${preset.color}`}
-										type="button"
-									/>
-								))}
-							</fieldset>
-							<div className="body-creator-control">
 								<label>
 									Skin roughness
 									<input
 										aria-label="Skin roughness"
-										max={PROCEDURAL_SKIN_APPEARANCE.roughness.max}
-										min={PROCEDURAL_SKIN_APPEARANCE.roughness.min}
-										onChange={(event) =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													skin: {
-														...current.appearance.skin,
-														roughness: Number(event.target.value),
-													},
-												},
-											}))
-										}
-										step={PROCEDURAL_SKIN_APPEARANCE.roughness.step}
 										type="range"
+										min={0.2}
+										max={1}
+										step={0.01}
 										value={recipe.appearance.skin.roughness}
-									/>
-								</label>
-								<div className="body-creator-value">
-									<output aria-label="Current skin roughness">
-										{recipe.appearance.skin.roughness.toFixed(2)}
-									</output>
-									<button
-										onClick={() =>
+										onChange={(e) => {
+											const value = Number(e.target.value);
 											updateRecipe((current) => ({
 												...current,
 												appearance: {
 													...current.appearance,
-													skin: {
-														...current.appearance.skin,
-														roughness:
-															PROCEDURAL_SKIN_APPEARANCE.roughness.defaultValue,
-													},
+													skin: { roughness: value },
 												},
-											}))
-										}
-										type="button"
-									>
-										Reset skin roughness
-									</button>
-								</div>
-							</div>
-							<div className="appearance-comparison">
-								<div>
-									<span
-										aria-label="Draft skin swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{ backgroundColor: recipe.palette.skin }}
-									/>
-									Draft · {recipe.palette.skin.toLowerCase()} ·{" "}
-									{recipe.appearance.skin.roughness.toFixed(2)}
-								</div>
-								<div>
-									<span
-										aria-label="Compiled skin swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{
-											backgroundColor:
-												activeManifest?.appearance?.skin.authoredColor ??
-												"transparent",
+											}));
 										}}
 									/>
-									Compiled ·{" "}
-									{activeManifest?.appearance?.skin.authoredColor ?? "—"} ·{" "}
-									{activeManifest?.appearance?.skin.authoredRoughness.toFixed(
-										2,
-									) ?? "—"}
-								</div>
-							</div>
-							{appearanceValidation.ok ? null : (
-								<div
-									aria-label="Appearance validation errors"
-									className="validation-list"
-									role="alert"
-								>
-									{appearanceValidation.issues.map((issue) => (
-										<p key={`${issue.path}:${issue.message}`}>
-											{issue.message}
-										</p>
-									))}
-								</div>
-							)}
-							<p className="creator-note">
-								Appearance edits are draft recipe values. Generate Preview
-								regenerates the GLB; the 3D preview is never recolored in the
-								browser.
-							</p>
-						</section>
-
-						<div className="section-heading">Face</div>
-						<section aria-label="Face" className="appearance-panel">
-							<div className="appearance-control">
+								</label>
+								<p className="creator-note">
+									Adjust your character, then Generate Preview. White tint
+									restores the original skin. Eye colour and clothing are fixed
+									in this experimental base.
+								</p>
+								{recentCompilations.length > 0 && (
+									<details>
+										<summary>Recent Compilations</summary>
+										{recentCompilations.map((entry) => (
+											<button
+												key={entry.result.requestId}
+												type="button"
+												disabled={compileStatus === "compiling"}
+												onClick={() => selectRecentCompilation(entry)}
+											>
+												{entry.recipe.name} ·{" "}
+												{entry.result.manifest.validationLevel === "preview"
+													? "Preview"
+													: "Finalised"}
+											</button>
+										))}
+									</details>
+								)}
+							</>
+						) : (
+							<>
 								<label>
-									Eye color
+									Recipe id
 									<input
-										aria-label="Eye color"
 										onChange={(event) =>
 											updateRecipe((current) => ({
 												...current,
-												appearance: {
-													...current.appearance,
-													face: {
-														...current.appearance.face,
-														eyeColor: event.target.value.toLowerCase(),
-													},
-												},
+												id: event.target.value,
 											}))
 										}
-										type="color"
-										value={recipe.appearance.face.eyeColor}
+										value={recipe.id}
 									/>
 								</label>
-								<div className="body-creator-value">
-									<output aria-label="Current eye color">
-										{recipe.appearance.face.eyeColor.toLowerCase()}
-									</output>
-									<button
-										onClick={() =>
+								<label>
+									Body preset
+									<select
+										onChange={(event) =>
 											updateRecipe((current) => ({
 												...current,
-												appearance: {
-													...current.appearance,
-													face: {
-														...current.appearance.face,
-														eyeColor:
-															PROCEDURAL_FACE_APPEARANCE.eyeColor.defaultValue,
-													},
+												body: {
+													...current.body,
+													baseId: event.target.value,
 												},
 											}))
 										}
-										type="button"
+										value={recipe.body.baseId}
 									>
-										Reset eye color
-									</button>
+										{BODY_BASE_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</select>
+								</label>
+
+								<div className="section-heading">Body</div>
+								<div className="body-creator-panel">
+									{PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.filter(
+										(key) => !isAuthored || key === "height",
+									).map((key) => {
+										const parameter = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
+										const value = recipe.body.parameters[key];
+										return (
+											<div className="body-creator-control" key={key}>
+												<label>
+													{parameter.label}
+													<input
+														aria-label={parameter.label}
+														max={parameter.max}
+														min={parameter.min}
+														onChange={(event) =>
+															updateBodyParameter(
+																key,
+																Number(event.target.value),
+															)
+														}
+														step={parameter.step}
+														type="range"
+														value={value}
+													/>
+												</label>
+												<div className="body-creator-value">
+													<output
+														aria-label={`Current ${parameter.label.toLowerCase()}`}
+													>
+														{value.toFixed(2)}
+														{parameter.units === "metres" ? " m" : ""}
+													</output>
+													<button
+														onClick={() =>
+															updateBodyParameter(key, parameter.defaultValue)
+														}
+														type="button"
+													>
+														Reset {parameter.label.toLowerCase()}
+													</button>
+												</div>
+											</div>
+										);
+									})}
+									{identityControls("Body")}
+									<div className="randomise-control" hidden={isAuthored}>
+										<label>
+											Random seed
+											<input
+												aria-label="Random seed"
+												onChange={(event) => setRandomSeed(event.target.value)}
+												value={randomSeed}
+											/>
+										</label>
+										<button onClick={handleRandomise} type="button">
+											Randomise
+										</button>
+									</div>
+									{bodyValidation.ok ? (
+										<p className="creator-note">
+											Body proportions pass compiler anatomy validation.
+										</p>
+									) : (
+										<div
+											className="validation-list"
+											aria-label="Body validation errors"
+											role="alert"
+										>
+											{bodyValidation.issues.map((issue) => (
+												<p key={`${issue.path}:${issue.message}`}>
+													{issue.message}
+												</p>
+											))}
+										</div>
+									)}
 								</div>
-							</div>
-							<fieldset className="skin-presets">
-								<legend>Eye color presets</legend>
-								{EYE_COLOR_PRESETS.map((preset) => (
-									<button
-										aria-label={`Use ${preset.label} eye color`}
-										key={preset.color}
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													face: {
-														...current.appearance.face,
-														eyeColor: preset.color,
+
+								<div className="section-heading">Appearance</div>
+								<section
+									aria-label="Skin appearance"
+									className="appearance-panel"
+								>
+									<div className="appearance-control">
+										<label>
+											Skin color
+											<input
+												aria-label="Skin color"
+												onChange={(event) =>
+													updateRecipe((current) => ({
+														...current,
+														palette: {
+															...current.palette,
+															skin: event.target.value.toLowerCase(),
+														},
+													}))
+												}
+												type="color"
+												value={recipe.palette.skin}
+											/>
+										</label>
+										<div className="body-creator-value">
+											<output aria-label="Current skin color">
+												{recipe.palette.skin.toLowerCase()}
+											</output>
+											<button
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														palette: {
+															...current.palette,
+															skin: PROCEDURAL_SKIN_APPEARANCE.color
+																.defaultValue,
+														},
+													}))
+												}
+												type="button"
+											>
+												Reset skin color
+											</button>
+										</div>
+									</div>
+									<fieldset className="skin-presets">
+										<legend>Skin tone presets</legend>
+										{SKIN_COLOR_PRESETS.map((preset) => (
+											<button
+												aria-label={`${preset.label} ${preset.color}`}
+												key={preset.color}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														palette: { ...current.palette, skin: preset.color },
+													}))
+												}
+												style={{ backgroundColor: preset.color }}
+												title={`${preset.label} ${preset.color}`}
+												type="button"
+											/>
+										))}
+									</fieldset>
+									<div className="body-creator-control">
+										<label>
+											Skin roughness
+											<input
+												aria-label="Skin roughness"
+												max={PROCEDURAL_SKIN_APPEARANCE.roughness.max}
+												min={PROCEDURAL_SKIN_APPEARANCE.roughness.min}
+												onChange={(event) =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															skin: {
+																...current.appearance.skin,
+																roughness: Number(event.target.value),
+															},
+														},
+													}))
+												}
+												step={PROCEDURAL_SKIN_APPEARANCE.roughness.step}
+												type="range"
+												value={recipe.appearance.skin.roughness}
+											/>
+										</label>
+										<div className="body-creator-value">
+											<output aria-label="Current skin roughness">
+												{recipe.appearance.skin.roughness.toFixed(2)}
+											</output>
+											<button
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															skin: {
+																...current.appearance.skin,
+																roughness:
+																	PROCEDURAL_SKIN_APPEARANCE.roughness
+																		.defaultValue,
+															},
+														},
+													}))
+												}
+												type="button"
+											>
+												Reset skin roughness
+											</button>
+										</div>
+									</div>
+									<div className="appearance-comparison">
+										<div>
+											<span
+												aria-label="Draft skin swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{ backgroundColor: recipe.palette.skin }}
+											/>
+											Draft · {recipe.palette.skin.toLowerCase()} ·{" "}
+											{recipe.appearance.skin.roughness.toFixed(2)}
+										</div>
+										<div>
+											<span
+												aria-label="Compiled skin swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{
+													backgroundColor:
+														activeManifest?.appearance?.skin.authoredColor ??
+														"transparent",
+												}}
+											/>
+											Compiled ·{" "}
+											{activeManifest?.appearance?.skin.authoredColor ?? "—"} ·{" "}
+											{activeManifest?.appearance?.skin.authoredRoughness.toFixed(
+												2,
+											) ?? "—"}
+										</div>
+									</div>
+									{appearanceValidation.ok ? null : (
+										<div
+											aria-label="Appearance validation errors"
+											className="validation-list"
+											role="alert"
+										>
+											{appearanceValidation.issues.map((issue) => (
+												<p key={`${issue.path}:${issue.message}`}>
+													{issue.message}
+												</p>
+											))}
+										</div>
+									)}
+									<p className="creator-note">
+										Appearance edits are draft recipe values. Generate Preview
+										regenerates the GLB; the 3D preview is never recolored in
+										the browser.
+									</p>
+								</section>
+
+								<div className="section-heading">Face</div>
+								{identityControls("Face")}
+								<section
+									aria-label="Face"
+									className="appearance-panel"
+									hidden={isAuthored}
+								>
+									<div className="appearance-control">
+										<label>
+											Eye color
+											<input
+												aria-label="Eye color"
+												onChange={(event) =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															face: {
+																...current.appearance.face,
+																eyeColor: event.target.value.toLowerCase(),
+															},
+														},
+													}))
+												}
+												type="color"
+												value={recipe.appearance.face.eyeColor}
+											/>
+										</label>
+										<div className="body-creator-value">
+											<output aria-label="Current eye color">
+												{recipe.appearance.face.eyeColor.toLowerCase()}
+											</output>
+											<button
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															face: {
+																...current.appearance.face,
+																eyeColor:
+																	PROCEDURAL_FACE_APPEARANCE.eyeColor
+																		.defaultValue,
+															},
+														},
+													}))
+												}
+												type="button"
+											>
+												Reset eye color
+											</button>
+										</div>
+									</div>
+									<fieldset className="skin-presets">
+										<legend>Eye color presets</legend>
+										{EYE_COLOR_PRESETS.map((preset) => (
+											<button
+												aria-label={`Use ${preset.label} eye color`}
+												key={preset.color}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															face: {
+																...current.appearance.face,
+																eyeColor: preset.color,
+															},
+														},
+													}))
+												}
+												style={{ backgroundColor: preset.color }}
+												title={`${preset.label} ${preset.color}`}
+												type="button"
+											/>
+										))}
+									</fieldset>
+									<div className="appearance-comparison">
+										<div>
+											<span
+												aria-label="Draft eye swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{
+													backgroundColor: recipe.appearance.face.eyeColor,
+												}}
+											/>
+											Draft · {recipe.appearance.face.eyeColor.toLowerCase()}
+										</div>
+										<div>
+											<span
+												aria-label="Compiled eye swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{
+													backgroundColor:
+														activeManifest?.appearance?.face.authoredEyeColor ??
+														"transparent",
+												}}
+											/>
+											Compiled ·{" "}
+											{activeManifest?.appearance?.face.authoredEyeColor ?? "—"}
+										</div>
+									</div>
+									<p className="creator-note">
+										Eye colour is authored recipe data. Generate Preview
+										regenerates the two embedded eye meshes and their shared
+										material; nose and mouth remain fixed readability geometry
+										in {PROCEDURAL_FACE_FEATURE_VERSION}.
+									</p>
+								</section>
+
+								<div className="section-heading">Recent Compilations</div>
+								<section
+									className="recent-compilations"
+									aria-label="Recent Compilations"
+								>
+									{recentCompilations.length === 0 ? (
+										<p className="creator-note">
+											Compiled bodies will appear here (up to 10).
+										</p>
+									) : (
+										recentCompilations.map((entry) => (
+											<button
+												aria-pressed={
+													compileResult?.requestId === entry.result.requestId
+												}
+												key={entry.result.requestId}
+												disabled={compileStatus === "compiling"}
+												onClick={() => selectRecentCompilation(entry)}
+												type="button"
+											>
+												{entry.parameters.height.toFixed(2)} m · {entry.seed}
+												{" · "}
+												{entry.result.manifest.validationLevel === "preview"
+													? "Preview"
+													: "Finalised"}
+											</button>
+										))
+									)}
+								</section>
+
+								<div className="section-heading">Hair</div>
+								<section aria-label="Hair" className="appearance-panel">
+									<label>
+										Hair color
+										<input
+											aria-label="Hair color"
+											type="color"
+											value={recipe.palette.hair}
+											onChange={(event) =>
+												updateRecipe((current) => ({
+													...current,
+													palette: {
+														...current.palette,
+														hair: event.target.value.toLowerCase(),
 													},
-												},
-											}))
-										}
-										style={{ backgroundColor: preset.color }}
-										title={`${preset.label} ${preset.color}`}
-										type="button"
-									/>
-								))}
-							</fieldset>
-							<div className="appearance-comparison">
-								<div>
-									<span
-										aria-label="Draft eye swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{ backgroundColor: recipe.appearance.face.eyeColor }}
-									/>
-									Draft · {recipe.appearance.face.eyeColor.toLowerCase()}
-								</div>
-								<div>
-									<span
-										aria-label="Compiled eye swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{
-											backgroundColor:
-												activeManifest?.appearance?.face.authoredEyeColor ??
-												"transparent",
-										}}
-									/>
-									Compiled ·{" "}
-									{activeManifest?.appearance?.face.authoredEyeColor ?? "—"}
-								</div>
-							</div>
-							<p className="creator-note">
-								Eye colour is authored recipe data. Generate Preview regenerates
-								the two embedded eye meshes and their shared material; nose and
-								mouth remain fixed readability geometry in{" "}
-								{PROCEDURAL_FACE_FEATURE_VERSION}.
-							</p>
-						</section>
-
-						<div className="section-heading">Recent Compilations</div>
-						<section
-							className="recent-compilations"
-							aria-label="Recent Compilations"
-						>
-							{recentCompilations.length === 0 ? (
-								<p className="creator-note">
-									Compiled bodies will appear here (up to 10).
-								</p>
-							) : (
-								recentCompilations.map((entry) => (
-									<button
-										aria-pressed={
-											compileResult?.requestId === entry.result.requestId
-										}
-										key={entry.result.requestId}
-										disabled={compileStatus === "compiling"}
-										onClick={() => selectRecentCompilation(entry)}
-										type="button"
-									>
-										{entry.parameters.height.toFixed(2)} m · {entry.seed}
-										{" · "}
-										{entry.result.manifest.validationLevel === "preview"
-											? "Preview"
-											: "Finalised"}
-									</button>
-								))
-							)}
-						</section>
-
-						<div className="section-heading">Hair</div>
-						<section aria-label="Hair" className="appearance-panel">
-							<label>
-								Hair color
-								<input
-									aria-label="Hair color"
-									type="color"
-									value={recipe.palette.hair}
-									onChange={(event) =>
-										updateRecipe((current) => ({
-											...current,
-											palette: {
-												...current.palette,
-												hair: event.target.value.toLowerCase(),
-											},
-										}))
-									}
-								/>
-							</label>
-							<div className="body-creator-value">
-								<output aria-label="Current hair color">
-									{recipe.palette.hair.toLowerCase()}
-								</output>
-								<button
-									type="button"
-									onClick={() =>
-										updateRecipe((current) => ({
-											...current,
-											palette: { ...current.palette, hair: "#3b2a1f" },
-										}))
-									}
-								>
-									Reset hair color
-								</button>
-							</div>
-							<fieldset className="skin-presets">
-								<legend>Hair color presets</legend>
-								{HAIR_COLOR_PRESETS.map((preset) => (
-									<button
-										key={preset.color}
-										type="button"
-										aria-label={`Use ${preset.label} hair color`}
-										title={`${preset.label} ${preset.color}`}
-										style={{ backgroundColor: preset.color }}
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												palette: { ...current.palette, hair: preset.color },
-											}))
-										}
-									/>
-								))}
-							</fieldset>
-							<p>
-								Draft color: {recipe.palette.hair.toLowerCase()} ? Compiled
-								color:{" "}
-								{activeManifest?.components.hair.componentId === "none"
-									? "No hair"
-									: (activeManifest?.appearance?.hair?.authoredColor ?? "?")}
-							</p>
-							<p className="creator-note">
-								Choose a hairstyle and Generate Preview to apply the colour. The
-								colour is saved even when No hair is selected.
-							</p>
-							<label>
-								Hairstyle
-								<select
-									aria-label="Hair component"
-									onChange={(event) =>
-										updateRecipe((current) =>
-											replaceHairComponent(
-												current,
-												event.target.value as CharacterHairComponentId,
-											),
-										)
-									}
-									value={recipe.components.hair}
-								>
-									{HAIR_COMPONENT_OPTIONS.map((option) => (
-										<option key={option.id} value={option.id}>
-											{option.label}
-										</option>
-									))}
-								</select>
-							</label>
-							<div className="appearance-comparison">
-								<div>
-									Draft ·{" "}
-									{recipe.components.hair === "none"
-										? "No hair"
-										: draftHairComponent?.name}
-								</div>
-								<div>
-									Compiled ·{" "}
-									{getCharacterComponentDefinition(
-										activeManifest?.components.hair.componentId ?? "none",
-									)?.name ?? "No hair"}
-								</div>
-							</div>
-							{draftHairComponent ? (
-								<dl aria-label="Hair source status">
-									<div>
-										<dt>Provider</dt>
-										<dd>{draftHairComponent?.provider}</dd>
+												}))
+											}
+										/>
+									</label>
+									<div className="body-creator-value">
+										<output aria-label="Current hair color">
+											{recipe.palette.hair.toLowerCase()}
+										</output>
+										<button
+											type="button"
+											onClick={() =>
+												updateRecipe((current) => ({
+													...current,
+													palette: { ...current.palette, hair: "#3b2a1f" },
+												}))
+											}
+										>
+											Reset hair color
+										</button>
 									</div>
-									<div>
-										<dt>Provenance</dt>
-										<dd>Validated · {draftHairComponent?.license.spdx}</dd>
+									<fieldset className="skin-presets">
+										<legend>Hair color presets</legend>
+										{HAIR_COLOR_PRESETS.map((preset) => (
+											<button
+												key={preset.color}
+												type="button"
+												aria-label={`Use ${preset.label} hair color`}
+												title={`${preset.label} ${preset.color}`}
+												style={{ backgroundColor: preset.color }}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														palette: { ...current.palette, hair: preset.color },
+													}))
+												}
+											/>
+										))}
+									</fieldset>
+									<p>
+										Draft color: {recipe.palette.hair.toLowerCase()} ? Compiled
+										color:{" "}
+										{activeManifest?.components.hair.componentId === "none"
+											? "No hair"
+											: (activeManifest?.appearance?.hair?.authoredColor ??
+												"?")}
+									</p>
+									<p className="creator-note">
+										Choose a hairstyle and Generate Preview to apply the colour.
+										The colour is saved even when No hair is selected.
+									</p>
+									<label>
+										Hairstyle
+										<select
+											aria-label="Hair component"
+											onChange={(event) =>
+												updateRecipe((current) =>
+													replaceHairComponent(
+														current,
+														event.target.value as CharacterHairComponentId,
+													),
+												)
+											}
+											value={recipe.components.hair}
+										>
+											{HAIR_COMPONENT_OPTIONS.filter(
+												(option) =>
+													!isAuthored ||
+													["none", "quaternius-hair-v0"].includes(option.id),
+											).map((option) => (
+												<option key={option.id} value={option.id}>
+													{isAuthored && option.id !== "none"
+														? "Short hair"
+														: option.label}
+												</option>
+											))}
+										</select>
+									</label>
+									<div className="appearance-comparison">
+										<div>
+											Draft ·{" "}
+											{recipe.components.hair === "none"
+												? "No hair"
+												: draftHairComponent?.name}
+										</div>
+										<div>
+											Compiled ·{" "}
+											{getCharacterComponentDefinition(
+												activeManifest?.components.hair.componentId ?? "none",
+											)?.name ?? "No hair"}
+										</div>
 									</div>
-									<div>
-										<dt>Fit profile</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.fittingProfile
-												?.id ?? draftHairComponent?.fittingProfile.id}
-										</dd>
-									</div>
-									<div>
-										<dt>Source bounds</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.sourceBounds
-												? matchingHairManifest.components.hair.sourceBounds.dimensions
-														.map((value) => value.toFixed(3))
-														.join(" × ")
-												: "Generate Preview to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Fitted bounds</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.bounds
-												? matchingHairManifest.components.hair.bounds.dimensions
-														.map((value) => value.toFixed(3))
-														.join(" × ")
-												: "Generate Preview to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Derived fit transform</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.derivedTransform
-												? `Scale ${matchingHairManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${matchingHairManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
-												: "Generate Preview to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Fit validation</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.fitValidation
-												? matchingHairManifest.components.hair.fitValidation
-														.passed
-													? "Pass"
-													: `Warnings: ${matchingHairManifest.components.hair.fitValidation.warnings.join(", ")}`
-												: "Generate Preview to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Compiled geometry</dt>
-										<dd>
-											{matchingHairManifest?.components?.hair?.componentId ===
-											recipe.components.hair
-												? `${matchingHairManifest.components.hair.meshCount} mesh · ${matchingHairManifest.components.hair.triangleCount} triangles · ${matchingHairManifest.components.hair.materialCount} material`
-												: "Generate Preview to inspect"}
-										</dd>
-									</div>
-								</dl>
-							) : null}
-							<p className="creator-note">
-								Hair edits are draft recipe values. Generate Preview embeds the
-								selected hairstyle in the complete GLB.
-							</p>
-						</section>
+									{draftHairComponent ? (
+										<dl aria-label="Hair source status">
+											<div>
+												<dt>Provider</dt>
+												<dd>{draftHairComponent?.provider}</dd>
+											</div>
+											<div>
+												<dt>Provenance</dt>
+												<dd>Validated · {draftHairComponent?.license.spdx}</dd>
+											</div>
+											<div>
+												<dt>Fit profile</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.fittingProfile
+														?.id ?? draftHairComponent?.fittingProfile.id}
+												</dd>
+											</div>
+											<div>
+												<dt>Source bounds</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.sourceBounds
+														? matchingHairManifest.components.hair.sourceBounds.dimensions
+																.map((value) => value.toFixed(3))
+																.join(" × ")
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Fitted bounds</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.bounds
+														? matchingHairManifest.components.hair.bounds.dimensions
+																.map((value) => value.toFixed(3))
+																.join(" × ")
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Derived fit transform</dt>
+												<dd>
+													{matchingHairManifest?.components.hair
+														.derivedTransform
+														? `Scale ${matchingHairManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${matchingHairManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Fit validation</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.fitValidation
+														? matchingHairManifest.components.hair.fitValidation
+																.passed
+															? "Pass"
+															: `Warnings: ${matchingHairManifest.components.hair.fitValidation.warnings.join(", ")}`
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Compiled geometry</dt>
+												<dd>
+													{matchingHairManifest?.components?.hair
+														?.componentId === recipe.components.hair
+														? `${matchingHairManifest.components.hair.meshCount} mesh · ${matchingHairManifest.components.hair.triangleCount} triangles · ${matchingHairManifest.components.hair.materialCount} material`
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+										</dl>
+									) : null}
+									<p className="creator-note">
+										Hair edits are draft recipe values. Generate Preview embeds
+										the selected hairstyle in the complete GLB.
+									</p>
+								</section>
+							</>
+						)}
 					</aside>
 
 					<section className="preview-panel" aria-label="Character preview">
 						<div className="preview-toolbar">
 							<div>
 								<strong>{recipe.name || "Untitled Character"}</strong>
-								<span>{recipe.skeletonId} source recipe</span>
+								<span>
+									{isAuthored
+										? "Experimental authored human"
+										: "Legacy procedural mannequin"}
+								</span>
 							</div>
-							<label>
+							<label className="preview-source-picker" hidden={!showDetails}>
 								Preview source
 								<select
 									onChange={(event) =>
@@ -1109,7 +1384,10 @@ export default function App() {
 										</a>
 									</p>
 								)}
-							<dl aria-label="Creator compilation diagnostics">
+							<dl
+								aria-label="Creator compilation diagnostics"
+								hidden={!showDetails}
+							>
 								<div>
 									<dt>Recipe hash</dt>
 									<dd>{activeManifest?.recipeHash ?? "—"}</dd>
@@ -1200,7 +1478,7 @@ export default function App() {
 						</div>
 					</section>
 
-					<aside className="panel details-panel">
+					<aside className="panel details-panel" hidden={!showDetails}>
 						<div className="section-heading">Palette</div>
 						<div className="palette-grid">
 							{CHARACTER_PALETTE_REGIONS.filter(
@@ -1239,7 +1517,6 @@ export default function App() {
 								))}
 							</div>
 						)}
-						{loadStatus ? <p className="load-status">{loadStatus}</p> : null}
 
 						<div className="section-heading">Recipe JSON</div>
 						<pre className="recipe-json" data-testid="recipe-json">
@@ -1258,11 +1535,9 @@ export default function App() {
 			)}
 
 			<footer className="status-bar">
-				<span>CharacterRecipeV1 is editable source data.</span>
-				<span>The mannequin GLB is a derived compiler artifact.</span>
-				<span>
-					Body proportions rebuild it through the local Blender compiler.
-				</span>
+				<span>Your recipe stays editable.</span>
+				<span>Drag to orbit · Scroll to zoom</span>
+				<span>Generate Preview to apply your changes.</span>
 				<span>Active section: {activeSection}</span>
 			</footer>
 		</div>

@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { validateAuthoredGeometry } from "../../../tools/blender-character/authored-human-contract.mjs";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 import {
 	CHARACTER_HAIR_COMPONENT_IDS,
@@ -169,12 +171,22 @@ export function validateCreatorCompileRequest(value) {
 			path: "$.components.hair",
 		});
 	}
+	issues.push(
+		...validateAuthoredGeometry(
+			value.geometrySource,
+			value.proportions,
+			value.components?.hair,
+		),
+	);
 	return issues.length > 0
 		? { issues, ok: false }
 		: {
 				issues: [],
 				ok: true,
 				value: {
+					...(value.geometrySource === undefined
+						? {}
+						: { geometrySource: structuredClone(value.geometrySource) }),
 					appearance: {
 						eyeColor: value.appearance.eyeColor.toLowerCase(),
 						hairColor: value.appearance.hairColor.toLowerCase(),
@@ -194,6 +206,7 @@ export function validateCreatorCompileRequest(value) {
 }
 
 export async function createRecipeForProportions({
+	geometrySource,
 	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
@@ -205,6 +218,7 @@ export async function createRecipeForProportions({
 	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
 	const candidate = {
 		...baseRecipe,
+		...(geometrySource === undefined ? {} : { geometrySource }),
 		appearance: {
 			hair: {
 				color:
@@ -252,6 +266,7 @@ export async function createRecipeForProportions({
 }
 
 export async function compileCreatorMannequin({
+	geometrySource,
 	mode = "full",
 	appearance,
 	baseRecipePath = path.resolve(
@@ -269,6 +284,7 @@ export async function compileCreatorMannequin({
 	requestId = randomUUID(),
 } = {}) {
 	const recipe = await createRecipeForProportions({
+		geometrySource,
 		appearance,
 		baseRecipePath,
 		proportions,
@@ -301,11 +317,16 @@ export async function compileCreatorMannequin({
 		});
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
+			!isDeepStrictEqual(
+				result?.manifest?.geometrySource,
+				recipe.geometrySource,
+			) ||
 			result?.manifest?.recipeHash !== recipeHash ||
 			result?.manifest?.appearance?.hair?.authoredColor !==
 				recipe.appearance.hair.color ||
-			result?.manifest?.appearance?.face?.authoredEyeColor !==
-				recipe.appearance.face.eyeColor ||
+			(recipe.geometrySource?.family !== "authored-human" &&
+				result?.manifest?.appearance?.face?.authoredEyeColor !==
+					recipe.appearance.face.eyeColor) ||
 			result?.manifest?.appearance?.skin?.authoredColor !==
 				recipe.appearance.skin.color ||
 			result?.manifest?.appearance?.skin?.authoredRoughness !==
@@ -454,6 +475,7 @@ export function createProceduralMannequinCompileMiddleware({
 						? "preview"
 						: "full",
 				appearance: parsed.value.appearance,
+				geometrySource: parsed.value.geometrySource,
 				generatedRoot,
 				hairComponentId: parsed.value.components.hair,
 				proportions: parsed.value.proportions,
