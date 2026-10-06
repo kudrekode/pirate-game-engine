@@ -1,5 +1,17 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment jsdom
+import "./testSetup";
+import {
+	createAuthoredHumanRecipe,
+	createDefaultCharacterRecipe,
+} from "@adventure-game-builder/character-contract";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 function successfulCompile(
@@ -12,6 +24,7 @@ function successfulCompile(
 		compilationDurationMs: 1234,
 		generatedAt: "2026-07-16T12:00:00.000Z",
 		manifest: {
+			validationLevel: "preview",
 			appearance: {
 				hair: {
 					authoredColor: "#3b2a1f",
@@ -66,7 +79,7 @@ function successfulCompile(
 				maxY: heightMetres,
 				minY: 0,
 			},
-			compilerVersion: "procedural-mannequin-blender-v7",
+			compilerVersion: "procedural-mannequin-blender-v8",
 			face: {
 				eyeColor: "#4b5d67",
 				eyeMeshCount: 2,
@@ -95,7 +108,7 @@ function successfulCompile(
 				neckTop: [0, 0, 1.45],
 				scalpTop: [0, 0, 1.726],
 				symmetryErrorMetres: 0,
-				topologyVersion: "procedural-humanoid-v3",
+				topologyVersion: "procedural-humanoid-v4",
 			},
 			components: {
 				hair: {
@@ -119,7 +132,7 @@ function successfulCompile(
 					vertexCount: hair === "none" ? 0 : 466,
 				},
 			},
-			deterministicBuild: true,
+			deterministicBuild: false,
 			generationDurationMs: 1200,
 			geometryAndSkinningSemanticHash: "e".repeat(64),
 			heightMetres,
@@ -161,9 +174,9 @@ function successfulCompile(
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v3",
+			topologyVersion: "procedural-humanoid-v4",
 			triangleCount: 5676,
-			validationVersion: "procedural-mannequin-roundtrip-v8",
+			validationVersion: "procedural-mannequin-roundtrip-v9",
 			vertexCount: 2876,
 		},
 		manifestUrl:
@@ -172,7 +185,7 @@ function successfulCompile(
 		status: "succeeded",
 		validation: {
 			passed: true,
-			version: "procedural-mannequin-roundtrip-v8",
+			version: "procedural-mannequin-roundtrip-v9",
 		},
 	};
 }
@@ -180,8 +193,116 @@ function successfulCompile(
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
+beforeEach(() => {
+	window.history.replaceState({}, "", "/?family=legacy");
+});
 
 describe("Asset Studio app", { timeout: 15_000 }, () => {
+	it("loads each recipe family with visible feedback and rejects an invalid identity without losing the draft", async () => {
+		window.history.replaceState({}, "", "/");
+		const { container } = render(<App />);
+		const input = container.querySelector('input[type="file"]');
+		if (!input)
+			throw new Error("Expected the recipe file input to be rendered.");
+		const load = (recipe: unknown) =>
+			fireEvent.change(input, {
+				target: {
+					files: [
+						{ name: "saved.json", text: async () => JSON.stringify(recipe) },
+					],
+				},
+			});
+		const legacy = createDefaultCharacterRecipe();
+		legacy.body.parameters.shoulderWidth = 0.8;
+		load(legacy);
+		await waitFor(() =>
+			expect(screen.getByLabelText("Character type")).toHaveValue("legacy"),
+		);
+		expect(
+			container.querySelector(
+				'[data-preview-source="procedural-mannequin-v0"]',
+			),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Loaded saved.json/)).toBeVisible();
+		const authored = createAuthoredHumanRecipe();
+		if (authored.geometry?.family !== "authored-human") throw Error("family");
+		authored.geometry.values.mass = 0.7;
+		load(authored);
+		await waitFor(() =>
+			expect(screen.getByText(/Loaded saved.json/)).toBeVisible(),
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Body" }));
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
+		expect(
+			container.querySelector(
+				'[data-preview-source="authored-human-canonical-v1"]',
+			),
+		).toBeInTheDocument();
+		expect(screen.getByTestId("recipe-json")).not.toBeVisible();
+		authored.geometry.values.mass = 9;
+		load(authored);
+		await waitFor(() =>
+			expect(screen.getByText(/Recipe rejected/)).toBeVisible(),
+		);
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
+	});
+
+	it("offers section presets, preserves unrelated choices, and resets without compiling", () => {
+		window.history.replaceState({}, "", "/");
+		render(<App />);
+		const section = (name: string) =>
+			fireEvent.click(
+				screen
+					.getByRole("navigation", { name: "Character categories" })
+					.querySelectorAll("button")[
+					["Character", "Body", "Face", "Hair", "Appearance"].indexOf(name)
+				],
+			);
+		section("Body");
+		for (const name of ["Build", "Muscle", "Frame", "Height"])
+			expect(screen.getByLabelText(name)).toBeVisible();
+		fireEvent.change(screen.getByLabelText("Height"), {
+			target: { value: "1.7" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Broad body preset" }));
+		expect(screen.getByText(/Changes not previewed/)).toBeVisible();
+		expect(screen.getByLabelText("Height")).toHaveValue("1.7");
+		expect(screen.getByLabelText("Frame")).toHaveValue("1");
+		expect(
+			screen.getByRole("button", { name: "Broad body preset" }),
+		).toHaveAttribute("aria-pressed", "true");
+		fireEvent.change(screen.getByLabelText("Build"), {
+			target: { value: "0.7" },
+		});
+		expect(screen.getByText("Custom")).toBeVisible();
+		section("Face");
+		fireEvent.click(
+			screen.getByRole("button", { name: "Angular face preset" }),
+		);
+		expect(screen.getByLabelText("Head Width")).toHaveValue("-0.65");
+		section("Hair");
+		fireEvent.click(screen.getByRole("button", { name: "Auburn hair" }));
+		section("Face");
+		fireEvent.click(screen.getByRole("button", { name: "Reset face" }));
+		expect(screen.getByLabelText("Head Width")).toHaveValue("0");
+		section("Body");
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
+		section("Hair");
+		expect(screen.getByLabelText("Hair color")).toHaveValue("#8b3f27");
+		section("Character");
+		fireEvent.click(screen.getByRole("button", { name: "Reset character" }));
+		fireEvent.click(
+			screen.getByRole("button", { name: "Undo character reset" }),
+		);
+		section("Body");
+		expect(screen.getByLabelText("Build")).toHaveValue("0.7");
+		fireEvent.click(screen.getByRole("button", { name: "Recipe details" }));
+		fireEvent.change(screen.getByLabelText("Character type"), {
+			target: { value: "legacy" },
+		});
+		expect(screen.getByLabelText("Shoulders")).toBeVisible();
+	});
+
 	it("renders the Character screen as the active V0 workflow", () => {
 		render(<App />);
 
@@ -216,9 +337,7 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		expect(screen.getByRole("button", { name: "Walk" })).toBeDisabled();
 		expect(screen.getByRole("button", { name: "Pause" })).toBeDisabled();
 		expect(screen.getByLabelText("Animation sample time")).toBeDisabled();
-		expect(
-			screen.getByText("CharacterRecipeV1 is editable source data."),
-		).toBeInTheDocument();
+		expect(screen.getByText("Your recipe stays editable.")).toBeInTheDocument();
 	});
 
 	it("updates recipe state from controls and reflects it in JSON", () => {
@@ -358,7 +477,9 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		}
 		expect(screen.getByLabelText("Current height")).toHaveTextContent("1.82 m");
 		expect(screen.getByRole("button", { name: "Reset arms" })).toBeEnabled();
-		expect(screen.getByRole("button", { name: "Compile" })).toBeEnabled();
+		expect(
+			screen.getByRole("button", { name: "Generate Preview" }),
+		).toBeEnabled();
 		expect(screen.queryByLabelText("Build")).not.toBeInTheDocument();
 	});
 
@@ -396,12 +517,10 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		fireEvent.change(screen.getByLabelText("Hair component"), {
 			target: { value: "quaternius-hair-v0" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+		fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
 
 		await waitFor(() =>
-			expect(
-				screen.getByText(/Compilation and validation succeeded/u),
-			).toBeInTheDocument(),
+			expect(screen.getByText(/Preview ready/u)).toBeInTheDocument(),
 		);
 		expect(
 			screen.getByLabelText("Procedural Mannequin V1 preview"),
@@ -447,7 +566,7 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		fireEvent.change(screen.getByLabelText("Hair component"), {
 			target: { value: "quaternius-hair-v0" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Compile" }));
+		fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
 
 		await waitFor(() =>
 			expect(
@@ -512,4 +631,178 @@ describe("Asset Studio app", { timeout: 15_000 }, () => {
 		}
 		expect(fetch).not.toHaveBeenCalled();
 	});
+});
+
+it("keeps distinct request snapshots and restores recent results without compiling again", async () => {
+	const requests: Record<string, unknown>[] = [];
+	const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+		const request = JSON.parse(String(init?.body));
+		requests.push(request);
+		const result = successfulCompile(request.proportions.height);
+		result.requestId = `11111111-1111-4111-8111-${String(requests.length).padStart(12, "0")}`;
+		result.manifest.proportions = request.proportions;
+		result.manifest.recipeHash = String(requests.length).repeat(64);
+		result.manifest.outputHash = String(requests.length + 3).repeat(64);
+		return new Response(JSON.stringify(result), { status: 200 });
+	});
+	vi.stubGlobal("fetch", fetch);
+	render(<App />);
+	const snapshots: string[] = [];
+	const randomise = screen.getByRole("button", { name: "Randomise" });
+	const generate = screen.getByRole("button", { name: "Generate Preview" });
+	for (const seed of ["body-e2e-11", "body-e2e-22", "body-e2e-33"]) {
+		fireEvent.change(screen.getByLabelText("Random seed"), {
+			target: { value: seed },
+		});
+		fireEvent.click(randomise);
+		snapshots.push(screen.getByTestId("recipe-json").textContent ?? "");
+		fireEvent.click(generate);
+		await waitFor(() =>
+			expect(screen.getByText(/Preview ready/u)).toBeInTheDocument(),
+		);
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent(String(requests.length).repeat(64));
+	}
+	expect(fetch).toHaveBeenCalledTimes(3);
+	expect(
+		new Set(requests.map((request) => JSON.stringify(request.proportions)))
+			.size,
+	).toBe(3);
+	for (const [index, seed] of [
+		"body-e2e-11",
+		"body-e2e-22",
+		"body-e2e-33",
+	].entries()) {
+		fireEvent.click(
+			within(screen.getByLabelText("Recent Compilations")).getByRole("button", {
+				name: new RegExp(seed),
+			}),
+		);
+		expect(screen.getByTestId("recipe-json").textContent).toBe(
+			snapshots[index],
+		);
+		expect(
+			screen.getByLabelText("Creator compilation diagnostics"),
+		).toHaveTextContent(String(index + 1).repeat(64));
+		expect(requests[index]).toMatchObject({
+			version: 6,
+			proportions: JSON.parse(snapshots[index]).body.parameters,
+		});
+	}
+	expect(fetch).toHaveBeenCalledTimes(3);
+	expect(document.querySelectorAll("canvas")).toHaveLength(1);
+	fetch.mockImplementationOnce(
+		async () =>
+			new Response(
+				JSON.stringify({
+					status: "failed",
+					error: "synthetic compile failure",
+				}),
+				{ status: 500 },
+			),
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
+	await waitFor(() =>
+		expect(screen.getByText(/synthetic compile failure/u)).toBeInTheDocument(),
+	);
+	expect(
+		screen.getByLabelText("Creator compilation diagnostics"),
+	).toHaveTextContent("3".repeat(64));
+	expect(
+		screen.getByLabelText("Recent Compilations").querySelectorAll("button"),
+	).toHaveLength(3);
+});
+
+it("separates preview assurance from finalisation and preserves the captured draft", async () => {
+	let finish: (value: Response) => void = () => {};
+	const fetch = vi.fn(
+		() =>
+			new Promise<Response>((resolve) => {
+				finish = resolve;
+			}),
+	);
+	vi.stubGlobal("fetch", fetch);
+	render(<App />);
+	fireEvent.click(screen.getByRole("button", { name: "Generate Preview" }));
+	expect(screen.getByText("Generating preview…")).toBeInTheDocument();
+	expect(
+		screen.getByRole("button", { name: "Finalise Character" }),
+	).toBeDisabled();
+	finish(new Response(JSON.stringify(successfulCompile(1.82))));
+	await screen.findByText("Preview ready");
+	expect(fetch.mock.calls[0]).toEqual(
+		expect.arrayContaining(["/__asset-studio/procedural-mannequin/preview"]),
+	);
+	expect(
+		screen.queryByRole("link", { name: "Download character GLB" }),
+	).toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: "Finalise Character" }));
+	expect(screen.getByText("Finalising…")).toBeInTheDocument();
+	const result = successfulCompile(1.82);
+	result.manifest.validationLevel = "full";
+	result.manifest.deterministicBuild = true;
+	finish(new Response(JSON.stringify(result)));
+	await screen.findByText("Character finalised");
+	expect(screen.getByRole("button", { name: "Use in Game" })).toBeDisabled();
+	expect(
+		screen.getByText(/Open Asset Creator from a local Game Engine project/),
+	).toBeVisible();
+	expect(fetch.mock.calls[1]).toEqual(
+		expect.arrayContaining(["/__asset-studio/procedural-mannequin/compile"]),
+	);
+	expect(
+		screen.getByRole("link", { name: "Download character GLB" }),
+	).toHaveAttribute("download");
+	fireEvent.change(screen.getByLabelText("Height"), {
+		target: { value: "1.9" },
+	});
+	expect(screen.getByText(/Changes not previewed/)).toBeInTheDocument();
+	expect(
+		screen.queryByRole("link", { name: "Download character GLB" }),
+	).toBeNull();
+});
+
+it("keeps outfit and swatch edits local, restores saved choices and blocks unsupported fits", async () => {
+	window.history.replaceState({}, "", "/");
+	const fetch = vi.fn();
+	vi.stubGlobal("fetch", fetch);
+	const { container } = render(<App />);
+	const category = (name: string) =>
+		within(
+			screen.getByRole("navigation", { name: "Character categories" }),
+		).getByRole("button", { name });
+	fireEvent.click(category("Clothing"));
+	fireEvent.click(screen.getByRole("button", { name: /Everyday Outfit/ }));
+	fireEvent.click(screen.getByRole("button", { name: "White top" }));
+	expect(screen.getByText(/Changes not previewed/)).toBeVisible();
+	const recipeJson = screen.getByTestId("recipe-json").textContent;
+	if (!recipeJson) throw new Error("Expected the recipe JSON.");
+	const saved = JSON.parse(recipeJson);
+	expect(saved.clothing.top.color).toBe("#dddcd5");
+	fireEvent.click(screen.getByRole("button", { name: /No outfit/ }));
+	const input = container.querySelector('input[type="file"]');
+	if (!input) throw new Error("Expected the recipe file input.");
+	fireEvent.change(input, {
+		target: {
+			files: [{ name: "outfit.json", text: async () => JSON.stringify(saved) }],
+		},
+	});
+	await screen.findByText(/Loaded outfit.json/);
+	fireEvent.click(category("Clothing"));
+	expect(screen.getByRole("button", { name: "White top" })).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	fireEvent.click(category("Body"));
+	for (const label of ["Build", "Muscle", "Frame"])
+		fireEvent.change(screen.getByLabelText(label, { exact: true }), {
+			target: { value: "1" },
+		});
+	expect(
+		screen.getByRole("button", { name: "Generate Preview" }),
+	).toBeDisabled();
+	fireEvent.click(category("Clothing"));
+	expect(screen.getByRole("alert")).toHaveTextContent("supported fit");
+	expect(fetch).not.toHaveBeenCalled();
 });

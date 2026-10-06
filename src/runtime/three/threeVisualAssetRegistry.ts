@@ -14,6 +14,8 @@ export type {
 } from "@adventure-game-builder/three-asset-preview";
 
 import type { ThreeVisualAssetDefinition } from "@adventure-game-builder/three-asset-preview";
+import { characterAssetProblem } from "../../data/characterAssets";
+import type { CharacterGameAsset } from "../../types/game";
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
@@ -203,14 +205,36 @@ function getAssetMap(): Map<string, ThreeVisualAssetDefinition> {
 	return new Map(activeRegistry.map((asset) => [asset.id, asset]));
 }
 
-export function listThreeVisualAssets(): ThreeVisualAssetDefinition[] {
-	return [...activeRegistry];
+export function listThreeVisualAssets(
+	projectAssets: CharacterGameAsset[] = [],
+): ThreeVisualAssetDefinition[] {
+	return [
+		...activeRegistry,
+		...projectAssets.flatMap((asset) => {
+			if (characterAssetProblem(asset)) return [];
+			return [
+				{
+					...PROCEDURAL_MANNEQUIN_V0_ASSET,
+					id: asset.id,
+					name: asset.name,
+					url: asset.glbUrl,
+					tags: ["character", "finalised", asset.geometryFamily],
+				},
+			];
+		}),
+	];
 }
 
 export function getThreeVisualAssetDefinition(
 	assetId: string | undefined,
+	projectAssets: CharacterGameAsset[] = [],
 ): ThreeVisualAssetDefinition | undefined {
-	return assetId ? getAssetMap().get(assetId) : undefined;
+	return assetId
+		? (getAssetMap().get(assetId) ??
+				listThreeVisualAssets(projectAssets).find(
+					(asset) => asset.id === assetId,
+				))
+		: undefined;
 }
 
 export function setThreeVisualAssetRegistryForTests(

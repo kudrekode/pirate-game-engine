@@ -80,6 +80,33 @@ describe("Three visual marker renderer", () => {
 		).toBeGreaterThan(0);
 	});
 
+	it("retains a missing character identity and shows a selectable error marker", () => {
+		const marker = makeMarker({
+			visual: {
+				assetId: "deleted-character",
+				mode: "placeholder",
+				requestedMode: "asset",
+				source: "authored",
+				placeholderType: "npc",
+				heightOffset: 0,
+				scale: 1,
+				rotationOffset: 0,
+			},
+		});
+		const metadata = { areaId: "area", entityId: "npc_1", entityType: "npc" };
+		const result = createThreeVisualMarkerGroup(marker, { metadata });
+		expect(result).toMatchObject({
+			assetStatus: "missing",
+			assetDefinitionId: "deleted-character",
+			usedAsset: false,
+		});
+		expect(result.group.userData.selectionMetadata).toBe(metadata);
+		expect(
+			getPlaceholderSelectableObjects(result.group).length,
+		).toBeGreaterThan(0);
+		expect(marker.visual?.assetId).toBe("deleted-character");
+	});
+
 	it("keeps editor and runtime on the shared normalised marker renderer", () => {
 		expect(threeDPreviewSource).toContain("createThreeVisualMarkerGroup(");
 		expect(threeRuntimePanelSource).toContain("createThreeVisualMarkerGroup(");

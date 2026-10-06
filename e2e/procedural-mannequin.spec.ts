@@ -1,7 +1,17 @@
+import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
 
 const ASSET_ID = "procedural-mannequin-quaternius-hair-v0";
+const fixtureManifest = JSON.parse(
+	readFileSync(
+		new URL(
+			"../public/assets/derived/procedural-humanoids/mannequin-hair-v0/manifest.json",
+			import.meta.url,
+		),
+		"utf8",
+	),
+);
 const EDITOR_LABEL = "ThreeDPreview";
 const RUNTIME_LABEL = "ThreeRuntimePanel";
 
@@ -44,8 +54,8 @@ async function waitForMannequin(
 			snapshot.asset.statusCounts.loading === 0 &&
 			snapshot.asset.statusCounts.error === 0 &&
 			metrics?.boneCount === 65 &&
-			metrics.triangleCount === 6506 &&
-			metrics.vertexCount === 3342 &&
+			metrics.triangleCount === fixtureManifest.triangleCount &&
+			metrics.vertexCount === fixtureManifest.vertexCount &&
 			metrics.skinnedMeshCount === 6 &&
 			metrics.materialCount === 4 &&
 			metrics.textureCount === 1 &&
@@ -70,7 +80,7 @@ async function waitForMannequin(
 	);
 }
 
-test("loads the Quaternius-haired Procedural Mannequin for a player and NPC through shared Three presentation", async ({
+test("loads the Quaternius-haired Procedural Mannequin for a player and NPC through shared Three presentation @integration", async ({
 	context,
 	page,
 }, testInfo) => {
@@ -97,10 +107,11 @@ test("loads the Quaternius-haired Procedural Mannequin for a player and NPC thro
 	await page.getByRole("button", { exact: true, name: "3D View" }).click();
 	await page.getByRole("button", { exact: true, name: "Perf" }).click();
 	const editorSnapshot = await waitForMannequin(page, EDITOR_LABEL);
-	await page.screenshot({
-		fullPage: true,
-		path: testInfo.outputPath("procedural-mannequin-editor.png"),
-	});
+	if (process.env.CAPTURE_VISUALS === "1")
+		await page.screenshot({
+			fullPage: true,
+			path: testInfo.outputPath("procedural-mannequin-editor.png"),
+		});
 
 	await page.getByRole("button", { exact: true, name: "Play" }).click();
 	await page.getByRole("button", { name: "Play 3D Experimental" }).click();
@@ -110,10 +121,11 @@ test("loads the Quaternius-haired Procedural Mannequin for a player and NPC thro
 	}
 	await page.getByRole("button", { exact: true, name: "Perf" }).click();
 	const runtimeSnapshot = await waitForMannequin(page, RUNTIME_LABEL);
-	await page.screenshot({
-		fullPage: true,
-		path: testInfo.outputPath("procedural-mannequin-runtime.png"),
-	});
+	if (process.env.CAPTURE_VISUALS === "1")
+		await page.screenshot({
+			fullPage: true,
+			path: testInfo.outputPath("procedural-mannequin-runtime.png"),
+		});
 
 	expect(editorSnapshot.asset.loadFailureCount).toBe(0);
 	expect(runtimeSnapshot.asset.loadFailureCount).toBe(0);

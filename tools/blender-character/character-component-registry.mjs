@@ -1,3 +1,4 @@
+import { validateClothingSources } from "./clothing-contract.mjs";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -254,7 +255,7 @@ export async function validateCharacterComponentRegistry({
 		throw new Error("Unsupported character component registry version.");
 	}
 	const ids = new Set();
-	const sourceHashes = {};
+	const sourceHashes = await validateClothingSources(workspaceRoot, registryData.clothingComponents);
 	for (const component of registryData.components) {
 		if (ids.has(component.id)) {
 			throw new Error(`Duplicate character component id "${component.id}".`);
@@ -266,7 +267,7 @@ export async function validateCharacterComponentRegistry({
 			component.expectedAttachmentBone !== "Head" ||
 			component.attachmentStrategy !== "main-skeleton-head-surface-skinning" ||
 			component.compilerCompatibilityVersion !==
-				"procedural-mannequin-blender-v7"
+				"procedural-mannequin-blender-v8"
 		) {
 			throw new Error(`Component "${component.id}" has incompatible metadata.`);
 		}

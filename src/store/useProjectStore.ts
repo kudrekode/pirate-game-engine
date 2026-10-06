@@ -46,6 +46,7 @@ export type MapPaletteSelection =
 	| { type: "structure"; structureId: string };
 
 type ProjectStore = {
+	projectContextId: string;
 	project: GameProject;
 	editorSelection: EditorSelection;
 	mapPaletteSelection: MapPaletteSelection;
@@ -538,6 +539,7 @@ function areaSelection(project: GameProject): EditorSelection {
 const initialProject = migrateProject(defaultProject);
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
+	projectContextId: makeId("project-context"),
 	project: initialProject,
 	editorSelection: areaSelection(initialProject),
 	mapPaletteSelection: { type: "none" },
@@ -547,6 +549,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		set({
 			editorSelection: areaSelection(migratedProject),
 			project: migratedProject,
+			projectContextId: makeId("project-context"),
 		});
 	},
 
@@ -559,7 +562,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
 	resetProject: () => {
 		const project = migrateProject(defaultProject);
-		set({ editorSelection: areaSelection(project), project });
+		set({
+			editorSelection: areaSelection(project),
+			project,
+			projectContextId: makeId("project-context"),
+		});
 	},
 
 	setEditorSelection: (selection) => set({ editorSelection: selection }),
@@ -580,7 +587,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		}
 
 		const project = migrateProject(JSON.parse(raw));
-		set({ editorSelection: areaSelection(project), project });
+		set({
+			editorSelection: areaSelection(project),
+			project,
+			projectContextId: makeId("project-context"),
+		});
 		return true;
 	},
 

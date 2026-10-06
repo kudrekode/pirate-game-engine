@@ -1,7 +1,10 @@
+import { validateClothing } from "../../../tools/blender-character/clothing-contract.mjs";
 import { randomUUID } from "node:crypto";
+import { validateAuthoredGeometry } from "../../../tools/blender-character/authored-human-contract.mjs";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 import {
 	CHARACTER_HAIR_COMPONENT_IDS,
@@ -25,6 +28,8 @@ export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 export const PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/assets";
 export const PROCEDURAL_MANNEQUIN_COMPILE_REQUEST_VERSION = 6;
+export const PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT =
+	"/__asset-studio/procedural-mannequin/preview";
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 const MAX_REQUEST_BYTES = 64 * 1024;
@@ -167,12 +172,26 @@ export function validateCreatorCompileRequest(value) {
 			path: "$.components.hair",
 		});
 	}
+	issues.push(...validateClothing(value.clothing, value.geometrySource));
+	issues.push(
+		...validateAuthoredGeometry(
+			value.geometrySource,
+			value.proportions,
+			value.components?.hair,
+		),
+	);
 	return issues.length > 0
 		? { issues, ok: false }
 		: {
 				issues: [],
 				ok: true,
 				value: {
+					...(value.clothing === undefined
+						? {}
+						: { clothing: structuredClone(value.clothing) }),
+					...(value.geometrySource === undefined
+						? {}
+						: { geometrySource: structuredClone(value.geometrySource) }),
 					appearance: {
 						eyeColor: value.appearance.eyeColor.toLowerCase(),
 						hairColor: value.appearance.hairColor.toLowerCase(),
@@ -192,6 +211,8 @@ export function validateCreatorCompileRequest(value) {
 }
 
 export async function createRecipeForProportions({
+	geometrySource,
+	clothing,
 	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
@@ -203,6 +224,8 @@ export async function createRecipeForProportions({
 	const baseRecipe = JSON.parse(await readFile(baseRecipePath, "utf8"));
 	const candidate = {
 		...baseRecipe,
+		...(clothing === undefined ? {} : { clothing }),
+		...(geometrySource === undefined ? {} : { geometrySource }),
 		appearance: {
 			hair: {
 				color:
@@ -250,6 +273,9 @@ export async function createRecipeForProportions({
 }
 
 export async function compileCreatorMannequin({
+	geometrySource,
+	clothing,
+	mode = "full",
 	appearance,
 	baseRecipePath = path.resolve(
 		WORKSPACE_ROOT,
@@ -266,6 +292,8 @@ export async function compileCreatorMannequin({
 	requestId = randomUUID(),
 } = {}) {
 	const recipe = await createRecipeForProportions({
+		geometrySource,
+		clothing,
 		appearance,
 		baseRecipePath,
 		proportions,
@@ -285,6 +313,7 @@ export async function compileCreatorMannequin({
 	const startedAt = performance.now();
 	try {
 		const result = await compileImpl({
+			mode,
 			clean: true,
 			outputDirectory,
 			recipePath,
@@ -297,11 +326,17 @@ export async function compileCreatorMannequin({
 		});
 		const completionDurationMs = Math.round(performance.now() - startedAt);
 		if (
+			!isDeepStrictEqual(result?.manifest?.clothing, recipe.clothing) ||
+			!isDeepStrictEqual(
+				result?.manifest?.geometrySource,
+				recipe.geometrySource,
+			) ||
 			result?.manifest?.recipeHash !== recipeHash ||
 			result?.manifest?.appearance?.hair?.authoredColor !==
 				recipe.appearance.hair.color ||
-			result?.manifest?.appearance?.face?.authoredEyeColor !==
-				recipe.appearance.face.eyeColor ||
+			(recipe.geometrySource?.family !== "authored-human" &&
+				result?.manifest?.appearance?.face?.authoredEyeColor !==
+					recipe.appearance.face.eyeColor) ||
 			result?.manifest?.appearance?.skin?.authoredColor !==
 				recipe.appearance.skin.color ||
 			result?.manifest?.appearance?.skin?.authoredRoughness !==
@@ -313,7 +348,9 @@ export async function compileCreatorMannequin({
 					result?.manifest?.proportions?.[key] === recipe.proportions[key],
 			) ||
 			result?.manifest?.outputHash?.length !== 64 ||
-			result?.manifest?.deterministicBuild !== true
+			(mode === "full"
+				? result?.manifest?.deterministicBuild !== true
+				: result?.manifest?.validationLevel !== "preview")
 		) {
 			throw new Error("Compiler returned an invalid or mismatched manifest.");
 		}
@@ -333,6 +370,14 @@ export async function compileCreatorMannequin({
 			},
 		};
 	} catch (error) {
+		error.technicalDetails = [
+			error.message,
+			error.stdout,
+			error.stderr,
+			`Recipe: ${canonicalizeProceduralMannequinRecipe(recipe)}`,
+		]
+			.filter(Boolean)
+			.join("\n");
 		await rm(stagingDirectory, { force: true, recursive: true });
 		throw error;
 	}
@@ -373,6 +418,16 @@ export function createProceduralMannequinCompileMiddleware({
 		const requestUrl = new URL(request.url ?? "/", "http://asset-studio.local");
 		if (
 			request.method === "GET" &&
+			requestUrl.pathname === "/__asset-studio/health"
+		) {
+			// Public identity only; compilation and generated files gain no CORS access.
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Cache-Control", "no-store");
+			jsonResponse(response, 200, { app: "asset-studio" });
+			return;
+		}
+		if (
+			request.method === "GET" &&
 			requestUrl.pathname.startsWith(`${PROCEDURAL_MANNEQUIN_ASSET_ENDPOINT}/`)
 		) {
 			const asset = resolveAssetRequest(generatedRoot, requestUrl.pathname);
@@ -394,7 +449,12 @@ export function createProceduralMannequinCompileMiddleware({
 			stream.pipe(response);
 			return;
 		}
-		if (requestUrl.pathname !== PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT) {
+		if (
+			![
+				PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT,
+				PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT,
+			].includes(requestUrl.pathname)
+		) {
 			next();
 			return;
 		}
@@ -420,7 +480,13 @@ export function createProceduralMannequinCompileMiddleware({
 			}
 			compileActive = true;
 			const result = await compileJob({
+				mode:
+					requestUrl.pathname === PROCEDURAL_MANNEQUIN_PREVIEW_ENDPOINT
+						? "preview"
+						: "full",
 				appearance: parsed.value.appearance,
+				geometrySource: parsed.value.geometrySource,
+				clothing: parsed.value.clothing,
 				generatedRoot,
 				hairComponentId: parsed.value.components.hair,
 				proportions: parsed.value.proportions,
@@ -428,7 +494,14 @@ export function createProceduralMannequinCompileMiddleware({
 			jsonResponse(response, 200, result);
 		} catch (error) {
 			jsonResponse(response, 500, {
-				error: error instanceof Error ? error.message : String(error),
+				error: /Human foundation|Anatomical slice/.test(String(error))
+					? "Character generation failed because the selected body proportions produced an invalid torso shape."
+					: "Character generation failed. Check the technical details and try again.",
+				technicalDetails:
+					error?.technicalDetails ??
+					[error?.message ?? String(error), error?.stdout, error?.stderr]
+						.filter(Boolean)
+						.join("\n"),
 				issues: error?.validationIssues ?? [],
 				status: "failed",
 			});

@@ -1,0 +1,16 @@
+{
+	"canonical-neutral.blend": {
+		"reopened": true,
+		"bodyVertices": 7281,
+		"bones": 65,
+		"packedImages": 7,
+		"bodyKeys": 0
+	},
+	"candidate.blend": {
+		"reopened": true,
+		"bodyVertices": 7281,
+		"bones": 65,
+		"packedImages": 9,
+		"bodyKeys": 7
+	}
+}

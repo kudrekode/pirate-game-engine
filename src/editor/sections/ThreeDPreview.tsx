@@ -48,7 +48,11 @@ import {
 	resolveTerrainMaterialKey,
 } from "../../runtime/three/worldPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
-import type { GameArea, PlayerConfig } from "../../types/game";
+import type {
+	CharacterGameAsset,
+	GameArea,
+	PlayerConfig,
+} from "../../types/game";
 import { areaEntitiesToMarkers, type EntityMarker } from "./entityMarkers";
 import {
 	GAMEPLAY_OVERLAY_FILTERS,
@@ -296,6 +300,7 @@ export function createPlayerSpawnPreviewMarker(
 	area: GameArea | undefined,
 	player: PlayerConfig,
 	surfaceMode: TerrainSurfaceMode,
+	projectAssets: CharacterGameAsset[] = [],
 ): EntityMarker | undefined {
 	if (!area) {
 		return undefined;
@@ -310,11 +315,14 @@ export function createPlayerSpawnPreviewMarker(
 		height: 1,
 		width: 1,
 	});
-	const visual = resolveThreeCharacterVisual({
-		kind: "player",
-		name: player.name,
-		threeVisual: player.threeVisual,
-	});
+	const visual = resolveThreeCharacterVisual(
+		{
+			kind: "player",
+			name: player.name,
+			threeVisual: player.threeVisual,
+		},
+		projectAssets,
+	);
 	return {
 		color: getWorldMaterialColor("friendly"),
 		depth: 0.64,
@@ -400,6 +408,7 @@ export function ThreeDPreview({
 	const terrainBrushStrokeRef = useRef<TerrainBrushStroke | null>(null);
 	const previousBuildInputsRef = useRef<ThreeDPreviewBuildInputs | null>(null);
 	const [mountError, setMountError] = useState("");
+	const [missingAssets, setMissingAssets] = useState(false);
 	const [localOverlayFilters, setLocalOverlayFilters] = useState(
 		readStoredMapOverlayFilters,
 	);
@@ -454,12 +463,14 @@ export function ThreeDPreview({
 				project.npcs,
 				overlayFilters,
 				terrainRenderMode,
+				project.characterAssets,
 			),
 		[
 			activeArea,
 			overlayFilters,
 			project.npcs,
 			project.objects,
+			project.characterAssets,
 			terrainRenderMode,
 		],
 	);
@@ -469,8 +480,9 @@ export function ThreeDPreview({
 				activeArea,
 				project.player,
 				terrainRenderMode,
+				project.characterAssets,
 			),
-		[activeArea, project.player, terrainRenderMode],
+		[activeArea, project.player, project.characterAssets, terrainRenderMode],
 	);
 	const renderMarkers = useMemo(
 		() => [
@@ -856,6 +868,12 @@ export function ThreeDPreview({
 			);
 			scene.add(walkPreviewMesh);
 		}
+		setMissingAssets(
+			markerRenderResults.some(
+				(result) =>
+					result.assetStatus === "error" || result.assetStatus === "missing",
+			),
+		);
 		diagnostics.setSceneEntityCounts({
 			assetStatuses: markerRenderResults.map((result) => ({
 				analysis: result.assetAnalysis,
@@ -2100,6 +2118,12 @@ export function ThreeDPreview({
 			}
 		>
 			<div className="content-panel three-d-preview-panel">
+				{missingAssets && (
+					<p role="alert">
+						A visual asset is unavailable. Restore its project asset files or
+						reimport it through Asset Creator. Saved assignments are preserved.
+					</p>
+				)}
 				<div
 					aria-label="3D map editor toolbar"
 					className="three-d-editor-toolbar"

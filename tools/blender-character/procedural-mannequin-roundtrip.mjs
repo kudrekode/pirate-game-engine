@@ -107,7 +107,7 @@ function toArrayBuffer(input) {
 	);
 }
 
-async function loadGlb(filePath) {
+export async function loadGlb(filePath) {
 	globalThis.self ??= globalThis;
 	globalThis.createImageBitmap ??= async () => ({
 		close() {},
@@ -176,7 +176,7 @@ function semanticMeshSnapshot(name, geometry) {
 	};
 }
 
-function semanticSnapshot(root) {
+export function semanticSnapshot(root) {
 	const materials = new Set();
 	const meshes = [];
 	root.traverse((object) => {
@@ -272,7 +272,7 @@ function analyzeSkinMaterial(root, expected) {
 	};
 }
 
-function analyzeArtifact(root) {
+export function analyzeArtifact(root) {
 	const materials = new Set();
 	const textures = new Set();
 	let meshCount = 0;
@@ -663,7 +663,7 @@ async function inspectGlbResources(filePath) {
 	};
 }
 
-function skeletonSignature(inspection) {
+export function skeletonSignature(inspection) {
 	const joints = inspection.skeletons[0]?.joints ?? [];
 	const normalized = joints
 		.map((joint) => ({
@@ -991,6 +991,49 @@ function poseSnapshot(root) {
 	});
 }
 
+function bodyEdgeLengths(root) {
+	let mesh;
+	root.traverse((object) => {
+		if (
+			!(object instanceof THREE.SkinnedMesh) ||
+			object.userData.faceFeatureType ||
+			object.name.startsWith("Face")
+		)
+			return;
+		const materials = Array.isArray(object.material)
+			? object.material
+			: [object.material];
+		if (
+			materials.some((material) => material.name === "ProceduralSkinMaterial")
+		)
+			mesh = object;
+	});
+	if (!(mesh instanceof THREE.SkinnedMesh))
+		throw new Error("Missing generated body surface.");
+	const position = mesh.geometry.attributes.position;
+	const index = mesh.geometry.index;
+	if (!index) throw new Error("Expected indexed generated body surface.");
+	const points = Array.from({ length: position.count }, (_, vertex) =>
+		mesh
+			.applyBoneTransform(
+				vertex,
+				new THREE.Vector3().fromBufferAttribute(position, vertex),
+			)
+			.applyMatrix4(mesh.matrixWorld),
+	);
+	const lengths = [];
+	for (let i = 0; i < index.count; i += 3) {
+		for (let edge = 0; edge < 3; edge += 1) {
+			lengths.push(
+				points[index.getX(i + edge)].distanceTo(
+					points[index.getX(i + ((edge + 1) % 3))],
+				),
+			);
+		}
+	}
+	return lengths;
+}
+
 function sampleAnimation(root, clip, normalizedTime) {
 	const clone = cloneSkeleton(root);
 	const mixer = new THREE.AnimationMixer(clone);
@@ -1001,6 +1044,7 @@ function sampleAnimation(root, clip, normalizedTime) {
 	mixer.setTime(clip.duration * normalizedTime);
 	clone.updateMatrixWorld(true);
 	const result = {
+		edgeLengths: bodyEdgeLengths(clone),
 		bounds: new THREE.Box3().setFromObject(clone, true),
 		lengths: lengthSnapshot(clone),
 		pelvis: worldPosition(clone, "pelvis"),
@@ -1011,13 +1055,16 @@ function sampleAnimation(root, clip, normalizedTime) {
 	return result;
 }
 
-function validateAnimation(root, clip) {
+export function validateAnimation(root, clip) {
 	const rootNames = new Set();
 	root.traverse((object) => object.name && rootNames.add(object.name));
 	const missingTrackTargets = clip.tracks
 		.map((track) => track.name.slice(0, track.name.lastIndexOf(".")))
 		.filter((name) => !rootNames.has(name));
 	const restLengths = lengthSnapshot(root);
+	const restEdges = bodyEdgeLengths(root);
+	let maximumSurfaceStretch = 0;
+	let finiteSurface = true;
 	let maximumBoneLengthRelativeError = 0;
 	let maximumBoundsExpansion = 0;
 	let minimumBoundsExpansion = Number.POSITIVE_INFINITY;
@@ -1025,6 +1072,15 @@ function validateAnimation(root, clip) {
 	const restSize = restBounds.getSize(new THREE.Vector3()).length();
 	const samples = [0, 0.25, 0.5, 0.75, 1].map((normalizedTime) => {
 		const sample = sampleAnimation(root, clip, normalizedTime);
+		for (let index = 0; index < restEdges.length; index += 1) {
+			const length = sample.edgeLengths[index];
+			finiteSurface &&= Number.isFinite(length);
+			if (restEdges[index] > 0.000001)
+				maximumSurfaceStretch = Math.max(
+					maximumSurfaceStretch,
+					length / restEdges[index],
+				);
+		}
 		for (const [key, value] of Object.entries(sample.lengths)) {
 			maximumBoneLengthRelativeError = Math.max(
 				maximumBoneLengthRelativeError,
@@ -1054,6 +1110,8 @@ function validateAnimation(root, clip) {
 		z: last.pelvis.z - first.pelvis.z,
 	};
 	return {
+		finiteSurface,
+		maximumSurfaceStretch,
 		finiteKeyframes: clip.tracks.every((track) =>
 			Array.from(track.values).every(Number.isFinite),
 		),
@@ -1062,6 +1120,8 @@ function validateAnimation(root, clip) {
 		minimumBoundsExpansion,
 		missingTrackTargets,
 		passed:
+			finiteSurface &&
+			maximumSurfaceStretch <= 3 &&
 			missingTrackTargets.length === 0 &&
 			clip.tracks.every((track) =>
 				Array.from(track.values).every(Number.isFinite),

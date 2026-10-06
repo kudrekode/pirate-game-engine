@@ -139,6 +139,15 @@ The registry supports No Hair, Buzzed, Short Crop, and Simple Parted. New source
 recipes are `recipes/procedural-mannequin-short-crop-v1.recipe.json` and
 `recipes/procedural-mannequin-simple-parted-v1.recipe.json`; use the same compiler
 with `--recipe` and a distinct `--output-dir` (use `--staging` for test outputs).
-Run `npm run validate:procedural-hairstyle-matrix -- --library` for all 24
+Run `npm run validate:procedural-hairstyle-matrix -- --library` for all 36
 body/style combinations. See `docs/assets/hairstyle-library-v2.md` for fit
 calibration, current evidence, compatibility, and remaining scope.
+
+## Selecting expensive validation
+
+Topology and hairstyle matrices support exact comma-separated `--case` names and
+`--list` (no outputs or Blender). Hair also supports `--style` ids and always
+retains a bald control for each body. Unknown/empty selections fail before compiling.
+The current six-choice hair library is 36 artifacts / 72 Blender passes.
+See [validation routing](../../docs/PLAYWRIGHT_SMOKE.md#matrix-routing-targeted-relevant-full)
+for commands, costs, required visual review and artifact freshness limits.

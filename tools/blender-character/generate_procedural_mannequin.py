@@ -1,8 +1,8 @@
-"""Deterministic Procedural Mannequin Body Proportions V1 generator.
+"""Deterministic Human Foundation generator.
 
 The immutable Quaternius source supplies only the validated 65-joint Golden
 rest skeleton. Every source mesh, material, texture, and image is removed
-before the engineering mannequin geometry and explicit weights are created.
+before anatomical profiles and explicit weights are created.
 """
 
 import argparse
@@ -12,12 +12,16 @@ import math
 import shutil
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import bmesh
 import bpy
 from mathutils import Euler, Matrix, Vector
 from mathutils.bvhtree import BVHTree
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from anatomy_invariants import central_slice_width, validate_surface_anatomy
 
 
 EXPECTED_JOINT_COUNT = 65
@@ -513,6 +517,48 @@ def import_hair_component(
     hair.data.update()
     if adjusted_hairline_vertices < 1:
         raise RuntimeError("Hairstyle face-clearance fit adjusted no vertices.")
+    if profile["fitClass"] == "long":
+        # The vendor cap closes below the chin. Open that front collar instead
+        # of projecting it into a visible hair band around the new neck.
+        edit = bmesh.new()
+        edit.from_mesh(hair.data)
+        collar = [face for face in edit.faces
+                  if face.calc_center_median().z < head_contract["neckTop"][2] + 0.025
+                  and face.calc_center_median().y < head_contract["headCentre"][1]]
+        bmesh.ops.delete(edit, geom=collar, context="FACES")
+        edit.to_mesh(hair.data)
+        edit.free()
+    # Bounds alone miss the skull's local curvature. Seat every style against
+    # the actual scalp, with extra clearance for the long-hair neck collar.
+    if hair.data.vertices:
+        surface = BVHTree.FromPolygons(
+            [vertex.co for vertex in body_mesh_object.data.vertices],
+            [list(polygon.vertices) for polygon in body_mesh_object.data.polygons],
+        )
+        for vertex in hair.data.vertices:
+            margin = (0.03 if profile["fitClass"] == "long" and vertex.co.z <= head_contract["neckTop"][2]
+                      else profile["scalpOffsetMetres"])
+            nearest, normal, _, distance = surface.find_nearest(vertex.co)
+            if nearest is not None and (distance < margin or (vertex.co - nearest).dot(normal) < 0):
+                vertex.co = nearest + normal * margin
+        # Long collar triangles can span the curved neck even when their corners
+        # are clear. Relax only penetrating faces, preserving the source topology.
+        for _ in range(4):
+            corrections = {}
+            for polygon in hair.data.polygons:
+                centre = sum((hair.data.vertices[index].co for index in polygon.vertices), Vector()) / len(polygon.vertices)
+                nearest, normal, _, _ = surface.find_nearest(centre)
+                clearance = (centre - nearest).dot(normal)
+                if clearance < 0.002:
+                    correction = normal * (0.006 - clearance)
+                    for index in polygon.vertices:
+                        if index not in corrections or corrections[index].length < correction.length:
+                            corrections[index] = correction
+            for index, correction in corrections.items():
+                hair.data.vertices[index].co += correction
+            if not corrections:
+                break
+        hair.data.update()
     object_name = "Hair_" + component["id"].replace("-", "_")
     hair.name = object_name
     hair.data.name = object_name + "_Mesh"
@@ -533,6 +579,21 @@ def import_hair_component(
         shoulder_vertices,
         profile,
     )
+    # Sample faces too: an enclosing bounding box does not prove the cap is
+    # outside the scalp between its vertices.
+    surface_samples = [vertex.co for vertex in hair.data.vertices] + [
+        sum((hair.data.vertices[index].co for index in polygon.vertices), Vector()) / len(polygon.vertices)
+        for polygon in hair.data.polygons
+    ]
+    signed_clearances = []
+    for point in surface_samples:
+        nearest, normal, _, _ = surface.find_nearest(point)
+        signed_clearances.append((point - nearest).dot(normal))
+    minimum_clearance = min(signed_clearances)
+    fit_validation["metrics"]["minimumSurfaceClearanceMetres"] = round(minimum_clearance, 9)
+    fit_validation["checks"]["surfaceClearance"] = minimum_clearance >= -0.002
+    fit_validation["passed"] = all(fit_validation["checks"].values())
+    fit_validation["warnings"] = [name for name, passed in fit_validation["checks"].items() if not passed]
     if not fit_validation["passed"]:
         raise RuntimeError(
             "Geometry-aware hairstyle fit failed: "
@@ -605,6 +666,34 @@ class MeshBuilder:
         width = (reference - axis * axis.dot(reference)).normalized()
         depth = axis.cross(width).normalized()
         return width, depth
+
+    def add_profile(self, name, bone, stations):
+        """Loft elliptical anatomical sections (centre, lateral radius, depth).
+
+        Stations follow one bone/torso axis. Closed ends overlap neighbouring
+        profiles; the existing voxel union welds them into a single skin.
+        """
+        axis = (stations[-1][0] - stations[0][0]).normalized()
+        width, depth = self._basis(axis)
+        segments = max(16, self.radial_segments * 2)
+        first = len(self.vertices)
+        for center, radius_x, radius_y in stations:
+            for segment in range(segments):
+                angle = math.tau * segment / segments
+                self.vertices.append(tuple(center + width * (math.cos(angle) * radius_x)
+                                           + depth * (math.sin(angle) * radius_y)))
+                self.weights.append(bone)
+        self.faces.append(tuple(first + i for i in reversed(range(segments))))
+        for ring in range(len(stations) - 1):
+            a = first + ring * segments
+            b = a + segments
+            for i in range(segments):
+                j = (i + 1) % segments
+                self.faces.append((a + i, a + j, b + j, b + i))
+        last = first + (len(stations) - 1) * segments
+        self.faces.append(tuple(last + i for i in range(segments)))
+        self.parts.append({"name": name, "bone": bone, "profile": "anatomical-loft",
+                           "vertexCount": len(self.vertices) - first})
 
     def add_ellipsoid(self, name, bone, start, end, width_radius, depth_radius):
         axis_vector = end - start
@@ -803,23 +892,29 @@ def assign_analytic_weights(mesh_object, weight_segments):
     weight_minimum = 1.0
     weight_maximum = 0.0
     weighted_bones = set()
+    head_start = next(start for name, start, _, _ in weight_segments if name == "Head")
     for vertex in mesh_object.data.vertices:
         point = vertex.co
         candidates = []
         for bone_name, start, end, radius in weight_segments:
+            # The face is rigidly Head-bound. Keep the skull on the same frame;
+            # blend only the neck below it, rather than pulling the jaw with arms.
+            if point.z >= head_start.z - 0.035:
+                if bone_name != "Head":
+                    continue
             # A connected surface does not imply that mirrored limbs should ever
             # share weights. Keep the torso available as a transition zone, but
             # restrict limb candidates to the anatomical side of the vertex.
-            if point.x > 0.01 and bone_name.endswith("_r"):
+            if point.x >= 0 and bone_name.endswith("_r"):
                 continue
-            if point.x < -0.01 and bone_name.endswith("_l"):
-                continue
-            if abs(point.x) <= 0.01 and (
-                bone_name.endswith("_l") or bone_name.endswith("_r")
-            ):
+            if point.x <= 0 and bone_name.endswith("_l"):
                 continue
             normalized_distance = point_segment_distance(point, start, end) / radius
             score = 1.0 / (0.04 + normalized_distance ** 4)
+            if bone_name.endswith(("_l", "_r")):
+                # Continuous falloff replaces the former 1 cm exclusion seam.
+                # The groin stays pelvis-led without mixing opposite thighs.
+                score *= min(1.0, abs(point.x) / 0.06) ** 2
             candidates.append((score, bone_name))
         candidates.sort(key=lambda entry: (-entry[0], entry[1]))
         selected = candidates[:4]
@@ -837,7 +932,7 @@ def assign_analytic_weights(mesh_object, weight_segments):
     return {
         "maximumInfluences": max(influence_counts),
         "normalizedWeightCount": len(mesh_object.data.vertices),
-        "strategy": "analytic-sided-segments-v2",
+        "strategy": "analytic-sided-segments-head-v3",
         "unweightedVertexCount": sum(count == 0 for count in influence_counts),
         "weightMaximum": weight_maximum,
         "weightMinimum": weight_minimum,
@@ -1062,7 +1157,8 @@ def create_face_features(recipe, armature, head_contract, skin_material, body_me
     separation = abs(eye_centres[0].x - eye_centres[1].x)
     checks = {
         "eyeDepth": all(
-            centre.y >= face_y and centre.y + eye_radii.y < head_contract["headCentre"][1]
+            eye_surface_y <= centre.y < eye_surface_y + eye_radii.y
+            and centre.y + eye_radii.y < head_contract["headCentre"][1]
             for centre in eye_centres
         ),
         "eyeSeparation": head_width * 0.28 <= separation <= head_width * 0.46,
@@ -1127,11 +1223,11 @@ def create_face_features(recipe, armature, head_contract, skin_material, body_me
 def measure_head_contract(mesh_object, anchors, measurements, topology_version):
     head_bone = anchors["head"]
     neck_bone = anchors["neck"]
-    neck_top = head_bone.z - measurements["neckRadius"] * 0.72
+    neck_top = head_bone.z - 0.02
     head_vertices = [
         mesh_object.matrix_world @ vertex.co
         for vertex in mesh_object.data.vertices
-        if vertex.co.z >= head_bone.z - 0.15
+        if vertex.co.z >= head_bone.z - 0.04
         and abs(vertex.co.x - head_bone.x) <= measurements["headHalfWidth"] * 1.45
         and abs(vertex.co.y - head_bone.y) <= measurements["headDepth"] * 1.55
     ]
@@ -1245,28 +1341,28 @@ def create_geometry(armature, recipe):
     measurements = {
         "calfRadius": 0.068 * anatomy["hipWidthMultiplier"] * (0.94 + anatomy["legLengthMultiplier"] * 0.06),
         "chestDepth": 0.13,
-        "chestHalfWidth": 0.245 * anatomy["shoulderWidthMultiplier"],
-        "elbowRadius": 0.07,
+        "chestHalfWidth": 0.205 * anatomy["shoulderWidthMultiplier"],
+        "elbowRadius": 0.052,
         "footDepth": 0.06,
         "footHalfWidth": 0.062 * anatomy["hipWidthMultiplier"],
         "forearmRadius": 0.064,
-        "handDepth": 0.035,
-        "handHalfWidth": 0.064,
+        "handDepth": 0.025,
+        "handHalfWidth": 0.047,
         "headDepth": 0.112,
-        "headHalfWidth": 0.12,
+        "headHalfWidth": 0.092,
         "hipJointRadius": 0.105 * anatomy["hipWidthMultiplier"],
-        "kneeRadius": 0.068 * anatomy["hipWidthMultiplier"],
-        "neckRadius": 0.064,
+        "kneeRadius": 0.058 * anatomy["hipWidthMultiplier"],
+        "neckRadius": 0.052,
         "pelvisDepth": 0.13,
         "pelvisHalfWidth": 0.195 * anatomy["hipWidthMultiplier"],
         "shoulderJointRadius": 0.08,
-        "thighRadius": 0.082 * anatomy["hipWidthMultiplier"],
+        "thighRadius": 0.105 * anatomy["hipWidthMultiplier"],
         "topologyVersion": recipe["geometry"]["topologyVersion"],
         "upperArmRadius": 0.076 * (0.96 + anatomy["shoulderWidthMultiplier"] * 0.04),
-        "voxelSizeMetres": 0.035,
-        "waistDepth": 0.112,
-        "waistHalfWidth": 0.17 * ((anatomy["hipWidthMultiplier"] + anatomy["shoulderWidthMultiplier"]) * 0.5),
-        "wristRadius": 0.052,
+        "voxelSizeMetres": 0.018,
+        "waistDepth": 0.10,
+        "waistHalfWidth": 0.145 * ((anatomy["hipWidthMultiplier"] + anatomy["shoulderWidthMultiplier"]) * 0.5),
+        "wristRadius": 0.036,
     }
 
     pelvis_origin = head("pelvis")
@@ -1293,14 +1389,25 @@ def create_geometry(armature, recipe):
     }
     transformed_head_tail = record(tail("Head"), torso_point(tail("Head")))
 
-    builder.add_ellipsoid(
-        "Pelvis", "pelvis", torso_heads["pelvis"], torso_heads["spine_01"],
-        measurements["pelvisHalfWidth"], measurements["pelvisDepth"],
-    )
-    builder.add_ellipsoid("TorsoLower", "spine_01", torso_heads["spine_01"], torso_heads["spine_02"], measurements["waistHalfWidth"], measurements["waistDepth"])
-    builder.add_ellipsoid("TorsoMiddle", "spine_02", torso_heads["spine_02"], torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.12, 0.122)
-    builder.add_ellipsoid("TorsoUpper", "spine_03", torso_heads["spine_03"], torso_heads["neck_01"], measurements["chestHalfWidth"], measurements["chestDepth"])
-    builder.add_ellipsoid("Neck", "neck_01", torso_heads["neck_01"], torso_heads["Head"], measurements["neckRadius"], measurements["neckRadius"] * 0.9)
+    pelvis = torso_heads["pelvis"]
+    waist = torso_heads["spine_02"]
+    chest = torso_heads["spine_03"]
+    neck = torso_heads["neck_01"]
+    builder.add_profile("Torso", "spine_02", [
+        (pelvis + Vector((0, 0, -0.035)), measurements["pelvisHalfWidth"] * 0.66, 0.08),
+        (pelvis + Vector((0, 0.012, 0.035)), measurements["pelvisHalfWidth"], 0.125),
+        (torso_heads["spine_01"], measurements["pelvisHalfWidth"] * 0.91, 0.117),
+        (waist, measurements["waistHalfWidth"], measurements["waistDepth"]),
+        (chest, measurements["chestHalfWidth"] * 0.91, 0.13),
+        (chest.lerp(neck, 0.56), measurements["chestHalfWidth"], 0.132),
+        (chest.lerp(neck, 0.78), measurements["chestHalfWidth"] * 0.86, 0.105),
+        (neck + Vector((0, 0, -0.008)), measurements["neckRadius"] * 1.32, 0.061),
+    ])
+    builder.add_profile("Neck", "neck_01", [
+        (neck - Vector((0, 0, 0.035)), 0.07, 0.065),
+        (neck + Vector((0, 0, 0.035)), measurements["neckRadius"], 0.05),
+        (torso_heads["Head"] + Vector((0, 0, 0.04)), 0.054, 0.055),
+    ])
     # Procedural Head V1 deliberately keeps the canonical Head/Neck bones but
     # replaces the short pill-shaped source with overlapping stylised volumes.
     # Golden feet point along local -Y, exported +Z before the shared
@@ -1312,45 +1419,40 @@ def create_geometry(armature, recipe):
     head_anchor = torso_heads["Head"]
     builder.add_sphere(
         "HeadCranium",
-        head_anchor + Vector((0.0, 0.012, 0.025)),
+        head_anchor + Vector((0.0, 0.012, 0.115)),
         measurements["headHalfWidth"],
         measurements["headDepth"],
         0.105,
     )
     builder.add_sphere(
         "HeadRearCranium",
-        head_anchor + Vector((0.0, 0.052, 0.018)),
+        head_anchor + Vector((0.0, 0.045, 0.112)),
         measurements["headHalfWidth"] * 0.91,
         measurements["headDepth"] * 0.78,
         0.092,
     )
     builder.add_sphere(
         "HeadFaceJaw",
-        head_anchor + Vector((0.0, -0.034, -0.052)),
+        head_anchor + Vector((0.0, -0.027, 0.052)),
         measurements["headHalfWidth"] * 0.78,
         measurements["headDepth"] * 0.78,
-        0.082,
+        0.072,
     )
     builder.add_sphere(
         "HeadChin",
-        head_anchor + Vector((0.0, -0.048, -0.112)),
+        head_anchor + Vector((0.0, -0.046, -0.002)),
         measurements["headHalfWidth"] * 0.48,
         measurements["headDepth"] * 0.5,
-        0.045,
+        0.033,
     )
     builder.add_box(
         "HeadFacePlane",
         "Head",
-        head_anchor + Vector((0.0, -measurements["headDepth"] * 0.86, -0.075)),
-        head_anchor + Vector((0.0, -measurements["headDepth"] * 0.9, 0.042)),
+        head_anchor + Vector((0.0, -measurements["headDepth"] * 0.78, 0.022)),
+        head_anchor + Vector((0.0, -measurements["headDepth"] * 0.83, 0.132)),
         measurements["headHalfWidth"] * 0.62,
         0.012,
     )
-    builder.add_sphere("TorsoPelvisTransition", torso_heads["spine_01"], measurements["waistHalfWidth"], measurements["waistDepth"], 0.11)
-    builder.add_sphere("WaistTransition", torso_heads["spine_02"], measurements["waistHalfWidth"] * 1.06, measurements["waistDepth"], 0.11)
-    builder.add_sphere("ChestTransition", torso_heads["spine_03"], measurements["waistHalfWidth"] * 1.16, 0.122, 0.12)
-    builder.add_sphere("NeckBaseTransition", torso_heads["neck_01"], measurements["neckRadius"] * 1.2, measurements["neckRadius"], 0.075)
-    builder.add_sphere("HeadNeckTransition", torso_heads["Head"], measurements["neckRadius"] * 1.1, measurements["neckRadius"], 0.075)
 
     weight_segments = [
         ("pelvis", torso_heads["pelvis"], torso_heads["spine_01"], measurements["pelvisHalfWidth"]),
@@ -1403,62 +1505,37 @@ def create_geometry(armature, recipe):
             measurements["shoulderJointRadius"],
             measurements["shoulderJointRadius"],
         )
-        builder.add_ellipsoid(
-            f"UpperArm.{label}",
-            f"upperarm_{suffix}",
-            upper_arm,
-            lower_arm,
-            measurements["upperArmRadius"],
-            measurements["upperArmRadius"],
-        )
-        builder.add_ellipsoid(
-            f"LowerArm.{label}",
-            f"lowerarm_{suffix}",
-            lower_arm,
-            hand,
-            measurements["forearmRadius"],
-            measurements["forearmRadius"] * 0.94,
-        )
-        builder.add_box(
-            f"Hand.{label}",
-            f"hand_{suffix}",
-            hand,
-            hand_tail,
-            measurements["handHalfWidth"],
-            measurements["handDepth"],
-        )
-        builder.add_ellipsoid(
-            f"UpperLeg.{label}",
-            f"thigh_{suffix}",
-            thigh,
-            calf,
-            measurements["thighRadius"],
-            measurements["thighRadius"] * 0.9,
-        )
-        builder.add_ellipsoid(
-            f"LowerLeg.{label}",
-            f"calf_{suffix}",
-            calf,
-            foot,
-            measurements["calfRadius"],
-            measurements["calfRadius"] * 0.92,
-        )
-        builder.add_box(
-            f"Foot.{label}",
-            f"foot_{suffix}",
-            foot,
-            ball,
-            measurements["footHalfWidth"],
-            measurements["footDepth"],
-        )
-        builder.add_box(
-            f"Toe.{label}",
-            f"ball_{suffix}",
-            ball,
-            ball_tail,
-            measurements["footHalfWidth"],
-            0.045,
-        )
+        # Fractions are measured along the matching joint segment, so changing
+        # reach preserves the elbow/knee narrowing and forearm/calf bulge.
+        def limb(name, bone, start, end, radius, profile, depth_ratio=1.0):
+            builder.add_profile(name, bone, [
+                (start.lerp(end, fraction), radius * width, radius * depth * depth_ratio)
+                for fraction, width, depth in profile
+            ])
+
+        limb(f"UpperArm.{label}", f"upperarm_{suffix}", upper_arm, lower_arm,
+             measurements["upperArmRadius"],
+             [(-0.12, .82, .82), (.1, 1.1, 1.1), (.4, 1, 1.04), (.78, .78, .8), (1.04, .68, .68)])
+        limb(f"LowerArm.{label}", f"lowerarm_{suffix}", lower_arm, hand,
+             measurements["forearmRadius"],
+             [(-.04, .8, .8), (.23, 1.03, 1), (.55, .85, .85), (.86, .62, .62), (1.06, .56, .56)])
+        limb(f"Hand.{label}", f"hand_{suffix}", hand, hand_tail,
+             measurements["handHalfWidth"],
+             [(-.15, .65, .74), (.25, .58, 1), (.72, .53, 1), (1.08, .4, .78)])
+        builder.add_sphere(f"Thumb.{label}", hand.lerp(hand_tail, .3) + Vector((0, 0, -.04)),
+                           .038, .026, .034)
+        limb(f"UpperLeg.{label}", f"thigh_{suffix}", thigh, calf,
+             measurements["thighRadius"],
+             [(-.14, .91, .97), (.12, 1.1, 1.14), (.38, 1.02, 1.08), (.72, .73, .8), (1.03, .55, .59)])
+        limb(f"LowerLeg.{label}", f"calf_{suffix}", calf, foot,
+             measurements["calfRadius"],
+             [(-.04, .85, .85), (.22, 1.16, 1.25), (.42, 1.12, 1.2), (.72, .73, .78), (1.04, .55, .58)])
+        limb(f"Foot.{label}", f"foot_{suffix}", foot, ball,
+             measurements["footHalfWidth"],
+             [(-.22, .68, .66), (.12, .82, .85), (.6, 1, .68), (1.12, 1, .58)])
+        limb(f"Toe.{label}", f"ball_{suffix}", ball, ball_tail,
+             measurements["footHalfWidth"],
+             [(-.12, 1, .58), (.6, 1.02, .53), (1.02, .83, .4)])
         builder.add_sphere(f"ShoulderTransition.{label}", upper_arm, measurements["shoulderJointRadius"] * 1.12, measurements["shoulderJointRadius"], measurements["shoulderJointRadius"])
         builder.add_sphere(f"ElbowTransition.{label}", lower_arm, measurements["elbowRadius"], measurements["elbowRadius"], measurements["elbowRadius"])
         builder.add_sphere(f"WristTransition.{label}", hand, measurements["wristRadius"], measurements["wristRadius"], measurements["wristRadius"])
@@ -1478,11 +1555,6 @@ def create_geometry(armature, recipe):
             ]
         )
 
-    chest_center = (torso_heads["spine_03"] + torso_heads["neck_01"]) * 0.5
-    chest_start = chest_center + Vector((0.0, -0.122, -0.035))
-    chest_end = chest_center + Vector((0.0, -0.135, 0.055))
-    builder.add_box("FacingMarker", "spine_03", chest_start, chest_end, 0.055, 0.018)
-
     mesh = bpy.data.meshes.new("ProceduralMannequinMesh")
     mesh.from_pydata(builder.vertices, [], builder.faces)
     mesh.validate(clean_customdata=False)
@@ -1494,6 +1566,17 @@ def create_geometry(armature, recipe):
     mesh.remesh_voxel_size = measurements["voxelSizeMetres"]
     mesh.remesh_voxel_adaptivity = 0.0
     bpy.ops.object.voxel_remesh()
+    # Round union seams without erasing the profile stations. Reduce the smooth
+    # surface afterwards; decimation happens before deterministic skin weights.
+    smooth = mesh_object.modifiers.new("AnatomicalSurface", "SMOOTH")
+    smooth.factor = 0.65
+    smooth.iterations = 5
+    bpy.ops.object.modifier_apply(modifier=smooth.name)
+    simplify = mesh_object.modifiers.new("GameSurface", "DECIMATE")
+    simplify.ratio = 0.7
+    simplify.use_symmetry = True
+    simplify.symmetry_axis = "X"
+    bpy.ops.object.modifier_apply(modifier=simplify.name)
     mesh = mesh_object.data
     mesh.validate(clean_customdata=False)
     mesh.update(calc_edges=True)
@@ -1530,6 +1613,22 @@ def create_geometry(armature, recipe):
     anatomy["lateralCentreError"] = abs(
         (local_minimum_x + local_maximum_x) * 0.5
     )
+
+    surface_vertices = [tuple(v.co) for v in mesh.vertices]
+    surface_faces = [list(p.vertices) for p in mesh.polygons]
+    def slice_width(z):
+        return central_slice_width(surface_vertices, surface_faces, z)
+
+    # Actual fused-surface measurements, not merely intended primitive sizes.
+    neck_width = slice_width(neck.lerp(torso_heads["Head"], 0.55).z)
+    waist_width = slice_width(waist.z)
+    ribcage_width = slice_width(chest.z)
+    anatomy["surfaceNeckWidth"] = neck_width
+    anatomy["surfaceWaistWidth"] = waist_width
+    anatomy["surfaceRibcageWidth"] = ribcage_width
+    anatomy["surfaceRatios"] = validate_surface_anatomy(
+        neck_width, slice_width(head_anchor.z + 0.115),
+        slice_width(chest.lerp(neck, 0.56).z), waist_width, ribcage_width)
 
     topology = mesh_topology_statistics(mesh)
     head_contract, scalp_vertices, neck_vertices, shoulder_vertices = measure_head_contract(
@@ -1572,6 +1671,7 @@ def skeleton_rest_signature(armature):
 
 
 def compile_mannequin(args, recipe):
+    started = time.perf_counter()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
@@ -1583,6 +1683,7 @@ def compile_mannequin(args, recipe):
     armature.name = "ProceduralMannequinArmature"
     armature.data.name = "ProceduralMannequinArmature"
     armature.animation_data_clear()
+    imported_at = time.perf_counter()
 
     (
         mesh_object,
@@ -1598,6 +1699,7 @@ def compile_mannequin(args, recipe):
         face_objects,
         face_report,
     ) = create_geometry(armature, recipe)
+    geometry_at = time.perf_counter()
     local_min_z = min(vertex.co.z for vertex in mesh_object.data.vertices)
     local_max_z = max(vertex.co.z for vertex in mesh_object.data.vertices)
     unscaled_height = local_max_z - local_min_z
@@ -1629,6 +1731,7 @@ def compile_mannequin(args, recipe):
     bpy.context.view_layer.objects.active = mesh_object
 
     output = Path(args.output)
+    export_started = time.perf_counter()
     output.parent.mkdir(parents=True, exist_ok=True)
     result = bpy.ops.export_scene.gltf(
         filepath=str(output),
@@ -1652,6 +1755,12 @@ def compile_mannequin(args, recipe):
     rest_signature, rest_snapshot = skeleton_rest_signature(armature)
     triangle_count = sum(len(polygon.vertices) - 2 for polygon in mesh_object.data.polygons)
     report = {
+        "timingsMs": {
+            "import": (imported_at - started) * 1000,
+            "geometry": (geometry_at - imported_at) * 1000,
+            "hairAndSetup": (export_started - geometry_at) * 1000,
+            "export": (time.perf_counter() - export_started) * 1000,
+        },
         "animationSet": recipe["animations"]["set"],
         "blender": {
             "buildHash": bpy.app.build_hash.decode(),
@@ -1702,7 +1811,7 @@ def compile_mannequin(args, recipe):
         "skinning": skinning,
         "templateHash": sha256(args.template),
         "warnings": [
-            "Topology V2 uses a controlled voxel union, Procedural Head V1 volumes, and analytic segment weights.",
+            "Human Foundation uses anatomical lofts, a smoothed 18 mm union, and analytic segment weights.",
             "Face Readability V0 uses fixed compiler-generated eye, nose, and mouth geometry; only eye colour is authored.",
             "Face features are fully Head-weighted and intentionally exclude expressions, eyelids, brows, and facial animation.",
             "Finger bones remain present for animation compatibility but the generated hands have no fingers.",

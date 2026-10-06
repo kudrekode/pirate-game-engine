@@ -39,22 +39,22 @@ The Playwright Three perf smoke now verifies the deterministic Demo Adventure be
 
 | System | Current Status | Notes |
 | --- | --- | --- |
-| game start | broadly shared | Runtime startup creates `RuntimeSession` from cloned project. |
+| game start | tested shared ordering | Rules, initial progression, actual-area entry, automatic quest sync; intro cutscenes suspend startup. |
 | initial progression | broadly shared | Shared progression helpers run startup flow. |
 | spawn | broadly shared | Runtime position is session/progression driven. |
-| player movement | broadly shared | Three input calls `playerMovementTransaction`; third-person remains grid/cardinal. |
+| player movement | tested shared eligibility | Session deadline and speed duration; no immediate repeat bypass; presentation completion does not gate gameplay. |
 | collision | broadly shared | Movement helper remains source of truth. |
 | terrain height | presentation-only | Height affects 3D visuals, not movement. |
 | interaction discovery | broadly shared | Three uses shared discovery for interact/touch. |
 | rules/actions | broadly shared | Shared rule dispatch/action helpers own state changes. |
-| cutscenes/dialogue | functional, presentation differs | UI polish remains. |
+| cutscenes/dialogue | tested node/choice/effect flow | Shared dialogue engine and session state; asynchronous node cutscenes resume actions; presentation differs. |
 | quests | broadly shared | Quest state/sync/rewards remain runtime-helper driven. |
 | inventory/pickups | broadly shared | Runtime quantities are session state. |
 | shops | broadly shared | Shop stock/currency flow uses shared helpers. |
 | area links/teleport | broadly shared | Runtime transition helpers own state changes. |
 | NPC movement | broadly shared | Three presentation is visual interpolation over runtime grid state. |
 | enemy contact | broadly shared | Shared NPC tick/contact helpers. |
-| combat | broadly shared | Shared combat helper owns damage/defeat/flags. |
+| combat | tested input gating | Both block attacks in cutscene/dialogue/shop/end states and preserve combat cooldown. Shared helper owns damage/defeat/flags. |
 | boats/vehicles | broadly shared | Shared object/vehicle helpers own board/sail/dismount. |
 | imported assets | presentation-only | Registry ids in authored config; live Three objects are not runtime state. |
 | offline-baked Golden animation | presentation-only | Shared registry playback; gameplay movement remains authoritative. |
@@ -106,3 +106,12 @@ Visual findings should not be treated as runtime parity failures unless they cha
 - Quest, inventory, pickup, shop, area transition, NPC, combat, and vehicle flows work through shared helpers.
 - Phaser and Three adapter tests prove key workflows call the same shared helper paths.
 - Remaining issues are Minor or Visual and are clearly documented as presentation work.
+
+## Phase 2 evidence boundary
+
+See [the correctness report](../PHASE_2_CORRECTNESS_RESULT.md) for regression
+scenarios and results. These tests establish the listed contracts, not exhaustive
+parity for every combination of legacy interactions and progression. Phaser polls
+held directions; Three consumes keyboard events. Both enforce the same earliest
+eligible gameplay time. Phaser canvas portraits and Three text overlays remain
+deliberately different presentation.

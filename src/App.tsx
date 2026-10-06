@@ -6,12 +6,14 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { migrateProject } from "./data/migrateProject";
 import {
 	createProjectFromPreset,
 	type ProjectPresetId,
 	projectPresets,
 } from "./data/projectPresets";
 import { validateProject } from "./data/validateProject";
+import { AssetCreatorLauncher } from "./editor/AssetCreatorLauncher";
 import { type EditorSectionId, editorSections } from "./editor/sections";
 import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
 import { RuntimePanel } from "./runtime/RuntimePanel";
@@ -41,6 +43,20 @@ function downloadJson(project: GameProject) {
 	URL.revokeObjectURL(url);
 }
 
+function readRecoveryProject(raw: string | null): GameProject | null {
+	if (!raw) return null;
+	try {
+		const value: unknown = JSON.parse(raw);
+		if (!value || typeof value !== "object" || Array.isArray(value))
+			return null;
+		// Read both current areas and the historical single-map shape.
+		if (!("areas" in value) && !("map" in value)) return null;
+		return migrateProject(value);
+	} catch {
+		return null;
+	}
+}
+
 type ScrollPosition = {
 	scrollLeft: number;
 	scrollTop: number;
@@ -62,6 +78,11 @@ export default function App() {
 	const setProject = useProjectStore((state) => state.setProject);
 
 	const [isStartupReady, setIsStartupReady] = useState(false);
+	const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+	const [recoveryChoice, setRecoveryChoice] = useState<{
+		saved: GameProject;
+		draft: GameProject;
+	} | null>(null);
 	const [isPresetChooserOpen, setIsPresetChooserOpen] = useState(false);
 	const [isInitialPresetChoice, setIsInitialPresetChoice] = useState(false);
 	const [activeSectionId, setActiveSectionId] =
@@ -102,37 +123,66 @@ export default function App() {
 				? `${validationIssues.length} issues`
 				: `${validationIssues.length} warning${validationIssues.length === 1 ? "" : "s"}`;
 
+	function loadRecoveredProject(
+		selected: GameProject,
+		saved: GameProject | null,
+	) {
+		setProject(selected);
+		savedProjectSnapshotRef.current = saved ? JSON.stringify(saved) : "";
+		// Loading is not an edit. In particular, do not replace an unchosen draft.
+		autosavedProjectSnapshotRef.current = JSON.stringify(selected);
+		setRecoveryChoice(null);
+		setAutosaveEnabled(true);
+		setStatusMessage(
+			selected === saved ? "Loaded saved project." : "Loaded autosaved draft.",
+		);
+	}
+
 	const handleSave = useCallback(() => {
-		saveToLocalStorage();
-		savedProjectSnapshotRef.current = JSON.stringify(project);
-		setStatusMessage("Saved to localStorage.");
-	}, [project, saveToLocalStorage]);
+		if (!autosaveEnabled) return;
+		try {
+			saveToLocalStorage();
+			savedProjectSnapshotRef.current = JSON.stringify(project);
+			setStatusMessage("Saved to localStorage.");
+		} catch {
+			setStatusMessage(
+				"Could not save. Your changes are still in this tab; export a copy.",
+			);
+		}
+	}, [autosaveEnabled, project, saveToLocalStorage]);
 
 	useEffect(() => {
 		try {
-			if (localStorage.getItem(STORAGE_KEY)) {
-				loadFromLocalStorage();
-				savedProjectSnapshotRef.current = JSON.stringify(
-					useProjectStore.getState().project,
+			const saved = readRecoveryProject(localStorage.getItem(STORAGE_KEY));
+			const draft = readRecoveryProject(
+				localStorage.getItem(AUTOSAVE_DRAFT_STORAGE_KEY),
+			);
+			if (saved && draft && JSON.stringify(saved) !== JSON.stringify(draft)) {
+				setRecoveryChoice({ saved, draft });
+			} else if (saved || draft) {
+				const selected = saved ?? draft;
+				if (!selected) return;
+				setProject(selected);
+				savedProjectSnapshotRef.current = saved ? JSON.stringify(saved) : "";
+				autosavedProjectSnapshotRef.current = JSON.stringify(selected);
+				setAutosaveEnabled(true);
+				setStatusMessage(
+					saved ? "Loaded saved project." : "Loaded autosaved draft.",
 				);
-				setStatusMessage("Loaded saved project.");
 			} else {
-				const draft = localStorage.getItem(AUTOSAVE_DRAFT_STORAGE_KEY);
-				if (draft) {
-					setProject(JSON.parse(draft) as GameProject);
-					setStatusMessage("Loaded autosaved draft.");
-				} else {
-					setIsInitialPresetChoice(true);
-					setIsPresetChooserOpen(true);
-				}
+				setIsInitialPresetChoice(true);
+				setIsPresetChooserOpen(true);
 			}
 		} catch {
-			setStatusMessage("Could not load saved project.");
+			setStatusMessage(
+				"Could not read browser storage. Export your work to keep a copy.",
+			);
+			setIsInitialPresetChoice(true);
 			setIsPresetChooserOpen(true);
 		} finally {
 			setIsStartupReady(true);
 		}
-	}, [loadFromLocalStorage, setProject]);
+	}, [setProject]);
 
 	useEffect(() => {
 		function handleSaveShortcut(event: KeyboardEvent) {
@@ -147,24 +197,36 @@ export default function App() {
 	}, [handleSave]);
 
 	useEffect(() => {
+		if (!isStartupReady || !autosaveEnabled) return;
 		const snapshot = JSON.stringify(project);
 		if (snapshot === autosavedProjectSnapshotRef.current) {
 			return;
 		}
 
 		const timeoutId = window.setTimeout(() => {
-			localStorage.setItem(AUTOSAVE_DRAFT_STORAGE_KEY, snapshot);
-			autosavedProjectSnapshotRef.current = snapshot;
-			setAutosaveTimestamp(
-				new Date().toLocaleTimeString([], {
-					hour: "2-digit",
-					minute: "2-digit",
-				}),
-			);
+			try {
+				localStorage.setItem(AUTOSAVE_DRAFT_STORAGE_KEY, snapshot);
+				autosavedProjectSnapshotRef.current = snapshot;
+				setAutosaveTimestamp(
+					new Date().toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					}),
+				);
+				setStatusMessage((message) =>
+					message.startsWith("Could not autosave")
+						? "Draft recovery is available."
+						: message,
+				);
+			} catch {
+				setAutosaveTimestamp("");
+				setStatusMessage(
+					"Could not autosave. Your changes are still in this tab; save or export a copy.",
+				);
+			}
 		}, AUTOSAVE_DELAY_MS);
-
 		return () => window.clearTimeout(timeoutId);
-	}, [project]);
+	}, [project, isStartupReady, autosaveEnabled]);
 
 	useLayoutEffect(() => {
 		const positions = tabScrollPositionsRef.current.get(activeSectionId);
@@ -204,6 +266,13 @@ export default function App() {
 	function handleLoad() {
 		try {
 			const loaded = loadFromLocalStorage();
+			if (!loaded) {
+				setStatusMessage("No saved project found.");
+				return;
+			}
+			autosavedProjectSnapshotRef.current = JSON.stringify(
+				useProjectStore.getState().project,
+			);
 			savedProjectSnapshotRef.current = JSON.stringify(
 				useProjectStore.getState().project,
 			);
@@ -235,6 +304,7 @@ export default function App() {
 		}
 
 		setProject(createProjectFromPreset(preset.id));
+		setAutosaveEnabled(true);
 		savedProjectSnapshotRef.current = "";
 		setRuntimeProject(null);
 		setIsInitialPresetChoice(false);
@@ -271,6 +341,43 @@ export default function App() {
 
 	if (!isStartupReady) {
 		return null;
+	}
+
+	if (recoveryChoice) {
+		return (
+			<div className="preset-chooser-backdrop">
+				<section
+					className="preset-chooser"
+					role="dialog"
+					aria-modal="true"
+					aria-label="Recover a project"
+				>
+					<strong>A saved project and a different draft are available.</strong>
+					<p>
+						Choose which to open. Neither copy is changed until you edit or
+						save.
+					</p>
+					<p>Saved project: {recoveryChoice.saved.metadata.name}</p>
+					<p>Recovery draft: {recoveryChoice.draft.metadata.name}</p>
+					<button
+						type="button"
+						onClick={() =>
+							loadRecoveredProject(recoveryChoice.draft, recoveryChoice.saved)
+						}
+					>
+						Recover draft
+					</button>
+					<button
+						type="button"
+						onClick={() =>
+							loadRecoveredProject(recoveryChoice.saved, recoveryChoice.saved)
+						}
+					>
+						Use saved project
+					</button>
+				</section>
+			</div>
+		);
 	}
 
 	return (
@@ -372,6 +479,14 @@ export default function App() {
 					<button onClick={handleLoad} type="button">
 						Load
 					</button>
+					<AssetCreatorLauncher
+						onImported={() => {
+							setActiveSectionId("character");
+							setStatusMessage(
+								"Character added. Set it as the player or add it to the NPC palette in Character.",
+							);
+						}}
+					/>
 					<button onClick={() => downloadJson(project)} type="button">
 						Export JSON
 					</button>

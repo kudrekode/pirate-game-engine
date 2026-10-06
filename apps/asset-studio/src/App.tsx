@@ -1,29 +1,43 @@
 import {
+	AUTHORED_BODY_PRESETS,
+	AUTHORED_FACE_PRESETS,
+	AUTHORED_HUMAN_CONTROLS,
+	type AuthoredHumanValues,
 	CHARACTER_HAIR_COMPONENT_IDS,
 	CHARACTER_PALETTE_REGIONS,
 	type CharacterBodyParameters,
 	type CharacterHairComponentId,
 	type CharacterPaletteRegion,
 	type CharacterRecipeV1,
+	CLOTHING_SLOTS,
+	CLOTHING_SWATCHES,
+	clothingIssues,
+	createAuthoredHumanRecipe,
 	createDefaultCharacterRecipe,
+	everydayClothing,
 	getCharacterComponentDefinition,
+	matchingAuthoredPreset,
+	noClothing,
 	parseCharacterRecipe,
+	sameCharacterGeometry,
+	sameClothing,
 	serializeCharacterRecipe,
 } from "@adventure-game-builder/character-contract";
 import {
-	disposeThreeVisualAssetCacheEntry,
-	GOLDEN_REFERENCE_HUMANOID_ASSET,
-	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
-	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	PROCEDURAL_MANNEQUIN_V0_ASSET,
-	requestThreeVisualAsset,
-	requestThreeVisualAssetAnimationClip,
-	type ThreeVisualAssetAnalysis,
 	type ThreeVisualAssetDefinition,
 } from "@adventure-game-builder/three-asset-preview";
-import { useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { useMemo, useRef, useState } from "react";
+import { GameEngineNavigation } from "./GameEngineNavigation";
+import { type CreatorCameraState, HumanoidPreview } from "./HumanoidPreview";
+import {
+	AUTHORED_HUMAN_FIXTURE_ID,
+	GOLDEN_REFERENCE_FIXTURE_ID,
+	PREVIEW_SOURCES,
+	PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+	type PreviewSource,
+	type PreviewSourceId,
+} from "./previewSources";
 import {
 	PROCEDURAL_FACE_APPEARANCE,
 	PROCEDURAL_FACE_FEATURE_VERSION,
@@ -37,6 +51,7 @@ import {
 	validateProceduralMannequinAppearance,
 	validateProceduralMannequinBody,
 } from "./proceduralMannequinCreator";
+import { UseInGame } from "./UseInGame";
 
 const NAV_SECTIONS = [
 	"Character",
@@ -45,6 +60,16 @@ const NAV_SECTIONS = [
 	"Animations",
 	"Export",
 ] as const;
+const CREATOR_SECTIONS = [
+	"Character",
+	"Body",
+	"Face",
+	"Hair",
+	"Clothing",
+	"Appearance",
+] as const;
+type CreatorSection = (typeof CREATOR_SECTIONS)[number];
+const INITIAL_AUTHORED_RECIPE = createAuthoredHumanRecipe();
 
 const BODY_BASE_OPTIONS = [
 	{ label: "Humanoid default", value: "humanoid-default" },
@@ -115,48 +140,6 @@ function downloadRecipe(recipe: CharacterRecipeV1) {
 	URL.revokeObjectURL(url);
 }
 
-const GOLDEN_REFERENCE_FIXTURE_ID = "golden-reference-humanoid-v0";
-const PROCEDURAL_MANNEQUIN_FIXTURE_ID = "procedural-mannequin-v0";
-const RETARGET_ARTIFACT_ROOT =
-	"/assets/derived/humanoid-animations/golden-reference-v0";
-const MANNEQUIN_ARTIFACT_ROOT =
-	"/assets/derived/procedural-humanoids/mannequin-v0";
-type PreviewSource = {
-	artifactUrl: string;
-	definition: ThreeVisualAssetDefinition;
-	description: string;
-	displayName: string;
-	fixtureId: string;
-	kindLabel: string;
-	manifestUrl?: string;
-	mannequin: boolean;
-	revision: string;
-	transient?: boolean;
-};
-const PREVIEW_SOURCES = {
-	[GOLDEN_REFERENCE_FIXTURE_ID]: {
-		artifactUrl: GOLDEN_REFERENCE_HUMANOID_ASSET.url,
-		definition: GOLDEN_REFERENCE_HUMANOID_ASSET,
-		description: "Externally authored engineering reference fixture",
-		displayName: "Golden Reference Humanoid",
-		fixtureId: GOLDEN_REFERENCE_FIXTURE_ID,
-		kindLabel: "Reference fixture",
-		mannequin: false,
-		revision: "golden-reference",
-	},
-	[PROCEDURAL_MANNEQUIN_FIXTURE_ID]: {
-		artifactUrl: `${MANNEQUIN_ARTIFACT_ROOT}/mannequin.glb`,
-		definition: PROCEDURAL_MANNEQUIN_V0_ASSET,
-		description: "Compiler-generated engineering geometry",
-		displayName: "Procedural Mannequin V0",
-		fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
-		kindLabel: "Compiled artifact",
-		manifestUrl: `${MANNEQUIN_ARTIFACT_ROOT}/manifest.json`,
-		mannequin: true,
-		revision: "checked-in",
-	},
-} as const satisfies Record<string, PreviewSource>;
-type PreviewSourceId = keyof typeof PREVIEW_SOURCES;
 type RecentCompilation = {
 	parameters: CharacterBodyParameters;
 	recipe: CharacterRecipeV1;
@@ -164,1007 +147,26 @@ type RecentCompilation = {
 	seed: string;
 	source: PreviewSource;
 };
-type PreviewAnimationState = "idle" | "rest" | "walk";
-type PreviewCameraPreset =
-	| "back"
-	| "close-front"
-	| "close-three-quarter"
-	| "front"
-	| "right-side"
-	| "scalp"
-	| "side"
-	| "three-quarter"
-	| "three-quarter-rear";
-const PREVIEW_CAMERA_LABELS: Record<PreviewCameraPreset, string> = {
-	back: "Back",
-	"close-front": "Close front",
-	"close-three-quarter": "Close three-quarter",
-	front: "Front",
-	"right-side": "Right side",
-	scalp: "Scalp",
-	side: "Side",
-	"three-quarter": "Three-quarter",
-	"three-quarter-rear": "Three-quarter rear",
-};
-type RetargetQualitySummary = {
-	finiteTransforms: boolean;
-	maxBoneLengthRelativeError: number;
-	maxBoundingSpanRelativeToRestHeight: number;
-	maxClavicleRestRotationDegrees: number;
-	maxIdleSymmetryError: number;
-	maxRootHorizontalDisplacement: number;
-	passed: boolean;
-};
-type RuntimeRetargetReport = {
-	artifactStatus: string;
-	boneMapVersion: string;
-	idle: {
-		clip: { duration: number };
-		profile: { boneMap: Record<string, string>; transformPolicy: string };
-		quality: { summary: RetargetQualitySummary };
-		rootMotion: { policy: string };
-	};
-	provenance: { provider: string };
-	walk: {
-		clip: { duration: number };
-		quality: { summary: RetargetQualitySummary };
-		rootMotion: { policy: string };
-	};
-	idleComparison: {
-		semanticMatches: unknown[];
-		unmatchedSourceBones: string[];
-		unmatchedTargetBones: string[];
-	};
-	legacyFailedBaseline: {
-		idleQuality: RetargetQualitySummary;
-		walkQuality: RetargetQualitySummary;
-	};
-};
-type OfflineBakeMetadata = {
-	clipId: "idle" | "walk";
-	clipName: string;
-	compilerVersion: string;
-	durationSeconds: number;
-	mappedBoneCount: number;
-	outputPath: string;
-	profileVersion: string;
-	rootMotion: { policy: string };
-	warnings: string[];
-};
-type OfflineBakeRoundTripReport = {
-	passed: boolean;
-	profileVersion: string;
-	idle: { passed: boolean; poseComparison: { passed: boolean } };
-	walk: { passed: boolean; poseComparison: { passed: boolean } };
-};
-type OfflineBakeBundle = {
-	idle: OfflineBakeMetadata;
-	walk: OfflineBakeMetadata;
-	roundTrip: OfflineBakeRoundTripReport;
-};
-const RETARGET_DIAGNOSTIC_JOINTS = [
-	"pelvis",
-	"spine_03",
-	"neck_01",
-	"Head",
-	"clavicle_l",
-	"clavicle_r",
-	"upperarm_l",
-	"upperarm_r",
-	"lowerarm_l",
-	"lowerarm_r",
-	"hand_l",
-	"hand_r",
-	"thigh_l",
-	"thigh_r",
-	"calf_l",
-	"calf_r",
-	"foot_l",
-	"foot_r",
-] as const;
-
-function loadRegisteredAnimationClip(
-	definition: ThreeVisualAssetDefinition,
-	clipName: string,
-): Promise<THREE.AnimationClip> {
-	return new Promise((resolve, reject) => {
-		const check = () => {
-			const result = requestThreeVisualAssetAnimationClip(
-				definition,
-				clipName,
-				{ onStateChange: check },
-			);
-			if (result.status === "loaded") resolve(result.clip);
-			else if (result.status === "error") reject(result.error);
-			else if (result.status === "missing_clip")
-				reject(
-					new Error(
-						`${definition.id} does not contain the required ${clipName} clip.`,
-					),
-				);
-		};
-		check();
-	});
-}
-
-function HumanoidPreview({
-	onManifestLoaded,
-	source,
-}: {
-	onManifestLoaded?: (manifest: ProceduralMannequinManifest) => void;
-	source: PreviewSource;
-}) {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const hostRef = useRef<HTMLDivElement>(null);
-	const resetViewRef = useRef<() => void>(() => undefined);
-	const setCameraPresetRef = useRef<(preset: PreviewCameraPreset) => void>(
-		() => undefined,
-	);
-	const seekAnimationRef = useRef<(normalizedTime: number) => void>(
-		() => undefined,
-	);
-	const [status, setStatus] = useState<"loading" | "loaded" | "error">(
-		"loading",
-	);
-	const [analysis, setAnalysis] = useState<ThreeVisualAssetAnalysis>();
-	const [error, setError] = useState("");
-	const [canResetView, setCanResetView] = useState(false);
-	const [animationState, setAnimationState] =
-		useState<PreviewAnimationState>("rest");
-	const [animationPlaying, setAnimationPlaying] = useState(true);
-	const [animationSample, setAnimationSample] = useState(0);
-	const [cameraPreset, setCameraPreset] =
-		useState<PreviewCameraPreset>("three-quarter");
-	const [clipStatus, setClipStatus] = useState<"loading" | "loaded" | "error">(
-		"loading",
-	);
-	const [retargetReport, setRetargetReport] = useState<RuntimeRetargetReport>();
-	const [offlineBake, setOfflineBake] = useState<OfflineBakeBundle>();
-	const [mannequinManifest, setMannequinManifest] =
-		useState<ProceduralMannequinManifest>();
-	const isMannequin = source.mannequin;
-	const animationPlayingRef = useRef(animationPlaying);
-	const applyAnimationStateRef = useRef<(state: PreviewAnimationState) => void>(
-		() => undefined,
-	);
-	useEffect(() => {
-		animationPlayingRef.current = animationPlaying;
-	}, [animationPlaying]);
-	useEffect(() => {
-		applyAnimationStateRef.current(animationState);
-	}, [animationState]);
-	useEffect(() => {
-		seekAnimationRef.current(animationSample);
-	}, [animationSample]);
-	useEffect(() => {
-		const canvas = canvasRef.current,
-			host = hostRef.current;
-		if (!canvas || !host || typeof WebGLRenderingContext === "undefined")
-			return;
-		setStatus("loading");
-		setAnalysis(undefined);
-		setError("");
-		setCanResetView(false);
-		setAnimationState("rest");
-		setAnimationSample(0);
-		setClipStatus("loading");
-		setRetargetReport(undefined);
-		setOfflineBake(undefined);
-		setMannequinManifest(undefined);
-		host.dataset.previewRevision = source.revision;
-		let disposed = false,
-			frame = 0;
-		let activeClone: THREE.Group | undefined;
-		let animationRoot: THREE.Object3D | undefined;
-		let animationMixer: THREE.AnimationMixer | undefined;
-		let activeAction: THREE.AnimationAction | undefined;
-		let activeState: PreviewAnimationState = "rest";
-		let restBoundsSize: THREE.Vector3 | undefined;
-		let restBoundsDiagonal: number | undefined;
-		const animationClips = new Map<
-			PreviewAnimationState,
-			THREE.AnimationClip
-		>();
-		const clock = new THREE.Clock();
-		let renderer: THREE.WebGLRenderer;
-		try {
-			renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
-		} catch (renderError) {
-			setStatus("error");
-			setError(
-				renderError instanceof Error
-					? renderError.message
-					: "WebGL unavailable.",
-			);
-			return;
-		}
-		renderer.setClearColor(0xf6f8fb, 1);
-		renderer.shadowMap.enabled = true;
-		const scene = new THREE.Scene(),
-			camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-		const controls = new OrbitControls(camera, renderer.domElement);
-		controls.enableDamping = true;
-		controls.enablePan = false;
-		controls.minPolarAngle = 0.2;
-		controls.maxPolarAngle = Math.PI / 2.05;
-		controls.rotateSpeed = 0.7;
-		controls.zoomSpeed = 0.8;
-		let initialCameraPosition: THREE.Vector3 | undefined;
-		let initialCameraTarget: THREE.Vector3 | undefined;
-		const updateCameraMetadata = () => {
-			host.dataset.cameraPosition = camera.position
-				.toArray()
-				.map((value) => value.toFixed(3))
-				.join(",");
-		};
-		controls.addEventListener("change", updateCameraMetadata);
-		scene.add(new THREE.HemisphereLight(0xffffff, 0xaab7c4, 1.8));
-		const key = new THREE.DirectionalLight(0xffffff, 2.1);
-		key.position.set(3, 5, 4);
-		key.castShadow = true;
-		const grid = new THREE.GridHelper(4, 16, 0x94a3b8, 0xd3dae2);
-		const ground = new THREE.Mesh(
-			new THREE.PlaneGeometry(8, 8),
-			new THREE.MeshStandardMaterial({ color: 0xe8edf2, roughness: 0.9 }),
-		);
-		ground.rotation.x = -Math.PI / 2;
-		ground.receiveShadow = true;
-		scene.add(key, grid, ground);
-		const resize = () => {
-			const width = Math.max(1, host.clientWidth),
-				height = Math.max(1, host.clientHeight);
-			renderer.setSize(width, height, false);
-			camera.aspect = width / height;
-			camera.updateProjectionMatrix();
-		};
-		const updateAnimationMetadata = (measureBounds = false) => {
-			animationRoot?.updateMatrixWorld(true);
-			host.dataset.animationState = activeState;
-			host.dataset.animationPlaying = String(animationPlayingRef.current);
-			host.dataset.animationTime = (activeAction?.time ?? 0).toFixed(4);
-			const pose = ["pelvis", "spine_03", "Head", "hand_l", "foot_l"]
-				.map((name) => animationRoot?.getObjectByName(name)?.quaternion)
-				.filter((quaternion): quaternion is THREE.Quaternion =>
-					Boolean(quaternion),
-				)
-				.flatMap((quaternion) => quaternion.toArray())
-				.map((value) => value.toFixed(4))
-				.join(",");
-			host.dataset.poseSnapshot = pose;
-			const pelvisWorld = animationRoot
-				?.getObjectByName("pelvis")
-				?.getWorldPosition(new THREE.Vector3());
-			host.dataset.pelvisHorizontal = pelvisWorld
-				? `${pelvisWorld.x.toFixed(5)},${pelvisWorld.z.toFixed(5)}`
-				: "";
-			const jointDiagnostics = Object.fromEntries(
-				RETARGET_DIAGNOSTIC_JOINTS.map((name) => {
-					const bone = animationRoot?.getObjectByName(name);
-					return [
-						name,
-						bone
-							? {
-									position: bone
-										.getWorldPosition(new THREE.Vector3())
-										.toArray()
-										.map((value) => Number(value.toFixed(6))),
-									rotation: bone
-										.getWorldQuaternion(new THREE.Quaternion())
-										.toArray()
-										.map((value) => Number(value.toFixed(6))),
-								}
-							: undefined,
-					];
-				}),
-			);
-			host.dataset.jointDiagnostics = JSON.stringify(jointDiagnostics);
-			if (measureBounds && animationRoot && restBoundsSize) {
-				const animatedSize = new THREE.Box3()
-					.setFromObject(animationRoot, true)
-					.getSize(new THREE.Vector3());
-				const expansion = animatedSize
-					.clone()
-					.divide(restBoundsSize)
-					.toArray()
-					.map((value) => Number(value.toFixed(6)));
-				const diagonalExpansion = restBoundsDiagonal
-					? animatedSize.length() / restBoundsDiagonal
-					: Number.NaN;
-				const heightExpansion = expansion[1];
-				host.dataset.boundsExpansion = expansion.join(",");
-				host.dataset.boundsOverallExpansion = diagonalExpansion.toFixed(6);
-				host.dataset.meshInvariantPassed = String(
-					expansion.every(Number.isFinite) &&
-						Number.isFinite(diagonalExpansion) &&
-						diagonalExpansion >= 0.65 &&
-						diagonalExpansion <= 1.5 &&
-						heightExpansion >= 0.7 &&
-						heightExpansion <= 1.3,
-				);
-			}
-		};
-		const restoreRestPose = () => {
-			animationMixer?.stopAllAction();
-			activeAction = undefined;
-			const skeletons = new Set<THREE.Skeleton>();
-			animationRoot?.traverse((object) => {
-				if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton);
-			});
-			for (const skeleton of skeletons) skeleton.pose();
-			animationRoot?.updateMatrixWorld(true);
-		};
-		const applyAnimationState = (state: PreviewAnimationState) => {
-			activeState = state;
-			if (!animationMixer || state === "rest") {
-				restoreRestPose();
-				updateAnimationMetadata(true);
-				return;
-			}
-			const clip = animationClips.get(state);
-			if (!clip) return;
-			activeAction?.stop();
-			const nextAction = animationMixer.clipAction(clip);
-			nextAction.reset().setLoop(THREE.LoopRepeat, Infinity).play();
-			activeAction = nextAction;
-			animationMixer.setTime(0);
-			updateAnimationMetadata(true);
-		};
-		applyAnimationStateRef.current = applyAnimationState;
-		seekAnimationRef.current = (normalizedTime) => {
-			if (!animationMixer || !activeAction) return;
-			const clip = activeAction.getClip();
-			animationMixer.setTime(
-				clip.duration * THREE.MathUtils.clamp(normalizedTime, 0, 0.999999),
-			);
-			updateAnimationMetadata(true);
-		};
-		const render = () => {
-			const deltaSeconds = Math.min(clock.getDelta(), 0.1);
-			if (animationPlayingRef.current) animationMixer?.update(deltaSeconds);
-			updateAnimationMetadata();
-			controls.update();
-			renderer.render(scene, camera);
-			frame = window.requestAnimationFrame(render);
-		};
-		const mountAsset = () => {
-			const result = requestThreeVisualAsset(source.definition, {
-				onStateChange: mountAsset,
-			});
-			if (disposed || result.status === "loading") return;
-			if (result.status === "error" || result.status === "missing") {
-				setStatus("error");
-				setError(
-					result.status === "error" ? String(result.error) : "Fixture missing.",
-				);
-				return;
-			}
-			activeClone?.removeFromParent();
-			const group = new THREE.Group();
-			group.name = `${source.definition.id}Preview`;
-			group.rotation.y = THREE.MathUtils.degToRad(
-				result.definition.defaultRotationOffset ?? 0,
-			);
-			group.scale.setScalar(result.definition.defaultScale ?? 1);
-			result.object.position.y = -result.analysis.bounds.minY;
-			result.object.traverse((object) => {
-				if (object instanceof THREE.Mesh) {
-					object.castShadow = result.definition.castShadow ?? false;
-					object.receiveShadow = result.definition.receiveShadow ?? false;
-				}
-			});
-			group.add(result.object);
-			scene.add(group);
-			activeClone = group;
-			animationRoot = result.object;
-			animationMixer?.stopAllAction();
-			if (animationRoot)
-				animationMixer = new THREE.AnimationMixer(animationRoot);
-			const bounds = new THREE.Box3().setFromObject(group),
-				center = bounds.getCenter(new THREE.Vector3()),
-				radius = Math.max(
-					bounds.getSize(new THREE.Vector3()).length() / 2,
-					0.8,
-				);
-			controls.minDistance = radius * 0.75;
-			controls.maxDistance = radius * 3.5;
-			setCameraPresetRef.current = (preset) => {
-				const closeView =
-					preset === "close-front" || preset === "close-three-quarter";
-				const target = new THREE.Vector3(
-					center.x,
-					preset === "scalp" || closeView
-						? bounds.max.y - radius * 0.08
-						: Math.max(center.y, 0.8),
-					center.z,
-				);
-				const offsets: Record<PreviewCameraPreset, THREE.Vector3> = {
-					back: new THREE.Vector3(0, radius * 0.08, radius * 2.45),
-					"close-front": new THREE.Vector3(0, radius * 0.02, -radius * 0.88),
-					"close-three-quarter": new THREE.Vector3(
-						radius * 0.62,
-						radius * 0.12,
-						-radius * 0.62,
-					),
-					front: new THREE.Vector3(0, radius * 0.08, -radius * 2.45),
-					"right-side": new THREE.Vector3(-radius * 2.45, radius * 0.08, 0),
-					scalp: new THREE.Vector3(
-						radius * 0.72,
-						radius * 0.82,
-						-radius * 0.72,
-					),
-					side: new THREE.Vector3(radius * 2.45, radius * 0.08, 0),
-					"three-quarter": new THREE.Vector3(
-						radius * 1.7,
-						radius * 0.28,
-						-radius * 1.7,
-					),
-					"three-quarter-rear": new THREE.Vector3(
-						radius * 1.7,
-						radius * 0.28,
-						radius * 1.7,
-					),
-				};
-				const offset = offsets[preset];
-				const damping = controls.enableDamping;
-				controls.enableDamping = false;
-				camera.position.copy(target).add(offset);
-				controls.target.copy(target);
-				controls.update();
-				controls.enableDamping = damping;
-				host.dataset.cameraPreset = preset;
-				updateCameraMetadata();
-			};
-			setCameraPresetRef.current("three-quarter");
-			initialCameraPosition = camera.position.clone();
-			initialCameraTarget = controls.target.clone();
-			controls.saveState();
-			resetViewRef.current = () => {
-				if (!initialCameraPosition || !initialCameraTarget) return;
-				setCameraPresetRef.current("three-quarter");
-			};
-			restoreRestPose();
-			restBoundsSize = new THREE.Box3()
-				.setFromObject(animationRoot, true)
-				.getSize(new THREE.Vector3());
-			restBoundsDiagonal = restBoundsSize.length();
-			updateCameraMetadata();
-			setCanResetView(true);
-			setAnalysis(result.analysis);
-			setStatus("loaded");
-			applyAnimationState(activeState);
-		};
-		const requestedMode = new URLSearchParams(window.location.search).get(
-			"retarget",
-		);
-		const failedBaseline = !isMannequin && requestedMode === "failed-v1";
-		const runtimeV2 = !isMannequin && requestedMode === "runtime-v2";
-		const offlineBaked = !failedBaseline && !runtimeV2;
-		host.dataset.retargetMode = failedBaseline
-			? "failed-v1"
-			: runtimeV2
-				? "runtime-v2"
-				: "offline-baked";
-		host.dataset.playbackMethod = offlineBaked
-			? "Offline baked"
-			: "Runtime retarget diagnostic";
-		const fetchJson = async <Result,>(url: string): Promise<Result> => {
-			const response = await fetch(url);
-			if (!response.ok) throw new Error(`${url} HTTP ${response.status}.`);
-			return response.json() as Promise<Result>;
-		};
-		const runtimeClip = (url: string) =>
-			fetchJson<ReturnType<typeof THREE.AnimationClip.toJSON>>(url).then(
-				(json) => THREE.AnimationClip.parse(json),
-			);
-		const idleClipPromise = offlineBaked
-			? loadRegisteredAnimationClip(
-					GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
-					"GoldenReference_Idle",
-				)
-			: runtimeClip(
-					failedBaseline
-						? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-idle.json`
-						: `${RETARGET_ARTIFACT_ROOT}/idle.runtime-retarget.json`,
-				);
-		const walkClipPromise = offlineBaked
-			? loadRegisteredAnimationClip(
-					GOLDEN_REFERENCE_WALK_BAKED_ASSET,
-					"GoldenReference_Walk_InPlace",
-				)
-			: runtimeClip(
-					failedBaseline
-						? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-walk.json`
-						: `${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`,
-				);
-		const offlineBakePromise = offlineBaked
-			? Promise.all([
-					fetchJson<OfflineBakeMetadata>(
-						`${RETARGET_ARTIFACT_ROOT}/idle.bake-metadata.json`,
-					),
-					fetchJson<OfflineBakeMetadata>(
-						`${RETARGET_ARTIFACT_ROOT}/walk.bake-metadata.json`,
-					),
-					fetchJson<OfflineBakeRoundTripReport>(
-						`${RETARGET_ARTIFACT_ROOT}/offline-bake-roundtrip-report.json`,
-					),
-				]).then(([idle, walk, roundTrip]) => ({ idle, roundTrip, walk }))
-			: Promise.resolve(undefined);
-		const mannequinManifestPromise = isMannequin
-			? fetchJson<ProceduralMannequinManifest>(
-					source.manifestUrl ?? `${MANNEQUIN_ARTIFACT_ROOT}/manifest.json`,
-				)
-			: Promise.resolve(undefined);
-		Promise.all([
-			idleClipPromise,
-			walkClipPromise,
-			fetchJson<RuntimeRetargetReport>(
-				`${RETARGET_ARTIFACT_ROOT}/runtime-retarget-report.json`,
-			),
-			offlineBakePromise,
-			mannequinManifestPromise,
-		])
-			.then(([idleClip, walkClip, report, baked, manifest]) => {
-				if (disposed) return;
-				animationClips.set("idle", idleClip);
-				animationClips.set("walk", walkClip);
-				host.dataset.retargetProfile =
-					baked?.idle.profileVersion ?? report.boneMapVersion;
-				if (baked) {
-					host.dataset.artifactPaths = `${baked.idle.outputPath},${baked.walk.outputPath}`;
-					host.dataset.compilerVersion = baked.idle.compilerVersion;
-					host.dataset.offlineRoundTripPassed = String(
-						baked.roundTrip.passed &&
-							baked.roundTrip.idle.poseComparison.passed &&
-							baked.roundTrip.walk.poseComparison.passed,
-					);
-				}
-				host.dataset.idleQuality = JSON.stringify(
-					failedBaseline
-						? report.legacyFailedBaseline.idleQuality
-						: report.idle.quality.summary,
-				);
-				host.dataset.walkQuality = JSON.stringify(
-					failedBaseline
-						? report.legacyFailedBaseline.walkQuality
-						: report.walk.quality.summary,
-				);
-				setRetargetReport(report);
-				setOfflineBake(baked);
-				setMannequinManifest(manifest);
-				if (manifest) {
-					onManifestLoaded?.(manifest);
-					host.dataset.assetHash = manifest.outputHash;
-					host.dataset.boundsHeight = String(manifest.bounds.dimensions.y);
-					host.dataset.heightMetres = String(manifest.heightMetres);
-					host.dataset.proportions = JSON.stringify(manifest.proportions);
-					host.dataset.anatomy = JSON.stringify(manifest.anatomy);
-					host.dataset.recipeId = manifest.recipeId;
-					host.dataset.recipeVersion = String(manifest.recipeVersion);
-					host.dataset.recipeHash = manifest.recipeHash;
-					host.dataset.skeletonSignature = manifest.skeletonSignature;
-					host.dataset.deterministicBuild = String(manifest.deterministicBuild);
-					host.dataset.semanticHash = manifest.normalizedSemanticHash;
-					host.dataset.geometrySkinningHash =
-						manifest.geometryAndSkinningSemanticHash ?? "legacy";
-					host.dataset.materialHash = manifest.materialSemanticHash ?? "legacy";
-					if (manifest.appearance?.skin) {
-						host.dataset.skinColor = manifest.appearance.skin.authoredColor;
-						host.dataset.skinRoughness = String(
-							manifest.appearance.skin.authoredRoughness,
-						);
-						host.dataset.skinMetallic = String(
-							manifest.appearance.skin.exportedMetallic,
-						);
-					}
-					if (manifest.appearance?.face) {
-						host.dataset.eyeColor = manifest.appearance.face.authoredEyeColor;
-						host.dataset.faceMaterial =
-							manifest.appearance.face.materialSchemaVersion;
-					}
-					host.dataset.hairColor =
-						manifest.appearance?.hair?.authoredColor ?? "legacy";
-					host.dataset.faceVersion = manifest.face?.version ?? "legacy";
-					host.dataset.faceEyeMeshes = String(manifest.face?.eyeMeshCount ?? 0);
-					host.dataset.faceValidation = String(
-						manifest.face?.validation?.passed ?? false,
-					);
-					host.dataset.hairComponent =
-						manifest.components?.hair?.componentId ?? "none";
-					host.dataset.hairAttachment =
-						manifest.components?.hair?.attachmentBone ?? "none";
-					host.dataset.hairFitProfile =
-						manifest.components?.hair?.fittingProfile?.id ?? "none";
-					host.dataset.hairFitStatus = String(
-						manifest.components?.hair?.fitValidation?.passed ??
-							manifest.components?.hair?.componentId === "none",
-					);
-					host.dataset.headContract = manifest.head
-						? JSON.stringify(manifest.head)
-						: "legacy";
-					host.dataset.topologyVersion =
-						manifest.topologyVersion ?? "legacy-primitive-v0";
-					host.dataset.topologyComponents = String(
-						manifest.topology?.connectedComponentCount ?? 38,
-					);
-				}
-				setClipStatus("loaded");
-				setAnimationState("idle");
-			})
-			.catch((clipError) => {
-				if (disposed) return;
-				setClipStatus("error");
-				setError(
-					clipError instanceof Error
-						? clipError.message
-						: "Animation artifacts failed to load.",
-				);
-			});
-		const observer =
-			typeof ResizeObserver === "undefined"
-				? undefined
-				: new ResizeObserver(resize);
-		observer?.observe(host);
-		resize();
-		mountAsset();
-		render();
-		return () => {
-			disposed = true;
-			resetViewRef.current = () => undefined;
-			setCameraPresetRef.current = () => undefined;
-			seekAnimationRef.current = () => undefined;
-			applyAnimationStateRef.current = () => undefined;
-			window.cancelAnimationFrame(frame);
-			observer?.disconnect();
-			controls.removeEventListener("change", updateCameraMetadata);
-			controls.dispose();
-			animationMixer?.stopAllAction();
-			if (animationRoot) animationMixer?.uncacheRoot(animationRoot);
-			const cloneSkeletons = new Set<THREE.Skeleton>();
-			activeClone?.traverse((object) => {
-				if (object instanceof THREE.SkinnedMesh)
-					cloneSkeletons.add(object.skeleton);
-			});
-			for (const skeleton of cloneSkeletons) skeleton.dispose();
-			activeClone?.removeFromParent();
-			if (source.transient)
-				disposeThreeVisualAssetCacheEntry(source.definition);
-			ground.geometry.dispose();
-			(ground.material as THREE.Material).dispose();
-			renderer.renderLists.dispose();
-			renderer.dispose();
-		};
-	}, [isMannequin, onManifestLoaded, source]);
-	return (
-		<div
-			className="preview-host"
-			data-preview-source={source.fixtureId}
-			data-preview-revision={source.revision}
-			ref={hostRef}
-		>
-			<canvas aria-label={`${source.displayName} preview`} ref={canvasRef} />
-			<fieldset className="preview-controls" aria-label="3D preview controls">
-				{(
-					[
-						"front",
-						"close-front",
-						"side",
-						"right-side",
-						"three-quarter",
-						"close-three-quarter",
-						"three-quarter-rear",
-						"back",
-						"scalp",
-					] as const
-				).map((preset) => (
-					<button
-						aria-pressed={cameraPreset === preset}
-						disabled={!canResetView}
-						key={preset}
-						onClick={() => {
-							setCameraPreset(preset);
-							setCameraPresetRef.current(preset);
-						}}
-						type="button"
-					>
-						{PREVIEW_CAMERA_LABELS[preset]}
-					</button>
-				))}
-				<button
-					disabled={!canResetView}
-					onClick={() => {
-						setCameraPreset("three-quarter");
-						resetViewRef.current();
-					}}
-					type="button"
-				>
-					Reset view
-				</button>
-			</fieldset>
-			<fieldset
-				className="animation-controls"
-				aria-label={`${source.displayName} animation controls`}
-			>
-				{(["rest", "idle", "walk"] as const).map((state) => (
-					<button
-						aria-pressed={animationState === state}
-						disabled={state !== "rest" && clipStatus !== "loaded"}
-						key={state}
-						onClick={() => {
-							setAnimationSample(0);
-							setAnimationState(state);
-						}}
-						type="button"
-					>
-						{state[0].toUpperCase() + state.slice(1)}
-					</button>
-				))}
-				<button
-					disabled={animationState === "rest" || clipStatus !== "loaded"}
-					onClick={() => setAnimationPlaying((playing) => !playing)}
-					type="button"
-				>
-					{animationPlaying ? "Pause" : "Play"}
-				</button>
-				<label className="animation-sample-control">
-					Sample {Math.round(animationSample * 100)}%
-					<input
-						aria-label="Animation sample time"
-						disabled={animationState === "rest" || clipStatus !== "loaded"}
-						max="0.75"
-						min="0"
-						onChange={(event) => {
-							setAnimationPlaying(false);
-							setAnimationSample(Number(event.target.value));
-						}}
-						step="0.25"
-						type="range"
-						value={animationSample}
-					/>
-				</label>
-			</fieldset>
-			<div className="preview-label">
-				{source.displayName} · {source.kindLabel}
-			</div>
-			<div className="preview-status" data-status={status}>
-				{status === "loading"
-					? `Loading ${source.displayName}…`
-					: status === "loaded"
-						? clipStatus === "loaded"
-							? `${source.kindLabel} loaded · ${animationState === "rest" ? "Rest pose" : `${animationState} ${offlineBake ? "offline-baked" : "runtime-retarget diagnostic"}`}`
-							: clipStatus === "error"
-								? `${source.kindLabel} loaded · Clip error: ${error}`
-								: `${source.kindLabel} loaded · Loading animation clips…`
-						: `Preview error: ${error}`}
-			</div>
-			<dl
-				aria-label={`${source.displayName} diagnostics`}
-				className="preview-diagnostics"
-			>
-				<div>
-					<dt>Asset</dt>
-					<dd>{source.definition.id}</dd>
-				</div>
-				<div>
-					<dt>Load</dt>
-					<dd>{status}</dd>
-				</div>
-				<div>
-					<dt>Skinned meshes</dt>
-					<dd>{analysis?.skinnedMeshCount ?? "—"}</dd>
-				</div>
-				<div>
-					<dt>Bones</dt>
-					<dd>{analysis?.boneCount ?? "—"}</dd>
-				</div>
-				<div>
-					<dt>Materials</dt>
-					<dd>{analysis?.materialCount ?? "—"}</dd>
-				</div>
-				<div>
-					<dt>Animation clips</dt>
-					<dd>
-						{clipStatus === "loaded"
-							? 2
-							: (analysis?.animationClips.length ?? "—")}
-					</dd>
-				</div>
-				<div>
-					<dt>Active clip</dt>
-					<dd>
-						{animationState === "rest"
-							? "Rest"
-							: `${animationState} · ${
-									offlineBake?.[animationState].durationSeconds.toFixed(3) ??
-									retargetReport?.[animationState].clip.duration.toFixed(3) ??
-									"—"
-								}s`}
-					</dd>
-				</div>
-				<div>
-					<dt>Provider / method</dt>
-					<dd>
-						{isMannequin
-							? "Blender-generated geometry · Offline-baked animation reuse"
-							: offlineBake
-								? `${retargetReport?.provenance.provider ?? "Adobe Mixamo"} · Offline baked`
-								: retargetReport
-									? `${retargetReport.provenance.provider} · runtime diagnostic`
-									: "—"}
-					</dd>
-				</div>
-				<div>
-					<dt>Bone mapping</dt>
-					<dd>
-						{isMannequin
-							? "65-joint Golden template · 22 explicitly weighted bones"
-							: offlineBake
-								? `${offlineBake.idle.mappedBoneCount} mapped · fingers/helpers at rest`
-								: retargetReport
-									? `${retargetReport.idleComparison.semanticMatches.length} mapped · ${retargetReport.idleComparison.unmatchedSourceBones.length} source / ${retargetReport.idleComparison.unmatchedTargetBones.length} target unmapped`
-									: "—"}
-					</dd>
-				</div>
-				<div>
-					<dt>Root motion</dt>
-					<dd>
-						{offlineBake?.walk.rootMotion.policy ??
-							retargetReport?.walk.rootMotion.policy ??
-							"—"}
-					</dd>
-				</div>
-				<div>
-					<dt>Retarget profile</dt>
-					<dd>
-						{offlineBake?.roundTrip.profileVersion ??
-							retargetReport?.boneMapVersion ??
-							"—"}
-					</dd>
-				</div>
-				<div>
-					<dt>Transform policy</dt>
-					<dd>
-						{isMannequin
-							? "Exact Golden rest skeleton · registry-owned facing"
-							: offlineBake
-								? "V2 rest-frame delta baked in Blender"
-								: (retargetReport?.idle.profile.transformPolicy ?? "—")}
-					</dd>
-				</div>
-				<div>
-					<dt>Artifact</dt>
-					<dd>
-						{isMannequin
-							? source.artifactUrl
-							: offlineBake
-								? `${offlineBake.idle.outputPath} · ${offlineBake.walk.outputPath}`
-								: "Runtime JSON diagnostics"}
-					</dd>
-				</div>
-				<div>
-					<dt>Compiler</dt>
-					<dd>
-						{mannequinManifest?.compilerVersion ??
-							offlineBake?.idle.compilerVersion ??
-							"Runtime only"}
-					</dd>
-				</div>
-				{mannequinManifest ? (
-					<>
-						<div>
-							<dt>Recipe</dt>
-							<dd>
-								{mannequinManifest.recipeId} · V
-								{mannequinManifest.recipeVersion}
-							</dd>
-						</div>
-						<div>
-							<dt>Recipe hash</dt>
-							<dd>{mannequinManifest.recipeHash}</dd>
-						</div>
-						<div>
-							<dt>Authored height</dt>
-							<dd>{mannequinManifest.heightMetres.toFixed(2)} m</dd>
-						</div>
-						<div>
-							<dt>Body proportions</dt>
-							<dd>
-								Shoulders{" "}
-								{mannequinManifest.proportions.shoulderWidth.toFixed(2)} · Torso{" "}
-								{mannequinManifest.proportions.torsoLength.toFixed(2)} · Arms{" "}
-								{mannequinManifest.proportions.armLength.toFixed(2)} · Legs{" "}
-								{mannequinManifest.proportions.legLength.toFixed(2)} · Hips{" "}
-								{mannequinManifest.proportions.hipWidth.toFixed(2)}
-							</dd>
-						</div>
-						<div>
-							<dt>Asset hash</dt>
-							<dd>{mannequinManifest.outputHash}</dd>
-						</div>
-						<div>
-							<dt>Skeleton contract</dt>
-							<dd>{mannequinManifest.skeletonContract}</dd>
-						</div>
-						<div>
-							<dt>Body topology</dt>
-							<dd>
-								{mannequinManifest.topologyVersion ?? "legacy-primitive-v0"} ·{" "}
-								{mannequinManifest.topology?.connectedComponentCount ?? 38}{" "}
-								connected component ·{" "}
-								{mannequinManifest.topology?.manifold
-									? "manifold"
-									: "legacy disconnected"}
-							</dd>
-						</div>
-						<div>
-							<dt>Generated geometry</dt>
-							<dd>
-								{mannequinManifest.meshCount} mesh ·{" "}
-								{mannequinManifest.vertexCount} vertices ·{" "}
-								{mannequinManifest.triangleCount} triangles ·{" "}
-								{mannequinManifest.materialCount} material
-							</dd>
-						</div>
-						<div>
-							<dt>Weights</dt>
-							<dd>
-								{mannequinManifest.influenceStatistics.maximumInfluences}{" "}
-								maximum influence ·{" "}
-								{mannequinManifest.influenceStatistics.unweightedVertexCount}{" "}
-								unweighted
-							</dd>
-						</div>
-						<div>
-							<dt>Deterministic build</dt>
-							<dd>
-								{mannequinManifest.deterministicBuild ? "Pass" : "Failed"}
-							</dd>
-						</div>
-						<div>
-							<dt>Known limitations</dt>
-							<dd>{mannequinManifest.knownLimitations.join(" · ")}</dd>
-						</div>
-					</>
-				) : null}
-				<div>
-					<dt>Pose quality gate</dt>
-					<dd>
-						{animationState === "rest"
-							? "Rest baseline"
-							: offlineBake
-								? offlineBake.roundTrip[animationState].poseComparison.passed
-									? "Pass · offline round trip and V2 pose comparison"
-									: "Failed offline round trip"
-								: retargetReport?.[animationState].quality.summary.passed
-									? "Pass (visual inspection still required)"
-									: "Failed"}
-					</dd>
-				</div>
-				<div>
-					<dt>Bounds</dt>
-					<dd>
-						{analysis
-							? `${analysis.bounds.dimensions.x.toFixed(2)} × ${analysis.bounds.dimensions.y.toFixed(2)} × ${analysis.bounds.dimensions.z.toFixed(2)}`
-							: "—"}
-					</dd>
-				</div>
-				<div>
-					<dt>Scale / facing</dt>
-					<dd>
-						{source.definition.defaultScale} /{" "}
-						{source.definition.defaultRotationOffset}°
-					</dd>
-				</div>
-			</dl>
-		</div>
-	);
-}
-
 export default function App() {
+	const [creatorSection, setCreatorSection] =
+		useState<CreatorSection>("Character");
+	const creatorCamera = useRef<CreatorCameraState>({
+		preset: "three-quarter",
+		manual: false,
+	});
+	const [resetCandidate, setResetCandidate] = useState<CharacterRecipeV1>();
 	const [activeSection, setActiveSection] =
 		useState<(typeof NAV_SECTIONS)[number]>("Character");
 	const [recipe, setRecipe] = useState<CharacterRecipeV1>(() => {
-		return createDefaultCharacterRecipe();
+		return new URLSearchParams(window.location.search).get("family") ===
+			"legacy"
+			? createDefaultCharacterRecipe()
+			: createAuthoredHumanRecipe();
 	});
+	const [showDetails, setShowDetails] = useState(
+		new URLSearchParams(window.location.search).get("family") === "legacy",
+	);
+	const isAuthored = recipe.geometry?.family === "authored-human";
 	const [randomSeed, setRandomSeed] = useState("asset-studio-1");
 	const [recentCompilations, setRecentCompilations] = useState<
 		RecentCompilation[]
@@ -1174,6 +176,8 @@ export default function App() {
 		"idle" | "compiling" | "succeeded" | "failed"
 	>("idle");
 	const [compileError, setCompileError] = useState("");
+	const [technicalDetails, setTechnicalDetails] = useState("");
+	const [operation, setOperation] = useState<"preview" | "full">("preview");
 	const [compileResult, setCompileResult] =
 		useState<ProceduralMannequinCompileResult>();
 	const [currentManifest, setCurrentManifest] =
@@ -1181,9 +185,12 @@ export default function App() {
 	const [compiledPreviewSource, setCompiledPreviewSource] =
 		useState<PreviewSource>();
 	const [previewSourceId, setPreviewSourceId] = useState<PreviewSourceId>(
-		GOLDEN_REFERENCE_FIXTURE_ID,
+		new URLSearchParams(window.location.search).get("family") === "legacy"
+			? GOLDEN_REFERENCE_FIXTURE_ID
+			: AUTHORED_HUMAN_FIXTURE_ID,
 	);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const generationActive = useRef(false);
 
 	const validation = useMemo(() => parseCharacterRecipe(recipe), [recipe]);
 	const recipeJson = useMemo(() => JSON.stringify(recipe, null, 2), [recipe]);
@@ -1192,7 +199,8 @@ export default function App() {
 	);
 	const appearanceValidation = validateProceduralMannequinAppearance(recipe);
 	const previewSource =
-		previewSourceId === PROCEDURAL_MANNEQUIN_FIXTURE_ID && compiledPreviewSource
+		previewSourceId === compiledPreviewSource?.fixtureId &&
+		compiledPreviewSource
 			? compiledPreviewSource
 			: PREVIEW_SOURCES[previewSourceId];
 	const activeManifest = compileResult?.manifest ?? currentManifest;
@@ -1204,22 +212,43 @@ export default function App() {
 			? activeManifest
 			: undefined;
 	const compileDirty = Boolean(
-		compileResult &&
-			(!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
-				(key) =>
-					compileResult.manifest.proportions[key] ===
-					recipe.body.parameters[key],
-			) ||
-				compileResult.manifest.appearance.skin.authoredColor !==
-					recipe.palette.skin.toLowerCase() ||
-				compileResult.manifest.appearance.skin.authoredRoughness !==
-					recipe.appearance.skin.roughness ||
-				compileResult.manifest.appearance.hair.authoredColor !==
-					recipe.palette.hair.toLowerCase() ||
-				compileResult.manifest.appearance.face.authoredEyeColor !==
-					recipe.appearance.face.eyeColor.toLowerCase() ||
-				compileResult.manifest.components.hair.componentId !==
-					recipe.components.hair),
+		(!activeManifest &&
+			isAuthored &&
+			(!sameClothing(recipe.clothing, INITIAL_AUTHORED_RECIPE.clothing) ||
+				!sameCharacterGeometry(
+					recipe.geometry,
+					INITIAL_AUTHORED_RECIPE.geometry,
+				) ||
+				recipe.body.parameters.height !==
+					INITIAL_AUTHORED_RECIPE.body.parameters.height ||
+				recipe.components.hair !== INITIAL_AUTHORED_RECIPE.components.hair ||
+				recipe.palette.hair.toLowerCase() !==
+					INITIAL_AUTHORED_RECIPE.palette.hair ||
+				recipe.palette.skin.toLowerCase() !==
+					INITIAL_AUTHORED_RECIPE.palette.skin ||
+				recipe.appearance.skin.roughness !==
+					INITIAL_AUTHORED_RECIPE.appearance.skin.roughness)) ||
+			(activeManifest &&
+				(!sameClothing(recipe.clothing, activeManifest.clothing) ||
+					!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
+						(key) =>
+							activeManifest.proportions[key] === recipe.body.parameters[key],
+					) ||
+					activeManifest.appearance.skin.authoredColor !==
+						recipe.palette.skin.toLowerCase() ||
+					activeManifest.appearance.skin.authoredRoughness !==
+						recipe.appearance.skin.roughness ||
+					activeManifest.appearance.hair.authoredColor !==
+						recipe.palette.hair.toLowerCase() ||
+					(!isAuthored &&
+						activeManifest.appearance.face.authoredEyeColor !==
+							recipe.appearance.face.eyeColor.toLowerCase()) ||
+					!sameCharacterGeometry(
+						activeManifest.geometrySource,
+						recipe.geometry,
+					) ||
+					activeManifest.components.hair.componentId !==
+						recipe.components.hair)),
 	);
 
 	function updateRecipe(
@@ -1227,6 +256,148 @@ export default function App() {
 	) {
 		setRecipe((current) => updater(current));
 		setLoadStatus("");
+	}
+
+	function openRecipe(nextRecipe: CharacterRecipeV1) {
+		setResetCandidate(undefined);
+		setRecipe(nextRecipe);
+		setActiveSection("Character");
+		setCreatorSection("Character");
+		creatorCamera.current = { preset: "three-quarter", manual: false };
+		setLoadStatus("");
+		setCompileError("");
+		setCompileResult(undefined);
+		setCompiledPreviewSource(undefined);
+		setCurrentManifest(undefined);
+		setCompileStatus("idle");
+		setPreviewSourceId(
+			nextRecipe.geometry?.family === "authored-human"
+				? AUTHORED_HUMAN_FIXTURE_ID
+				: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+		);
+	}
+	function chooseFamily(authored: boolean) {
+		openRecipe(
+			authored ? createAuthoredHumanRecipe() : createDefaultCharacterRecipe(),
+		);
+	}
+	function applyIdentity(values: Partial<AuthoredHumanValues>) {
+		updateRecipe((current) =>
+			current.geometry?.family === "authored-human"
+				? {
+						...current,
+						geometry: {
+							...current.geometry,
+							values: { ...current.geometry.values, ...values },
+						},
+					}
+				: current,
+		);
+	}
+	function resetSection() {
+		const defaults = createAuthoredHumanRecipe();
+		if (defaults.geometry?.family !== "authored-human") return;
+		if (creatorSection === "Body" || creatorSection === "Face") {
+			const section = creatorSection;
+			applyIdentity(
+				Object.fromEntries(
+					Object.entries(AUTHORED_HUMAN_CONTROLS)
+						.filter(([, control]) => control.section === section)
+						.map(([key]) => [key, 0]),
+				),
+			);
+			if (section === "Body")
+				updateBodyParameter("height", defaults.body.parameters.height);
+		} else if (creatorSection === "Hair") {
+			updateRecipe((current) => ({
+				...replaceHairComponent(current, "quaternius-hair-v0"),
+				palette: { ...current.palette, hair: defaults.palette.hair },
+			}));
+		} else if (creatorSection === "Clothing") {
+			updateRecipe((current) => ({ ...current, clothing: everydayClothing() }));
+		} else if (creatorSection === "Appearance") {
+			updateRecipe((current) => ({
+				...current,
+				palette: { ...current.palette, skin: defaults.palette.skin },
+				appearance: { ...current.appearance, skin: defaults.appearance.skin },
+			}));
+		}
+	}
+	function presetCards(section: "Body" | "Face") {
+		if (recipe.geometry?.family !== "authored-human") return null;
+		const presets: ReadonlyArray<{
+			id: string;
+			name: string;
+			description: string;
+			values: Partial<AuthoredHumanValues>;
+		}> = section === "Body" ? AUTHORED_BODY_PRESETS : AUTHORED_FACE_PRESETS;
+		const selected = matchingAuthoredPreset(recipe.geometry.values, presets);
+		return (
+			<>
+				<p className="preset-selection">
+					<strong>{selected?.name ?? "Custom"}</strong>{" "}
+					<span>· {section === "Body" ? "body" : "face"}</span>
+				</p>
+				<fieldset
+					className={`preset-grid ${section.toLowerCase()}-presets`}
+					aria-label={`${section} presets`}
+				>
+					{presets.map((preset) => (
+						<button
+							type="button"
+							key={preset.id}
+							aria-label={`${preset.name} ${section.toLowerCase()} preset`}
+							aria-pressed={selected?.id === preset.id}
+							onClick={() => applyIdentity(preset.values)}
+						>
+							<img
+								src={`/assets/creator-presets/${section.toLowerCase()}-${preset.id}.jpg`}
+								alt=""
+							/>
+							<strong>{preset.name}</strong>
+							<span>{preset.description}</span>
+						</button>
+					))}
+				</fieldset>
+			</>
+		);
+	}
+	function identityControls(section: "Body" | "Face") {
+		if (recipe.geometry?.family !== "authored-human") return null;
+		const values = recipe.geometry.values;
+		return Object.entries(AUTHORED_HUMAN_CONTROLS)
+			.filter(([, control]) => control.section === section)
+			.map(([name, control]) => {
+				const key = name as keyof AuthoredHumanValues;
+				return (
+					<label key={name}>
+						{control.label}
+						<input
+							aria-label={control.label}
+							type="range"
+							min={control.min}
+							max={control.max}
+							step={0.01}
+							value={values[key]}
+							onChange={(event) => {
+								const value = Number(event.target.value);
+								updateRecipe((current) =>
+									current.geometry?.family === "authored-human"
+										? {
+												...current,
+												geometry: {
+													...current.geometry,
+													values: { ...current.geometry.values, [key]: value },
+												},
+											}
+										: current,
+								);
+							}}
+						/>
+						<output>{values[key].toFixed(2)}</output>
+					</label>
+				);
+			});
 	}
 
 	function updateBodyParameter(
@@ -1251,11 +422,13 @@ export default function App() {
 			...current,
 			body: { ...current.body, parameters },
 		}));
-		setCompileStatus("idle");
+		if (!generationActive.current) setCompileStatus("idle");
 		setCompileError("");
 	}
 
 	function selectRecentCompilation(compilation: RecentCompilation) {
+		setResetCandidate(undefined);
+		if (generationActive.current) return;
 		setRecipe({
 			...compilation.recipe,
 			body: {
@@ -1270,37 +443,54 @@ export default function App() {
 			},
 		});
 		setRandomSeed(compilation.seed);
+		setOperation(
+			compilation.result.manifest.validationLevel === "preview"
+				? "preview"
+				: "full",
+		);
+		setTechnicalDetails("");
 		setCompileResult(compilation.result);
 		setCurrentManifest(compilation.result.manifest);
 		setCompiledPreviewSource(compilation.source);
-		setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
+		setPreviewSourceId(compilation.source.fixtureId as PreviewSourceId);
 		setCompileStatus("succeeded");
 		setCompileError("");
 	}
 
-	async function handleCompile() {
+	async function handleCompile(mode: "preview" | "full" = "preview") {
 		if (
+			!validation.ok ||
 			!bodyValidation.ok ||
 			!appearanceValidation.ok ||
-			compileStatus === "compiling"
+			generationActive.current
 		)
 			return;
+		generationActive.current = true;
+		setOperation(mode);
+		setTechnicalDetails("");
 		setCompileStatus("compiling");
 		setCompileError("");
 		try {
-			const result = await requestProceduralMannequinCompile(recipe);
+			const result = await requestProceduralMannequinCompile(
+				recipe,
+				fetch,
+				mode,
+			);
 			const definition: ThreeVisualAssetDefinition = {
 				...PROCEDURAL_MANNEQUIN_V0_ASSET,
 				id: `procedural-mannequin-creator-${result.requestId}`,
-				name: `Procedural Mannequin ${result.manifest.heightMetres.toFixed(2)} m`,
+				name: `${isAuthored ? "Authored Human" : "Procedural Mannequin"} ${result.manifest.heightMetres.toFixed(2)} m`,
 				url: result.assetUrl,
 			};
 			const source: PreviewSource = {
 				artifactUrl: result.assetUrl,
 				definition,
 				description: `Locally compiled ${result.manifest.heightMetres.toFixed(2)} m creator artifact`,
-				displayName: "Procedural Mannequin V1",
-				fixtureId: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+				displayName: isAuthored ? "Authored Human" : "Procedural Mannequin V1",
+				fixtureId: isAuthored
+					? AUTHORED_HUMAN_FIXTURE_ID
+					: PROCEDURAL_MANNEQUIN_FIXTURE_ID,
+				authoredHuman: isAuthored,
 				kindLabel: "Creator compile",
 				manifestUrl: result.manifestUrl,
 				mannequin: true,
@@ -1337,17 +527,31 @@ export default function App() {
 					),
 				].slice(0, 10),
 			);
-			setPreviewSourceId(PROCEDURAL_MANNEQUIN_FIXTURE_ID);
+			setPreviewSourceId(source.fixtureId as PreviewSourceId);
 			setCompileStatus("succeeded");
 		} catch (error) {
+			setTechnicalDetails(
+				error instanceof Error
+					? String(
+							(error as Error & { technicalDetails?: string })
+								.technicalDetails ?? error.message,
+						)
+					: String(error),
+			);
 			setCompileError(
-				error instanceof Error ? error.message : "Compilation failed.",
+				error instanceof Error &&
+					error.message.startsWith("Character generation failed")
+					? error.message
+					: "Character generation failed. Check the technical details and try again.",
 			);
 			setCompileStatus("failed");
+		} finally {
+			generationActive.current = false;
 		}
 	}
 
 	function handleLoadRecipe(event: React.ChangeEvent<HTMLInputElement>) {
+		if (generationActive.current) return;
 		const file = event.target.files?.[0];
 		if (!file) {
 			return;
@@ -1355,6 +559,7 @@ export default function App() {
 		file
 			.text()
 			.then((raw) => {
+				if (generationActive.current) return;
 				const parsed = parseCharacterRecipe(JSON.parse(raw));
 				if (!parsed.ok) {
 					setLoadStatus(
@@ -1362,8 +567,10 @@ export default function App() {
 					);
 					return;
 				}
-				setRecipe(parsed.value);
-				setLoadStatus(`Loaded ${file.name}.`);
+				openRecipe(parsed.value);
+				setLoadStatus(
+					`Loaded ${file.name}. Generate Preview to view your saved values.`,
+				);
 			})
 			.catch((error) => {
 				setLoadStatus(
@@ -1376,17 +583,26 @@ export default function App() {
 	}
 
 	return (
-		<div className="asset-studio-shell">
+		<div className={`asset-studio-shell ${isAuthored ? "human-creator" : ""}`}>
 			<header className="top-bar">
+				<GameEngineNavigation />
 				<div className="brand-lockup">
 					<span className="brand-mark">AS</span>
 					<div>
-						<strong>Asset Studio</strong>
-						<span>Character recipe foundation</span>
+						<strong>{isAuthored ? "Character Creator" : "Asset Studio"}</strong>
+						<span>
+							{isAuthored ? "Make someone new" : "Character recipe foundation"}
+						</span>
 					</div>
 				</div>
-				<nav aria-label="Asset Studio sections" className="top-nav">
-					{NAV_SECTIONS.map((section) => (
+				<nav
+					aria-label="Asset Studio sections"
+					className="top-nav"
+					hidden={isAuthored}
+				>
+					{NAV_SECTIONS.filter(
+						(section) => !isAuthored || section === "Character",
+					).map((section) => (
 						<button
 							className={section === activeSection ? "active" : ""}
 							key={section}
@@ -1399,14 +615,25 @@ export default function App() {
 				</nav>
 				<div className="top-actions">
 					<button
+						type="button"
+						onClick={() => setShowDetails((value) => !value)}
+						aria-pressed={showDetails}
+					>
+						Recipe details
+					</button>
+					<button
 						disabled={!validation.ok}
 						onClick={() => downloadRecipe(recipe)}
 						type="button"
 					>
-						Save Recipe JSON
+						{isAuthored ? "Save character" : "Save Recipe JSON"}
 					</button>
-					<button onClick={() => fileInputRef.current?.click()} type="button">
-						Load Recipe JSON
+					<button
+						disabled={compileStatus === "compiling"}
+						onClick={() => fileInputRef.current?.click()}
+						type="button"
+					>
+						{isAuthored ? "Open character" : "Load Recipe JSON"}
 					</button>
 					<input
 						accept="application/json"
@@ -1419,11 +646,58 @@ export default function App() {
 			</header>
 
 			{activeSection === "Character" ? (
-				<main className="workspace">
+				<main
+					className={`workspace ${showDetails ? "with-details" : "creator-workspace"}`}
+				>
 					<aside className="panel creation-panel">
-						<h1>Character</h1>
-						<label>
-							Recipe name
+						{isAuthored && (
+							<nav
+								className="creator-categories"
+								aria-label="Character categories"
+							>
+								{CREATOR_SECTIONS.map((section) => (
+									<button
+										type="button"
+										key={section}
+										aria-pressed={section === creatorSection}
+										onClick={() => setCreatorSection(section)}
+									>
+										{section}
+									</button>
+								))}
+							</nav>
+						)}
+						<h1>{isAuthored ? creatorSection : "Character"}</h1>
+						{loadStatus ? (
+							<p className="load-status" role="status">
+								{loadStatus}
+							</p>
+						) : null}
+						<label hidden={isAuthored && !showDetails}>
+							Character type
+							<select
+								aria-label="Character type"
+								disabled={compileStatus === "compiling"}
+								value={isAuthored ? "authored" : "legacy"}
+								onChange={(e) => chooseFamily(e.target.value === "authored")}
+							>
+								<option value="authored">Authored Human · Experimental</option>
+								<option value="legacy">Legacy Procedural Mannequin</option>
+							</select>
+						</label>
+						<button
+							type="button"
+							disabled={compileStatus === "compiling"}
+							hidden={isAuthored && creatorSection !== "Character"}
+							onClick={() => {
+								chooseFamily(isAuthored);
+								setResetCandidate(recipe);
+							}}
+						>
+							Reset character
+						</button>
+						<label hidden={isAuthored && creatorSection !== "Character"}>
+							{isAuthored ? "Character name" : "Recipe name"}
 							<input
 								onChange={(event) =>
 									updateRecipe((current) => ({
@@ -1434,575 +708,966 @@ export default function App() {
 								value={recipe.name}
 							/>
 						</label>
-						<label>
-							Recipe id
-							<input
-								onChange={(event) =>
-									updateRecipe((current) => ({
-										...current,
-										id: event.target.value,
-									}))
-								}
-								value={recipe.id}
-							/>
-						</label>
-						<label>
-							Body preset
-							<select
-								onChange={(event) =>
-									updateRecipe((current) => ({
-										...current,
-										body: {
-											...current.body,
-											baseId: event.target.value,
-										},
-									}))
-								}
-								value={recipe.body.baseId}
-							>
-								{BODY_BASE_OPTIONS.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</select>
-						</label>
 
-						<div className="section-heading">Body</div>
-						<div className="body-creator-panel">
-							{PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.map((key) => {
-								const parameter = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
-								const value = recipe.body.parameters[key];
-								return (
-									<div className="body-creator-control" key={key}>
+						{isAuthored ? (
+							<>
+								{creatorSection === "Character" && (
+									<>
+										<p className="creator-intro">
+											A face. A silhouette. A character of your own.
+										</p>
+										<p className="creator-note">
+											Start with a body, choose a face, then make it yours.
+										</p>
+										<div className="start-choices">
+											<button
+												type="button"
+												onClick={() => setCreatorSection("Body")}
+											>
+												Choose a body →
+											</button>
+											<button
+												type="button"
+												onClick={() => setCreatorSection("Face")}
+											>
+												Choose a face →
+											</button>
+										</div>
+										<p className="creator-note">
+											This first collection uses one masculine base with three
+											builds and five faces.
+										</p>
+										{resetCandidate && (
+											<button
+												type="button"
+												onClick={() => {
+													openRecipe(resetCandidate);
+													setResetCandidate(undefined);
+												}}
+											>
+												Undo character reset
+											</button>
+										)}
+										{recentCompilations.length > 0 && (
+											<details className="recent-results">
+												<summary>Recent results · this session</summary>
+												{recentCompilations.map((entry, index) => (
+													<button
+														key={entry.result.requestId}
+														type="button"
+														disabled={compileStatus === "compiling"}
+														onClick={() => selectRecentCompilation(entry)}
+													>
+														{recentCompilations.length - index}.{" "}
+														{entry.recipe.name} ·{" "}
+														{entry.result.manifest.validationLevel === "preview"
+															? "Preview"
+															: "Finalised"}
+													</button>
+												))}
+											</details>
+										)}
+									</>
+								)}
+								{creatorSection === "Body" && (
+									<>
+										{presetCards("Body")}
+										<p className="creator-note">
+											All builds keep your chosen height. This base retains
+											defined muscles.
+										</p>
+										<div className="section-heading">Make it yours</div>
 										<label>
-											{parameter.label}
+											Height
 											<input
-												aria-label={parameter.label}
-												max={parameter.max}
-												min={parameter.min}
-												onChange={(event) =>
-													updateBodyParameter(key, Number(event.target.value))
-												}
-												step={parameter.step}
+												aria-label="Height"
 												type="range"
-												value={value}
+												min={1.5}
+												max={2.1}
+												step={0.01}
+												value={recipe.body.parameters.height}
+												onChange={(e) =>
+													updateBodyParameter("height", Number(e.target.value))
+												}
+											/>
+											<output>
+												{recipe.body.parameters.height.toFixed(2)} m
+											</output>
+										</label>
+										{identityControls("Body")}
+									</>
+								)}
+								{creatorSection === "Face" && (
+									<>
+										{presetCards("Face")}
+										<div className="section-heading">Make it yours</div>
+										{identityControls("Face")}
+									</>
+								)}
+								{creatorSection === "Hair" && (
+									<>
+										<p className="creator-note">
+											Pick a style, then choose its colour.
+										</p>
+										<fieldset
+											className="preset-grid hair-presets"
+											aria-label="Hairstyle"
+										>
+											{[
+												{
+													id: "quaternius-hair-v0",
+													name: "Short hair",
+													image: "short",
+												},
+												{ id: "none", name: "No hair", image: "none" },
+											].map((hair) => (
+												<button
+													type="button"
+													key={hair.id}
+													aria-pressed={recipe.components.hair === hair.id}
+													onClick={() =>
+														updateRecipe((current) =>
+															replaceHairComponent(
+																current,
+																hair.id as CharacterHairComponentId,
+															),
+														)
+													}
+												>
+													<img
+														src={`/assets/creator-presets/hair-${hair.image}.jpg`}
+														alt=""
+													/>
+													<strong>{hair.name}</strong>
+												</button>
+											))}
+										</fieldset>
+										<fieldset className="skin-presets">
+											<legend>Hair colour</legend>
+											{HAIR_COLOR_PRESETS.map((preset) => (
+												<button
+													type="button"
+													key={preset.color}
+													aria-label={`${preset.label} hair`}
+													aria-pressed={recipe.palette.hair === preset.color}
+													style={{ backgroundColor: preset.color }}
+													onClick={() =>
+														updateRecipe((current) => ({
+															...current,
+															palette: {
+																...current.palette,
+																hair: preset.color,
+															},
+														}))
+													}
+												/>
+											))}
+										</fieldset>
+										<label>
+											Custom hair colour
+											<input
+												aria-label="Hair color"
+												type="color"
+												value={recipe.palette.hair}
+												onChange={(e) => {
+													const value = e.target.value;
+													updateRecipe((current) => ({
+														...current,
+														palette: { ...current.palette, hair: value },
+													}));
+												}}
+											/>
+										</label>
+										<p className="creator-note">
+											Colour also applies to the brows.
+										</p>
+									</>
+								)}
+								{creatorSection === "Clothing" && (
+									<>
+										<p className="creator-note">
+											One everyday outfit. Choose its colours, then generate a
+											preview.
+										</p>
+										<fieldset
+											className="preset-grid outfit-presets"
+											aria-label="Outfit"
+										>
+											<button
+												type="button"
+												aria-pressed={CLOTHING_SLOTS.every(
+													(slot) =>
+														recipe.clothing?.[slot] &&
+														recipe.clothing[slot] !== "none",
+												)}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														clothing: everydayClothing(),
+													}))
+												}
+											>
+												<img
+													src="/assets/creator-presets/everyday-outfit.jpg"
+													alt="Grey T-shirt, dark trousers and brown ankle boots"
+												/>
+												<strong>Everyday Outfit</strong>
+											</button>
+											<button
+												type="button"
+												aria-pressed={sameClothing(
+													recipe.clothing,
+													noClothing(),
+												)}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														clothing: noClothing(),
+													}))
+												}
+											>
+												<img
+													src="/assets/creator-presets/body-athletic.jpg"
+													alt="Base character without an outfit"
+												/>
+												<strong>No outfit</strong>
+											</button>
+										</fieldset>
+										{CLOTHING_SLOTS.map((slot) => {
+											const chosen = recipe.clothing?.[slot];
+											if (!chosen || chosen === "none") return null;
+											const label =
+												slot === "top"
+													? "Top"
+													: slot === "bottoms"
+														? "Trousers"
+														: "Shoes";
+											return (
+												<fieldset className="skin-presets" key={slot}>
+													<legend>{label} colour</legend>
+													{CLOTHING_SWATCHES[slot].map((swatch) => (
+														<button
+															type="button"
+															key={swatch.color}
+															title={swatch.name}
+															aria-label={`${swatch.name} ${label.toLowerCase()}`}
+															aria-pressed={chosen.color === swatch.color}
+															style={{ backgroundColor: swatch.color }}
+															onClick={() =>
+																updateRecipe((current) => ({
+																	...current,
+																	clothing: {
+																		...(current.clothing ?? noClothing()),
+																		[slot]: { ...chosen, color: swatch.color },
+																	},
+																}))
+															}
+														/>
+													))}
+												</fieldset>
+											);
+										})}
+									</>
+								)}
+								{creatorSection === "Appearance" && (
+									<>
+										<p className="creator-note">
+											A subtle tint over the original painted skin.
+										</p>
+										<fieldset className="skin-presets">
+											<legend>Tint</legend>
+											{[
+												{ color: "#ffffff", name: "Original" },
+												{ color: "#f3ddcb", name: "Warm" },
+												{ color: "#d8c5b6", name: "Muted" },
+												{ color: "#b59a85", name: "Deep" },
+											].map((tone) => (
+												<button
+													type="button"
+													key={tone.color}
+													aria-label={`${tone.name} tint`}
+													aria-pressed={recipe.palette.skin === tone.color}
+													style={{ backgroundColor: tone.color }}
+													onClick={() =>
+														updateRecipe((current) => ({
+															...current,
+															palette: {
+																...current.palette,
+																skin: tone.color,
+															},
+														}))
+													}
+												/>
+											))}
+										</fieldset>
+										<label>
+											Custom tint
+											<input
+												aria-label="Skin tint"
+												type="color"
+												value={recipe.palette.skin}
+												onChange={(e) => {
+													const value = e.target.value;
+													updateRecipe((current) => ({
+														...current,
+														palette: { ...current.palette, skin: value },
+													}));
+												}}
+											/>
+										</label>
+										<label>
+											Skin finish
+											<input
+												aria-label="Skin finish"
+												type="range"
+												min={0.2}
+												max={1}
+												step={0.01}
+												value={recipe.appearance.skin.roughness}
+												onChange={(e) => {
+													const value = Number(e.target.value);
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															skin: { roughness: value },
+														},
+													}));
+												}}
+											/>
+											<span className="range-ends">
+												<span>Satin</span>
+												<span>Matte</span>
+											</span>
+										</label>
+									</>
+								)}
+								{creatorSection !== "Character" && (
+									<button
+										className="reset-section"
+										type="button"
+										onClick={resetSection}
+									>
+										Reset {creatorSection.toLowerCase()}
+									</button>
+								)}
+							</>
+						) : (
+							<>
+								<label>
+									Recipe id
+									<input
+										onChange={(event) =>
+											updateRecipe((current) => ({
+												...current,
+												id: event.target.value,
+											}))
+										}
+										value={recipe.id}
+									/>
+								</label>
+								<label>
+									Body preset
+									<select
+										onChange={(event) =>
+											updateRecipe((current) => ({
+												...current,
+												body: {
+													...current.body,
+													baseId: event.target.value,
+												},
+											}))
+										}
+										value={recipe.body.baseId}
+									>
+										{BODY_BASE_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</select>
+								</label>
+
+								<div className="section-heading">Body</div>
+								<div className="body-creator-panel">
+									{PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.filter(
+										(key) => !isAuthored || key === "height",
+									).map((key) => {
+										const parameter = PROCEDURAL_MANNEQUIN_BODY_PARAMETERS[key];
+										const value = recipe.body.parameters[key];
+										return (
+											<div className="body-creator-control" key={key}>
+												<label>
+													{parameter.label}
+													<input
+														aria-label={parameter.label}
+														max={parameter.max}
+														min={parameter.min}
+														onChange={(event) =>
+															updateBodyParameter(
+																key,
+																Number(event.target.value),
+															)
+														}
+														step={parameter.step}
+														type="range"
+														value={value}
+													/>
+												</label>
+												<div className="body-creator-value">
+													<output
+														aria-label={`Current ${parameter.label.toLowerCase()}`}
+													>
+														{value.toFixed(2)}
+														{parameter.units === "metres" ? " m" : ""}
+													</output>
+													<button
+														onClick={() =>
+															updateBodyParameter(key, parameter.defaultValue)
+														}
+														type="button"
+													>
+														Reset {parameter.label.toLowerCase()}
+													</button>
+												</div>
+											</div>
+										);
+									})}
+									{identityControls("Body")}
+									<div className="randomise-control" hidden={isAuthored}>
+										<label>
+											Random seed
+											<input
+												aria-label="Random seed"
+												onChange={(event) => setRandomSeed(event.target.value)}
+												value={randomSeed}
+											/>
+										</label>
+										<button onClick={handleRandomise} type="button">
+											Randomise
+										</button>
+									</div>
+									{bodyValidation.ok ? (
+										<p className="creator-note">
+											Body proportions pass compiler anatomy validation.
+										</p>
+									) : (
+										<div
+											className="validation-list"
+											aria-label="Body validation errors"
+											role="alert"
+										>
+											{bodyValidation.issues.map((issue) => (
+												<p key={`${issue.path}:${issue.message}`}>
+													{issue.message}
+												</p>
+											))}
+										</div>
+									)}
+								</div>
+
+								<div className="section-heading">Appearance</div>
+								<section
+									aria-label="Skin appearance"
+									className="appearance-panel"
+								>
+									<div className="appearance-control">
+										<label>
+											Skin color
+											<input
+												aria-label="Skin color"
+												onChange={(event) =>
+													updateRecipe((current) => ({
+														...current,
+														palette: {
+															...current.palette,
+															skin: event.target.value.toLowerCase(),
+														},
+													}))
+												}
+												type="color"
+												value={recipe.palette.skin}
 											/>
 										</label>
 										<div className="body-creator-value">
-											<output
-												aria-label={`Current ${parameter.label.toLowerCase()}`}
-											>
-												{value.toFixed(2)}
-												{parameter.units === "metres" ? " m" : ""}
+											<output aria-label="Current skin color">
+												{recipe.palette.skin.toLowerCase()}
 											</output>
 											<button
 												onClick={() =>
-													updateBodyParameter(key, parameter.defaultValue)
+													updateRecipe((current) => ({
+														...current,
+														palette: {
+															...current.palette,
+															skin: PROCEDURAL_SKIN_APPEARANCE.color
+																.defaultValue,
+														},
+													}))
 												}
 												type="button"
 											>
-												Reset {parameter.label.toLowerCase()}
+												Reset skin color
 											</button>
 										</div>
 									</div>
-								);
-							})}
-							<div className="randomise-control">
-								<label>
-									Random seed
-									<input
-										aria-label="Random seed"
-										onChange={(event) => setRandomSeed(event.target.value)}
-										value={randomSeed}
-									/>
-								</label>
-								<button onClick={handleRandomise} type="button">
-									Randomise
-								</button>
-							</div>
-							{bodyValidation.ok ? (
-								<p className="creator-note">
-									Body proportions pass compiler anatomy validation.
-								</p>
-							) : (
-								<div
-									className="validation-list"
-									aria-label="Body validation errors"
-									role="alert"
+									<fieldset className="skin-presets">
+										<legend>Skin tone presets</legend>
+										{SKIN_COLOR_PRESETS.map((preset) => (
+											<button
+												aria-label={`${preset.label} ${preset.color}`}
+												key={preset.color}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														palette: {
+															...current.palette,
+															skin: preset.color,
+														},
+													}))
+												}
+												style={{ backgroundColor: preset.color }}
+												title={`${preset.label} ${preset.color}`}
+												type="button"
+											/>
+										))}
+									</fieldset>
+									<div className="body-creator-control">
+										<label>
+											Skin roughness
+											<input
+												aria-label="Skin roughness"
+												max={PROCEDURAL_SKIN_APPEARANCE.roughness.max}
+												min={PROCEDURAL_SKIN_APPEARANCE.roughness.min}
+												onChange={(event) =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															skin: {
+																...current.appearance.skin,
+																roughness: Number(event.target.value),
+															},
+														},
+													}))
+												}
+												step={PROCEDURAL_SKIN_APPEARANCE.roughness.step}
+												type="range"
+												value={recipe.appearance.skin.roughness}
+											/>
+										</label>
+										<div className="body-creator-value">
+											<output aria-label="Current skin roughness">
+												{recipe.appearance.skin.roughness.toFixed(2)}
+											</output>
+											<button
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															skin: {
+																...current.appearance.skin,
+																roughness:
+																	PROCEDURAL_SKIN_APPEARANCE.roughness
+																		.defaultValue,
+															},
+														},
+													}))
+												}
+												type="button"
+											>
+												Reset skin roughness
+											</button>
+										</div>
+									</div>
+									<div className="appearance-comparison">
+										<div>
+											<span
+												aria-label="Draft skin swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{ backgroundColor: recipe.palette.skin }}
+											/>
+											Draft · {recipe.palette.skin.toLowerCase()} ·{" "}
+											{recipe.appearance.skin.roughness.toFixed(2)}
+										</div>
+										<div>
+											<span
+												aria-label="Compiled skin swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{
+													backgroundColor:
+														activeManifest?.appearance?.skin.authoredColor ??
+														"transparent",
+												}}
+											/>
+											Compiled ·{" "}
+											{activeManifest?.appearance?.skin.authoredColor ?? "—"} ·{" "}
+											{activeManifest?.appearance?.skin.authoredRoughness.toFixed(
+												2,
+											) ?? "—"}
+										</div>
+									</div>
+									{appearanceValidation.ok ? null : (
+										<div
+											aria-label="Appearance validation errors"
+											className="validation-list"
+											role="alert"
+										>
+											{appearanceValidation.issues.map((issue) => (
+												<p key={`${issue.path}:${issue.message}`}>
+													{issue.message}
+												</p>
+											))}
+										</div>
+									)}
+									<p className="creator-note">
+										Appearance edits are draft recipe values. Generate Preview
+										regenerates the GLB; the 3D preview is never recolored in
+										the browser.
+									</p>
+								</section>
+
+								<div className="section-heading">Face</div>
+								{identityControls("Face")}
+								<section
+									aria-label="Face"
+									className="appearance-panel"
+									hidden={isAuthored}
 								>
-									{bodyValidation.issues.map((issue) => (
-										<p key={`${issue.path}:${issue.message}`}>
-											{issue.message}
+									<div className="appearance-control">
+										<label>
+											Eye color
+											<input
+												aria-label="Eye color"
+												onChange={(event) =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															face: {
+																...current.appearance.face,
+																eyeColor: event.target.value.toLowerCase(),
+															},
+														},
+													}))
+												}
+												type="color"
+												value={recipe.appearance.face.eyeColor}
+											/>
+										</label>
+										<div className="body-creator-value">
+											<output aria-label="Current eye color">
+												{recipe.appearance.face.eyeColor.toLowerCase()}
+											</output>
+											<button
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															face: {
+																...current.appearance.face,
+																eyeColor:
+																	PROCEDURAL_FACE_APPEARANCE.eyeColor
+																		.defaultValue,
+															},
+														},
+													}))
+												}
+												type="button"
+											>
+												Reset eye color
+											</button>
+										</div>
+									</div>
+									<fieldset className="skin-presets">
+										<legend>Eye color presets</legend>
+										{EYE_COLOR_PRESETS.map((preset) => (
+											<button
+												aria-label={`Use ${preset.label} eye color`}
+												key={preset.color}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														appearance: {
+															...current.appearance,
+															face: {
+																...current.appearance.face,
+																eyeColor: preset.color,
+															},
+														},
+													}))
+												}
+												style={{ backgroundColor: preset.color }}
+												title={`${preset.label} ${preset.color}`}
+												type="button"
+											/>
+										))}
+									</fieldset>
+									<div className="appearance-comparison">
+										<div>
+											<span
+												aria-label="Draft eye swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{
+													backgroundColor: recipe.appearance.face.eyeColor,
+												}}
+											/>
+											Draft · {recipe.appearance.face.eyeColor.toLowerCase()}
+										</div>
+										<div>
+											<span
+												aria-label="Compiled eye swatch"
+												className="appearance-swatch"
+												role="img"
+												style={{
+													backgroundColor:
+														activeManifest?.appearance?.face.authoredEyeColor ??
+														"transparent",
+												}}
+											/>
+											Compiled ·{" "}
+											{activeManifest?.appearance?.face.authoredEyeColor ?? "—"}
+										</div>
+									</div>
+									<p className="creator-note">
+										Eye colour is authored recipe data. Generate Preview
+										regenerates the two embedded eye meshes and their shared
+										material; nose and mouth remain fixed readability geometry
+										in {PROCEDURAL_FACE_FEATURE_VERSION}.
+									</p>
+								</section>
+
+								<div className="section-heading">Recent Compilations</div>
+								<section
+									className="recent-compilations"
+									aria-label="Recent Compilations"
+								>
+									{recentCompilations.length === 0 ? (
+										<p className="creator-note">
+											Compiled bodies will appear here (up to 10).
 										</p>
-									))}
-								</div>
-							)}
-						</div>
+									) : (
+										recentCompilations.map((entry) => (
+											<button
+												aria-pressed={
+													compileResult?.requestId === entry.result.requestId
+												}
+												key={entry.result.requestId}
+												disabled={compileStatus === "compiling"}
+												onClick={() => selectRecentCompilation(entry)}
+												type="button"
+											>
+												{entry.parameters.height.toFixed(2)} m · {entry.seed}
+												{" · "}
+												{entry.result.manifest.validationLevel === "preview"
+													? "Preview"
+													: "Finalised"}
+											</button>
+										))
+									)}
+								</section>
 
-						<div className="section-heading">Appearance</div>
-						<section aria-label="Skin appearance" className="appearance-panel">
-							<div className="appearance-control">
-								<label>
-									Skin color
-									<input
-										aria-label="Skin color"
-										onChange={(event) =>
-											updateRecipe((current) => ({
-												...current,
-												palette: {
-													...current.palette,
-													skin: event.target.value.toLowerCase(),
-												},
-											}))
-										}
-										type="color"
-										value={recipe.palette.skin}
-									/>
-								</label>
-								<div className="body-creator-value">
-									<output aria-label="Current skin color">
-										{recipe.palette.skin.toLowerCase()}
-									</output>
-									<button
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												palette: {
-													...current.palette,
-													skin: PROCEDURAL_SKIN_APPEARANCE.color.defaultValue,
-												},
-											}))
-										}
-										type="button"
-									>
-										Reset skin color
-									</button>
-								</div>
-							</div>
-							<fieldset className="skin-presets">
-								<legend>Skin tone presets</legend>
-								{SKIN_COLOR_PRESETS.map((preset) => (
-									<button
-										aria-label={`${preset.label} ${preset.color}`}
-										key={preset.color}
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												palette: { ...current.palette, skin: preset.color },
-											}))
-										}
-										style={{ backgroundColor: preset.color }}
-										title={`${preset.label} ${preset.color}`}
-										type="button"
-									/>
-								))}
-							</fieldset>
-							<div className="body-creator-control">
-								<label>
-									Skin roughness
-									<input
-										aria-label="Skin roughness"
-										max={PROCEDURAL_SKIN_APPEARANCE.roughness.max}
-										min={PROCEDURAL_SKIN_APPEARANCE.roughness.min}
-										onChange={(event) =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													skin: {
-														...current.appearance.skin,
-														roughness: Number(event.target.value),
+								<div className="section-heading">Hair</div>
+								<section aria-label="Hair" className="appearance-panel">
+									<label>
+										Hair color
+										<input
+											aria-label="Hair color"
+											type="color"
+											value={recipe.palette.hair}
+											onChange={(event) =>
+												updateRecipe((current) => ({
+													...current,
+													palette: {
+														...current.palette,
+														hair: event.target.value.toLowerCase(),
 													},
-												},
-											}))
-										}
-										step={PROCEDURAL_SKIN_APPEARANCE.roughness.step}
-										type="range"
-										value={recipe.appearance.skin.roughness}
-									/>
-								</label>
-								<div className="body-creator-value">
-									<output aria-label="Current skin roughness">
-										{recipe.appearance.skin.roughness.toFixed(2)}
-									</output>
-									<button
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													skin: {
-														...current.appearance.skin,
-														roughness:
-															PROCEDURAL_SKIN_APPEARANCE.roughness.defaultValue,
-													},
-												},
-											}))
-										}
-										type="button"
-									>
-										Reset skin roughness
-									</button>
-								</div>
-							</div>
-							<div className="appearance-comparison">
-								<div>
-									<span
-										aria-label="Draft skin swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{ backgroundColor: recipe.palette.skin }}
-									/>
-									Draft · {recipe.palette.skin.toLowerCase()} ·{" "}
-									{recipe.appearance.skin.roughness.toFixed(2)}
-								</div>
-								<div>
-									<span
-										aria-label="Compiled skin swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{
-											backgroundColor:
-												activeManifest?.appearance?.skin.authoredColor ??
-												"transparent",
-										}}
-									/>
-									Compiled ·{" "}
-									{activeManifest?.appearance?.skin.authoredColor ?? "—"} ·{" "}
-									{activeManifest?.appearance?.skin.authoredRoughness.toFixed(
-										2,
-									) ?? "—"}
-								</div>
-							</div>
-							{appearanceValidation.ok ? null : (
-								<div
-									aria-label="Appearance validation errors"
-									className="validation-list"
-									role="alert"
-								>
-									{appearanceValidation.issues.map((issue) => (
-										<p key={`${issue.path}:${issue.message}`}>
-											{issue.message}
-										</p>
-									))}
-								</div>
-							)}
-							<p className="creator-note">
-								Appearance edits are draft recipe values. Compile regenerates
-								the GLB; the 3D preview is never recolored in the browser.
-							</p>
-						</section>
-
-						<div className="section-heading">Face</div>
-						<section aria-label="Face" className="appearance-panel">
-							<div className="appearance-control">
-								<label>
-									Eye color
-									<input
-										aria-label="Eye color"
-										onChange={(event) =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													face: {
-														...current.appearance.face,
-														eyeColor: event.target.value.toLowerCase(),
-													},
-												},
-											}))
-										}
-										type="color"
-										value={recipe.appearance.face.eyeColor}
-									/>
-								</label>
-								<div className="body-creator-value">
-									<output aria-label="Current eye color">
-										{recipe.appearance.face.eyeColor.toLowerCase()}
-									</output>
-									<button
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													face: {
-														...current.appearance.face,
-														eyeColor:
-															PROCEDURAL_FACE_APPEARANCE.eyeColor.defaultValue,
-													},
-												},
-											}))
-										}
-										type="button"
-									>
-										Reset eye color
-									</button>
-								</div>
-							</div>
-							<fieldset className="skin-presets">
-								<legend>Eye color presets</legend>
-								{EYE_COLOR_PRESETS.map((preset) => (
-									<button
-										aria-label={`Use ${preset.label} eye color`}
-										key={preset.color}
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												appearance: {
-													...current.appearance,
-													face: {
-														...current.appearance.face,
-														eyeColor: preset.color,
-													},
-												},
-											}))
-										}
-										style={{ backgroundColor: preset.color }}
-										title={`${preset.label} ${preset.color}`}
-										type="button"
-									/>
-								))}
-							</fieldset>
-							<div className="appearance-comparison">
-								<div>
-									<span
-										aria-label="Draft eye swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{ backgroundColor: recipe.appearance.face.eyeColor }}
-									/>
-									Draft · {recipe.appearance.face.eyeColor.toLowerCase()}
-								</div>
-								<div>
-									<span
-										aria-label="Compiled eye swatch"
-										className="appearance-swatch"
-										role="img"
-										style={{
-											backgroundColor:
-												activeManifest?.appearance?.face.authoredEyeColor ??
-												"transparent",
-										}}
-									/>
-									Compiled ·{" "}
-									{activeManifest?.appearance?.face.authoredEyeColor ?? "—"}
-								</div>
-							</div>
-							<p className="creator-note">
-								Eye colour is authored recipe data. Compile regenerates the two
-								embedded eye meshes and their shared material; nose and mouth
-								remain fixed readability geometry in{" "}
-								{PROCEDURAL_FACE_FEATURE_VERSION}.
-							</p>
-						</section>
-
-						<div className="section-heading">Recent Compilations</div>
-						<section
-							className="recent-compilations"
-							aria-label="Recent Compilations"
-						>
-							{recentCompilations.length === 0 ? (
-								<p className="creator-note">
-									Compiled bodies will appear here (up to 10).
-								</p>
-							) : (
-								recentCompilations.map((entry) => (
-									<button
-										aria-pressed={
-											compileResult?.requestId === entry.result.requestId
-										}
-										key={entry.result.requestId}
-										onClick={() => selectRecentCompilation(entry)}
-										type="button"
-									>
-										{entry.parameters.height.toFixed(2)} m · {entry.seed}
-									</button>
-								))
-							)}
-						</section>
-
-						<div className="section-heading">Hair</div>
-						<section aria-label="Hair" className="appearance-panel">
-							<label>
-								Hair color
-								<input
-									aria-label="Hair color"
-									type="color"
-									value={recipe.palette.hair}
-									onChange={(event) =>
-										updateRecipe((current) => ({
-											...current,
-											palette: {
-												...current.palette,
-												hair: event.target.value.toLowerCase(),
-											},
-										}))
-									}
-								/>
-							</label>
-							<div className="body-creator-value">
-								<output aria-label="Current hair color">
-									{recipe.palette.hair.toLowerCase()}
-								</output>
-								<button
-									type="button"
-									onClick={() =>
-										updateRecipe((current) => ({
-											...current,
-											palette: { ...current.palette, hair: "#3b2a1f" },
-										}))
-									}
-								>
-									Reset hair color
-								</button>
-							</div>
-							<fieldset className="skin-presets">
-								<legend>Hair color presets</legend>
-								{HAIR_COLOR_PRESETS.map((preset) => (
-									<button
-										key={preset.color}
-										type="button"
-										aria-label={`Use ${preset.label} hair color`}
-										title={`${preset.label} ${preset.color}`}
-										style={{ backgroundColor: preset.color }}
-										onClick={() =>
-											updateRecipe((current) => ({
-												...current,
-												palette: { ...current.palette, hair: preset.color },
-											}))
-										}
-									/>
-								))}
-							</fieldset>
-							<p>
-								Draft color: {recipe.palette.hair.toLowerCase()} ? Compiled
-								color:{" "}
-								{activeManifest?.components.hair.componentId === "none"
-									? "No hair"
-									: (activeManifest?.appearance?.hair?.authoredColor ?? "?")}
-							</p>
-							<p className="creator-note">
-								Choose a hairstyle and Compile to apply the colour. The colour
-								is saved even when No hair is selected.
-							</p>
-							<label>
-								Hairstyle
-								<select
-									aria-label="Hair component"
-									onChange={(event) =>
-										updateRecipe((current) =>
-											replaceHairComponent(
-												current,
-												event.target.value as CharacterHairComponentId,
-											),
-										)
-									}
-									value={recipe.components.hair}
-								>
-									{HAIR_COMPONENT_OPTIONS.map((option) => (
-										<option key={option.id} value={option.id}>
-											{option.label}
-										</option>
-									))}
-								</select>
-							</label>
-							<div className="appearance-comparison">
-								<div>
-									Draft ·{" "}
-									{recipe.components.hair === "none"
-										? "No hair"
-										: draftHairComponent?.name}
-								</div>
-								<div>
-									Compiled ·{" "}
-									{getCharacterComponentDefinition(
-										activeManifest?.components.hair.componentId ?? "none",
-									)?.name ?? "No hair"}
-								</div>
-							</div>
-							{draftHairComponent ? (
-								<dl aria-label="Hair source status">
-									<div>
-										<dt>Provider</dt>
-										<dd>{draftHairComponent?.provider}</dd>
+												}))
+											}
+										/>
+									</label>
+									<div className="body-creator-value">
+										<output aria-label="Current hair color">
+											{recipe.palette.hair.toLowerCase()}
+										</output>
+										<button
+											type="button"
+											onClick={() =>
+												updateRecipe((current) => ({
+													...current,
+													palette: { ...current.palette, hair: "#3b2a1f" },
+												}))
+											}
+										>
+											Reset hair color
+										</button>
 									</div>
-									<div>
-										<dt>Provenance</dt>
-										<dd>Validated · {draftHairComponent?.license.spdx}</dd>
+									<fieldset className="skin-presets">
+										<legend>Hair color presets</legend>
+										{HAIR_COLOR_PRESETS.map((preset) => (
+											<button
+												key={preset.color}
+												type="button"
+												aria-label={`Use ${preset.label} hair color`}
+												title={`${preset.label} ${preset.color}`}
+												style={{ backgroundColor: preset.color }}
+												onClick={() =>
+													updateRecipe((current) => ({
+														...current,
+														palette: {
+															...current.palette,
+															hair: preset.color,
+														},
+													}))
+												}
+											/>
+										))}
+									</fieldset>
+									<p>
+										Draft color: {recipe.palette.hair.toLowerCase()} ? Compiled
+										color:{" "}
+										{activeManifest?.components.hair.componentId === "none"
+											? "No hair"
+											: (activeManifest?.appearance?.hair?.authoredColor ??
+												"?")}
+									</p>
+									<p className="creator-note">
+										Choose a hairstyle and Generate Preview to apply the colour.
+										The colour is saved even when No hair is selected.
+									</p>
+									<label>
+										Hairstyle
+										<select
+											aria-label="Hair component"
+											onChange={(event) =>
+												updateRecipe((current) =>
+													replaceHairComponent(
+														current,
+														event.target.value as CharacterHairComponentId,
+													),
+												)
+											}
+											value={recipe.components.hair}
+										>
+											{HAIR_COMPONENT_OPTIONS.filter(
+												(option) =>
+													!isAuthored ||
+													["none", "quaternius-hair-v0"].includes(option.id),
+											).map((option) => (
+												<option key={option.id} value={option.id}>
+													{isAuthored && option.id !== "none"
+														? "Short hair"
+														: option.label}
+												</option>
+											))}
+										</select>
+									</label>
+									<div className="appearance-comparison">
+										<div>
+											Draft ·{" "}
+											{recipe.components.hair === "none"
+												? "No hair"
+												: draftHairComponent?.name}
+										</div>
+										<div>
+											Compiled ·{" "}
+											{getCharacterComponentDefinition(
+												activeManifest?.components.hair.componentId ?? "none",
+											)?.name ?? "No hair"}
+										</div>
 									</div>
-									<div>
-										<dt>Fit profile</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.fittingProfile
-												?.id ?? draftHairComponent?.fittingProfile.id}
-										</dd>
-									</div>
-									<div>
-										<dt>Source bounds</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.sourceBounds
-												? matchingHairManifest.components.hair.sourceBounds.dimensions
-														.map((value) => value.toFixed(3))
-														.join(" × ")
-												: "Compile to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Fitted bounds</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.bounds
-												? matchingHairManifest.components.hair.bounds.dimensions
-														.map((value) => value.toFixed(3))
-														.join(" × ")
-												: "Compile to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Derived fit transform</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.derivedTransform
-												? `Scale ${matchingHairManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${matchingHairManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
-												: "Compile to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Fit validation</dt>
-										<dd>
-											{matchingHairManifest?.components.hair.fitValidation
-												? matchingHairManifest.components.hair.fitValidation
-														.passed
-													? "Pass"
-													: `Warnings: ${matchingHairManifest.components.hair.fitValidation.warnings.join(", ")}`
-												: "Compile to inspect"}
-										</dd>
-									</div>
-									<div>
-										<dt>Compiled geometry</dt>
-										<dd>
-											{matchingHairManifest?.components?.hair?.componentId ===
-											recipe.components.hair
-												? `${matchingHairManifest.components.hair.meshCount} mesh · ${matchingHairManifest.components.hair.triangleCount} triangles · ${matchingHairManifest.components.hair.materialCount} material`
-												: "Compile to inspect"}
-										</dd>
-									</div>
-								</dl>
-							) : null}
-							<p className="creator-note">
-								Hair edits are draft recipe values. Compile embeds the selected
-								hairstyle in the complete GLB.
-							</p>
-						</section>
+									{draftHairComponent ? (
+										<dl aria-label="Hair source status">
+											<div>
+												<dt>Provider</dt>
+												<dd>{draftHairComponent?.provider}</dd>
+											</div>
+											<div>
+												<dt>Provenance</dt>
+												<dd>Validated · {draftHairComponent?.license.spdx}</dd>
+											</div>
+											<div>
+												<dt>Fit profile</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.fittingProfile
+														?.id ?? draftHairComponent?.fittingProfile.id}
+												</dd>
+											</div>
+											<div>
+												<dt>Source bounds</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.sourceBounds
+														? matchingHairManifest.components.hair.sourceBounds.dimensions
+																.map((value) => value.toFixed(3))
+																.join(" × ")
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Fitted bounds</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.bounds
+														? matchingHairManifest.components.hair.bounds.dimensions
+																.map((value) => value.toFixed(3))
+																.join(" × ")
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Derived fit transform</dt>
+												<dd>
+													{matchingHairManifest?.components.hair
+														.derivedTransform
+														? `Scale ${matchingHairManifest.components.hair.derivedTransform.scale.map((value) => value.toFixed(3)).join("/")} · seat ${matchingHairManifest.components.hair.derivedTransform.fittedCrown[2].toFixed(3)} m`
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Fit validation</dt>
+												<dd>
+													{matchingHairManifest?.components.hair.fitValidation
+														? matchingHairManifest.components.hair.fitValidation
+																.passed
+															? "Pass"
+															: `Warnings: ${matchingHairManifest.components.hair.fitValidation.warnings.join(", ")}`
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+											<div>
+												<dt>Compiled geometry</dt>
+												<dd>
+													{matchingHairManifest?.components?.hair
+														?.componentId === recipe.components.hair
+														? `${matchingHairManifest.components.hair.meshCount} mesh · ${matchingHairManifest.components.hair.triangleCount} triangles · ${matchingHairManifest.components.hair.materialCount} material`
+														: "Generate Preview to inspect"}
+												</dd>
+											</div>
+										</dl>
+									) : null}
+									<p className="creator-note">
+										Hair edits are draft recipe values. Generate Preview embeds
+										the selected hairstyle in the complete GLB.
+									</p>
+								</section>
+							</>
+						)}
 					</aside>
 
 					<section className="preview-panel" aria-label="Character preview">
 						<div className="preview-toolbar">
 							<div>
 								<strong>{recipe.name || "Untitled Character"}</strong>
-								<span>{recipe.skeletonId} source recipe</span>
+								<span>
+									{isAuthored
+										? "Your character · drag to turn · scroll to zoom"
+										: "Legacy procedural mannequin"}
+								</span>
 							</div>
-							<label>
+							<label className="preview-source-picker" hidden={!showDetails}>
 								Preview source
 								<select
 									onChange={(event) =>
@@ -2019,37 +1684,130 @@ export default function App() {
 							</label>
 						</div>
 						<HumanoidPreview
+							busy={isAuthored && compileStatus === "compiling"}
 							key={`${previewSource.fixtureId}:${previewSource.revision}`}
 							onManifestLoaded={setCurrentManifest}
 							source={previewSource}
+							creatorCamera={isAuthored ? creatorCamera : undefined}
+							suggestedCamera={
+								creatorSection === "Body" || creatorSection === "Clothing"
+									? "full-body"
+									: creatorSection === "Face" || creatorSection === "Hair"
+										? "face"
+										: creatorSection === "Appearance"
+											? "upper-body"
+											: "three-quarter"
+							}
 						/>
-						<div className="compile-status" data-compile-status={compileStatus}>
+						{clothingIssues(recipe.clothing, recipe.geometry).map((message) => (
+							<p role="alert" key={message}>
+								{message}
+							</p>
+						))}
+						<div
+							className="compile-status"
+							data-compile-status={compileStatus}
+							data-dirty={compileDirty}
+							aria-busy={compileStatus === "compiling"}
+						>
 							<div className="compile-summary">
-								<strong>Compilation status</strong>
-								<span>
+								<strong>Character status</strong>
+								<span role="status">
 									{compileStatus === "compiling"
-										? "Running the local headless Blender compiler and validation pipeline…"
+										? operation === "preview"
+											? "Generating preview…"
+											: "Finalising…"
 										: compileStatus === "succeeded"
 											? compileDirty
-												? "Recipe changed. Compile again to update the preview."
-												: "Compilation and validation succeeded; the generated GLB is active."
+												? "Changes not previewed · Generate Preview to see your changes."
+												: compileResult?.manifest.validationLevel === "preview"
+													? "Preview ready"
+													: "Character finalised"
 											: compileStatus === "failed"
-												? `Compilation failed. The previous preview remains active. ${compileError}`
-												: "Ready to compile body proportions through the local Blender development endpoint."}
+												? `Generation failed. ${compileError} The previous preview remains active.`
+												: compileDirty
+													? "Changes not previewed · Generate Preview to see your changes."
+													: "Ready"}
 								</span>
 							</div>
 							<button
 								disabled={
+									!validation.ok ||
 									!bodyValidation.ok ||
 									!appearanceValidation.ok ||
 									compileStatus === "compiling"
 								}
-								onClick={handleCompile}
+								className="generate-preview"
+								onClick={() => handleCompile("preview")}
 								type="button"
 							>
-								{compileStatus === "compiling" ? "Compiling…" : "Compile"}
+								Generate Preview
 							</button>
-							<dl aria-label="Creator compilation diagnostics">
+							<button
+								type="button"
+								disabled={
+									!validation.ok ||
+									!bodyValidation.ok ||
+									!appearanceValidation.ok ||
+									compileStatus === "compiling"
+								}
+								onClick={() => handleCompile("full")}
+							>
+								Finalise Character
+							</button>
+							<p>
+								{isAuthored
+									? "Preview to see your edits. Finalise when you’re ready to download."
+									: "Generate Preview for fast iteration. Finalise Character runs the full validation and creates a reusable local asset."}
+							</p>
+							{technicalDetails && (
+								<details>
+									<summary>Technical details</summary>
+									<pre
+										style={{
+											whiteSpace: "pre-wrap",
+											maxHeight: "18rem",
+											overflow: "auto",
+										}}
+									>
+										{technicalDetails}
+									</pre>
+								</details>
+							)}
+							{compileStatus === "succeeded" &&
+								!compileDirty &&
+								compileResult?.manifest.validationLevel !== "preview" &&
+								compileResult && (
+									<div>
+										<UseInGame recipe={recipe} result={compileResult} />
+										<a href={compileResult.assetUrl} download="character.glb">
+											Download character GLB
+										</a>
+										{(!isAuthored || showDetails) && " · "}
+										<a
+											hidden={isAuthored && !showDetails}
+											href={compileResult.manifestUrl}
+											download="manifest.json"
+										>
+											Manifest
+										</a>
+										{(!isAuthored || showDetails) && " · "}
+										<a
+											href={compileResult.manifestUrl.replace(
+												"manifest.json",
+												"recipe.snapshot.json",
+											)}
+											hidden={isAuthored && !showDetails}
+											download="recipe.snapshot.json"
+										>
+											Compiler recipe
+										</a>
+									</div>
+								)}
+							<dl
+								aria-label="Creator compilation diagnostics"
+								hidden={!showDetails}
+							>
 								<div>
 									<dt>Recipe hash</dt>
 									<dd>{activeManifest?.recipeHash ?? "—"}</dd>
@@ -2122,7 +1880,7 @@ export default function App() {
 									<dt>Validation status</dt>
 									<dd>
 										{activeManifest
-											? `Pass · ${activeManifest.validationVersion}`
+											? `${activeManifest.validationLevel === "preview" ? "Preview checked; determinism not tested" : "Full validation passed"} · ${activeManifest.validationVersion}`
 											: "—"}
 									</dd>
 								</div>
@@ -2140,7 +1898,7 @@ export default function App() {
 						</div>
 					</section>
 
-					<aside className="panel details-panel">
+					<aside className="panel details-panel" hidden={!showDetails}>
 						<div className="section-heading">Palette</div>
 						<div className="palette-grid">
 							{CHARACTER_PALETTE_REGIONS.filter(
@@ -2179,7 +1937,6 @@ export default function App() {
 								))}
 							</div>
 						)}
-						{loadStatus ? <p className="load-status">{loadStatus}</p> : null}
 
 						<div className="section-heading">Recipe JSON</div>
 						<pre className="recipe-json" data-testid="recipe-json">
@@ -2198,11 +1955,9 @@ export default function App() {
 			)}
 
 			<footer className="status-bar">
-				<span>CharacterRecipeV1 is editable source data.</span>
-				<span>The mannequin GLB is a derived compiler artifact.</span>
-				<span>
-					Body proportions rebuild it through the local Blender compiler.
-				</span>
+				<span>Your recipe stays editable.</span>
+				<span>Drag to orbit · Scroll to zoom</span>
+				<span>Generate Preview to apply your changes.</span>
 				<span>Active section: {activeSection}</span>
 			</footer>
 		</div>

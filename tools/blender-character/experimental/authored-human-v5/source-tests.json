@@ -1,0 +1,16 @@
+{
+	"closedMeshRings": 9,
+	"changedBySide": {
+		"l": 118,
+		"r": 118
+	},
+	"maximumWeightSumError": 1.2293457984924316e-7,
+	"allNonElbowWeightsExact": true,
+	"maximumMirrorWeightDifference": 0,
+	"paintedSeamPairsMatch": true,
+	"protectedSourcePreserved": true,
+	"exactExistingPoses": ["rest", "idle", "walk", "elbow"],
+	"intermediateDegrees": 70,
+	"testsRun": 5,
+	"passed": true
+}

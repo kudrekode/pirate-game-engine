@@ -7,6 +7,7 @@ import type {
 	PlayerVehicleState,
 } from "../types/game";
 import { getPlayerCombatStats } from "./combat";
+import type { RuntimeDialogueState } from "./dialogueEngine";
 import type { NPCMovementState } from "./npcMovement";
 import { createRuntimeQuestState, type RuntimeQuestState } from "./questEngine";
 import { createRuntimeState, type RuntimeGameState } from "./ruleEngine";
@@ -53,6 +54,9 @@ export type RuntimeSessionState = {
 	enemyContactCooldowns: Map<string, number>;
 	activeShopId?: string;
 	nextAttackAt: number;
+	nextMoveAt: number;
+	startupPending: boolean;
+	dialogue?: RuntimeDialogueState;
 	recentEnemy?: RuntimeRecentEnemyState;
 };
 
@@ -100,5 +104,7 @@ export function createRuntimeSession(
 		enemyOrigins: new Map<string, RuntimeGridPosition>(),
 		enemyContactCooldowns: new Map<string, number>(),
 		nextAttackAt: 0,
+		nextMoveAt: 0,
+		startupPending: false,
 	};
 }

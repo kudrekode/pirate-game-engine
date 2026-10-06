@@ -79,7 +79,7 @@ function successfulPayload(
 				shoulderWidthMultiplier: 1,
 				torsoLengthMultiplier: 1,
 			},
-			compilerVersion: "procedural-mannequin-blender-v7",
+			compilerVersion: "procedural-mannequin-blender-v8",
 			face: {
 				eyeColor: "#4b5d67",
 				eyeMeshCount: 2,
@@ -108,7 +108,7 @@ function successfulPayload(
 				neckTop: [0, 0, 1.45],
 				scalpTop: [0, 0, 1.726],
 				symmetryErrorMetres: 0,
-				topologyVersion: "procedural-humanoid-v3",
+				topologyVersion: "procedural-humanoid-v4",
 			},
 			components: {
 				hair: {
@@ -156,9 +156,9 @@ function successfulPayload(
 				nonManifoldEdgeCount: 0,
 				unreferencedVertexCount: 0,
 			},
-			topologyVersion: "procedural-humanoid-v3",
+			topologyVersion: "procedural-humanoid-v4",
 			triangleCount: 5676,
-			validationVersion: "procedural-mannequin-roundtrip-v8",
+			validationVersion: "procedural-mannequin-roundtrip-v9",
 			vertexCount: 2876,
 		},
 		manifestUrl: "/generated/job/output/manifest.json",
@@ -166,7 +166,7 @@ function successfulPayload(
 		status: "succeeded" as const,
 		validation: {
 			passed: true as const,
-			version: "procedural-mannequin-roundtrip-v8",
+			version: "procedural-mannequin-roundtrip-v9",
 		},
 	};
 }

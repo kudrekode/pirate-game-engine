@@ -6,6 +6,7 @@ import {
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
 import { resolveMovementAt, type VehicleMovementConfig } from "./movement";
+import { canAcceptRuntimeInput } from "./runtimeInput";
 import type {
 	RuntimeGridPosition,
 	RuntimeSessionState,
@@ -120,6 +121,7 @@ function findWaitingTriggerTarget(
 export function attemptPlayerMove(
 	session: RuntimeSessionState,
 	direction: RuntimeGridPosition,
+	nowMs = 0,
 ): PlayerMoveResult {
 	const area = getCurrentArea(session);
 	const from = { ...session.playerPosition };
@@ -129,6 +131,15 @@ export function attemptPlayerMove(
 		y: from.y + direction.y,
 	};
 
+	if (!canAcceptRuntimeInput(session, nowMs, false)) {
+		return {
+			type: "blocked",
+			reason: "Gameplay input is paused.",
+			from,
+			to,
+			facing: { ...session.playerFacing },
+		};
+	}
 	session.playerFacing = facing;
 
 	if (to.x < 0 || to.y < 0 || to.x >= area.width || to.y >= area.height) {
@@ -160,6 +171,11 @@ export function attemptPlayerMove(
 		};
 	}
 
+	const moveDurationMs = getPlayerMoveDurationMs(
+		session.project.player.speed,
+		movement.speedMultiplier,
+	);
+	session.nextMoveAt = nowMs + moveDurationMs;
 	session.playerPosition = to;
 	const touchTarget = findTouchInteractableTarget({
 		project: session.project,
@@ -175,10 +191,7 @@ export function attemptPlayerMove(
 		from,
 		to,
 		facing,
-		moveDurationMs: getPlayerMoveDurationMs(
-			session.project.player.speed,
-			movement.speedMultiplier,
-		),
+		moveDurationMs,
 		movementMode: movement.movementMode ?? session.currentMovementMode,
 		touchTargets: touchTarget ? [touchTarget] : [],
 		triggerTargets: findWaitingTriggerTarget(

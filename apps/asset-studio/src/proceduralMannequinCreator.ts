@@ -3,13 +3,16 @@ import {
 	CHARACTER_FACE_APPEARANCE_LIMITS,
 	CHARACTER_SKIN_APPEARANCE_LIMITS,
 	type CharacterBodyParameters,
+	type CharacterClothing,
+	type CharacterGeometry,
 	type CharacterHairComponentId,
 	type CharacterRecipeV1,
+	sameClothing,
 } from "@adventure-game-builder/character-contract";
 
 export const PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT =
 	"/__asset-studio/procedural-mannequin/compile";
-export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v3";
+export const PROCEDURAL_HUMANOID_TOPOLOGY_VERSION = "procedural-humanoid-v4";
 export const PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION =
 	"procedural-skin-material-v1";
 export const PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION =
@@ -72,6 +75,10 @@ export const PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS = Object.keys(
 ) as Array<keyof CharacterBodyParameters>;
 
 export type ProceduralMannequinManifest = {
+	geometrySource?: CharacterGeometry;
+	clothing?: CharacterClothing;
+	geometryFamily?: "authored-human";
+	validationLevel?: "preview" | "full";
 	appearance: {
 		hair: {
 			authoredColor: string;
@@ -254,6 +261,7 @@ export type ProceduralMannequinCompileResult = {
 };
 
 export type ProceduralMannequinCompileFailure = {
+	technicalDetails?: string;
 	error: string;
 	issues?: Array<{ message: string; path: string }>;
 	status: "failed";
@@ -412,10 +420,16 @@ export function randomizeProceduralMannequinBody(seed: string) {
 export function createProceduralMannequinCompileRequest(
 	recipe: Pick<
 		CharacterRecipeV1,
-		"appearance" | "body" | "components" | "palette"
+		"appearance" | "body" | "components" | "palette" | "geometry" | "clothing"
 	>,
 ) {
 	return {
+		...(recipe.clothing === undefined
+			? {}
+			: { clothing: structuredClone(recipe.clothing) }),
+		...(recipe.geometry
+			? { geometrySource: structuredClone(recipe.geometry) }
+			: {}),
 		appearance: {
 			eyeColor: recipe.appearance.face.eyeColor.toLowerCase(),
 			hairColor: recipe.palette.hair.toLowerCase(),
@@ -431,9 +445,10 @@ export function createProceduralMannequinCompileRequest(
 export async function requestProceduralMannequinCompile(
 	recipe: Pick<
 		CharacterRecipeV1,
-		"appearance" | "body" | "components" | "palette"
+		"appearance" | "body" | "components" | "palette" | "geometry" | "clothing"
 	>,
 	request: typeof fetch = fetch,
+	mode: "preview" | "full" = "full",
 ): Promise<ProceduralMannequinCompileResult> {
 	const validation = validateProceduralMannequinBody(recipe.body.parameters);
 	if (!validation.ok) throw new Error(validation.issues[0]?.message);
@@ -441,11 +456,16 @@ export async function requestProceduralMannequinCompile(
 	if (!appearanceValidation.ok)
 		throw new Error(appearanceValidation.issues[0]?.message);
 	const compileRequest = createProceduralMannequinCompileRequest(recipe);
-	const response = await request(PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT, {
-		body: JSON.stringify(compileRequest),
-		headers: { "Content-Type": "application/json" },
-		method: "POST",
-	});
+	const response = await request(
+		mode === "preview"
+			? PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT.replace(/compile$/, "preview")
+			: PROCEDURAL_MANNEQUIN_COMPILE_ENDPOINT,
+		{
+			body: JSON.stringify(compileRequest),
+			headers: { "Content-Type": "application/json" },
+			method: "POST",
+		},
+	);
 	const payload = (await response.json()) as
 		| ProceduralMannequinCompileResult
 		| ProceduralMannequinCompileFailure;
@@ -454,8 +474,14 @@ export async function requestProceduralMannequinCompile(
 			payload.status === "failed" && payload.issues?.length
 				? ` ${payload.issues.map((issue) => `${issue.path} ${issue.message}`).join("; ")}`
 				: "";
-		throw new Error(
-			`${payload.status === "failed" ? payload.error : `Compile failed with HTTP ${response.status}.`}${details}`,
+		throw Object.assign(
+			new Error(
+				`${payload.status === "failed" ? payload.error : `Compile failed with HTTP ${response.status}.`}${details}`,
+			),
+			{
+				technicalDetails:
+					payload.status === "failed" ? payload.technicalDetails : undefined,
+			},
 		);
 	}
 	if (
@@ -466,6 +492,40 @@ export async function requestProceduralMannequinCompile(
 			"Compile endpoint returned a hairstyle component mismatch.",
 		);
 	}
+	if (recipe.geometry?.family === "authored-human") {
+		if (!sameClothing(recipe.clothing, payload.manifest.clothing))
+			throw new Error("Compile endpoint returned different clothing choices.");
+		const source = payload.manifest.geometrySource;
+		if (
+			source?.family !== "authored-human" ||
+			source.baseRevision !== recipe.geometry.baseRevision ||
+			source.rigProfile !== recipe.geometry.rigProfile ||
+			Object.entries(recipe.geometry.values).some(
+				([key, value]) =>
+					source.values[key as keyof typeof source.values] !== value,
+			) ||
+			payload.manifest.heightMetres !== recipe.body.parameters.height ||
+			payload.manifest.appearance.skin.authoredColor !==
+				compileRequest.appearance.skinColor ||
+			payload.manifest.appearance.skin.authoredRoughness !==
+				compileRequest.appearance.skinRoughness ||
+			payload.manifest.appearance.hair.authoredColor !==
+				compileRequest.appearance.hairColor ||
+			payload.manifest.topologyVersion !== recipe.geometry.baseRevision ||
+			payload.manifest.validationLevel !== mode ||
+			payload.manifest.deterministicBuild !== (mode === "full") ||
+			payload.manifest.outputHash.length !== 64 ||
+			payload.manifest.recipeHash.length !== 64 ||
+			!payload.validation.passed
+		) {
+			throw new Error(
+				"Compile endpoint returned mismatched authored-human metadata.",
+			);
+		}
+		return payload;
+	}
+	if (payload.manifest.geometrySource?.family === "authored-human")
+		throw new Error("Compile endpoint returned the wrong geometry family.");
 	if (
 		!PROCEDURAL_MANNEQUIN_BODY_PARAMETER_KEYS.every(
 			(key) =>
@@ -493,6 +553,12 @@ export async function requestProceduralMannequinCompile(
 		payload.manifest.appearance?.skin?.materialCount !== 1 ||
 		payload.manifest.appearance?.skin?.materialSchemaVersion !==
 			PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION ||
+		(mode === "full" &&
+			(!payload.manifest.deterministicBuild ||
+				payload.manifest.validationLevel === "preview")) ||
+		(mode === "preview" &&
+			(payload.manifest.validationLevel !== "preview" ||
+				payload.manifest.deterministicBuild !== false)) ||
 		payload.manifest.outputHash.length !== 64 ||
 		payload.manifest.recipeHash.length !== 64 ||
 		payload.manifest.topologyVersion !== PROCEDURAL_HUMANOID_TOPOLOGY_VERSION ||

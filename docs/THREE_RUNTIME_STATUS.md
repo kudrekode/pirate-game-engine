@@ -9,16 +9,22 @@
 ## Implemented Runtime Systems
 
 - `Play 3D Experimental` can be selected from Play mode while `Play 2D` remains the default.
-- Runtime startup creates a shared `RuntimeSession` from a cloned `GameProject`.
+- Runtime startup creates a shared `RuntimeSession` from a cloned `GameProject`; both adapters use the documented game-start/progression/actual-area/quest sequence.
 - Movement, facing, touch targets, interactions, object behaviours, pickups, shops, vehicles, rules, progression, quests, NPC ticks, enemy contact, and combat route through shared runtime helpers.
 - Player and NPC visual positions interpolate between authoritative grid positions.
 - Runtime camera modes include follow and inspect; project camera config supports fixed-isometric and third-person follow.
 - Third-person mode supports mouse-look state, recentering, and camera-relative WASD input.
 - Movement remains discrete/cardinal/grid-based even in third-person camera mode.
-- Runtime UI uses React overlays for status, flow log, health, inventory, quests, shops, cutscene/dialogue requests, game over, and end game.
+- Runtime UI uses React overlays for status, flow log, health, inventory, quests, shops, cutscenes, authored dialogue nodes/choices, game over, and end game. Dialogue transitions and node effects use the existing shared dialogue engine.
 - Three performance diagnostics track RAF interval, frame callback cost, render cost, visual update, camera update, runtime tick, terrain rebuilds, water/coast updates, asset status, hitches, scene rebuilds, renderer counts, and RAF loop lifecycle.
 
 ## Implemented Visual Systems
+
+- Finalised Asset Creator characters are project-scoped visual assets, using the
+  same marker renderer, GLTF cache, skeleton-safe clones and Golden idle/walk
+  controller as built-ins. Player assignments and NPC instance transforms survive
+  project save/reload. Missing assets retain references and show an explicit error
+  marker/message. See [integration evidence](../AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
 
 - Placeholder meshes cover terrain, structures, objects, NPCs, pickups, vehicles, event blocks, and the player.
 - Object and NPC definitions can author 3D visual settings through `threeVisual`.
@@ -96,3 +102,8 @@ Visual differences, imported asset styling, water/coast presentation, and camera
    [`docs/assets/asset-studio-height-authoring-v0.md`](assets/asset-studio-height-authoring-v0.md).
 7. Asset Upload/Library V1 later, once built-in registry workflows are stable.
 8. Diagonal/free movement later, after visual, animation, and parity work clarify requirements.
+
+Phase 2 established shared movement deadlines and modal/startup/end input blocking,
+including attack cooldown and NPC pause coverage. See the contracts in
+[RUNTIME_ARCHITECTURE.md](RUNTIME_ARCHITECTURE.md) and the bounded validation evidence
+in [PHASE_2_CORRECTNESS_RESULT.md](../PHASE_2_CORRECTNESS_RESULT.md).

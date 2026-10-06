@@ -1,0 +1,1001 @@
+{
+	"artifactStatus": "procedural-compiled-validated",
+	"blenderReport": {
+		"geometrySource": {
+			"baseRevision": "authored-human-canonical-v1",
+			"family": "authored-human",
+			"rigProfile": "golden-humanoid-v0",
+			"values": {
+				"athletic": 0,
+				"broadFrame": 0,
+				"headWidth": 0,
+				"jaw": 0,
+				"mass": 0,
+				"nose": 0
+			}
+		},
+		"sourceHash": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"heightScale": 1.0002271938535026,
+		"bodyMaterials": ["MI_Superhero_Male"],
+		"hairMaterials": ["MI_Hair_1.002", "MI_Hair_1.003"],
+		"warnings": [
+			"Experimental muscular male base; clothing and eye-colour editing are not yet available.",
+			"Skin tint multiplies the authored texture, including its painted shorts."
+		],
+		"head": {
+			"version": "authored-head-v1"
+		},
+		"face": {
+			"version": "authored-face-v1"
+		},
+		"components": {
+			"hair": {
+				"derivedTransform": "preserved-authored-fit",
+				"fitValidation": {
+					"passed": true
+				}
+			}
+		}
+	},
+	"buildMode": "staging",
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
+		"faceGeometryDeterministic": true,
+		"facePlacementDeterministic": true,
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"roundTrip": {
+		"passed": true,
+		"checks": {
+			"rig": true,
+			"binds": true,
+			"weights": true,
+			"uv": true,
+			"materials": true,
+			"hair": true,
+			"height": true,
+			"animations": true,
+			"clones": true
+		},
+		"animations": [
+			{
+				"name": "GoldenReference_Idle",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			},
+			{
+				"name": "GoldenReference_Walk_InPlace",
+				"tracks": 23,
+				"samples": 5,
+				"cloneIsolated": true,
+				"restRestored": true
+			}
+		],
+		"artifact": {
+			"materialCount": 4,
+			"meshCount": 4,
+			"textureCount": 6,
+			"triangleCount": 15148,
+			"vertexCount": 8949
+		},
+		"inspection": {
+			"jointCount": 65
+		},
+		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+		"semanticHash": "677ff621095aaae05e91a46dc17b5c6f9decfe41838f888cf3f14681e4f1fcb0",
+		"geometrySemanticHash": "bf272d6acb0a48d16bedba5d2552c767d276c89a27345b754fe9e1e5e552db27",
+		"materialSemanticHash": "aa0764ae47950c16003e6b7e3fd3de4863cff04e776573cca4860f2104f4eeea",
+		"faceGeometrySemanticHash": "659ba4b06a86ad389fe62a40fe0a9085f87930b3a3b3f6591e14e8188cc1c1f6",
+		"geometry": {
+			"maximumInfluences": 4,
+			"maximumWeightSumError": 4.470348358154297e-8,
+			"outOfRangeJointCount": 0,
+			"unweightedVertexCount": 0,
+			"meshCount": 1,
+			"vertexCount": 7281,
+			"triangleCount": 12566,
+			"bounds": {
+				"dimensions": [
+					1.8592884843637199, 1.820000339864803, 0.29155408220147305
+				],
+				"maximumY": 1.8200002010720464,
+				"minimumY": -1.3879275667302848e-7
+			}
+		},
+		"topologyFingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544",
+		"outputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+		"semanticStructure": {
+			"hierarchy": [
+				{
+					"name": "Scene",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Group"
+				},
+				{
+					"name": "CanonicalHeight",
+					"parent": "Scene",
+					"position": [0, 0.0095122, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1.0002272, 1.0002272, 1.0002272],
+					"type": "Object3D"
+				},
+				{
+					"name": "Armature",
+					"parent": "CanonicalHeight",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Object3D"
+				},
+				{
+					"name": "Eyebrows001",
+					"parent": "Armature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "Eyes001",
+					"parent": "Armature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "SuperHero_Male001",
+					"parent": "Armature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "V2_Buzzed001",
+					"parent": "Armature",
+					"position": [0, 0, 0],
+					"quaternion": [0, 0, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "SkinnedMesh"
+				},
+				{
+					"name": "root",
+					"parent": "Armature",
+					"position": [0, 0, 0],
+					"quaternion": [-0.7071068, 0, 0, 0.7071068],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pelvis",
+					"parent": "root",
+					"position": [0, 0.043, 0.9491],
+					"quaternion": [0.800571, 0, 0, 0.5992379],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "spine_01",
+					"parent": "pelvis",
+					"position": [0, 0.1280923, 0],
+					"quaternion": [-0.0918562, 0, 0, 0.9957722],
+					"scale": [1, 1.0000001, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "spine_02",
+					"parent": "spine_01",
+					"position": [0, 0.1063499, 0],
+					"quaternion": [-0.0395854, 1e-7, 0, 0.9992162],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "spine_03",
+					"parent": "spine_02",
+					"position": [0, 0.1331338, 0],
+					"quaternion": [-0.124189, -1e-7, 0, 0.9922586],
+					"scale": [1, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "clavicle_l",
+					"parent": "spine_03",
+					"position": [0.0314, 0.1737177, 0.0673285],
+					"quaternion": [-0.5287374, -0.329102, -0.4138081, 0.6639966],
+					"scale": [1.0000001, 1.0000001, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "upperarm_l",
+					"parent": "clavicle_l",
+					"position": [-0.0091357, 0.205739, -0.0396713],
+					"quaternion": [0.1498032, 0.6911308, -0.1493883, 0.6910719],
+					"scale": [0.9999999, 0.9999998, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "lowerarm_l",
+					"parent": "upperarm_l",
+					"position": [1e-7, 0.251115, 0],
+					"quaternion": [0.0307322, 0.0000416, -0.0000015, 0.9995276],
+					"scale": [1, 1, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "hand_l",
+					"parent": "lowerarm_l",
+					"position": [-1e-7, 0.2435943, 0],
+					"quaternion": [-0.0156016, -4e-7, 0, 0.9998783],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_01_l",
+					"parent": "hand_l",
+					"position": [0.0071596, 0.1174025, 0.0406433],
+					"quaternion": [0.0085051, 0.7068115, -0.0185241, 0.7071082],
+					"scale": [1, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "index_02_l",
+					"parent": "index_01_l",
+					"position": [0, 0.0326126, -1e-7],
+					"quaternion": [5e-7, 0.0000495, -0.0005331, 0.9999999],
+					"scale": [0.9999999, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "index_03_l",
+					"parent": "index_02_l",
+					"position": [0, 0.0279114, -1e-7],
+					"quaternion": [0.000002, -0.0000071, -0.0001857, 1],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "index_04_leaf_l",
+					"parent": "index_03_l",
+					"position": [0, 0.0241101, -1e-7],
+					"quaternion": [0, 0.999823, 0, 0.018816],
+					"scale": [0.9999999, 0.9999999, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_01_l",
+					"parent": "hand_l",
+					"position": [0.0046828, 0.1154388, 0.0151134],
+					"quaternion": [0.0050673, 0.7067628, -0.0219582, 0.7070916],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_02_l",
+					"parent": "middle_01_l",
+					"position": [0, 0.0375261, -1e-7],
+					"quaternion": [6e-7, 0.0000784, 0.0020528, 0.9999979],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_03_l",
+					"parent": "middle_02_l",
+					"position": [0, 0.0301167, -5e-7],
+					"quaternion": [-4e-7, -0.0000543, -0.0014198, 0.999999],
+					"scale": [0.9999999, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_04_leaf_l",
+					"parent": "middle_03_l",
+					"position": [0, 0.0305197, 2e-7],
+					"quaternion": [0, 0.9998255, 0, 0.0186798],
+					"scale": [1, 0.9999997, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_01_l",
+					"parent": "hand_l",
+					"position": [0.0060379, 0.0985413, -0.0346174],
+					"quaternion": [0.002601, 0.7066821, -0.0244147, 0.707105],
+					"scale": [1.0000001, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_02_l",
+					"parent": "pinky_01_l",
+					"position": [0, 0.0316311, 1e-7],
+					"quaternion": [4e-7, 0.0000953, -0.0015674, 0.9999987],
+					"scale": [1.0000001, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_03_l",
+					"parent": "pinky_02_l",
+					"position": [0, 0.0274308, 1e-7],
+					"quaternion": [0.0000033, -0.0001373, 0.0004661, 0.9999999],
+					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_04_leaf_l",
+					"parent": "pinky_03_l",
+					"position": [0, 0.0215234, 2e-7],
+					"quaternion": [0, 0.9998292, 0, 0.0184837],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_01_l",
+					"parent": "hand_l",
+					"position": [0.0047521, 0.1094007, -0.0123702],
+					"quaternion": [0.0153238, 0.706917, -0.0117133, 0.7070335],
+					"scale": [1.0000001, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_02_l",
+					"parent": "ring_01_l",
+					"position": [0, 0.0360011, 0],
+					"quaternion": [-0.0000048, 0.0002186, 0.0023998, 0.9999971],
+					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_03_l",
+					"parent": "ring_02_l",
+					"position": [0, 0.0283001, -1e-7],
+					"quaternion": [0.0000036, -0.000253, -0.0033876, 0.9999942],
+					"scale": [0.9999999, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_04_leaf_l",
+					"parent": "ring_03_l",
+					"position": [0, 0.0291017, 0],
+					"quaternion": [0, 0.9998186, 0, 0.0190498],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_01_l",
+					"parent": "hand_l",
+					"position": [0.0274813, 0.0338136, 0.0410632],
+					"quaternion": [-0.2444633, -0.9435676, -0.2160615, 0.0568801],
+					"scale": [1.0000001, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_02_l",
+					"parent": "thumb_01_l",
+					"position": [0, 0.0395199, 0],
+					"quaternion": [8e-7, 0.0000046, -0.000004, 1],
+					"scale": [1, 1.0000001, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_03_l",
+					"parent": "thumb_02_l",
+					"position": [-2e-7, 0.035491, 0],
+					"quaternion": [-1e-7, -0.0000297, 0.0000017, 1],
+					"scale": [1.0000001, 1.0000001, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_04_leaf_l",
+					"parent": "thumb_03_l",
+					"position": [0, 0.0345582, 0],
+					"quaternion": [-1e-7, 0.3827087, 0, 0.9238691],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "clavicle_r",
+					"parent": "spine_03",
+					"position": [-0.0314, 0.1737177, 0.0673285],
+					"quaternion": [-0.5287375, 0.3291019, 0.4138082, 0.6639966],
+					"scale": [1.0000001, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "upperarm_r",
+					"parent": "clavicle_r",
+					"position": [0.0091358, 0.205739, -0.0396714],
+					"quaternion": [0.1498032, -0.6911308, 0.1493882, 0.6910719],
+					"scale": [0.9999998, 0.9999995, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "lowerarm_r",
+					"parent": "upperarm_r",
+					"position": [-2e-7, 0.2511151, 0],
+					"quaternion": [0.0307322, -0.0000417, 0.0000015, 0.9995277],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "hand_r",
+					"parent": "lowerarm_r",
+					"position": [0, 0.2435944, 0],
+					"quaternion": [-0.0156016, 5e-7, 0, 0.9998783],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "index_01_r",
+					"parent": "hand_r",
+					"position": [-0.0071594, 0.1174027, 0.0406433],
+					"quaternion": [0.008505, -0.7068117, 0.0185242, 0.707108],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "index_02_r",
+					"parent": "index_01_r",
+					"position": [0, 0.0326125, 0],
+					"quaternion": [4e-7, -0.0000494, 0.0005331, 0.9999999],
+					"scale": [0.9999999, 1.0000001, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "index_03_r",
+					"parent": "index_02_r",
+					"position": [0, 0.0279114, 0],
+					"quaternion": [0.000002, 0.0000071, 0.0001856, 1],
+					"scale": [1, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "index_04_leaf_r",
+					"parent": "index_03_r",
+					"position": [0, 0.0241101, -1e-7],
+					"quaternion": [0, -0.999823, 0, 0.018816],
+					"scale": [0.9999999, 1, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_01_r",
+					"parent": "hand_r",
+					"position": [-0.0046826, 0.115439, 0.0151134],
+					"quaternion": [0.0050674, -0.7067628, 0.0219582, 0.7070916],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_02_r",
+					"parent": "middle_01_r",
+					"position": [0, 0.0375261, -2e-7],
+					"quaternion": [6e-7, -0.0000784, -0.0020528, 0.9999979],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_03_r",
+					"parent": "middle_02_r",
+					"position": [0, 0.0301166, -2e-7],
+					"quaternion": [-4e-7, 0.0000544, 0.0014199, 0.999999],
+					"scale": [0.9999999, 0.9999999, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "middle_04_leaf_r",
+					"parent": "middle_03_r",
+					"position": [0, 0.0305197, 1e-7],
+					"quaternion": [-1e-7, -0.9998255, 0, 0.0186797],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_01_r",
+					"parent": "hand_r",
+					"position": [-0.0060375, 0.0985414, -0.0346174],
+					"quaternion": [0.0026011, -0.7066822, 0.0244147, 0.7071049],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_02_r",
+					"parent": "pinky_01_r",
+					"position": [0, 0.031631, -1e-7],
+					"quaternion": [4e-7, -0.0000954, 0.0015674, 0.9999987],
+					"scale": [1.0000001, 0.9999998, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_03_r",
+					"parent": "pinky_02_r",
+					"position": [0, 0.0274308, 0],
+					"quaternion": [0.0000032, 0.0001374, -0.000466, 0.9999999],
+					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "pinky_04_leaf_r",
+					"parent": "pinky_03_r",
+					"position": [0, 0.0215233, 0],
+					"quaternion": [0, -0.9998292, 0, 0.0184837],
+					"scale": [1, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_01_r",
+					"parent": "hand_r",
+					"position": [-0.0047518, 0.1094009, -0.0123702],
+					"quaternion": [0.0153239, -0.7069171, 0.0117133, 0.7070334],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_02_r",
+					"parent": "ring_01_r",
+					"position": [0, 0.0360009, -2e-7],
+					"quaternion": [-0.0000049, -0.0002185, -0.0023997, 0.9999971],
+					"scale": [0.9999999, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_03_r",
+					"parent": "ring_02_r",
+					"position": [0, 0.0283002, -1e-7],
+					"quaternion": [0.0000037, 0.0002528, 0.0033876, 0.9999942],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "ring_04_leaf_r",
+					"parent": "ring_03_r",
+					"position": [0, 0.0291018, 0],
+					"quaternion": [0, -0.9998186, 0, 0.0190498],
+					"scale": [0.9999999, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_01_r",
+					"parent": "hand_r",
+					"position": [-0.0274811, 0.0338136, 0.0410631],
+					"quaternion": [-0.2444625, 0.9435679, 0.2160614, 0.0568799],
+					"scale": [0.9999999, 0.9999999, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_02_r",
+					"parent": "thumb_01_r",
+					"position": [-3e-7, 0.0395199, 0],
+					"quaternion": [7e-7, -0.0000048, 0.0000032, 1],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_03_r",
+					"parent": "thumb_02_r",
+					"position": [-1e-7, 0.0354908, 0],
+					"quaternion": [-2e-7, 0.0000296, -0.0000021, 1],
+					"scale": [1, 1.0000001, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thumb_04_leaf_r",
+					"parent": "thumb_03_r",
+					"position": [2e-7, 0.0345582, 0],
+					"quaternion": [0, -0.3827088, 0, 0.923869],
+					"scale": [0.9999999, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "neck_01",
+					"parent": "spine_03",
+					"position": [0, 0.215093, 0],
+					"quaternion": [0.2572591, 0, 0, 0.9663424],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "Head",
+					"parent": "neck_01",
+					"position": [0, 0.0828523, 0],
+					"quaternion": [-0.13207, 0, 0, 0.9912404],
+					"scale": [1, 0.9999998, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "thigh_l",
+					"parent": "pelvis",
+					"position": [0.1143051, 0.0231769, 0.0004878],
+					"quaternion": [0.989831, 0, 0, 0.1422484],
+					"scale": [1, 1, 1.000001],
+					"type": "Bone"
+				},
+				{
+					"name": "calf_l",
+					"parent": "thigh_l",
+					"position": [0, 0.4288002, 0],
+					"quaternion": [0.0559889, 0, 0, 0.9984314],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "foot_l",
+					"parent": "calf_l",
+					"position": [0, 0.4587884, 0],
+					"quaternion": [-0.5721679, 3e-7, -2e-7, 0.8201365],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_l",
+					"parent": "foot_l",
+					"position": [0, 0.1590736, 0],
+					"quaternion": [1e-7, 0.9731196, -0.2303006, 3e-7],
+					"scale": [1, 1.0000004, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_leaf_l",
+					"parent": "ball_l",
+					"position": [0, 0.0788998, 0],
+					"quaternion": [0, -1e-7, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "thigh_r",
+					"parent": "pelvis",
+					"position": [-0.1143051, 0.0231769, 0.0004878],
+					"quaternion": [0.989831, 0, 0, 0.1422484],
+					"scale": [1, 1, 1.000001],
+					"type": "Bone"
+				},
+				{
+					"name": "calf_r",
+					"parent": "thigh_r",
+					"position": [0, 0.4288002, 0],
+					"quaternion": [0.0559889, 0, 0, 0.9984314],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				},
+				{
+					"name": "foot_r",
+					"parent": "calf_r",
+					"position": [0, 0.4587884, 0],
+					"quaternion": [-0.5721679, -3e-7, 2e-7, 0.8201365],
+					"scale": [1, 1, 0.9999999],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_r",
+					"parent": "foot_r",
+					"position": [0, 0.1590736, 0],
+					"quaternion": [1e-7, -0.9731196, 0.2303006, 3e-7],
+					"scale": [1, 1.0000004, 1.0000001],
+					"type": "Bone"
+				},
+				{
+					"name": "ball_leaf_r",
+					"parent": "ball_r",
+					"position": [0, 0.0788998, 0],
+					"quaternion": [0, 1e-7, 0, 1],
+					"scale": [1, 1, 1],
+					"type": "Bone"
+				}
+			],
+			"materials": [
+				{
+					"color": "ffffff",
+					"name": "MI_Eyes",
+					"linearColor": [1, 1, 1],
+					"metallic": 0,
+					"roughness": 0.3454545,
+					"type": "MeshStandardMaterial"
+				},
+				{
+					"color": "3b2a1f",
+					"name": "MI_Hair_1.002",
+					"linearColor": [0.043735, 0.0231534, 0.0137021],
+					"metallic": 0,
+					"roughness": 0.72,
+					"type": "MeshStandardMaterial"
+				},
+				{
+					"color": "3b2a1f",
+					"name": "MI_Hair_1.003",
+					"linearColor": [0.043735, 0.0231534, 0.0137021],
+					"metallic": 0,
+					"roughness": 0.72,
+					"type": "MeshStandardMaterial"
+				},
+				{
+					"color": "ffffff",
+					"name": "MI_Superhero_Male",
+					"linearColor": [1, 1, 1],
+					"metallic": 0,
+					"roughness": 0.72,
+					"type": "MeshStandardMaterial"
+				}
+			],
+			"meshes": [
+				{
+					"attributes": {
+						"_source_vertex": {
+							"count": 646,
+							"hash": "ecf12c343bdfcd9350ecd0eb0037b27e47bb7b1faea0fe5dd7f68f539f43d8e1",
+							"itemSize": 1
+						},
+						"color": {
+							"count": 646,
+							"hash": "9bc2050c45617ce0720d9882e3d33fdacc90e5479d8846a17cc164939fa99a8d",
+							"itemSize": 4
+						},
+						"color_1": {
+							"count": 646,
+							"hash": "aae4b39f9bee16b0d3095d53dc66528a7f8ba5c1659fe6b480d1b70b16af8aae",
+							"itemSize": 4
+						},
+						"color_2": {
+							"count": 646,
+							"hash": "f43b401d6dbd92f98bcb30347080ad328f64a905c351323e7ceac4bf62ea5e88",
+							"itemSize": 4
+						},
+						"normal": {
+							"count": 646,
+							"hash": "af553a6597835cb314503e20034eaaba25c8d42a784984e17f022a58b7d8c166",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 646,
+							"hash": "a2fc56c1aba43a34133ac605a220010464434a8ba51db36bb608da0f6954acd4",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 646,
+							"hash": "af9ba0fcca53592e8ec6b31156e42a445dbee4dce04616d0e05d230181530891",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 646,
+							"hash": "eae96c6717772166ecd4fe41f53d6f90856a22508ecc314d1495a7eb81a0c9b3",
+							"itemSize": 4
+						},
+						"uv": {
+							"count": 646,
+							"hash": "4141af7310bfad5514a04e57976c886bb31d9231224073ee71896ca39ea0f657",
+							"itemSize": 2
+						},
+						"uv1": {
+							"count": 646,
+							"hash": "0e8d9e73b0cc4fb21a488c03a78ca016d7b33a56816b48fd28c25f81d0de0d55",
+							"itemSize": 2
+						},
+						"uv2": {
+							"count": 646,
+							"hash": "0e8d9e73b0cc4fb21a488c03a78ca016d7b33a56816b48fd28c25f81d0de0d55",
+							"itemSize": 2
+						},
+						"uv3": {
+							"count": 646,
+							"hash": "0e8d9e73b0cc4fb21a488c03a78ca016d7b33a56816b48fd28c25f81d0de0d55",
+							"itemSize": 2
+						}
+					},
+					"index": {
+						"count": 2952,
+						"hash": "83b3fd9ac643a298868a78dc6e46e19647789e6118aa506b6a49f579d6c72b3e"
+					},
+					"name": "Eyebrows001"
+				},
+				{
+					"attributes": {
+						"_source_vertex": {
+							"count": 556,
+							"hash": "a816e424f15eca10e0e162c3fb5ceb25ef779fccdf5a1e91634c4b9c687d4426",
+							"itemSize": 1
+						},
+						"color": {
+							"count": 556,
+							"hash": "31babadf49065365ea016355aa60febc2ed1d9c80005a0625d29edf35d3518fb",
+							"itemSize": 3
+						},
+						"color_1": {
+							"count": 556,
+							"hash": "3eea1e9874abc53e932cdcfe2369e8416a5e30e9b2645c59b8683e5703860b8e",
+							"itemSize": 4
+						},
+						"normal": {
+							"count": 556,
+							"hash": "9ced6e1abbd06d36f3f3a3803bfc3bf591c232543ba8fcea3bc67021ab50e045",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 556,
+							"hash": "ae838757f70724f5b372c2fcb03074d53c36388f162a5847286c96edfb22677a",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 556,
+							"hash": "245062ff0a71326501455a3c7a4b90ebbb5bbaafcd70c2f7de295ace22d933ea",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 556,
+							"hash": "b202a0a140a8146687ac88dbba95662249238756a2249d1a24eb9eecca38bbea",
+							"itemSize": 4
+						},
+						"uv": {
+							"count": 556,
+							"hash": "5812babffb2e2e2cc88c9d812a2f4151ca923cb5b65b6b529ff94c0ea0196687",
+							"itemSize": 2
+						},
+						"uv1": {
+							"count": 556,
+							"hash": "b82aa07ee7d0fc73e17c4d2b2449d6fecb67d331532b75a827765e8285b908c3",
+							"itemSize": 2
+						},
+						"uv2": {
+							"count": 556,
+							"hash": "e59148bebf3f0f30aedbc20854ec451245c951bbbace4f354420e9a4e8513df9",
+							"itemSize": 2
+						},
+						"uv3": {
+							"count": 556,
+							"hash": "57c964bc675826af47b217f0cbd0cdd9bf741b8bb13eb5d64bf81c793eb46e5d",
+							"itemSize": 2
+						}
+					},
+					"index": {
+						"count": 2304,
+						"hash": "0bddb9286ccce52dc02106e3832f8153808a69c96f38341f5653fc5096eaae58"
+					},
+					"name": "Eyes001"
+				},
+				{
+					"attributes": {
+						"_source_vertex": {
+							"count": 7281,
+							"hash": "c3267997acf28d48e1d7ca57666c7de8daa2b29c98f89bf339206f71f724815e",
+							"itemSize": 1
+						},
+						"color": {
+							"count": 7281,
+							"hash": "9eced5a5d23f570ea0e2debf440ec5a107f214af15bf3523778c420438d75d83",
+							"itemSize": 3
+						},
+						"color_1": {
+							"count": 7281,
+							"hash": "3e02c10a2ed2d4cd938b5f1b572b1645ca6b4eec333e393ffbe775661f15f6d7",
+							"itemSize": 4
+						},
+						"normal": {
+							"count": 7281,
+							"hash": "7fcfe207e69cde2167bbafe12430715db1fade04c0f34b2dd35a0dc89b176033",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 7281,
+							"hash": "508ba07e0ecffce5f0d9de2229e7e8f8869805cb26566d3b0aca0c308b81fd49",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 7281,
+							"hash": "67fe21366decfb2be47caab3180250f39cc7f53d34d95ff64505876d9a2ff080",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 7281,
+							"hash": "5bc413e6514b02685ec573fc74f8aee1708582e7ce160e66d0bef9a0ddb53898",
+							"itemSize": 4
+						},
+						"uv": {
+							"count": 7281,
+							"hash": "a132a9c82c864efbd9066408ac7cfccbe96f2791ac47f3d2aacd291baec077b6",
+							"itemSize": 2
+						},
+						"uv1": {
+							"count": 7281,
+							"hash": "d5960f8abacb124aa332b2dc344cba815f14fd87769d466d2dd23f2c43c5578b",
+							"itemSize": 2
+						}
+					},
+					"index": {
+						"count": 37698,
+						"hash": "611b5cd4498cd050b88af2238dcc6398aae66a566c987f9c26c81ef1fb7e60d7"
+					},
+					"name": "SuperHero_Male001"
+				},
+				{
+					"attributes": {
+						"_source_vertex": {
+							"count": 466,
+							"hash": "aa36d840380ff5f03226c46b3ff9940c1490c1311cd5961cf5fd448d01fc177f",
+							"itemSize": 1
+						},
+						"normal": {
+							"count": 466,
+							"hash": "0d7e21f89c709c158755e814702fd1943ec8d0584c8e59b7ce78fcb1be4e76ca",
+							"itemSize": 3
+						},
+						"position": {
+							"count": 466,
+							"hash": "57ab75c367e3433b71ab5e347a20cdd65f2c9a74290c9902c4cae3ea1f628a00",
+							"itemSize": 3
+						},
+						"skinIndex": {
+							"count": 466,
+							"hash": "01c2c44a4f7d7e8ee2827d97ffe3040fa0073915e56428314df7b520de93f4a5",
+							"itemSize": 4
+						},
+						"skinWeight": {
+							"count": 466,
+							"hash": "a0ca1bb83babe525863f06eda00385bc695953fbd3a3e464bf719eafb24c9780",
+							"itemSize": 4
+						},
+						"uv": {
+							"count": 466,
+							"hash": "d82599c249aae2479e7dea7b44ee1ed68441ca968ffd2a3e34fe99d350d44197",
+							"itemSize": 2
+						}
+					},
+					"index": {
+						"count": 2490,
+						"hash": "b44c3971a5327b19a4e37fcada9938fac530dd1c58cb49bfc678e24da7be0658"
+					},
+					"name": "V2_Buzzed001"
+				}
+			]
+		}
+	},
+	"secondRoundTrip": {
+		"checks": {
+			"rig": true,
+			"binds": true,
+			"weights": true,
+			"uv": true,
+			"materials": true,
+			"hair": true,
+			"height": true,
+			"animations": true,
+			"clones": true
+		},
+		"passed": true,
+		"semanticHash": "677ff621095aaae05e91a46dc17b5c6f9decfe41838f888cf3f14681e4f1fcb0",
+		"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840"
+	},
+	"sourceHashesAfter": {
+		"C:/Users/jadcr/Documents/Code/game-engine/tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/recipes/authored-human-canonical-v1.recipe.json": "872d39e936dd0bf49c54cdc095a44e2c24d00199a0beaeb183819adfed753579",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "421b2c2d4643048ff596569cd07dc39968441e222922171ae7fcd6479a2cd1f7",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
+	},
+	"sourceHashesBefore": {
+		"C:/Users/jadcr/Documents/Code/game-engine/tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/recipes/authored-human-canonical-v1.recipe.json": "872d39e936dd0bf49c54cdc095a44e2c24d00199a0beaeb183819adfed753579",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.gltf": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+		"C:/Users/jadcr/Documents/Code/game-engine/packages/character-contract/src/character-component-registry.json": "421b2c2d4643048ff596569cd07dc39968441e222922171ae7fcd6479a2cd1f7",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf": "43752a4c8f2464eb2494a8ab179bf7ad237638a3d47fb3de0a38361db40e1451",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.bin": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_BaseColor.png": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+		"C:/Users/jadcr/Documents/Code/game-engine/public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/T_Hair_1_Normal.png": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb"
+	},
+	"sourceImmutable": true
+}

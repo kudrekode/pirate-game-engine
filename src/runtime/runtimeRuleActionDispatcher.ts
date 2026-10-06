@@ -72,6 +72,7 @@ function syncQuestProgress(
 	session: RuntimeSessionState,
 	emit: RuntimeRuleEventEmitter,
 ): void {
+	if (session.startupPending) return;
 	const beforeRewardedQuestIds = new Set(
 		session.runtimeQuestState.rewardedQuestIds,
 	);

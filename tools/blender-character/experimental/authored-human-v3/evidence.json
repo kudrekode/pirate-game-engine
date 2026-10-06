@@ -1,0 +1,968 @@
+{
+	"status": "FAIL: body-deformation stop condition; garment correction not attempted",
+	"inputs": {
+		"preservedV2": {
+			"candidate.blend": "ebd603dc9ae51d121d53acfc60d5fb79eac29dbcb14348e0efc887e3471735a4",
+			"canonical-neutral.blend": "c9031dcf5aca1a643804b6872a18352f6d5a1e8d5df953a01b5d02163d7b8c5b",
+			"deformation-evidence.json": "70af439d171ce5eb6c87ca84c10bed69f129a385913ddda81e7286ea9ed9784f",
+			"License_Standard.txt": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e",
+			"manifest.json": "ababd9cd24e64cf449c66997bdfcd2b339effafc42592e4faf986af021f77dab",
+			"README.md": "82bc1e7450cfd86a77b53ae02b5ab4a7c17dd248049e07c12dbfc5777b78401a",
+			"roundtrip.json": "bec78ff3bddd12074de3e24737b684c5570a62541d73a9428f7b4417b38202a8",
+			"source-reopen.json": "af963ed50f0a4d8fb51f067d695b62e6c2eec51945bb2fb2ca91ca4a9ff0893f",
+			"targets.json": "c843b76311ec2aa8ecad29744eb61e6ab36d33607f9e37c24b1aacb2401e4c46",
+			"vendor-hashes.json": "cef8e326d310236c88cc397c9f5041d7f74d4da96adba54f99b4fa7e9bf32a09"
+		},
+		"cases": {
+			"dressed-neutral": {},
+			"combined": {
+				"headWidth": 1,
+				"jaw": 1,
+				"nose": 1,
+				"mass": 1,
+				"athletic": 1,
+				"broadFrame": 1
+			}
+		},
+		"exports": {
+			"neutral": "21795103f9d988c877053a724fb47f5710c01da9c78afdddf99ff65a0b093897",
+			"dressed-neutral": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"combined": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7"
+		},
+		"animations": {
+			"idle": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+			"walk-in-place": "00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c"
+		}
+	},
+	"localWeightDiagnosis": {
+		"raise": {
+			"upperarmDirectionDifferenceDegrees": 0.0,
+			"assistedShoulderPivotTravelMm": 64.23061448048006,
+			"oldShoulderPivotTravelMm": 0.0,
+			"clavicleDegrees": 20,
+			"upperarmDegrees": 40,
+			"forearmDegrees": 15,
+			"restRigUnchanged": true
+		},
+		"bodyWeightAblation": {
+			"note": "Numeric two-vertex counterfactual only; no weights changed, no accepted body correction. It isolates the weight-gradient contribution, not a complete artistic repair.",
+			"edges": [
+				{
+					"pose": "idle",
+					"region": "shoulder",
+					"vertices": [238, 398],
+					"ratio": 3.1476702666158713,
+					"restMm": 13.72028011151722,
+					"midpoint": [
+						0.1755889654159546, 0.11726652085781097, 1.5093650817871094
+					],
+					"weights": [
+						{
+							"clavicle_l": 0.6126074194908142,
+							"upperarm_l": 0.22214864194393158,
+							"spine_03": 0.10307767987251282,
+							"neck_01": 0.062166210263967514
+						},
+						{
+							"upperarm_l": 0.5126773118972778,
+							"clavicle_l": 0.4233173429965973,
+							"spine_03": 0.06400536745786667
+						}
+					],
+					"manualSkinningErrorMm": 0.00012489448945403258,
+					"sameEdgeMeanWeightRatio": 0.8251932131936426
+				},
+				{
+					"pose": "elbow",
+					"region": "elbow",
+					"vertices": [553, 555],
+					"ratio": 4.2468335203629355,
+					"restMm": 23.74416997067703,
+					"midpoint": [
+						0.40705960988998413, 0.13322091102600098, 1.4269800186157227
+					],
+					"weights": [
+						{
+							"lowerarm_l": 0.7678918838500977,
+							"upperarm_l": 0.23210816085338593
+						},
+						{
+							"upperarm_l": 0.8784221410751343,
+							"lowerarm_l": 0.12157784402370453
+						}
+					],
+					"manualSkinningErrorMm": 0.0001228781230931777,
+					"sameEdgeMeanWeightRatio": 0.5456234160382927
+				},
+				{
+					"pose": "crouch",
+					"region": "knee",
+					"vertices": [2628, 3380],
+					"ratio": 2.939467816236442,
+					"restMm": 25.100626336634452,
+					"midpoint": [
+						-0.11059349030256271, -0.028972752392292023, 0.5495395660400391
+					],
+					"weights": [
+						{
+							"thigh_r": 0.7440438866615295,
+							"calf_r": 0.25595614314079285
+						},
+						{
+							"calf_r": 0.7991877794265747,
+							"thigh_r": 0.20081225037574768
+						}
+					],
+					"manualSkinningErrorMm": 6.006850114687196e-5,
+					"sameEdgeMeanWeightRatio": 0.5676643703586036
+				},
+				{
+					"pose": "crouch",
+					"region": "groin",
+					"vertices": [2751, 3050],
+					"ratio": 5.320084017059148,
+					"restMm": 4.194536650991921,
+					"midpoint": [
+						-0.010199509561061859, 0.06710071116685867, 0.9004955887794495
+					],
+					"weights": [
+						{
+							"pelvis": 0.5711180567741394,
+							"thigh_r": 0.41229701042175293,
+							"thigh_l": 0.016584910452365875
+						},
+						{
+							"pelvis": 0.7771430611610413,
+							"thigh_r": 0.2034948468208313,
+							"thigh_l": 0.019362080842256546
+						}
+					],
+					"manualSkinningErrorMm": 5.9611920288969795e-5,
+					"sameEdgeMeanWeightRatio": 0.8310005293093595
+				}
+			]
+		},
+		"bendConstruction": [
+			{
+				"pose": "elbow",
+				"restSegmentAngleDegrees": 3.5222002754852264,
+				"posedSegmentAngleDegrees": 118.52219628972358,
+				"addedFlexionDegrees": 114.99999601423835
+			},
+			{
+				"pose": "crouch",
+				"restSegmentAngleDegrees": 6.419212418784852,
+				"posedSegmentAngleDegrees": 131.41919170697344,
+				"addedFlexionDegrees": 124.99997928818858
+			}
+		],
+		"garment": {
+			"thicknessPairs": 4446,
+			"pairsWithL1DifferenceAbovePoint1": 11,
+			"largestShellWeightDifferences": [
+				{
+					"sourceVertices": [1057, 5503],
+					"weightL1Difference": 0.27007532492280006,
+					"position": [
+						-0.2006397843360901, 0.13964278995990753, 1.3928887844085693
+					],
+					"weights": [
+						{
+							"upperarm_r": 0.6822948455810547,
+							"spine_03": 0.19033358991146088,
+							"clavicle_r": 0.068282850086689,
+							"spine_02": 0.05908874049782753
+						},
+						{
+							"upperarm_r": 0.547257125377655,
+							"spine_03": 0.26970797777175903,
+							"spine_02": 0.1011822521686554,
+							"clavicle_r": 0.08185255527496338
+						}
+					]
+				},
+				{
+					"sourceVertices": [1031, 5477],
+					"weightL1Difference": 0.2657380700111389,
+					"position": [
+						0.20066483318805695, 0.1394195854663849, 1.3930108547210693
+					],
+					"weights": [
+						{
+							"upperarm_l": 0.6807314157485962,
+							"spine_03": 0.19115379452705383,
+							"clavicle_l": 0.06820839643478394,
+							"spine_02": 0.05990641564130783
+						},
+						{
+							"upperarm_l": 0.5478624105453491,
+							"spine_03": 0.26939961314201355,
+							"spine_02": 0.10121473670005798,
+							"clavicle_l": 0.08152332156896591
+						}
+					]
+				},
+				{
+					"sourceVertices": [960, 5406],
+					"weightL1Difference": 0.2286524996161461,
+					"position": [
+						0.19219651818275452, 0.15538522601127625, 1.395611047744751
+					],
+					"weights": [
+						{
+							"upperarm_l": 0.4340701401233673,
+							"spine_03": 0.32867875695228577,
+							"clavicle_l": 0.13322287797927856,
+							"spine_02": 0.10402821004390717
+						},
+						{
+							"upperarm_l": 0.5483964085578918,
+							"spine_03": 0.26231008768081665,
+							"clavicle_l": 0.10777001082897186,
+							"spine_02": 0.08152351528406143
+						}
+					]
+				}
+			],
+			"raisedShoulderEdges": {
+				"edges": 6289,
+				"over2x": 67,
+				"top": [
+					{
+						"vertices": [1031, 5477],
+						"ratio": 6.024879622461605,
+						"restMm": 2.500020431969641,
+						"midpoint": [
+							0.20066483318805695, 0.1394195854663849, 1.3930108547210693
+						],
+						"weights": [
+							{
+								"upperarm_l": 0.6807314157485962,
+								"spine_03": 0.19115379452705383,
+								"clavicle_l": 0.06820839643478394,
+								"spine_02": 0.05990641564130783
+							},
+							{
+								"upperarm_l": 0.5478624105453491,
+								"spine_03": 0.26939961314201355,
+								"spine_02": 0.10121473670005798,
+								"clavicle_l": 0.08152332156896591
+							}
+						]
+					},
+					{
+						"vertices": [3345, 7791],
+						"ratio": 3.7950392166718876,
+						"restMm": 2.500008142492716,
+						"midpoint": [
+							0.19701236486434937, 0.1564943492412567, 1.4068820476531982
+						],
+						"weights": [
+							{
+								"upperarm_l": 0.7185493111610413,
+								"spine_03": 0.16395622491836548,
+								"clavicle_l": 0.08140575885772705,
+								"spine_02": 0.03608869016170502
+							},
+							{
+								"upperarm_l": 0.6273506283760071,
+								"spine_03": 0.21555891633033752,
+								"clavicle_l": 0.09813755750656128,
+								"spine_02": 0.05895289406180382
+							}
+						]
+					},
+					{
+						"vertices": [1031, 3344],
+						"ratio": 3.4241490856266137,
+						"restMm": 11.46477737631221,
+						"midpoint": [
+							0.2012278437614441, 0.1380784958600998, 1.3873369693756104
+						],
+						"weights": [
+							{
+								"upperarm_l": 0.6807314157485962,
+								"spine_03": 0.19115379452705383,
+								"clavicle_l": 0.06820839643478394,
+								"spine_02": 0.05990641564130783
+							},
+							{
+								"spine_03": 0.38704726099967957,
+								"upperarm_l": 0.3590649366378784,
+								"spine_02": 0.15993395447731018,
+								"clavicle_l": 0.09395390748977661
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	"roundtrip": {
+		"note": "Transport only. Image decoding stubbed; visual failure is not overridden.",
+		"cases": {
+			"dressed-neutral": {
+				"sha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"meshes": 5,
+				"joints": 65,
+				"triangles": 32940,
+				"preservedEntireV2Asset": true,
+				"weightError": 4.7963112592697144e-8,
+				"restDifference": 3.5762786865234375e-7,
+				"bindDifference": 0,
+				"animation": [
+					{
+						"name": "GoldenReference_Idle",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					},
+					{
+						"name": "GoldenReference_Walk_InPlace",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					}
+				]
+			},
+			"combined": {
+				"sha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"meshes": 5,
+				"joints": 65,
+				"triangles": 32940,
+				"preservedEntireV2Asset": true,
+				"weightError": 4.7963112592697144e-8,
+				"restDifference": 3.5762786865234375e-7,
+				"bindDifference": 0,
+				"animation": [
+					{
+						"name": "GoldenReference_Idle",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					},
+					{
+						"name": "GoldenReference_Walk_InPlace",
+						"tracks": 23,
+						"samples": 5,
+						"cloneIsolated": true,
+						"restRestored": true
+					}
+				]
+			}
+		}
+	},
+	"measurements": {
+		"dressed-neutral": {
+			"rest": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 1.0000464163358302,
+						"minEdgeStretch": 0.9999405683354808
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 1.0000186389546508,
+						"minEdgeStretch": 0.9999616699159948,
+						"samples": 26684,
+						"minimumSignedGapMm": 4.0198864953708835,
+						"samplesInsideBeyond1mm": 0
+					}
+				}
+			},
+			"idle": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 3.1476702666158713,
+						"minEdgeStretch": 0.5408369906791454
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 3.7753682186875657,
+						"minEdgeStretch": 0.499428258153446,
+						"samples": 26684,
+						"minimumSignedGapMm": -14.182534301653504,
+						"samplesInsideBeyond1mm": 547
+					}
+				}
+			},
+			"walk": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 3.6635622665495653,
+						"minEdgeStretch": 0.3289771344577165
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 3.8043590511077845,
+						"minEdgeStretch": 0.3733586976145503,
+						"samples": 26684,
+						"minimumSignedGapMm": -11.469619315903401,
+						"samplesInsideBeyond1mm": 292
+					}
+				}
+			},
+			"raised-arm": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 2.892605776634815,
+						"minEdgeStretch": 0.26921683684522957
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 6.024879622461605,
+						"minEdgeStretch": 0.3256844756148958,
+						"samples": 26684,
+						"minimumSignedGapMm": -10.58656582608819,
+						"samplesInsideBeyond1mm": 96
+					}
+				}
+			},
+			"crouch": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 5.320084017059148,
+						"minEdgeStretch": 0.1900588179070365
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 2.947197662096948,
+						"minEdgeStretch": 0.13274837665215686,
+						"samples": 26684,
+						"minimumSignedGapMm": -13.1580057204701,
+						"samplesInsideBeyond1mm": 545
+					}
+				}
+			},
+			"raised-arm-old": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 2.3484051457631443,
+						"minEdgeStretch": 0.1781468147272021
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 4.193522010615886,
+						"minEdgeStretch": 0.3256844756148958,
+						"samples": 26684,
+						"minimumSignedGapMm": -10.58656582608819,
+						"samplesInsideBeyond1mm": 96
+					}
+				}
+			},
+			"elbow": {
+				"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 4.2468335203629355,
+						"minEdgeStretch": 0.32977412687798824
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 2.109862630795197,
+						"minEdgeStretch": 0.4777787795378319,
+						"samples": 26684,
+						"minimumSignedGapMm": -9.227993432432413,
+						"samplesInsideBeyond1mm": 128
+					}
+				}
+			}
+		},
+		"combined": {
+			"rest": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 1.0000462346452759,
+						"minEdgeStretch": 0.9999281461207279
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 1.0000118007259218,
+						"minEdgeStretch": 0.999958280927772,
+						"samples": 26684,
+						"minimumSignedGapMm": 4.2666157532949,
+						"samplesInsideBeyond1mm": 0
+					}
+				}
+			},
+			"idle": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 3.222644860725451,
+						"minEdgeStretch": 0.4603089254792223
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 3.185771586664471,
+						"minEdgeStretch": 0.5307172725463914,
+						"samples": 26684,
+						"minimumSignedGapMm": -15.402420329337474,
+						"samplesInsideBeyond1mm": 656
+					}
+				}
+			},
+			"walk": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 3.8229524847317893,
+						"minEdgeStretch": 0.29186308851130166
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 4.964851219217592,
+						"minEdgeStretch": 0.3469694031704505,
+						"samples": 26684,
+						"minimumSignedGapMm": -13.663309196999762,
+						"samplesInsideBeyond1mm": 427
+					}
+				}
+			},
+			"raised-arm": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 3.145913978770347,
+						"minEdgeStretch": 0.2664655223550733
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 7.127328553813881,
+						"minEdgeStretch": 0.3055425551894843,
+						"samples": 26684,
+						"minimumSignedGapMm": -13.681611744686961,
+						"samplesInsideBeyond1mm": 176
+					}
+				}
+			},
+			"crouch": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 5.565103123633948,
+						"minEdgeStretch": 0.20519863834144073
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 3.8412855799075403,
+						"minEdgeStretch": 0.12611926936646772,
+						"samples": 26684,
+						"minimumSignedGapMm": -13.896559743443504,
+						"samplesInsideBeyond1mm": 568
+					}
+				}
+			},
+			"raised-arm-old": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 2.400785483468923,
+						"minEdgeStretch": 0.1850507871966341
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 4.8186162816191604,
+						"minEdgeStretch": 0.3055425551894843,
+						"samples": 26684,
+						"minimumSignedGapMm": -13.681611744686961,
+						"samplesInsideBeyond1mm": 176
+					}
+				}
+			},
+			"elbow": {
+				"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+				"measurements": {
+					"SuperHero_Male.001": {
+						"maxEdgeStretch": 4.486054233951041,
+						"minEdgeStretch": 0.3190094068888497
+					},
+					"V2_Tank.001": {
+						"maxEdgeStretch": 2.8426867504959383,
+						"minEdgeStretch": 0.48203036162745416,
+						"samples": 26684,
+						"minimumSignedGapMm": -10.804864228703082,
+						"samplesInsideBeyond1mm": 145
+					}
+				}
+			}
+		}
+	},
+	"renders": {
+		"dressed-neutral-bare.jpg": [
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/rest/front.png",
+				"sha256": "b30e4106032699c9fea6a66176e1b4bc5fb5d217f2b81fba447dadcc33ec6fee",
+				"label": "rest / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/idle/front.png",
+				"sha256": "7ce824d7f7a49fc35cf9b7145d8422227b0fba7f38a6c3cc9d8c0a6bf01545ca",
+				"label": "idle / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/walk/front.png",
+				"sha256": "99e528919fa8afcd4d71e27d90c95628d987c65128754507a96e7d606aa2b4b4",
+				"label": "walk / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/raised-arm/front.png",
+				"sha256": "26d132f3e323fb3adab9f71926d38b526abf82e6780a3965e919e6b27dd04e5a",
+				"label": "raised-arm / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/crouch/front.png",
+				"sha256": "a7414527edc88c30258c90b66ebf83b519e20411e128e2401e76fbaa65908e50",
+				"label": "crouch / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/rest/side.png",
+				"sha256": "4a7e773c40dbfbef4e0d711655980d05405edfb2c52b233ad6f92b4d42a87d5a",
+				"label": "rest / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/idle/side.png",
+				"sha256": "eb3314636d7581de6cdeeb5b12d7aa8a95898ffb7fbfaf03f1a06b3a1f07652d",
+				"label": "idle / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/walk/side.png",
+				"sha256": "40dabed3ccce7df21e22e51220fada7d40e14d0083700be9e759a25151901408",
+				"label": "walk / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/raised-arm/side.png",
+				"sha256": "80250d3f1eb416d74e2de699ef71e333c07f4112658f65c475bfef0cab3a568e",
+				"label": "raised-arm / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/crouch/side.png",
+				"sha256": "6b49ae2bd25d833ced069fbf6b6094cc84b8702ede8a20f7b431c53299c1eeee",
+				"label": "crouch / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/rest/torso-back.png",
+				"sha256": "95e14f1d640241123b246c8221ce132587f8969aa8ac7e3070846847da3e5357",
+				"label": "rest / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/idle/torso-back.png",
+				"sha256": "e962f19adc47255c27152376280cc5ae835d5caae4162200c5277bec6244971d",
+				"label": "idle / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/walk/torso-back.png",
+				"sha256": "ed656685c67420427d111e5faa276329f49579156e8755ee51b5f6581fc454a5",
+				"label": "walk / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/raised-arm/torso-back.png",
+				"sha256": "1f9952ad2af6735e70e6f43722a6094ad8fe2d196346a099d98b6a050d83774c",
+				"label": "raised-arm / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/crouch/torso-back.png",
+				"sha256": "39ea256cc12f69ad5cc2c021e0bf195b62da8544af21281960f0303656a8d47f",
+				"label": "crouch / torso-back"
+			}
+		],
+		"dressed-neutral.jpg": [
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/rest/front.png",
+				"sha256": "f42dbefa14ef94b0371f3b160238a2c61c9c9e16ffe0ec39cd3a7386e747a8e4",
+				"label": "rest / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/idle/front.png",
+				"sha256": "8a3f4c57cb33991824ba2a2928096d4c8736579f0902f04f96886415deae6512",
+				"label": "idle / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/walk/front.png",
+				"sha256": "2ce010c564f4e06cf73f1dd98fb93563cc8bc48bef8ff7c496de313852329cbd",
+				"label": "walk / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/raised-arm/front.png",
+				"sha256": "d2765324a87f4992503cce3e107d03404b9367cf600f678b6579be2e6846e22b",
+				"label": "raised-arm / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/crouch/front.png",
+				"sha256": "48c63d7fe61fc32021a2e7357025a5c84a6a83258b52ca498a1ed2f85c208873",
+				"label": "crouch / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/rest/side.png",
+				"sha256": "aed478c7a920d93eda5e0a443b3b442902a20969ed2e89cc4d146c5aebfabb42",
+				"label": "rest / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/idle/side.png",
+				"sha256": "55bd083668ab805690dad253bfaaaef4c5683bf00bdce50b39eb0043e587a36a",
+				"label": "idle / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/walk/side.png",
+				"sha256": "f931cf87de721864bcd7c38d43c2bfa5ec3b288c46b1dc54a9dee82f9543e306",
+				"label": "walk / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/raised-arm/side.png",
+				"sha256": "e528963d62e799660fe82ad84733167455869879e5506a6af546202336f505fd",
+				"label": "raised-arm / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/crouch/side.png",
+				"sha256": "0d3ee7cf9dc6d2df504f02a52ac0aa708e780cb00c895923911493e82fbf6132",
+				"label": "crouch / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/rest/torso-back.png",
+				"sha256": "bdd0e0895f40577c9a8ca12d60f42a41cf7adb6d543e739759cf0fe708582219",
+				"label": "rest / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/idle/torso-back.png",
+				"sha256": "cf86b1e7ef70c4282be54aec04b7a992bce4539d1f68d666f55f7ba33964e662",
+				"label": "idle / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/walk/torso-back.png",
+				"sha256": "fbbda032f5f140f086b5580e23f5f7d2e3c10036fd833706debd0e3fe4f004eb",
+				"label": "walk / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/raised-arm/torso-back.png",
+				"sha256": "34eb10ed03b029dee3f78da18a9cf10512b97518693c058c60265bdaab1a9206",
+				"label": "raised-arm / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/crouch/torso-back.png",
+				"sha256": "f89d590f558ef40867b0ca8cc17e24f20dbcbd56d25497e0c18f65c7a70dafaa",
+				"label": "crouch / torso-back"
+			}
+		],
+		"combined-bare.jpg": [
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/rest/front.png",
+				"sha256": "c034d3390b0b80ab32e6654d06727218d7d7c6e3f2898f2403aaa5b4b45e5a64",
+				"label": "rest / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/idle/front.png",
+				"sha256": "7fd1d93b7a2efe73a49026a0592cc62e003c48d27f6657587eac78600405d5bb",
+				"label": "idle / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/walk/front.png",
+				"sha256": "f1cc08b438739311801e65332c8b50165e6b8eb65c724e6b868d27279dcb1faa",
+				"label": "walk / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/raised-arm/front.png",
+				"sha256": "a9d72a66fdae0abe3539beba3fcd6bb490377323e25e7f3aad6ec5e85ee59856",
+				"label": "raised-arm / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/crouch/front.png",
+				"sha256": "37235964b14cbb240a80918465a3e6c42a5bce3c61598365e679ff21c51ce89d",
+				"label": "crouch / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/rest/side.png",
+				"sha256": "99bd1dd4b199f1c663b9c799f781f5a6048075d71444c0798e4feb486c1a43fe",
+				"label": "rest / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/idle/side.png",
+				"sha256": "a370e8abf59838f4372f31ef832e9934fc0dbcf4e113b3a0aa4f4a116451d8dd",
+				"label": "idle / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/walk/side.png",
+				"sha256": "8a944b91c16c5d74d99b3380e3e80c4af0f2164dbffcfee141ac809ea67b0055",
+				"label": "walk / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/raised-arm/side.png",
+				"sha256": "edfccc8734b3c16c65f5bb9ae27b080524d8ad811729076e8b1c63cde1ed7740",
+				"label": "raised-arm / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/crouch/side.png",
+				"sha256": "e172b1ca6b6376bc2a4d219ae0e7f74657f843c911ecf54010460becfeab7523",
+				"label": "crouch / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/rest/torso-back.png",
+				"sha256": "735afd991db2d0a8584cd0070349c2c65db9646d8a4d257d26215e80743dc00f",
+				"label": "rest / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/idle/torso-back.png",
+				"sha256": "edd3ad58e380e5fa60d91a6dd8a55bb5c189c42499ecda5a4d823943095fe9cd",
+				"label": "idle / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/walk/torso-back.png",
+				"sha256": "effae9dbabee697ddfbd81bf4d82643cc5e5b7f042d0fefed07aa8bd0c49123e",
+				"label": "walk / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/raised-arm/torso-back.png",
+				"sha256": "38626e9eb174230036587041f2823417f14ff46d61528c143369a3f865d6eb07",
+				"label": "raised-arm / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/crouch/torso-back.png",
+				"sha256": "38e6b1bc000a6276b5dc7e367494a5a3688466b8c4e277417a914f7a476c4cd4",
+				"label": "crouch / torso-back"
+			}
+		],
+		"combined.jpg": [
+			{
+				"render": "test-results/authored-human-v3/renders/combined/rest/front.png",
+				"sha256": "be3ce5779ccf98b965b7f1b23b1aca070a9c016dfdce06356018c0a2ec5b76a7",
+				"label": "rest / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/idle/front.png",
+				"sha256": "1d8f008c011aed6175fa3002591c9f1526d1eab6e569580fe6679a9fbb8441fb",
+				"label": "idle / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/walk/front.png",
+				"sha256": "6466a7ab0a0a4714296d1e50a9bd2fc32cfe359097aad033c6464e284434554d",
+				"label": "walk / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/raised-arm/front.png",
+				"sha256": "9b23b7638cac1c72720fad93fe761454b990d84f61f47939fdd48c1de280b0b4",
+				"label": "raised-arm / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/crouch/front.png",
+				"sha256": "793241a15caa6ea069c44935f690b39bef07234a9392d93c2bbec620ced46944",
+				"label": "crouch / front"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/rest/side.png",
+				"sha256": "7a93a37ad084a200ce00b922c8dc0cc88490dc7323c865167afa9e0bf5b11020",
+				"label": "rest / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/idle/side.png",
+				"sha256": "47454dd0d989cba4ed09ea81c5976e9f2c8c43b1e49ef08c3d3a2c9d39e8a43d",
+				"label": "idle / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/walk/side.png",
+				"sha256": "ac72d8630733b55f6ced875772dce20217d0a893b13782b180d40e9b30a3d378",
+				"label": "walk / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/raised-arm/side.png",
+				"sha256": "1249e63ab33f13011abd414e7ba091be2dbb5fd1e1deb3def1a9dc2b8c8dbac8",
+				"label": "raised-arm / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/crouch/side.png",
+				"sha256": "934e652b25864528b50a12044d463d58a387c217941ef9824005a67acc1298b6",
+				"label": "crouch / side"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/rest/torso-back.png",
+				"sha256": "79ba4bcba9cb99291747d5526ec8de01b911ca5b167c7f4dc68c45864b3d17e6",
+				"label": "rest / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/idle/torso-back.png",
+				"sha256": "9b7cf39b27990add8e3d44db274927f5ee04e079ed8806b96196766406869db3",
+				"label": "idle / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/walk/torso-back.png",
+				"sha256": "a809b8bab2993ac916e6a18f23c0504f11a6759a001b2dc8ecb1a75e4d45ef5d",
+				"label": "walk / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/raised-arm/torso-back.png",
+				"sha256": "56f4495c73c47045af6abc392962cf3f3c2b28e14ec2ffe56f3b0baa704b7b72",
+				"label": "raised-arm / torso-back"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/crouch/torso-back.png",
+				"sha256": "94254d32ec4aadc5fe40d6704a1765ede8162ca309e29c49f379fbb1ebfebdac",
+				"label": "crouch / torso-back"
+			}
+		],
+		"body-stop.jpg": [
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/elbow/elbow-side.png",
+				"sha256": "f40212f25402bfef08b874d727783cec3beb6442406b96cd75b5fb250dc18308",
+				"label": "neutral / elbow"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/crouch/knee-side.png",
+				"sha256": "07fdfc51d1999a0222ab73978724750ca4e621d3ca10929abda1f43a366dd91b",
+				"label": "neutral / crouch"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/elbow/elbow-side.png",
+				"sha256": "812083889a57b5ddef9497e63d789aed175b33427770c7a1d9242a1baa41d6d1",
+				"label": "combined / elbow"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/crouch/knee-side.png",
+				"sha256": "57088e7dc6c32876b5c3ace3b080b1ec55dfde73a6a528560b504936e757f2c8",
+				"label": "combined / crouch"
+			}
+		],
+		"raise-comparison.jpg": [
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/raised-arm-old/torso-back.png",
+				"sha256": "52a3c9d8362a9762f4b227d6b2403a0f19694bd0bf026aff5ed0c88affaaa30d",
+				"label": "Body / old raise"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral-bare/raised-arm/torso-back.png",
+				"sha256": "1f9952ad2af6735e70e6f43722a6094ad8fe2d196346a099d98b6a050d83774c",
+				"label": "Body / clavicle-assisted"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/raised-arm-old/torso-side.png",
+				"sha256": "3c8916ef1220d1b8999f9522ecbcdafbf932f406e95f6c0cf3bf8d3303b608fc",
+				"label": "Tank / old raise"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/dressed-neutral/raised-arm/torso-side.png",
+				"sha256": "c99ebbe34913b35843af5db7f6da3277dd28e206dc85925f8f8be0478dc169cb",
+				"label": "Tank / clavicle-assisted"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/raised-arm-old/torso-back.png",
+				"sha256": "cc2877ab614f99e8dfd1e004b2262b26a8a6416925f5ff06f91a72f74e811dec",
+				"label": "Body / old raise"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined-bare/raised-arm/torso-back.png",
+				"sha256": "38626e9eb174230036587041f2823417f14ff46d61528c143369a3f865d6eb07",
+				"label": "Body / clavicle-assisted"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/raised-arm-old/torso-side.png",
+				"sha256": "a6dd7b7d0cee59eee8fb37b24c591caa4b8b64c7b651a87fb7c9d3af2f30bb87",
+				"label": "Tank / old raise"
+			},
+			{
+				"render": "test-results/authored-human-v3/renders/combined/raised-arm/torso-side.png",
+				"sha256": "662ed9ea9760f530886e962baaebcca57558c93dc1d15e98cebdb1b658769b08",
+				"label": "Tank / clavicle-assisted"
+			}
+		]
+	},
+	"sourceScripts": {
+		"authored_human_v3.py": "e83574bc36a24616d20f3b04d518b9957b7e01fc17ba9185c8e2c4c2eb22d3fe",
+		"authored_human_v3_test.py": "1487b00bff4466cb236253b7fa42c6e8baac676d9a8fb5e8b26d803a573551f1",
+		"validate-authored-human-v3.mjs": "71d64665ec7c03ed543b21c24f388cf122577117c8aa91b946ca684d7c22b9b0",
+		"authored_human_v3_evidence.py": "9fd199b234b0f4d76ffe15c3baf16e834f453b40f554c7a5c1ee02f16ca438b6"
+	}
+}

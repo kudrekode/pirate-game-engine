@@ -1,3 +1,4 @@
+import { clothingSourcePaths } from "./clothing-contract.mjs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
@@ -11,7 +12,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
+import { promisify, isDeepStrictEqual } from "node:util";
 import {
 	buildHeadlessBlenderArguments,
 	discoverBlender,
@@ -48,6 +49,9 @@ import {
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
 import { validateProceduralMannequinArtifact } from "./procedural-mannequin-roundtrip.mjs";
+import { AUTHORED_HUMAN_SOURCE } from "./authored-human-contract.mjs";
+import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
+import { authoredHumanManifest } from "./authored-human-family.mjs";
 
 const execFileAsync = promisify(execFile);
 export const PROCEDURAL_MANNEQUIN_PATHS = Object.freeze({
@@ -64,6 +68,13 @@ export const PROCEDURAL_MANNEQUIN_PATHS = Object.freeze({
 		"public/assets/source/quaternius/Base Characters/Godot - UE/Superhero_Male_FullBody.bin",
 });
 const COMPILER_SOURCE_PATHS = [
+	"tools/blender-character/authored_human_clothing.py",
+	"tools/blender-character/clothing-contract.mjs",
+	"tools/blender-character/generate_authored_human.py",
+	"tools/blender-character/authored-human-contract.mjs",
+	"tools/blender-character/authored-human-roundtrip.mjs",
+	"tools/blender-character/authored-human-family.mjs",
+	"tools/blender-character/anatomy_invariants.py",
 	"tools/blender-character/generate_procedural_mannequin.py",
 	"tools/blender-character/procedural-mannequin-compiler.mjs",
 	"tools/blender-character/procedural-mannequin-contract.mjs",
@@ -164,6 +175,7 @@ async function compilerHash(workspaceRoot = process.cwd()) {
 }
 
 async function runPass({
+	authored = false,
 	blender,
 	directory,
 	execFileImpl = execFileAsync,
@@ -171,6 +183,7 @@ async function runPass({
 	templatePath,
 	workspaceRoot = process.cwd(),
 }) {
+	const startedAt = performance.now();
 	const outputPath = path.join(directory, OUTPUT_NAMES.glb);
 	const reportPath = path.join(directory, "blender-report.json");
 	const scriptArguments = buildProceduralMannequinScriptArguments({
@@ -182,7 +195,12 @@ async function runPass({
 		workspaceRoot,
 	});
 	const blenderArguments = buildHeadlessBlenderArguments(
-		path.resolve(workspaceRoot, PROCEDURAL_MANNEQUIN_PATHS.script),
+		path.resolve(
+			workspaceRoot,
+			authored
+				? "tools/blender-character/generate_authored_human.py"
+				: PROCEDURAL_MANNEQUIN_PATHS.script,
+		),
 		scriptArguments,
 	);
 	const { stderr, stdout } = await execFileImpl(blender, blenderArguments, {
@@ -192,6 +210,7 @@ async function runPass({
 		windowsHide: true,
 	});
 	return {
+		durationMs: performance.now() - startedAt,
 		blenderArguments,
 		outputHash: await hashFile(outputPath),
 		outputPath,
@@ -224,6 +243,36 @@ export async function validateInstalledProceduralMannequin({
 		);
 	}
 	const artifactPath = path.join(outputDirectory, OUTPUT_NAMES.glb);
+	if (parsed.value.geometrySource?.family === "authored-human") {
+		const validation = await validateAuthoredHumanArtifact({
+			artifactPath,
+			recipe: parsed.value,
+			workspaceRoot,
+		});
+		const manifest = JSON.parse(
+			await readFile(path.join(outputDirectory, OUTPUT_NAMES.manifest), "utf8"),
+		);
+		const checks = {
+			artifact: validation.passed,
+			clothing: isDeepStrictEqual(manifest.clothing, parsed.value.clothing),
+			outputHash: manifest.outputHash === validation.outputHash,
+			recipeHash:
+				manifest.recipeHash === hashProceduralMannequinRecipe(parsed.value),
+			identity: isDeepStrictEqual(
+				manifest.geometrySource,
+				parsed.value.geometrySource,
+			),
+			topology:
+				manifest.topology?.fingerprint === validation.topologyFingerprint,
+			skeleton: manifest.skeletonSignature === validation.skeletonSignature,
+		};
+		return {
+			passed: Object.values(checks).every(Boolean),
+			checks,
+			manifest,
+			validation,
+		};
+	}
 	const [validation, manifest, outputHash] = await Promise.all([
 		validateProceduralMannequinArtifact({
 			artifactPath,
@@ -305,6 +354,7 @@ export async function validateInstalledProceduralMannequin({
 }
 
 export async function compileProceduralMannequin({
+	mode = "full",
 	blender: requestedBlender,
 	clean = false,
 	execFileImpl = execFileAsync,
@@ -314,6 +364,8 @@ export async function compileProceduralMannequin({
 	templatePath = PROCEDURAL_MANNEQUIN_PATHS.template,
 	workspaceRoot = process.cwd(),
 } = {}) {
+	if (!["preview", "full"].includes(mode))
+		throw new Error("Unknown generation mode.");
 	const compilationStartedAt = performance.now();
 	const rawRecipe = JSON.parse(await readFile(recipePath, "utf8"));
 	const parsed = validateProceduralMannequinRecipe(rawRecipe);
@@ -323,6 +375,7 @@ export async function compileProceduralMannequin({
 		);
 	}
 	const recipe = parsed.value;
+	const authored = recipe.geometrySource?.family === "authored-human";
 	const registryValidation = await validateCharacterComponentRegistry({
 		workspaceRoot,
 	});
@@ -339,6 +392,11 @@ export async function compileProceduralMannequin({
 		path.basename(PROCEDURAL_MANNEQUIN_PATHS.templateBuffer),
 	);
 	const immutablePaths = [
+		...(authored
+			? [AUTHORED_HUMAN_SOURCE, ...clothingSourcePaths()].map((p) =>
+					path.resolve(workspaceRoot, p),
+				)
+			: []),
 		recipePath,
 		templatePath,
 		templateBufferPath,
@@ -374,6 +432,7 @@ export async function compileProceduralMannequin({
 			),
 		]);
 		const first = await runPass({
+			authored,
 			blender,
 			directory: firstDirectory,
 			execFileImpl,
@@ -381,16 +440,24 @@ export async function compileProceduralMannequin({
 			templatePath,
 			workspaceRoot,
 		});
-		const second = await runPass({
-			blender,
-			directory: secondDirectory,
-			execFileImpl,
-			recipePath: canonicalRecipePath,
-			templatePath,
-			workspaceRoot,
-		});
+		const second =
+			mode === "full"
+				? await runPass({
+						authored,
+						blender,
+						directory: secondDirectory,
+						execFileImpl,
+						recipePath: canonicalRecipePath,
+						templatePath,
+						workspaceRoot,
+					})
+				: null;
+		const validationStarted = performance.now();
 		const [firstValidation, secondValidation] = await Promise.all([
-			validateProceduralMannequinArtifact({
+			(authored
+				? validateAuthoredHumanArtifact
+				: validateProceduralMannequinArtifact)({
+				recipe,
 				artifactPath: first.outputPath,
 				expectedFace: expectedFace(recipe),
 				expectedHeightMetres: recipe.proportions.height,
@@ -399,32 +466,56 @@ export async function compileProceduralMannequin({
 				templatePath,
 				workspaceRoot,
 			}),
-			validateProceduralMannequinArtifact({
-				artifactPath: second.outputPath,
-				expectedFace: expectedFace(recipe),
-				expectedHeightMetres: recipe.proportions.height,
-				expectedHairComponent: hairComponent,
-				expectedSkinMaterial: expectedSkinMaterial(recipe),
-				templatePath,
-				workspaceRoot,
-			}),
+			second
+				? (authored
+						? validateAuthoredHumanArtifact
+						: validateProceduralMannequinArtifact)({
+						recipe,
+						artifactPath: second.outputPath,
+						expectedFace: expectedFace(recipe),
+						expectedHeightMetres: recipe.proportions.height,
+						expectedHairComponent: hairComponent,
+						expectedSkinMaterial: expectedSkinMaterial(recipe),
+						templatePath,
+						workspaceRoot,
+					})
+				: null,
 		]);
-		if (!firstValidation.passed || !secondValidation.passed) {
+		const validationMs = performance.now() - validationStarted;
+		if (
+			!firstValidation.passed ||
+			(secondValidation && !secondValidation.passed)
+		) {
 			throw new Error(
-				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstFace: firstValidation.face, firstHair: firstValidation.hair, second: secondValidation.checks, secondFace: secondValidation.face, secondHair: secondValidation.hair })}`,
+				`Procedural mannequin round trip failed: ${JSON.stringify({ first: firstValidation.checks, firstFace: firstValidation.face, firstHair: firstValidation.hair, second: secondValidation?.checks, secondFace: secondValidation?.face, secondHair: secondValidation?.hair })}`,
 			);
 		}
 		if (
 			firstValidation.skeletonSignature !==
 				GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE ||
-			secondValidation.skeletonSignature !==
-				GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE
+			(secondValidation &&
+				secondValidation.skeletonSignature !==
+					GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE)
 		) {
 			throw new Error(
 				"Generated GLB changed the Golden exported rest signature.",
 			);
 		}
-		for (const pass of [first, second]) {
+		for (const pass of [first, second].filter(Boolean)) {
+			if (authored) {
+				if (
+					!isDeepStrictEqual(
+						pass.report.geometrySource,
+						recipe.geometrySource,
+					) ||
+					pass.report.sourceHash !==
+						immutableBefore[
+							portable(path.resolve(workspaceRoot, AUTHORED_HUMAN_SOURCE))
+						]
+				)
+					throw new Error("Authored source provenance mismatch.");
+				continue;
+			}
 			const expectedMaterial = expectedSkinMaterial(recipe);
 			const expectedFaceDefinition = expectedFace(recipe);
 			if (
@@ -517,53 +608,59 @@ export async function compileProceduralMannequin({
 				);
 			}
 		}
-		const determinism = {
-			binaryDeterministic: first.outputHash === second.outputHash,
-			firstOutputHash: first.outputHash,
-			geometryAndSkinningDeterministic:
-				firstValidation.geometrySemanticHash ===
-				secondValidation.geometrySemanticHash,
-			materialDeterministic:
-				firstValidation.materialSemanticHash ===
-				secondValidation.materialSemanticHash,
-			nodeHierarchyDeterministic:
-				JSON.stringify(firstValidation.semanticSnapshot.hierarchy) ===
-				JSON.stringify(secondValidation.semanticSnapshot.hierarchy),
-			normalizedSemanticDeterministic:
-				firstValidation.semanticHash === secondValidation.semanticHash,
-			secondOutputHash: second.outputHash,
-			headContractDeterministic:
-				JSON.stringify(first.report.head) ===
-				JSON.stringify(second.report.head),
-			hairstyleFitDeterministic:
-				JSON.stringify(first.report.components?.hair?.derivedTransform) ===
-					JSON.stringify(second.report.components?.hair?.derivedTransform) &&
-				JSON.stringify(first.report.components?.hair?.fitValidation) ===
-					JSON.stringify(second.report.components?.hair?.fitValidation),
-			faceGeometryDeterministic:
-				firstValidation.faceGeometrySemanticHash ===
-				secondValidation.faceGeometrySemanticHash,
-			facePlacementDeterministic:
-				JSON.stringify(first.report.face) ===
-				JSON.stringify(second.report.face),
-			skeletonDeterministic:
-				firstValidation.skeletonSignature ===
-				secondValidation.skeletonSignature,
-			topologyAndWeightsDeterministic:
-				JSON.stringify(firstValidation.semanticSnapshot.meshes) ===
-				JSON.stringify(secondValidation.semanticSnapshot.meshes),
-		};
+		const determinism = second
+			? {
+					binaryDeterministic: first.outputHash === second.outputHash,
+					firstOutputHash: first.outputHash,
+					geometryAndSkinningDeterministic:
+						firstValidation.geometrySemanticHash ===
+						secondValidation.geometrySemanticHash,
+					materialDeterministic:
+						firstValidation.materialSemanticHash ===
+						secondValidation.materialSemanticHash,
+					nodeHierarchyDeterministic:
+						JSON.stringify(firstValidation.semanticSnapshot.hierarchy) ===
+						JSON.stringify(secondValidation.semanticSnapshot.hierarchy),
+					normalizedSemanticDeterministic:
+						firstValidation.semanticHash === secondValidation.semanticHash,
+					secondOutputHash: second.outputHash,
+					headContractDeterministic:
+						JSON.stringify(first.report.head) ===
+						JSON.stringify(second.report.head),
+					hairstyleFitDeterministic:
+						JSON.stringify(first.report.components?.hair?.derivedTransform) ===
+							JSON.stringify(
+								second.report.components?.hair?.derivedTransform,
+							) &&
+						JSON.stringify(first.report.components?.hair?.fitValidation) ===
+							JSON.stringify(second.report.components?.hair?.fitValidation),
+					faceGeometryDeterministic:
+						firstValidation.faceGeometrySemanticHash ===
+						secondValidation?.faceGeometrySemanticHash,
+					facePlacementDeterministic:
+						JSON.stringify(first.report.face) ===
+						JSON.stringify(second.report.face),
+					skeletonDeterministic:
+						firstValidation.skeletonSignature ===
+						secondValidation.skeletonSignature,
+					topologyAndWeightsDeterministic:
+						JSON.stringify(firstValidation.semanticSnapshot.meshes) ===
+						JSON.stringify(secondValidation.semanticSnapshot.meshes),
+				}
+			: null;
 		if (
-			!determinism.nodeHierarchyDeterministic ||
-			!determinism.headContractDeterministic ||
-			!determinism.hairstyleFitDeterministic ||
-			!determinism.faceGeometryDeterministic ||
-			!determinism.facePlacementDeterministic ||
-			!determinism.geometryAndSkinningDeterministic ||
-			!determinism.materialDeterministic ||
-			!determinism.normalizedSemanticDeterministic ||
-			!determinism.skeletonDeterministic ||
-			!determinism.topologyAndWeightsDeterministic
+			determinism &&
+			((authored && !determinism.binaryDeterministic) ||
+				!determinism.nodeHierarchyDeterministic ||
+				!determinism.headContractDeterministic ||
+				!determinism.hairstyleFitDeterministic ||
+				!determinism.faceGeometryDeterministic ||
+				!determinism.facePlacementDeterministic ||
+				!determinism.geometryAndSkinningDeterministic ||
+				!determinism.materialDeterministic ||
+				!determinism.normalizedSemanticDeterministic ||
+				!determinism.skeletonDeterministic ||
+				!determinism.topologyAndWeightsDeterministic)
 		) {
 			throw new Error(
 				`Repeated builds were not semantically deterministic: ${JSON.stringify(determinism)}`,
@@ -591,197 +688,240 @@ export async function compileProceduralMannequin({
 		const compilerSourceHash = await compilerHash(workspaceRoot);
 		const warnings = [
 			...first.report.warnings,
-			...(determinism.binaryDeterministic
+			...(!determinism || determinism.binaryDeterministic
 				? []
 				: [
 						"Blender GLB bytes differed between builds; normalized scene, topology, weights, skeleton, and material data matched.",
 					]),
 		];
 		const geometry = firstValidation.geometry;
-		const manifest = {
-			anatomy,
-			animationProfile: "mixamo-to-quaternius-v2",
-			animationSet: GOLDEN_REFERENCE_ANIMATION_SET,
-			assetId: recipe.id,
-			blender: {
-				buildHash: blenderVersion.buildHash,
-				version: blenderVersion.version,
-			},
-			bounds: {
-				dimensions: {
-					x: geometry.bounds.dimensions[0],
-					y: geometry.bounds.dimensions[1],
-					z: geometry.bounds.dimensions[2],
-				},
-				maxY: geometry.bounds.maximumY,
-				minY: geometry.bounds.minimumY,
-			},
-			head: first.report.head,
-			compilerHash: compilerSourceHash,
-			compilerVersion: PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
-			components: {
-				hair: hairComponent.definition
-					? {
-							attachmentBone: hairComponent.definition.expectedAttachmentBone,
-							attachmentStrategy: hairComponent.definition.attachmentStrategy,
-							compilerCompatibilityVersion:
-								hairComponent.definition.compilerCompatibilityVersion,
-							componentId: hairComponent.componentId,
-							fittingProfile: hairComponent.definition.fittingProfile,
-							license: hairComponent.definition.license,
-							knownLimitations: hairComponent.definition.knownLimitations,
-							bounds: first.report.components.hair.bounds,
-							derivedTransform: first.report.components.hair.derivedTransform,
-							exportedBounds: firstValidation.hair.bounds,
-							fitValidation: first.report.components.hair.fitValidation,
-							materialCount: firstValidation.hair.materialCount,
-							materialNames: firstValidation.hair.materialNames,
-							meshCount: firstValidation.hair.meshCount,
-							objectName: firstValidation.hair.objectName,
-							normalizedTransform: hairComponent.definition.normalizedTransform,
-							provider: hairComponent.definition.provider,
-							packName: hairComponent.definition.packName,
-							sourceAsset: hairComponent.definition.sourceAsset,
-							sourceBounds: first.report.components.hair.sourceBounds,
-							sourceFiles: hairComponent.definition.sourceFiles,
-							sourceTransform: hairComponent.definition.sourceTransform,
-							textureCount: firstValidation.hair.textureCount,
-							textureNames: firstValidation.hair.textureNames,
-							triangleCount: firstValidation.hair.triangleCount,
-							vertexCount: firstValidation.hair.vertexCount,
-						}
-					: {
-							attachmentBone: null,
-							componentId: NO_HAIR_COMPONENT_ID,
-							materialCount: 0,
-							meshCount: 0,
-							textureCount: 0,
-							triangleCount: 0,
-							vertexCount: 0,
+		const manifest = authored
+			? authoredHumanManifest({
+					recipe,
+					recipeHash,
+					compilerSourceHash,
+					first,
+					validation: firstValidation,
+					determinism,
+					mode,
+					sourceImmutable,
+					blenderVersion,
+					warnings,
+				})
+			: {
+					...(recipe.geometrySource
+						? { geometrySource: recipe.geometrySource }
+						: {}),
+					validationLevel: mode,
+					timingsMs: {
+						firstBlender: first.durationMs,
+						secondBlender: second?.durationMs ?? 0,
+						roundTrips: validationMs,
+						firstStages: first.report.timingsMs,
+					},
+					anatomy: {
+						...anatomy,
+						surfaceNeckWidth: first.report.anatomy.surfaceNeckWidth,
+						surfaceWaistWidth: first.report.anatomy.surfaceWaistWidth,
+						surfaceRibcageWidth: first.report.anatomy.surfaceRibcageWidth,
+						surfaceRatios: first.report.anatomy.surfaceRatios,
+					},
+					animationProfile: "mixamo-to-quaternius-v2",
+					animationSet: GOLDEN_REFERENCE_ANIMATION_SET,
+					assetId: recipe.id,
+					blender: {
+						buildHash: blenderVersion.buildHash,
+						version: blenderVersion.version,
+					},
+					bounds: {
+						dimensions: {
+							x: geometry.bounds.dimensions[0],
+							y: geometry.bounds.dimensions[1],
+							z: geometry.bounds.dimensions[2],
 						},
-			},
-			determinism,
-			deterministicBuild:
-				determinism.binaryDeterministic &&
-				determinism.normalizedSemanticDeterministic,
-			engineForward: "-Z after registry 180-degree Y rotation",
-			geometryProfile: recipe.geometry.profile,
-			measurements,
-			heightMetres: recipe.proportions.height,
-			influenceStatistics: {
-				maximumInfluences: geometry.maximumInfluences,
-				maximumWeightSumError: geometry.maximumWeightSumError,
-				outOfRangeJointCount: geometry.outOfRangeJointCount,
-				strategy: first.report.skinning.strategy,
-				unweightedVertexCount: geometry.unweightedVertexCount,
-			},
-			jointCount: firstValidation.inspection.jointCount,
-			knownLimitations: warnings,
-			appearance: {
-				hair: {
-					authoredColor: recipe.appearance.hair.color,
-					authoredColorSpace: "srgb",
-					materialSchemaVersion: PROCEDURAL_HAIR_MATERIAL_SCHEMA_VERSION,
-					materialCount: firstValidation.hair.materialCount,
-					exportedLinearColor:
-						firstValidation.hair.material?.exportedLinearColor ?? null,
-					exportedRoughness:
-						firstValidation.hair.material?.exportedRoughness ?? null,
-					exportedMetallic:
-						firstValidation.hair.material?.exportedMetallic ?? null,
-				},
-				face: {
-					authoredEyeColor: recipe.appearance.face.eyeColor,
-					authoredEyeColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
-					canonicalLinearColor: expectedFace(recipe).eyeMaterial.linearColor,
-					exportedLinearColor:
-						firstValidation.face.eyeMaterial.exportedLinearColor,
-					exportedMetallic: firstValidation.face.eyeMaterial.exportedMetallic,
-					exportedRoughness: firstValidation.face.eyeMaterial.exportedRoughness,
-					materialCount: firstValidation.face.eyeMaterial.materialCount,
-					materialName: firstValidation.face.eyeMaterial.materialName,
-					materialSchemaVersion: PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION,
-				},
-				skin: {
-					authoredColor: recipe.appearance.skin.color,
-					authoredColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
-					authoredRoughness: recipe.appearance.skin.roughness,
-					canonicalLinearColor: expectedSkinMaterial(recipe).linearColor,
-					exportedLinearColor: firstValidation.material.exportedLinearColor,
-					exportedMetallic: firstValidation.material.exportedMetallic,
-					exportedRoughness: firstValidation.material.exportedRoughness,
-					materialCount: firstValidation.material.materialCount,
-					materialName: firstValidation.material.materialName,
-					materialSchemaVersion: PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION,
-				},
-			},
-			artifactStatistics: firstValidation.artifact,
-			face: {
-				...first.report.face,
-				orientation: firstValidation.face.orientation,
-				materialCount: firstValidation.face.materialCount,
-				sourceTriangleCount: first.report.face.triangleCount,
-				sourceVertexCount: first.report.face.vertexCount,
-				triangleCount: firstValidation.face.triangleCount,
-				vertexCount: firstValidation.face.vertexCount,
-			},
-			allMeshGeometrySemanticHash: firstValidation.allMeshGeometrySemanticHash,
-			faceGeometrySemanticHash: firstValidation.faceGeometrySemanticHash,
-			bodyStatistics: {
-				materialCount: geometry.materialCount,
-				meshCount: geometry.meshCount,
-				triangleCount: geometry.triangleCount,
-				vertexCount: geometry.vertexCount,
-			},
-			materialCount: firstValidation.artifact.materialCount,
-			meshCount: firstValidation.artifact.meshCount,
-			meshNames: firstValidation.semanticSnapshot.meshes.map(
-				(mesh) => mesh.name,
-			),
-			normalizedSemanticHash: firstValidation.semanticHash,
-			geometryAndSkinningSemanticHash: firstValidation.geometrySemanticHash,
-			materialSemanticHash: firstValidation.materialSemanticHash,
-			outputFile: OUTPUT_NAMES.glb,
-			outputHash: await hashFile(outputPath),
-			proportions: recipe.proportions,
-			recipeHash,
-			recipeId: recipe.id,
-			recipeVersion: recipe.version,
-			skeletonContract: GOLDEN_HUMANOID_SKELETON_CONTRACT,
-			skeletonSignature: firstValidation.skeletonSignature,
-			sourceImmutable,
-			componentRegistry: {
-				path: PROCEDURAL_MANNEQUIN_PATHS.componentRegistry,
-				validated: registryValidation.passed,
-				version: registryValidation.version,
-			},
-			templateHashes: {
-				buffer: immutableBefore[portable(templateBufferPath)],
-				gltf: immutableBefore[portable(templatePath)],
-			},
-			triangleCount: firstValidation.artifact.triangleCount,
-			topology: geometry.topology,
-			topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
-			units: "metres",
-			validationVersion: PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
-			vertexCount: firstValidation.artifact.vertexCount,
-			warnings,
-		};
+						maxY: geometry.bounds.maximumY,
+						minY: geometry.bounds.minimumY,
+					},
+					head: first.report.head,
+					compilerHash: compilerSourceHash,
+					compilerVersion: PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
+					components: {
+						hair: hairComponent.definition
+							? {
+									attachmentBone:
+										hairComponent.definition.expectedAttachmentBone,
+									attachmentStrategy:
+										hairComponent.definition.attachmentStrategy,
+									compilerCompatibilityVersion:
+										hairComponent.definition.compilerCompatibilityVersion,
+									componentId: hairComponent.componentId,
+									fittingProfile: hairComponent.definition.fittingProfile,
+									license: hairComponent.definition.license,
+									knownLimitations: hairComponent.definition.knownLimitations,
+									bounds: first.report.components.hair.bounds,
+									derivedTransform:
+										first.report.components.hair.derivedTransform,
+									exportedBounds: firstValidation.hair.bounds,
+									fitValidation: first.report.components.hair.fitValidation,
+									materialCount: firstValidation.hair.materialCount,
+									materialNames: firstValidation.hair.materialNames,
+									meshCount: firstValidation.hair.meshCount,
+									objectName: firstValidation.hair.objectName,
+									normalizedTransform:
+										hairComponent.definition.normalizedTransform,
+									provider: hairComponent.definition.provider,
+									packName: hairComponent.definition.packName,
+									sourceAsset: hairComponent.definition.sourceAsset,
+									sourceBounds: first.report.components.hair.sourceBounds,
+									sourceFiles: hairComponent.definition.sourceFiles,
+									sourceTransform: hairComponent.definition.sourceTransform,
+									textureCount: firstValidation.hair.textureCount,
+									textureNames: firstValidation.hair.textureNames,
+									triangleCount: firstValidation.hair.triangleCount,
+									vertexCount: firstValidation.hair.vertexCount,
+								}
+							: {
+									attachmentBone: null,
+									componentId: NO_HAIR_COMPONENT_ID,
+									materialCount: 0,
+									meshCount: 0,
+									textureCount: 0,
+									triangleCount: 0,
+									vertexCount: 0,
+								},
+					},
+					determinism,
+					deterministicBuild: Boolean(
+						determinism?.binaryDeterministic &&
+							determinism.normalizedSemanticDeterministic,
+					),
+					engineForward: "-Z after registry 180-degree Y rotation",
+					geometryProfile: recipe.geometry.profile,
+					measurements,
+					heightMetres: recipe.proportions.height,
+					influenceStatistics: {
+						maximumInfluences: geometry.maximumInfluences,
+						maximumWeightSumError: geometry.maximumWeightSumError,
+						outOfRangeJointCount: geometry.outOfRangeJointCount,
+						strategy: first.report.skinning.strategy,
+						unweightedVertexCount: geometry.unweightedVertexCount,
+					},
+					jointCount: firstValidation.inspection.jointCount,
+					knownLimitations: warnings,
+					appearance: {
+						hair: {
+							authoredColor: recipe.appearance.hair.color,
+							authoredColorSpace: "srgb",
+							materialSchemaVersion: PROCEDURAL_HAIR_MATERIAL_SCHEMA_VERSION,
+							materialCount: firstValidation.hair.materialCount,
+							exportedLinearColor:
+								firstValidation.hair.material?.exportedLinearColor ?? null,
+							exportedRoughness:
+								firstValidation.hair.material?.exportedRoughness ?? null,
+							exportedMetallic:
+								firstValidation.hair.material?.exportedMetallic ?? null,
+						},
+						face: {
+							authoredEyeColor: recipe.appearance.face.eyeColor,
+							authoredEyeColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
+							canonicalLinearColor:
+								expectedFace(recipe).eyeMaterial.linearColor,
+							exportedLinearColor:
+								firstValidation.face.eyeMaterial.exportedLinearColor,
+							exportedMetallic:
+								firstValidation.face.eyeMaterial.exportedMetallic,
+							exportedRoughness:
+								firstValidation.face.eyeMaterial.exportedRoughness,
+							materialCount: firstValidation.face.eyeMaterial.materialCount,
+							materialName: firstValidation.face.eyeMaterial.materialName,
+							materialSchemaVersion: PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION,
+						},
+						skin: {
+							authoredColor: recipe.appearance.skin.color,
+							authoredColorSpace: PROCEDURAL_SKIN_COLOR_SPACE,
+							authoredRoughness: recipe.appearance.skin.roughness,
+							canonicalLinearColor: expectedSkinMaterial(recipe).linearColor,
+							exportedLinearColor: firstValidation.material.exportedLinearColor,
+							exportedMetallic: firstValidation.material.exportedMetallic,
+							exportedRoughness: firstValidation.material.exportedRoughness,
+							materialCount: firstValidation.material.materialCount,
+							materialName: firstValidation.material.materialName,
+							materialSchemaVersion: PROCEDURAL_SKIN_MATERIAL_SCHEMA_VERSION,
+						},
+					},
+					artifactStatistics: firstValidation.artifact,
+					face: {
+						...first.report.face,
+						orientation: firstValidation.face.orientation,
+						materialCount: firstValidation.face.materialCount,
+						sourceTriangleCount: first.report.face.triangleCount,
+						sourceVertexCount: first.report.face.vertexCount,
+						triangleCount: firstValidation.face.triangleCount,
+						vertexCount: firstValidation.face.vertexCount,
+					},
+					allMeshGeometrySemanticHash:
+						firstValidation.allMeshGeometrySemanticHash,
+					faceGeometrySemanticHash: firstValidation.faceGeometrySemanticHash,
+					bodyStatistics: {
+						materialCount: geometry.materialCount,
+						meshCount: geometry.meshCount,
+						triangleCount: geometry.triangleCount,
+						vertexCount: geometry.vertexCount,
+					},
+					materialCount: firstValidation.artifact.materialCount,
+					meshCount: firstValidation.artifact.meshCount,
+					meshNames: firstValidation.semanticSnapshot.meshes.map(
+						(mesh) => mesh.name,
+					),
+					normalizedSemanticHash: firstValidation.semanticHash,
+					geometryAndSkinningSemanticHash: firstValidation.geometrySemanticHash,
+					materialSemanticHash: firstValidation.materialSemanticHash,
+					outputFile: OUTPUT_NAMES.glb,
+					outputHash: await hashFile(outputPath),
+					proportions: recipe.proportions,
+					recipeHash,
+					recipeId: recipe.id,
+					recipeVersion: recipe.version,
+					skeletonContract: GOLDEN_HUMANOID_SKELETON_CONTRACT,
+					skeletonSignature: firstValidation.skeletonSignature,
+					sourceImmutable,
+					componentRegistry: {
+						path: PROCEDURAL_MANNEQUIN_PATHS.componentRegistry,
+						validated: registryValidation.passed,
+						version: registryValidation.version,
+					},
+					templateHashes: {
+						buffer: immutableBefore[portable(templateBufferPath)],
+						gltf: immutableBefore[portable(templatePath)],
+					},
+					triangleCount: firstValidation.artifact.triangleCount,
+					topology: geometry.topology,
+					topologyVersion: PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
+					units: "metres",
+					validationVersion: PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
+					vertexCount: firstValidation.artifact.vertexCount,
+					warnings,
+				};
 		manifest.generationDurationMs = Math.round(
 			performance.now() - compilationStartedAt,
 		);
 		const diagnostics = {
-			artifactStatus: "procedural-compiled-validated",
+			artifactStatus:
+				mode === "preview"
+					? "preview-validated"
+					: "procedural-compiled-validated",
 			blenderReport: first.report,
 			buildMode: staging ? "staging" : "derived-artifact",
 			determinism,
 			roundTrip: stripSemanticSnapshot(firstValidation),
-			secondRoundTrip: {
-				checks: secondValidation.checks,
-				passed: secondValidation.passed,
-				semanticHash: secondValidation.semanticHash,
-				skeletonSignature: secondValidation.skeletonSignature,
-			},
+			secondRoundTrip: secondValidation
+				? {
+						checks: secondValidation?.checks,
+						passed: secondValidation.passed,
+						semanticHash: secondValidation.semanticHash,
+						skeletonSignature: secondValidation.skeletonSignature,
+					}
+				: null,
 			sourceHashesAfter: immutableAfter,
 			sourceHashesBefore: immutableBefore,
 			sourceImmutable,
@@ -794,13 +934,17 @@ export async function compileProceduralMannequin({
 			`heightMetres=${recipe.proportions.height}`,
 			`proportions=${JSON.stringify(recipe.proportions)}`,
 			`firstOutputHash=${first.outputHash}`,
-			`secondOutputHash=${second.outputHash}`,
-			`binaryDeterministic=${determinism.binaryDeterministic}`,
+			`secondOutputHash=${second?.outputHash ?? "not run"}`,
+			`binaryDeterministic=${determinism?.binaryDeterministic ?? "not tested"}`,
 			`semanticHash=${firstValidation.semanticHash}`,
-			`semanticDeterministic=${determinism.normalizedSemanticDeterministic}`,
+			`semanticDeterministic=${determinism?.normalizedSemanticDeterministic ?? "not tested"}`,
 			`roundTripPassed=${firstValidation.passed}`,
 			`validationVersion=${PROCEDURAL_MANNEQUIN_VALIDATION_VERSION}`,
 			`sourceImmutable=${sourceImmutable}`,
+			first.stdout,
+			first.stderr,
+			second?.stdout ?? "",
+			second?.stderr ?? "",
 		].join("\n");
 		await Promise.all([
 			writeFile(
@@ -866,6 +1010,7 @@ if (
 		: await compileProceduralMannequin({
 				...common,
 				blender: options.blender,
+				mode: options.mode ?? "full",
 				clean: Boolean(options.clean),
 				staging: Boolean(options.staging),
 			});

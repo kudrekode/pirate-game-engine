@@ -1,0 +1,76 @@
+{
+	"revision": "authored-human-canonical-v1",
+	"source": "tools/blender-character/experimental/authored-human-v2/candidate.blend",
+	"sourceSha256": "ebd603dc9ae51d121d53acfc60d5fb79eac29dbcb14348e0efc887e3471735a4",
+	"candidateSha256": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+	"rigProfile": "golden-humanoid-v0",
+	"changes": {
+		"contours": {
+			"Basis": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.1343728017351
+			},
+			"headWidth": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.1343728017351
+			},
+			"jaw": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.1343728017351
+			},
+			"nose": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.1343728017351
+			},
+			"mass": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.095278849352056
+			},
+			"athletic": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.13109675729649
+			},
+			"broadFrame": {
+				"vertices": 1628,
+				"maxDisplacementMm": 24.1343728017351
+			}
+		},
+		"changedWeights": 1552,
+		"vertices": 7281,
+		"triangles": 12566,
+		"topology": "Original vertex order, triangles and per-corner UVs preserved",
+		"targetMigration": "Same six local fairing iterations, adjacency and Basis masks on every key"
+	},
+	"identities": {
+		"dressed-neutral": {},
+		"head-wide": {
+			"headWidth": 1
+		},
+		"head-narrow": {
+			"headWidth": -1
+		},
+		"jaw": {
+			"jaw": 1
+		},
+		"nose": {
+			"nose": 1
+		},
+		"fuller": {
+			"mass": 1
+		},
+		"athletic": {
+			"athletic": 1
+		},
+		"broad": {
+			"broadFrame": 1
+		},
+		"combined": {
+			"headWidth": 1,
+			"jaw": 1,
+			"nose": 1,
+			"mass": 1,
+			"athletic": 1,
+			"broadFrame": 1
+		}
+	}
+}

@@ -10,6 +10,7 @@ import {
 	resolveThreeVisual,
 } from "../../runtime/three/threeVisuals";
 import type {
+	CharacterGameAsset,
 	GameArea,
 	NPCDefinition,
 	ObjectDefinition,
@@ -101,6 +102,7 @@ export function areaEntitiesToMarkers(
 	npcDefinitionsOrFilters: NPCDefinition[] | boolean | MapOverlayFilters,
 	filtersMaybe?: boolean | MapOverlayFilters,
 	surfaceMode: TerrainSurfaceMode = "blocky",
+	projectAssets: CharacterGameAsset[] = [],
 ): EntityMarker[] {
 	if (!area) {
 		return [];
@@ -197,14 +199,17 @@ export function areaEntitiesToMarkers(
 				surfaceMode,
 			);
 			const markerHeight = isVehicle ? 0.35 : 0.8;
-			const visual = resolveThreeVisual({
-				behaviour: object.behaviourOverride ?? definition?.defaultBehaviour,
-				category: definition?.category,
-				interaction: object.interaction ?? definition?.defaultInteraction,
-				kind: "object",
-				name: object.nameOverride ?? definition?.name,
-				threeVisual: definition?.threeVisual,
-			});
+			const visual = resolveThreeVisual(
+				{
+					behaviour: object.behaviourOverride ?? definition?.defaultBehaviour,
+					category: definition?.category,
+					interaction: object.interaction ?? definition?.defaultInteraction,
+					kind: "object",
+					name: object.nameOverride ?? definition?.name,
+					threeVisual: definition?.threeVisual,
+				},
+				projectAssets,
+			);
 			markers.push({
 				color: isVehicle
 					? ENTITY_MARKER_COLORS.vehicle
@@ -235,13 +240,16 @@ export function areaEntitiesToMarkers(
 			const resolvedNpc = resolveNPCInstance(definition, npc);
 			const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
 			const markerHeight = 1.25;
-			const visual = resolveThreeCharacterVisual({
-				attributes: resolvedNpc.attributes,
-				enemyEnabled: resolvedNpc.enemyBehaviour?.enabled,
-				kind: "npc",
-				name: resolvedNpc.name,
-				threeVisual: definition?.threeVisual,
-			});
+			const visual = resolveThreeCharacterVisual(
+				{
+					attributes: resolvedNpc.attributes,
+					enemyEnabled: resolvedNpc.enemyBehaviour?.enabled,
+					kind: "npc",
+					name: resolvedNpc.name,
+					threeVisual: resolvedNpc.threeVisual,
+				},
+				projectAssets,
+			);
 			markers.push({
 				color: ENTITY_MARKER_COLORS.npc,
 				depth: 0.48,

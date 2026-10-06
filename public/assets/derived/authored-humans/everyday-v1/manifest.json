@@ -1,0 +1,353 @@
+{
+	"geometrySource": {
+		"family": "authored-human",
+		"baseRevision": "authored-human-canonical-v1",
+		"rigProfile": "golden-humanoid-v0",
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"clothing": {
+		"top": {
+			"componentId": "everyday-top",
+			"revision": "1",
+			"color": "#56616b"
+		},
+		"bottoms": {
+			"componentId": "everyday-bottoms",
+			"revision": "1",
+			"color": "#303948"
+		},
+		"footwear": {
+			"componentId": "everyday-footwear",
+			"revision": "1",
+			"color": "#322b27"
+		}
+	},
+	"clothingProvenance": {
+		"components": {
+			"top": {
+				"componentId": "everyday-top",
+				"revision": "1",
+				"color": "#56616b",
+				"sourceHash": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60",
+				"mesh": "Everyday_Top",
+				"materialNames": ["Everyday_top", "Everyday_top_edge"]
+			},
+			"bottoms": {
+				"componentId": "everyday-bottoms",
+				"revision": "1",
+				"color": "#303948",
+				"sourceHash": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60",
+				"mesh": "Everyday_Trousers",
+				"materialNames": ["Everyday_bottoms", "Everyday_bottoms_edge"]
+			},
+			"footwear": {
+				"componentId": "everyday-footwear",
+				"revision": "1",
+				"color": "#322b27",
+				"sourceHash": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60",
+				"mesh": "Everyday_Boots",
+				"materialNames": ["Everyday_footwear", "Everyday_footwear_edge"]
+			}
+		},
+		"removedBodyFaces": 4760,
+		"coverageHash": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47",
+		"sources": [
+			{
+				"id": "everyday-top",
+				"name": "Everyday T-shirt",
+				"slot": "top",
+				"revision": "1",
+				"compatibilityFamily": "authored-human-canonical-v1",
+				"rigProfile": "golden-humanoid-v0",
+				"sourceIdentity": "project-authored-everyday-v1",
+				"sourceMeshName": "Everyday_Top",
+				"sourceFiles": [
+					{
+						"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+						"role": "mesh",
+						"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+					},
+					{
+						"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+						"role": "coverage",
+						"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+					},
+					{
+						"path": "tools/blender-character/author_everyday_outfit.py",
+						"role": "authoring",
+						"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+					}
+				],
+				"provenance": {
+					"path": "tools/blender-character/clothing/everyday-v1/PROVENANCE.txt",
+					"role": "provenance",
+					"sha256": "106aeb765ef518d96ab5d55666536ddc45b76cc945aacd148a488124e055b3a1"
+				},
+				"license": {
+					"path": "public/assets/source/quaternius/License_Standard.txt",
+					"role": "derived-fit-CC0-1.0",
+					"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e"
+				}
+			},
+			{
+				"id": "everyday-bottoms",
+				"name": "Everyday trousers",
+				"slot": "bottoms",
+				"revision": "1",
+				"compatibilityFamily": "authored-human-canonical-v1",
+				"rigProfile": "golden-humanoid-v0",
+				"sourceIdentity": "project-authored-everyday-v1",
+				"sourceMeshName": "Everyday_Trousers",
+				"sourceFiles": [
+					{
+						"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+						"role": "mesh",
+						"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+					},
+					{
+						"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+						"role": "coverage",
+						"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+					},
+					{
+						"path": "tools/blender-character/author_everyday_outfit.py",
+						"role": "authoring",
+						"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+					}
+				],
+				"provenance": {
+					"path": "tools/blender-character/clothing/everyday-v1/PROVENANCE.txt",
+					"role": "provenance",
+					"sha256": "106aeb765ef518d96ab5d55666536ddc45b76cc945aacd148a488124e055b3a1"
+				},
+				"license": {
+					"path": "public/assets/source/quaternius/License_Standard.txt",
+					"role": "derived-fit-CC0-1.0",
+					"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e"
+				}
+			},
+			{
+				"id": "everyday-footwear",
+				"name": "Everyday ankle boots",
+				"slot": "footwear",
+				"revision": "1",
+				"compatibilityFamily": "authored-human-canonical-v1",
+				"rigProfile": "golden-humanoid-v0",
+				"sourceIdentity": "project-authored-everyday-v1",
+				"sourceMeshName": "Everyday_Boots",
+				"sourceFiles": [
+					{
+						"path": "tools/blender-character/clothing/everyday-v1/outfit.blend",
+						"role": "mesh",
+						"sha256": "bf0ada23ccbf3b110683ebfff305e68af404268a929ed55beca4b514555a9b60"
+					},
+					{
+						"path": "tools/blender-character/clothing/everyday-v1/coverage.json",
+						"role": "coverage",
+						"sha256": "b63b6d9efebc61af94c7aceefc5a412625616eeec0128ae248841ff35016da47"
+					},
+					{
+						"path": "tools/blender-character/author_everyday_outfit.py",
+						"role": "authoring",
+						"sha256": "d5998e7a3ac0dd95f1969db1fb28de854c3b83b010cc6fdfa57534cc382e1529"
+					}
+				],
+				"provenance": {
+					"path": "tools/blender-character/clothing/everyday-v1/PROVENANCE.txt",
+					"role": "provenance",
+					"sha256": "106aeb765ef518d96ab5d55666536ddc45b76cc945aacd148a488124e055b3a1"
+				},
+				"license": {
+					"path": "public/assets/source/quaternius/License_Standard.txt",
+					"role": "derived-fit-CC0-1.0",
+					"sha256": "0f4beaf0fe360a7732e58bbe3dbf60a2422367fbea60cb9ea4add968f383268e"
+				}
+			}
+		]
+	},
+	"geometryFamily": "authored-human",
+	"canonicalSource": {
+		"path": "tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend",
+		"sha256": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"revision": "authored-human-canonical-v1"
+	},
+	"validationLevel": "full",
+	"compilerVersion": "authored-human-blender-v2",
+	"validationVersion": "authored-human-roundtrip-v2",
+	"compilerHash": "3d1017f422baf30a04bd4b3378fed2df5bc7c647a66bcbe269c227d8d8a2ef90",
+	"blender": {
+		"version": "5.2.0 LTS",
+		"buildHash": "fbe6228777e7"
+	},
+	"assetId": "authored-human-everyday-v1",
+	"recipeId": "authored-human-everyday-v1",
+	"recipeVersion": 6,
+	"recipeHash": "5a8676912d32088096026b21ff426512dd678fdc7ac7243ad10f8892d75f94f3",
+	"proportions": {
+		"height": 1.82,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5,
+		"armLength": 0.5,
+		"legLength": 0.5,
+		"hipWidth": 0.5
+	},
+	"heightMetres": 1.82,
+	"geometryProfile": "authored-canonical",
+	"topologyVersion": "authored-human-canonical-v1",
+	"topology": {
+		"stableIdentityTopology": true,
+		"fingerprint": "69165d18d1a8ac3ad10293aa8a5d4d59d6d22081a82a1075ed8542493f7a283e"
+	},
+	"bodyStatistics": {
+		"maximumInfluences": 4,
+		"maximumWeightSumError": 4.470348358154297e-8,
+		"outOfRangeJointCount": 0,
+		"unweightedVertexCount": 0,
+		"meshCount": 1,
+		"vertexCount": 4717,
+		"triangleCount": 7806,
+		"bounds": {
+			"dimensions": [
+				1.8592884843637199, 1.8234375747118208, 0.37081177809371535
+			],
+			"maximumY": 1.823437427175972,
+			"minimumY": -1.4753584894229566e-7
+		}
+	},
+	"artifactStatistics": {
+		"materialCount": 10,
+		"meshCount": 10,
+		"textureCount": 6,
+		"triangleCount": 53796,
+		"vertexCount": 32463
+	},
+	"materialCount": 10,
+	"meshCount": 10,
+	"textureCount": 6,
+	"triangleCount": 53796,
+	"vertexCount": 32463,
+	"jointCount": 65,
+	"skeletonContract": "golden-humanoid-v0",
+	"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+	"animationSet": "golden-reference-v0",
+	"animationProfile": "mixamo-to-quaternius-v2",
+	"influenceStatistics": {
+		"maximumInfluences": 4,
+		"maximumWeightSumError": 4.470348358154297e-8,
+		"outOfRangeJointCount": 0,
+		"unweightedVertexCount": 0,
+		"meshCount": 1,
+		"vertexCount": 4717,
+		"triangleCount": 7806,
+		"bounds": {
+			"dimensions": [
+				1.8592884843637199, 1.8234375747118208, 0.37081177809371535
+			],
+			"maximumY": 1.823437427175972,
+			"minimumY": -1.4753584894229566e-7
+		},
+		"strategy": "canonical-local-contour-and-weight-pass"
+	},
+	"bounds": {
+		"dimensions": {
+			"x": 1.8592884843637199,
+			"y": 1.8234375747118208,
+			"z": 0.37081177809371535
+		},
+		"minY": -1.4753584894229566e-7,
+		"maxY": 1.823437427175972
+	},
+	"appearance": {
+		"skin": {
+			"authoredColor": "#ffffff",
+			"authoredColorSpace": "srgb",
+			"authoredRoughness": 0.72,
+			"canonicalLinearColor": [1, 1, 1],
+			"exportedLinearColor": [1, 1, 1],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialName": "MI_Superhero_Male",
+			"materialSchemaVersion": "authored-texture-tint-v1"
+		},
+		"hair": {
+			"authoredColor": "#3b2a1f",
+			"authoredColorSpace": "srgb",
+			"exportedLinearColor": [
+				0.043735029256973465, 0.02315336617811041, 0.013702083047289686
+			],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialSchemaVersion": "procedural-hair-material-v1"
+		},
+		"face": {
+			"authoredEyeColor": "source",
+			"materialSchemaVersion": "authored-eye-source-v1",
+			"materialCount": 1
+		}
+	},
+	"components": {
+		"hair": {
+			"componentId": "quaternius-hair-v0",
+			"attachmentBone": "Head",
+			"meshCount": 1,
+			"fitValidation": {
+				"passed": true,
+				"method": "canonical correspondence; endpoint visual acceptance recorded in the integration report"
+			}
+		}
+	},
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
+		"faceGeometryDeterministic": true,
+		"facePlacementDeterministic": true,
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"deterministicBuild": true,
+	"outputFile": "mannequin.glb",
+	"outputHash": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+	"normalizedSemanticHash": "de4e9f692c632310f8c0ed275ab90a088245bb2491297ed46c22c78b24909baa",
+	"geometryAndSkinningSemanticHash": "e5eac800e8e3f7cc9bd25cbde2af140521584d44bef63fa6ef064d9df264c9ee",
+	"materialSemanticHash": "4252ce1bd1c888e69648b93c68d2aecc6f593d32508d9421aa221d9c6fff2b16",
+	"meshNames": [
+		"Everyday_Boots_sewn_cage001",
+		"Everyday_Boots_sewn_cage001_1",
+		"Everyday_Top_sewn_cage001",
+		"Everyday_Top_sewn_cage001_1",
+		"Everyday_Trousers_sewn_cage001",
+		"Everyday_Trousers_sewn_cage001_1",
+		"Eyebrows001",
+		"Eyes001",
+		"SuperHero_Male001",
+		"V2_Buzzed001"
+	],
+	"sourceImmutable": true,
+	"warnings": [
+		"Experimental muscular male base; eye-colour editing is not available.",
+		"Clothing uses bounded authored fitting; extreme combined builds are rejected."
+	],
+	"knownLimitations": [
+		"Experimental muscular male base; eye-colour editing is not available.",
+		"Clothing uses bounded authored fitting; extreme combined builds are rejected."
+	],
+	"units": "metres",
+	"engineForward": "-Z after registry 180-degree Y rotation",
+	"generationDurationMs": 13587
+}

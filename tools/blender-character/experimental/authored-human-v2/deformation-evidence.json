@@ -1,0 +1,244 @@
+{
+	"dressed-neutral": {
+		"rest": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "rest",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 1.0000464163358302,
+					"minEdgeStretch": 0.9999405683354808
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 1.0000186389546508,
+					"minEdgeStretch": 0.9999616699159948,
+					"samples": 26684,
+					"minimumSignedGapMm": 4.0198864953708835,
+					"samplesInsideBeyond1mm": 0
+				}
+			}
+		},
+		"idle": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "idle",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 3.1476702666158713,
+					"minEdgeStretch": 0.5408369906791454
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 3.7753682186875657,
+					"minEdgeStretch": 0.499428258153446,
+					"samples": 26684,
+					"minimumSignedGapMm": -14.182534301653504,
+					"samplesInsideBeyond1mm": 547
+				}
+			}
+		},
+		"walk": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "walk",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 3.6635622665495653,
+					"minEdgeStretch": 0.3289771344577165
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 3.8043590511077845,
+					"minEdgeStretch": 0.3733586976145503,
+					"samples": 26684,
+					"minimumSignedGapMm": -11.469619315903401,
+					"samplesInsideBeyond1mm": 292
+				}
+			}
+		},
+		"raised-arm": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "raised-arm",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 2.3484051457631443,
+					"minEdgeStretch": 0.1781468147272021
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 4.193522010615886,
+					"minEdgeStretch": 0.3256844756148958,
+					"samples": 26684,
+					"minimumSignedGapMm": -10.58656582608819,
+					"samplesInsideBeyond1mm": 96
+				}
+			}
+		},
+		"elbow": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "elbow",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 4.2468335203629355,
+					"minEdgeStretch": 0.32977412687798824
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 2.109862630795197,
+					"minEdgeStretch": 0.4777787795378319,
+					"samples": 26684,
+					"minimumSignedGapMm": -9.227993432432413,
+					"samplesInsideBeyond1mm": 128
+				}
+			}
+		},
+		"crouch": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "crouch",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 5.320084017059148,
+					"minEdgeStretch": 0.1900588179070365
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 2.947197662096948,
+					"minEdgeStretch": 0.13274837665215686,
+					"samples": 26684,
+					"minimumSignedGapMm": -13.1580057204701,
+					"samplesInsideBeyond1mm": 545
+				}
+			}
+		},
+		"head-turn": {
+			"modelSha256": "b2bc0478175e798cf1d59472368eeb017d06070106f52a457d27584df5e77366",
+			"pose": "head-turn",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 1.4767644734398435,
+					"minEdgeStretch": 0.646365486743645
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 1.3742114143820434,
+					"minEdgeStretch": 0.683384045020177,
+					"samples": 26684,
+					"minimumSignedGapMm": 4.523578681983054,
+					"samplesInsideBeyond1mm": 0
+				}
+			}
+		}
+	},
+	"combined": {
+		"rest": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "rest",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 1.0000462346452759,
+					"minEdgeStretch": 0.9999281461207279
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 1.0000118007259218,
+					"minEdgeStretch": 0.999958280927772,
+					"samples": 26684,
+					"minimumSignedGapMm": 4.2666157532949,
+					"samplesInsideBeyond1mm": 0
+				}
+			}
+		},
+		"idle": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "idle",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 3.222644860725451,
+					"minEdgeStretch": 0.4603089254792223
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 3.185771586664471,
+					"minEdgeStretch": 0.5307172725463914,
+					"samples": 26684,
+					"minimumSignedGapMm": -15.402420329337474,
+					"samplesInsideBeyond1mm": 656
+				}
+			}
+		},
+		"walk": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "walk",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 3.8229524847317893,
+					"minEdgeStretch": 0.29186308851130166
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 4.964851219217592,
+					"minEdgeStretch": 0.3469694031704505,
+					"samples": 26684,
+					"minimumSignedGapMm": -13.663309196999762,
+					"samplesInsideBeyond1mm": 427
+				}
+			}
+		},
+		"raised-arm": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "raised-arm",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 2.400785483468923,
+					"minEdgeStretch": 0.1850507871966341
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 4.8186162816191604,
+					"minEdgeStretch": 0.3055425551894843,
+					"samples": 26684,
+					"minimumSignedGapMm": -13.681611744686961,
+					"samplesInsideBeyond1mm": 176
+				}
+			}
+		},
+		"elbow": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "elbow",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 4.486054233951041,
+					"minEdgeStretch": 0.3190094068888497
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 2.8426867504959383,
+					"minEdgeStretch": 0.48203036162745416,
+					"samples": 26684,
+					"minimumSignedGapMm": -10.804864228703082,
+					"samplesInsideBeyond1mm": 145
+				}
+			}
+		},
+		"crouch": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "crouch",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 5.565103123633948,
+					"minEdgeStretch": 0.20519863834144073
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 3.8412855799075403,
+					"minEdgeStretch": 0.12611926936646772,
+					"samples": 26684,
+					"minimumSignedGapMm": -13.896559743443504,
+					"samplesInsideBeyond1mm": 568
+				}
+			}
+		},
+		"head-turn": {
+			"modelSha256": "000bf72be7adbdeeb82ed83c6d466d6ffc7b353c727f2edfbe3c41aa35885dc7",
+			"pose": "head-turn",
+			"measurements": {
+				"SuperHero_Male.001": {
+					"maxEdgeStretch": 1.4892077994858666,
+					"minEdgeStretch": 0.6136136505929076
+				},
+				"V2_Tank.001": {
+					"maxEdgeStretch": 1.3919862960064615,
+					"minEdgeStretch": 0.6777068680460543,
+					"samples": 26684,
+					"minimumSignedGapMm": 4.359181533800438,
+					"samplesInsideBeyond1mm": 0
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,182 @@
+{
+	"geometrySource": {
+		"family": "authored-human",
+		"baseRevision": "authored-human-canonical-v1",
+		"rigProfile": "golden-humanoid-v0",
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"geometryFamily": "authored-human",
+	"canonicalSource": {
+		"path": "tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend",
+		"sha256": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"revision": "authored-human-canonical-v1"
+	},
+	"validationLevel": "full",
+	"compilerVersion": "authored-human-blender-v1",
+	"validationVersion": "authored-human-roundtrip-v1",
+	"compilerHash": "e395979076fb3ed202cf3518a1f1a23898b3ecb1e1e07075bc9a9adaa75affae",
+	"blender": {
+		"version": "5.2.0 LTS",
+		"buildHash": "fbe6228777e7"
+	},
+	"assetId": "procedural-mannequin-v0",
+	"recipeId": "procedural-mannequin-v0",
+	"recipeVersion": 6,
+	"recipeHash": "caf19aa55cdd8278bec322fb3522c30f18af9fe091ba103edff64ba34ee1c80b",
+	"proportions": {
+		"height": 1.82,
+		"shoulderWidth": 0.5,
+		"torsoLength": 0.5,
+		"armLength": 0.5,
+		"legLength": 0.5,
+		"hipWidth": 0.5
+	},
+	"heightMetres": 1.82,
+	"geometryProfile": "authored-canonical",
+	"topologyVersion": "authored-human-canonical-v1",
+	"topology": {
+		"stableIdentityTopology": true,
+		"fingerprint": "2b9a37904d2249eb88c538124d2971319ea733be9c4d3cf5542a7f4c4aea3544"
+	},
+	"bodyStatistics": {
+		"maximumInfluences": 4,
+		"maximumWeightSumError": 4.470348358154297e-8,
+		"outOfRangeJointCount": 0,
+		"unweightedVertexCount": 0,
+		"meshCount": 1,
+		"vertexCount": 7281,
+		"triangleCount": 12566,
+		"bounds": {
+			"dimensions": [
+				1.8592884843637199, 1.820000339864803, 0.29155408220147305
+			],
+			"maximumY": 1.8200002010720464,
+			"minimumY": -1.3879275667302848e-7
+		}
+	},
+	"artifactStatistics": {
+		"materialCount": 4,
+		"meshCount": 4,
+		"textureCount": 6,
+		"triangleCount": 15148,
+		"vertexCount": 8949
+	},
+	"materialCount": 4,
+	"meshCount": 4,
+	"textureCount": 6,
+	"triangleCount": 15148,
+	"vertexCount": 8949,
+	"jointCount": 65,
+	"skeletonContract": "golden-humanoid-v0",
+	"skeletonSignature": "24264599feb13a49857540c8efab3e46fcfb2a45cec1a03b8bf90bbd4f74b840",
+	"animationSet": "golden-reference-v0",
+	"animationProfile": "mixamo-to-quaternius-v2",
+	"influenceStatistics": {
+		"maximumInfluences": 4,
+		"maximumWeightSumError": 4.470348358154297e-8,
+		"outOfRangeJointCount": 0,
+		"unweightedVertexCount": 0,
+		"meshCount": 1,
+		"vertexCount": 7281,
+		"triangleCount": 12566,
+		"bounds": {
+			"dimensions": [
+				1.8592884843637199, 1.820000339864803, 0.29155408220147305
+			],
+			"maximumY": 1.8200002010720464,
+			"minimumY": -1.3879275667302848e-7
+		},
+		"strategy": "canonical-local-contour-and-weight-pass"
+	},
+	"bounds": {
+		"dimensions": {
+			"x": 1.8592884843637199,
+			"y": 1.820000339864803,
+			"z": 0.29155408220147305
+		},
+		"minY": -1.3879275667302848e-7,
+		"maxY": 1.8200002010720464
+	},
+	"appearance": {
+		"skin": {
+			"authoredColor": "#ffffff",
+			"authoredColorSpace": "srgb",
+			"authoredRoughness": 0.72,
+			"canonicalLinearColor": [1, 1, 1],
+			"exportedLinearColor": [1, 1, 1],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialName": "MI_Superhero_Male",
+			"materialSchemaVersion": "authored-texture-tint-v1"
+		},
+		"hair": {
+			"authoredColor": "#3b2a1f",
+			"authoredColorSpace": "srgb",
+			"exportedLinearColor": [
+				0.043735029256973465, 0.02315336617811041, 0.013702083047289686
+			],
+			"exportedMetallic": 0,
+			"exportedRoughness": 0.72,
+			"materialCount": 1,
+			"materialSchemaVersion": "procedural-hair-material-v1"
+		},
+		"face": {
+			"authoredEyeColor": "source",
+			"materialSchemaVersion": "authored-eye-source-v1",
+			"materialCount": 1
+		}
+	},
+	"components": {
+		"hair": {
+			"componentId": "quaternius-hair-v0",
+			"attachmentBone": "Head",
+			"meshCount": 1,
+			"fitValidation": {
+				"passed": true,
+				"method": "canonical correspondence; endpoint visual acceptance recorded in the integration report"
+			}
+		}
+	},
+	"determinism": {
+		"binaryDeterministic": true,
+		"firstOutputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+		"geometryAndSkinningDeterministic": true,
+		"materialDeterministic": true,
+		"nodeHierarchyDeterministic": true,
+		"normalizedSemanticDeterministic": true,
+		"secondOutputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+		"headContractDeterministic": true,
+		"hairstyleFitDeterministic": true,
+		"faceGeometryDeterministic": true,
+		"facePlacementDeterministic": true,
+		"skeletonDeterministic": true,
+		"topologyAndWeightsDeterministic": true
+	},
+	"deterministicBuild": true,
+	"outputFile": "mannequin.glb",
+	"outputHash": "cbd56583755271361bd5dbf8fa968d42b4331bd7b3be2e13a40ff07110e1eb3b",
+	"normalizedSemanticHash": "677ff621095aaae05e91a46dc17b5c6f9decfe41838f888cf3f14681e4f1fcb0",
+	"geometryAndSkinningSemanticHash": "bf272d6acb0a48d16bedba5d2552c767d276c89a27345b754fe9e1e5e552db27",
+	"materialSemanticHash": "aa0764ae47950c16003e6b7e3fd3de4863cff04e776573cca4860f2104f4eeea",
+	"meshNames": ["Eyebrows001", "Eyes001", "SuperHero_Male001", "V2_Buzzed001"],
+	"sourceImmutable": true,
+	"warnings": [
+		"Experimental muscular male base; clothing and eye-colour editing are not yet available.",
+		"Skin tint multiplies the authored texture, including its painted shorts."
+	],
+	"knownLimitations": [
+		"Experimental muscular male base; clothing and eye-colour editing are not yet available.",
+		"Skin tint multiplies the authored texture, including its painted shorts."
+	],
+	"units": "metres",
+	"engineForward": "-Z after registry 180-degree Y rotation",
+	"generationDurationMs": 8894
+}

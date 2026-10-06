@@ -1,0 +1,66 @@
+{
+	"version": 1,
+	"id": "character-new",
+	"name": "New Character",
+	"skeletonId": "humanoid-v1",
+	"body": {
+		"baseId": "authored-human-canonical-v1",
+		"parameters": {
+			"height": 1.82,
+			"shoulderWidth": 0.5,
+			"torsoLength": 0.5,
+			"armLength": 0.5,
+			"legLength": 0.5,
+			"hipWidth": 0.5
+		}
+	},
+	"components": {
+		"hair": "quaternius-hair-v0"
+	},
+	"palette": {
+		"skin": "#ffffff",
+		"hair": "#3b2a1f",
+		"primary": "#2f6f8f",
+		"secondary": "#d9a441",
+		"metal": "#8a949e"
+	},
+	"appearance": {
+		"face": {
+			"eyeColor": "#4b5d67"
+		},
+		"skin": {
+			"roughness": 0.72
+		}
+	},
+	"animationSetId": "humanoid-basic-v1",
+	"geometry": {
+		"family": "authored-human",
+		"baseRevision": "authored-human-canonical-v1",
+		"rigProfile": "golden-humanoid-v0",
+		"values": {
+			"mass": 0,
+			"athletic": 0,
+			"broadFrame": 0,
+			"headWidth": 0,
+			"jaw": 0,
+			"nose": 0
+		}
+	},
+	"clothing": {
+		"top": {
+			"componentId": "everyday-top",
+			"revision": "1",
+			"color": "#56616b"
+		},
+		"bottoms": {
+			"componentId": "everyday-bottoms",
+			"revision": "1",
+			"color": "#303948"
+		},
+		"footwear": {
+			"componentId": "everyday-footwear",
+			"revision": "1",
+			"color": "#322b27"
+		}
+	}
+}

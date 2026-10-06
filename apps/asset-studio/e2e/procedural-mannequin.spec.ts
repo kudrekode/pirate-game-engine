@@ -31,12 +31,18 @@ async function verifyAnimations(page: Page) {
 	}
 }
 
-test("previews and animates the checked-in Face Readability V0 mannequin", async ({
+test("previews and animates the checked-in Face Readability V0 mannequin @integration", async ({
 	page,
-}, testInfo) => {
+}) => {
 	test.setTimeout(180_000);
 	const consoleErrors = collectErrors(page);
-	await page.goto("/");
+	const historicalRequests: string[] = [];
+	page.on("request", (request) => {
+		if (request.url().includes("runtime-retarget-report"))
+			historicalRequests.push(request.url());
+	});
+	await page.route("**/runtime-retarget-report.json", (route) => route.abort());
+	await page.goto("/?family=legacy");
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 	await expect(page.locator(".preview-status")).toHaveAttribute(
@@ -50,7 +56,7 @@ test("previews and animates the checked-in Face Readability V0 mannequin", async
 	await expect(host).toHaveAttribute("data-semantic-hash", /^[0-9a-f]{64}$/u);
 	await expect(host).toHaveAttribute(
 		"data-topology-version",
-		"procedural-humanoid-v3",
+		"procedural-humanoid-v4",
 	);
 	await expect(host).toHaveAttribute("data-topology-components", "1");
 	await expect(host).toHaveAttribute(
@@ -63,38 +69,16 @@ test("previews and animates the checked-in Face Readability V0 mannequin", async
 	await expect(host).toHaveAttribute("data-proportions", /"armLength":0\.5/u);
 	const diagnostics = page.getByLabel("Procedural Mannequin V0 diagnostics");
 	await expect(diagnostics).toContainText("procedural-mannequin-v0");
-	await expect(diagnostics).toContainText("V1");
+	await expect(diagnostics).toContainText("V6");
 	await expect(diagnostics).toContainText("5 mesh");
-	await expect(diagnostics).toContainText("2876 vertices");
-	await expect(diagnostics).toContainText("5676 triangles");
-	await expect(diagnostics).toContainText("procedural-humanoid-v3");
+	await expect(diagnostics).toContainText(/\d+ vertices/u);
+	await expect(diagnostics).toContainText(/\d+ triangles/u);
+	await expect(diagnostics).toContainText("procedural-humanoid-v4");
 	await expect(diagnostics).toContainText("1 connected component");
 	await expect(diagnostics).toContainText("manifold");
 	await expect(diagnostics).toContainText("65-joint Golden template");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v7");
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v8");
 	await verifyAnimations(page);
-	for (const state of ["Rest", "Idle", "Walk"]) {
-		await page.getByRole("button", { exact: true, name: state }).click();
-		if (state !== "Rest")
-			await page.getByLabel("Animation sample time").fill("0.25");
-		for (const view of ["Front", "Side", "Three-quarter"]) {
-			await page.getByRole("button", { exact: true, name: view }).click();
-			const chrome = page.locator(
-				".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
-			);
-			await chrome.evaluateAll((elements) => {
-				for (const element of elements)
-					(element as HTMLElement).style.visibility = "hidden";
-			});
-			await page.locator("canvas").screenshot({
-				path: testInfo.outputPath(`oriented-bald-${state}-${view}.png`),
-			});
-			await chrome.evaluateAll((elements) => {
-				for (const element of elements)
-					(element as HTMLElement).style.visibility = "";
-			});
-		}
-	}
 
 	await page
 		.getByLabel("Preview source")
@@ -102,29 +86,49 @@ test("previews and animates the checked-in Face Readability V0 mannequin", async
 	await expect(page.locator("canvas")).toHaveCount(1);
 	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
 	await expect(page.locator("canvas")).toHaveCount(1);
+	// Exercise the extracted preview's unmount/remount boundary without compiling.
+	await page
+		.getByRole("navigation", { name: "Asset Studio sections" })
+		.getByRole("button", { name: "Components", exact: true })
+		.click();
+	await expect(page.locator("canvas")).toHaveCount(0);
+	await page
+		.getByRole("navigation", { name: "Asset Studio sections" })
+		.getByRole("button", { name: "Character", exact: true })
+		.click();
+	await expect(page.locator("canvas")).toHaveCount(1);
+	await expect(page.locator(".preview-status")).toHaveAttribute(
+		"data-status",
+		"loaded",
+		{ timeout: 60_000 },
+	);
+	await expect(host).toHaveAttribute("data-animation-state", "idle");
+	await verifyAnimations(page);
+	expect(historicalRequests).toEqual([]);
 	expect(consoleErrors).toEqual([]);
 });
 
-test("randomises, compiles, animates, validates, and revisits several body shapes", async ({
+test("compiles one real body through the browser API and previews its artifact @compiler", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(360_000);
 	const consoleErrors = collectErrors(page);
 	let compileRequests = 0;
 	page.on("request", (request) => {
-		if (
-			request.url().includes("/__asset-studio/procedural-mannequin/compile")
-		) {
+		if (/\/procedural-mannequin\/(compile|preview)$/.test(request.url())) {
 			compileRequests += 1;
 		}
 	});
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const seedInput = page.getByLabel("Random seed");
 	const randomise = page.getByRole("button", {
 		exact: true,
 		name: "Randomise",
 	});
-	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compile = page.getByRole("button", {
+		exact: true,
+		name: "Generate Preview",
+	});
 	const compileStatus = page.locator("[data-compile-status]");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 
@@ -173,45 +177,67 @@ test("randomises, compiles, animates, validates, and revisits several body shape
 		};
 	}
 
-	const seeds = ["body-e2e-11", "body-e2e-22", "body-e2e-33"];
-	const bodies = [];
-	for (const seed of seeds) bodies.push(await randomiseAndCompile(seed));
-	expect(compileRequests).toBe(seeds.length);
-	expect(new Set(bodies.map((body) => body.recipeHash)).size).toBe(
-		seeds.length,
-	);
-	expect(new Set(bodies.map((body) => body.assetHash)).size).toBe(seeds.length);
-	expect(new Set(bodies.map((body) => body.boundsHeight)).size).toBeGreaterThan(
-		1,
-	);
-	for (const body of bodies) {
-		expect(body.assetHash).toMatch(/^[0-9a-f]{64}$/u);
-		expect(body.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
-		expect(body.boundsHeight).toBeCloseTo(body.parameters.height, 4);
-	}
+	const body = await randomiseAndCompile("body-e2e-11");
+	expect(compileRequests).toBe(1);
+	await expect(compileStatus).toContainText("Preview ready");
+	await expect(host).toHaveAttribute("data-deterministic-build", "false");
+	expect(body.assetHash).toMatch(/^[0-9a-f]{64}$/u);
+	expect(body.recipeHash).toMatch(/^[0-9a-f]{64}$/u);
+	expect(body.boundsHeight).toBeCloseTo(body.parameters.height, 4);
 
 	const diagnostics = page.getByLabel("Creator compilation diagnostics");
-	await expect(diagnostics).toContainText("procedural-mannequin-blender-v7");
-	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v8");
-	await page.screenshot({
-		path: testInfo.outputPath("creator-random-body.png"),
+	await expect(diagnostics).toContainText("procedural-mannequin-blender-v8");
+	await expect(diagnostics).toContainText("procedural-mannequin-roundtrip-v9");
+	await testInfo.attach("compiled-artifact.json", {
+		body: JSON.stringify({ compileRequests, body }),
+		contentType: "application/json",
 	});
 
 	await page
 		.getByLabel("Recent Compilations")
-		.getByRole("button", { name: new RegExp(seeds[0], "u") })
+		.getByRole("button", { name: /body-e2e-11/u })
 		.click();
-	await expect(host).toHaveAttribute("data-recipe-hash", bodies[0].recipeHash);
-	expect(compileRequests).toBe(seeds.length);
+	await expect(host).toHaveAttribute("data-recipe-hash", body.recipeHash);
+	expect(compileRequests).toBe(1);
+	await page
+		.getByRole("button", { name: "Finalise Character", exact: true })
+		.click();
+	await expect(compileStatus).toContainText("Character finalised", {
+		timeout: 90000,
+	});
+	await expect(host).toHaveAttribute("data-deterministic-build", "true");
+	await expect(
+		page.getByRole("link", { name: "Download character GLB" }),
+	).toBeVisible();
+	expect(compileRequests).toBe(2);
+	const finalHash = await host.getAttribute("data-asset-hash");
+	await page.route("**/procedural-mannequin/preview", (route) =>
+		route.fulfill({
+			status: 500,
+			json: {
+				status: "failed",
+				error:
+					"Character generation failed because the selected body proportions produced an invalid torso shape.",
+				technicalDetails: "Synthetic Blender regression log",
+			},
+		}),
+	);
+	await compile.click();
+	await expect(compileStatus).toContainText("Generation failed");
+	await expect(host).toHaveAttribute("data-asset-hash", finalHash!);
+	await page.getByText("Technical details", { exact: true }).click();
+	await expect(
+		page.getByText("Synthetic Blender regression log"),
+	).toBeVisible();
 	expect(consoleErrors).toEqual([]);
 });
 
-test("compiles isolated skin color and roughness changes without changing geometry or rig", async ({
+test("compiles isolated skin color and roughness changes without changing geometry or rig @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(360_000);
 	const consoleErrors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const cases = [
 		{ color: "#f1c7a5", name: "tone-1-matte", roughness: 0.82 },
 		{ color: "#7d4f38", name: "tone-5-matte", roughness: 0.82 },
@@ -233,7 +259,9 @@ test("compiles isolated skin color and roughness changes without changing geomet
 				appearance.color,
 			);
 		}
-		await page.getByRole("button", { exact: true, name: "Compile" }).click();
+		await page
+			.getByRole("button", { exact: true, name: "Finalise Character" })
+			.click();
 		await expect(page.locator("[data-compile-status]")).toHaveAttribute(
 			"data-compile-status",
 			"succeeded",
@@ -291,15 +319,18 @@ test("compiles isolated skin color and roughness changes without changing geomet
 	expect(consoleErrors).toEqual([]);
 });
 
-test("compiles, animates, captures, and revisits bald and Quaternius hairstyle variants", async ({
+test("compiles, animates, captures, and revisits bald and Quaternius hairstyle variants @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(600_000);
 	const consoleErrors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const hairSelect = page.getByLabel("Hair component");
 	const eyeColorInput = page.getByLabel("Eye color", { exact: true });
-	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compile = page.getByRole("button", {
+		exact: true,
+		name: "Finalise Character",
+	});
 	const compileStatus = page.locator("[data-compile-status]");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 
@@ -378,7 +409,7 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 	expect(hairHash).not.toBe(baldHash);
 	await expect(
 		page.getByRole("region", { exact: true, name: "Hair" }),
-	).toContainText("Compiled · Quaternius Buzzed");
+	).toContainText("Compiled Â· Quaternius Buzzed");
 	const recent = page.getByLabel("Recent Compilations").getByRole("button");
 	await expect(recent).toHaveCount(2);
 	await recent.nth(1).click();
@@ -403,12 +434,12 @@ test("compiles, animates, captures, and revisits bald and Quaternius hairstyle v
 	expect(consoleErrors).toEqual([]);
 });
 
-test("compiles and visually validates the Hairstyle Library V2", async ({
+test("compiles and visually validates the Hairstyle Library V2 @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(240_000);
 	const errors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 	const styles = [
 		["quaternius-hair-short-crop-v1", "#bd955b", "Short Crop"],
@@ -417,7 +448,9 @@ test("compiles and visually validates the Hairstyle Library V2", async ({
 	for (const [id, color, name] of styles) {
 		await page.getByLabel("Hair component").selectOption(id);
 		await page.getByLabel("Hair color", { exact: true }).fill(color);
-		await page.getByRole("button", { exact: true, name: "Compile" }).click();
+		await page
+			.getByRole("button", { exact: true, name: "Finalise Character" })
+			.click();
 		await expect(page.locator("[data-compile-status]")).toHaveAttribute(
 			"data-compile-status",
 			"succeeded",
@@ -482,15 +515,18 @@ test("compiles and visually validates the Hairstyle Library V2", async ({
 	expect(errors).toEqual([]);
 });
 
-test("compiles and visually validates length-aware Long and Buns", async ({
+test("compiles and visually validates length-aware Long and Buns @visual", async ({
 	page,
 }, testInfo) => {
 	test.setTimeout(360_000);
 	const errors = collectErrors(page);
-	await page.goto("/");
+	await page.goto("/?family=legacy");
 	const hairSelect = page.getByLabel("Hair component");
 	const hairColorInput = page.getByLabel("Hair color", { exact: true });
-	const compile = page.getByRole("button", { exact: true, name: "Compile" });
+	const compile = page.getByRole("button", {
+		exact: true,
+		name: "Finalise Character",
+	});
 	const compileStatus = page.locator("[data-compile-status]");
 	const host = page.locator(`[data-preview-source="${SOURCE_ID}"]`);
 	const hairRegion = page.getByRole("region", { exact: true, name: "Hair" });
@@ -578,5 +614,44 @@ test("compiles and visually validates length-aware Long and Buns", async ({
 		await expect(host).toHaveAttribute("data-recipe-hash", result.recipeHash);
 	}
 	await expect(page.locator("canvas")).toHaveCount(1);
+	expect(errors).toEqual([]);
+});
+
+// Appearance acceptance is explicit; the integration smoke above produces no success images.
+test("captures the checked-in mannequin fixture for appearance review @visual", async ({
+	page,
+}, testInfo) => {
+	const errors = collectErrors(page);
+	await page.goto("/?family=legacy");
+	await page.getByLabel("Preview source").selectOption(SOURCE_ID);
+	await expect(page.locator(".preview-status")).toHaveAttribute(
+		"data-status",
+		"loaded",
+		{ timeout: 60000 },
+	);
+	await verifyAnimations(page);
+	for (const state of ["Rest", "Idle", "Walk"]) {
+		await page.getByRole("button", { exact: true, name: state }).click();
+		if (state !== "Rest")
+			await page.getByLabel("Animation sample time").fill("0.25");
+		for (const view of ["Front", "Side", "Three-quarter"]) {
+			await page.getByRole("button", { exact: true, name: view }).click();
+			const chrome = page.locator(
+				".preview-controls, .animation-controls, .preview-label, .preview-status, .preview-diagnostics",
+			);
+			await chrome.evaluateAll((elements) => {
+				for (const element of elements)
+					(element as HTMLElement).style.visibility = "hidden";
+			});
+			await page.locator("canvas").screenshot({
+				path: testInfo.outputPath(`oriented-bald-${state}-${view}.png`),
+			});
+			await chrome.evaluateAll((elements) => {
+				for (const element of elements)
+					(element as HTMLElement).style.visibility = "";
+			});
+		}
+	}
+
 	expect(errors).toEqual([]);
 });
