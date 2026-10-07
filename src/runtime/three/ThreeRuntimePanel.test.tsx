@@ -41,6 +41,13 @@ const threeSpies = vi.hoisted(() => ({
 	WebGLRenderer: vi.fn(),
 }));
 
+// Presentation pixels/resources have focused tests and a real browser check;
+// this mocked-renderer suite owns runtime input, state and scene lifetime.
+vi.mock("./groundPresentation", () => ({
+	createGroundPresentation: () => ({ apply: vi.fn(), dispose: vi.fn() }),
+	createWorldEdgePresentation: () => [],
+}));
+
 vi.mock("../runtimeSession", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("../runtimeSession")>();
 	return {
@@ -220,6 +227,7 @@ vi.mock("three", () => {
 			castShadow = false;
 			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
+				dispose: vi.fn(),
 				camera: { far: 0, near: 0 },
 				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};

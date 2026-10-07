@@ -22,6 +22,13 @@ vi.mock("../runtime/RuntimePanel", () => ({
 	RuntimePanel: () => <div>Runtime mock</div>,
 }));
 
+// Pixel resources are exercised by groundPresentation.test and the real browser
+// flow; this suite owns editor gestures with a deliberately minimal Three mock.
+vi.mock("../runtime/three/groundPresentation", () => ({
+	createGroundPresentation: () => ({ apply: vi.fn(), dispose: vi.fn() }),
+	createWorldEdgePresentation: () => [],
+}));
+
 vi.mock("../editor/sections/ThreeDPreview", async () => {
 	const { useProjectStore } = await import("../store/useProjectStore");
 	const { getPreviewPlacementInfo } = await import(
@@ -194,6 +201,7 @@ vi.mock("three", () => {
 			castShadow = false;
 			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
+				dispose: vi.fn(),
 				camera: { far: 0, near: 0 },
 				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};

@@ -102,6 +102,12 @@ describe("water presentation helpers", () => {
 		});
 
 		presentation.meshes.forEach((mesh) => {
+			const fade = mesh.geometry.getAttribute("color");
+			expect(fade.itemSize).toBe(4);
+			if (mesh.userData.waterPresentation === "shallowWater") {
+				expect(fade.getW(0)).toBe(1);
+				expect(fade.getW(3)).toBe(0);
+			}
 			mesh.geometry.dispose();
 		});
 		state.coastlineMaterial.dispose();
@@ -157,6 +163,9 @@ describe("water presentation helpers", () => {
 
 		markWaterPresentationMesh(mesh);
 		updateWaterPresentation(state, 1200);
+		expect(state.time.value).toBe(1.2);
+		expect(state.coastlineMaterial.transparent).toBe(false);
+		expect(state.coastlineMaterial.depthWrite).toBe(true);
 
 		expect(mesh.material).toBe(state.waterMaterial);
 		expect(mesh.geometry).toBe(geometry);

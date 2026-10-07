@@ -98,6 +98,10 @@ import {
 	zoomOrbitCamera,
 } from "./cameraControls";
 import {
+	createGroundPresentation,
+	createWorldEdgePresentation,
+} from "./groundPresentation";
+import {
 	disposePlaceholderObject,
 	type ThreeResourceDisposeTracker,
 } from "./placeholderMeshes";
@@ -1583,6 +1587,7 @@ export function ThreeRuntimePanel({
 
 		const terrainRebuildStartedAt = performance.now();
 		const waterPresentation = createWaterPresentationState();
+		const groundPresentation = createGroundPresentation(area);
 		let terrainMeshCount = 0;
 		let terrainTriangleCount = 0;
 		let terrainVertexCount = 0;
@@ -1611,8 +1616,9 @@ export function ThreeRuntimePanel({
 					markWaterPresentationMesh(mesh);
 				}
 				applyShadowRole(mesh, {
-					receive: !usesWaterPresentation,
+					receive: true,
 				});
+				if (!usesWaterPresentation) groundPresentation.apply(mesh);
 				addRenderObject(mesh);
 			});
 		} else {
@@ -1636,6 +1642,7 @@ export function ThreeRuntimePanel({
 				}
 				applyShadowRole(mesh, { receive: !usesWaterPresentation });
 				mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+				if (!usesWaterPresentation) groundPresentation.apply(mesh);
 				addRenderObject(mesh);
 			});
 		}
@@ -1644,6 +1651,13 @@ export function ThreeRuntimePanel({
 			waterPresentation,
 		);
 		coastlinePresentation.meshes.forEach((mesh) => {
+			addRenderObject(mesh);
+		});
+		createWorldEdgePresentation(
+			area,
+			waterPresentation.waterMaterial,
+			terrainRenderMode,
+		).forEach((mesh) => {
 			addRenderObject(mesh);
 		});
 		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
@@ -1661,6 +1675,9 @@ export function ThreeRuntimePanel({
 
 		const runtimeArea: GameArea = {
 			...area,
+			// Spawn helpers stay in Edit; the player's feet and shadow sit on the
+			// authored ground in Play. This copy is only used to build visual markers.
+			eventBlocks: area.eventBlocks.filter((block) => block.kind !== "spawn"),
 			npcs: area.npcs.filter((npc) => !session.defeatedNpcIds.has(npc.id)),
 			pickups: area.pickups.filter(
 				(pickup) =>
@@ -2179,6 +2196,9 @@ export function ThreeRuntimePanel({
 			}
 			renderer.dispose();
 			atmosphere.dispose();
+			groundPresentation.dispose();
+			for (const result of [...markerRenderResults, playerRenderResult])
+				result.disposePresentation?.();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),

@@ -23,6 +23,10 @@ import {
 	zoomOrbitCamera,
 } from "../../runtime/three/cameraControls";
 import {
+	createGroundPresentation,
+	createWorldEdgePresentation,
+} from "../../runtime/three/groundPresentation";
+import {
 	disposePlaceholderObject,
 	getPlaceholderSelectableObjects,
 	type ThreeResourceDisposeTracker,
@@ -827,8 +831,10 @@ export function ThreeDPreview({
 			getWorldMaterialColor("default"),
 		);
 		scene.add(grid);
+		grid.visible = isTerrainEditing;
 
 		const waterPresentation = createWaterPresentationState();
+		const groundPresentation = createGroundPresentation(activeArea);
 		let waterSurfaceMeshCount = 0;
 		const terrainRebuildStartedAt = performance.now();
 		const smoothTerrainVisualMeshes =
@@ -848,8 +854,9 @@ export function ThreeDPreview({
 							markWaterPresentationMesh(mesh);
 						}
 						applyShadowRole(mesh, {
-							receive: !usesWaterPresentation,
+							receive: true,
 						});
+						if (!usesWaterPresentation) groundPresentation.apply(mesh);
 						scene.add(mesh);
 						return mesh;
 					})
@@ -883,6 +890,7 @@ export function ThreeDPreview({
 						applyShadowRole(mesh, { receive: !usesWaterPresentation });
 						mesh.userData.selectionMetadata = selectionMetadata;
 						mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+						if (!usesWaterPresentation) groundPresentation.apply(mesh);
 						scene.add(mesh);
 						return mesh;
 					});
@@ -891,6 +899,14 @@ export function ThreeDPreview({
 			waterPresentation,
 		);
 		coastlinePresentation.meshes.forEach((mesh) => {
+			scene.add(mesh);
+		});
+		const worldEdgeMeshes = createWorldEdgePresentation(
+			activeArea,
+			waterPresentation.waterMaterial,
+			terrainRenderMode,
+		);
+		worldEdgeMeshes.forEach((mesh) => {
 			scene.add(mesh);
 		});
 		const smoothTerrainVertexCount = smoothTerrainMeshes.reduce(
@@ -2451,6 +2467,7 @@ export function ThreeDPreview({
 			cleanupTerrainBrushGhost();
 			renderer.dispose();
 			atmosphere.dispose();
+			groundPresentation.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),
@@ -2464,7 +2481,11 @@ export function ThreeDPreview({
 			coastlinePresentation.meshes.forEach((mesh) => {
 				disposeMesh(mesh, disposeTracker);
 			});
+			worldEdgeMeshes.forEach((mesh) => {
+				disposeMesh(mesh, disposeTracker);
+			});
 			markerRenderResults.forEach((result) => {
+				result.disposePresentation?.();
 				if (!result.usedAsset) {
 					disposePlaceholderObject(result.group, disposeTracker);
 				}

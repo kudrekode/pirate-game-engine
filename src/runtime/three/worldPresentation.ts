@@ -34,25 +34,25 @@ export const THREE_WORLD_MATERIALS: Record<
 	default: { color: 0x94a3b8, roughness: 0.82 },
 	dirt: { color: 0x8a5a32, roughness: 0.95 },
 	event: { color: 0xb95fd9, opacity: 0.72, roughness: 0.7, transparent: true },
-	foliage: { color: 0x2f7d43, roughness: 0.88 },
+	foliage: { color: 0x687950, roughness: 0.9 },
 	friendly: { color: 0x2f6fed, roughness: 0.55 },
-	grass: { color: 0x4f8f45, roughness: 0.92 },
+	grass: { color: 0x78835c, roughness: 0.96 },
 	hostile: { color: 0xc2413d, roughness: 0.62 },
 	houseWall: { color: 0xd0bd91, roughness: 0.86 },
 	itemAccent: { color: 0xf7c948, roughness: 0.45 },
 	marketCanopy: { color: 0xd84c45, roughness: 0.58 },
 	roof: { color: 0x9f342c, roughness: 0.72 },
-	sand: { color: 0xd7c47a, roughness: 0.98 },
+	sand: { color: 0xc7b791, roughness: 0.94 },
 	skin: { color: 0xf2c6a6, roughness: 0.68 },
 	stone: { color: 0x7d8791, roughness: 0.9 },
 	water: {
-		color: 0x2f9fd8,
+		color: 0x27777d,
 		metalness: 0.02,
-		opacity: 0.68,
-		roughness: 0.18,
+		opacity: 0.94,
+		roughness: 0.3,
 		transparent: true,
 	},
-	waterAccent: { color: 0x1687a7, metalness: 0.03, roughness: 0.35 },
+	waterAccent: { color: 0x64aaa0, metalness: 0.03, roughness: 0.35 },
 	wood: { color: 0x7c4a24, roughness: 0.78 },
 };
 
@@ -111,22 +111,22 @@ export const DEFAULT_ATMOSPHERE_PRESET_ID: AtmospherePresetId = "clear-day";
 export const ATMOSPHERE_PRESETS: Record<AtmospherePresetId, AtmospherePreset> =
 	{
 		"clear-day": {
-			fog: { far: 58, near: 16 },
+			fog: { far: 80, near: 24 },
 			id: "clear-day",
 			label: "Clear Day",
 			lighting: {
-				ambientGroundColor: 0x53654d,
-				ambientIntensity: 0.9,
-				ambientSkyColor: 0xd9eeff,
-				sunAzimuthDegrees: 38,
-				sunColor: 0xfff2d2,
-				sunElevationDegrees: 48,
-				sunIntensity: 1.35,
+				ambientGroundColor: 0x9a937e,
+				ambientIntensity: 1.5,
+				ambientSkyColor: 0xdce9ec,
+				sunAzimuthDegrees: -38,
+				sunColor: 0xffefd6,
+				sunElevationDegrees: 42,
+				sunIntensity: 2.5,
 			},
 			palette: {
-				fog: 0xb9d6e8,
-				horizon: 0xb9d6e8,
-				sky: 0x4f8fc8,
+				fog: 0xd3dfda,
+				horizon: 0xd3dfda,
+				sky: 0x799dac,
 			},
 			renderer: { toneMappingExposure: 1.05 },
 		},
@@ -252,6 +252,7 @@ function createAtmosphereSky(
 ): THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial> {
 	const geometry = new THREE.SphereGeometry(280, 16, 8);
 	const material = new THREE.ShaderMaterial({
+		depthTest: false,
 		depthWrite: false,
 		fog: false,
 		fragmentShader: `
@@ -260,8 +261,9 @@ function createAtmosphereSky(
 			varying vec3 vDirection;
 
 			void main() {
-				float skyBlend = smoothstep(-0.18, 0.38, normalize(vDirection).y);
+				float skyBlend = smoothstep(0.0, 0.65, normalize(vDirection).y);
 				gl_FragColor = vec4(mix(horizonColor, skyColor, skyBlend), 1.0);
+				#include <colorspace_fragment>
 			}
 		`,
 		side: THREE.BackSide,
@@ -275,7 +277,9 @@ function createAtmosphereSky(
 
 			void main() {
 				vDirection = (modelMatrix * vec4(position, 0.0)).xyz;
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				// Camera-centred sky at the far plane, independent of editor clipping.
+				vec4 clip = projectionMatrix * vec4(mat3(viewMatrix) * position, 1.0);
+				gl_Position = clip.xyww;
 			}
 		`,
 	});
@@ -349,13 +353,14 @@ export function applyAtmosphere(
 	if (enableShadows) {
 		sun.shadow.mapSize.set(1024, 1024);
 		sun.shadow.camera.bottom = -20;
-		sun.shadow.camera.far = 96;
+		sun.shadow.camera.far = 120;
 		sun.shadow.camera.left = -20;
 		sun.shadow.camera.near = 0.5;
 		sun.shadow.camera.right = 20;
 		sun.shadow.camera.top = 20;
-		sun.shadow.normalBias = 0.02;
-		sun.shadow.radius = 2;
+		sun.shadow.bias = -0.00015;
+		sun.shadow.normalBias = 0.012;
+		sun.shadow.radius = 2.5;
 	}
 	scene.add(sky, ambient, sun);
 	configureAtmosphereRenderer(renderer, preset, enableShadows);
@@ -365,6 +370,7 @@ export function applyAtmosphere(
 			scene.remove(sky, ambient, sun);
 			sky.geometry.dispose();
 			sky.material.dispose();
+			sun.shadow.dispose();
 		},
 		lights: { ambient, sun },
 		preset,

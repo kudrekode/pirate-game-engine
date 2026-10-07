@@ -14,9 +14,11 @@ import {
 } from "./threeVisualAssetLoader";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 import { resolveThreeVisualAssetTransform } from "./threeVisuals";
+import { applyWorldKitMaterials } from "./worldKitMaterials";
 import { applyShadowRole } from "./worldPresentation";
 
 export type ThreeVisualRenderResult = {
+	disposePresentation?: () => void;
 	assetAnalysis?: ThreeVisualAssetAnalysis;
 	assetCategory?: ThreeVisualAssetDefinition["category"];
 	assetDefinitionId?: string;
@@ -134,6 +136,11 @@ function createMarkerGroup(
 	options.diagnostics?.recordAssetClone(assetRequest.definition.id);
 	return {
 		assetAnalysis: assetRequest.analysis,
+		disposePresentation: applyWorldKitMaterials(
+			assetRequest.object,
+			assetRequest.definition.id,
+			marker.id,
+		),
 		assetCategory: assetRequest.definition.category,
 		assetDefinitionId: assetRequest.definition.id,
 		assetStatus: "loaded",

@@ -23,6 +23,7 @@ export type CoastlineEdge = {
 };
 
 export type WaterPresentationState = {
+	time: { value: number };
 	coastlineMaterial: THREE.MeshStandardMaterial;
 	shallowWaterMaterial: THREE.MeshStandardMaterial;
 	waterMaterial: THREE.MeshStandardMaterial;
@@ -35,16 +36,15 @@ export type CoastlinePresentation = {
 
 type WaterPresentationArea = GameArea;
 
-const COASTLINE_STRIP_WIDTH = 0.18;
-const SHALLOW_WATER_STRIP_WIDTH = 0.36;
+const COASTLINE_STRIP_WIDTH = 0.28;
+const SHALLOW_WATER_STRIP_WIDTH = 0.85;
 const COASTLINE_Y_OFFSET = 0.025;
 const SHALLOW_WATER_Y_OFFSET = 0.014;
-const WATER_BASE_OPACITY = 0.7;
-const WATER_OPACITY_AMPLITUDE = 0.035;
-const COASTLINE_BASE_OPACITY = 0.72;
-const COASTLINE_OPACITY_AMPLITUDE = 0.06;
-const SHALLOW_WATER_BASE_OPACITY = 0.32;
-const SHALLOW_WATER_OPACITY_AMPLITUDE = 0.035;
+const WATER_BASE_OPACITY = 0.94;
+const WATER_OPACITY_AMPLITUDE = 0.008;
+const COASTLINE_BASE_OPACITY = 1;
+const SHALLOW_WATER_BASE_OPACITY = 0.38;
+const SHALLOW_WATER_OPACITY_AMPLITUDE = 0.015;
 
 function terrainTileKey(x: number, y: number): string {
 	return `${x}:${y}`;
@@ -63,19 +63,54 @@ export function isWaterTerrainId(tileId: string | undefined): boolean {
 }
 
 export function createWaterPresentationState(): WaterPresentationState {
+	const time = { value: 0 };
 	const waterMaterial = createWorldMaterial("water", {
 		opacity: WATER_BASE_OPACITY,
 	});
 	waterMaterial.depthWrite = false;
 	waterMaterial.transparent = true;
+	// Small world-space ripples in the existing Standard material: lighting,
+	// shadows, fog and colour management remain Three's normal rendering path.
+	waterMaterial.onBeforeCompile = (shader) => {
+		shader.uniforms.coastalTime = time;
+		shader.vertexShader =
+			`varying vec3 vCoastalPosition;\n${shader.vertexShader}`.replace(
+				"#include <begin_vertex>",
+				"#include <begin_vertex>\nvCoastalPosition = (modelMatrix * vec4(position, 1.0)).xyz;",
+			);
+		shader.fragmentShader =
+			`uniform float coastalTime;\nvarying vec3 vCoastalPosition;\n${shader.fragmentShader}`
+				.replace(
+					"#include <color_fragment>",
+					`
+				#include <color_fragment>
+				float swell = sin(vCoastalPosition.x * 1.7 + vCoastalPosition.z * 2.3 + coastalTime * 0.65);
+				float ripple = sin(vCoastalPosition.x * 5.1 - vCoastalPosition.z * 3.8 + coastalTime * 0.9);
+				diffuseColor.rgb *= 1.0 + swell * 0.16 + ripple * 0.045;
+			`,
+				)
+				.replace(
+					"#include <normal_fragment_maps>",
+					`
+				#include <normal_fragment_maps>
+				vec3 rippleNormal = vec3(
+					0.045 * cos(vCoastalPosition.x * 1.7 + vCoastalPosition.z * 2.3 + coastalTime * 0.65),
+					0.0,
+					0.035 * cos(vCoastalPosition.x * 5.1 - vCoastalPosition.z * 3.8 + coastalTime * 0.9));
+				normal = normalize(normal + mat3(viewMatrix) * rippleNormal);
+			`,
+				);
+	};
+	waterMaterial.customProgramCacheKey = () => "coastal-water-v1";
 
 	const coastlineMaterial = new THREE.MeshStandardMaterial({
-		color: 0xe7fbf6,
-		depthWrite: false,
+		color: 0xffffff,
+		depthWrite: true,
 		metalness: 0,
 		opacity: COASTLINE_BASE_OPACITY,
-		roughness: 0.38,
-		transparent: true,
+		roughness: 0.94,
+		transparent: false,
+		vertexColors: true,
 	});
 
 	const shallowWaterMaterial = createWorldMaterial("waterAccent", {
@@ -83,8 +118,9 @@ export function createWaterPresentationState(): WaterPresentationState {
 	});
 	shallowWaterMaterial.depthWrite = false;
 	shallowWaterMaterial.transparent = true;
+	shallowWaterMaterial.vertexColors = true;
 
-	return { coastlineMaterial, shallowWaterMaterial, waterMaterial };
+	return { coastlineMaterial, shallowWaterMaterial, waterMaterial, time };
 }
 
 export function updateWaterPresentation(
@@ -92,12 +128,10 @@ export function updateWaterPresentation(
 	elapsedMs: number,
 ): void {
 	const seconds = elapsedMs / 1000;
+	state.time.value = seconds;
 	state.waterMaterial.opacity =
 		WATER_BASE_OPACITY + Math.sin(seconds * 1.35) * WATER_OPACITY_AMPLITUDE;
-	state.waterMaterial.roughness = 0.19 + Math.sin(seconds * 0.85 + 0.7) * 0.035;
-	state.coastlineMaterial.opacity =
-		COASTLINE_BASE_OPACITY +
-		Math.sin(seconds * 1.75 + 0.4) * COASTLINE_OPACITY_AMPLITUDE;
+	state.waterMaterial.roughness = 0.3 + Math.sin(seconds * 0.85 + 0.7) * 0.015;
 	state.shallowWaterMaterial.opacity =
 		SHALLOW_WATER_BASE_OPACITY +
 		Math.sin(seconds * 1.25 + 1.2) * SHALLOW_WATER_OPACITY_AMPLITUDE;
@@ -201,6 +235,7 @@ type ShoreVertex = {
 
 function createQuadGeometry(
 	vertices: [ShoreVertex, ShoreVertex, ShoreVertex, ShoreVertex],
+	alpha: [number, number, number, number],
 ): THREE.BufferGeometry {
 	const geometry = new THREE.BufferGeometry();
 	geometry.setAttribute(
@@ -211,6 +246,13 @@ function createQuadGeometry(
 		),
 	);
 	geometry.setIndex([0, 1, 2, 2, 3, 0]);
+	geometry.setAttribute(
+		"color",
+		new THREE.Float32BufferAttribute(
+			alpha.flatMap((a) => [1, 1, 1, a]),
+			4,
+		),
+	);
 	geometry.computeVertexNormals?.();
 	geometry.computeBoundingSphere();
 	return geometry;
@@ -230,7 +272,7 @@ function getCoastlineGeometry(
 	edge: CoastlineEdge,
 ): THREE.BufferGeometry {
 	const sampler = createTerrainSurfaceSampler(area);
-	const landInset = COASTLINE_STRIP_WIDTH;
+	const landInset = 0.01;
 	const waterInset = COASTLINE_STRIP_WIDTH;
 	const x0 = edge.gridX - 0.5;
 	const x1 = edge.gridX + 0.5;
@@ -268,28 +310,41 @@ function getCoastlineGeometry(
 	const landEndWorld = gridToWorld(area, landEnd.x, landEnd.y);
 	const waterEndWorld = gridToWorld(area, waterEnd.x, waterEnd.y);
 	const waterStartWorld = gridToWorld(area, waterStart.x, waterStart.y);
-	return createQuadGeometry([
-		{
-			x: landStartWorld.x,
-			y: sampler.sampleSmoothSurfaceY(landStart) + COASTLINE_Y_OFFSET,
-			z: landStartWorld.z,
-		},
-		{
-			x: landEndWorld.x,
-			y: sampler.sampleSmoothSurfaceY(landEnd) + COASTLINE_Y_OFFSET,
-			z: landEndWorld.z,
-		},
-		{
-			x: waterEndWorld.x,
-			y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
-			z: waterEndWorld.z,
-		},
-		{
-			x: waterStartWorld.x,
-			y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
-			z: waterStartWorld.z,
-		},
-	]);
+	const geometry = createQuadGeometry(
+		[
+			{
+				x: landStartWorld.x,
+				y: sampler.sampleSmoothSurfaceY(landStart) + COASTLINE_Y_OFFSET,
+				z: landStartWorld.z,
+			},
+			{
+				x: landEndWorld.x,
+				y: sampler.sampleSmoothSurfaceY(landEnd) + COASTLINE_Y_OFFSET,
+				z: landEndWorld.z,
+			},
+			{
+				x: waterEndWorld.x,
+				y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
+				z: waterEndWorld.z,
+			},
+			{
+				x: waterStartWorld.x,
+				y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
+				z: waterStartWorld.z,
+			},
+		],
+		[1, 1, 1, 1],
+	);
+	const sand = new THREE.Color(0xc7b791);
+	const wet = new THREE.Color(0x77998c);
+	geometry.setAttribute(
+		"color",
+		new THREE.Float32BufferAttribute(
+			[sand, sand, wet, wet].flatMap((color) => [color.r, color.g, color.b, 1]),
+			4,
+		),
+	);
+	return geometry;
 }
 
 function getShallowWaterGeometry(
@@ -335,12 +390,15 @@ function getShallowWaterGeometry(
 	const outerEndWorld = gridToWorld(area, outerEnd.x, outerEnd.y);
 	const outerStartWorld = gridToWorld(area, outerStart.x, outerStart.y);
 	const y = edge.waterSurfaceY + SHALLOW_WATER_Y_OFFSET;
-	return createQuadGeometry([
-		{ x: innerStartWorld.x, y, z: innerStartWorld.z },
-		{ x: innerEndWorld.x, y, z: innerEndWorld.z },
-		{ x: outerEndWorld.x, y, z: outerEndWorld.z },
-		{ x: outerStartWorld.x, y, z: outerStartWorld.z },
-	]);
+	return createQuadGeometry(
+		[
+			{ x: innerStartWorld.x, y, z: innerStartWorld.z },
+			{ x: innerEndWorld.x, y, z: innerEndWorld.z },
+			{ x: outerEndWorld.x, y, z: outerEndWorld.z },
+			{ x: outerStartWorld.x, y, z: outerStartWorld.z },
+		],
+		[1, 1, 0, 0],
+	);
 }
 
 export function createCoastlinePresentation(

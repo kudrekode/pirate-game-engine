@@ -1,0 +1,552 @@
+{
+	"editor": {
+		"asset": {
+			"activeImportedAssetInstances": 32,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"world-barrel",
+				"world-bush",
+				"world-chest",
+				"world-crate",
+				"world-dock",
+				"world-floor",
+				"world-grass",
+				"world-lantern",
+				"world-palm",
+				"world-post",
+				"world-railing",
+				"world-rock-large",
+				"world-rock-small",
+				"world-rope",
+				"world-rowboat",
+				"world-sack",
+				"world-shack",
+				"world-sign",
+				"world-stairs",
+				"world-stall",
+				"world-stool",
+				"world-table",
+				"world-wall"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 2,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 0,
+					"activeMixers": 0,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 0,
+					"playerState": "idle",
+					"sourceAssetIds": []
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 20
+			},
+			"activeCloneInstances": 32,
+			"cacheHitCount": 9,
+			"cloneCount": 88,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 23,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 32,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 0
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 218.4,
+			"averageFrameIntervalMs": 218.4,
+			"frameCount": 43,
+			"fps": 4,
+			"lastFrameMs": 253.4,
+			"lastFrameIntervalMs": 253.4,
+			"lastRenderMs": 3.9,
+			"worstFrameMs": 1649.2,
+			"worstFrameIntervalMs": 1649.2
+		},
+		"hitches": {
+			"lastDurationMs": 253.4,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 1,
+			"over100MsCount": 34,
+			"over500MsCount": 1,
+			"over50MsCount": 42,
+			"recent": [
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 237.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 244.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 248.4,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 250,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 239.6,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 243.7,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 245.6,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 253.4,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				}
+			]
+		},
+		"label": "ThreeDPreview",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			},
+			"cameraUpdate": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			},
+			"frameCallback": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			},
+			"render": {
+				"averageMs": 23.5,
+				"count": 43,
+				"lastMs": 3.9,
+				"worstMs": 381.5
+			},
+			"runtimeTick": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			},
+			"visualUpdate": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 43,
+				"lastMs": 0,
+				"worstMs": 0.1
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"clone: world-dock",
+			"clone: world-palm",
+			"clone: world-bush",
+			"clone: world-grass",
+			"clone: world-stool",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: asset state changed"
+		],
+		"renderer": {
+			"drawCalls": 115,
+			"geometries": 94,
+			"lines": 42,
+			"points": 0,
+			"programs": 15,
+			"textures": 54,
+			"triangles": 145876
+		},
+		"raf": {
+			"activeLoopCount": 0,
+			"lastCancelReason": "",
+			"lastStartReason": "",
+			"loopCancelCount": 0,
+			"loopRestartCount": 0,
+			"loopStartCount": 0
+		},
+		"runtime": {
+			"averageTickMs": 0,
+			"lastTickMs": 0,
+			"tickCount": 0,
+			"worstTickMs": 0
+		},
+		"scene": {
+			"areaId": "area_main",
+			"areaName": "Tidewatch Harbour",
+			"buildCount": 6,
+			"cleanupCount": 5,
+			"entityCount": 32,
+			"lastBuildMs": 33.2,
+			"lastRebuildReason": "asset state changed",
+			"projectName": "Tidewatch Harbour",
+			"reasonCounts": {
+				"initial preview build": 1,
+				"preview state changed": 1,
+				"asset state changed": 4
+			},
+			"timeSinceLastRebuildMs": 7907.3
+		},
+		"terrain": {
+			"coastlineEdgeCount": 20,
+			"lastDurationMs": 3.9,
+			"meshCount": 42,
+			"mode": "smooth",
+			"rebuildCount": 6,
+			"tileCount": 300,
+			"triangleCount": 680,
+			"vertexCount": 517,
+			"waterMeshCount": 1
+		}
+	},
+	"play": {
+		"asset": {
+			"activeImportedAssetInstances": 32,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"world-barrel",
+				"world-bush",
+				"world-chest",
+				"world-crate",
+				"world-dock",
+				"world-floor",
+				"world-grass",
+				"world-lantern",
+				"world-palm",
+				"world-post",
+				"world-railing",
+				"world-rock-large",
+				"world-rock-small",
+				"world-rope",
+				"world-rowboat",
+				"world-sack",
+				"world-shack",
+				"world-sign",
+				"world-stairs",
+				"world-stall",
+				"world-stool",
+				"world-table",
+				"world-wall"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 2,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 2,
+					"activeMixers": 2,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 0,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 20
+			},
+			"activeCloneInstances": 32,
+			"cacheHitCount": 32,
+			"cloneCount": 64,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 2,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 32,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 1
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 519.7,
+			"averageFrameIntervalMs": 519.7,
+			"frameCount": 31,
+			"fps": 2.2,
+			"lastFrameMs": 447.4,
+			"lastFrameIntervalMs": 447.4,
+			"lastRenderMs": 2.9,
+			"worstFrameMs": 2714.2,
+			"worstFrameIntervalMs": 2714.2
+		},
+		"hitches": {
+			"lastDurationMs": 447.4,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 1,
+			"over100MsCount": 34,
+			"over500MsCount": 11,
+			"over50MsCount": 37,
+			"recent": [
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 447.3,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 440.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 437.8,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 464.7,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 442.3,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 435.5,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 437.8,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 447.4,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.1,
+				"count": 31,
+				"lastMs": 0.2,
+				"worstMs": 1.2
+			},
+			"cameraUpdate": {
+				"averageMs": 0.2,
+				"count": 31,
+				"lastMs": 0.2,
+				"worstMs": 0.7
+			},
+			"frameCallback": {
+				"averageMs": 47.9,
+				"count": 31,
+				"lastMs": 3.8,
+				"worstMs": 683.3
+			},
+			"render": {
+				"averageMs": 46.8,
+				"count": 31,
+				"lastMs": 2.9,
+				"worstMs": 682.6
+			},
+			"runtimeTick": {
+				"averageMs": 0.1,
+				"count": 15,
+				"lastMs": 0,
+				"worstMs": 0.5
+			},
+			"visualUpdate": {
+				"averageMs": 0.8,
+				"count": 31,
+				"lastMs": 0.7,
+				"worstMs": 5.8
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 31,
+				"lastMs": 0,
+				"worstMs": 0.1
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"clone: world-palm",
+			"clone: world-bush",
+			"clone: world-grass",
+			"clone: world-stool",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build"
+		],
+		"renderer": {
+			"drawCalls": 106,
+			"geometries": 85,
+			"lines": 0,
+			"points": 0,
+			"programs": 16,
+			"textures": 54,
+			"triangles": 145870
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"averageTickMs": 0.1,
+			"lastTickMs": 0,
+			"tickCount": 15,
+			"worstTickMs": 0.5
+		},
+		"scene": {
+			"areaId": "area_main",
+			"areaName": "Tidewatch Harbour",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 33,
+			"lastBuildMs": 446.4,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Tidewatch Harbour",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 16561.6
+		},
+		"terrain": {
+			"coastlineEdgeCount": 20,
+			"lastDurationMs": 14.8,
+			"meshCount": 42,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 300,
+			"triangleCount": 680,
+			"vertexCount": 517,
+			"waterMeshCount": 1
+		}
+	},
+	"errors": [],
+	"failedAssets": [],
+	"projectUnchanged": true
+}
