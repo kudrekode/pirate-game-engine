@@ -233,6 +233,30 @@ function migrateInteraction(
 		return undefined;
 	}
 
+	if (value.type === "collect_item") {
+		return withInteractionBase(value, fallbackActivationMode, {
+			type: "collect_item",
+			itemId: readString(value.itemId, ""),
+			quantity: Math.max(1, Math.floor(readNumber(value.quantity, 1))),
+		});
+	}
+	if (value.type === "show_message" || value.type === "object_behaviour") {
+		return withInteractionBase(value, fallbackActivationMode, {
+			type: value.type,
+			...(value.type === "show_message"
+				? {
+						lines: Array.isArray(value.lines)
+							? value.lines.filter(
+									(line): line is string => typeof line === "string",
+								)
+							: [],
+						speaker: readString(value.speaker, ""),
+						once: readBoolean(value.once, false),
+					}
+				: {}),
+		});
+	}
+
 	if (value.type === "area_link" || value.type === "teleport") {
 		const targetAreaId = readString(value.targetAreaId, "");
 		const targetEventBlockId = readString(value.targetEventBlockId, "");

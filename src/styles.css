@@ -1,3 +1,33 @@
+.runtime-interaction-prompt {
+	position: absolute;
+	bottom: 28px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 5;
+	padding: 9px 18px;
+	border: 1px solid #a3b4ae66;
+	border-radius: 8px;
+	background: #132321ed;
+	color: #fff9e8;
+	pointer-events: none;
+}
+
+.runtime-opened-label {
+	position: absolute;
+	transform: translate(-50%, -100%);
+	padding: 3px 7px;
+	border-radius: 4px;
+	background: #153a2ddd;
+	color: #e5f6da;
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.simple-interaction textarea {
+	width: 100%;
+	resize: vertical;
+}
+
 :root {
 	color: #1f2933;
 	background: #eef1f4;

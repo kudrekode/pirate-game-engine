@@ -150,6 +150,16 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 		if (!interaction) {
 			return;
 		}
+		if (interaction.type === "collect_item") {
+			checkReference(
+				context.itemIds,
+				interaction.itemId,
+				"item",
+				`${path}.itemId`,
+				entityType,
+				entityId,
+			);
+		}
 		if (interaction.type === "play_cutscene") {
 			checkReference(
 				context.cutsceneIds,

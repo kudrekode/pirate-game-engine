@@ -18,9 +18,12 @@ import {
 } from "./questEngine";
 import type { RuntimeSessionState } from "./runtimeSession";
 import { buyShopEntry } from "./shopRuntime";
+import { createTraversalWorld } from "./traversal";
 import { createBoardedVehicleState } from "./vehicleRuntime";
 
 export type RuntimeObjectInteractionEvent =
+	| { type: "objectCollected"; objectId: string }
+	| { type: "containerOpened"; objectId: string }
 	| { type: "status"; message: string }
 	| { type: "flowLog"; message: string }
 	| { type: "stateChanged" }
@@ -117,7 +120,18 @@ export function runRuntimeObjectBehaviour(
 	session: RuntimeSessionState,
 	object: ObjectInstance,
 	emit: RuntimeObjectInteractionEventEmitter,
+	activation: "on_interact" | "on_touch" = "on_interact",
 ): boolean {
+	const interaction =
+		object.interaction ??
+		session.project.objects.find((d) => d.id === object.objectDefinitionId)
+			?.defaultInteraction;
+	if (
+		interaction?.type === "object_behaviour" &&
+		interaction.activationMode !== activation &&
+		interaction.activationMode !== "both"
+	)
+		return false;
 	const behaviour = resolveObjectBehaviour(session.project, object);
 	const result = runObjectBehaviour(behaviour, {
 		itemDefinitions: session.project.items,
@@ -131,6 +145,7 @@ export function runRuntimeObjectBehaviour(
 	}
 
 	if (result.type === "container") {
+		if (result.opened) emit({ type: "containerOpened", objectId: object.id });
 		emitInventoryChanged(session, emit);
 		syncQuestProgress(session, emit);
 		emitStateChanged(emit);
@@ -245,6 +260,58 @@ export function collectRuntimePickup(
 		type: "status",
 		message: `Picked up ${findItemName(session, pickup.itemId) ?? pickup.itemId} x${pickup.quantity}.`,
 	});
+	return true;
+}
+
+// A placed visual can use the existing pickup transaction. Only the session's
+// cloned scene is removed; the authored instance and its visual remain in Edit.
+export function collectRuntimeObjectPickup(
+	session: RuntimeSessionState,
+	objectId: string,
+	emit: RuntimeObjectInteractionEventEmitter,
+): boolean {
+	const area = findCurrentArea(session);
+	const object = area?.objects.find((entry) => entry.id === objectId);
+	const interaction =
+		object?.interaction ??
+		session.project.objects.find(
+			(entry) => entry.id === object?.objectDefinitionId,
+		)?.defaultInteraction;
+	if (
+		!area ||
+		!object ||
+		interaction?.type !== "collect_item" ||
+		!interaction.itemId ||
+		interaction.activationMode === "disabled"
+	)
+		return false;
+	if (!session.project.items.some((item) => item.id === interaction.itemId)) {
+		emit({ type: "status", message: "Pickup item is missing." });
+		return false;
+	}
+	const collected = collectRuntimePickup(
+		session,
+		{
+			id: object.id,
+			areaId: area.id,
+			x: object.x,
+			y: object.y,
+			itemId: interaction.itemId,
+			quantity: interaction.quantity ?? 1,
+			once: true,
+			pickupMode: "on_interact",
+		},
+		emit,
+	);
+	if (!collected) return false;
+	area.objects = area.objects.filter((entry) => entry.id !== object.id);
+	if (session.traversal?.world.areaId === area.id)
+		session.traversal.world = createTraversalWorld(
+			session.project,
+			area,
+			session.traversal.world.mode,
+		);
+	emit({ type: "objectCollected", objectId: object.id });
 	return true;
 }
 

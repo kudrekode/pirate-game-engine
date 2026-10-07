@@ -122,6 +122,9 @@ export type InteractionActivationMode =
 	| "disabled";
 
 export type InteractionType =
+	| "show_message"
+	| "object_behaviour"
+	| "collect_item"
 	| "area_link"
 	| "teleport"
 	| "play_cutscene"
@@ -132,6 +135,12 @@ export type InteractionType =
 
 export type Interaction = {
 	type: InteractionType;
+	// Inline, ordered text uses the existing dialogue engine during Play.
+	lines?: string[];
+	itemId?: string;
+	quantity?: number;
+	speaker?: string;
+	once?: boolean;
 	activationMode: InteractionActivationMode;
 	prompt?: string;
 	targetAreaId?: string;

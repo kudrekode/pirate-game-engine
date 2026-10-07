@@ -21,12 +21,16 @@ import {
 	makeDefaultObjectBehaviour,
 	ObjectBehaviourEditor,
 } from "../ObjectBehaviourEditor";
+import { EntityInteractionEditor } from "./EntityInteractionEditor";
 import { MapNpcInspector } from "./MapNpcInspector";
 import type { MapInspectorSelection } from "./mapEditorSelection";
 import { cloneCurrentProject } from "./useMapEditHistory";
 
 const interactionTypes = [
 	"none",
+	"show_message",
+	"object_behaviour",
+	"collect_item",
 	"area_link",
 	"teleport",
 	"play_cutscene",
@@ -270,6 +274,10 @@ export function MapInspector({
 	function makeDefaultInteraction(
 		type: Exclude<InteractionTypeOption, "none">,
 	): Interaction {
+		if (type === "collect_item")
+			return { type, activationMode: "on_interact", quantity: 1 };
+		if (type === "show_message" || type === "object_behaviour")
+			return { type, activationMode: "on_interact", lines: [""] };
 		const activationMode = getDefaultActivationMode(type);
 
 		if (type === "play_cutscene") {
@@ -391,264 +399,330 @@ export function MapInspector({
 
 		return (
 			<div className="interaction-editor">
-				<div className="panel-title secondary">Interaction</div>
-				{hasDirectInteraction && targetingRuleCount > 0 ? (
-					<div className="validation-message">
-						This target has a direct interaction and rule-based logic. Both may
-						run.
-					</div>
-				) : null}
-				<label>
-					Type
-					<select
-						onChange={(event) => {
-							const nextType = event.target.value as InteractionTypeOption;
-							updateSelectedInteraction(
-								nextType === "none"
-									? undefined
-									: makeDefaultInteraction(nextType),
-							);
-						}}
-						value={interactionType}
-					>
-						<option value="none">None</option>
-						<option value="area_link">Area link</option>
-						<option value="teleport">Teleport</option>
-						<option value="play_cutscene">Play cutscene</option>
-						<option value="start_dialogue">Start dialogue</option>
-						<option value="open_shop">Open shop</option>
-						<option value="set_flag">Set flag</option>
-						<option value="change_movement_mode">Change movement mode</option>
-					</select>
-				</label>
-
-				{interaction ? (
-					<>
-						<label>
-							Activation
-							<select
-								onChange={(event) =>
-									updateSelectedInteraction({
-										...interaction,
-										activationMode: event.target
-											.value as InteractionActivationMode,
-									})
-								}
-								value={interaction.activationMode}
-							>
-								{activationModes.map((mode) => (
-									<option key={mode} value={mode}>
-										{mode === "on_touch"
-											? "On touch"
-											: mode === "on_interact"
-												? "On interact"
-												: mode === "both"
-													? "Both"
-													: "Disabled"}
-									</option>
-								))}
-							</select>
-						</label>
-						<label>
-							Prompt
-							<input
-								onChange={(event) =>
-									updateSelectedInteraction({
-										...interaction,
-										prompt: event.target.value,
-									})
-								}
-								placeholder={getDefaultPrompt(
-									interaction.type,
-									interaction.mode,
-								)}
-								value={interaction.prompt ?? ""}
-							/>
-						</label>
-					</>
-				) : null}
-
-				{interaction?.type === "area_link" ||
-				interaction?.type === "teleport" ? (
-					<>
-						<label>
-							Target area
-							<select
-								onChange={(event) => {
-									const nextArea = project.areas.find(
-										(area) => area.id === event.target.value,
-									);
-									updateSelectedInteraction({
-										...interaction,
-										targetAreaId: event.target.value,
-										targetEventBlockId: nextArea?.eventBlocks[0]?.id ?? "",
-									});
-								}}
-								value={targetArea?.id ?? ""}
-							>
-								{project.areas.map((area) => (
-									<option key={area.id} value={area.id}>
-										{area.name}
-									</option>
-								))}
-							</select>
-						</label>
-						<label>
-							Target spawn/event
-							<select
-								onChange={(event) =>
-									updateSelectedInteraction({
-										...interaction,
-										targetAreaId:
-											targetArea?.id ?? interaction.targetAreaId ?? "",
-										targetEventBlockId: event.target.value,
-									})
-								}
-								value={interaction.targetEventBlockId ?? ""}
-							>
-								{targetEventBlocks.map((eventBlock) => (
-									<option key={eventBlock.id} value={eventBlock.id}>
-										{eventBlock.name} ({eventBlock.kind})
-									</option>
-								))}
-							</select>
-						</label>
-					</>
-				) : null}
-
-				{interaction?.type === "play_cutscene" ? (
-					<label>
-						Cutscene
-						<select
-							onChange={(event) =>
-								updateSelectedInteraction({
-									...interaction,
-									cutsceneId: event.target.value,
+				<EntityInteractionEditor
+					key={targetId}
+					project={project}
+					kind={
+						selectedObject
+							? "object"
+							: selectedNpc
+								? "npc"
+								: selectedEventBlock
+									? "event"
+									: "structure"
+					}
+					name={
+						selectedObject
+							? (selectedObject.nameOverride ??
+								project.objects.find(
+									(d) => d.id === selectedObject.objectDefinitionId,
+								)?.name ??
+								"Object")
+							: (selectedResolvedNpc?.name ??
+								selectedEventBlock?.name ??
+								"Object")
+					}
+					interaction={interaction}
+					behaviour={
+						selectedObject
+							? (selectedObject.behaviourOverride ??
+								project.objects.find(
+									(d) => d.id === selectedObject.objectDefinitionId,
+								)?.defaultBehaviour)
+							: undefined
+					}
+					onChange={(next, behaviour) =>
+						selectedObject
+							? updateSelectedObject({
+									interaction: next,
+									...(behaviour ? { behaviourOverride: behaviour } : {}),
 								})
-							}
-							value={interaction.cutsceneId ?? ""}
+							: selectedNpc &&
+									next.type === "show_message" &&
+									next.activationMode !== "disabled"
+								? updateSelectedNpc({
+										interaction: next,
+										interactionOverride: next,
+										attributesOverride: {
+											...selectedNpc.attributesOverride,
+											canInteract: true,
+										},
+									})
+								: updateSelectedInteraction(next)
+					}
+					onCreateItem={(name) => {
+						const id = `item_${crypto.randomUUID()}`;
+						updateProject((draft) => {
+							draft.items.push({ id, name, category: "misc", stackable: true });
+						});
+						return id;
+					}}
+				/>
+				<details>
+					<summary>Advanced interaction</summary>
+					{hasDirectInteraction && targetingRuleCount > 0 ? (
+						<div className="validation-message">
+							This target has a direct interaction and rule-based logic. Both
+							may run.
+						</div>
+					) : null}
+					<label>
+						Type
+						<select
+							onChange={(event) => {
+								const nextType = event.target.value as InteractionTypeOption;
+								updateSelectedInteraction(
+									nextType === "none"
+										? undefined
+										: makeDefaultInteraction(nextType),
+								);
+							}}
+							value={interactionType}
 						>
-							{project.cutscenes.map((cutscene) => (
-								<option key={cutscene.id} value={cutscene.id}>
-									{cutscene.name}
-								</option>
-							))}
+							<option value="none">None</option>
+							<option value="area_link">Area link</option>
+							<option value="teleport">Teleport</option>
+							<option value="play_cutscene">Play cutscene</option>
+							<option value="show_message">Inline message / dialogue</option>
+							<option value="object_behaviour">Object behaviour</option>
+							<option value="collect_item">Pickup</option>
+							<option value="start_dialogue">Start dialogue</option>
+							<option value="open_shop">Open shop</option>
+							<option value="set_flag">Set flag</option>
+							<option value="change_movement_mode">Change movement mode</option>
 						</select>
 					</label>
-				) : null}
 
-				{interaction?.type === "start_dialogue" ? (
-					<label>
-						Dialogue
-						<select
-							onChange={(event) =>
-								updateSelectedInteraction({
-									...interaction,
-									dialogueId: event.target.value,
-								})
-							}
-							value={interaction.dialogueId ?? ""}
-						>
-							<option value="">Select dialogue</option>
-							{project.dialogues.map((dialogue) => (
-								<option key={dialogue.id} value={dialogue.id}>
-									{dialogue.name}
-								</option>
-							))}
-						</select>
-					</label>
-				) : null}
-
-				{interaction?.type === "open_shop" ? (
-					<label>
-						Shop
-						<select
-							onChange={(event) =>
-								updateSelectedInteraction({
-									...interaction,
-									shopId: event.target.value,
-								})
-							}
-							value={interaction.shopId ?? ""}
-						>
-							<option value="">Select shop</option>
-							{project.shops.map((shop) => (
-								<option key={shop.id} value={shop.id}>
-									{shop.name}
-								</option>
-							))}
-						</select>
-					</label>
-				) : null}
-
-				{interaction?.type === "set_flag" ? (
-					<>
-						<label>
-							Flag
-							<input
-								onChange={(event) =>
-									updateSelectedInteraction({
-										...interaction,
-										flag: event.target.value,
-									})
-								}
-								value={interaction.flag ?? ""}
-							/>
-						</label>
-						{interaction.flag &&
-						!(interaction.flag in project.gameState.flags) ? (
-							<div className="validation-message">
-								Missing flag "{interaction.flag}".
-								<button
-									onClick={() =>
-										updateProject((draft) => {
-											if (interaction.flag) {
-												draft.gameState.flags[interaction.flag] = false;
-											}
+					{interaction ? (
+						<>
+							<label>
+								Activation
+								<select
+									onChange={(event) =>
+										updateSelectedInteraction({
+											...interaction,
+											activationMode: event.target
+												.value as InteractionActivationMode,
 										})
 									}
-									type="button"
+									value={interaction.activationMode}
 								>
-									Create flag
-								</button>
-							</div>
-						) : null}
+									{activationModes.map((mode) => (
+										<option key={mode} value={mode}>
+											{mode === "on_touch"
+												? "On touch"
+												: mode === "on_interact"
+													? "On interact"
+													: mode === "both"
+														? "Both"
+														: "Disabled"}
+										</option>
+									))}
+								</select>
+							</label>
+							<label>
+								Prompt
+								<input
+									onChange={(event) =>
+										updateSelectedInteraction({
+											...interaction,
+											prompt: event.target.value,
+										})
+									}
+									placeholder={getDefaultPrompt(
+										interaction.type,
+										interaction.mode,
+									)}
+									value={interaction.prompt ?? ""}
+								/>
+							</label>
+						</>
+					) : null}
+
+					{interaction?.type === "area_link" ||
+					interaction?.type === "teleport" ? (
+						<>
+							<label>
+								Target area
+								<select
+									onChange={(event) => {
+										const nextArea = project.areas.find(
+											(area) => area.id === event.target.value,
+										);
+										updateSelectedInteraction({
+											...interaction,
+											targetAreaId: event.target.value,
+											targetEventBlockId: nextArea?.eventBlocks[0]?.id ?? "",
+										});
+									}}
+									value={targetArea?.id ?? ""}
+								>
+									{project.areas.map((area) => (
+										<option key={area.id} value={area.id}>
+											{area.name}
+										</option>
+									))}
+								</select>
+							</label>
+							<label>
+								Target spawn/event
+								<select
+									onChange={(event) =>
+										updateSelectedInteraction({
+											...interaction,
+											targetAreaId:
+												targetArea?.id ?? interaction.targetAreaId ?? "",
+											targetEventBlockId: event.target.value,
+										})
+									}
+									value={interaction.targetEventBlockId ?? ""}
+								>
+									{targetEventBlocks.map((eventBlock) => (
+										<option key={eventBlock.id} value={eventBlock.id}>
+											{eventBlock.name} ({eventBlock.kind})
+										</option>
+									))}
+								</select>
+							</label>
+						</>
+					) : null}
+
+					{interaction?.type === "play_cutscene" ? (
 						<label>
-							Set flag to:
+							Cutscene
 							<select
 								onChange={(event) =>
 									updateSelectedInteraction({
 										...interaction,
-										value: event.target.value === "true",
+										cutsceneId: event.target.value,
 									})
 								}
-								value={String(interaction.value ?? true)}
+								value={interaction.cutsceneId ?? ""}
 							>
-								<option value="true">true</option>
-								<option value="false">false</option>
+								{project.cutscenes.map((cutscene) => (
+									<option key={cutscene.id} value={cutscene.id}>
+										{cutscene.name}
+									</option>
+								))}
 							</select>
 						</label>
-					</>
-				) : null}
+					) : null}
 
-				{interaction?.type === "change_movement_mode" ? (
-					<label>
-						Mode
-						<select
-							onChange={(event) =>
-								updateSelectedInteraction({
-									...interaction,
-									mode: event.target.value as NonNullable<Interaction["mode"]>,
-								})
-							}
-							value={interaction.mode ?? "walk"}
-						>
-							<option value="walk">Walk</option>
-							<option value="sail">Sail</option>
-							<option value="ride">Ride</option>
-						</select>
-					</label>
-				) : null}
+					{interaction?.type === "start_dialogue" ? (
+						<label>
+							Dialogue
+							<select
+								onChange={(event) =>
+									updateSelectedInteraction({
+										...interaction,
+										dialogueId: event.target.value,
+									})
+								}
+								value={interaction.dialogueId ?? ""}
+							>
+								<option value="">Select dialogue</option>
+								{project.dialogues.map((dialogue) => (
+									<option key={dialogue.id} value={dialogue.id}>
+										{dialogue.name}
+									</option>
+								))}
+							</select>
+						</label>
+					) : null}
+
+					{interaction?.type === "open_shop" ? (
+						<label>
+							Shop
+							<select
+								onChange={(event) =>
+									updateSelectedInteraction({
+										...interaction,
+										shopId: event.target.value,
+									})
+								}
+								value={interaction.shopId ?? ""}
+							>
+								<option value="">Select shop</option>
+								{project.shops.map((shop) => (
+									<option key={shop.id} value={shop.id}>
+										{shop.name}
+									</option>
+								))}
+							</select>
+						</label>
+					) : null}
+
+					{interaction?.type === "set_flag" ? (
+						<>
+							<label>
+								Flag
+								<input
+									onChange={(event) =>
+										updateSelectedInteraction({
+											...interaction,
+											flag: event.target.value,
+										})
+									}
+									value={interaction.flag ?? ""}
+								/>
+							</label>
+							{interaction.flag &&
+							!(interaction.flag in project.gameState.flags) ? (
+								<div className="validation-message">
+									Missing flag "{interaction.flag}".
+									<button
+										onClick={() =>
+											updateProject((draft) => {
+												if (interaction.flag) {
+													draft.gameState.flags[interaction.flag] = false;
+												}
+											})
+										}
+										type="button"
+									>
+										Create flag
+									</button>
+								</div>
+							) : null}
+							<label>
+								Set flag to:
+								<select
+									onChange={(event) =>
+										updateSelectedInteraction({
+											...interaction,
+											value: event.target.value === "true",
+										})
+									}
+									value={String(interaction.value ?? true)}
+								>
+									<option value="true">true</option>
+									<option value="false">false</option>
+								</select>
+							</label>
+						</>
+					) : null}
+
+					{interaction?.type === "change_movement_mode" ? (
+						<label>
+							Mode
+							<select
+								onChange={(event) =>
+									updateSelectedInteraction({
+										...interaction,
+										mode: event.target.value as NonNullable<
+											Interaction["mode"]
+										>,
+									})
+								}
+								value={interaction.mode ?? "walk"}
+							>
+								<option value="walk">Walk</option>
+								<option value="sail">Sail</option>
+								<option value="ride">Ride</option>
+							</select>
+						</label>
+					) : null}
+				</details>
 			</div>
 		);
 	}
@@ -1213,40 +1287,42 @@ export function MapInspector({
 						{selectedObject.widthTiles ?? definition?.widthTiles ?? 1} x{" "}
 						{selectedObject.heightTiles ?? definition?.heightTiles ?? 1} tiles
 					</div>
-					<div className="panel-title secondary">Behaviour</div>
-					<div className="coordinate-readout">
-						Resolved behaviour: {resolvedBehaviour.type}
-					</div>
-					<label className="checkbox-row standalone">
-						<input
-							checked={useDefaultBehaviour}
-							onChange={(event) =>
-								updateSelectedObject({
-									behaviourOverride: event.target.checked
-										? undefined
-										: resolvedBehaviour,
-								})
-							}
-							type="checkbox"
-						/>
-						Use definition default behaviour
-					</label>
-					{!useDefaultBehaviour ? (
-						<ObjectBehaviourEditor
-							behaviour={
-								selectedObject.behaviourOverride ??
-								makeDefaultObjectBehaviour("none")
-							}
-							onChange={(behaviour: ObjectBehaviour) =>
-								updateSelectedObject({ behaviourOverride: behaviour })
-							}
-							project={project}
-						/>
-					) : null}
 					{renderInteractionEditor(
-						selectedObject.interaction,
+						selectedObject.interaction ?? definition?.defaultInteraction,
 						selectedObject.id,
 					)}
+					<details>
+						<summary>Advanced object behaviour</summary>
+						<div className="coordinate-readout">
+							Resolved behaviour: {resolvedBehaviour.type}
+						</div>
+						<label className="checkbox-row standalone">
+							<input
+								checked={useDefaultBehaviour}
+								onChange={(event) =>
+									updateSelectedObject({
+										behaviourOverride: event.target.checked
+											? undefined
+											: resolvedBehaviour,
+									})
+								}
+								type="checkbox"
+							/>
+							Use definition default behaviour
+						</label>
+						{!useDefaultBehaviour ? (
+							<ObjectBehaviourEditor
+								behaviour={
+									selectedObject.behaviourOverride ??
+									makeDefaultObjectBehaviour("none")
+								}
+								onChange={(behaviour: ObjectBehaviour) =>
+									updateSelectedObject({ behaviourOverride: behaviour })
+								}
+								project={project}
+							/>
+						) : null}
+					</details>
 					<div className="panel-title secondary">State</div>
 					{Object.entries(objectState).map(([key, value]) => (
 						<div className="state-row variable" key={key}>

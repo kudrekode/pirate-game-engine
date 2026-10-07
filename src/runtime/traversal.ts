@@ -49,6 +49,37 @@ export type RuntimeTraversal = {
 	durationMs: number;
 	lastReason?: string;
 };
+
+// Segment versus existing oriented boxes. Target geometry is exempt so a solid
+// chest can be used from its edge; intervening walls still occlude it.
+export function isInteractionSegmentBlocked(
+	world: TraversalWorld,
+	from: TraversalPosition,
+	to: { x: number; y: number },
+	targetId: string,
+): boolean {
+	const origin: Vec = [from.x, from.height + 0.9, from.y];
+	const direction: Vec = [to.x - from.x, 0, to.y - from.y];
+	return world.solids.some((box) => {
+		if (box.id === targetId) return false;
+		let near = 0,
+			far = 1;
+		for (let axis = 0; axis < 3; axis++) {
+			const start = dot(sub(origin, box.center), box.axes[axis]);
+			const delta = dot(direction, box.axes[axis]);
+			if (Math.abs(delta) < 1e-8) {
+				if (Math.abs(start) > box.half[axis]) return false;
+			} else {
+				const a = (-box.half[axis] - start) / delta;
+				const b = (box.half[axis] - start) / delta;
+				near = Math.max(near, Math.min(a, b));
+				far = Math.min(far, Math.max(a, b));
+				if (near > far) return false;
+			}
+		}
+		return far > 0.001 && near < 0.999;
+	});
+}
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub = (a: Vec, b: Vec): Vec => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross = (a: Vec, b: Vec): Vec => [

@@ -51,15 +51,16 @@ export function runObjectBehaviour(
 			};
 		}
 
-		behaviour.contents.forEach((content) =>
+		behaviour.contents.forEach((content) => {
 			giveItem(
 				context.state.inventory,
 				context.itemDefinitions,
 				content.itemId,
 				content.quantity,
-			),
-		);
+			);
+		});
 
+		context.openedObjectIds.add(context.objectId);
 		if (behaviour.once) {
 			if (behaviour.openedFlag) {
 				context.state.flags[behaviour.openedFlag] = true;
@@ -72,7 +73,9 @@ export function runObjectBehaviour(
 			type: "container",
 			handled: true,
 			opened: true,
-			message: "Collected contents.",
+			message: behaviour.contents.length
+				? `Received: ${behaviour.contents.map((content) => `${context.itemDefinitions.find((item) => item.id === content.itemId)?.name ?? "Item"} ×${content.quantity}`).join(", ")}.`
+				: "Opened empty container.",
 		};
 	}
 

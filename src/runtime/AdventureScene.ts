@@ -42,6 +42,8 @@ import {
 	resolveObjectBehaviour,
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
+import { prepareInteractionMessage } from "./interactionMessages";
+import { interactionPrompt } from "./interactionPrompt";
 import type { VehicleMovementConfig } from "./movement";
 import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
@@ -59,6 +61,7 @@ import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "./runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
 	closeRuntimeShop,
+	collectRuntimeObjectPickup,
 	collectRuntimePickup,
 	dismountRuntimeVehicle,
 	openRuntimeShop,
@@ -367,6 +370,20 @@ export class AdventureScene extends Phaser.Scene {
 
 	// Input translation into shared runtime transactions.
 	update(time: number) {
+		if (this.isDialogueOpen && this.activeDialogue) {
+			if (this.wasInteractPressed()) {
+				const active = this.activeDialogue;
+				if (
+					getDialogueNode(active.definition, active.state.nodeId)?.type !==
+					"choice"
+				) {
+					if (advanceDialogue(active.definition, active.state))
+						this.renderActiveDialogueNode();
+					else this.closeDialogue();
+				}
+			}
+			return;
+		}
 		if (
 			!isRuntimeGameplayBlocked(
 				this.session,
@@ -426,7 +443,11 @@ export class AdventureScene extends Phaser.Scene {
 						interactable.interaction &&
 						canInteractActivate(interactable.interaction)
 					) {
-						this.runInteraction(interactable.interaction, interactable.label);
+						this.runInteraction(
+							interactable.interaction,
+							interactable.label,
+							interactable.id,
+						);
 					}
 					return;
 				}
@@ -435,7 +456,11 @@ export class AdventureScene extends Phaser.Scene {
 					interactable.interaction &&
 					canInteractActivate(interactable.interaction)
 				) {
-					this.runInteraction(interactable.interaction, interactable.label);
+					this.runInteraction(
+						interactable.interaction,
+						interactable.label,
+						interactable.id,
+					);
 				}
 			});
 			return;
@@ -475,6 +500,13 @@ export class AdventureScene extends Phaser.Scene {
 		this.combatKeys = {
 			SPACE: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
 		};
+		const closeMessage = () => {
+			if (this.isDialogueOpen) this.closeDialogue();
+		};
+		keyboard.on("keydown-ESC", closeMessage);
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+			keyboard.off("keydown-ESC", closeMessage),
+		);
 	}
 
 	// Phaser camera configuration.
@@ -954,6 +986,15 @@ export class AdventureScene extends Phaser.Scene {
 	private handleRuntimeObjectInteractionEvent(
 		event: RuntimeObjectInteractionEvent,
 	) {
+		if (event.type === "objectCollected") {
+			this.objectMarkers.get(event.objectId)?.destroy();
+			this.objectMarkers.delete(event.objectId);
+			return;
+		}
+		if (event.type === "containerOpened") {
+			this.objectMarkers.get(event.objectId)?.setAlpha(0.6);
+			return;
+		}
 		if (event.type === "status") {
 			this.setStatus(event.message);
 			return;
@@ -1119,6 +1160,13 @@ export class AdventureScene extends Phaser.Scene {
 			.container(worldX, worldY, [body, label])
 			.setDepth(42);
 		marker.setName(`object:${object.id}`);
+		const behaviour = this.getObjectBehaviour(object);
+		if (
+			behaviour.type === "container" &&
+			(this.session.openedObjectIds.has(object.id) ||
+				(behaviour.openedFlag && this.runtimeState.flags[behaviour.openedFlag]))
+		)
+			marker.setAlpha(0.6);
 		this.objectMarkers.set(object.id, marker);
 		this.worldLayer?.add(marker);
 	}
@@ -1488,7 +1536,13 @@ export class AdventureScene extends Phaser.Scene {
 		}
 
 		const buttonLabel =
-			node.type === "text" && node.nextNodeId ? "Next" : "End conversation";
+			node.type === "text" && node.nextNodeId
+				? this.session.inlineDialogue === active.definition
+					? "Continue"
+					: "Next"
+				: this.session.inlineDialogue === active.definition
+					? "Close"
+					: "End conversation";
 		const nextButton = this.add
 			.text(width - 42, height - 36, buttonLabel, {
 				backgroundColor: "#f8fafc",
@@ -1637,6 +1691,7 @@ export class AdventureScene extends Phaser.Scene {
 			runtimeState: this.runtimeState,
 			collectedPickupIds: this.collectedPickupIds,
 			defeatedNpcIds: this.defeatedNpcIds,
+			firedInteractionIds: this.session.firedInteractionIds,
 		});
 	}
 
@@ -1645,71 +1700,33 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
-		this.promptText.setText(
-			interactable
-				? interactable.type === "pickup"
-					? `Press E to pick up ${interactable.label}`
-					: interactable.type === "npc"
-						? `Press E to talk to ${interactable.label}`
-						: interactable.type === "object"
-							? this.promptForObject(interactable)
-							: this.promptForInteraction(interactable.interaction)
-				: "",
-		);
-	}
-
-	private promptForObject(
-		interactable: Extract<InteractableTarget, { type: "object" }>,
-	): string {
-		const behaviour = this.getObjectBehaviour(interactable.object);
-		if (behaviour.type === "vehicle" && behaviour.vehicleType === "boat") {
-			return "Press E to board";
-		}
-
-		if (behaviour.type === "sign") {
-			return "Press E to read";
-		}
-
-		if (behaviour.type === "container") {
-			return "Press E to open";
-		}
-
-		return this.promptForInteraction(interactable.interaction);
-	}
-
-	private promptForInteraction(interaction?: Interaction): string {
-		if (!interaction) {
-			return "Press E to interact";
-		}
-
-		if (interaction.prompt) {
-			return interaction.prompt;
-		}
-
-		if (interaction.type === "area_link" || interaction.type === "teleport") {
-			return "Press E to enter";
-		}
-
-		if (interaction.type === "change_movement_mode") {
-			return interaction.mode === "sail"
-				? "Press E to board"
-				: "Press E to ride";
-		}
-
-		if (interaction.type === "start_dialogue") {
-			return "Press E to talk";
-		}
-
-		if (interaction.type === "open_shop") {
-			return "Press E to shop";
-		}
-
-		return "Press E to inspect";
+		this.promptText.setText(interactionPrompt(this.session, interactable));
 	}
 
 	// Legacy direct interaction presentation and compatibility handling.
-	private runInteraction(interaction: Interaction, label: string) {
+	private runInteraction(
+		interaction: Interaction,
+		label: string,
+		targetId: string,
+	) {
 		if (interaction.activationMode === "disabled") {
+			return;
+		}
+		if (interaction.type === "show_message") {
+			const definition = prepareInteractionMessage(
+				this.session,
+				interaction,
+				targetId,
+				label,
+			);
+			if (definition) this.showDialogue(definition);
+			return;
+		}
+		if (interaction.type === "object_behaviour") return;
+		if (interaction.type === "collect_item") {
+			collectRuntimeObjectPickup(this.session, targetId, (event) =>
+				this.handleRuntimeObjectInteractionEvent(event),
+			);
 			return;
 		}
 
@@ -1814,9 +1831,15 @@ export class AdventureScene extends Phaser.Scene {
 		this.setStatus(`Movement mode: ${this.currentMovementMode}.`);
 	}
 
-	private runObjectBehaviour(object: ObjectInstance): boolean {
-		return runRuntimeObjectBehaviour(this.session, object, (event) =>
-			this.handleRuntimeObjectInteractionEvent(event),
+	private runObjectBehaviour(
+		object: ObjectInstance,
+		activation: "on_interact" | "on_touch" = "on_interact",
+	): boolean {
+		return runRuntimeObjectBehaviour(
+			this.session,
+			object,
+			(event) => this.handleRuntimeObjectInteractionEvent(event),
+			activation,
 		);
 	}
 
@@ -1976,10 +1999,10 @@ export class AdventureScene extends Phaser.Scene {
 				objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
 			this.fireRuleTrigger({ type: "on_touch", targetId: object.id }, () => {
 				if (objectBehaviourCanTouch) {
-					this.runObjectBehaviour(object);
+					this.runObjectBehaviour(object, "on_touch");
 				}
 				if (objectInteraction && canTouchActivate(objectInteraction)) {
-					this.runInteraction(objectInteraction, target.label);
+					this.runInteraction(objectInteraction, target.label, target.id);
 				}
 				onDone();
 			});
@@ -1990,7 +2013,7 @@ export class AdventureScene extends Phaser.Scene {
 		const interaction = target.interaction;
 		this.fireRuleTrigger({ type: "on_touch", targetId: eventBlock.id }, () => {
 			if (interaction && canTouchActivate(interaction)) {
-				this.runInteraction(interaction, eventBlock.name);
+				this.runInteraction(interaction, eventBlock.name, target.id);
 			}
 			onDone();
 		});

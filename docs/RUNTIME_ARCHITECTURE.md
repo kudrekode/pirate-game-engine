@@ -151,6 +151,30 @@ NPCs retain their separate existing grid movement helper; the harbour NPC idles.
 
 ## Event Flow
 
+### Map-authored interactions
+
+The contextual Map Inspector writes the existing `Interaction`, `ObjectBehaviour`
+and item contracts. Additive `show_message` interactions hold ordered lines and an
+optional speaker; `interactionMessages` translates those into temporary nodes for
+the existing dialogue engine. `object_behaviour` supplies explicit activation and
+prompt controls for containers and doors. `collect_item` routes a placed prop
+through the existing pickup transaction, removes only the session clone, and
+refreshes shared traversal descriptors. Legacy direct interactions remain available.
+
+Profiled Three areas target within 1.75 metres using continuous position, instance
+offsets, facing, stable distance/ID ordering and existing solid-box occlusion.
+Legacy grid areas retain their one-cell reach. The prompt and execution use the
+same shared discovery helper. E/Enter interact; inline text advances with E/Enter
+or the Continue/Close control, and Escape closes it. Session dialogue blocks player
+input and NPC ticks. No gamepad abstraction exists in this input path.
+
+Opened objects, collected pickups and once-only message trigger IDs belong to the
+session. Project saves contain authored configuration only; new Play resets game
+state. There is no save-game persistence added here. Event trigger helpers remain
+visible in Edit and hidden in Play; trigger entry retains the existing cell-based
+movement transaction. The static chest uses an Opened badge in Three and a faded
+marker in Phaser, without changing its mesh or collider.
+
 Typical runtime flow:
 
 1. Play mode receives a cloned `GameProject`.

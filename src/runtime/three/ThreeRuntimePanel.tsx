@@ -39,8 +39,14 @@ import {
 	type InteractableTarget,
 	isPickupCollected,
 	resolveEventInteraction,
+	resolveObjectBehaviour,
 	type TouchInteractableTarget,
 } from "../interactionDiscovery";
+import {
+	getRuntimeDialogueDefinition,
+	prepareInteractionMessage,
+} from "../interactionMessages";
+import { interactionPrompt } from "../interactionPrompt";
 import { attemptPlayerMove } from "../playerMovementTransaction";
 import { fireTrigger } from "../ruleEngine";
 import {
@@ -55,6 +61,7 @@ import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "../runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
 	closeRuntimeShop,
+	collectRuntimeObjectPickup,
 	collectRuntimePickup,
 	dismountRuntimeVehicle,
 	openRuntimeShop,
@@ -480,6 +487,7 @@ export function ThreeRuntimePanel({
 		useState<PendingCutscene | null>(null);
 	const [gameOver, setGameOver] = useState(false);
 	const [dialogueNode, setDialogueNode] = useState<DialogueNode | null>(null);
+	const [primaryPrompt, setPrimaryPrompt] = useState("");
 
 	function setPendingCutscene(value: PendingCutscene | null) {
 		pendingCutsceneRef.current = value;
@@ -501,9 +509,9 @@ export function ThreeRuntimePanel({
 	function renderDialogueNode() {
 		const session = getSession();
 		const state = session?.dialogue;
-		const definition = session?.project.dialogues.find(
-			(entry) => entry.id === state?.dialogueId,
-		);
+		const definition = session
+			? getRuntimeDialogueDefinition(session)
+			: undefined;
 		const node =
 			state && definition
 				? getDialogueNode(definition, state.nodeId)
@@ -530,9 +538,9 @@ export function ThreeRuntimePanel({
 
 	function showDialogue(dialogueId: string | undefined) {
 		const session = getSession();
-		const definition = session?.project.dialogues.find(
-			(entry) => entry.id === dialogueId,
-		);
+		const definition = session
+			? getRuntimeDialogueDefinition(session, dialogueId)
+			: undefined;
 		if (
 			!session ||
 			!definition ||
@@ -550,9 +558,9 @@ export function ThreeRuntimePanel({
 	function advanceConversation(choiceId?: string) {
 		const session = getSession();
 		const state = session?.dialogue;
-		const definition = session?.project.dialogues.find(
-			(entry) => entry.id === state?.dialogueId,
-		);
+		const definition = session
+			? getRuntimeDialogueDefinition(session)
+			: undefined;
 		if (
 			!session ||
 			!state ||
@@ -964,6 +972,14 @@ export function ThreeRuntimePanel({
 		if (!session) {
 			return;
 		}
+		if (event.type === "containerOpened") {
+			diagnostics.recordObjectStateUpdate("container opened");
+			return;
+		}
+		if (event.type === "objectCollected") {
+			forceRender("object pickup collected");
+			return;
+		}
 
 		if (event.type === "status") {
 			setStatus(event.message);
@@ -1164,9 +1180,28 @@ export function ThreeRuntimePanel({
 		);
 	}
 
-	function runDirectInteraction(interaction: Interaction, label: string): void {
+	function runDirectInteraction(
+		interaction: Interaction,
+		label: string,
+		targetId: string,
+	): void {
 		const session = getSession();
 		if (!session || interaction.activationMode === "disabled") {
+			return;
+		}
+		if (interaction.type === "show_message") {
+			const definition = prepareInteractionMessage(
+				session,
+				interaction,
+				targetId,
+				label,
+			);
+			if (definition) showDialogue(definition.id);
+			return;
+		}
+		if (interaction.type === "object_behaviour") return;
+		if (interaction.type === "collect_item") {
+			collectRuntimeObjectPickup(session, targetId, handleObjectEvent);
 			return;
 		}
 
@@ -1254,9 +1289,14 @@ export function ThreeRuntimePanel({
 			fireRuntimeTrigger(
 				{ type: "on_touch", targetId: target.object.id },
 				() => {
-					runRuntimeObjectBehaviour(session, target.object, handleObjectEvent);
+					runRuntimeObjectBehaviour(
+						session,
+						target.object,
+						handleObjectEvent,
+						"on_touch",
+					);
 					if (target.interaction && canTouchActivate(target.interaction)) {
-						runDirectInteraction(target.interaction, target.label);
+						runDirectInteraction(target.interaction, target.label, target.id);
 					}
 				},
 			);
@@ -1268,7 +1308,7 @@ export function ThreeRuntimePanel({
 			{ type: "on_touch", targetId: target.eventBlock.id },
 			() => {
 				if (interaction && canTouchActivate(interaction)) {
-					runDirectInteraction(interaction, target.label);
+					runDirectInteraction(interaction, target.label, target.id);
 				}
 			},
 		);
@@ -1371,7 +1411,10 @@ export function ThreeRuntimePanel({
 			area,
 			collectedPickupIds: session.collectedPickupIds,
 			defeatedNpcIds: session.defeatedNpcIds,
-			playerPosition: session.playerPosition,
+			playerPosition: session.traversal?.position ?? session.playerPosition,
+			playerFacing: session.playerFacing,
+			traversal: session.traversal,
+			firedInteractionIds: session.firedInteractionIds,
 			project: session.project,
 			runtimeState: session.runtimeState,
 		});
@@ -1389,12 +1432,17 @@ export function ThreeRuntimePanel({
 		fireRuntimeTrigger(
 			{ type: "on_interact", targetId: getTargetId(target) },
 			() => {
+				let handled = false;
 				if (target.type === "object") {
-					runRuntimeObjectBehaviour(session, target.object, handleObjectEvent);
+					handled = runRuntimeObjectBehaviour(
+						session,
+						target.object,
+						handleObjectEvent,
+					);
 				}
 				if (target.interaction && canInteractActivate(target.interaction)) {
-					runDirectInteraction(target.interaction, target.label);
-				} else {
+					runDirectInteraction(target.interaction, target.label, target.id);
+				} else if (!handled) {
 					setStatus(`Interacted with ${target.label}.`);
 				}
 				diagnostics.recordObjectStateUpdate("interaction completed");
@@ -1465,6 +1513,29 @@ export function ThreeRuntimePanel({
 				/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)
 			)
 				return;
+			if (
+				event.repeat &&
+				["e", "enter", "escape"].includes(event.key.toLowerCase())
+			)
+				return;
+			if (
+				getSession()?.dialogue &&
+				["e", "E", "Enter", "Escape"].includes(event.key)
+			) {
+				event.preventDefault();
+				heldMovementKeys.current.clear();
+				if (event.key === "Escape") closeDialogue();
+				else if (dialogueNode?.type !== "choice") advanceConversation();
+				return;
+			}
+			if (
+				pendingCutsceneRef.current &&
+				["e", "E", "Enter", "Escape"].includes(event.key)
+			) {
+				event.preventDefault();
+				pendingCutsceneRef.current.onContinue();
+				return;
+			}
 			if (event.key === "Escape" && mouseLookActiveRef.current) {
 				event.preventDefault();
 				setMouseLookActive(false);
@@ -1549,6 +1620,36 @@ export function ThreeRuntimePanel({
 			window.removeEventListener("blur", clearKeys);
 			window.clearInterval(interval);
 		};
+	});
+
+	useEffect(() => {
+		const refresh = () => {
+			const current = getSession();
+			const currentArea = current ? getArea(current) : undefined;
+			if (!current || !currentArea || gameplayBlocked(current)) {
+				setPrimaryPrompt("");
+				return;
+			}
+			const target = findNearestInteractableTarget({
+				area: currentArea,
+				project: current.project,
+				playerPosition: current.traversal?.position ?? current.playerPosition,
+				playerFacing: current.playerFacing,
+				traversal: current.traversal,
+				runtimeState: current.runtimeState,
+				collectedPickupIds: current.collectedPickupIds,
+				defeatedNpcIds: current.defeatedNpcIds,
+				firedInteractionIds: current.firedInteractionIds,
+			});
+			setPrimaryPrompt(
+				current.playerVehicleState.active
+					? "E — Dismount"
+					: interactionPrompt(current, target),
+			);
+		};
+		refresh();
+		const timer = window.setInterval(refresh, 100);
+		return () => window.clearInterval(timer);
 	});
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: NPC ticking reads current sessionRef state.
@@ -1783,7 +1884,9 @@ export function ThreeRuntimePanel({
 			...area,
 			// Spawn helpers stay in Edit; the player's feet and shadow sit on the
 			// authored ground in Play. This copy is only used to build visual markers.
-			eventBlocks: area.eventBlocks.filter((block) => block.kind !== "spawn"),
+			eventBlocks: area.eventBlocks.filter(
+				(block) => block.kind === "area_link",
+			),
 			npcs: area.npcs.filter((npc) => !session.defeatedNpcIds.has(npc.id)),
 			pickups: area.pickups.filter(
 				(pickup) =>
@@ -1871,12 +1974,42 @@ export function ThreeRuntimePanel({
 			terrainRenderMode,
 			session.project.characterAssets,
 		);
+		const openedLabels: {
+			id: string;
+			flag?: string;
+			element: HTMLDivElement;
+			position: THREE.Vector3;
+		}[] = [];
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
 				onAssetStateChange: handleAssetStateChange,
 			});
 			const { group } = renderResult;
+			const object =
+				marker.kind === "object"
+					? area.objects.find((o) => o.id === marker.id)
+					: undefined;
+			const behaviour = object
+				? resolveObjectBehaviour(session.project, object)
+				: undefined;
+			if (behaviour?.type === "container") {
+				const element = document.createElement("div");
+				element.className = "runtime-opened-label";
+				element.textContent = "Opened";
+				element.hidden = true;
+				host.append(element);
+				openedLabels.push({
+					id: marker.id,
+					flag: behaviour.openedFlag,
+					element,
+					position: new THREE.Vector3(
+						marker.threeX,
+						marker.threeY + 0.7,
+						marker.threeZ,
+					),
+				});
+			}
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
 				if (npcVisual) {
@@ -2294,6 +2427,19 @@ export function ThreeRuntimePanel({
 			}
 			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
+			for (const label of openedLabels) {
+				if (
+					!session.openedObjectIds.has(label.id) &&
+					!(label.flag && session.runtimeState.flags[label.flag])
+				) {
+					label.element.hidden = true;
+					continue;
+				}
+				const point = label.position.clone().project(camera);
+				label.element.style.left = `${((point.x + 1) * host.clientWidth) / 2}px`;
+				label.element.style.top = `${((1 - point.y) * host.clientHeight) / 2}px`;
+				label.element.hidden = point.z > 1 || point.z < -1;
+			}
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
 			diagnostics.recordRendererInfo(renderer.info);
 			animationFrame = window.requestAnimationFrame(render);
@@ -2310,6 +2456,7 @@ export function ThreeRuntimePanel({
 
 		return () => {
 			diagnostics.recordRafLoopCancel(rebuildReason);
+			for (const label of openedLabels) label.element.remove();
 			diagnostics.recordSceneCleanup();
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
@@ -2368,6 +2515,11 @@ export function ThreeRuntimePanel({
 					<div className="three-runtime-error">{mountError}</div>
 				) : null}
 			</div>
+			{primaryPrompt && !dialogueNode && !pendingCutscene && (
+				<div className="runtime-interaction-prompt" role="status">
+					{primaryPrompt}
+				</div>
+			)}
 			<ThreePerformanceOverlay
 				diagnostics={diagnostics}
 				title="3D Runtime Perf"
@@ -2559,8 +2711,12 @@ export function ThreeRuntimePanel({
 					) : (
 						<button type="button" onClick={() => advanceConversation()}>
 							{dialogueNode.type === "text" && dialogueNode.nextNodeId
-								? "Next"
-								: "End conversation"}
+								? session.inlineDialogue?.id === session.dialogue.dialogueId
+									? "Continue"
+									: "Next"
+								: session.inlineDialogue?.id === session.dialogue.dialogueId
+									? "Close"
+									: "End conversation"}
 						</button>
 					)}
 				</div>

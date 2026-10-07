@@ -25,6 +25,16 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The interaction authoring route is one opt-in case:
+`node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@gameplay-interactions'`.
+Inspect `--list` first. It imports the original Tidewatch project and uses real
+Inspector controls to author sign/barrel text, NPC lines, a chest reward, a keyed
+door and a cell trigger. It moves only the showcase chest through ordinary
+transform fields, saves the new project under `docs/assets/gameplay-interactions/`,
+then uses keyboard movement/E and dialogue controls through Play, Edit and reload.
+It does not write runtime positions or invoke interaction helpers from the browser.
+Keep this software-rendered route separate from CI; no Blender or visual matrix.
+
 The traversal acceptance course is one opt-in case (no compiler or Blender):
 `node node_modules/@playwright/test/cli.js test e2e/traversal-collision.spec.ts --grep '@traversal'`.
 Use `--list` first. It imports the unchanged Tidewatch Harbour, walks via real

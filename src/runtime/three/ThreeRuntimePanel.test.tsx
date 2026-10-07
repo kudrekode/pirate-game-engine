@@ -272,6 +272,12 @@ vi.mock("three", () => {
 		},
 		SRGBColorSpace: "SRGBColorSpace",
 		Vector3: class {
+			clone() {
+				return this;
+			}
+			project() {
+				return this;
+			}
 			constructor(
 				public x = 0,
 				public y = 0,
@@ -606,6 +612,70 @@ describe("ThreeRuntimePanel", () => {
 		} finally {
 			restoreLoader();
 		}
+	});
+
+	it("presents inline messages, pauses movement, advances with E and closes with Escape", async () => {
+		const project = makeProject();
+		project.areas[0].objects.push({
+			id: "sign",
+			areaId: project.areas[0].id,
+			objectDefinitionId: "sign",
+			x: 0,
+			y: 1,
+			interaction: {
+				type: "show_message",
+				activationMode: "on_interact",
+				prompt: "Read sign",
+				lines: ["Harbour welcome", "Watch the tide"],
+			},
+		});
+		const saved = JSON.stringify(project);
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+		await waitFor(() =>
+			expect(screen.getByText("E — Read sign")).toBeInTheDocument(),
+		);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+		fireEvent.keyDown(window, { key: "e", repeat: true });
+		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
+		fireEvent.keyDown(window, { key: "e" });
+		expect(screen.getByRole("dialog")).toHaveTextContent("Watch the tide");
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(screen.queryByRole("dialog")).toBeNull();
+		expect(JSON.stringify(project)).toBe(saved);
+	});
+
+	it("collects an authored prop through real interaction input without changing editor data", async () => {
+		const project = makeProject();
+		project.items = [
+			{ id: "supplies", name: "Supplies", category: "misc", stackable: true },
+		];
+		project.areas[0].objects.push({
+			id: "sack",
+			objectDefinitionId: "sack",
+			areaId: project.areas[0].id,
+			x: 0,
+			y: 1,
+			interaction: {
+				type: "collect_item",
+				activationMode: "on_interact",
+				itemId: "supplies",
+				quantity: 2,
+			},
+		});
+		const saved = JSON.stringify(project);
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+		await waitFor(() =>
+			expect(screen.getByText("E — Pick up Supplies")).toBeInTheDocument(),
+		);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(latestSession().runtimeState.inventory.items.supplies).toBe(2);
+		expect(latestSession().project.areas[0].objects).toHaveLength(0);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(latestSession().runtimeState.inventory.items.supplies).toBe(2);
+		expect(JSON.stringify(project)).toBe(saved);
 	});
 
 	it("keeps fixed follow movement grid-relative", async () => {

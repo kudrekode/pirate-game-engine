@@ -1,5 +1,6 @@
 import { cloneProject } from "../data/migrateProject";
 import type {
+	DialogueDefinition,
 	GameArea,
 	GameProject,
 	MovementMode,
@@ -60,6 +61,8 @@ export type RuntimeSessionState = {
 	nextMoveAt: number;
 	startupPending: boolean;
 	dialogue?: RuntimeDialogueState;
+	inlineDialogue?: DialogueDefinition;
+	firedInteractionIds: Set<string>;
 	recentEnemy?: RuntimeRecentEnemyState;
 };
 
@@ -102,6 +105,7 @@ export function createRuntimeSession(
 		waitingForTrigger: null,
 		collectedPickupIds: new Set<string>(),
 		openedObjectIds: new Set<string>(),
+		firedInteractionIds: new Set<string>(),
 		defeatedNpcIds: new Set<string>(),
 		npcMovementStates: new Map<string, RuntimeNpcMovementTiming>(),
 		enemyOrigins: new Map<string, RuntimeGridPosition>(),
