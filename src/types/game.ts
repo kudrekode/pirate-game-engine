@@ -27,6 +27,14 @@ export type ThreeVisualConfig = {
 	rotationOffset?: number;
 };
 
+// Presentation transforms are instance-owned. X/Z offsets stay relative to the
+// integer gameplay cell; elevation, rotation and scale do not change collision.
+export type MapEntityTransform = {
+	position: { x: number; y: number; z: number };
+	rotation: { x: number; y: number; z: number };
+	scale: { x: number; y: number; z: number };
+};
+
 export type GameProject = {
 	characterAssets?: CharacterGameAsset[];
 	metadata: ProjectMetadata;
@@ -186,6 +194,7 @@ export type OverlayTile = {
 };
 
 export type MapStructure = {
+	transform?: MapEntityTransform;
 	id: string;
 	structureId: string;
 	name: string;
@@ -247,6 +256,8 @@ export type ObjectBehaviour =
 	  };
 
 export type ObjectInstance = {
+	transform?: MapEntityTransform;
+	threeVisual?: ThreeVisualConfig;
 	id: string;
 	objectDefinitionId: string;
 	areaId: string;
@@ -262,6 +273,7 @@ export type ObjectInstance = {
 };
 
 export type PickupObject = {
+	transform?: MapEntityTransform;
 	id: string;
 	itemId: string;
 	quantity: number;
@@ -332,6 +344,8 @@ export type EnemyBehaviour = {
 };
 
 export type NPCInstance = {
+	transform?: MapEntityTransform;
+	nameOverride?: string;
 	threeVisual?: ThreeVisualConfig;
 	id: string;
 	npcDefinitionId: string;
@@ -374,6 +388,7 @@ export type MapOverlayFilter =
 	| "none";
 
 export type EventBlock = {
+	transform?: MapEntityTransform;
 	id: string;
 	name: string;
 	x: number;

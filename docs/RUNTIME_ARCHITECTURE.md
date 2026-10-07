@@ -14,6 +14,7 @@ Adapters are not separate engines. They translate input, rendering, camera, anim
 - Object/NPC/item/shop/quest/rule/cutscene/dialogue definitions.
 - Player defaults, camera defaults, and game-state defaults.
 - 3D visual config such as placeholder type, registry asset id, scale, height offset, and rotation offset.
+- Optional instance `transform` values add XYZ presentation offsets, degree rotations and scale multipliers to the resolved visual defaults. Map editing keeps integer `x`/`y` gameplay anchors and stores fractional X/Z residuals in the transform. Elevation, rotation and scale do not change grid collision or movement. Missing transforms retain legacy identity behavior.
 
 `GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 

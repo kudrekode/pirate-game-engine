@@ -64,6 +64,13 @@ images are optional with `CAPTURE_VISUALS=1`; normal summaries omit uncaptured p
 
 ## Screenshot selection and inspection
 
+The Map Editor product workflow is opt-in and uses one already finalised imported
+character, with no Blender work:
+`node node_modules/@playwright/test/cli.js test e2e/map-editor-product.spec.ts --grep '@map-product' --output=test-results/map-product-browser`.
+It covers native asset drag/drop, transform handles, hierarchy and inspector edits,
+history, character placement, Play isolation and full saved-project equality after
+reload. It captures editor, Play and reloaded screenshots plus persistence evidence.
+
 Finalised character game integration is opt-in:
 `node node_modules/@playwright/test/cli.js test e2e/asset-creator.spec.ts --grep '@game-character'`.
 It requires the two local servers and performs two compile requests / three Blender

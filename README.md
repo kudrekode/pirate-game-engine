@@ -74,7 +74,7 @@ The Map Workspace has shared 2D and 3D view modes. Both views edit the same `Gam
 
 The Three.js 3D view in the Map Workspace is an editor view. It renders the active area's terrain tiles, per-tile height/elevation, and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select, move, and place existing editor entities and sculpt terrain height.
 
-The Phaser runtime remains the default and reference 2D playable runtime. Pressing Play defaults to Phaser, with a `Play 3D Experimental` option available for the Three.js runtime adapter.
+The Phaser runtime remains the reference 2D playable runtime. Play starts in the current Map view: 2D uses Phaser and 3D uses the experimental Three.js adapter. Returning with `Back to Edit` preserves the workspace camera, selection and undo history.
 
 Both runtime adapters use shared runtime helpers and `RuntimeSession` state for gameplay semantics. Movement, interaction discovery, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, and progression should stay in shared runtime code rather than being reimplemented inside Phaser or Three.js render adapters.
 

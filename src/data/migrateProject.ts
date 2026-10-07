@@ -53,6 +53,7 @@ import type {
 import { THREE_PLACEHOLDER_VISUAL_TYPES } from "../types/game";
 import { migrateCharacterAssets } from "./characterAssets";
 import { defaultProject } from "./defaultProject";
+import { migrateMapEntityTransform } from "./mapEntityTransform";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
 import {
@@ -334,6 +335,9 @@ function migrateEventBlocks(
 		return [
 			{
 				id: readString(item.id, `event_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
 				name: readString(item.name, "Event"),
 				x: readNumber(item.x, 0, 0),
 				y: readNumber(item.y, 0, 0),
@@ -361,6 +365,9 @@ function migrateStructures(value: unknown): MapStructure[] {
 		return [
 			{
 				id: readString(item.id, `structure_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
 				structureId: readString(item.structureId, "small_house"),
 				name: readString(item.name, "Structure"),
 				x: readNumber(item.x, 0, 0),
@@ -500,6 +507,12 @@ function migrateObjectInstances(
 		return [
 			{
 				id: readString(item.id, `object_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
+				...(migrateThreeVisualConfig(item.threeVisual)
+					? { threeVisual: migrateThreeVisualConfig(item.threeVisual) }
+					: {}),
 				objectDefinitionId: readString(
 					item.objectDefinitionId,
 					readString(item.objectId, ""),
@@ -539,6 +552,9 @@ function migratePickups(value: unknown, areaId: string): PickupObject[] {
 		return [
 			{
 				id: readString(item.id, `pickup_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
 				itemId: readString(item.itemId, ""),
 				quantity: Math.round(readNumber(item.quantity, 1, 1, 9999)),
 				areaId,
@@ -727,6 +743,12 @@ function migrateNpcInstances(
 		return [
 			{
 				id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
+				...(readString(item.nameOverride, "")
+					? { nameOverride: readString(item.nameOverride, "") }
+					: {}),
 				npcDefinitionId,
 				...(migrateThreeVisualConfig(item.threeVisual)
 					? { threeVisual: migrateThreeVisualConfig(item.threeVisual) }

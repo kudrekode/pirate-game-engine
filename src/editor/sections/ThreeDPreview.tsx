@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import {
+	TransformControls,
+	type TransformControlsMode,
+} from "three/examples/jsm/controls/TransformControls.js";
+import {
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
 } from "../../data/terrainSurface";
@@ -30,7 +34,10 @@ import {
 	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "../../runtime/three/threePerformanceDiagnostics";
-import { createThreeVisualMarkerGroup } from "../../runtime/three/threeVisualRenderer";
+import {
+	createThreeVisualMarkerGroup,
+	updateThreeVisualMarkerTransform,
+} from "../../runtime/three/threeVisualRenderer";
 import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
 import {
 	createCoastlinePresentation,
@@ -83,6 +90,14 @@ import {
 	terrainBlockToSelectionMetadata,
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
+import {
+	getSceneEntity,
+	readSceneTransform,
+	SCENE_ASSET_MIME,
+	type SceneAsset,
+	sceneAssets,
+	writeSceneTransform,
+} from "./sceneEditing";
 import {
 	type SmoothTerrainMesh,
 	type TerrainRenderMode,
@@ -140,6 +155,15 @@ type ThreeDPreviewBuildInputs = {
 };
 
 type ThreeDPreviewProps = {
+	transformMode?: TransformControlsMode;
+	onTransformModeChange?: (mode: TransformControlsMode) => void;
+	positionSnap?: number;
+	onPositionSnapChange?: (snap: number) => void;
+	rotationSnap?: number;
+	onRotationSnapChange?: (snap: number) => void;
+	focusRequest?: number;
+	addAssetRequest?: { asset: SceneAsset; serial: number };
+	onAssetDrop?: (asset: SceneAsset, position: PreviewGridPosition) => void;
 	brushFalloff?: TerrainBrushFalloff;
 	brushShape?: TerrainBrushShape;
 	brushSize?: TerrainBrushSize;
@@ -376,6 +400,15 @@ function disposeMesh(
 }
 
 export function ThreeDPreview({
+	transformMode = "translate",
+	onTransformModeChange,
+	positionSnap = 1,
+	onPositionSnapChange,
+	rotationSnap = 15,
+	onRotationSnapChange,
+	focusRequest = 0,
+	addAssetRequest,
+	onAssetDrop,
 	brushFalloff = "hard",
 	brushShape = "square",
 	brushSize = 1,
@@ -423,6 +456,44 @@ export function ThreeDPreview({
 	const overlayFilters = controlledOverlayFilters ?? localOverlayFilters;
 	const project = useProjectStore((state) => state.project);
 	const editorSelection = useProjectStore((state) => state.editorSelection);
+	const selectionRef = useRef(editorSelection);
+	selectionRef.current = editorSelection;
+	const controlsStateRef = useRef({
+		transformMode,
+		positionSnap,
+		rotationSnap,
+		onAssetDrop,
+	});
+	controlsStateRef.current = {
+		transformMode,
+		positionSnap,
+		rotationSnap,
+		onAssetDrop,
+	};
+	const sceneUiRef = useRef<
+		| {
+				sync: () => void;
+				update: (markers: EntityMarker[]) => void;
+				focus: () => void;
+				add: (asset: SceneAsset) => void;
+		  }
+		| undefined
+	>(undefined);
+	const sceneUiSyncKey = JSON.stringify([
+		editorSelection,
+		transformMode,
+		positionSnap,
+		rotationSnap,
+	]);
+	useEffect(() => {
+		if (sceneUiSyncKey) sceneUiRef.current?.sync();
+	}, [sceneUiSyncKey]);
+	useEffect(() => {
+		if (focusRequest) sceneUiRef.current?.focus();
+	}, [focusRequest]);
+	useEffect(() => {
+		if (addAssetRequest) sceneUiRef.current?.add(addAssetRequest.asset);
+	}, [addAssetRequest]);
 	const setEditorSelection = useProjectStore(
 		(state) => state.setEditorSelection,
 	);
@@ -447,6 +518,14 @@ export function ThreeDPreview({
 			project.areas[0],
 		[project.activeAreaId, project.areas],
 	);
+	// Names, gameplay fields and instance transforms do not change terrain geometry.
+	const terrainContentKey = JSON.stringify([
+		activeArea?.id,
+		activeArea?.width,
+		activeArea?.height,
+		activeArea?.terrainTiles,
+		activeArea?.terrainHeights,
+	]);
 	const terrainBlocks = useMemo(
 		() => terrainTilesToBlocks(activeArea),
 		[activeArea],
@@ -500,10 +579,43 @@ export function ThreeDPreview({
 		() => getPreviewSelectionDetails(project, editorSelection),
 		[editorSelection, project],
 	);
+	const renderMarkersRef = useRef(renderMarkers);
+	renderMarkersRef.current = renderMarkers;
+	const markerContentKey = JSON.stringify(
+		renderMarkers.map(
+			({
+				id,
+				kind,
+				shape,
+				color,
+				opacity,
+				width,
+				height,
+				depth,
+				visualType,
+				visual,
+			}) => ({
+				id,
+				kind,
+				shape,
+				color,
+				opacity,
+				width,
+				height,
+				depth,
+				visualType,
+				visual,
+			}),
+		),
+	);
+	useEffect(() => {
+		sceneUiRef.current?.update(renderMarkers);
+	}, [renderMarkers]);
 	const placementInfo = useMemo(
 		() => getPreviewPlacementInfo(project, mapPaletteSelection),
 		[mapPaletteSelection, project],
 	);
+	const placementContentKey = JSON.stringify(placementInfo);
 	const canMoveSelection =
 		isMovablePreviewSelection(editorSelection) &&
 		editorSelection.areaId === activeArea?.id;
@@ -536,8 +648,9 @@ export function ThreeDPreview({
 
 	const resetCamera = useCallback(() => {
 		cameraStateRef.current = resetOrbitCameraState(cameraDimensions);
+		if (embedded) cameraStateRef.current.distance *= 0.8;
 		setCameraPreset("isometric");
-	}, [cameraDimensions]);
+	}, [cameraDimensions, embedded]);
 
 	useEffect(() => {
 		if (!activeAreaId) {
@@ -572,6 +685,13 @@ export function ThreeDPreview({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (
+				hostRef.current?.closest("[hidden]") ||
+				(event.target instanceof HTMLElement &&
+					(event.target.matches("input, select, textarea") ||
+						event.target.isContentEditable))
+			)
+				return;
 			if (event.key === "Escape") {
 				if (walkPreviewPosition) {
 					event.preventDefault();
@@ -819,10 +939,7 @@ export function ThreeDPreview({
 				marker,
 				activeArea?.id ?? "",
 			);
-			const isSelected = selectionMatchesMetadata(
-				editorSelection,
-				selectionMetadata,
-			);
+			const isSelected = false;
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
 				metadata: selectionMetadata,
@@ -916,6 +1033,153 @@ export function ThreeDPreview({
 		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		host.appendChild(renderer.domElement);
+		const transformControls = new TransformControls(
+			camera,
+			renderer.domElement,
+		);
+		transformControls.setSize(0.85);
+		scene.add(transformControls.getHelper());
+		const selectionBox = new THREE.BoxHelper(new THREE.Group(), 0x00b9ff);
+		(selectionBox.material as THREE.LineBasicMaterial).depthTest = false;
+		selectionBox.renderOrder = 1000;
+		selectionBox.visible = false;
+		scene.add(selectionBox);
+		let transformStart:
+			| {
+					position: THREE.Vector3;
+					rotation: THREE.Euler;
+					scale: THREE.Vector3;
+					authored: ReturnType<typeof readSceneTransform>;
+					selection: typeof editorSelection;
+			  }
+			| undefined;
+		let suppressTransformClick = false;
+		transformControls.addEventListener("mouseDown", () => {
+			const object = transformControls.object;
+			const state = useProjectStore.getState();
+			const entity = getSceneEntity(state.project, state.editorSelection);
+			if (!object || !entity) return;
+			suppressTransformClick = true;
+			transformStart = {
+				position: object.position.clone(),
+				rotation: object.rotation.clone(),
+				scale: object.scale.clone(),
+				authored: readSceneTransform(entity),
+				selection: state.editorSelection,
+			};
+		});
+		transformControls.addEventListener("objectChange", () => {
+			if (transformControls.object)
+				selectionBox.setFromObject(transformControls.object);
+		});
+		transformControls.addEventListener("mouseUp", () => {
+			const object = transformControls.object;
+			const start = transformStart;
+			transformStart = undefined;
+			if (!object || !start) return;
+			if (
+				object.position.equals(start.position) &&
+				object.rotation.equals(start.rotation) &&
+				object.scale.equals(start.scale)
+			)
+				return;
+			const next = structuredClone(start.authored);
+			for (const axis of ["x", "y", "z"] as const) {
+				next.position[axis] += object.position[axis] - start.position[axis];
+				next.rotation[axis] += THREE.MathUtils.radToDeg(
+					object.rotation[axis] - start.rotation[axis],
+				);
+				next.scale[axis] *= object.scale[axis] / start.scale[axis];
+			}
+			const {
+				positionSnap: snap,
+				rotationSnap: turn,
+				transformMode: mode,
+			} = controlsStateRef.current;
+			if (mode === "translate" && snap)
+				for (const axis of ["x", "y", "z"] as const)
+					next.position[axis] = Math.round(next.position[axis] / snap) * snap;
+			if (mode === "rotate" && turn)
+				for (const axis of ["x", "y", "z"] as const)
+					next.rotation[axis] = Math.round(next.rotation[axis] / turn) * turn;
+			updateProject((draft) =>
+				writeSceneTransform(draft, start.selection, next),
+			);
+		});
+		const syncSelection = () => {
+			const index = renderMarkersRef.current.findIndex((marker) =>
+				selectionMatchesMetadata(
+					selectionRef.current,
+					entityMarkerToSelectionMetadata(marker, activeArea?.id ?? ""),
+				),
+			);
+			const group = markerRenderResults[index]?.group;
+			const state = controlsStateRef.current;
+			transformControls.setMode(state.transformMode);
+			transformControls.setSpace(
+				state.transformMode === "scale" ? "local" : "world",
+			);
+			transformControls.setTranslationSnap(state.positionSnap || null);
+			transformControls.setRotationSnap(
+				state.rotationSnap
+					? THREE.MathUtils.degToRad(state.rotationSnap)
+					: null,
+			);
+			if (
+				group &&
+				!isTerrainEditing &&
+				!placementInfo.active &&
+				!isWalkPreviewActive
+			) {
+				transformControls.attach(group);
+				selectionBox.setFromObject(group);
+				selectionBox.visible = true;
+			} else {
+				transformControls.detach();
+				selectionBox.visible = false;
+			}
+		};
+		sceneUiRef.current = {
+			sync: syncSelection,
+			update: (markers) => {
+				markers.forEach((marker, index) => {
+					if (
+						marker.id === renderMarkers[index]?.id &&
+						marker.kind === renderMarkers[index]?.kind
+					)
+						updateThreeVisualMarkerTransform(
+							markerRenderResults[index].group,
+							marker,
+						);
+				});
+				scene.updateMatrixWorld(true);
+				syncSelection();
+			},
+			focus: () => {
+				const object = transformControls.object;
+				if (!object) return;
+				const box = new THREE.Box3().setFromObject(object);
+				const focus = box.getCenter(new THREE.Vector3());
+				cameraStateRef.current = {
+					...cameraStateRef.current,
+					focus,
+					distance: Math.max(
+						4,
+						box.getSize(new THREE.Vector3()).length() * 2.5,
+					),
+				};
+				setCameraPreset("custom");
+			},
+			add: (asset) => {
+				if (!activeArea) return;
+				const focus = cameraStateRef.current.focus;
+				controlsStateRef.current.onAssetDrop?.(asset, {
+					x: focus.x + (activeArea.width - 1) / 2,
+					y: focus.z + (activeArea.height - 1) / 2,
+				});
+			},
+		};
+		syncSelection();
 
 		const raycaster = new THREE.Raycaster();
 		const pointer = new THREE.Vector2();
@@ -952,7 +1216,10 @@ export function ThreeDPreview({
 			renderer.domElement.releasePointerCapture?.(event.pointerId);
 		};
 
-		const setPointerFromEvent = (event: PointerEvent) => {
+		const setPointerFromEvent = (event: {
+			clientX: number;
+			clientY: number;
+		}) => {
 			const bounds = renderer.domElement.getBoundingClientRect();
 			const ndc = getCanvasPointerNdc(
 				{ clientX: event.clientX, clientY: event.clientY },
@@ -972,7 +1239,10 @@ export function ThreeDPreview({
 			return true;
 		};
 
-		const updateRaycasterFromPointer = (event: PointerEvent) => {
+		const updateRaycasterFromPointer = (event: {
+			clientX: number;
+			clientY: number;
+		}) => {
 			if (!setPointerFromEvent(event)) {
 				return false;
 			}
@@ -1008,10 +1278,100 @@ export function ThreeDPreview({
 
 		const selectFromPointer = (event: PointerEvent) => {
 			const metadata = getPointerHit(event);
-			if (!metadata) {
+			if (
+				!metadata ||
+				(metadata.entityType === "terrain" && !isTerrainEditing)
+			) {
+				setEditorSelection(
+					activeArea ? { type: "area", areaId: activeArea.id } : null,
+				);
 				return;
 			}
 			setEditorSelection(metadataToEditorSelection(metadata));
+		};
+		const dropGhost = new THREE.Mesh(
+			new THREE.BoxGeometry(0.95, 0.05, 0.95),
+			new THREE.MeshBasicMaterial({
+				color: 0x00b9ff,
+				transparent: true,
+				opacity: 0.65,
+				depthTest: false,
+			}),
+		);
+		dropGhost.visible = false;
+		scene.add(dropGhost);
+		const dropPosition = (
+			event: DragEvent,
+		): PreviewGridPosition | undefined => {
+			if (!activeArea) return;
+			if (updateRaycasterFromPointer(event)) {
+				const hit = raycaster.intersectObjects(
+					terrainSurfacePickMeshes,
+					false,
+				)[0];
+				if (hit)
+					return terrainIntersectionToPreviewGridPosition(activeArea, hit);
+				const point = raycaster.ray.intersectPlane(
+					new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
+					new THREE.Vector3(),
+				);
+				if (point)
+					return {
+						x: Math.min(
+							activeArea.width - 1,
+							Math.max(0, Math.round(point.x + (activeArea.width - 1) / 2)),
+						),
+						y: Math.min(
+							activeArea.height - 1,
+							Math.max(0, Math.round(point.z + (activeArea.height - 1) / 2)),
+						),
+					};
+			}
+			return {
+				x: cameraStateRef.current.focus.x + (activeArea.width - 1) / 2,
+				y: cameraStateRef.current.focus.z + (activeArea.height - 1) / 2,
+			};
+		};
+		const handleDragOver = (event: DragEvent) => {
+			if (!event.dataTransfer?.types.includes(SCENE_ASSET_MIME) || !activeArea)
+				return;
+			event.preventDefault();
+			event.dataTransfer.dropEffect = "copy";
+			const position = dropPosition(event);
+			if (position) {
+				const point = previewGridPositionToThreePoint(activeArea, position);
+				dropGhost.position.set(
+					point.x,
+					getTerrainPresentationSurfaceY(
+						activeArea,
+						position,
+						terrainRenderMode,
+					) + 0.08,
+					point.z,
+				);
+				dropGhost.visible = true;
+			}
+		};
+		const handleDragLeave = () => {
+			dropGhost.visible = false;
+		};
+		const handleDrop = (event: DragEvent) => {
+			dropGhost.visible = false;
+			if (!event.dataTransfer?.types.includes(SCENE_ASSET_MIME)) return;
+			event.preventDefault();
+			try {
+				const identity = JSON.parse(
+					event.dataTransfer.getData(SCENE_ASSET_MIME),
+				);
+				const asset = sceneAssets(useProjectStore.getState().project).find(
+					(entry) => entry.id === identity.id && entry.kind === identity.kind,
+				);
+				const position = dropPosition(event);
+				if (asset && position)
+					controlsStateRef.current.onAssetDrop?.(asset, position);
+			} catch {
+				/* Unrelated drag data must never mutate a project. */
+			}
 		};
 
 		const cleanupDragGhost = () => {
@@ -1485,9 +1845,14 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerDown = (event: PointerEvent) => {
+			if (host.closest("[hidden]") || transformControls.dragging) return;
 			// Alt-modified drags are reserved for camera control so unmodified
 			// pointer input remains owned by paint, sculpt, placement, and selection.
-			if (event.altKey && (event.button === 0 || event.button === 1)) {
+			if (
+				event.button === 1 ||
+				event.button === 2 ||
+				(event.altKey && event.button === 0)
+			) {
 				event.preventDefault();
 				cameraDrag = {
 					pointerId: event.pointerId,
@@ -1625,7 +1990,8 @@ export function ThreeDPreview({
 			const startsSelectedMove =
 				metadata &&
 				metadataIsMovable(metadata) &&
-				selectionMatchesMetadata(editorSelection, metadata);
+				selectionMatchesMetadata(selectionRef.current, metadata) &&
+				!embedded;
 			pointerStart = {
 				didDrag: false,
 				metadata: startsSelectedMove ? metadata : undefined,
@@ -1639,6 +2005,7 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerMove = (event: PointerEvent) => {
+			if (transformControls.dragging) return;
 			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				if (cameraDrag.pointerId !== event.pointerId) {
@@ -1786,6 +2153,11 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerUp = (event: PointerEvent) => {
+			if (suppressTransformClick) {
+				suppressTransformClick = false;
+				pointerStart = null;
+				return;
+			}
 			if (cameraDrag) {
 				if (cameraDrag.pointerId !== event.pointerId) {
 					return;
@@ -1960,6 +2332,16 @@ export function ThreeDPreview({
 			handlePointerUp(event);
 		};
 
+		const preparePointer = (event: PointerEvent) => {
+			transformControls.enabled =
+				event.button === 0 && !event.altKey && !host.closest("[hidden]");
+		};
+		const preventContextMenu = (event: Event) => event.preventDefault();
+		renderer.domElement.addEventListener("pointerdown", preparePointer, true);
+		renderer.domElement.addEventListener("contextmenu", preventContextMenu);
+		renderer.domElement.addEventListener("dragover", handleDragOver);
+		renderer.domElement.addEventListener("dragleave", handleDragLeave);
+		renderer.domElement.addEventListener("drop", handleDrop);
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
 		renderer.domElement.addEventListener("pointermove", handlePointerMove);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
@@ -1990,6 +2372,10 @@ export function ThreeDPreview({
 		};
 
 		const render = () => {
+			if (host.closest("[hidden]")) {
+				animationFrame = window.requestAnimationFrame(render);
+				return;
+			}
 			const now = performance.now();
 			diagnostics.recordFrame(now - lastFrameMs);
 			lastFrameMs = now;
@@ -2022,6 +2408,24 @@ export function ThreeDPreview({
 		render();
 
 		return () => {
+			sceneUiRef.current = undefined;
+			transformControls.dispose();
+			selectionBox.geometry.dispose();
+			(selectionBox.material as THREE.Material).dispose();
+			dropGhost.geometry.dispose();
+			dropGhost.material.dispose();
+			renderer.domElement.removeEventListener(
+				"pointerdown",
+				preparePointer,
+				true,
+			);
+			renderer.domElement.removeEventListener(
+				"contextmenu",
+				preventContextMenu,
+			);
+			renderer.domElement.removeEventListener("dragover", handleDragOver);
+			renderer.domElement.removeEventListener("dragleave", handleDragLeave);
+			renderer.domElement.removeEventListener("drop", handleDrop);
 			diagnostics.recordSceneCleanup();
 			window.cancelAnimationFrame(animationFrame);
 			window.removeEventListener("resize", resize);
@@ -2081,7 +2485,9 @@ export function ThreeDPreview({
 			}
 		};
 	}, [
-		activeArea,
+		terrainContentKey,
+		markerContentKey,
+		placementContentKey,
 		addEventBlock,
 		addNpc,
 		addObject,
@@ -2092,16 +2498,11 @@ export function ThreeDPreview({
 		brushShape,
 		brushSize,
 		brushStrength,
-		editorSelection,
-		renderMarkers,
 		heightToolValue,
 		mapPaletteSelection,
-		placementInfo,
 		setEditorSelection,
 		setTiles,
 		setTerrainHeights,
-		smoothTerrainMeshes,
-		terrainBlocks,
 		terrainGesture,
 		terrainPaintTileId,
 		terrainHeightTool,
@@ -2129,12 +2530,82 @@ export function ThreeDPreview({
 					className="three-d-editor-toolbar"
 					role="toolbar"
 				>
-					<div className="three-d-toolbar-row">
-						<div className="three-d-toolbar-title">
-							<strong>3D Map</strong>
-							<span>{activeArea?.name ?? "No active area"}</span>
-							<span>{toolbarModeLabel}</span>
+					{embedded && (
+						<div className="scene-transform-toolbar">
+							<fieldset className="scene-transform-modes">
+								<legend className="sr-only">Transform tools</legend>
+								{(["translate", "rotate", "scale"] as const).map((mode) => (
+									<button
+										type="button"
+										aria-pressed={transformMode === mode}
+										key={mode}
+										onClick={() => {
+											setMapPaletteSelection({ type: "none" });
+											onTransformModeChange?.(mode);
+										}}
+										title={
+											mode === "translate"
+												? "Move (W)"
+												: mode === "rotate"
+													? "Rotate (E)"
+													: "Scale (R)"
+										}
+									>
+										{mode === "translate"
+											? "Move"
+											: mode === "rotate"
+												? "Rotate"
+												: "Scale"}
+									</button>
+								))}
+							</fieldset>
+							<label>
+								Move snap
+								<select
+									aria-label="Position snap"
+									value={positionSnap}
+									onChange={(event) =>
+										onPositionSnapChange?.(Number(event.target.value))
+									}
+								>
+									{[0, 0.25, 0.5, 1].map((value) => (
+										<option value={value} key={value}>
+											{value || "Off"}
+										</option>
+									))}
+								</select>
+							</label>
+							<label>
+								Turn snap
+								<select
+									aria-label="Rotation snap"
+									value={rotationSnap}
+									onChange={(event) =>
+										onRotationSnapChange?.(Number(event.target.value))
+									}
+								>
+									{[0, 15, 45, 90].map((value) => (
+										<option value={value} key={value}>
+											{value ? `${value}°` : "Off"}
+										</option>
+									))}
+								</select>
+							</label>
 						</div>
+					)}
+					<div className="three-d-toolbar-row">
+						{embedded && (placementInfo.active || isTerrainEditing) && (
+							<span className="scene-hint" role="status">
+								{toolbarModeLabel}
+							</span>
+						)}
+						{!embedded && (
+							<div className="three-d-toolbar-title">
+								<strong>3D Map</strong>
+								<span>{activeArea?.name ?? "No active area"}</span>
+								<span>{toolbarModeLabel}</span>
+							</div>
+						)}
 						<fieldset
 							aria-label="3D camera controls"
 							className="three-d-toolbar-group"
@@ -2163,42 +2634,53 @@ export function ThreeDPreview({
 							<button onClick={resetCamera} type="button">
 								Reset camera
 							</button>
-						</fieldset>
-						<fieldset
-							aria-label="3D terrain render mode"
-							className="three-d-toolbar-group"
-						>
 							<button
-								className={terrainRenderMode === "blocky" ? "active" : ""}
-								onClick={() => setTerrainRenderMode("blocky")}
 								type="button"
+								disabled={!canMoveSelection}
+								onClick={() => sceneUiRef.current?.focus()}
 							>
-								Blocky terrain
-							</button>
-							<button
-								className={terrainRenderMode === "smooth" ? "active" : ""}
-								onClick={() => setTerrainRenderMode("smooth")}
-								type="button"
-							>
-								Smooth terrain
+								Focus selected
 							</button>
 						</fieldset>
-						<div className="three-d-toolbar-group">
-							{isWalkPreviewActive ? (
-								<button onClick={stopWalkPreview} type="button">
-									Stop 3D Walk Preview
-								</button>
-							) : (
-								<button onClick={startWalkPreview} type="button">
-									Start 3D Walk Preview
-								</button>
-							)}
-						</div>
+						{!embedded && (
+							<>
+								<fieldset
+									aria-label="3D terrain render mode"
+									className="three-d-toolbar-group"
+								>
+									<button
+										className={terrainRenderMode === "blocky" ? "active" : ""}
+										onClick={() => setTerrainRenderMode("blocky")}
+										type="button"
+									>
+										Blocky terrain
+									</button>
+									<button
+										className={terrainRenderMode === "smooth" ? "active" : ""}
+										onClick={() => setTerrainRenderMode("smooth")}
+										type="button"
+									>
+										Smooth terrain
+									</button>
+								</fieldset>
+								<div className="three-d-toolbar-group">
+									{isWalkPreviewActive ? (
+										<button onClick={stopWalkPreview} type="button">
+											Stop 3D Walk Preview
+										</button>
+									) : (
+										<button onClick={startWalkPreview} type="button">
+											Start 3D Walk Preview
+										</button>
+									)}
+								</div>
+							</>
+						)}
 					</div>
 					<div className="three-d-toolbar-row compact">
 						<div className="three-d-nav-hints">
-							<span>Alt + Drag: Orbit</span>
-							<span>Alt + Shift + Drag: Pan</span>
+							<span>Right / Alt + drag: Orbit</span>
+							<span>Middle / Alt + Shift + drag: Pan</span>
 							<span>Wheel: Zoom</span>
 						</div>
 						{isTerrainEditing ? (
@@ -2320,7 +2802,11 @@ export function ThreeDPreview({
 						) : (
 							<div className="three-d-nav-hints">
 								<span>Click: Select</span>
-								<span>Drag selected marker: Move</span>
+								<span>
+									{embedded
+										? "Drag handles to transform · F: Focus"
+										: "Drag selected marker: Move"}
+								</span>
 							</div>
 						)}
 					</div>
@@ -2385,7 +2871,17 @@ export function ThreeDPreview({
 					className="three-d-preview-host"
 					ref={hostRef}
 					role="img"
-				/>
+				>
+					{embedded &&
+						activeArea &&
+						!activeArea.objects.length &&
+						!activeArea.npcs.length &&
+						!activeArea.structures.length && (
+							<div className="viewport-empty-state">
+								Drag an asset into the scene to get started.
+							</div>
+						)}
+				</div>
 				<ThreePerformanceOverlay
 					diagnostics={diagnostics}
 					title="3D Preview Perf"

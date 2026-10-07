@@ -24,17 +24,22 @@ vi.mock("../runtime/RuntimePanel", () => ({
 
 vi.mock("../editor/sections/ThreeDPreview", async () => {
 	const { useProjectStore } = await import("../store/useProjectStore");
+	const { getPreviewPlacementInfo } = await import(
+		"../editor/sections/previewPlacement"
+	);
 
 	return {
 		ThreeDPreview: ({
-			placementInfo = { active: false },
 			terrainHeightTool,
 			terrainPaintTileId,
 		}: {
-			placementInfo?: { active: boolean; label?: string };
 			terrainHeightTool?: string;
 			terrainPaintTileId?: string;
 		}) => {
+			const placementInfo = getPreviewPlacementInfo(
+				useProjectStore((state) => state.project),
+				useProjectStore((state) => state.mapPaletteSelection),
+			);
 			const selectFirstNpc = () => {
 				const state = useProjectStore.getState();
 				const area =
@@ -84,6 +89,30 @@ vi.mock("three/examples/jsm/controls/OrbitControls.js", () => ({
 		target = { set: vi.fn() };
 		dispose = vi.fn();
 		update = vi.fn();
+	},
+}));
+
+// Real handle interaction is covered by the @map-product browser workflow.
+// These deterministic tests exercise the editor's camera/terrain/selection paths.
+vi.mock("three/examples/jsm/controls/TransformControls.js", () => ({
+	TransformControls: class {
+		enabled = true;
+		dragging = false;
+		object: unknown;
+		getHelper = vi.fn(() => ({}));
+		setSize = vi.fn();
+		setMode = vi.fn();
+		setSpace = vi.fn();
+		setTranslationSnap = vi.fn();
+		setRotationSnap = vi.fn();
+		addEventListener = vi.fn();
+		attach = vi.fn((object: unknown) => {
+			this.object = object;
+		});
+		detach = vi.fn(() => {
+			this.object = undefined;
+		});
+		dispose = vi.fn();
 	},
 }));
 
@@ -152,6 +181,11 @@ vi.mock("three", () => {
 		ACESFilmicToneMapping: "ACESFilmicToneMapping",
 		AmbientLight: class {},
 		BoxGeometry: Disposable,
+		BoxHelper: class extends Object3D {
+			geometry = new Disposable();
+			material = new Disposable();
+			setFromObject = vi.fn();
+		},
 		BufferGeometry,
 		Color: class {},
 		ConeGeometry: Disposable,
@@ -173,6 +207,7 @@ vi.mock("three", () => {
 		Mesh,
 		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		MeshStandardMaterial: Disposable,
+		MeshBasicMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
 		Plane: class {},
@@ -385,7 +420,7 @@ describe("ThreeDPreview", () => {
 		const { container } = render(<MapEditor />);
 
 		expect(getButtonByText(container, "2D View")).toHaveClass("selected");
-		expect(container).toHaveTextContent("View: 2D");
+		expect(container).toHaveTextContent("Editing");
 		expect(
 			container.querySelector('[aria-label="Map editing canvas"]'),
 		).not.toBeNull();
@@ -393,7 +428,7 @@ describe("ThreeDPreview", () => {
 		fireEvent.click(getButtonByText(container, "3D View"));
 
 		expect(getButtonByText(container, "3D View")).toHaveClass("selected");
-		expect(container).toHaveTextContent("View: 3D");
+		expect(container).toHaveTextContent("Editing");
 		expect(
 			container.querySelector('[aria-label="3D preview viewport"]'),
 		).not.toBeNull();
@@ -407,15 +442,19 @@ describe("ThreeDPreview", () => {
 		fireEvent.click(npcButton as HTMLButtonElement);
 		fireEvent.click(getButtonByText(container, "3D View"));
 
-		expect(
-			screen.getByText("Tool: Place NPC - Captain Mira"),
-		).toBeInTheDocument();
+		expect(screen.getByText("Placing NPC: Captain Mira")).toBeInTheDocument();
 		expect(npcButton).toHaveClass("selected");
 
 		fireEvent.click(getButtonByText(container, "2D View"));
-		expect(
-			screen.getByText("Tool: Place NPC - Captain Mira"),
-		).toBeInTheDocument();
+		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
+			"Tool: Paint",
+		);
+		expect(screen.getByLabelText("Map editor status")).toHaveTextContent(
+			"Palette: Npc",
+		);
+		expect(screen.getByLabelText("NPC definition")).toHaveValue(
+			useProjectStore.getState().project.npcs[0].id,
+		);
 		expect(npcButton).toHaveClass("selected");
 	}, 15000);
 
@@ -475,8 +514,10 @@ describe("ThreeDPreview", () => {
 		expect(screen.getByLabelText("3D map editor toolbar")).toBeInTheDocument();
 		expect(screen.getByText("3D Map")).toBeInTheDocument();
 		expect(screen.queryByText(/3D Preview is experimental/)).toBeNull();
-		expect(screen.getByText("Alt + Drag: Orbit")).toBeInTheDocument();
-		expect(screen.getByText("Alt + Shift + Drag: Pan")).toBeInTheDocument();
+		expect(screen.getByText("Right / Alt + drag: Orbit")).toBeInTheDocument();
+		expect(
+			screen.getByText("Middle / Alt + Shift + drag: Pan"),
+		).toBeInTheDocument();
 		expect(screen.getByText("Wheel: Zoom")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Top" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Isometric" })).toHaveClass(
@@ -738,7 +779,7 @@ describe("ThreeDPreview", () => {
 		useProjectStore.getState().setProject(makeThreeTileProject());
 
 		render(<ThreeDPreview embedded terrainPaintTileId="sand" />);
-		fireEvent.click(screen.getByRole("button", { name: "Smooth terrain" }));
+		// The embedded workspace uses smooth terrain by default.
 		fireEvent.pointerDown(getPreviewCanvas(), {
 			button: 0,
 			clientX: 160,

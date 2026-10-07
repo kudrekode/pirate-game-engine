@@ -127,7 +127,7 @@ test("records finalised-character runtime cost, collision and camera compatibili
 			});
 		}
 		await page
-			.getByRole("button", { name: "Back to editor", exact: true })
+			.getByRole("button", { name: "Back to Edit", exact: true })
 			.click();
 	}
 	expect(requests).toHaveLength(1);
@@ -216,6 +216,7 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	const importResponse = await imported;
 	const importResult = await importResponse.json();
 	expect(importResponse.ok(), JSON.stringify(importResult)).toBe(true);
+	await page.getByRole("button", { name: "Character", exact: true }).click();
 	await expect(
 		page.getByRole("region", { name: "Project characters" }),
 	).toBeVisible();
@@ -265,9 +266,7 @@ test("finalises a character into a persistent player and independent NPCs @game-
 		);
 	}
 	observations.twoInstances = await play(2);
-	await page
-		.getByRole("button", { name: "Back to editor", exact: true })
-		.click();
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	// Re-enter the existing NPC placement mode and add another reference.
 	await page.getByRole("button", { name: "Tile 13, 7", exact: true }).click();
 	await page.keyboard.press("1");
@@ -307,9 +306,7 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	await page.screenshot({
 		path: testInfo.outputPath("three-characters-runtime.png"),
 	});
-	await page
-		.getByRole("button", { name: "Back to editor", exact: true })
-		.click();
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
 	const saved = await page.evaluate(() =>
 		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
@@ -338,9 +335,7 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	await reloadSaved();
 	observations.reloaded = await play(3);
 	await page.screenshot({ path: testInfo.outputPath("reloaded-runtime.png") });
-	await page
-		.getByRole("button", { name: "Back to editor", exact: true })
-		.click();
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Export JSON", exact: true }).click();
 	// The same saved project also works in a fresh browser page with no loader cache.
 	await page.getByRole("button", { name: "Map", exact: true }).click();
@@ -354,9 +349,7 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	await page.screenshot({
 		path: testInfo.outputPath("five-characters-runtime.png"),
 	});
-	await page
-		.getByRole("button", { name: "Back to editor", exact: true })
-		.click();
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Load", exact: true }).click();
 	await page.route(`**${importResult.asset.glbUrl}`, (route) =>
 		route.fulfill({ status: 404, body: "Missing character" }),

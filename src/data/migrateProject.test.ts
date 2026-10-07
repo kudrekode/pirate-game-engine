@@ -2,6 +2,45 @@ import { describe, expect, it } from "vitest";
 import { migrateProject } from "./migrateProject";
 
 describe("migrateProject", () => {
+	it("sanitizes optional instance transforms and retains placed character names", () => {
+		const project = migrateProject({
+			areas: [
+				{
+					id: "area",
+					width: 8,
+					height: 8,
+					terrainTiles: [],
+					npcs: [
+						{
+							id: "guide",
+							npcDefinitionId: "npc",
+							nameOverride: "Harbour Guide",
+							transform: {
+								position: { x: 0.25, y: Infinity, z: -0.5 },
+								rotation: { x: 45, y: 720, z: NaN },
+								scale: { x: -2, y: 100, z: 1.5 },
+							},
+						},
+					],
+					objects: [],
+				},
+			],
+			npcs: [{ id: "npc", name: "Guide" }],
+		});
+		expect(project.areas[0].npcs[0]).toMatchObject({
+			nameOverride: "Harbour Guide",
+			transform: {
+				position: { x: 0.25, y: 0, z: -0.5 },
+				rotation: { x: 45, y: 0, z: 0 },
+				scale: { x: 0.05, y: 20, z: 1.5 },
+			},
+		});
+		expect(project.areas[0].objects).toEqual([]);
+		const reloaded = migrateProject(JSON.parse(JSON.stringify(project)))
+			.areas[0].npcs[0];
+		expect(reloaded.transform).toEqual(project.areas[0].npcs[0].transform);
+		expect(reloaded.nameOverride).toBe("Harbour Guide");
+	});
 	it("migrates a legacy single map into one area", () => {
 		const project = migrateProject({
 			metadata: { name: "Legacy", version: "0.0.1" },

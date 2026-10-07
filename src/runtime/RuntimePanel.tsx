@@ -13,14 +13,19 @@ const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
 
 type RuntimePanelProps = {
+	initialMode?: "2d" | "3d";
 	project: GameProject;
 	onClose: () => void;
 };
 
-export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
+export function RuntimePanel({
+	project,
+	onClose,
+	initialMode = "2d",
+}: RuntimePanelProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sceneRef = useRef<AdventureScene | null>(null);
-	const [playMode, setPlayMode] = useState<"2d" | "3d">("2d");
+	const [playMode, setPlayMode] = useState<"2d" | "3d">(initialMode);
 	const [inventory, setInventory] = useState<Record<string, number>>({});
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const [quests, setQuests] = useState<QuestView[]>([]);
@@ -143,7 +148,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 		<section className="runtime-panel">
 			<div className="runtime-toolbar">
 				<div>
-					<strong>Play Test</strong>
+					<strong className="play-mode-badge">Playing</strong>
 					<span>{project.metadata.name}</span>
 				</div>
 				<div className="runtime-mode-selector">
@@ -163,7 +168,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 					</button>
 				</div>
 				<button onClick={onClose} type="button">
-					Back to editor
+					Back to Edit
 				</button>
 			</div>
 			<div className="runtime-stage">

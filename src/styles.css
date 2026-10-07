@@ -2475,3 +2475,416 @@ label {
 	display: block;
 	margin: 8px 0;
 }
+.app-shell [hidden] {
+	display: none !important;
+}
+.play-mode-badge {
+	background: #166534;
+	color: white;
+	padding: 5px 10px;
+	border-radius: 5px;
+	font-size: 12px;
+}
+.top-actions {
+	margin: 0;
+	border: 0;
+	padding: 0;
+	min-inline-size: 0;
+}
+.top-actions:disabled {
+	opacity: 0.5;
+}
+.scene-hint {
+	color: #607186;
+	font-size: 11px;
+	line-height: 1.5;
+	margin: 8px 0;
+}
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+.scene-asset-browser .panel-title,
+.scene-hierarchy .panel-title {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.scene-asset-browser .panel-title span,
+.scene-hierarchy .panel-title span {
+	color: #6c7d8e;
+	font-size: 11px;
+}
+.asset-search input,
+.scene-hierarchy > input {
+	width: 100%;
+	height: 32px;
+	font-size: 12px;
+}
+.asset-categories {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 10px 0;
+}
+.asset-categories button {
+	padding: 4px 7px;
+	font-size: 11px;
+	border-radius: 5px;
+}
+.asset-categories button[aria-pressed="true"],
+.scene-transform-modes button[aria-pressed="true"] {
+	background: #e0f2fe;
+	color: #075985;
+	border-color: #38bdf8;
+}
+.asset-card-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+.asset-card {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	border: 1px solid #d7e1eb;
+	border-radius: 7px;
+	overflow: hidden;
+	background: #fff;
+	cursor: grab;
+}
+.asset-card:hover {
+	border-color: #38bdf8;
+	box-shadow: 0 2px 8px #0c4a6e14;
+}
+.asset-card:active {
+	cursor: grabbing;
+}
+.asset-card-preview {
+	background: linear-gradient(145deg, #eef3f8, #dce6f0);
+	height: 76px;
+	display: grid;
+	place-items: center;
+}
+.asset-card-preview img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	pointer-events: none;
+}
+.asset-card-preview > span {
+	font-size: 34px;
+	color: #516d86;
+}
+.asset-card > strong {
+	font-size: 11px;
+	padding: 6px 7px 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.asset-card > small {
+	font-size: 10px;
+	color: #6e7f90;
+	padding: 3px 7px;
+}
+.asset-card > button {
+	border: 0;
+	border-top: 1px solid #edf1f5;
+	border-radius: 0;
+	padding: 4px;
+	font-size: 11px;
+	color: #075985;
+}
+.map-authoring-tools {
+	border-top: 1px solid #d8e3ec;
+	margin-top: 16px;
+	padding-top: 12px;
+}
+.map-authoring-tools > summary,
+.scene-gameplay > summary,
+.scene-visual > summary {
+	cursor: pointer;
+	color: #334e68;
+	font-size: 12px;
+	font-weight: 700;
+	padding: 8px 0;
+}
+.edit-mode-badge {
+	background: #e0f2fe !important;
+	color: #075985;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+}
+.scene-transform-toolbar {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+.scene-transform-modes {
+	display: flex;
+	gap: 3px;
+}
+.scene-transform-modes button {
+	font-weight: 700;
+}
+.scene-transform-toolbar label {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 10px;
+	color: #566b80;
+}
+.scene-transform-toolbar select {
+	width: 63px;
+	height: 28px;
+	font-size: 11px;
+	padding: 3px;
+}
+.three-d-preview-workspace .three-d-preview-panel {
+	padding: 0;
+	overflow: hidden;
+	gap: 6px;
+}
+.three-d-preview-workspace .three-d-preview-host {
+	min-height: 200px;
+	flex-basis: 0;
+	border-radius: 7px;
+}
+.three-d-preview-workspace .three-d-editor-toolbar {
+	padding: 8px;
+	gap: 7px;
+}
+.three-d-preview-workspace .three-d-editor-toolbar button {
+	padding: 5px 8px;
+	font-size: 11px;
+}
+.three-d-preview-workspace .three-d-toolbar-title {
+	display: none;
+}
+.three-d-preview-workspace .three-d-toolbar-group {
+	padding: 0;
+	border: 0;
+}
+.three-d-preview-workspace .three-d-nav-hints {
+	gap: 6px;
+}
+.three-d-preview-workspace .three-d-nav-hints span {
+	border: 0;
+	background: transparent;
+	padding: 0;
+	font-size: 10px;
+	color: #62758a;
+}
+.viewport-empty-state {
+	position: absolute;
+	bottom: 18px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: max-content;
+	max-width: 90%;
+	padding: 9px 14px;
+	border: 1px solid #d3e7f4;
+	border-radius: 6px;
+	color: #254b67;
+	background: #f8fcffeb;
+	z-index: 2;
+	pointer-events: none;
+	font-size: 12px;
+}
+.map-editor .map-inspector-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	overflow: hidden;
+	padding: 12px;
+}
+.scene-hierarchy {
+	display: flex;
+	flex-direction: column;
+	min-height: 120px;
+	max-height: 30%;
+	flex: 0 1 210px;
+}
+.scene-tree {
+	overflow: auto;
+	margin-top: 6px;
+	min-height: 32px;
+}
+.scene-tree button {
+	display: flex;
+	width: 100%;
+	text-align: left;
+	gap: 7px;
+	align-items: center;
+	padding: 6px;
+	border: 0;
+	border-radius: 4px;
+	font-size: 12px;
+	background: transparent;
+}
+.scene-tree button > span:nth-child(2) {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.scene-tree button > small {
+	color: #8291a3;
+	font-size: 9px;
+	text-transform: capitalize;
+}
+.scene-tree button[aria-selected="true"] {
+	background: #e0f2fe;
+	color: #075985;
+	box-shadow: inset 3px 0 #0ea5e9;
+}
+.scene-tree button:hover {
+	background: #f0f5fa;
+}
+.scene-selection-actions {
+	display: flex;
+	gap: 5px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #dde6ef;
+}
+.scene-selection-actions button {
+	flex: 1;
+	padding: 5px;
+	font-size: 11px;
+}
+.scene-inspector-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding-right: 3px;
+}
+.scene-transform-inspector fieldset {
+	padding: 0;
+	border: 0;
+	margin: 12px 0;
+	min-inline-size: 0;
+}
+.scene-transform-inspector legend {
+	color: #536b81;
+	font-size: 11px;
+	padding: 0;
+	margin-bottom: 5px;
+	font-weight: 600;
+}
+.transform-vector {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 5px;
+}
+.transform-vector label {
+	display: flex;
+	gap: 3px;
+	align-items: center;
+}
+.transform-vector input {
+	min-width: 0;
+	padding: 5px 3px;
+	font-size: 12px;
+	width: 100%;
+	height: 30px;
+}
+.transform-vector label > span {
+	font-size: 10px;
+	font-weight: 800;
+}
+.axis-x {
+	color: #cf465d;
+}
+.axis-y {
+	color: #328151;
+}
+.axis-z {
+	color: #376ecc;
+}
+.scene-name {
+	display: block;
+	font-size: 11px;
+	color: #536b81;
+	margin-bottom: 14px;
+}
+.scene-name input {
+	width: 100%;
+	margin-top: 5px;
+	font-weight: 600;
+}
+.scene-transform-inspector > button {
+	font-size: 11px;
+	padding: 5px 8px;
+}
+.scene-gameplay {
+	margin-top: 12px;
+	border-top: 1px solid #dce5ed;
+}
+.scene-visual {
+	margin-top: 8px;
+}
+.scene-visual .form-grid {
+	grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+	.app-shell .top-bar {
+		grid-template-columns: minmax(160px, 230px) minmax(70px, 1fr) auto;
+		gap: 10px;
+		padding: 8px 12px;
+	}
+	.app-shell .top-actions {
+		gap: 4px;
+	}
+	.app-shell .top-actions button {
+		font-size: 11px;
+		padding: 7px 9px;
+	}
+	.app-shell .project-heading {
+		grid-template-columns: 1fr;
+	}
+	.app-shell .app-logo {
+		display: none;
+	}
+	.app-shell .status-line {
+		font-size: 11px;
+	}
+	.app-shell .bottom-tabs {
+		gap: 4px;
+		padding: 5px 8px;
+	}
+	.app-shell .bottom-tabs button {
+		padding: 8px 5px;
+		font-size: 11px;
+		min-height: 34px;
+	}
+	.map-editor.editor-panel {
+		gap: 8px;
+		padding: 8px;
+	}
+	.map-editor .map-workspace-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		padding: 5px 7px;
+		gap: 6px;
+	}
+	.map-editor .map-workspace-toolbar button {
+		padding: 5px 8px;
+		font-size: 11px;
+	}
+	.map-editor .map-view-toggle {
+		display: flex;
+	}
+	.map-editor .map-workspace-status {
+		flex: 1;
+		justify-content: flex-end;
+		gap: 5px;
+		font-size: 11px;
+	}
+}

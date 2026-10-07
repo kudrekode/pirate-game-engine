@@ -310,7 +310,12 @@ function setObjectBasePosition(
 	visual?: ResolvedThreeVisual,
 ): void {
 	const base = getVisualWorldBase(area, position, terrainMode);
-	object.position.set(base.x, base.y + (visual?.heightOffset ?? 0), base.z);
+	const offset = object.userData.mapEntityTransform?.position;
+	object.position.set(
+		base.x + (offset?.x ?? 0),
+		base.y + (visual?.heightOffset ?? 0) + (offset?.y ?? 0),
+		base.z + (offset?.z ?? 0),
+	);
 }
 
 function setObjectFacing(
@@ -318,7 +323,11 @@ function setObjectFacing(
 	facing: VisualGridPosition,
 	visual?: ResolvedThreeVisual,
 ): void {
-	object.rotation.y = resolveThreeCharacterFacingYaw(facing, visual);
+	object.rotation.y =
+		resolveThreeCharacterFacingYaw(facing, visual) +
+		THREE.MathUtils.degToRad(
+			object.userData.mapEntityTransform?.rotation.y ?? 0,
+		);
 }
 
 function getRuntimeCameraDimensions(area: GameArea): {
