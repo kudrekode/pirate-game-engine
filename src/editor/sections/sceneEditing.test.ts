@@ -24,10 +24,10 @@ describe("scene editing", () => {
 	it("places a real registry prop in a blank project, selects it, preserves instance edits on duplication and deletes safely", () => {
 		const store = useProjectStore.getState();
 		const asset = sceneAssets(store.project).find(
-			(entry) => entry.id === "pirate-crate",
+			(entry) => entry.id === "world-crate",
 		);
 		expect(asset).toBeDefined();
-		if (!asset) throw new Error("Expected Pirate Crate asset.");
+		if (!asset) throw new Error("Expected Supply Crate asset.");
 		const selection = placeSceneAsset(asset, { x: 7, y: 4 });
 		expect(useProjectStore.getState().editorSelection).toEqual(selection);
 		const transform = defaultMapEntityTransform();
@@ -58,7 +58,7 @@ describe("scene editing", () => {
 		expect(copy.id).not.toBe(entity.id);
 		expect(copy.transform).toEqual(entity.transform);
 		expect(copy.transform).not.toBe(entity.transform);
-		expect(copy).toMatchObject({ nameOverride: "Pirate Crate copy" });
+		expect(copy).toMatchObject({ nameOverride: "Supply Crate copy" });
 		deleteSceneSelection(copySelection);
 		expect(useProjectStore.getState().project).toEqual(edited);
 		expect(useProjectStore.getState().editorSelection?.type).toBe("area");

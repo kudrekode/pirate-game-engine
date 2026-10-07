@@ -23,6 +23,10 @@ export type ThreeVisualAssetDefinition = {
 	url: string;
 	resourceUrlAliases?: Record<string, string>;
 	category?: ThreeVisualAssetCategory;
+	/** Library presentation only; does not change gameplay or saved projects. */
+	browserCategory?: "Characters" | "Props" | "Nature" | "Buildings";
+	thumbnailUrl?: string;
+	hiddenFromBrowser?: boolean;
 	animationOnly?: boolean;
 	animations?: Partial<
 		Record<ThreeCharacterAnimationState, ThreeCharacterAnimationMapping>

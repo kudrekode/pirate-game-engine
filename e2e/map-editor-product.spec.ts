@@ -50,17 +50,17 @@ test("builds a scene with handles, an authored character and a persistent Edit/P
 	).toBeVisible();
 	await page
 		.getByRole("textbox", { name: "Search assets" })
-		.fill("Pirate Crate");
-	const card = page.getByRole("article", { name: "Pirate Crate", exact: true });
+		.fill("Supply Crate");
+	const card = page.getByRole("article", { name: "Supply Crate", exact: true });
 	const bounds = await canvas.boundingBox();
 	expect(bounds).not.toBeNull();
 	if (!bounds) throw new Error("Expected 3D canvas bounds.");
 	await card.dragTo(canvas, {
 		targetPosition: { x: bounds.width * 0.56, y: bounds.height * 0.56 },
 	});
-	await expect(page.getByLabel("Scene name")).toHaveValue("Pirate Crate");
+	await expect(page.getByLabel("Scene name")).toHaveValue("Supply Crate");
 	await expect(
-		page.getByRole("option", { name: "Pirate Crate object" }),
+		page.getByRole("option", { name: "Supply Crate object" }),
 	).toHaveAttribute("aria-selected", "true");
 	await expect
 		.poll(() =>
@@ -134,7 +134,7 @@ test("builds a scene with handles, an authored character and a persistent Edit/P
 	await page.getByLabel("Position Z").fill("7");
 	await page.getByLabel("Position Z").press("Tab");
 	await page
-		.getByRole("option", { name: "Pirate Crate object", exact: true })
+		.getByRole("option", { name: "Supply Crate object", exact: true })
 		.click();
 	await page.getByLabel("Scene name").fill("Harbour supplies");
 	for (const [label, value] of [

@@ -47,6 +47,14 @@ This is an active work-in-progress and a portfolio project, not a production-rea
 
 ## Saving and recovery
 
+The Map Asset Browser includes the 23-piece **Tidewatch Harbour** world kit.
+Browse Props, Buildings or Nature, search by name/tag, then drag into the 3D
+viewport. New kit assets use metres and place at scale 1. See the
+[kit result and scale guide](WORLD_ASSET_LIBRARY_PASS_RESULT.md) for the asset
+list, provenance and the explicit-import demonstration project. Existing projects
+and starter defaults are unchanged. Raised docks/steps are visual pieces and do
+not add height-aware movement.
+
 The browser keeps one manual save and one autosave draft. If both are valid and
 different, startup asks which to open; neither copy is written while this choice
 is pending or merely because a copy was loaded. A valid save is used when the

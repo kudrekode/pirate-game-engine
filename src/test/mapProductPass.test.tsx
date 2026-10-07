@@ -40,10 +40,10 @@ beforeEach(() => {
 it("adds, selects, renames, transforms and duplicates a prop with grouped inspector undo and safe form shortcuts", async () => {
 	render(<MapEditor />);
 	await act(async () =>
-		fireEvent.click(screen.getByLabelText("Add Pirate Crate")),
+		fireEvent.click(screen.getByLabelText("Add Supply Crate")),
 	);
 	expect(
-		screen.getByRole("option", { name: "Pirate Crate object" }),
+		screen.getByRole("option", { name: "Supply Crate object" }),
 	).toHaveAttribute("aria-selected", "true");
 	const area = () => useProjectStore.getState().project.areas[0];
 	const originalX = area().objects[0].x;
@@ -100,7 +100,7 @@ it("keeps the editor mounted and selected through isolated Play, blocks editor s
 	);
 	render(<App />);
 	await act(async () =>
-		fireEvent.click(screen.getByLabelText("Add Pirate Crate")),
+		fireEvent.click(screen.getByLabelText("Add Supply Crate")),
 	);
 	const canvas = screen.getByRole("application", {
 		name: "Map editing canvas",

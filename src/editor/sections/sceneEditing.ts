@@ -7,7 +7,10 @@ import {
 	migrateMapEntityTransform,
 } from "../../data/mapEntityTransform";
 import { structurePresets } from "../../data/mapVisuals";
-import { listThreeVisualAssets } from "../../runtime/three/threeVisualAssetRegistry";
+import {
+	getThreeVisualAssetDefinition,
+	listThreeVisualAssets,
+} from "../../runtime/three/threeVisualAssetRegistry";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	EditorSelection,
@@ -34,8 +37,15 @@ export function sceneAssets(project: GameProject): SceneAsset[] {
 			(entry): SceneAsset => ({
 				id: entry.id,
 				name: entry.name,
-				category: /tree|palm|rock/i.test(entry.name) ? "Nature" : "Props",
-				tags: [entry.category],
+				category:
+					getThreeVisualAssetDefinition(entry.threeVisual?.assetId)
+						?.browserCategory ??
+					(/tree|palm|rock/i.test(entry.name) ? "Nature" : "Props"),
+				tags: [
+					entry.category,
+					...(getThreeVisualAssetDefinition(entry.threeVisual?.assetId)?.tags ??
+						[]),
+				],
 				kind: "object",
 				visual: entry.threeVisual,
 			}),
@@ -64,7 +74,8 @@ export function sceneAssets(project: GameProject): SceneAsset[] {
 	];
 	const used = new Set(assets.map((asset) => asset.visual?.assetId));
 	for (const asset of listThreeVisualAssets(project.characterAssets)) {
-		if (asset.animationOnly || used.has(asset.id)) continue;
+		if (asset.animationOnly || asset.hiddenFromBrowser || used.has(asset.id))
+			continue;
 		const imported = project.characterAssets?.find(
 			(item) => item.id === asset.id,
 		);
@@ -73,11 +84,12 @@ export function sceneAssets(project: GameProject): SceneAsset[] {
 			id: asset.id,
 			name: asset.name,
 			category:
-				asset.category === "character"
+				asset.browserCategory ??
+				(asset.category === "character"
 					? "Characters"
 					: asset.category === "environment"
 						? "Nature"
-						: "Props",
+						: "Props"),
 			tags: asset.tags ?? [],
 			kind: asset.category === "character" ? "character" : "visual",
 			visual: { mode: "asset", assetId: asset.id },

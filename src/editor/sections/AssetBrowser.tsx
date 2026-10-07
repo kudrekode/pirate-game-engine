@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { requestThreeVisualAsset } from "../../runtime/three/threeVisualAssetLoader";
 import { getThreeVisualAssetDefinition } from "../../runtime/three/threeVisualAssetRegistry";
 import type { GameProject } from "../../types/game";
+import { renderAssetThumbnail } from "./assetThumbnail";
 import { SCENE_ASSET_MIME, type SceneAsset, sceneAssets } from "./sceneEditing";
 
 export function AssetBrowser({
@@ -34,7 +35,7 @@ export function AssetBrowser({
 				assetId,
 				project.characterAssets,
 			);
-			if (!definition) continue;
+			if (!definition || definition.thumbnailUrl) continue;
 			const loaded = requestThreeVisualAsset(definition, {
 				onStateChange: () => {
 					if (active) setThumbnails((current) => ({ ...current }));
@@ -47,24 +48,7 @@ export function AssetBrowser({
 					renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 					rendererRef.current = renderer;
 				}
-				renderer.setSize(128, 96);
-				const scene = new THREE.Scene();
-				scene.add(new THREE.HemisphereLight(0xffffff, 0x687585, 2.5));
-				const light = new THREE.DirectionalLight(0xffffff, 3);
-				light.position.set(3, 5, 4);
-				scene.add(light);
-				const model = loaded.object;
-				const box = new THREE.Box3().setFromObject(model);
-				const center = box.getCenter(new THREE.Vector3());
-				const size = box.getSize(new THREE.Vector3());
-				model.position.sub(center);
-				scene.add(model);
-				const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.001, 10000);
-				const distance = Math.max(size.x, size.y, size.z, 0.01) * 2.1;
-				camera.position.set(distance * 0.65, distance * 0.4, distance);
-				camera.lookAt(0, 0, 0);
-				renderer.render(scene, camera);
-				next[assetId] = renderer.domElement.toDataURL();
+				next[assetId] = renderAssetThumbnail(renderer, loaded.object);
 			} catch {
 				/* Asset names and type icons remain usable without WebGL. */
 			}
@@ -111,50 +95,53 @@ export function AssetBrowser({
 			</fieldset>
 			<p className="scene-hint">Drag into the world, or use Add.</p>
 			<div className="asset-card-grid">
-				{visible.map((asset) => (
-					<article
-						className="asset-card"
-						key={`${asset.kind}:${asset.id}`}
-						aria-label={asset.name}
-						draggable
-						onDragStart={(event) => {
-							event.dataTransfer.setData(
-								SCENE_ASSET_MIME,
-								JSON.stringify({ id: asset.id, kind: asset.kind }),
-							);
-							event.dataTransfer.effectAllowed = "copy";
-						}}
-					>
-						<div className="asset-card-preview">
-							{asset.visual?.assetId && thumbnails[asset.visual.assetId] ? (
-								<img
-									draggable={false}
-									src={thumbnails[asset.visual.assetId]}
-									alt={asset.name}
-								/>
-							) : (
-								<span aria-hidden="true">
-									{asset.category === "Characters"
-										? "♟"
-										: asset.category === "Buildings"
-											? "⌂"
-											: asset.category === "Nature"
-												? "♧"
-												: "◇"}
-								</span>
-							)}
-						</div>
-						<strong title={asset.name}>{asset.name}</strong>
-						<small>{asset.category}</small>
-						<button
-							type="button"
-							aria-label={`Add ${asset.name}`}
-							onClick={() => onAdd(asset)}
+				{visible.map((asset) => {
+					const thumbnail =
+						getThreeVisualAssetDefinition(
+							asset.visual?.assetId,
+							project.characterAssets,
+						)?.thumbnailUrl ?? thumbnails[asset.visual?.assetId ?? ""];
+					return (
+						<article
+							className="asset-card"
+							key={`${asset.kind}:${asset.id}`}
+							aria-label={asset.name}
+							draggable
+							onDragStart={(event) => {
+								event.dataTransfer.setData(
+									SCENE_ASSET_MIME,
+									JSON.stringify({ id: asset.id, kind: asset.kind }),
+								);
+								event.dataTransfer.effectAllowed = "copy";
+							}}
 						>
-							+ Add
-						</button>
-					</article>
-				))}
+							<div className="asset-card-preview">
+								{thumbnail ? (
+									<img draggable={false} src={thumbnail} alt={asset.name} />
+								) : (
+									<span aria-hidden="true">
+										{asset.category === "Characters"
+											? "♟"
+											: asset.category === "Buildings"
+												? "⌂"
+												: asset.category === "Nature"
+													? "♧"
+													: "◇"}
+									</span>
+								)}
+							</div>
+							<strong title={asset.name}>{asset.name}</strong>
+							<small>{asset.category}</small>
+							<button
+								type="button"
+								aria-label={`Add ${asset.name}`}
+								onClick={() => onAdd(asset)}
+							>
+								+ Add
+							</button>
+						</article>
+					);
+				})}
 			</div>
 			{!visible.length && (
 				<p className="empty-state">No matching assets. Try another search.</p>

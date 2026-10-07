@@ -64,6 +64,16 @@ images are optional with `CAPTURE_VISUALS=1`; normal summaries omit uncaptured p
 
 ## Screenshot selection and inspection
 
+The world-library acceptance is one opt-in editor workflow:
+`node node_modules/@playwright/test/cli.js test e2e/world-asset-library.spec.ts --grep '@world-kit' --output=test-results/world-kit/browser`.
+Use `--list` first. It drags all 23 curated assets, exercises transforms and
+duplication, composes a 30-object harbour, places an already finalised character,
+plays, saves and reloads. It records cache requests, diagnostics, three screenshots
+and ordinary project JSON. No character compiler or Blender matrix runs. Keep
+this software-rendered browser check separate from CI to avoid timing contention.
+The content-only GLB/thumbnail round trip is `node tools/world-kit/thumbnails.mjs`
+against the running editor; it uses the shared cached loader and thumbnail helper.
+
 The Map Editor product workflow is opt-in and uses one already finalised imported
 character, with no Blender work:
 `node node_modules/@playwright/test/cli.js test e2e/map-editor-product.spec.ts --grep '@map-product' --output=test-results/map-product-browser`.

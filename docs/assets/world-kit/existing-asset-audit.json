@@ -1,0 +1,437 @@
+{
+	"date": "2026-10-07",
+	"assets": [
+		{
+			"path": "public/assets/pirate-demo/barrel.glb",
+			"actual": "PNG colour atlas",
+			"classification": "usable after cleanup",
+			"action": "Copied unchanged to Textures/colormap.png; retained legacy bytes"
+		},
+		{
+			"path": "public/assets/pirate-demo/boat-row-large.glb",
+			"actual": "barrel",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/boat-row-small.glb",
+			"actual": "boat-row-large",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/bottle-large.glb",
+			"actual": "bottle",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/bottle.glb",
+			"actual": "boat-row-small",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/cannon-ball.glb",
+			"actual": "cannon",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/cannon-mobile.glb",
+			"actual": "cannon-ball",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/cannon.glb",
+			"actual": "bottle-large",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/castle-door.glb",
+			"actual": "cannon-mobile",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/castle-gate.glb",
+			"actual": "castle-door",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/castle-wall.glb",
+			"actual": "castle-gate",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/castle-window.glb",
+			"actual": "castle-wall",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/chest.glb",
+			"actual": "castle-window",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/crate-bottles.glb",
+			"actual": "crate",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/crate.glb",
+			"actual": "chest",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-high-pennant.glb",
+			"actual": "flag-high",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-high.glb",
+			"actual": "flag",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-pennant.glb",
+			"actual": "flag-high-pennant",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-pirate-high-pennant.glb",
+			"actual": "flag-pirate-high",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-pirate-high.glb",
+			"actual": "flag-pirate",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-pirate-pennant.glb",
+			"actual": "flag-pirate-high-pennant",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag-pirate.glb",
+			"actual": "flag-pennant",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/flag.glb",
+			"actual": "crate-bottles",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/grass-patch.glb",
+			"actual": "grass",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/grass-plant.glb",
+			"actual": "grass-patch",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/grass.glb",
+			"actual": "flag-pirate-pennant",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/hole.glb",
+			"actual": "grass-plant",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/mast-ropes.glb",
+			"actual": "mast",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/mast.glb",
+			"actual": "hole",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/palm-bend.glb",
+			"actual": "mast-ropes",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/palm-detailed-bend.glb",
+			"actual": "palm-bend",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/palm-detailed-straight.glb",
+			"actual": "palm-detailed-bend",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/palm-straight.glb",
+			"actual": "palm-detailed-straight",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/patch-grass-foliage.glb",
+			"actual": "patch-grass",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/patch-grass.glb",
+			"actual": "palm-straight",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/patch-sand-foliage.glb",
+			"actual": "patch-sand",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/patch-sand.glb",
+			"actual": "patch-grass-foliage",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/platform-planks.glb",
+			"actual": "platform",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/platform.glb",
+			"actual": "patch-sand-foliage",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/rocks-a.glb",
+			"actual": "platform-planks",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/rocks-b.glb",
+			"actual": "rocks-a",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/rocks-c.glb",
+			"actual": "rocks-b",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/rocks-sand-a.glb",
+			"actual": "rocks-c",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/rocks-sand-b.glb",
+			"actual": "rocks-sand-a",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/rocks-sand-c.glb",
+			"actual": "rocks-sand-b",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-ghost.glb",
+			"actual": "rocks-sand-c",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-large.glb",
+			"actual": "ship-ghost",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-medium.glb",
+			"actual": "ship-large",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-pirate-large.glb",
+			"actual": "ship-medium",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-pirate-medium.glb",
+			"actual": "ship-pirate-large",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-pirate-small.glb",
+			"actual": "ship-pirate-medium",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-small.glb",
+			"actual": "ship-pirate-small",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/ship-wreck.glb",
+			"actual": "ship-small",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-fence-sides.glb",
+			"actual": "structure-fence",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-fence.glb",
+			"actual": "structure",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-platform-dock-small.glb",
+			"actual": "structure-platform-dock",
+			"classification": "usable after cleanup",
+			"action": "Reused in metre-scale kit; see manifest for exact hash and adaptations"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-platform-dock.glb",
+			"actual": "structure-platform",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-platform-small.glb",
+			"actual": "structure-platform-dock-small",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-platform.glb",
+			"actual": "structure-fence-sides",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure-roof.glb",
+			"actual": "structure-platform-small",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/structure.glb",
+			"actual": "ship-wreck",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tool-paddle.glb",
+			"actual": "structure-roof",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tool-shovel.glb",
+			"actual": "tool-paddle",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-base-door.glb",
+			"actual": "tower-base",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-base.glb",
+			"actual": "tool-shovel",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-complete-large.glb",
+			"actual": "tower-base-door",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-complete-small.glb",
+			"actual": "tower-complete-large",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-middle-windows.glb",
+			"actual": "tower-middle",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-middle.glb",
+			"actual": "tower-complete-small",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-roof.glb",
+			"actual": "tower-middle-windows",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-top.glb",
+			"actual": "tower-roof",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		},
+		{
+			"path": "public/assets/pirate-demo/tower-watch.glb",
+			"actual": "tower-top",
+			"classification": "unsuitable for this kit",
+			"action": "Retained unchanged; inaccurate name, oversized ship/castle scope, redundant variant or exaggerated silhouette"
+		}
+	]
+}

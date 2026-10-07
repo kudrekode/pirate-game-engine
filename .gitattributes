@@ -1,0 +1,14 @@
+# Coverage is a byte-hashed generated source artifact; preserve its accepted bytes.
+tools/blender-character/clothing/everyday-v1/coverage.json -text
+# These accepted source hashes were recorded with CRLF bytes. Preserve those
+# checkout bytes on every platform without weakening byte-level provenance.
+tools/blender-character/author_everyday_outfit.py text eol=crlf
+tools/blender-character/clothing/everyday-v1/PROVENANCE.txt text eol=crlf
+public/assets/source/quaternius/License_Standard.txt text eol=crlf
+# The world-kit manifest records this authoring source's SHA-256.
+tools/world-kit/author.py text eol=lf
+"public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buzzed.gltf" text eol=lf
+"public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_BuzzedFemale.gltf" text eol=lf
+"public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_SimpleParted.gltf" text eol=lf
+"public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Long.gltf" text eol=lf
+"public/assets/source/quaternius/Hairstyles/Origin at 0/glTF (Godot)/Hair_Buns.gltf" text eol=lf
