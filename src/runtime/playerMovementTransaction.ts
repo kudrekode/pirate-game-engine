@@ -11,6 +11,7 @@ import type {
 	RuntimeGridPosition,
 	RuntimeSessionState,
 } from "./runtimeSession";
+import { createRuntimeTraversal, sweepTraversal } from "./traversal";
 
 export type PlayerMoveBlockedResult = {
 	type: "blocked";
@@ -122,13 +123,33 @@ export function attemptPlayerMove(
 	session: RuntimeSessionState,
 	direction: RuntimeGridPosition,
 	nowMs = 0,
+	distance = 1,
 ): PlayerMoveResult {
 	const area = getCurrentArea(session);
-	const from = { ...session.playerPosition };
+	let traversal = session.playerVehicleState.active
+		? undefined
+		: session.traversal;
+	if (traversal?.world.areaId !== area.id) traversal = undefined;
+	if (
+		traversal &&
+		(traversal.grid.x !== session.playerPosition.x ||
+			traversal.grid.y !== session.playerPosition.y)
+	) {
+		traversal = createRuntimeTraversal(
+			traversal.world,
+			area,
+			session.project,
+			session.playerPosition,
+		);
+		session.traversal = traversal;
+	}
+	const from = traversal
+		? { x: traversal.position.x, y: traversal.position.y }
+		: { ...session.playerPosition };
 	const facing = { ...direction };
-	const to = {
-		x: from.x + direction.x,
-		y: from.y + direction.y,
+	let to = {
+		x: from.x + direction.x * (traversal ? distance : 1),
+		y: from.y + direction.y * (traversal ? distance : 1),
 	};
 
 	if (!canAcceptRuntimeInput(session, nowMs, false)) {
@@ -140,9 +161,18 @@ export function attemptPlayerMove(
 			facing: { ...session.playerFacing },
 		};
 	}
-	session.playerFacing = facing;
+	// Combat/vehicle interactions address integer cells; presentation may face
+	// along the continuous movement vector without changing that contract.
+	session.playerFacing = traversal
+		? Math.abs(direction.x) > Math.abs(direction.y)
+			? { x: Math.sign(direction.x), y: 0 }
+			: { x: 0, y: Math.sign(direction.y) }
+		: facing;
 
-	if (to.x < 0 || to.y < 0 || to.x >= area.width || to.y >= area.height) {
+	if (
+		!traversal &&
+		(to.x < 0 || to.y < 0 || to.x >= area.width || to.y >= area.height)
+	) {
 		return {
 			type: "blocked",
 			from,
@@ -152,16 +182,40 @@ export function attemptPlayerMove(
 	}
 
 	const activeVehicle = getActiveVehicleBehaviour(session, area);
-	const movement = resolveMovementAt(area, to.x, to.y, session.project.player, {
-		activeVehicle: activeVehicle
-			? {
-					...activeVehicle,
-					vehicleObjectInstanceId:
-						session.playerVehicleState.vehicleObjectInstanceId,
-				}
-			: undefined,
-	});
+	const swept = traversal
+		? sweepTraversal(
+				traversal.world,
+				area,
+				session.project,
+				traversal.position,
+				{ x: to.x - from.x, y: to.y - from.y },
+			)
+		: undefined;
+	if (swept) to = { x: swept.position.x, y: swept.position.y };
+	const movement = swept
+		? {
+				canMove: swept.path.length > 1,
+				reason: swept.reason,
+				speedMultiplier: resolveMovementAt(
+					area,
+					Math.round(to.x),
+					Math.round(to.y),
+					session.project.player,
+					{ ignoredObjectIds: traversal?.world.profiledObjects },
+				).speedMultiplier,
+				movementMode: session.currentMovementMode,
+			}
+		: resolveMovementAt(area, to.x, to.y, session.project.player, {
+				activeVehicle: activeVehicle
+					? {
+							...activeVehicle,
+							vehicleObjectInstanceId:
+								session.playerVehicleState.vehicleObjectInstanceId,
+						}
+					: undefined,
+			});
 	if (!movement.canMove) {
+		if (traversal) traversal.lastReason = movement.reason;
 		return {
 			type: "blocked",
 			reason: movement.reason ?? "Blocked.",
@@ -171,12 +225,24 @@ export function attemptPlayerMove(
 		};
 	}
 
-	const moveDurationMs = getPlayerMoveDurationMs(
-		session.project.player.speed,
-		movement.speedMultiplier,
-	);
+	const moveDurationMs =
+		getPlayerMoveDurationMs(
+			session.project.player.speed,
+			movement.speedMultiplier,
+		) * (traversal ? Math.hypot(to.x - from.x, to.y - from.y) : 1);
 	session.nextMoveAt = nowMs + moveDurationMs;
-	session.playerPosition = to;
+	const grid = traversal ? { x: Math.round(to.x), y: Math.round(to.y) } : to;
+	const enteredCell =
+		grid.x !== session.playerPosition.x || grid.y !== session.playerPosition.y;
+	session.playerPosition = grid;
+	if (traversal && swept) {
+		traversal.position = swept.position;
+		traversal.path = swept.path;
+		traversal.grid = grid;
+		traversal.startMs = nowMs;
+		traversal.durationMs = moveDurationMs;
+		traversal.lastReason = swept.reason;
+	}
 	const touchTarget = findTouchInteractableTarget({
 		project: session.project,
 		area,
@@ -193,11 +259,9 @@ export function attemptPlayerMove(
 		facing,
 		moveDurationMs,
 		movementMode: movement.movementMode ?? session.currentMovementMode,
-		touchTargets: touchTarget ? [touchTarget] : [],
-		triggerTargets: findWaitingTriggerTarget(
-			session,
-			area,
-			session.playerPosition,
-		),
+		touchTargets: enteredCell && touchTarget ? [touchTarget] : [],
+		triggerTargets: !enteredCell
+			? []
+			: findWaitingTriggerTarget(session, area, session.playerPosition),
 	};
 }

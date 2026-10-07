@@ -10,10 +10,17 @@ export type {
 	ThreeCharacterAnimationMapping,
 	ThreeCharacterAnimationState,
 	ThreeVisualAssetCategory,
-	ThreeVisualAssetDefinition,
 } from "@adventure-game-builder/three-asset-preview";
 
-import type { ThreeVisualAssetDefinition } from "@adventure-game-builder/three-asset-preview";
+import type { ThreeVisualAssetDefinition as VisualAssetDefinition } from "@adventure-game-builder/three-asset-preview";
+import {
+	type AssetTraversalProfile,
+	WORLD_ASSET_TRAVERSAL,
+} from "../../data/worldAssetTraversal";
+export type ThreeVisualAssetDefinition = VisualAssetDefinition & {
+	traversal?: AssetTraversalProfile;
+};
+
 import { characterAssetProblem } from "../../data/characterAssets";
 import type { CharacterGameAsset } from "../../types/game";
 
@@ -213,6 +220,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	// Harbour v1: metre-space content; legacy identities above remain loadable.
 	{
 		id: "world-barrel",
+		traversal: WORLD_ASSET_TRAVERSAL["world-barrel"],
 		name: "Wooden Barrel",
 		kind: "glb",
 		url: "/assets/world-kit/barrel.glb",
@@ -226,6 +234,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-crate",
+		traversal: WORLD_ASSET_TRAVERSAL["world-crate"],
 		name: "Supply Crate",
 		kind: "glb",
 		url: "/assets/world-kit/crate.glb",
@@ -239,6 +248,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-chest",
+		traversal: WORLD_ASSET_TRAVERSAL["world-chest"],
 		name: "Treasure Chest",
 		kind: "glb",
 		url: "/assets/world-kit/chest.glb",
@@ -252,6 +262,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-dock",
+		traversal: WORLD_ASSET_TRAVERSAL["world-dock"],
 		name: "Dock Section",
 		kind: "glb",
 		url: "/assets/world-kit/dock.glb",
@@ -265,6 +276,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-floor",
+		traversal: WORLD_ASSET_TRAVERSAL["world-floor"],
 		name: "Wooden Floor",
 		kind: "glb",
 		url: "/assets/world-kit/floor.glb",
@@ -330,6 +342,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-railing",
+		traversal: WORLD_ASSET_TRAVERSAL["world-railing"],
 		name: "Wooden Railing",
 		kind: "glb",
 		url: "/assets/world-kit/railing.glb",
@@ -343,6 +356,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-wall",
+		traversal: WORLD_ASSET_TRAVERSAL["world-wall"],
 		name: "Timber Wall",
 		kind: "glb",
 		url: "/assets/world-kit/wall.glb",
@@ -356,6 +370,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-post",
+		traversal: WORLD_ASSET_TRAVERSAL["world-post"],
 		name: "Timber Post",
 		kind: "glb",
 		url: "/assets/world-kit/post.glb",
@@ -369,6 +384,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-stairs",
+		traversal: WORLD_ASSET_TRAVERSAL["world-stairs"],
 		name: "Wooden Steps",
 		kind: "glb",
 		url: "/assets/world-kit/stairs.glb",
@@ -382,6 +398,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-table",
+		traversal: WORLD_ASSET_TRAVERSAL["world-table"],
 		name: "Tavern Table",
 		kind: "glb",
 		url: "/assets/world-kit/table.glb",
@@ -395,6 +412,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-stool",
+		traversal: WORLD_ASSET_TRAVERSAL["world-stool"],
 		name: "Wooden Stool",
 		kind: "glb",
 		url: "/assets/world-kit/stool.glb",
@@ -460,6 +478,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-rock-small",
+		traversal: WORLD_ASSET_TRAVERSAL["world-rock-small"],
 		name: "Small Rock",
 		kind: "glb",
 		url: "/assets/world-kit/rock-small.glb",
@@ -473,6 +492,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-rock-large",
+		traversal: WORLD_ASSET_TRAVERSAL["world-rock-large"],
 		name: "Large Rock",
 		kind: "glb",
 		url: "/assets/world-kit/rock-large.glb",
@@ -486,6 +506,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{
 		id: "world-shack",
+		traversal: WORLD_ASSET_TRAVERSAL["world-shack"],
 		name: "Small Shack",
 		kind: "glb",
 		url: "/assets/world-kit/shack.glb",

@@ -25,6 +25,16 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The traversal acceptance course is one opt-in case (no compiler or Blender):
+`node node_modules/@playwright/test/cli.js test e2e/traversal-collision.spec.ts --grep '@traversal'`.
+Use `--list` first. It imports the unchanged Tidewatch Harbour, walks via real
+keyboard input, checks steps/dock seams/props/walls/water, observes authored
+Walk/Idle, then checks complete saved-project equality and replay after reload.
+Two screenshots and a compact checkpoint trace are written to
+`docs/assets/traversal/`. The chest physically obstructs the saved scene's doorway;
+the test records that limitation instead of moving it. Unobstructed doorway and
+interior behavior have deterministic geometry coverage. Run separately from CI.
+
 Install Chromium once if needed: `npx playwright install chromium`.
 On Windows use `npm.cmd`/`npx.cmd` when forwarding flags; the PowerShell shim can
 swallow them. For regex arguments containing `|`, prefer an existing quoted npm

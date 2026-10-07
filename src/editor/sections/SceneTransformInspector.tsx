@@ -106,8 +106,8 @@ export function SceneTransformInspector({
 				</fieldset>
 			))}
 			<p className="scene-hint">
-				X / Z: map position · Y: elevation. Collision uses the nearest grid
-				cell.
+				X / Z: map position · Y: elevation. Supported world-kit assets use these
+				transforms for collision in 3D Play.
 			</p>
 			<button
 				type="button"

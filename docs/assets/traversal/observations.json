@@ -1,0 +1,226 @@
+{
+	"checkpoints": [
+		{
+			"name": "beach spawn",
+			"x": 9,
+			"y": 8,
+			"height": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 8
+			}
+		},
+		{
+			"name": "rotated barrel blocks",
+			"x": 8.680000000000001,
+			"y": 8,
+			"height": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 8
+			},
+			"reason": "Blocked by Wooden Barrel copy."
+		},
+		{
+			"name": "upper stair tread",
+			"x": 8.88,
+			"y": 9.799999999999994,
+			"height": 1.3092857142857175,
+			"rootY": 1.3092857142857175,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 10
+			}
+		},
+		{
+			"name": "first dock",
+			"x": 8.88,
+			"y": 11.399999999999988,
+			"height": 0.6257820000000001,
+			"rootY": 0.6257820000000001,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 11
+			}
+		},
+		{
+			"name": "dock seam",
+			"x": 8.88,
+			"y": 12.399999999999984,
+			"height": 0.6257820000000001,
+			"rootY": 0.6257820000000001,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 12
+			}
+		},
+		{
+			"name": "second dock",
+			"x": 8.88,
+			"y": 13.39999999999998,
+			"height": 0.6257820000000001,
+			"rootY": 0.6257820000000001,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 13
+			}
+		},
+		{
+			"name": "returned over stairs to beach",
+			"x": 8.88,
+			"y": 9.399999999999995,
+			"height": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 9
+			}
+		},
+		{
+			"name": "existing chest obstructs shack doorway",
+			"x": 5.080000000000001,
+			"y": 5.666666666666663,
+			"height": 1.007895,
+			"rootY": 1.007895,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 6
+			},
+			"reason": "Blocked by Treasure Chest."
+		},
+		{
+			"name": "shack side wall blocks",
+			"x": 3.3133333333333326,
+			"y": 4.066666666666662,
+			"height": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 4
+			},
+			"reason": "Blocked by Small Shack."
+		},
+		{
+			"name": "deep water blocks",
+			"x": 4.913333333333334,
+			"y": 10.466666666666656,
+			"height": 0.603666666666671,
+			"rootY": 0.603666666666671,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 10
+			},
+			"reason": "No reachable floor (water, void or step too high)."
+		},
+		{
+			"name": "rotated supply crate blocks",
+			"x": 4.246666666666667,
+			"y": 8.466666666666663,
+			"height": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 4,
+				"y": 8
+			},
+			"reason": "Blocked by Supply Crate copy."
+		},
+		{
+			"name": "returned to spawn",
+			"x": 9.046666666666667,
+			"y": 8.066666666666665,
+			"height": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 8
+			}
+		},
+		{
+			"name": "reloaded stair traversal",
+			"x": 8.8,
+			"y": 9.799999999999994,
+			"height": 1.3092857142857175,
+			"rootY": 1.3092857142857175,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 10
+			}
+		},
+		{
+			"name": "authored character walk then idle",
+			"x": 8.8,
+			"y": 9.599999999999994,
+			"height": 1.335,
+			"rootY": 1.335,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 10
+			}
+		}
+	],
+	"projectUnchanged": true,
+	"observedAnimationStates": ["walk", "idle"],
+	"errors": [],
+	"character": {
+		"activeAssetIds": [
+			"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+		],
+		"activeCloneInstances": 2,
+		"assetMetrics": [
+			{
+				"boneCount": 65,
+				"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"materialCount": 10,
+				"materialTypes": [
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial",
+					"MeshStandardMaterial"
+				],
+				"skinnedMeshCount": 10,
+				"textureCount": 6,
+				"triangleCount": 53796,
+				"vertexCount": 32463
+			}
+		],
+		"animationClips": [],
+		"animation": {
+			"activeLoopingActions": 2,
+			"activeMixers": 2,
+			"incompatibleClipCount": 0,
+			"loadingSourceCount": 0,
+			"missingClipCount": 0,
+			"oneShotActionsTriggered": 0,
+			"playerState": "idle",
+			"sourceAssetIds": [
+				"golden-reference-quaternius-idle-baked-v1",
+				"golden-reference-quaternius-walk-baked-v1"
+			]
+		},
+		"cloneTypes": ["skeleton-utils"],
+		"skinnedMeshCount": 20
+	},
+	"limitation": "The unchanged chest at (5,5.2) physically obstructs the shack doorway; interior/door opening is verified in deterministic geometry tests."
+}

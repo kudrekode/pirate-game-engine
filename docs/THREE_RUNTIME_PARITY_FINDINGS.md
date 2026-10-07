@@ -21,7 +21,11 @@ Do not treat visual differences as gameplay parity failures unless they change `
 - Phaser and Three adapters translate input/events/presentation only.
 - Imported GLTF/GLB assets are presentation-only.
 - Placeholder meshes, visual transform defaults, water surfaces, coastline strips, terrain smoothing, camera state, and diagnostics are presentation-only.
-- Runtime movement remains discrete/cardinal/grid-based unless shared movement helpers deliberately change.
+- Runtime movement remains discrete/cardinal/grid-based for legacy areas and
+  Phaser. Profiled world-kit areas in Three use shared `traversal` through
+  `attemptPlayerMove`; terrain height, transformed colliders and water rejection
+  now deliberately have shared gameplay semantics. Moving NPCs retain their
+  existing separate grid helper. No renderer owns collision decisions.
 
 ## Reproducible Checks
 

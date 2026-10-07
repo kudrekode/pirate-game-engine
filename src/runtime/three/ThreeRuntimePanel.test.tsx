@@ -238,6 +238,8 @@ vi.mock("three", () => {
 		HemisphereLight: class {},
 		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		Mesh,
+		MeshBasicMaterial: Disposable,
+		DoubleSide: 2,
 		MeshStandardMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
@@ -550,6 +552,60 @@ describe("ThreeRuntimePanel", () => {
 			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument();
 		});
 		expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+	});
+
+	it("bridges held diagonal input to subcell session movement and clears it on blur", async () => {
+		const project = makeProject();
+		project.objects = [
+			{
+				id: "floor",
+				name: "Floor",
+				category: "prop",
+				widthTiles: 1,
+				heightTiles: 1,
+				blocksMovement: false,
+				threeVisual: { mode: "asset", assetId: "world-floor" },
+			},
+		];
+		project.areas[0].objects = [
+			{
+				id: "floor",
+				objectDefinitionId: "floor",
+				areaId: project.areas[0].id,
+				x: 2,
+				y: 2,
+			},
+		];
+		const saved = JSON.stringify(project);
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: () => new Promise<never>(() => undefined),
+		}));
+		const now = vi.spyOn(performance, "now").mockReturnValue(1000);
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+			fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+			fireEvent.keyDown(window, { key: "ArrowDown", code: "ArrowDown" });
+			expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+			expect(latestSession().traversal?.position.x).toBeCloseTo(0.2);
+			now.mockReturnValue(1100);
+			await waitFor(() =>
+				expect(latestSession().traversal?.position.y).toBeGreaterThan(0.1),
+			);
+			expect(latestSession().traversal?.position.x).toBeCloseTo(
+				0.2 + 0.2 * Math.SQRT1_2,
+			);
+			fireEvent.blur(window);
+			const resting = { ...latestSession().traversal?.position };
+			now.mockReturnValue(2000);
+			await act(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 40));
+				runLatestAnimationFrame();
+			});
+			expect(latestSession().traversal?.position).toEqual(resting);
+			expect(JSON.stringify(project)).toBe(saved);
+		} finally {
+			restoreLoader();
+		}
 	});
 
 	it("keeps fixed follow movement grid-relative", async () => {

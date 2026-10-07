@@ -14,7 +14,7 @@ Adapters are not separate engines. They translate input, rendering, camera, anim
 - Object/NPC/item/shop/quest/rule/cutscene/dialogue definitions.
 - Player defaults, camera defaults, and game-state defaults.
 - 3D visual config such as placeholder type, registry asset id, scale, height offset, and rotation offset.
-- Optional instance `transform` values add XYZ presentation offsets, degree rotations and scale multipliers to the resolved visual defaults. Map editing keeps integer `x`/`y` gameplay anchors and stores fractional X/Z residuals in the transform. Elevation, rotation and scale do not change grid collision or movement. Missing transforms retain legacy identity behavior.
+- Optional instance `transform` values add XYZ offsets, degree rotations and scale multipliers to the resolved visual defaults. Map editing keeps integer `x`/`y` anchors and fractional X/Z residuals. World-kit traversal profiles use these same transforms in 3D Play; unprofiled content retains legacy cell collision. Missing transforms retain identity behavior.
 
 `GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 
@@ -66,7 +66,7 @@ Play mode starts from a cloned project snapshot and creates a `RuntimeSession` i
 
 `RuntimeSession` owns runtime copies of:
 
-- Current area id, player grid position, and facing.
+- Current area id, player grid position, and facing; optional continuous traversal position, foot height and accepted sweep samples.
 - Flags, variables, inventory quantities, NPC attributes, quest state, shop stock, player health, and combat state.
 - Progression/waiting-trigger state, entered areas, collected pickups, opened objects, defeated NPC ids, vehicle state, NPC movement timing, and enemy contact timing.
 
@@ -79,6 +79,7 @@ Shared helpers are renderer-independent and own gameplay semantics:
 - `runtimeSession`: create and hold play-session state.
 - `interactionDiscovery`: nearest/touch interactables, priority, and eligibility.
 - `playerMovementTransaction`: grid movement, facing, movement duration, touch targets, and trigger targets.
+- `traversal`: renderer-independent transformed boxes, walkable planes, spatial candidate buckets, terrain height and swept collision. `data/worldAssetTraversal.ts` provides source-controlled normalized asset profiles, also exposed by the visual registry. No GLB parsing, raycasting, editor state or renderer imports enter gameplay.
 - `runtimeRuleActionDispatcher`: renderer-neutral rule effects and presentation requests.
 - `runtimeProgression`: start progression, cutscene progression, trigger waits, area entry, and area transitions.
 - `runtimeObjectInteractions`: object behaviours, pickups, shops, and vehicle transactions.
@@ -127,11 +128,26 @@ These systems are visual/editor presentation and must not be mistaken for gamepl
 
 - Imported GLTF/GLB assets, cached source scenes, and cloned active instances.
 - 3D placeholder meshes and authored visual transform defaults.
-- Terrain height/elevation, smooth terrain mesh generation, water surface material animation, and coastline strips.
+- Smooth terrain mesh generation, water surface material animation, and coastline strips. Shared traversal deliberately reads terrain elevation and water identity in profiled areas.
 - Camera follow/inspect/third-person state and mouse-look state.
 - Performance diagnostics overlays and Playwright perf snapshots.
 
-Runtime movement remains discrete/grid-based. Terrain height and water/coast visuals do not change collision or movement until shared movement helpers explicitly add height-aware or water-depth rules.
+Phaser and unprofiled legacy areas retain grid movement. Three Play enables shared
+traversal when placed assets have world-kit profiles. Walkable terrain uses the
+rendered triangle heights (or blocky heights); water/void has no walking floor.
+Asset surfaces can support walking over water. Steps up/down are limited to
+0.4 m, with no falling, jumping or swimming. Ordinary props use boxes; stairs use
+a ramp through tread centres; the shack uses walls with a doorway gap. Full XYZ
+rotation, visual scale/offsets and per-axis instance scale are applied before
+indexing. Cached descriptors are rebuilt with the existing scene lifetime.
+
+`attemptPlayerMove` sweeps short segments, commits a continuous position and
+rounded gameplay cell, retains cardinal gameplay facing for combat/vehicle exits,
+and emits touch/trigger targets only upon entering a new cell. Its accepted path
+drives both player grounding and camera follow; animation
+continues to depend on horizontal movement. Spawn/teleport resets traversal.
+The Three adapter owns held-key input and debug rendering, not collision decisions.
+NPCs retain their separate existing grid movement helper; the harbour NPC idles.
 
 ## Event Flow
 
@@ -190,8 +206,10 @@ a dialogue, a cutscene, or game over/end. It also holds those inputs during a
 movement interval; attack eligibility additionally uses the existing combat
 cooldown. NPC simulation pauses for the modal/startup/end states, but not for a
 normal player movement interval. Modal buttons can still advance/close the modal.
-Inputs are not buffered by the Three handler; held/repeated input only moves when
-an eligible event arrives. Phaser polls held directions on its update clock.
+Legacy Three input uses key events. Profiled-area Three input samples held keys
+every 16 ms through the same eligibility/deadline check and 0.2 m transactions;
+key release and window blur clear held input. Phaser polls held directions on its
+update clock. No traversal geometry or runtime position is saved into a project.
 
 ## Dialogue contract (Phase 2)
 

@@ -27,8 +27,8 @@ export type ThreeVisualConfig = {
 	rotationOffset?: number;
 };
 
-// Presentation transforms are instance-owned. X/Z offsets stay relative to the
-// integer gameplay cell; elevation, rotation and scale do not change collision.
+// Instance-owned transforms. X/Z offsets stay relative to integer gameplay
+// anchors; profiled world assets also use these transforms for runtime traversal.
 export type MapEntityTransform = {
 	position: { x: number; y: number; z: number };
 	rotation: { x: number; y: number; z: number };

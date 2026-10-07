@@ -2,12 +2,13 @@
 import { createHash } from "node:crypto";
 // @ts-expect-error File checks run only in the isolated root-node Vitest project.
 import { readFileSync } from "node:fs";
-import { Box3, Vector3 } from "three";
+import { Box3, Raycaster, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import manifest from "../../../public/assets/world-kit/manifest.json";
 import { migrateProject } from "../../data/migrateProject";
 import { createProjectFromPreset } from "../../data/projectPresets";
+import { WORLD_ASSET_TRAVERSAL } from "../../data/worldAssetTraversal";
 import {
 	duplicateSceneSelection,
 	placeSceneAsset,
@@ -83,6 +84,21 @@ describe("Harbour world kit", () => {
 			doc.buffers[0].uri = `data:application/octet-stream;base64,${bytes.subarray(28 + jsonLength).toString("base64")}`;
 			const loaded = await new GLTFLoader().parseAsync(JSON.stringify(doc), "");
 			const bounds = new Box3().setFromObject(loaded.scene);
+			if (["world-dock", "world-floor", "world-stairs"].includes(asset.id)) {
+				const profile = WORLD_ASSET_TRAVERSAL[asset.id];
+				expect(definition?.traversal).toBe(profile);
+				for (const floor of profile.surfaces ?? []) {
+					const z = (floor.z[0] + floor.z[1]) / 2;
+					const hit = new Raycaster(
+						new Vector3(0, 5, z),
+						new Vector3(0, -1, 0),
+					).intersectObject(loaded.scene, true)[0];
+					expect(hit?.point.y, `${asset.id} tread/deck height`).toBeCloseTo(
+						(floor.y[0] + floor.y[1]) / 2,
+						4,
+					);
+				}
+			}
 			expect(bounds.min.y, asset.name).toBeCloseTo(0, 4);
 			const size = bounds.getSize(new Vector3()).toArray();
 			size.forEach((value, index) => {

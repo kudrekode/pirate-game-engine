@@ -252,6 +252,17 @@ describe("Three orbit camera helpers", () => {
 		expect(complete.currentYawOffsetDegrees).toBe(90);
 	});
 
+	it("retains continuous camera-relative directions for profiled traversal", () => {
+		const direction = resolveCameraRelativeGridDirection(
+			{ x: 0, y: -1 },
+			45,
+			true,
+		);
+		expect(direction.x).toBeCloseTo(-Math.SQRT1_2);
+		expect(direction.y).toBeCloseTo(-Math.SQRT1_2);
+		expect(Math.hypot(direction.x, direction.y)).toBeCloseTo(1);
+	});
+
 	it("clamps arbitrary camera states safely", () => {
 		const bounds = getOrbitCameraBounds(dimensions);
 		const clamped = clampOrbitCameraState(

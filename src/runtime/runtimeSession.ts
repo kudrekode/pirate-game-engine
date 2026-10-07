@@ -12,6 +12,7 @@ import type { NPCMovementState } from "./npcMovement";
 import { createRuntimeQuestState, type RuntimeQuestState } from "./questEngine";
 import { createRuntimeState, type RuntimeGameState } from "./ruleEngine";
 import { createRuntimeShopStocks, type RuntimeShopStocks } from "./shopRuntime";
+import type { RuntimeTraversal } from "./traversal";
 
 export type RuntimeGridPosition = { x: number; y: number };
 
@@ -33,6 +34,8 @@ export type RuntimeRecentEnemyState = {
 };
 
 export type RuntimeSessionState = {
+	// Optional metre-space traversal; integer playerPosition still owns triggers.
+	traversal?: RuntimeTraversal;
 	project: GameProject;
 	currentAreaId: string;
 	playerPosition: RuntimeGridPosition;
