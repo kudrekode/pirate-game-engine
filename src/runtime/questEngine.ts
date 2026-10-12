@@ -242,6 +242,7 @@ export function grantQuestReward(
 	reward: QuestReward,
 	runtimeState: RuntimeGameState,
 	itemDefinitions: ItemDefinition[],
+	onOverflow?: (message: string) => void,
 ): void {
 	if (reward.type === "item") {
 		giveItem(
@@ -249,6 +250,7 @@ export function grantQuestReward(
 			itemDefinitions,
 			reward.itemId,
 			reward.quantity,
+			onOverflow,
 		);
 		return;
 	}
@@ -268,6 +270,7 @@ export function completeQuest(
 	questId: string,
 	runtimeState: RuntimeGameState,
 	itemDefinitions: ItemDefinition[],
+	onOverflow?: (message: string) => void,
 ): boolean {
 	const quest = state.quests.find((candidate) => candidate.id === questId);
 	if (!quest) {
@@ -284,7 +287,7 @@ export function completeQuest(
 	}
 
 	quest.rewards?.forEach((reward) => {
-		grantQuestReward(reward, runtimeState, itemDefinitions);
+		grantQuestReward(reward, runtimeState, itemDefinitions, onOverflow);
 	});
 	state.rewardedQuestIds.add(quest.id);
 	return true;
@@ -317,6 +320,7 @@ export function updateQuestProgress(
 	state: RuntimeQuestState,
 	runtimeState: RuntimeGameState,
 	itemDefinitions: ItemDefinition[],
+	onOverflow?: (message: string) => void,
 ): boolean {
 	let changed = false;
 	let completedInPass = true;
@@ -346,7 +350,13 @@ export function updateQuestProgress(
 				quest.objectives.every((objective) =>
 					state.completedObjectiveIds.has(objectiveKey(quest.id, objective.id)),
 				) &&
-				completeQuest(state, quest.id, runtimeState, itemDefinitions)
+				completeQuest(
+					state,
+					quest.id,
+					runtimeState,
+					itemDefinitions,
+					onOverflow,
+				)
 			) {
 				changed = true;
 				completedInPass = true;

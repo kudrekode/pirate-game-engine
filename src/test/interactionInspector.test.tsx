@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it } from "vitest";
 import harbour from "../../docs/assets/world-kit/tidewatch-harbour.project.json";
 import { migrateProject } from "../data/migrateProject";
@@ -99,8 +99,27 @@ it("authors barrel text, chest reward and ordered NPC lines through contextual f
 	fireEvent.change(screen.getByLabelText("Pickup quantity"), {
 		target: { value: "3" },
 	});
+	const shack = area.objects.find(
+		(o) => o.objectDefinitionId === "scene-world-shack",
+	);
+	if (!shack) throw new Error("Shack fixture missing");
+	select({ type: "object", areaId: area.id, id: shack.id });
+	fireEvent.click(screen.getByLabelText("Enable interaction"));
+	fireEvent.change(screen.getByLabelText("Interaction type"), {
+		target: { value: "door" },
+	});
+	const fields = within(screen.getByRole("region", { name: "Interaction" }));
+	expect(
+		fields.getByRole("option", { name: "Harbour Key" }),
+	).toBeInTheDocument();
+	fireEvent.change(fields.getByLabelText("Required item"), {
+		target: { value: useProjectStore.getState().project.items[0].id },
+	});
 	const saved = useProjectStore.getState().project;
 	const loaded = migrateProject(JSON.parse(JSON.stringify(saved)));
+	expect(
+		loaded.areas[0].objects.find((o) => o.id === shack.id)?.behaviourOverride,
+	).toMatchObject({ type: "door", requiredItemId: saved.items[0].id });
 	expect(
 		loaded.areas[0].objects.find((o) => o.id === sack.id)?.interaction,
 	).toMatchObject({

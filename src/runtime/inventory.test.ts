@@ -5,6 +5,7 @@ import {
 	createInventory,
 	giveItem,
 	hasItem,
+	inventoryRewardIssue,
 	removeItem,
 } from "./inventory";
 
@@ -31,6 +32,29 @@ const pickup: PickupObject = {
 };
 
 describe("inventory", () => {
+	it("leaves overflow pickups available and accepts the whole reward after space is freed", () => {
+		const inventory = createInventory({ gold_coin: 9 });
+		const collected = new Set<string>();
+		expect(collectPickup(pickup, inventory, items, collected)).toBe(false);
+		expect(inventory.items.gold_coin).toBe(9);
+		expect(collected.size).toBe(0);
+		removeItem(inventory, "gold_coin", 2);
+		expect(collectPickup(pickup, inventory, items, collected)).toBe(true);
+		expect(inventory.items.gold_coin).toBe(10);
+	});
+	it("checks repeated reward entries together and preserves legacy quantities above a changed limit", () => {
+		const inventory = createInventory({ gold_coin: 8 });
+		expect(
+			inventoryRewardIssue(inventory, items, [
+				{ itemId: "gold_coin", quantity: 2 },
+				{ itemId: "gold_coin", quantity: 1 },
+			]),
+		).toContain("Stack limit: 10");
+		expect(inventory.items.gold_coin).toBe(8);
+		inventory.items.gold_coin = 20;
+		giveItem(inventory, items, "gold_coin", 1);
+		expect(inventory.items.gold_coin).toBe(20);
+	});
 	it("gives and removes items without going below zero", () => {
 		const inventory = createInventory();
 

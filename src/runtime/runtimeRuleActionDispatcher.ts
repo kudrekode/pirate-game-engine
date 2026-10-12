@@ -14,6 +14,7 @@ export type RuntimeRuleEvent =
 	| { type: "status"; message: string }
 	| { type: "flowLog"; message: string }
 	| { type: "stateChanged" }
+	| { type: "itemFeedback"; message: string }
 	| { type: "inventoryChanged"; inventory: Record<string, number> }
 	| { type: "questsChanged"; quests: QuestView[] }
 	| { type: "questRewardsGranted"; questIds: string[] }
@@ -80,6 +81,7 @@ function syncQuestProgress(
 		session.runtimeQuestState,
 		session.runtimeState,
 		session.project.items,
+		(message) => emit({ type: "itemFeedback", message }),
 	);
 
 	if (stateChanged) {
@@ -158,6 +160,7 @@ export function createRuntimeRuleContext(
 					questId,
 					session.runtimeState,
 					session.project.items,
+					(message) => emit({ type: "itemFeedback", message }),
 				)
 			) {
 				emitInventoryChanged(session, emit);
@@ -190,5 +193,6 @@ export function createRuntimeRuleContext(
 		itemDefinitions: session.project.items,
 		shopDefinitions: session.project.shops,
 		stateChanged: () => handleStateChanged(session, emit),
+		showItemFeedback: (message) => emit({ type: "itemFeedback", message }),
 	};
 }

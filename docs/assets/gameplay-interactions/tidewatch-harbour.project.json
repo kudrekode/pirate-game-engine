@@ -2151,7 +2151,7 @@
 					"interaction": {
 						"type": "object_behaviour",
 						"activationMode": "on_interact",
-						"prompt": "Enter"
+						"prompt": "Enter Shack"
 					},
 					"behaviourOverride": {
 						"type": "door",
@@ -7721,8 +7721,10 @@
 		{
 			"id": "item_2af528dd-f6d2-4ff1-961f-07325a8ae67d",
 			"name": "Harbour Key",
-			"category": "misc",
-			"stackable": true
+			"description": "Opens the small shack at Tidewatch Harbour. The key stays with you after entering.",
+			"category": "key",
+			"iconId": "key",
+			"stackable": false
 		}
 	],
 	"shops": [],

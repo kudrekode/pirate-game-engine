@@ -1,3 +1,12 @@
+# Keep Biome-managed text identical in Windows and Linux checkouts.
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mts text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
 # Coverage is a byte-hashed generated source artifact; preserve its accepted bytes.
 tools/blender-character/clothing/everyday-v1/coverage.json -text
 # These accepted source hashes were recorded with CRLF bytes. Preserve those

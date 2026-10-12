@@ -97,6 +97,7 @@ export function ObjectBehaviourEditor({
 					{behaviour.contents.map((content, index) => (
 						<div
 							className="quest-reward-row"
+							// biome-ignore lint/suspicious/noArrayIndexKey: legacy reward entries allow duplicate items and have no ids; these fields are fully controlled.
 							key={`${content.itemId}_${index}`}
 						>
 							<select

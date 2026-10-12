@@ -638,6 +638,10 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
 		fireEvent.keyDown(window, { key: "ArrowRight" });
 		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+		fireEvent.keyDown(window, { key: "i" });
+		expect(
+			screen.queryByRole("dialog", { name: "Inventory" }),
+		).not.toBeInTheDocument();
 		fireEvent.keyDown(window, { key: "e", repeat: true });
 		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
 		fireEvent.keyDown(window, { key: "e" });
@@ -670,8 +674,23 @@ describe("ThreeRuntimePanel", () => {
 		await waitFor(() =>
 			expect(screen.getByText("E — Pick up Supplies")).toBeInTheDocument(),
 		);
+		const builds = threeSpies.WebGLRenderer.mock.calls.length;
+		fireEvent.keyDown(window, { key: "i" });
+		expect(screen.getByRole("dialog", { name: "Inventory" })).toHaveTextContent(
+			"Your inventory is empty",
+		);
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		fireEvent.keyDown(window, { key: "e" });
+		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+		expect(latestSession().runtimeState.inventory.items).toEqual({});
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(builds);
 		fireEvent.keyDown(window, { key: "e" });
 		expect(latestSession().runtimeState.inventory.items.supplies).toBe(2);
+		expect(screen.getByText("Supplies ×2 acquired")).toBeVisible();
+		fireEvent.click(screen.getByRole("button", { name: "Inventory I" }));
+		expect(screen.getByRole("button", { name: "Supplies ×2" })).toBeVisible();
+		fireEvent.keyDown(window, { key: "i" });
 		expect(latestSession().project.areas[0].objects).toHaveLength(0);
 		fireEvent.keyDown(window, { key: "e" });
 		expect(latestSession().runtimeState.inventory.items.supplies).toBe(2);

@@ -5,9 +5,9 @@ import {
 	AUTHORED_BODY_PRESETS,
 	AUTHORED_FACE_PRESETS,
 } from "../../packages/character-contract/src/authoredHumanPresets.ts";
-import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
-import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
 import { cloneThreeVisualAssetRoot } from "../../packages/three-asset-preview/src/index.ts";
+import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
+import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
 
 const cases = Object.fromEntries([
 	...AUTHORED_BODY_PRESETS.map((p) => [`body-${p.id}`, { values: p.values }]),

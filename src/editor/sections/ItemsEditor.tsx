@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react";
+import {
+	itemCategoryLabels,
+	itemIcon,
+	itemIcons,
+} from "../../runtime/itemPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	ConditionExpression,
@@ -9,7 +14,6 @@ import type {
 const categories: ItemDefinition["category"][] = [
 	"key",
 	"currency",
-	"consumable",
 	"quest",
 	"misc",
 ];
@@ -163,12 +167,10 @@ export function ItemsEditor() {
 							}}
 							type="button"
 						>
-							<span className="item-icon">
-								{item.name.slice(0, 1).toUpperCase()}
-							</span>
+							<span className="item-icon">{itemIcon(item)}</span>
 							<span>
 								<strong>{item.name}</strong>
-								<small>{item.category}</small>
+								<small>{itemCategoryLabels[item.category]}</small>
 							</span>
 						</button>
 					))}
@@ -192,10 +194,6 @@ export function ItemsEditor() {
 						) : null}
 						<div className="form-grid">
 							<label>
-								ID
-								<input disabled value={selectedItem.id} />
-							</label>
-							<label>
 								Name
 								<input
 									onChange={(event) => updateItem({ name: event.target.value })}
@@ -215,9 +213,36 @@ export function ItemsEditor() {
 								>
 									{categories.map((category) => (
 										<option key={category} value={category}>
-											{category}
+											{itemCategoryLabels[category]}
 										</option>
 									))}
+									{selectedItem.category === "consumable" && (
+										<option value="consumable">
+											Consumable (legacy label)
+										</option>
+									)}
+								</select>
+							</label>
+							<label>
+								Icon
+								<select
+									value={selectedItem.iconId ?? ""}
+									onChange={(event) =>
+										updateItem({ iconId: event.target.value || undefined })
+									}
+								>
+									<option value="">Category icon</option>
+									{Object.entries(itemIcons).map(([id, symbol]) => (
+										<option key={id} value={id}>
+											{symbol} {id[0].toUpperCase() + id.slice(1)}
+										</option>
+									))}
+									{selectedItem.iconId &&
+										!Object.keys(itemIcons).includes(selectedItem.iconId) && (
+											<option value={selectedItem.iconId}>
+												Legacy icon (category fallback)
+											</option>
+										)}
 								</select>
 							</label>
 						</div>
@@ -248,12 +273,21 @@ export function ItemsEditor() {
 						</label>
 						{selectedItem.stackable ? (
 							<label>
-								Maximum stack
+								Stack limit
 								<input
 									min={1}
 									onChange={(event) =>
 										updateItem({
-											maxStack: Math.max(1, Number(event.target.value)),
+											maxStack:
+												event.target.value === ""
+													? undefined
+													: Math.min(
+															9999,
+															Math.max(
+																1,
+																Math.round(Number(event.target.value)),
+															),
+														),
 										})
 									}
 									placeholder="Unlimited"
@@ -262,6 +296,11 @@ export function ItemsEditor() {
 								/>
 							</label>
 						) : null}
+						{!selectedItem.stackable && (
+							<p className="helper-text">
+								Stack limit: 1. Enable Stackable for larger quantities.
+							</p>
+						)}
 						<button
 							className="danger-button"
 							onClick={deleteItem}

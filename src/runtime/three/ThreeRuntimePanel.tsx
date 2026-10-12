@@ -32,6 +32,7 @@ import {
 	getAvailableDialogueChoices,
 	getDialogueNode,
 } from "../dialogueEngine";
+import { InventoryPanel } from "../InventoryPanel";
 import {
 	canInteractActivate,
 	canTouchActivate,
@@ -90,6 +91,10 @@ import {
 	createTraversalWorld,
 	sampleTraversalMotion,
 } from "../traversal";
+import {
+	InventoryNotifications,
+	useInventoryPresentation,
+} from "../useInventoryPresentation";
 import {
 	advanceThirdPersonMouseLook,
 	clampOrbitCameraState,
@@ -478,7 +483,14 @@ export function ThreeRuntimePanel({
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
-	const [inventory, setInventory] = useState<Record<string, number>>({});
+	const {
+		inventory,
+		updateInventory: setInventory,
+		showItemFeedback,
+		notices,
+	} = useInventoryPresentation(project.gameState.inventory);
+	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+	const inventoryOpenRef = useRef(false);
 	const [quests, setQuests] = useState<
 		Array<{ id: string; name: string; status: string }>
 	>([]);
@@ -496,8 +508,25 @@ export function ThreeRuntimePanel({
 
 	function gameplayBlocked(session: RuntimeSessionState): boolean {
 		return Boolean(
-			pendingCutsceneRef.current || session.dialogue || gameOverRef.current,
+			inventoryOpenRef.current ||
+				pendingCutsceneRef.current ||
+				session.dialogue ||
+				gameOverRef.current,
 		);
+	}
+
+	function toggleInventory() {
+		const current = getSession();
+		if (
+			!current ||
+			(!inventoryOpenRef.current &&
+				isRuntimeGameplayBlocked(current, gameplayBlocked(current)))
+		)
+			return;
+		inventoryOpenRef.current = !inventoryOpenRef.current;
+		heldMovementKeys.current.clear();
+		setMouseLookActive(false);
+		setIsInventoryOpen(inventoryOpenRef.current);
 	}
 
 	function closeDialogue() {
@@ -814,6 +843,10 @@ export function ThreeRuntimePanel({
 			appendFlow(event.message);
 			return;
 		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			setInventory(event.inventory);
 			return;
@@ -904,6 +937,10 @@ export function ThreeRuntimePanel({
 			forceRender("rule state changed");
 			return;
 		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			setInventory(event.inventory);
 			return;
@@ -991,6 +1028,10 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "stateChanged") {
 			diagnostics.recordObjectStateUpdate("object state changed");
+			return;
+		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -1138,6 +1179,10 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "flowLog") {
 			appendFlow(event.message);
+			return;
+		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -1508,6 +1553,7 @@ export function ThreeRuntimePanel({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented) return;
 			if (
 				event.target instanceof HTMLElement &&
 				/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)
@@ -1515,9 +1561,15 @@ export function ThreeRuntimePanel({
 				return;
 			if (
 				event.repeat &&
-				["e", "enter", "escape"].includes(event.key.toLowerCase())
+				["e", "enter", "escape", "i"].includes(event.key.toLowerCase())
 			)
 				return;
+			if (event.key.toLowerCase() === "i") {
+				event.preventDefault();
+				toggleInventory();
+				return;
+			}
+			if (inventoryOpenRef.current) return;
 			if (
 				getSession()?.dialogue &&
 				["e", "E", "Enter", "Escape"].includes(event.key)
@@ -2515,11 +2567,22 @@ export function ThreeRuntimePanel({
 					<div className="three-runtime-error">{mountError}</div>
 				) : null}
 			</div>
-			{primaryPrompt && !dialogueNode && !pendingCutscene && (
-				<div className="runtime-interaction-prompt" role="status">
-					{primaryPrompt}
-				</div>
+			<InventoryNotifications items={project.items} notices={notices} />
+			{isInventoryOpen && (
+				<InventoryPanel
+					items={project.items}
+					inventory={inventory}
+					onClose={toggleInventory}
+				/>
 			)}
+			{primaryPrompt &&
+				!isInventoryOpen &&
+				!dialogueNode &&
+				!pendingCutscene && (
+					<div className="runtime-interaction-prompt" role="status">
+						{primaryPrompt}
+					</div>
+				)}
 			<ThreePerformanceOverlay
 				diagnostics={diagnostics}
 				title="3D Runtime Perf"
@@ -2544,6 +2607,17 @@ export function ThreeRuntimePanel({
 				</span>
 				<span>Gold: {goldCount}</span>
 				<span>{status}</span>
+				<button
+					type="button"
+					onClick={toggleInventory}
+					disabled={
+						!!session &&
+						!isInventoryOpen &&
+						isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+					}
+				>
+					Inventory <kbd>I</kbd>
+				</button>
 				<div className="three-runtime-camera-controls">
 					<span>
 						Camera

@@ -1,13 +1,18 @@
 import Phaser from "phaser";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { RuntimeDebugEvent } from "./debugLog";
+import { InventoryPanel } from "./InventoryPanel";
 import type { QuestView } from "./questEngine";
 import { getCurrencyHudEntries, getQuestTrackerState } from "./runtimeHud";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
+import {
+	InventoryNotifications,
+	useInventoryPresentation,
+} from "./useInventoryPresentation";
 
 const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
@@ -26,8 +31,15 @@ export function RuntimePanel({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sceneRef = useRef<AdventureScene | null>(null);
 	const [playMode, setPlayMode] = useState<"2d" | "3d">(initialMode);
-	const [inventory, setInventory] = useState<Record<string, number>>({});
+	const {
+		inventory,
+		updateInventory: setInventory,
+		resetInventory,
+		showItemFeedback,
+		notices,
+	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+	const inventoryOpenRef = useRef(false);
 	const [quests, setQuests] = useState<QuestView[]>([]);
 	const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
 	const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(
@@ -42,10 +54,26 @@ export function RuntimePanel({
 		gameOver: false,
 	});
 
+	const toggleInventory = useCallback(() => {
+		const next = !inventoryOpenRef.current;
+		if (!sceneRef.current?.setInventoryOpen(next)) return;
+		inventoryOpenRef.current = next;
+		setIsInventoryOpen(next);
+	}, []);
+
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (
+				playMode !== "2d" ||
+				event.repeat ||
+				event.defaultPrevented ||
+				(event.target instanceof HTMLElement &&
+					/INPUT|TEXTAREA|SELECT/.test(event.target.tagName))
+			)
+				return;
 			if (event.key.toLowerCase() === "i") {
-				setIsInventoryOpen((isOpen) => !isOpen);
+				event.preventDefault();
+				toggleInventory();
 			}
 			if (event.key.toLowerCase() === "j") {
 				setIsQuestPanelOpen((isOpen) => !isOpen);
@@ -54,7 +82,7 @@ export function RuntimePanel({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, []);
+	}, [playMode, toggleInventory]);
 
 	useEffect(() => {
 		// Restart signal for Phaser sessions.
@@ -64,7 +92,9 @@ export function RuntimePanel({
 		}
 		void runtimeKey;
 
-		setInventory({});
+		resetInventory(project.gameState.inventory ?? {});
+		inventoryOpenRef.current = false;
+		setIsInventoryOpen(false);
 		setQuests([]);
 		setShopState(null);
 		setDebugEvents([]);
@@ -81,6 +111,7 @@ export function RuntimePanel({
 			setShopState,
 			setCombat,
 			setDebugEvents,
+			showItemFeedback,
 		);
 		sceneRef.current = scene;
 		const game = new Phaser.Game({
@@ -106,15 +137,11 @@ export function RuntimePanel({
 		playMode,
 		project,
 		runtimeKey,
+		resetInventory,
+		setInventory,
+		showItemFeedback,
 	]);
 
-	const inventoryItems = Object.entries(inventory)
-		.filter(([, quantity]) => quantity > 0)
-		.map(([itemId, quantity]) => ({
-			item: project.items.find((candidate) => candidate.id === itemId),
-			itemId,
-			quantity,
-		}));
 	const currencyHudEntries = getCurrencyHudEntries(project, inventory);
 	const activeQuests = quests.filter((quest) => quest.status === "active");
 	const completedQuests = quests.filter(
@@ -182,6 +209,9 @@ export function RuntimePanel({
 					<>
 						<div className="phaser-host" ref={containerRef} />
 						<div className="inventory-hud">
+							<button type="button" onClick={toggleInventory}>
+								Inventory <kbd>I</kbd>
+							</button>
 							{currencyHudEntries.length > 0 ? (
 								currencyHudEntries.map((entry) => (
 									<span key={entry.id}>
@@ -240,26 +270,14 @@ export function RuntimePanel({
 								<p>{questTracker.message}</p>
 							</aside>
 						)}
-						{isInventoryOpen ? (
-							<aside className="inventory-panel">
-								<div className="inventory-heading">
-									<strong>Inventory</strong>
-									<span>Press I to close</span>
-								</div>
-								{inventoryItems.length > 0 ? (
-									<div className="inventory-list">
-										{inventoryItems.map(({ item, itemId, quantity }) => (
-											<div className="inventory-row" key={itemId}>
-												<span>{item?.name ?? itemId}</span>
-												<strong>x{quantity}</strong>
-											</div>
-										))}
-									</div>
-								) : (
-									<p className="inventory-empty">No items collected.</p>
-								)}
-							</aside>
-						) : null}
+						<InventoryNotifications items={project.items} notices={notices} />
+						{isInventoryOpen && (
+							<InventoryPanel
+								items={project.items}
+								inventory={inventory}
+								onClose={toggleInventory}
+							/>
+						)}
 						{isQuestPanelOpen ? (
 							<aside className="quest-panel">
 								<div className="inventory-heading">

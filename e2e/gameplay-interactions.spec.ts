@@ -1,6 +1,179 @@
 import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
+test("inspects and retains the Harbour Key with real player input @inventory-items", async ({
+	page,
+}) => {
+	test.setTimeout(600_000);
+	page.setDefaultTimeout(30_000);
+	const output = "docs/assets/inventory-items";
+	await fs.mkdir(output, { recursive: true });
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	page.on("console", (message) => {
+		if (message.type() === "error") errors.push(message.text());
+	});
+	await page.goto("/");
+	await page.getByRole("button", { name: /Blank Project/ }).click();
+	await page
+		.locator('input[type="file"]')
+		.setInputFiles(
+			"docs/assets/gameplay-interactions/tidewatch-harbour.project.json",
+		);
+	await page.getByRole("button", { name: "3D View", exact: true }).click();
+	await page.getByRole("button", { name: "Save", exact: true }).click();
+	const saved = await page.evaluate(() =>
+		localStorage.getItem("adventure-builder-project-v1"),
+	);
+	expect(saved).toBeTruthy();
+	const position = async (): Promise<{
+		x: number;
+		y: number;
+		height: number;
+	} | null> =>
+		JSON.parse(
+			(await page
+				.locator(".three-runtime-hud")
+				.getAttribute("data-traversal-target")) ?? "null",
+		);
+	async function play() {
+		await page.getByRole("button", { name: "Play", exact: true }).click();
+		await expect
+			.poll(async () => !!(await position()), { timeout: 45_000 })
+			.toBe(true);
+		await page.getByLabel("Three runtime viewport", { exact: true }).focus();
+	}
+	async function go(x: number, y: number) {
+		console.log(`Inventory route: walk to ${x}, ${y}`);
+		for (const axis of ["x", "y"] as const) {
+			for (let step = 0; step < 90; step++) {
+				const before = await position();
+				if (!before) throw new Error("Player position unavailable");
+				const difference = (axis === "x" ? x : y) - before[axis];
+				if (Math.abs(difference) < 0.115) break;
+				await page.keyboard.press(
+					axis === "x"
+						? difference > 0
+							? "ArrowRight"
+							: "ArrowLeft"
+						: difference > 0
+							? "ArrowDown"
+							: "ArrowUp",
+				);
+				await page.waitForTimeout(90);
+				const after = await position();
+				if (!after) throw new Error("Player position unavailable");
+				expect(
+					Math.abs(after[axis] - before[axis]),
+					`Route blocked at ${JSON.stringify(before)}`,
+				).toBeGreaterThan(0.005);
+				if (step === 89) throw new Error("Route failed");
+			}
+		}
+	}
+	const inventory = page.getByRole("dialog", {
+		name: "Inventory",
+		exact: true,
+	});
+	const prompt = page.locator(".runtime-interaction-prompt");
+	await play();
+	await page.getByRole("button", { name: "Inventory I", exact: true }).click();
+	await expect(inventory).toContainText("Your inventory is empty");
+	const resting = await position();
+	await page.keyboard.press("ArrowRight");
+	await page.keyboard.press("e");
+	expect(await position()).toEqual(resting);
+	await page.keyboard.press("Escape");
+	await expect(inventory).toHaveCount(0);
+	await go(9, 9.4);
+	await go(4.8, 9.4);
+	await go(4.8, 5.2);
+	await go(5, 5.2);
+	await expect(prompt).toHaveText("Requires Harbour Key");
+	await page.keyboard.press("e");
+	await expect(page.locator(".three-runtime-hud")).toContainText(
+		"Door is locked. Requires Harbour Key.",
+	);
+	await page.screenshot({ path: `${output}/locked-door.png` });
+	await go(4.8, 7.6);
+	await go(5.8, 7.6);
+	await expect(prompt).toHaveText("E — Open chest");
+	await page.keyboard.press("i");
+	await page.keyboard.press("e");
+	await expect(inventory).toContainText("Your inventory is empty");
+	await page.keyboard.press("i");
+	await expect(prompt).toHaveText("E — Open chest");
+	await page.keyboard.press("e");
+	await expect(page.locator(".inventory-notifications")).toContainText(
+		"Harbour Key acquired",
+	);
+	await page.screenshot({ path: `${output}/pickup.png` });
+	await expect(prompt).toHaveText("E — Empty chest");
+	await page.keyboard.press("e");
+	await expect(page.locator(".three-runtime-hud")).toContainText(
+		"Container is empty.",
+	);
+	await page.keyboard.press("i");
+	await expect(
+		inventory.getByRole("button", { name: "Harbour Key ×1", exact: true }),
+	).toBeVisible();
+	await inventory
+		.getByRole("button", { name: "Harbour Key ×1", exact: true })
+		.click();
+	await expect(
+		inventory.getByRole("region", { name: "Item details" }),
+	).toContainText("Opens the small shack at Tidewatch Harbour.");
+	await expect(inventory).toContainText("Key Item");
+	await page.screenshot({ path: `${output}/inventory.png` });
+	await inventory.getByRole("button", { name: "Close Esc" }).click();
+	await go(4.8, 7.6);
+	await go(4.8, 5.2);
+	await go(5, 5.2);
+	await expect(prompt).toHaveText("E — Enter Shack · Harbour Key retained");
+	await page.keyboard.press("e");
+	await expect
+		.poll(
+			async () =>
+				JSON.parse(
+					(await page
+						.locator(".three-runtime-host")
+						.getAttribute("data-traversal")) ?? "null",
+				)?.y ?? -1,
+			{ timeout: 30_000 },
+		)
+		.toBeCloseTo(4, 1);
+	await expect(page.locator(".three-runtime-hud")).toContainText(
+		"Harbour Key retained",
+	);
+	await page.keyboard.press("i");
+	await expect(
+		inventory.getByRole("button", { name: "Harbour Key ×1", exact: true }),
+	).toBeVisible();
+	await page.keyboard.press("Escape");
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
+	await page.getByRole("button", { name: "Save", exact: true }).click();
+	expect(
+		await page.evaluate(() =>
+			localStorage.getItem("adventure-builder-project-v1"),
+		),
+	).toBe(saved);
+	await page.reload();
+	await page.getByRole("button", { name: "Save", exact: true }).click();
+	expect(
+		await page.evaluate(() =>
+			localStorage.getItem("adventure-builder-project-v1"),
+		),
+	).toBe(saved);
+	await play();
+	await page.keyboard.press("i");
+	await expect(inventory).toContainText("Your inventory is empty");
+	expect(errors).toEqual([]);
+	await fs.writeFile(
+		`${output}/observations.json`,
+		`${JSON.stringify({ errors, lockedRequirement: true, pickupToast: true, keyInspected: true, keyRetained: true, duplicatePrevented: true, modalBlocksInput: true, authoredProjectUnchanged: true, saveReloadEqual: true, freshSessionEmpty: true }, null, "\t")}\n`,
+	);
+});
+
 test.use({ trace: "off", viewport: { width: 1100, height: 800 } });
 test("authors and plays Tidewatch interactions with real input @gameplay-interactions", async ({
 	page,
@@ -186,7 +359,7 @@ test("authors and plays Tidewatch interactions with real input @gameplay-interac
 	await expect(dialog).toHaveCount(0);
 	await go(9, 5.2);
 	await go(5, 5.2);
-	await expect(prompt).toHaveText("E — Enter");
+	await expect(prompt).toHaveText("E — Enter · Harbour Key retained");
 	await page.keyboard.press("e");
 	await expect
 		.poll(

@@ -473,6 +473,12 @@ export function EntityInteractionEditor({
 											Choose a destination and an arrival event point.
 										</p>
 									)}
+									{door?.requiredItemId && (
+										<p className="muted">
+											The required item stays in the player's inventory after
+											entry.
+										</p>
+									)}
 								</>
 							)}
 							{type === "flag" && (

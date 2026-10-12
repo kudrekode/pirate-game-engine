@@ -155,7 +155,24 @@ export class AdventureScene extends Phaser.Scene {
 	private readonly onShopChanged?: (shop: RuntimeShopPanelState | null) => void;
 	private readonly onCombatChanged?: (combat: RuntimeCombatHudState) => void;
 	private readonly onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void;
+	private readonly onItemFeedback?: (message: string) => void;
 	private isCutsceneOpen = false;
+	private isInventoryOpen = false;
+
+	setInventoryOpen(open: boolean): boolean {
+		if (
+			open &&
+			isRuntimeGameplayBlocked(
+				this.session,
+				this.isCutsceneOpen || this.isDialogueOpen || this.isFinished,
+			)
+		)
+			return false;
+		this.isInventoryOpen = open;
+		this.input?.keyboard?.resetKeys();
+		if (open) this.promptText?.setText("");
+		return true;
+	}
 	private isDialogueOpen = false;
 	private activeDialogue?: {
 		container?: Phaser.GameObjects.Container;
@@ -173,6 +190,7 @@ export class AdventureScene extends Phaser.Scene {
 		onShopChanged?: (shop: RuntimeShopPanelState | null) => void,
 		onCombatChanged?: (combat: RuntimeCombatHudState) => void,
 		onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void,
+		onItemFeedback?: (message: string) => void,
 	) {
 		super("AdventureScene");
 		this.session = createRuntimeSession(project);
@@ -184,6 +202,7 @@ export class AdventureScene extends Phaser.Scene {
 		this.onShopChanged = onShopChanged;
 		this.onCombatChanged = onCombatChanged;
 		this.onDebugEventsChanged = onDebugEventsChanged;
+		this.onItemFeedback = onItemFeedback;
 	}
 
 	private get playerPosition() {
@@ -370,6 +389,7 @@ export class AdventureScene extends Phaser.Scene {
 
 	// Input translation into shared runtime transactions.
 	update(time: number) {
+		if (this.isInventoryOpen) return;
 		if (this.isDialogueOpen && this.activeDialogue) {
 			if (this.wasInteractPressed()) {
 				const active = this.activeDialogue;
@@ -962,6 +982,10 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		if (event.type === "itemFeedback") {
+			this.onItemFeedback?.(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			this.onInventoryChanged?.(event.inventory);
 			return;
@@ -1005,6 +1029,10 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		if (event.type === "itemFeedback") {
+			this.onItemFeedback?.(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			this.onInventoryChanged?.(event.inventory);
 			return;
@@ -1875,6 +1903,10 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		if (event.type === "itemFeedback") {
+			this.onItemFeedback?.(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			this.onInventoryChanged?.(event.inventory);
 			return;
@@ -2088,6 +2120,10 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		if (event.type === "itemFeedback") {
+			this.onItemFeedback?.(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			this.onInventoryChanged?.(event.inventory);
 			return;

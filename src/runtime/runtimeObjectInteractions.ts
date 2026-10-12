@@ -8,7 +8,7 @@ import {
 	isPickupCollected,
 	resolveObjectBehaviour,
 } from "./interactionDiscovery";
-import { collectPickup } from "./inventory";
+import { collectPickup, inventoryRewardIssue } from "./inventory";
 import { findDismountTile, type VehicleMovementConfig } from "./movement";
 import { runObjectBehaviour } from "./objectBehaviour";
 import {
@@ -27,6 +27,7 @@ export type RuntimeObjectInteractionEvent =
 	| { type: "status"; message: string }
 	| { type: "flowLog"; message: string }
 	| { type: "stateChanged" }
+	| { type: "itemFeedback"; message: string }
 	| { type: "inventoryChanged"; inventory: Record<string, number> }
 	| { type: "questsChanged"; quests: QuestView[] }
 	| {
@@ -84,6 +85,7 @@ function syncQuestProgress(
 		session.runtimeQuestState,
 		session.runtimeState,
 		session.project.items,
+		(message) => emit({ type: "itemFeedback", message }),
 	);
 	if (stateChanged) {
 		emitInventoryChanged(session, emit);
@@ -181,6 +183,7 @@ export function runRuntimeObjectBehaviour(
 					areaId: result.targetAreaId,
 					eventBlockId: result.targetEventBlockId,
 				});
+				emit({ type: "status", message: result.message });
 			} else {
 				emit({
 					type: "status",
@@ -236,6 +239,15 @@ export function collectRuntimePickup(
 		return false;
 	}
 
+	const issue = inventoryRewardIssue(
+		session.runtimeState.inventory,
+		session.project.items,
+		[pickup],
+	);
+	if (issue) {
+		emit({ type: "status", message: issue });
+		return false;
+	}
 	const collected = collectPickup(
 		pickup,
 		session.runtimeState.inventory,
@@ -258,7 +270,7 @@ export function collectRuntimePickup(
 	emitStateChanged(emit);
 	emit({
 		type: "status",
-		message: `Picked up ${findItemName(session, pickup.itemId) ?? pickup.itemId} x${pickup.quantity}.`,
+		message: `Picked up ${findItemName(session, pickup.itemId) ?? "Item"} ×${pickup.quantity}.`,
 	});
 	return true;
 }

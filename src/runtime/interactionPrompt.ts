@@ -1,5 +1,6 @@
 import type { InteractableTarget } from "./interactionDiscovery";
 import { resolveObjectBehaviour } from "./interactionDiscovery";
+import { hasItem } from "./inventory";
 import type { RuntimeSessionState } from "./runtimeSession";
 
 export function interactionPrompt(
@@ -13,8 +14,18 @@ export function interactionPrompt(
 			: target.type === "npc"
 				? "Talk"
 				: "Interact";
+	let requirementHint = "";
 	if (target.type === "object") {
 		const behaviour = resolveObjectBehaviour(session.project, target.object);
+		if (behaviour.type === "door" && behaviour.requiredItemId) {
+			const name =
+				session.project.items.find(
+					(item) => item.id === behaviour.requiredItemId,
+				)?.name || "required item";
+			if (!hasItem(session.runtimeState.inventory, behaviour.requiredItemId))
+				return `Requires ${name}`;
+			requirementHint = ` · ${name} retained`;
+		}
 		if (behaviour.type === "container") {
 			const opened =
 				session.openedObjectIds.has(target.id) ||
@@ -40,5 +51,8 @@ export function interactionPrompt(
 				: label);
 	}
 	// Old authored prompts already included the key hint.
-	return /^press\s+(e|enter)\b/i.test(label) ? label : `E — ${label}`;
+	return (
+		(/^press\s+(e|enter)\b/i.test(label) ? label : `E — ${label}`) +
+		requirementHint
+	);
 }

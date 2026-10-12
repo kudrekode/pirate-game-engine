@@ -2,6 +2,51 @@ import { describe, expect, it } from "vitest";
 import { migrateProject } from "./migrateProject";
 
 describe("migrateProject", () => {
+	it("preserves player-facing item fields and legacy icons/categories without restoring deleted items", () => {
+		const project = migrateProject({
+			items: [
+				{
+					id: "key",
+					name: "Harbour Key",
+					description: "Opens the shack.",
+					category: "key",
+					iconId: "key",
+					stackable: false,
+					maxStack: 100,
+				},
+				{
+					id: "rope",
+					name: "Rope",
+					category: "unknown",
+					stackable: true,
+					maxStack: 2.6,
+				},
+				{
+					id: "legacy",
+					name: "Legacy",
+					category: "consumable",
+					iconId: "legacy-symbol",
+				},
+			],
+		});
+		expect(project.items[0]).toEqual({
+			id: "key",
+			name: "Harbour Key",
+			description: "Opens the shack.",
+			category: "key",
+			iconId: "key",
+			stackable: false,
+		});
+		expect(project.items[1]).toMatchObject({ category: "misc", maxStack: 3 });
+		expect(project.items[2]).toMatchObject({
+			category: "consumable",
+			iconId: "legacy-symbol",
+		});
+		expect(migrateProject(JSON.parse(JSON.stringify(project))).items).toEqual(
+			project.items,
+		);
+		expect(migrateProject({ ...project, items: [] }).items).toEqual([]);
+	});
 	it("sanitizes optional instance transforms and retains placed character names", () => {
 		const project = migrateProject({
 			areas: [

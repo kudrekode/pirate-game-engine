@@ -84,6 +84,30 @@ function target(
 }
 
 describe("interaction authoring contract", () => {
+	it("names the missing door key before input and shows retention after acquisition", () => {
+		const { session, area } = setup();
+		session.project.items.push({
+			id: "key",
+			name: "Harbour Key",
+			category: "key",
+			stackable: false,
+		});
+		area.objects[0].interaction = {
+			type: "object_behaviour",
+			activationMode: "on_interact",
+			prompt: "Enter Shack",
+		};
+		area.objects[0].behaviourOverride = { type: "door", requiredItemId: "key" };
+		expect(interactionPrompt(session, target(session))).toBe(
+			"Requires Harbour Key",
+		);
+		session.runtimeState.inventory.items.key = 1;
+		expect(interactionPrompt(session, target(session))).toBe(
+			"E — Enter Shack · Harbour Key retained",
+		);
+		runRuntimeObjectBehaviour(session, area.objects[0], () => {});
+		expect(session.runtimeState.inventory.items.key).toBe(1);
+	});
 	it("reports a missing pickup item and preserves the collectible until its definition is repaired", () => {
 		const { session, area } = setup();
 		area.objects[0].interaction = {

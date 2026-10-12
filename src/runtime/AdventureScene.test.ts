@@ -113,6 +113,21 @@ function harness(authored = project()) {
 }
 
 describe("Phaser gameplay boundary", () => {
+	it("pauses gameplay for inventory, resumes on close, and refuses it during dialogue", () => {
+		const { scene, boundary } = harness();
+		scene.create();
+		boundary.checkTouchInteractions = vi.fn(() => false);
+		boundary.checkTrigger = vi.fn();
+		expect(scene.setInventoryOpen(true)).toBe(true);
+		scene.update(1000);
+		expect(boundary.session.playerPosition).toEqual({ x: 0, y: 0 });
+		expect(boundary.updateNpcMovement).not.toHaveBeenCalled();
+		expect(scene.setInventoryOpen(false)).toBe(true);
+		scene.update(1000);
+		expect(boundary.session.playerPosition).toEqual({ x: 1, y: 0 });
+		boundary.isDialogueOpen = true;
+		expect(scene.setInventoryOpen(true)).toBe(false);
+	});
 	it("uses the same movement deadline even if the presentation tween has not completed", () => {
 		const { scene, boundary } = harness();
 		scene.create();

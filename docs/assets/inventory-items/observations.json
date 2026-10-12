@@ -1,0 +1,12 @@
+{
+	"errors": [],
+	"lockedRequirement": true,
+	"pickupToast": true,
+	"keyInspected": true,
+	"keyRetained": true,
+	"duplicatePrevented": true,
+	"modalBlocksInput": true,
+	"authoredProjectUnchanged": true,
+	"saveReloadEqual": true,
+	"freshSessionEmpty": true
+}

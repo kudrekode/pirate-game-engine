@@ -1,5 +1,5 @@
 import type { ItemDefinition, ObjectBehaviour } from "../types/game";
-import { giveItem, hasItem } from "./inventory";
+import { giveItem, hasItem, inventoryRewardIssue } from "./inventory";
 import type { RuntimeGameState } from "./ruleEngine";
 
 export type ObjectBehaviourResult =
@@ -51,6 +51,19 @@ export function runObjectBehaviour(
 			};
 		}
 
+		const issue = inventoryRewardIssue(
+			context.state.inventory,
+			context.itemDefinitions,
+			behaviour.contents,
+		);
+		if (issue)
+			return {
+				type: "container",
+				handled: true,
+				opened: false,
+				message: issue,
+			};
+
 		behaviour.contents.forEach((content) => {
 			giveItem(
 				context.state.inventory,
@@ -80,6 +93,10 @@ export function runObjectBehaviour(
 	}
 
 	if (behaviour.type === "door") {
+		const requiredName =
+			context.itemDefinitions.find(
+				(item) => item.id === behaviour.requiredItemId,
+			)?.name || "the required item";
 		const hasRequiredItem =
 			!behaviour.requiredItemId ||
 			hasItem(context.state.inventory, behaviour.requiredItemId, 1);
@@ -90,7 +107,7 @@ export function runObjectBehaviour(
 				handled: true,
 				allowed: false,
 				lockedCutsceneId: behaviour.lockedCutsceneId,
-				message: "Door is locked.",
+				message: `Door is locked. Requires ${requiredName}.`,
 			};
 		}
 
@@ -100,7 +117,9 @@ export function runObjectBehaviour(
 			allowed: true,
 			targetAreaId: behaviour.targetAreaId,
 			targetEventBlockId: behaviour.targetEventBlockId,
-			message: "Door opened.",
+			message: behaviour.requiredItemId
+				? `Door opened. ${requiredName} retained.`
+				: "Door opened.",
 		};
 	}
 
