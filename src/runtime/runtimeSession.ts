@@ -3,6 +3,7 @@ import type {
 	DialogueDefinition,
 	GameArea,
 	GameProject,
+	Interaction,
 	MovementMode,
 	PlayerCombatStats,
 	PlayerVehicleState,
@@ -62,6 +63,11 @@ export type RuntimeSessionState = {
 	startupPending: boolean;
 	dialogue?: RuntimeDialogueState;
 	inlineDialogue?: DialogueDefinition;
+	pendingInteraction?: {
+		areaId: string;
+		targetId: string;
+		interaction: Interaction;
+	};
 	firedInteractionIds: Set<string>;
 	recentEnemy?: RuntimeRecentEnemyState;
 };

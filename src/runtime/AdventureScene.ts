@@ -48,6 +48,11 @@ import type { VehicleMovementConfig } from "./movement";
 import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
 import type { QuestView } from "./questEngine";
+import {
+	finishQuestConversation,
+	finishQuestInteraction,
+	observeQuestLocation,
+} from "./questInteractions";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
 import {
 	attemptRuntimeCombatAttack,
@@ -75,7 +80,6 @@ import {
 	processRuntimeProgression,
 	type RuntimeProgressionEvent,
 	startRuntimeSession,
-	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "./runtimeProgression";
 import {
@@ -921,6 +925,10 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private handleRuntimeProgressionEvent(event: RuntimeProgressionEvent) {
+		if (event.type === "questAction") {
+			this.handleRuntimeRuleEvent(event.event);
+			return;
+		}
 		if (event.type === "areaChanged") {
 			const nextArea = this.findArea(event.areaId);
 			if (!nextArea) {
@@ -1010,6 +1018,10 @@ export class AdventureScene extends Phaser.Scene {
 	private handleRuntimeObjectInteractionEvent(
 		event: RuntimeObjectInteractionEvent,
 	) {
+		if (event.type === "questAction") {
+			this.handleRuntimeRuleEvent(event.event);
+			return;
+		}
 		if (event.type === "objectCollected") {
 			this.objectMarkers.get(event.objectId)?.destroy();
 			this.objectMarkers.delete(event.objectId);
@@ -1432,6 +1444,11 @@ export class AdventureScene extends Phaser.Scene {
 		this.activeDialogue = undefined;
 		this.session.dialogue = undefined;
 		this.isDialogueOpen = false;
+		finishQuestConversation(
+			this.session,
+			(event) => this.handleRuntimeRuleEvent(event),
+			(event) => this.handleRuntimeProgressionEvent(event),
+		);
 		this.updatePrompt(this.findNearestInteractable());
 	}
 
@@ -1747,7 +1764,14 @@ export class AdventureScene extends Phaser.Scene {
 				targetId,
 				label,
 			);
-			if (definition) this.showDialogue(definition);
+			if (definition) {
+				this.session.pendingInteraction = {
+					areaId: this.session.currentAreaId,
+					targetId,
+					interaction,
+				};
+				this.showDialogue(definition);
+			}
 			return;
 		}
 		if (interaction.type === "object_behaviour") return;
@@ -1821,6 +1845,11 @@ export class AdventureScene extends Phaser.Scene {
 				return;
 			}
 
+			this.session.pendingInteraction = {
+				areaId: this.session.currentAreaId,
+				targetId,
+				interaction,
+			};
 			this.showDialogue(dialogue);
 			return;
 		}
@@ -1843,7 +1872,14 @@ export class AdventureScene extends Phaser.Scene {
 
 			const value = interaction.value ?? true;
 			this.runtimeState.flags[interaction.flag] = value;
-			this.syncQuestProgress();
+			finishQuestInteraction(
+				this.session,
+				this.session.currentAreaId,
+				targetId,
+				interaction,
+				(event) => this.handleRuntimeRuleEvent(event),
+				(event) => this.handleRuntimeProgressionEvent(event),
+			);
 			this.updateDebugPanel();
 			this.setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
 			return;
@@ -1976,6 +2012,9 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 
+		observeQuestLocation(this.session, (event) =>
+			this.handleRuntimeProgressionEvent(event),
+		);
 		const destinationX = move.to.x * this.tileSize + this.tileSize / 2;
 		const destinationY = move.to.y * this.tileSize + this.tileSize / 2;
 
@@ -2254,12 +2293,6 @@ export class AdventureScene extends Phaser.Scene {
 		if (!alreadyEntered) {
 			this.logEvent(`Area entered: ${area.name}.`);
 		}
-	}
-
-	private syncQuestProgress() {
-		syncRuntimeQuestProgress(this.session, (event) =>
-			this.handleRuntimeProgressionEvent(event),
-		);
 	}
 
 	private logEvent(message: string) {

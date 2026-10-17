@@ -222,6 +222,9 @@ function withInteractionBase(
 			fallbackActivationMode,
 		),
 		...(prompt ? { prompt } : {}),
+		...(Array.isArray(source.completionActions)
+			? { completionActions: migrateActions(source.completionActions) }
+			: {}),
 	};
 }
 
@@ -1441,6 +1444,18 @@ function migrateObjectiveCondition(value: unknown): ObjectiveCondition | null {
 	if (!isRecord(value)) {
 		return null;
 	}
+	if (
+		value.type === "interaction_completed" ||
+		value.type === "container_opened" ||
+		value.type === "enter_event" ||
+		value.type === "door_used"
+	) {
+		return {
+			type: value.type,
+			areaId: readString(value.areaId, ""),
+			targetId: readString(value.targetId, ""),
+		};
+	}
 
 	if (value.type === "flag") {
 		return {
@@ -1566,6 +1581,12 @@ function migrateQuests(value: unknown): Quest[] {
 			{
 				id: readString(quest.id, `quest_${index + 1}`),
 				name: readString(quest.name, `Quest ${index + 1}`),
+				...(quest.objectiveMode === "sequence"
+					? { objectiveMode: "sequence" as const }
+					: {}),
+				...(readString(quest.completionMessage, "")
+					? { completionMessage: readString(quest.completionMessage, "") }
+					: {}),
 				...(description ? { description } : {}),
 				status,
 				objectives: migrateObjectives(quest.objectives),

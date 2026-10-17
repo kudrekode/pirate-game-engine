@@ -45,7 +45,12 @@ export function EntityInteractionEditor({
 								: "message";
 	const defaultMode = kind === "event" ? "on_touch" : "on_interact";
 	function choose(next: string) {
-		const base = { activationMode: defaultMode } as const;
+		const base = {
+			activationMode: defaultMode,
+			...(interaction?.completionActions
+				? { completionActions: interaction.completionActions }
+				: {}),
+		} as const;
 		if (next === "pickup") {
 			onChange(
 				{
@@ -106,6 +111,9 @@ export function EntityInteractionEditor({
 	}
 	const container = behaviour?.type === "container" ? behaviour : undefined;
 	const lines = interaction?.lines?.length ? interaction.lines : [""];
+	const startQuestId = interaction?.completionActions?.find(
+		(action) => action.type === "activate_quest",
+	)?.questId;
 	const door = behaviour?.type === "door" ? behaviour : undefined;
 	const targetArea = project.areas.find(
 		(a) => a.id === (door?.targetAreaId ?? interaction?.targetAreaId),
@@ -163,6 +171,58 @@ export function EntityInteractionEditor({
 			</label>
 			{enabled && (
 				<>
+					{(project.quests.length > 0 || startQuestId) &&
+						(type === "message" ||
+							type === "flag" ||
+							interaction?.type === "start_dialogue") && (
+							<label>
+								Start Quest
+								<select
+									aria-label="Start Quest"
+									value={
+										interaction?.completionActions?.find(
+											(action) => action.type === "activate_quest",
+										)?.questId ?? ""
+									}
+									onChange={(event) =>
+										patch({
+											completionActions: [
+												...(interaction?.completionActions ?? []).filter(
+													(action) => action.type !== "activate_quest",
+												),
+												...(event.target.value
+													? [
+															{
+																type: "activate_quest" as const,
+																questId: event.target.value,
+															},
+														]
+													: []),
+											],
+										})
+									}
+								>
+									<option value="">None</option>
+									{startQuestId &&
+										!project.quests.some(
+											(quest) => quest.id === startQuestId,
+										) && (
+											<option value={startQuestId}>
+												Missing quest — choose a replacement
+											</option>
+										)}
+									{project.quests.map((quest) => (
+										<option key={quest.id} value={quest.id}>
+											{quest.name}
+										</option>
+									))}
+								</select>
+								<span className="helper-text">
+									Starts after this interaction finishes. Quest progress resets
+									each Play session.
+								</span>
+							</label>
+						)}
 					<label>
 						Interaction type
 						<select

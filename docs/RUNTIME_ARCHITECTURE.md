@@ -187,6 +187,33 @@ Typical runtime flow:
 
 Presentation requests such as cutscenes, dialogue, shops, teleports, game over, and end game should stay renderer-neutral until the adapter displays them.
 
+### Directed quest authoring
+
+The existing `Quest` / `Objective` schema and `questEngine` own progression.
+New quests explicitly opt into `objectiveMode: "sequence"` and start inactive;
+missing mode retains legacy independent objectives. An author can explicitly
+start at Play start, use the existing `activate_quest` rule action, or select
+Start Quest on a message/dialogue or flag interaction in the Map Inspector.
+Interaction `completionActions` run through the existing action dispatcher when
+the conversation closes or the flag interaction succeeds.
+
+Item/flag conditions read current session state when a step activates. Scoped
+session facts remember completed conversations/messages, opened containers,
+entered event cells/arrival points and successfully used doors. Facts are bounded
+sets of targets, not a chronological event log. `questInteractions` observes
+accepted movement and conversation completion; object transactions and shared
+transitions record their own successful facts. Locked/invalid doors do not count.
+Only active steps advance; pre-satisfied steps settle in the same deterministic
+pass. Legacy rewards and completion actions run once through the shared rule
+context, with a re-entry guard for state changes caused by rewards. No quest
+evaluation runs from a presentation frame loop.
+
+Both adapters consume `QuestView` and the shared `QuestPresentation` HUD, showing
+the quest title and current step. Snapshot changes feed the existing non-blocking
+notification queue. Authored quest data survives project Save/Load; progress,
+facts and reward guards belong to the isolated Play session and reset on new Play.
+No save-game system or expanded journal is introduced.
+
 ## Testing Guidance
 
 Prefer focused runtime-helper tests for gameplay semantics. Adapter tests should verify input/event/render translation without relying on real WebGL where possible.

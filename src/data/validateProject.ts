@@ -150,6 +150,9 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 		if (!interaction) {
 			return;
 		}
+		interaction.completionActions?.forEach((action, index) => {
+			checkAction(action, `${path}.completionActions.${index}`, entityId);
+		});
 		if (interaction.type === "collect_item") {
 			checkReference(
 				context.itemIds,
@@ -485,6 +488,37 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 		quest.objectives.forEach((objective, objectiveIndex) => {
 			const condition = objective.condition;
 			const path = `quests.${questIndex}.objectives.${objectiveIndex}.condition`;
+			if ("targetId" in condition) {
+				const area = project.areas.find(
+					(entry) => entry.id === condition.areaId,
+				);
+				const targets =
+					condition.type === "enter_event"
+						? area?.eventBlocks
+						: condition.type === "interaction_completed"
+							? [...(area?.npcs ?? []), ...(area?.objects ?? [])]
+							: area?.objects.filter(
+									(object) =>
+										(
+											object.behaviourOverride ??
+											project.objects.find(
+												(definition) =>
+													definition.id === object.objectDefinitionId,
+											)?.defaultBehaviour
+										)?.type ===
+										(condition.type === "container_opened"
+											? "container"
+											: "door"),
+								);
+				if (!targets?.some((target) => target.id === condition.targetId))
+					addIssue(
+						path,
+						`Quest "${quest.name}" has a missing or incompatible objective target.`,
+						path,
+						"Quest",
+						quest.id,
+					);
+			}
 			if (condition.type === "has_item") {
 				checkReference(
 					context.itemIds,

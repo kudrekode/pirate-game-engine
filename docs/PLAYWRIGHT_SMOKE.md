@@ -25,6 +25,17 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The quest authoring route is one opt-in case in the existing interaction suite:
+`node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@quest-objectives'`.
+Inspect `--list` first. It imports the interaction showcase, authors three ordered
+steps and the Keeper's Start Quest field through real controls, saves a separate
+showcase under `docs/assets/quest-objectives/`, then walks, talks, opens the chest
+and enters the keyed shack. It checks objective/completion feedback, exact project
+equality after Edit/Save/reload, and completes the route again in fresh Play.
+The harness only reads positions and saved data; it never writes quest progress
+or invokes runtime interactions. Run separately from CI to avoid contention with
+the software-rendered browser. No Blender or performance matrix is involved.
+
 The interaction authoring route is one opt-in case:
 `node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@gameplay-interactions'`.
 Inspect `--list` first. It imports the original Tidewatch project and uses real

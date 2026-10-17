@@ -49,6 +49,15 @@ import {
 } from "../interactionMessages";
 import { interactionPrompt } from "../interactionPrompt";
 import { attemptPlayerMove } from "../playerMovementTransaction";
+import {
+	QuestObjectiveTracker,
+	useQuestPresentation,
+} from "../QuestPresentation";
+import {
+	finishQuestConversation,
+	finishQuestInteraction,
+	observeQuestLocation,
+} from "../questInteractions";
 import { fireTrigger } from "../ruleEngine";
 import {
 	attemptRuntimeCombatAttack,
@@ -74,7 +83,6 @@ import {
 	completeRuntimeProgressionCutscene,
 	type RuntimeProgressionEvent,
 	startRuntimeSession,
-	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "../runtimeProgression";
 import {
@@ -491,9 +499,7 @@ export function ThreeRuntimePanel({
 	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const inventoryOpenRef = useRef(false);
-	const [quests, setQuests] = useState<
-		Array<{ id: string; name: string; status: string }>
-	>([]);
+	const { quests, setQuests } = useQuestPresentation(showItemFeedback);
 	const [shopMessage, setShopMessage] = useState<string | undefined>();
 	const [pendingCutscene, setPendingCutsceneState] =
 		useState<PendingCutscene | null>(null);
@@ -533,6 +539,8 @@ export function ThreeRuntimePanel({
 		const session = getSession();
 		if (session) session.dialogue = undefined;
 		setDialogueNode(null);
+		if (session)
+			finishQuestConversation(session, handleRuleEvent, handleProgressionEvent);
 	}
 
 	function renderDialogueNode() {
@@ -830,6 +838,10 @@ export function ThreeRuntimePanel({
 	}
 
 	function handleProgressionEvent(event: RuntimeProgressionEvent): void {
+		if (event.type === "questAction") {
+			handleRuleEvent(event.event);
+			return;
+		}
 		const session = getSession();
 		if (!session) {
 			return;
@@ -1005,6 +1017,10 @@ export function ThreeRuntimePanel({
 	}
 
 	function handleObjectEvent(event: RuntimeObjectInteractionEvent): void {
+		if (event.type === "questAction") {
+			handleRuleEvent(event.event);
+			return;
+		}
 		const session = getSession();
 		if (!session) {
 			return;
@@ -1241,7 +1257,14 @@ export function ThreeRuntimePanel({
 				targetId,
 				label,
 			);
-			if (definition) showDialogue(definition.id);
+			if (definition) {
+				session.pendingInteraction = {
+					areaId: session.currentAreaId,
+					targetId,
+					interaction,
+				};
+				showDialogue(definition.id);
+			}
 			return;
 		}
 		if (interaction.type === "object_behaviour") return;
@@ -1287,6 +1310,12 @@ export function ThreeRuntimePanel({
 		}
 
 		if (interaction.type === "start_dialogue") {
+			if (getRuntimeDialogueDefinition(session, interaction.dialogueId))
+				session.pendingInteraction = {
+					areaId: session.currentAreaId,
+					targetId,
+					interaction,
+				};
 			showDialogue(interaction.dialogueId);
 			return;
 		}
@@ -1307,7 +1336,14 @@ export function ThreeRuntimePanel({
 			}
 			const value = interaction.value ?? true;
 			session.runtimeState.flags[interaction.flag] = value;
-			syncRuntimeQuestProgress(session, handleProgressionEvent);
+			finishQuestInteraction(
+				session,
+				session.currentAreaId,
+				targetId,
+				interaction,
+				handleRuleEvent,
+				handleProgressionEvent,
+			);
 			setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
 			forceRender("direct interaction changed flag");
 			return;
@@ -1406,6 +1442,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 
+		observeQuestLocation(session, handleProgressionEvent);
 		playerVisualRef.current = startVisualGridMove(
 			playerVisualRef.current ?? undefined,
 			session.currentAreaId,
@@ -2697,16 +2734,11 @@ export function ThreeRuntimePanel({
 					))}
 				</div>
 			) : null}
-			{quests.length > 0 ? (
-				<div className="three-runtime-quests">
-					<strong>Quests</strong>
-					{quests.slice(0, 3).map((quest) => (
-						<span key={quest.id}>
-							{quest.name}: {quest.status}
-						</span>
-					))}
-				</div>
-			) : null}
+			<QuestObjectiveTracker
+				project={project}
+				quests={quests}
+				className="three-runtime-quests"
+			/>
 			{activeShop ? (
 				<div className="three-runtime-shop">
 					<div>

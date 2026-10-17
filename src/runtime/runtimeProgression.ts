@@ -4,11 +4,16 @@ import {
 	getQuestViews,
 	markAreaEntered,
 	type QuestView,
-	updateQuestProgress,
+	recordQuestFact,
 } from "./questEngine";
+import {
+	type RuntimeRuleEvent,
+	updateSessionQuestProgress,
+} from "./runtimeRuleActionDispatcher";
 import type { RuntimeSessionState } from "./runtimeSession";
 
 export type RuntimeProgressionEvent =
+	| { type: "questAction"; event: RuntimeRuleEvent }
 	| {
 			type: "spawnPlayer";
 			areaId: string;
@@ -73,11 +78,8 @@ export function syncRuntimeQuestProgress(
 	emit: RuntimeProgressionEventEmitter,
 ): void {
 	if (session.startupPending) return;
-	const stateChanged = updateQuestProgress(
-		session.runtimeQuestState,
-		session.runtimeState,
-		session.project.items,
-		(message) => emit({ type: "itemFeedback", message }),
+	const stateChanged = updateSessionQuestProgress(session, (event) =>
+		emit({ type: "questAction", event }),
 	);
 	emit({ type: "questSync" });
 	if (stateChanged) {
@@ -122,6 +124,14 @@ export function transitionRuntimeArea(
 	}
 
 	session.playerPosition = { x: eventBlock.x, y: eventBlock.y };
+	if (!session.startupPending) {
+		recordQuestFact(
+			session.runtimeQuestState,
+			"enter_event",
+			nextArea.id,
+			eventBlock.id,
+		);
+	}
 	session.nextMoveAt = 0;
 	emit({
 		type: "spawnPlayer",
@@ -164,6 +174,20 @@ function finishRuntimeStartup(
 ): void {
 	if (!session.startupPending) return;
 	session.startupPending = false;
+	for (const eventBlock of findArea(session, session.currentAreaId)
+		?.eventBlocks ?? []) {
+		if (
+			eventBlock.x === session.playerPosition.x &&
+			eventBlock.y === session.playerPosition.y
+		) {
+			recordQuestFact(
+				session.runtimeQuestState,
+				"enter_event",
+				session.currentAreaId,
+				eventBlock.id,
+			);
+		}
+	}
 	markRuntimeAreaEntered(session, session.currentAreaId, emit);
 	emit({ type: "areaEnterTriggerRequested", areaId: session.currentAreaId });
 }

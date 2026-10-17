@@ -11,17 +11,18 @@ import {
 import { collectPickup, inventoryRewardIssue } from "./inventory";
 import { findDismountTile, type VehicleMovementConfig } from "./movement";
 import { runObjectBehaviour } from "./objectBehaviour";
+import { getQuestViews, type QuestView, recordQuestFact } from "./questEngine";
 import {
-	getQuestViews,
-	type QuestView,
-	updateQuestProgress,
-} from "./questEngine";
+	type RuntimeRuleEvent,
+	updateSessionQuestProgress,
+} from "./runtimeRuleActionDispatcher";
 import type { RuntimeSessionState } from "./runtimeSession";
 import { buyShopEntry } from "./shopRuntime";
 import { createTraversalWorld } from "./traversal";
 import { createBoardedVehicleState } from "./vehicleRuntime";
 
 export type RuntimeObjectInteractionEvent =
+	| { type: "questAction"; event: RuntimeRuleEvent }
 	| { type: "objectCollected"; objectId: string }
 	| { type: "containerOpened"; objectId: string }
 	| { type: "status"; message: string }
@@ -81,11 +82,8 @@ function syncQuestProgress(
 	session: RuntimeSessionState,
 	emit: RuntimeObjectInteractionEventEmitter,
 ): void {
-	const stateChanged = updateQuestProgress(
-		session.runtimeQuestState,
-		session.runtimeState,
-		session.project.items,
-		(message) => emit({ type: "itemFeedback", message }),
+	const stateChanged = updateSessionQuestProgress(session, (event) =>
+		emit({ type: "questAction", event }),
 	);
 	if (stateChanged) {
 		emitInventoryChanged(session, emit);
@@ -147,6 +145,13 @@ export function runRuntimeObjectBehaviour(
 	}
 
 	if (result.type === "container") {
+		if (result.opened)
+			recordQuestFact(
+				session.runtimeQuestState,
+				"container_opened",
+				session.currentAreaId,
+				object.id,
+			);
 		if (result.opened) emit({ type: "containerOpened", objectId: object.id });
 		emitInventoryChanged(session, emit);
 		syncQuestProgress(session, emit);
@@ -178,6 +183,12 @@ export function runRuntimeObjectBehaviour(
 			if (
 				findEventBlock(session, result.targetAreaId, result.targetEventBlockId)
 			) {
+				recordQuestFact(
+					session.runtimeQuestState,
+					"door_used",
+					session.currentAreaId,
+					object.id,
+				);
 				emit({
 					type: "teleportRequested",
 					areaId: result.targetAreaId,

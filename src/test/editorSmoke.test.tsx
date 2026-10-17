@@ -762,12 +762,12 @@ describe("editor smoke tests", () => {
 
 		expect(
 			screen.getByText(
-				"Inactive quests do not progress until activated by a rule.",
+				"Not started. Select Start Quest on a map interaction, or use the existing Activate quest rule action.",
 			),
 		).toBeInTheDocument();
 	});
 
-	it("creates new quests active by default", () => {
+	it("creates sequential quests waiting for an explicit start", () => {
 		const project = cloneProject(defaultProject);
 		project.quests = [];
 		project.trackedQuestId = undefined;
@@ -776,9 +776,14 @@ describe("editor smoke tests", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Add quest" }));
 
-		expect(useProjectStore.getState().project.quests[0].status).toBe("active");
+		expect(useProjectStore.getState().project.quests[0].status).toBe(
+			"inactive",
+		);
+		expect(useProjectStore.getState().project.quests[0].objectiveMode).toBe(
+			"sequence",
+		);
 		expect(
-			screen.getByDisplayValue("Active - can progress during play"),
+			screen.getByDisplayValue("From an interaction or Start Quest action"),
 		).toBeInTheDocument();
 	});
 

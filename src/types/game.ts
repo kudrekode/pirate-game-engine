@@ -141,6 +141,8 @@ export type Interaction = {
 	quantity?: number;
 	speaker?: string;
 	once?: boolean;
+	// Runs through the shared action dispatcher after a successful interaction.
+	completionActions?: GameAction[];
 	activationMode: InteractionActivationMode;
 	prompt?: string;
 	targetAreaId?: string;
@@ -595,6 +597,9 @@ export type Quest = {
 	name: string;
 	description?: string;
 	status: QuestStatus;
+	// Missing retains legacy independent objectives; new quests use sequence.
+	objectiveMode?: "sequence";
+	completionMessage?: string;
 	objectives: Objective[];
 	completionActions?: GameAction[];
 	// Legacy compatibility. Imported projects migrate these into completionActions.
@@ -608,6 +613,10 @@ export type Objective = {
 };
 
 export type ObjectiveCondition =
+	| { type: "interaction_completed"; areaId: string; targetId: string }
+	| { type: "container_opened"; areaId: string; targetId: string }
+	| { type: "enter_event"; areaId: string; targetId: string }
+	| { type: "door_used"; areaId: string; targetId: string }
 	| { type: "flag"; flag: string; value: boolean }
 	| { type: "has_item"; itemId: string; quantity?: number }
 	| {

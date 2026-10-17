@@ -5,8 +5,12 @@ import { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { RuntimeDebugEvent } from "./debugLog";
 import { InventoryPanel } from "./InventoryPanel";
+import {
+	QuestObjectiveTracker,
+	useQuestPresentation,
+} from "./QuestPresentation";
 import type { QuestView } from "./questEngine";
-import { getCurrencyHudEntries, getQuestTrackerState } from "./runtimeHud";
+import { getCurrencyHudEntries } from "./runtimeHud";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
 import {
@@ -40,7 +44,7 @@ export function RuntimePanel({
 	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const inventoryOpenRef = useRef(false);
-	const [quests, setQuests] = useState<QuestView[]>([]);
+	const { quests, setQuests } = useQuestPresentation(showItemFeedback);
 	const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
 	const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(
 		null,
@@ -139,6 +143,7 @@ export function RuntimePanel({
 		runtimeKey,
 		resetInventory,
 		setInventory,
+		setQuests,
 		showItemFeedback,
 	]);
 
@@ -147,7 +152,6 @@ export function RuntimePanel({
 	const completedQuests = quests.filter(
 		(quest) => quest.status === "completed",
 	);
-	const questTracker = getQuestTrackerState(project, quests);
 	const activeShop = shopState
 		? project.shops.find((shop) => shop.id === shopState.shopId)
 		: undefined;
@@ -258,18 +262,7 @@ export function RuntimePanel({
 								)}
 							</div>
 						</details>
-						{questTracker.kind === "quest" ? (
-							<aside className="quest-tracker">
-								<span>{questTracker.label}</span>
-								{renderQuest(questTracker.quest)}
-							</aside>
-						) : (
-							<aside className="quest-tracker empty">
-								<span>{questTracker.label}</span>
-								<strong>{questTracker.title}</strong>
-								<p>{questTracker.message}</p>
-							</aside>
-						)}
+						<QuestObjectiveTracker project={project} quests={quests} />
 						<InventoryNotifications items={project.items} notices={notices} />
 						{isInventoryOpen && (
 							<InventoryPanel
