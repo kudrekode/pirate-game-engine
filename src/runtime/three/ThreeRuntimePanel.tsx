@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import {
 	getTerrainPresentationSurfaceY,
@@ -32,6 +32,11 @@ import {
 	getAvailableDialogueChoices,
 	getDialogueNode,
 } from "../dialogueEngine";
+import {
+	assertGameSaveSafe,
+	type GameSave,
+	restoreGameSave,
+} from "../gameSave";
 import { InventoryPanel } from "../InventoryPanel";
 import {
 	canInteractActivate,
@@ -53,6 +58,7 @@ import {
 	QuestObjectiveTracker,
 	useQuestPresentation,
 } from "../QuestPresentation";
+import { getQuestViews } from "../questEngine";
 import {
 	finishQuestConversation,
 	finishQuestInteraction,
@@ -98,6 +104,7 @@ import {
 	createRuntimeTraversal,
 	createTraversalWorld,
 	sampleTraversalMotion,
+	sampleTraversalTerrain,
 } from "../traversal";
 import {
 	InventoryNotifications,
@@ -229,6 +236,8 @@ function resolveThreeRuntimeBuildReason(
 type ThreeRuntimePanelProps = {
 	project: GameProject;
 	onRestart: () => void;
+	initialSave?: GameSave;
+	saveSessionRef?: MutableRefObject<(() => RuntimeSessionState) | null>;
 };
 
 type RuntimeCameraMode = "follow" | "inspect";
@@ -450,6 +459,8 @@ function createRuntimePlayerMarker(
 export function ThreeRuntimePanel({
 	project,
 	onRestart,
+	initialSave,
+	saveSessionRef,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
@@ -486,20 +497,23 @@ export function ThreeRuntimePanel({
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
-	const [terrainRenderMode, setTerrainRenderMode] =
-		useState<TerrainRenderMode>("smooth");
+	const [terrainRenderMode, setTerrainRenderMode] = useState<TerrainRenderMode>(
+		initialSave?.player.traversal?.mode ?? "smooth",
+	);
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
 	const {
 		inventory,
 		updateInventory: setInventory,
+		resetInventory,
 		showItemFeedback,
 		notices,
 	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const inventoryOpenRef = useRef(false);
-	const { quests, setQuests } = useQuestPresentation(showItemFeedback);
+	const { quests, setQuests, resetQuests } =
+		useQuestPresentation(showItemFeedback);
 	const [shopMessage, setShopMessage] = useState<string | undefined>();
 	const [pendingCutscene, setPendingCutsceneState] =
 		useState<PendingCutscene | null>(null);
@@ -736,13 +750,18 @@ export function ThreeRuntimePanel({
 		{
 			resetCamera = false,
 			resetCameraMode = false,
-		}: { resetCamera?: boolean; resetCameraMode?: boolean } = {},
+			preserveTraversal = false,
+		}: {
+			resetCamera?: boolean;
+			resetCameraMode?: boolean;
+			preserveTraversal?: boolean;
+		} = {},
 	) {
-		if (session) session.traversal = undefined;
+		if (session && !preserveTraversal) session.traversal = undefined;
 		playerVisualRef.current = session
 			? resetVisualEntityState(
 					session.currentAreaId,
-					session.playerPosition,
+					session.traversal?.position ?? session.playerPosition,
 					session.playerFacing,
 				)
 			: null;
@@ -753,11 +772,12 @@ export function ThreeRuntimePanel({
 
 	function resetPresentationVisuals(
 		session: RuntimeSessionState | null = getSession(),
-		options: { resetCameraMode?: boolean } = {},
+		options: { resetCameraMode?: boolean; preserveTraversal?: boolean } = {},
 	) {
 		resetPlayerVisual(session, {
 			resetCamera: true,
 			resetCameraMode: options.resetCameraMode,
+			preserveTraversal: options.preserveTraversal,
 		});
 		npcVisualsRef.current = new Map();
 	}
@@ -1552,25 +1572,35 @@ export function ThreeRuntimePanel({
 	useEffect(() => {
 		isStartingRuntimeRef.current = true;
 		try {
-			const session = createRuntimeSession(project);
+			const session = initialSave
+				? restoreGameSave(project, initialSave)
+				: createRuntimeSession(project);
 			sessionRef.current = session;
 			previousBuildInputsRef.current = null;
-			resetPresentationVisuals(session, { resetCameraMode: true });
+			resetPresentationVisuals(session, {
+				resetCameraMode: true,
+				preserveTraversal: !!initialSave,
+			});
 			setMountError(null);
 			gameOverRef.current = false;
 			setGameOver(false);
 			setPendingCutscene(null);
 			setFlowLog([]);
-			setInventory({ ...session.runtimeState.inventory.items });
-			setQuests([]);
-			setStatus("3D runtime started.");
+			resetInventory({ ...session.runtimeState.inventory.items });
+			resetQuests(
+				initialSave
+					? getQuestViews(session.runtimeQuestState, session.runtimeState)
+					: [],
+			);
+			setStatus(initialSave ? "Saved game continued." : "3D runtime started.");
 
 			setDialogueNode(null);
-			startRuntimeSession(
-				session,
-				(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
-				handleProgressionEvent,
-			);
+			if (!initialSave)
+				startRuntimeSession(
+					session,
+					(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
+					handleProgressionEvent,
+				);
 			nextRebuildReasonRef.current = "initial runtime start";
 		} catch (error) {
 			sessionRef.current = null;
@@ -1586,7 +1616,20 @@ export function ThreeRuntimePanel({
 			sessionRef.current = null;
 			resetPresentationVisuals(null);
 		};
-	}, [project]);
+	}, [project, initialSave]);
+
+	useEffect(() => {
+		if (!saveSessionRef) return;
+		saveSessionRef.current = () => {
+			const session = getSession();
+			if (!session) throw new Error("Game is still starting.");
+			assertGameSaveSafe(session, gameplayBlocked(session));
+			return session;
+		};
+		return () => {
+			saveSessionRef.current = null;
+		};
+	});
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -1759,7 +1802,7 @@ export function ThreeRuntimePanel({
 				tickRuntimeNpcs(session, area, performance.now(), handleNpcEvent);
 				diagnostics.recordRuntimeTick(performance.now() - tickStartedAt);
 			}
-		}, 500);
+		}, 50);
 
 		return () => window.clearInterval(interval);
 	}, [gameOver, pendingCutscene]);
@@ -2430,6 +2473,7 @@ export function ThreeRuntimePanel({
 					npcPosition,
 					terrainRenderMode,
 					visual,
+					sampleTraversalTerrain(traversalWorld, npcPosition),
 				);
 				setObjectFacing(group, npcVisual.facing, visual);
 				npcVisualsRef.current.set(
@@ -2441,6 +2485,22 @@ export function ThreeRuntimePanel({
 					moving: !npcVisualGridPosition.done,
 				});
 			});
+			if (import.meta.env.DEV)
+				host.dataset.npcs = JSON.stringify(
+					area.npcs.map((npc) => {
+						const group = npcRenderGroups.get(npc.id);
+						return {
+							id: npc.id,
+							x: npc.x,
+							y: npc.y,
+							facing: npc.facing,
+							health: session.runtimeState.npcs[npc.id]?.health,
+							position: group?.position.toArray(),
+							animation: characterAnimationControllers.get(npc.id)?.getStats()
+								.semanticState,
+						};
+					}),
+				);
 			const animationUpdateStartedAt = performance.now();
 			characterAnimationControllers.get("runtime_player")?.sync({
 				defeated: gameOverRef.current,
@@ -2642,6 +2702,12 @@ export function ThreeRuntimePanel({
 					Health {session?.runtimePlayerHealth ?? 0}/
 					{session?.playerCombat.maxHealth ?? 0}
 				</span>
+				{session?.recentEnemy && (
+					<span>
+						{session.recentEnemy.name} {session.recentEnemy.health}/
+						{session.recentEnemy.maxHealth}
+					</span>
+				)}
 				<span>Gold: {goldCount}</span>
 				<span>{status}</span>
 				<button

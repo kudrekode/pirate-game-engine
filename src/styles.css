@@ -3052,3 +3052,26 @@ label {
 		max-height: 140px;
 	}
 }
+
+.runtime-entry,
+.runtime-save-status,
+.runtime-save-confirm {
+	color: #f8fafc;
+}
+
+.runtime-entry {
+	padding: 2rem;
+}
+.runtime-entry button {
+	margin-right: 0.75rem;
+}
+.runtime-save-status:not(:empty),
+.runtime-save-confirm {
+	padding: 0.75rem 1rem;
+}
+.runtime-save-confirm {
+	border: 1px solid var(--border-color, #4b5563);
+}
+.runtime-save-confirm button {
+	margin-right: 0.75rem;
+}

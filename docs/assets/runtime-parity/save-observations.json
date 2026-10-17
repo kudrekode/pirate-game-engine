@@ -1,0 +1,174 @@
+{
+	"errors": [],
+	"atSave": {
+		"x": 4.800000000000001,
+		"y": 8.1,
+		"height": 1
+	},
+	"firstSave": {
+		"version": 1,
+		"projectId": "d9a8b7b09664b15e62f1e0f1ac7c8c70",
+		"projectVersion": "0.1.0",
+		"savedAt": "2026-10-17T11:32:59.130Z",
+		"player": {
+			"areaId": "area_main",
+			"position": {
+				"x": 5,
+				"y": 8
+			},
+			"facing": {
+				"x": 0,
+				"y": 1
+			},
+			"health": 100,
+			"movementMode": "walk",
+			"vehicle": {
+				"active": false
+			},
+			"traversal": {
+				"x": 4.800000000000001,
+				"y": 8.1,
+				"height": 1,
+				"mode": "smooth"
+			}
+		},
+		"state": {
+			"flags": {},
+			"variables": {},
+			"inventory": {
+				"item_2af528dd-f6d2-4ff1-961f-07325a8ae67d": 1
+			},
+			"npcs": {
+				"npc_instance_108eda9c": {
+					"maxHealth": 100,
+					"health": 100,
+					"faction": "villagers",
+					"alignment": "friendly",
+					"canInteract": true,
+					"movementSpeed": 1
+				}
+			},
+			"completedRuleIds": []
+		},
+		"quests": {
+			"statuses": {
+				"quest_339d93c5": "active"
+			},
+			"enteredAreaIds": ["area_main"],
+			"rewardedQuestIds": [],
+			"completedObjectiveIds": [
+				"quest_339d93c5:objective_213998b7",
+				"quest_339d93c5:objective_2d912cf4"
+			],
+			"facts": [
+				"[\"enter_event\",\"area_main\",\"area_main_spawn\"]",
+				"[\"interaction_completed\",\"area_main\",\"npc_instance_108eda9c\"]",
+				"[\"enter_event\",\"area_main\",\"eventBlock_f7d9d4ff-b5fa-405a-b886-856b90e28d4b\"]",
+				"[\"interaction_completed\",\"area_main\",\"eventBlock_f7d9d4ff-b5fa-405a-b886-856b90e28d4b\"]",
+				"[\"container_opened\",\"area_main\",\"object_instance_f54636e7\"]"
+			],
+			"completedActionIds": []
+		},
+		"world": {
+			"collectedPickupIds": [],
+			"openedObjectIds": ["object_instance_f54636e7"],
+			"defeatedNpcIds": [],
+			"firedInteractionIds": [
+				"area_main:eventBlock_f7d9d4ff-b5fa-405a-b886-856b90e28d4b"
+			],
+			"objectPositions": []
+		},
+		"shops": {},
+		"progression": {
+			"index": 1,
+			"waiting": null
+		}
+	},
+	"completedSave": {
+		"version": 1,
+		"projectId": "d9a8b7b09664b15e62f1e0f1ac7c8c70",
+		"projectVersion": "0.1.0",
+		"savedAt": "2026-10-17T11:37:24.078Z",
+		"player": {
+			"areaId": "area_main",
+			"position": {
+				"x": 5,
+				"y": 4
+			},
+			"facing": {
+				"x": -1,
+				"y": 0
+			},
+			"health": 100,
+			"movementMode": "walk",
+			"vehicle": {
+				"active": false
+			},
+			"traversal": {
+				"x": 5,
+				"y": 4,
+				"height": 1,
+				"mode": "smooth"
+			}
+		},
+		"state": {
+			"flags": {},
+			"variables": {},
+			"inventory": {
+				"item_2af528dd-f6d2-4ff1-961f-07325a8ae67d": 1
+			},
+			"npcs": {
+				"npc_instance_108eda9c": {
+					"maxHealth": 100,
+					"health": 100,
+					"faction": "villagers",
+					"alignment": "friendly",
+					"canInteract": true,
+					"movementSpeed": 1
+				}
+			},
+			"completedRuleIds": []
+		},
+		"quests": {
+			"statuses": {
+				"quest_339d93c5": "completed"
+			},
+			"enteredAreaIds": ["area_main"],
+			"rewardedQuestIds": ["quest_339d93c5"],
+			"completedObjectiveIds": [
+				"quest_339d93c5:objective_213998b7",
+				"quest_339d93c5:objective_2d912cf4",
+				"quest_339d93c5:objective_75db3bab"
+			],
+			"facts": [
+				"[\"enter_event\",\"area_main\",\"area_main_spawn\"]",
+				"[\"interaction_completed\",\"area_main\",\"npc_instance_108eda9c\"]",
+				"[\"enter_event\",\"area_main\",\"eventBlock_f7d9d4ff-b5fa-405a-b886-856b90e28d4b\"]",
+				"[\"interaction_completed\",\"area_main\",\"eventBlock_f7d9d4ff-b5fa-405a-b886-856b90e28d4b\"]",
+				"[\"container_opened\",\"area_main\",\"object_instance_f54636e7\"]",
+				"[\"door_used\",\"area_main\",\"object_instance_1f05d35f\"]",
+				"[\"enter_event\",\"area_main\",\"eventBlock_6f4efe3c-7828-4e0d-b978-d55d8c12f241\"]"
+			],
+			"completedActionIds": []
+		},
+		"world": {
+			"collectedPickupIds": [],
+			"openedObjectIds": ["object_instance_f54636e7"],
+			"defeatedNpcIds": [],
+			"firedInteractionIds": [
+				"area_main:eventBlock_f7d9d4ff-b5fa-405a-b886-856b90e28d4b"
+			],
+			"objectPositions": []
+		},
+		"shops": {},
+		"progression": {
+			"index": 1,
+			"waiting": null
+		}
+	},
+	"projectUnchanged": true,
+	"keyRetained": true,
+	"chestEmpty": true,
+	"oneTimeTriggerNotReplayed": true,
+	"completionRetained": true
+}

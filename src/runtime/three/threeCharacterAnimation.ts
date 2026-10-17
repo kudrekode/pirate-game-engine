@@ -328,7 +328,9 @@ export function createThreeCharacterAnimationController({
 			syncResolvedState();
 		},
 		triggerAttack: () => {
-			if (currentContext.defeated || disposed) {
+			// A missing/unloaded attack has no mixer finished event. Keep locomotion
+			// alive and let the combat HUD present the hit/miss instead of latching.
+			if (currentContext.defeated || disposed || !actions.has("attack")) {
 				return;
 			}
 			oneShotState = "attack";

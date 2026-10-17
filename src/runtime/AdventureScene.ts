@@ -32,6 +32,7 @@ import {
 	getDialogueNode,
 	type RuntimeDialogueState,
 } from "./dialogueEngine";
+import { assertGameSaveSafe, type GameSave, restoreGameSave } from "./gameSave";
 import {
 	canInteractActivate,
 	canTouchActivate,
@@ -47,7 +48,7 @@ import { interactionPrompt } from "./interactionPrompt";
 import type { VehicleMovementConfig } from "./movement";
 import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
-import type { QuestView } from "./questEngine";
+import { getQuestViews, type QuestView } from "./questEngine";
 import {
 	finishQuestConversation,
 	finishQuestInteraction,
@@ -69,6 +70,7 @@ import {
 	collectRuntimeObjectPickup,
 	collectRuntimePickup,
 	dismountRuntimeVehicle,
+	getRuntimeActiveVehicleBehaviour,
 	openRuntimeShop,
 	type RuntimeObjectInteractionEvent,
 	runRuntimeObjectBehaviour,
@@ -195,11 +197,19 @@ export class AdventureScene extends Phaser.Scene {
 		onCombatChanged?: (combat: RuntimeCombatHudState) => void,
 		onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void,
 		onItemFeedback?: (message: string) => void,
+		private readonly initialSave?: GameSave,
 	) {
 		super("AdventureScene");
-		this.session = createRuntimeSession(project);
+		this.session = initialSave
+			? restoreGameSave(project, initialSave)
+			: createRuntimeSession(project);
+		// Phaser uses shared grid coordinates; continuous traversal is optional.
+		this.session.traversal = undefined;
 		this.project = this.session.project;
-		this.currentArea = getInitialRuntimeArea(this.project);
+		this.currentArea =
+			this.project.areas.find(
+				(area) => area.id === this.session.currentAreaId,
+			) ?? getInitialRuntimeArea(this.project);
 		this.tileSize = this.currentArea.tileSize;
 		this.onInventoryChanged = onInventoryChanged;
 		this.onQuestsChanged = onQuestsChanged;
@@ -337,6 +347,18 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	// Phaser scene lifecycle.
+	getSaveSession(): RuntimeSessionState {
+		assertGameSaveSafe(
+			this.session,
+			!this.playerMarker ||
+				this.isCutsceneOpen ||
+				this.isDialogueOpen ||
+				this.isInventoryOpen ||
+				this.isFinished,
+		);
+		return this.session;
+	}
+
 	create() {
 		this.logEvent("Game started.");
 		this.worldLayer = this.add.container(0, 0);
@@ -384,6 +406,20 @@ export class AdventureScene extends Phaser.Scene {
 		this.updateDebugPanel();
 		this.notifyInventoryChanged();
 		this.notifyCombatChanged();
+		if (this.initialSave) {
+			this.spawnPlayer(this.session.playerPosition);
+			const vehicle = getRuntimeActiveVehicleBehaviour(
+				this.session,
+				this.currentArea,
+			);
+			if (vehicle) this.addVehicleVisual(vehicle);
+			this.onQuestsChanged?.(
+				getQuestViews(this.runtimeQuestState, this.runtimeState),
+			);
+			this.updateDebugPanel();
+			this.setStatus("Saved game continued.");
+			return;
+		}
 		startRuntimeSession(
 			this.session,
 			(onDone) => this.fireRuleTrigger({ type: "on_game_start" }, onDone),
@@ -1280,7 +1316,7 @@ export class AdventureScene extends Phaser.Scene {
 		}
 	}
 
-	private spawnPlayer(eventBlock: EventBlock) {
+	private spawnPlayer(eventBlock: Pick<EventBlock, "x" | "y">) {
 		const avatar = getVisualPreset(
 			this.project.player.mapAvatarId,
 			characterSprites,

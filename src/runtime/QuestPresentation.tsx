@@ -63,7 +63,11 @@ export function useQuestPresentation(notify: (message: string) => void) {
 		},
 		[notify],
 	);
-	return { quests, setQuests };
+	const resetQuests = useCallback((next: QuestView[]) => {
+		previous.current = next;
+		update(next);
+	}, []);
+	return { quests, setQuests, resetQuests };
 }
 
 export function QuestObjectiveTracker({

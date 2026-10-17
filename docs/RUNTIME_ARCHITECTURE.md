@@ -147,7 +147,9 @@ and emits touch/trigger targets only upon entering a new cell. Its accepted path
 drives both player grounding and camera follow; animation
 continues to depend on horizontal movement. Spawn/teleport resets traversal.
 The Three adapter owns held-key input and debug rendering, not collision decisions.
-NPCs retain their separate existing grid movement helper; the harbour NPC idles.
+NPCs retain their separate existing grid movement helper. Three samples the
+rendered terrain triangle at their interpolated X/Z coordinates for smooth grounding;
+this does not add NPC traversal over profiled docks or stairs.
 
 ## Event Flow
 
@@ -169,8 +171,8 @@ or the Continue/Close control, and Escape closes it. Session dialogue blocks pla
 input and NPC ticks. No gamepad abstraction exists in this input path.
 
 Opened objects, collected pickups and once-only message trigger IDs belong to the
-session. Project saves contain authored configuration only; new Play resets game
-state. There is no save-game persistence added here. Event trigger helpers remain
+session. Project saves contain authored configuration only. New Game resets progress;
+Continue restores a separate versioned game save (see Save games below). Event trigger helpers remain
 visible in Edit and hidden in Play; trigger entry retains the existing cell-based
 movement transaction. The static chest uses an Opened badge in Three and a faded
 marker in Phaser, without changing its mesh or collider.
@@ -211,8 +213,9 @@ evaluation runs from a presentation frame loop.
 Both adapters consume `QuestView` and the shared `QuestPresentation` HUD, showing
 the quest title and current step. Snapshot changes feed the existing non-blocking
 notification queue. Authored quest data survives project Save/Load; progress,
-facts and reward guards belong to the isolated Play session and reset on new Play.
-No save-game system or expanded journal is introduced.
+facts and reward guards belong to the isolated Play session. New Game resets them;
+Save Game / Continue persists them separately from authored defaults. No expanded
+journal is introduced.
 
 ## Testing Guidance
 
@@ -278,3 +281,28 @@ adapters. Completing a conversation clears its session state and restores input,
 subject to any remaining modal, deadline or end state. Phaser retains its canvas
 panel and portrait presets; Three uses a React text/choice overlay. Portrait and
 layout parity are presentation work, outside this correctness pass.
+
+## Save games
+
+`gameSave.ts` stores semantic session progress in version 1 plain JSON. Both
+adapters restore a fresh cloned session and rebuild visuals without rerunning
+startup/entry actions. Flags, variables, inventory, NPC attributes/defeats,
+collected/opened/once-trigger IDs, quest facts/status/objective and reward guards,
+shop stock, vehicle/object positions, progression waits and player location/health
+are durable. Wander positions, cooldowns, UI, animations and renderer objects reset.
+Optional traversal coordinates retain precise Three position; Phaser uses the
+shared rounded grid cell. Shared area transitions invalidate stale traversal.
+
+One browser-local slot per authored content fingerprint uses a separate
+`adventure-builder-game-save-v1:` localStorage key. Canonical FNV-1a 128 identity
+excludes the active editor-area selection, so unchanged imports/reloads match.
+Authored content changes create a different revision/slot; version 1 does not
+migrate progress across edits. The fingerprint is not an authentication scheme.
+Validation rejects corrupt, unsupported, mismatched or invalid-reference payloads.
+There are no new authored schema fields or renderer-specific save formats.
+
+Play offers Continue/New Game when a slot exists. New Game and Restart retain
+old saves until explicit replacement. Manual save is refused during modal/startup/
+end states and asynchronous cutscene action sequences. Inventory/quest displays
+initialize silently on Continue. See [the result report](../RUNTIME_PARITY_SAVE_GAME_RESULT.md)
+and its two opt-in real-input browser checks for current evidence and limits.

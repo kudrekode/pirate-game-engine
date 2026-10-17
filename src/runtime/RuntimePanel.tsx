@@ -4,6 +4,12 @@ import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { RuntimeDebugEvent } from "./debugLog";
+import {
+	createGameSave,
+	type GameSave,
+	loadGameSave,
+	storeGameSave,
+} from "./gameSave";
 import { InventoryPanel } from "./InventoryPanel";
 import {
 	QuestObjectiveTracker,
@@ -11,6 +17,7 @@ import {
 } from "./QuestPresentation";
 import type { QuestView } from "./questEngine";
 import { getCurrencyHudEntries } from "./runtimeHud";
+import type { RuntimeSessionState } from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
 import {
@@ -27,11 +34,108 @@ type RuntimePanelProps = {
 	onClose: () => void;
 };
 
-export function RuntimePanel({
+export function RuntimePanel(props: RuntimePanelProps) {
+	const [entry, setEntry] = useState(() => {
+		try {
+			const save = loadGameSave(props.project, localStorage);
+			return { save, choosing: !!save, error: "" };
+		} catch (error) {
+			return {
+				save: null,
+				choosing: true,
+				error:
+					error instanceof Error ? error.message : "Could not read save game.",
+			};
+		}
+	});
+	const [continued, setContinued] = useState<GameSave | undefined>();
+	if (entry.choosing)
+		return (
+			<section className="runtime-panel">
+				<div className="runtime-toolbar">
+					<strong>{props.project.metadata.name}</strong>
+					<button type="button" onClick={props.onClose}>
+						Back to Edit
+					</button>
+				</div>
+				<div className="runtime-entry">
+					<h2>Ready to play</h2>
+					{entry.error && <p role="alert">{entry.error}</p>}
+					{entry.save && (
+						<button
+							type="button"
+							onClick={() => {
+								setContinued(entry.save!);
+								setEntry({ ...entry, choosing: false });
+							}}
+						>
+							Continue
+						</button>
+					)}
+					<button
+						type="button"
+						onClick={() => {
+							setContinued(undefined);
+							setEntry({ ...entry, choosing: false });
+						}}
+					>
+						New Game
+					</button>
+					<p>
+						New Game keeps your previous save. Save Game will ask before
+						replacing it.
+					</p>
+				</div>
+			</section>
+		);
+	return (
+		<RuntimePlayPanel
+			{...props}
+			initialSave={continued}
+			protectPreviousSave={!continued && (!!entry.save || !!entry.error)}
+		/>
+	);
+}
+
+function RuntimePlayPanel({
 	project,
 	onClose,
 	initialMode = "2d",
-}: RuntimePanelProps) {
+	initialSave,
+	protectPreviousSave,
+}: RuntimePanelProps & {
+	initialSave?: GameSave;
+	protectPreviousSave: boolean;
+}) {
+	const [resumeSave, setResumeSave] = useState(initialSave);
+	const [protectSave, setProtectSave] = useState(protectPreviousSave);
+	const [saveMessage, setSaveMessage] = useState("");
+	const [replacePending, setReplacePending] = useState(false);
+	const saveSessionRef = useRef<(() => RuntimeSessionState) | null>(null);
+	function saveGame(replace = false) {
+		try {
+			const session = saveSessionRef.current?.();
+			if (!session) throw new Error("Game is still starting.");
+			if (protectSave && !replace) {
+				setReplacePending(true);
+				return;
+			}
+			storeGameSave(project, createGameSave(project, session), localStorage);
+			setProtectSave(false);
+			setReplacePending(false);
+			setSaveMessage("Game saved.");
+		} catch (error) {
+			setSaveMessage(
+				error instanceof Error ? error.message : "Could not save game.",
+			);
+		}
+	}
+	function restartGame() {
+		setResumeSave(undefined);
+		setProtectSave(true);
+		setSaveMessage("");
+		setRuntimeKey((key) => key + 1);
+	}
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sceneRef = useRef<AdventureScene | null>(null);
 	const [playMode, setPlayMode] = useState<"2d" | "3d">(initialMode);
@@ -44,7 +148,8 @@ export function RuntimePanel({
 	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const inventoryOpenRef = useRef(false);
-	const { quests, setQuests } = useQuestPresentation(showItemFeedback);
+	const { quests, setQuests, resetQuests } =
+		useQuestPresentation(showItemFeedback);
 	const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
 	const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(
 		null,
@@ -96,10 +201,12 @@ export function RuntimePanel({
 		}
 		void runtimeKey;
 
-		resetInventory(project.gameState.inventory ?? {});
+		resetInventory(
+			resumeSave?.state.inventory ?? project.gameState.inventory ?? {},
+		);
 		inventoryOpenRef.current = false;
 		setIsInventoryOpen(false);
-		setQuests([]);
+		resetQuests([]);
 		setShopState(null);
 		setDebugEvents([]);
 		setCombat({
@@ -108,16 +215,25 @@ export function RuntimePanel({
 			gameOver: false,
 		});
 
+		let restoringQuests = !!resumeSave;
+		const presentQuests = (next: QuestView[]) => {
+			if (restoringQuests) {
+				resetQuests(next);
+				restoringQuests = false;
+			} else setQuests(next);
+		};
 		const scene = new AdventureScene(
 			project,
 			setInventory,
-			setQuests,
+			presentQuests,
 			setShopState,
 			setCombat,
 			setDebugEvents,
 			showItemFeedback,
+			resumeSave,
 		);
 		sceneRef.current = scene;
+		saveSessionRef.current = () => scene.getSaveSession();
 		const game = new Phaser.Game({
 			type: Phaser.AUTO,
 			parent: containerRef.current,
@@ -134,6 +250,7 @@ export function RuntimePanel({
 		return () => {
 			game.destroy(true);
 			sceneRef.current = null;
+			saveSessionRef.current = null;
 		};
 	}, [
 		initialCombat.health,
@@ -141,7 +258,9 @@ export function RuntimePanel({
 		playMode,
 		project,
 		runtimeKey,
+		resumeSave,
 		resetInventory,
+		resetQuests,
 		setInventory,
 		setQuests,
 		showItemFeedback,
@@ -177,36 +296,73 @@ export function RuntimePanel({
 
 	return (
 		<section className="runtime-panel">
-			<div className="runtime-toolbar">
-				<div>
-					<strong className="play-mode-badge">Playing</strong>
-					<span>{project.metadata.name}</span>
-				</div>
-				<div className="runtime-mode-selector">
-					<button
-						className={playMode === "2d" ? "selected" : ""}
-						onClick={() => setPlayMode("2d")}
-						type="button"
-					>
-						Play 2D
+			<div className="runtime-toolbar-shell">
+				<div className="runtime-toolbar">
+					<div>
+						<strong className="play-mode-badge">Playing</strong>
+						<span>{project.metadata.name}</span>
+					</div>
+					<div className="runtime-mode-selector">
+						<button
+							className={playMode === "2d" ? "selected" : ""}
+							onClick={() => {
+								if (playMode !== "2d") {
+									setPlayMode("2d");
+									setProtectSave(true);
+									setSaveMessage("");
+								}
+							}}
+							type="button"
+						>
+							Play 2D
+						</button>
+						<button
+							className={playMode === "3d" ? "selected" : ""}
+							onClick={() => {
+								if (playMode !== "3d") {
+									setPlayMode("3d");
+									setProtectSave(true);
+									setSaveMessage("");
+								}
+							}}
+							type="button"
+						>
+							Play 3D Experimental
+						</button>
+					</div>
+					<button type="button" onClick={() => saveGame()}>
+						Save Game
 					</button>
-					<button
-						className={playMode === "3d" ? "selected" : ""}
-						onClick={() => setPlayMode("3d")}
-						type="button"
-					>
-						Play 3D Experimental
+					<button onClick={onClose} type="button">
+						Back to Edit
 					</button>
 				</div>
-				<button onClick={onClose} type="button">
-					Back to Edit
-				</button>
+				<div className="runtime-save-status" role="status">
+					{saveMessage}
+				</div>
+				{replacePending && (
+					<div
+						role="dialog"
+						aria-label="Replace saved game"
+						className="runtime-save-confirm"
+					>
+						<p>Replace your previous saved progress with this game?</p>
+						<button type="button" onClick={() => saveGame(true)}>
+							Replace save
+						</button>
+						<button type="button" onClick={() => setReplacePending(false)}>
+							Cancel
+						</button>
+					</div>
+				)}
 			</div>
 			<div className="runtime-stage">
 				{playMode === "3d" ? (
 					<ThreeRuntimePanel
 						key={runtimeKey}
-						onRestart={() => setRuntimeKey((key) => key + 1)}
+						onRestart={restartGame}
+						initialSave={resumeSave}
+						saveSessionRef={saveSessionRef}
 						project={project}
 					/>
 				) : (
@@ -242,7 +398,7 @@ export function RuntimePanel({
 						{combat.gameOver ? (
 							<button
 								className="runtime-restart-button"
-								onClick={() => setRuntimeKey((key) => key + 1)}
+								onClick={restartGame}
 								type="button"
 							>
 								Restart

@@ -14,7 +14,16 @@ import type {
 	ObjectBehaviour,
 	ObjectInstance,
 } from "../../types/game";
+import {
+	createGameSave,
+	GAME_SAVE_PREFIX,
+	gameSaveProjectId,
+	loadGameSave,
+	storeGameSave,
+} from "../gameSave";
 import { RuntimePanel } from "../RuntimePanel";
+import { createRuntimeSession } from "../runtimeSession";
+import { createRuntimeTraversal, createTraversalWorld } from "../traversal";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
@@ -1495,7 +1504,7 @@ it.each([
 	const intervals = vi.spyOn(window, "setInterval");
 	render(<ThreeRuntimePanel project={dialogueProject()} onRestart={vi.fn()} />);
 	const tick = intervals.mock.calls.find(
-		(call) => call[1] === 500,
+		(call) => call[1] === 50,
 	)![0] as () => void;
 	if (modal === "dialogue") fireEvent.keyDown(window, { key: "e" });
 	else latestSession().activeShopId = "store";
@@ -1509,4 +1518,118 @@ it.each([
 	} else latestSession().activeShopId = undefined;
 	act(() => tick());
 	expect(runtimeSpies.tickRuntimeNpcs).toHaveBeenCalledTimes(1);
+});
+
+it("offers Continue or New Game, preserves the slot until explicit replacement, and restores silently", () => {
+	const project = makeProject();
+	const s = createRuntimeSession(project);
+	s.playerPosition = { x: 1, y: 2 };
+	s.runtimeState.variables.progress = 42;
+	const saved = createGameSave(project, s);
+	storeGameSave(project, saved, localStorage);
+	const before = JSON.stringify(project);
+	const first = render(
+		<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />,
+	);
+	expect(
+		screen.queryByLabelText("Three runtime viewport"),
+	).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	expect(screen.getByText("Pos: 1, 2")).toBeInTheDocument();
+	expect(document.querySelector(".inventory-notifications")?.textContent).toBe(
+		"",
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Save Game" }));
+	expect(screen.getByText("Game saved.")).toBeInTheDocument();
+	expect(loadGameSave(project, localStorage)?.state.variables.progress).toBe(
+		42,
+	);
+	first.unmount();
+	const old = JSON.stringify(loadGameSave(project, localStorage));
+	render(<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />);
+	fireEvent.click(screen.getByRole("button", { name: "New Game" }));
+	expect(screen.getByText("Pos: 0, 0")).toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Save Game" }));
+	expect(
+		screen.getByRole("dialog", { name: "Replace saved game" }),
+	).toBeInTheDocument();
+	expect(JSON.stringify(loadGameSave(project, localStorage))).toBe(old);
+	fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+	expect(JSON.stringify(loadGameSave(project, localStorage))).toBe(old);
+	fireEvent.click(screen.getByRole("button", { name: "Save Game" }));
+	fireEvent.click(screen.getByRole("button", { name: "Replace save" }));
+	expect(loadGameSave(project, localStorage)?.player.position).toEqual({
+		x: 0,
+		y: 0,
+	});
+	expect(JSON.stringify(project)).toBe(before);
+});
+
+it("restores fractional traversal coordinates before the first Three scene build", () => {
+	const project = makeProject();
+	project.objects = [
+		{
+			id: "floor",
+			name: "Floor",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+			threeVisual: { mode: "asset", assetId: "world-floor" },
+		},
+	];
+	project.areas[0].objects = [
+		{
+			id: "floor",
+			objectDefinitionId: "floor",
+			areaId: "area_test",
+			x: 2,
+			y: 2,
+		},
+	];
+	const s = createRuntimeSession(project);
+	s.playerPosition = { x: 1, y: 0 };
+	s.traversal = createRuntimeTraversal(
+		createTraversalWorld(s.project, s.project.areas[0]),
+		s.project.areas[0],
+		s.project,
+		s.playerPosition,
+		{ x: 1.2, y: 0.2, height: 1 },
+	);
+	const saveSessionRef = { current: null } as {
+		current: null | (() => typeof s);
+	};
+	const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync: () => new Promise<never>(() => undefined),
+	}));
+	try {
+		render(
+			<ThreeRuntimePanel
+				project={project}
+				onRestart={vi.fn()}
+				initialSave={createGameSave(project, s)}
+				saveSessionRef={saveSessionRef}
+			/>,
+		);
+		expect(saveSessionRef.current!().traversal?.position).toEqual(
+			s.traversal.position,
+		);
+		expect(saveSessionRef.current!().nextMoveAt).toBe(0);
+	} finally {
+		restoreLoader();
+	}
+});
+
+it("shows a corrupt-slot error and allows New Game without deleting the slot", () => {
+	const project = makeProject();
+	const key = GAME_SAVE_PREFIX + gameSaveProjectId(project);
+	localStorage.setItem(key, "broken JSON");
+	render(<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />);
+	expect(screen.getByRole("alert")).toHaveTextContent("corrupt");
+	expect(
+		screen.queryByRole("button", { name: "Continue" }),
+	).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "New Game" }));
+	expect(screen.getByLabelText("Three runtime viewport")).toBeInTheDocument();
+	expect(localStorage.getItem(key)).toBe("broken JSON");
 });

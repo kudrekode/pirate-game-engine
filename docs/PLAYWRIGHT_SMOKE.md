@@ -302,3 +302,23 @@ Current assets can log missing `Textures/colormap.png`; screenshots can produce
 WebGL ReadPixels warnings. Record relevant warnings separately from test failures.
 Both Playwright configs preserve failure screenshots and traces. Do not rerun a
 failed unchanged matrix/smoke without inspecting its first error and artifacts.
+
+## Runtime parity and saved-game acceptance
+
+Two opt-in real-input flows use ordinary checked-in projects, existing authored
+humanoids and read-only diagnostics. They do not compile assets or run performance
+matrices. Inspect the selection first:
+
+```powershell
+node node_modules/@playwright/test/cli.js test e2e/runtime-parity-save.spec.ts --grep '@runtime-parity-save' --list
+node node_modules/@playwright/test/cli.js test e2e/runtime-parity-save.spec.ts --grep '@runtime-parity-save' --output=test-results/runtime-parity-save
+```
+
+The courtyard case observes independent wander/patrol, interpolation and Golden
+idle/walk, dialogue pause, Space damage/defeat, enemy contact and defeat persistence.
+The Tidewatch case starts Harbour Trouble, gets the key, saves, reloads/continues,
+checks exact position, opened chest and one-time trigger suppression, completes
+the quest and continues the completed save. Both compare complete authored JSON.
+Screenshots and compact observation records go to `docs/assets/runtime-parity/`.
+Run separately from CI; the software WebGL browser can be slow. The save route
+contains no gameplay state injection and the diagnostics expose no mutation API.

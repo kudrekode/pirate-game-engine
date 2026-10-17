@@ -124,6 +124,8 @@ export function transitionRuntimeArea(
 	}
 
 	session.playerPosition = { x: eventBlock.x, y: eventBlock.y };
+	// A transition invalidates continuous coordinates as well as the grid clock.
+	session.traversal = undefined;
 	if (!session.startupPending) {
 		recordQuestFact(
 			session.runtimeQuestState,
