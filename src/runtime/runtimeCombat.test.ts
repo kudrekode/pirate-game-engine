@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
 import type { GameArea, GameProject, NPCInstance } from "../types/game";
+import { createGameSave, restoreGameSave } from "./gameSave";
 import { findNearestInteractableTarget } from "./interactionDiscovery";
 import { isNpcTileWalkable } from "./npcMovement";
 import {
@@ -264,6 +265,76 @@ describe("runtime combat attack", () => {
 
 		expect(session.npcMovementStates.has("bandit")).toBe(false);
 		expect(session.enemyContactCooldowns.has("bandit")).toBe(false);
+	});
+
+	it("syncs a defeat objective only on defeat and preserves its reward through Continue", () => {
+		const project = makeProject(
+			makeArea({
+				npcs: [
+					makeNpc({
+						attributes: { ...makeNpc().attributes, health: 50 },
+					}),
+				],
+			}),
+		);
+		project.items = [
+			{ id: "coin", name: "Coin", category: "currency", stackable: true },
+		];
+		project.quests = [
+			{
+				id: "defeat",
+				name: "Defeat the bandit",
+				status: "active",
+				objectiveMode: "sequence",
+				objectives: [
+					{
+						id: "bandit",
+						description: "Defeat the bandit",
+						condition: {
+							type: "flag",
+							flag: "npc_defeated_bandit",
+							value: true,
+						},
+					},
+				],
+				rewards: [{ type: "item", itemId: "coin", quantity: 1 }],
+			},
+		];
+		const authored = JSON.stringify(project);
+		const session = createRuntimeSession(project);
+		session.playerPosition = { x: 1, y: 1 };
+		session.playerFacing = { x: 1, y: 0 };
+		const area = session.project.areas[0];
+		const { emit, events } = makeEvents();
+		expect(attemptRuntimeCombatAttack(session, area, 1000, emit)).toBe(true);
+		expect(session.runtimeQuestState.quests[0].status).toBe("active");
+		expect(events.some((event) => event.type === "questsChanged")).toBe(false);
+		expect(attemptRuntimeCombatAttack(session, area, 1100, emit)).toBe(false);
+		expect(session.runtimeState.npcs.bandit.health).toBe(25);
+		expect(attemptRuntimeCombatAttack(session, area, 1500, emit)).toBe(true);
+		expect(session.runtimeState.flags.npc_defeated_bandit).toBe(true);
+		expect(session.runtimeQuestState.quests[0].status).toBe("completed");
+		expect(session.runtimeState.inventory.items.coin).toBe(1);
+		expect(events).toContainEqual(
+			expect.objectContaining({ type: "questsChanged" }),
+		);
+		const continued = restoreGameSave(
+			project,
+			createGameSave(project, session),
+		);
+		expect(continued.project.areas[0].npcs).toHaveLength(0);
+		expect(continued.runtimeQuestState.quests[0].status).toBe("completed");
+		expect(continued.runtimeState.flags.npc_defeated_bandit).toBe(true);
+		expect(
+			attemptRuntimeCombatAttack(
+				continued,
+				continued.project.areas[0],
+				2000,
+				emit,
+			),
+		).toBe(false);
+		expect(continued.runtimeState.inventory.items.coin).toBe(1);
+		expect(JSON.stringify(project)).toBe(authored);
 	});
 
 	it("does not import renderer or editor modules", () => {

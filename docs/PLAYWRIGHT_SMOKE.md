@@ -322,3 +322,30 @@ the quest and continues the completed save. Both compare complete authored JSON.
 Screenshots and compact observation records go to `docs/assets/runtime-parity/`.
 Run separately from CI; the software WebGL browser can be slow. The save route
 contains no gameplay state injection and the diagnostics expose no mutation API.
+
+## Targeted runtime performance investigation
+
+The [current performance result](../THREE_RUNTIME_PERFORMANCE_RESULT.md) separates
+hardware frame pacing, CPU phases and asynchronous GPU timing. Run
+`node tools/profile-three-runtime.mjs --list` before selecting exact headed cases;
+`node tools/profile-three-runtime.mjs local-check parity-contact,harbour-patrol`
+uses the existing parity/harbour projects after starting the root Vite server.
+This is opt-in investigation, with no FPS assertions or production mutation hooks.
+
+`node node_modules/@playwright/test/cli.js test e2e/runtime-parity-save.spec.ts --grep '@runtime-performance' --list`
+selects the one five-patrol lifecycle acceptance case. Its checks cover actor
+movement/animation, load/clone/rebuild stability, hidden-editor rendering and
+Play/Edit preservation. The existing `@runtime-parity-save` pair covers gameplay,
+quests and Continue. Set `RUNTIME_PARITY_OUTPUT` to a task-specific directory to
+keep fresh evidence separate from the historical parity artifacts.
+
+## Combat-event frame gaps
+
+The combat-only investigation is documented in [COMBAT_HITCH_RESULT.md](../COMBAT_HITCH_RESULT.md).
+After starting root Vite, inspect `node tools/profile-combat-hitch.mjs --list`,
+then use `node tools/profile-combat-hitch.mjs after-local-check 5` for the unchanged
+Runtime Parity Demo. Miss, contact, nonlethal and lethal events are recorded
+separately. Labels beginning with `after` assert preserved scene/controller
+identities and local defeat disposal. Browser-only probes and raw output remain
+outside production; evidence is written to `test-results/combat-hitch/`.
+Do not run other suites concurrently with frame-pacing captures.

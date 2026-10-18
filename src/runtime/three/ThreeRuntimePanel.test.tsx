@@ -32,12 +32,14 @@ import {
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
 import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
+import * as visualRenderer from "./threeVisualRenderer";
 
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
 	createRuntimeSession: vi.fn(),
 	sessionCreated: vi.fn(),
 	tickRuntimeNpcs: vi.fn(),
+	terrainPresentationSample: vi.fn(),
 	dismountRuntimeVehicle: vi.fn(),
 	runRuntimeObjectBehaviour: vi.fn(),
 }));
@@ -48,6 +50,7 @@ const phaserSpies = vi.hoisted(() => ({
 
 const threeSpies = vi.hoisted(() => ({
 	WebGLRenderer: vi.fn(),
+	removeFromScene: vi.fn(),
 }));
 
 // Presentation pixels/resources have focused tests and a real browser check;
@@ -56,6 +59,20 @@ vi.mock("./groundPresentation", () => ({
 	createGroundPresentation: () => ({ apply: vi.fn(), dispose: vi.fn() }),
 	createWorldEdgePresentation: () => [],
 }));
+
+vi.mock("../../data/terrainSurface", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("../../data/terrainSurface")>();
+	return {
+		...actual,
+		getTerrainPresentationSurfaceY: (
+			...args: Parameters<typeof actual.getTerrainPresentationSurfaceY>
+		) => {
+			runtimeSpies.terrainPresentationSample(...args);
+			return actual.getTerrainPresentationSurfaceY(...args);
+		},
+	};
+});
 
 vi.mock("../runtimeSession", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("../runtimeSession")>();
@@ -179,7 +196,19 @@ vi.mock("three", () => {
 	class Object3D {
 		children: Object3D[] = [];
 		castShadow = false;
-		position = { set: vi.fn() };
+		position = {
+			x: 0,
+			y: 0,
+			z: 0,
+			set: vi.fn((x: number, y: number, z: number) => {
+				Object.assign(this.position, { x, y, z });
+			}),
+			toArray: (): number[] => [
+				this.position.x,
+				this.position.y,
+				this.position.z,
+			],
+		};
 		receiveShadow = false;
 		rotation = { y: 0 };
 		scale = { setScalar: vi.fn() };
@@ -260,7 +289,7 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
-			remove = vi.fn();
+			remove = threeSpies.removeFromScene;
 		},
 		ShaderMaterial: Disposable,
 		WebGLRenderer: class {
@@ -404,12 +433,14 @@ function makeBoatProject(areaPatch: Partial<GameArea> = {}): GameProject {
 }
 
 beforeEach(() => {
+	runtimeSpies.terrainPresentationSample.mockClear();
 	runtimeSpies.attemptPlayerMove.mockClear();
 	runtimeSpies.createRuntimeSession.mockClear();
 	runtimeSpies.dismountRuntimeVehicle.mockClear();
 	runtimeSpies.runRuntimeObjectBehaviour.mockClear();
 	phaserSpies.Game.mockClear();
 	threeSpies.WebGLRenderer.mockClear();
+	threeSpies.removeFromScene.mockClear();
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
 	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
 });
@@ -1632,4 +1663,135 @@ it("shows a corrupt-slot error and allows New Game without deleting the slot", (
 	fireEvent.click(screen.getByRole("button", { name: "New Game" }));
 	expect(screen.getByLabelText("Three runtime viewport")).toBeInTheDocument();
 	expect(localStorage.getItem(key)).toBe("broken JSON");
+});
+
+it.each([
+	false,
+	true,
+])("retains the scene through combat and disposes only the defeated NPC (imported=%s)", (imported) => {
+	const skeleton = { dispose: vi.fn() };
+	const disposePresentation = vi.fn();
+	const createMarker = visualRenderer.createThreeVisualMarkerGroup;
+	vi.spyOn(visualRenderer, "createThreeVisualMarkerGroup").mockImplementation(
+		(marker, options) => {
+			const result = createMarker(marker, options);
+			if (imported && marker.id === "guard") {
+				// Model the loaded-clone ownership boundary: meshes can share a
+				// skeleton, geometry/materials belong to the source cache.
+				result.usedAsset = true;
+				result.disposePresentation = disposePresentation;
+				result.group.traverse((object) => {
+					if ("geometry" in object)
+						Object.assign(object, { isSkinnedMesh: true, skeleton });
+				});
+			}
+			return result;
+		},
+	);
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const intervals = vi.spyOn(window, "setInterval");
+	const project = makeProject();
+	project.player.combat = {
+		maxHealth: 100,
+		health: 100,
+		attackDamage: 25,
+		attackRangeTiles: 1,
+		attackCooldownMs: 500,
+	};
+	project.areas[0].npcs = [
+		{
+			id: "guard",
+			nameOverride: "Guard",
+			npcDefinitionId: "guard_def",
+			areaId: "area_test",
+			x: 2,
+			y: 0,
+			facing: "left",
+			blocksMovement: true,
+			movementMode: "stationary",
+			attributes: {
+				maxHealth: 50,
+				health: 50,
+				faction: "guards",
+				alignment: "hostile",
+				canInteract: false,
+				movementSpeed: 1,
+			},
+			enemyBehaviour: {
+				enabled: true,
+				detectionRadiusTiles: 4,
+				chaseRadiusTiles: 5,
+				returnToOrigin: true,
+				contactDamage: 5,
+			},
+		},
+	];
+	const authored = JSON.stringify(project);
+	const { unmount } = render(
+		<ThreeRuntimePanel project={project} onRestart={vi.fn()} />,
+	);
+	const tick = intervals.mock.calls.find(
+		(call) => call[1] === 50,
+	)![0] as () => void;
+	const session = latestSession();
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount;
+	const renderers = threeSpies.WebGLRenderer.mock.calls.length;
+	session.npcMovementStates.set("guard", {
+		movement: { patrolIndex: 0 },
+		nextMoveAt: 0,
+	});
+	act(() => tick());
+	expect(session.project.areas[0].npcs[0].x).toBe(1);
+	now += 2000;
+	act(() => tick());
+	expect(screen.getByText("Health 95/100")).toBeInTheDocument();
+	now += 2000;
+	act(() => tick());
+	expect(screen.getByText("Health 90/100")).toBeInTheDocument();
+	fireEvent.keyDown(window, { key: "ArrowRight" }); // Face the blocking guard.
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(screen.getByText("Guard 25/50")).toBeInTheDocument();
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(renderers);
+	expect(getRuntimeDiagnosticsSnapshot().raf.activeLoopCount).toBe(1);
+	now += 600;
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(session.defeatedNpcIds.has("guard")).toBe(true);
+	expect(session.project.areas[0].npcs).toHaveLength(0);
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(renderers);
+	expect(getRuntimeDiagnosticsSnapshot().scene.entityCount).toBe(1);
+	expect(threeSpies.removeFromScene).toHaveBeenCalledTimes(1);
+	const removed = threeSpies.removeFromScene.mock.calls[0][0];
+	const disposedGeometry = removed.children[0].geometry;
+	expect(disposedGeometry.dispose).toHaveBeenCalledTimes(imported ? 0 : 1);
+	expect(skeleton.dispose).toHaveBeenCalledTimes(imported ? 1 : 0);
+	expect(disposePresentation).toHaveBeenCalledTimes(imported ? 1 : 0);
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	expect(session.playerPosition).toEqual({ x: 1, y: 0 });
+	expect(JSON.stringify(project)).toBe(authored);
+	unmount();
+	expect(disposedGeometry.dispose).toHaveBeenCalledTimes(imported ? 0 : 1);
+	expect(skeleton.dispose).toHaveBeenCalledTimes(imported ? 1 : 0);
+	expect(disposePresentation).toHaveBeenCalledTimes(imported ? 1 : 0);
+	expect(
+		window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel"),
+	).toBeNull();
+});
+
+it("reuses scene terrain lookups for actor and camera frames across terrain modes", () => {
+	render(<ThreeRuntimePanel project={makeProject()} onRestart={vi.fn()} />);
+	for (const mode of ["Smooth terrain", "Blocky terrain"] as const) {
+		fireEvent.click(screen.getByRole("button", { name: mode }));
+		const samples = runtimeSpies.terrainPresentationSample.mock.calls.length;
+		act(() => {
+			runLatestAnimationFrame();
+			runLatestAnimationFrame();
+			runLatestAnimationFrame();
+		});
+		expect(runtimeSpies.terrainPresentationSample).toHaveBeenCalledTimes(
+			samples,
+		);
+	}
 });

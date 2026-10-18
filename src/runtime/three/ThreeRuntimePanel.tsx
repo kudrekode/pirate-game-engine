@@ -3,6 +3,7 @@ import * as THREE from "three";
 import {
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
+	type TerrainSurfaceSampler,
 } from "../../data/terrainSurface";
 import {
 	areaEntitiesToMarkers,
@@ -313,17 +314,20 @@ function getVisualWorldBase(
 	area: GameArea,
 	position: VisualGridPosition,
 	terrainMode: TerrainSurfaceMode,
+	sampler?: TerrainSurfaceSampler,
 ): VisualWorldPosition {
 	const point = previewGridPositionToThreePoint(area, position);
 	const terrainX = clampGridCoordinate(position.x, area.width - 1);
 	const terrainY = clampGridCoordinate(position.y, area.height - 1);
 	return {
 		x: point.x,
-		y: getTerrainPresentationSurfaceY(
-			area,
-			{ x: terrainX, y: terrainY },
-			terrainMode,
-		),
+		y: sampler
+			? sampler.sampleSurfaceY({ x: terrainX, y: terrainY }, terrainMode)
+			: getTerrainPresentationSurfaceY(
+					area,
+					{ x: terrainX, y: terrainY },
+					terrainMode,
+				),
 		z: point.z,
 	};
 }
@@ -332,8 +336,9 @@ function getVisualPlayerCenter(
 	area: GameArea,
 	position: VisualGridPosition,
 	terrainMode: TerrainSurfaceMode,
+	sampler?: TerrainSurfaceSampler,
 ): VisualWorldPosition {
-	const base = getVisualWorldBase(area, position, terrainMode);
+	const base = getVisualWorldBase(area, position, terrainMode, sampler);
 	return {
 		x: base.x,
 		y: base.y + 0.625,
@@ -348,8 +353,9 @@ function setObjectBasePosition(
 	terrainMode: TerrainSurfaceMode,
 	visual?: ResolvedThreeVisual,
 	groundHeight?: number,
+	sampler?: TerrainSurfaceSampler,
 ): void {
-	const base = getVisualWorldBase(area, position, terrainMode);
+	const base = getVisualWorldBase(area, position, terrainMode, sampler);
 	const offset = object.userData.mapEntityTransform?.position;
 	object.position.set(
 		base.x + (offset?.x ?? 0),
@@ -478,6 +484,9 @@ export function ThreeRuntimePanel({
 		typeof createTraversalWorld
 	> | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
+	const removeNpcPresentationRef = useRef<((npcId: string) => void) | null>(
+		null,
+	);
 	const characterAnimationControllersRef = useRef<
 		Map<string, ThreeCharacterAnimationController>
 	>(new Map());
@@ -495,6 +504,7 @@ export function ThreeRuntimePanel({
 	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
 	const isStartingRuntimeRef = useRef(false);
 	const [renderVersion, setRenderVersion] = useState(0);
+	const [, setHudVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
 	const [terrainRenderMode, setTerrainRenderMode] = useState<TerrainRenderMode>(
@@ -643,6 +653,10 @@ export function ThreeRuntimePanel({
 			diagnostics.dispose();
 		};
 	}, [diagnostics]);
+
+	useEffect(() => {
+		if (import.meta.env.DEV) diagnostics.recordReactCommit();
+	});
 
 	function forceRender(reason = "runtime state changed") {
 		nextRebuildReasonRef.current = reason;
@@ -1182,7 +1196,8 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged" || event.type === "combatChanged") {
-			forceRender("npc state changed");
+			// Health/contact updates need a HUD commit, not a new WebGL scene.
+			setHudVersion((version) => version + 1);
 			return;
 		}
 		if (event.type === "gameOver") {
@@ -1231,7 +1246,7 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "npcRemoved") {
 			npcVisualsRef.current.delete(event.npcId);
-			forceRender("npc removed");
+			removeNpcPresentationRef.current?.(event.npcId);
 			return;
 		}
 		if (
@@ -1239,7 +1254,8 @@ export function ThreeRuntimePanel({
 			event.type === "combatChanged" ||
 			event.type === "npcDamaged"
 		) {
-			forceRender("combat changed");
+			// Health and defeat feedback retain the scene and surviving actors.
+			setHudVersion((version) => version + 1);
 		}
 	}
 
@@ -2222,24 +2238,64 @@ export function ThreeRuntimePanel({
 					result.assetStatus === "error" || result.assetStatus === "missing",
 			),
 		);
-		diagnostics.setSceneEntityCounts({
-			assetStatuses: [...markerRenderResults, playerRenderResult].map(
-				(result) => ({
-					analysis: result.assetAnalysis,
-					category: result.assetCategory,
-					cloneType: result.cloneType,
-					definitionId: result.assetDefinitionId,
-					status: result.assetStatus,
-					usedAsset: result.usedAsset,
-				}),
-			),
-			entityCount: runtimeMarkers.length + 1,
-			sceneIdentity: {
-				areaId: area.id,
-				areaName: area.name,
-				projectName: session.project.metadata.name,
-			},
-		});
+		const updateSceneEntityCounts = () =>
+			diagnostics.setSceneEntityCounts({
+				assetStatuses: [...markerRenderResults, playerRenderResult].map(
+					(result) => ({
+						analysis: result.assetAnalysis,
+						category: result.assetCategory,
+						cloneType: result.cloneType,
+						definitionId: result.assetDefinitionId,
+						status: result.assetStatus,
+						usedAsset: result.usedAsset,
+					}),
+				),
+				entityCount: markerRenderResults.length + 1,
+				sceneIdentity: {
+					areaId: area.id,
+					areaName: area.name,
+					projectName: session.project.metadata.name,
+				},
+			});
+
+		updateSceneEntityCounts();
+
+		// The shared combat transaction already removes the NPC from the live area,
+		// which movement/collision reads directly. Only this actor's presentation
+		// needs disposal; terrain, traversal, renderer and other mixers stay alive.
+		const removeNpcPresentation = (npcId: string) => {
+			const group = npcRenderGroups.get(npcId);
+			if (!group) return;
+			characterAnimationControllers.get(npcId)?.dispose();
+			characterAnimationControllers.delete(npcId);
+			npcRenderGroups.delete(npcId);
+			npcRenderVisuals.delete(npcId);
+			scene.remove(group);
+
+			const resultIndex = markerRenderResults.findIndex(
+				(result) => result.group === group,
+			);
+			const [result] = markerRenderResults.splice(resultIndex, 1);
+			result.disposePresentation?.();
+			if (result.usedAsset) {
+				// Skeleton clones own their bone textures; GLTF geometry/materials
+				// remain shared with the loader cache and surviving actors.
+				const skeletons = new Set<THREE.Skeleton>();
+				group.traverse((object) => {
+					const mesh = object as THREE.SkinnedMesh;
+					if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton);
+				});
+				for (const skeleton of skeletons) skeleton.dispose();
+			} else {
+				disposePlaceholderObject(group);
+			}
+			const objectIndex = renderObjects.findIndex(
+				(entry) => entry.object === group,
+			);
+			renderObjects.splice(objectIndex, 1);
+			updateCharacterAnimationDiagnostics();
+			updateSceneEntityCounts();
+		};
 
 		let renderer: THREE.WebGLRenderer;
 		try {
@@ -2269,6 +2325,19 @@ export function ThreeRuntimePanel({
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
+		removeNpcPresentationRef.current = removeNpcPresentation;
+		if (import.meta.env.DEV) {
+			const gl = renderer.getContext?.();
+			const debug = gl?.getExtension("WEBGL_debug_renderer_info");
+			diagnostics.setRenderContext({
+				backend: debug
+					? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL))
+					: "unavailable",
+				width: renderer.domElement.width,
+				height: renderer.domElement.height,
+				pixelRatio: renderer.getPixelRatio?.() ?? 1,
+			});
+		}
 
 		let cameraDrag: {
 			mode: "inspectOrbit" | "inspectPan";
@@ -2421,6 +2490,8 @@ export function ThreeRuntimePanel({
 			lastFrameMs = now;
 			diagnostics.recordFrameInterval(deltaMs);
 
+			// The scene owns a terrain lookup already. Reuse it for every actor
+			// and the camera instead of allocating full tile maps per frame.
 			const visualUpdateStartedAt = performance.now();
 			const playerVisual =
 				playerVisualRef.current ??
@@ -2445,6 +2516,7 @@ export function ThreeRuntimePanel({
 				terrainRenderMode,
 				playerRenderVisual,
 				grounded?.height,
+				traversalWorld.sampler,
 			);
 			collisionDebug.visible = showCollisionRef.current;
 			if (grounded) {
@@ -2474,6 +2546,7 @@ export function ThreeRuntimePanel({
 					terrainRenderMode,
 					visual,
 					sampleTraversalTerrain(traversalWorld, npcPosition),
+					traversalWorld.sampler,
 				);
 				setObjectFacing(group, npcVisual.facing, visual);
 				npcVisualsRef.current.set(
@@ -2532,6 +2605,7 @@ export function ThreeRuntimePanel({
 						area,
 						playerVisualPosition,
 						terrainRenderMode,
+						traversalWorld.sampler,
 					),
 					...(grounded ? { y: grounded.height + 0.625 } : {}),
 				},
@@ -2607,6 +2681,9 @@ export function ThreeRuntimePanel({
 			diagnostics.recordRafLoopCancel(rebuildReason);
 			for (const label of openedLabels) label.element.remove();
 			diagnostics.recordSceneCleanup();
+			if (removeNpcPresentationRef.current === removeNpcPresentation) {
+				removeNpcPresentationRef.current = null;
+			}
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);

@@ -9,7 +9,8 @@ test.use({
 	// add readbacks to every frame and are not needed by these semantic checks.
 	trace: { mode: "retain-on-failure", screenshots: false, snapshots: true },
 });
-const output = "docs/assets/runtime-parity";
+const output =
+	process.env.RUNTIME_PARITY_OUTPUT ?? "docs/assets/runtime-parity";
 const projectKey = "adventure-builder-project-v1";
 type Npc = {
 	id: string;
@@ -42,7 +43,8 @@ async function authored(page: Page) {
 }
 async function importProject(page: Page, file: string) {
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
+	if (await page.getByRole("button", { name: /Blank Project/ }).isVisible())
+		await page.getByRole("button", { name: /Blank Project/ }).click();
 	await page.locator('input[type="file"]').setInputFiles(file);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
@@ -81,7 +83,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	page.on("pageerror", (e) => errors.push(e.message));
 	const original = await importProject(
 		page,
-		`${output}/runtime-parity-demo.project.json`,
+		"docs/assets/runtime-parity/runtime-parity-demo.project.json",
 	);
 	await play(page);
 	await expect(page.locator(".three-runtime-hud")).toContainText("Pos: 2, 7");
@@ -180,6 +182,9 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 		)
 		.not.toBe(JSON.stringify(paused));
 	await page.getByLabel("Three runtime viewport", { exact: true }).focus();
+	const beforeContact = await page.evaluate(
+		() => window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+	);
 	await page.keyboard.press("ArrowRight");
 	await expect(page.locator(".three-runtime-hud")).toContainText("Pos: 3, 7");
 	await expect
@@ -195,6 +200,12 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard 25/50",
 	);
+	const afterDamage = await page.evaluate(
+		() => window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+	);
+	expect(afterDamage.scene.buildCount).toBe(beforeContact.scene.buildCount);
+	expect(afterDamage.asset.cloneCount).toBe(beforeContact.asset.cloneCount);
+	expect(afterDamage.raf.activeLoopCount).toBe(1);
 	await page.waitForTimeout(550);
 	await page.keyboard.press("Space");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
@@ -203,6 +214,22 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	await expect
 		.poll(async () => (await npcs(page)).some((n) => n.id === "sparring_guard"))
 		.toBe(false);
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!
+						.asset.character.animation.activeMixers,
+			),
+		)
+		.toBe(5);
+	const afterDefeat = await page.evaluate(
+		() => window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+	);
+	expect(afterDefeat.scene.buildCount).toBe(beforeContact.scene.buildCount);
+	expect(afterDefeat.asset.cloneCount).toBe(beforeContact.asset.cloneCount);
+	expect(afterDefeat.scene.cleanupCount).toBe(beforeContact.scene.cleanupCount);
+	expect(afterDefeat.raf.activeLoopCount).toBe(1);
 	await page.keyboard.press("ArrowRight");
 	await expect(page.locator(".three-runtime-hud")).toContainText("Pos: 4, 7");
 	await expect
@@ -411,5 +438,198 @@ test("Tidewatch Harbour Trouble Save / reload / Continue through real controls @
 			null,
 			2,
 		) + "\n",
+	);
+});
+
+test("five harbour patrols retain actors and pause hidden editor rendering @runtime-performance", async ({
+	page,
+}) => {
+	test.setTimeout(180_000);
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	await fs.mkdir(output, { recursive: true });
+	const project = JSON.parse(
+		await fs.readFile(
+			"docs/assets/quest-objectives/tidewatch-harbour.project.json",
+			"utf8",
+		),
+	);
+	const area = project.areas[0],
+		keeper = area.npcs[0];
+	for (const [i, [x, y, end]] of [
+		[1, 8, 10],
+		[3, 8, 10],
+		[5, 8, 10],
+		[8, 9, 10],
+		[13, 8, 10],
+	].entries()) {
+		area.npcs.push({
+			...structuredClone(keeper),
+			id: "harbour_patrol_" + i,
+			nameOverride: "Harbour patrol " + i,
+			x,
+			y,
+			transform: undefined,
+			interaction: undefined,
+			interactionOverride: {
+				type: "show_message",
+				activationMode: "disabled",
+				lines: [],
+			},
+			movementMode: "patrol",
+			movementOverride: {
+				movementMode: "patrol",
+				movementSpeed: 1,
+				patrolPath: {
+					loop: true,
+					points: [
+						{ x, y },
+						{ x, y: end },
+					],
+				},
+			},
+			patrolPath: {
+				loop: true,
+				points: [
+					{ x, y },
+					{ x, y: end },
+				],
+			},
+		});
+	}
+	const fixture = output + "/five-patrols.project.json";
+	await fs.writeFile(fixture, JSON.stringify(project));
+	const original = await importProject(page, fixture);
+	// Capture the settled editor canvas, after asynchronous asset replacement.
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const s =
+					window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeDPreview");
+				return (
+					s?.asset.character.activeCloneInstances === 7 &&
+					s.asset.statusCounts.loading === 0
+				);
+			}),
+		)
+		.toBe(true);
+	const editorCanvas = await page
+		.getByLabel("3D preview viewport")
+		.locator("canvas")
+		.first()
+		.elementHandle();
+	await play(page);
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const s =
+					window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel");
+				return (
+					s?.asset.character.animation.activeMixers === 7 &&
+					s.asset.character.animation.loadingSourceCount === 0
+				);
+			}),
+		)
+		.toBe(true);
+	const before = await page.evaluate(() =>
+		window.__THREE_PERF_DIAGNOSTICS__!.getSnapshots(),
+	);
+	const actors = await page.evaluate(
+		() =>
+			new Promise<Record<string, { positions: string[]; states: string[] }>>(
+				(resolve) => {
+					const rows: Record<
+						string,
+						{ positions: Set<string>; states: Set<string> }
+					> = {};
+					const stopAt = performance.now() + 6500;
+					function sample() {
+						for (const n of JSON.parse(
+							document.querySelector<HTMLElement>(".three-runtime-host")!
+								.dataset.npcs ?? "[]",
+						)) {
+							rows[n.id] ??= {
+								positions: new Set(),
+								states: new Set(),
+							};
+							const row = rows[n.id];
+							row.positions.add(n.x + "," + n.y);
+							row.states.add(n.animation);
+						}
+						if (performance.now() < stopAt) requestAnimationFrame(sample);
+						else
+							resolve(
+								Object.fromEntries(
+									Object.entries(rows).map(([id, row]) => [
+										id,
+										{ positions: [...row.positions], states: [...row.states] },
+									]),
+								),
+							);
+					}
+					sample();
+				},
+			),
+	);
+	for (let i = 0; i < 5; i++) {
+		expect(actors["harbour_patrol_" + i].positions.length).toBeGreaterThan(1);
+		expect(actors["harbour_patrol_" + i].states).toEqual(
+			expect.arrayContaining(["idle", "walk"]),
+		);
+	}
+	const after = await page.evaluate(() =>
+		window.__THREE_PERF_DIAGNOSTICS__!.getSnapshots(),
+	);
+	expect(after.ThreeRuntimePanel.scene.buildCount).toBe(
+		before.ThreeRuntimePanel.scene.buildCount,
+	);
+	expect(after.ThreeRuntimePanel.asset.cloneCount).toBe(
+		before.ThreeRuntimePanel.asset.cloneCount,
+	);
+	expect(after.ThreeRuntimePanel.asset.loadStartedCount).toBe(
+		before.ThreeRuntimePanel.asset.loadStartedCount,
+	);
+	expect(after.ThreeRuntimePanel.raf.activeLoopCount).toBe(1);
+	expect(after.ThreeDPreview.frame.frameCount).toBe(
+		before.ThreeDPreview.frame.frameCount,
+	);
+	expect(after.ThreeRuntimePanel.asset.character.animation.activeMixers).toBe(
+		7,
+	);
+	await page.screenshot({ path: output + "/five-patrols.png" });
+	await exitAndCheck(page, original);
+	expect(await editorCanvas!.evaluate((node) => node.isConnected)).toBe(true);
+	await expect(
+		page.getByLabel("3D preview viewport").locator("canvas").first(),
+	).toBeVisible();
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeDPreview")!.frame
+						.frameCount,
+			),
+		)
+		.toBeGreaterThan(after.ThreeDPreview.frame.frameCount);
+	expect(
+		await page.evaluate(() =>
+			window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel"),
+		),
+	).toBeNull();
+	expect(errors).toEqual([]);
+	await fs.writeFile(
+		output + "/five-patrols.json",
+		JSON.stringify(
+			{
+				actors,
+				before,
+				after,
+				errors,
+				projectUnchanged: true,
+				editorCanvasPreserved: true,
+			},
+			null,
+			2,
+		),
 	);
 });
