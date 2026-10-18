@@ -1,7 +1,9 @@
 import { cloneProject } from "../data/migrateProject";
 import type {
+	DialogueDefinition,
 	GameArea,
 	GameProject,
+	Interaction,
 	MovementMode,
 	PlayerCombatStats,
 	PlayerVehicleState,
@@ -12,6 +14,7 @@ import type { NPCMovementState } from "./npcMovement";
 import { createRuntimeQuestState, type RuntimeQuestState } from "./questEngine";
 import { createRuntimeState, type RuntimeGameState } from "./ruleEngine";
 import { createRuntimeShopStocks, type RuntimeShopStocks } from "./shopRuntime";
+import type { RuntimeTraversal } from "./traversal";
 
 export type RuntimeGridPosition = { x: number; y: number };
 
@@ -33,6 +36,8 @@ export type RuntimeRecentEnemyState = {
 };
 
 export type RuntimeSessionState = {
+	// Optional metre-space traversal; integer playerPosition still owns triggers.
+	traversal?: RuntimeTraversal;
 	project: GameProject;
 	currentAreaId: string;
 	playerPosition: RuntimeGridPosition;
@@ -57,6 +62,13 @@ export type RuntimeSessionState = {
 	nextMoveAt: number;
 	startupPending: boolean;
 	dialogue?: RuntimeDialogueState;
+	inlineDialogue?: DialogueDefinition;
+	pendingInteraction?: {
+		areaId: string;
+		targetId: string;
+		interaction: Interaction;
+	};
+	firedInteractionIds: Set<string>;
 	recentEnemy?: RuntimeRecentEnemyState;
 };
 
@@ -99,6 +111,7 @@ export function createRuntimeSession(
 		waitingForTrigger: null,
 		collectedPickupIds: new Set<string>(),
 		openedObjectIds: new Set<string>(),
+		firedInteractionIds: new Set<string>(),
 		defeatedNpcIds: new Set<string>(),
 		npcMovementStates: new Map<string, RuntimeNpcMovementTiming>(),
 		enemyOrigins: new Map<string, RuntimeGridPosition>(),

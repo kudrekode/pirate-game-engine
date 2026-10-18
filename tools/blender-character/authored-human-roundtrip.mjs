@@ -1,4 +1,3 @@
-import { CLOTHING_SLOTS } from "./clothing-contract.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -6,16 +5,17 @@ import path from "node:path";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { inspectAnimationSource } from "../animation-retargeting/animation-source-inspection.mjs";
-import {
-	loadGlb,
-	semanticSnapshot,
-	analyzeArtifact,
-	skeletonSignature,
-} from "./procedural-mannequin-roundtrip.mjs";
+import { CLOTHING_SLOTS } from "./clothing-contract.mjs";
 import {
 	canonicalSrgbHexToLinear,
 	GOLDEN_HUMANOID_EXPORTED_REST_SIGNATURE,
 } from "./procedural-mannequin-contract.mjs";
+import {
+	analyzeArtifact,
+	loadGlb,
+	semanticSnapshot,
+	skeletonSignature,
+} from "./procedural-mannequin-roundtrip.mjs";
 
 const hash = (value) =>
 	createHash("sha256")

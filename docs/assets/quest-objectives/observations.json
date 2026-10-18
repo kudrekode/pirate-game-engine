@@ -1,0 +1,13 @@
+{
+	"errors": [],
+	"authoredThroughControls": true,
+	"explicitStart": true,
+	"dialogueFinishedBeforeStart": true,
+	"sequentialObjectives": true,
+	"pickupFeedback": true,
+	"keyDoorEntry": true,
+	"completionFeedback": true,
+	"authoredProjectUnchanged": true,
+	"saveReloadEqual": true,
+	"freshSessionReplayCompleted": true
+}

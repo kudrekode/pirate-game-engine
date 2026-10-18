@@ -14,7 +14,16 @@ import type {
 	ObjectBehaviour,
 	ObjectInstance,
 } from "../../types/game";
+import {
+	createGameSave,
+	GAME_SAVE_PREFIX,
+	gameSaveProjectId,
+	loadGameSave,
+	storeGameSave,
+} from "../gameSave";
 import { RuntimePanel } from "../RuntimePanel";
+import { createRuntimeSession } from "../runtimeSession";
+import { createRuntimeTraversal, createTraversalWorld } from "../traversal";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
@@ -23,12 +32,14 @@ import {
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
 import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
+import * as visualRenderer from "./threeVisualRenderer";
 
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
 	createRuntimeSession: vi.fn(),
 	sessionCreated: vi.fn(),
 	tickRuntimeNpcs: vi.fn(),
+	terrainPresentationSample: vi.fn(),
 	dismountRuntimeVehicle: vi.fn(),
 	runRuntimeObjectBehaviour: vi.fn(),
 }));
@@ -39,7 +50,29 @@ const phaserSpies = vi.hoisted(() => ({
 
 const threeSpies = vi.hoisted(() => ({
 	WebGLRenderer: vi.fn(),
+	removeFromScene: vi.fn(),
 }));
+
+// Presentation pixels/resources have focused tests and a real browser check;
+// this mocked-renderer suite owns runtime input, state and scene lifetime.
+vi.mock("./groundPresentation", () => ({
+	createGroundPresentation: () => ({ apply: vi.fn(), dispose: vi.fn() }),
+	createWorldEdgePresentation: () => [],
+}));
+
+vi.mock("../../data/terrainSurface", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("../../data/terrainSurface")>();
+	return {
+		...actual,
+		getTerrainPresentationSurfaceY: (
+			...args: Parameters<typeof actual.getTerrainPresentationSurfaceY>
+		) => {
+			runtimeSpies.terrainPresentationSample(...args);
+			return actual.getTerrainPresentationSurfaceY(...args);
+		},
+	};
+});
 
 vi.mock("../runtimeSession", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("../runtimeSession")>();
@@ -163,7 +196,19 @@ vi.mock("three", () => {
 	class Object3D {
 		children: Object3D[] = [];
 		castShadow = false;
-		position = { set: vi.fn() };
+		position = {
+			x: 0,
+			y: 0,
+			z: 0,
+			set: vi.fn((x: number, y: number, z: number) => {
+				Object.assign(this.position, { x, y, z });
+			}),
+			toArray: (): number[] => [
+				this.position.x,
+				this.position.y,
+				this.position.z,
+			],
+		};
 		receiveShadow = false;
 		rotation = { y: 0 };
 		scale = { setScalar: vi.fn() };
@@ -220,6 +265,7 @@ vi.mock("three", () => {
 			castShadow = false;
 			position = { copy: vi.fn(), set: vi.fn() };
 			shadow = {
+				dispose: vi.fn(),
 				camera: { far: 0, near: 0 },
 				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
@@ -230,6 +276,8 @@ vi.mock("three", () => {
 		HemisphereLight: class {},
 		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		Mesh,
+		MeshBasicMaterial: Disposable,
+		DoubleSide: 2,
 		MeshStandardMaterial: Disposable,
 		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
@@ -241,7 +289,7 @@ vi.mock("three", () => {
 		Scene: class {
 			background: unknown;
 			add = vi.fn();
-			remove = vi.fn();
+			remove = threeSpies.removeFromScene;
 		},
 		ShaderMaterial: Disposable,
 		WebGLRenderer: class {
@@ -262,6 +310,12 @@ vi.mock("three", () => {
 		},
 		SRGBColorSpace: "SRGBColorSpace",
 		Vector3: class {
+			clone() {
+				return this;
+			}
+			project() {
+				return this;
+			}
 			constructor(
 				public x = 0,
 				public y = 0,
@@ -379,12 +433,14 @@ function makeBoatProject(areaPatch: Partial<GameArea> = {}): GameProject {
 }
 
 beforeEach(() => {
+	runtimeSpies.terrainPresentationSample.mockClear();
 	runtimeSpies.attemptPlayerMove.mockClear();
 	runtimeSpies.createRuntimeSession.mockClear();
 	runtimeSpies.dismountRuntimeVehicle.mockClear();
 	runtimeSpies.runRuntimeObjectBehaviour.mockClear();
 	phaserSpies.Game.mockClear();
 	threeSpies.WebGLRenderer.mockClear();
+	threeSpies.removeFromScene.mockClear();
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
 	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
 });
@@ -542,6 +598,143 @@ describe("ThreeRuntimePanel", () => {
 			expect(screen.getByText("Pos: 1, 0")).toBeInTheDocument();
 		});
 		expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
+	});
+
+	it("bridges held diagonal input to subcell session movement and clears it on blur", async () => {
+		const project = makeProject();
+		project.objects = [
+			{
+				id: "floor",
+				name: "Floor",
+				category: "prop",
+				widthTiles: 1,
+				heightTiles: 1,
+				blocksMovement: false,
+				threeVisual: { mode: "asset", assetId: "world-floor" },
+			},
+		];
+		project.areas[0].objects = [
+			{
+				id: "floor",
+				objectDefinitionId: "floor",
+				areaId: project.areas[0].id,
+				x: 2,
+				y: 2,
+			},
+		];
+		const saved = JSON.stringify(project);
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: () => new Promise<never>(() => undefined),
+		}));
+		const now = vi.spyOn(performance, "now").mockReturnValue(1000);
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+			fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+			fireEvent.keyDown(window, { key: "ArrowDown", code: "ArrowDown" });
+			expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+			expect(latestSession().traversal?.position.x).toBeCloseTo(0.2);
+			now.mockReturnValue(1100);
+			await waitFor(() =>
+				expect(latestSession().traversal?.position.y).toBeGreaterThan(0.1),
+			);
+			expect(latestSession().traversal?.position.x).toBeCloseTo(
+				0.2 + 0.2 * Math.SQRT1_2,
+			);
+			fireEvent.blur(window);
+			const resting = { ...latestSession().traversal?.position };
+			now.mockReturnValue(2000);
+			await act(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 40));
+				runLatestAnimationFrame();
+			});
+			expect(latestSession().traversal?.position).toEqual(resting);
+			expect(JSON.stringify(project)).toBe(saved);
+		} finally {
+			restoreLoader();
+		}
+	});
+
+	it("presents inline messages, pauses movement, advances with E and closes with Escape", async () => {
+		const project = makeProject();
+		project.areas[0].objects.push({
+			id: "sign",
+			areaId: project.areas[0].id,
+			objectDefinitionId: "sign",
+			x: 0,
+			y: 1,
+			interaction: {
+				type: "show_message",
+				activationMode: "on_interact",
+				prompt: "Read sign",
+				lines: ["Harbour welcome", "Watch the tide"],
+			},
+		});
+		const saved = JSON.stringify(project);
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+		await waitFor(() =>
+			expect(screen.getByText("E — Read sign")).toBeInTheDocument(),
+		);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+		fireEvent.keyDown(window, { key: "i" });
+		expect(
+			screen.queryByRole("dialog", { name: "Inventory" }),
+		).not.toBeInTheDocument();
+		fireEvent.keyDown(window, { key: "e", repeat: true });
+		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
+		fireEvent.keyDown(window, { key: "e" });
+		expect(screen.getByRole("dialog")).toHaveTextContent("Watch the tide");
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(screen.queryByRole("dialog")).toBeNull();
+		expect(JSON.stringify(project)).toBe(saved);
+	});
+
+	it("collects an authored prop through real interaction input without changing editor data", async () => {
+		const project = makeProject();
+		project.items = [
+			{ id: "supplies", name: "Supplies", category: "misc", stackable: true },
+		];
+		project.areas[0].objects.push({
+			id: "sack",
+			objectDefinitionId: "sack",
+			areaId: project.areas[0].id,
+			x: 0,
+			y: 1,
+			interaction: {
+				type: "collect_item",
+				activationMode: "on_interact",
+				itemId: "supplies",
+				quantity: 2,
+			},
+		});
+		const saved = JSON.stringify(project);
+		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+		await waitFor(() =>
+			expect(screen.getByText("E — Pick up Supplies")).toBeInTheDocument(),
+		);
+		const builds = threeSpies.WebGLRenderer.mock.calls.length;
+		fireEvent.keyDown(window, { key: "i" });
+		expect(screen.getByRole("dialog", { name: "Inventory" })).toHaveTextContent(
+			"Your inventory is empty",
+		);
+		fireEvent.keyDown(window, { key: "ArrowRight" });
+		fireEvent.keyDown(window, { key: "e" });
+		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
+		expect(latestSession().runtimeState.inventory.items).toEqual({});
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(builds);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(latestSession().runtimeState.inventory.items.supplies).toBe(2);
+		expect(screen.getByText("Supplies ×2 acquired")).toBeVisible();
+		fireEvent.click(screen.getByRole("button", { name: "Inventory I" }));
+		expect(screen.getByRole("button", { name: "Supplies ×2" })).toBeVisible();
+		fireEvent.keyDown(window, { key: "i" });
+		expect(latestSession().project.areas[0].objects).toHaveLength(0);
+		fireEvent.keyDown(window, { key: "e" });
+		expect(latestSession().runtimeState.inventory.items.supplies).toBe(2);
+		expect(JSON.stringify(project)).toBe(saved);
 	});
 
 	it("keeps fixed follow movement grid-relative", async () => {
@@ -1342,7 +1535,7 @@ it.each([
 	const intervals = vi.spyOn(window, "setInterval");
 	render(<ThreeRuntimePanel project={dialogueProject()} onRestart={vi.fn()} />);
 	const tick = intervals.mock.calls.find(
-		(call) => call[1] === 500,
+		(call) => call[1] === 50,
 	)![0] as () => void;
 	if (modal === "dialogue") fireEvent.keyDown(window, { key: "e" });
 	else latestSession().activeShopId = "store";
@@ -1356,4 +1549,249 @@ it.each([
 	} else latestSession().activeShopId = undefined;
 	act(() => tick());
 	expect(runtimeSpies.tickRuntimeNpcs).toHaveBeenCalledTimes(1);
+});
+
+it("offers Continue or New Game, preserves the slot until explicit replacement, and restores silently", () => {
+	const project = makeProject();
+	const s = createRuntimeSession(project);
+	s.playerPosition = { x: 1, y: 2 };
+	s.runtimeState.variables.progress = 42;
+	const saved = createGameSave(project, s);
+	storeGameSave(project, saved, localStorage);
+	const before = JSON.stringify(project);
+	const first = render(
+		<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />,
+	);
+	expect(
+		screen.queryByLabelText("Three runtime viewport"),
+	).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	expect(screen.getByText("Pos: 1, 2")).toBeInTheDocument();
+	expect(document.querySelector(".inventory-notifications")?.textContent).toBe(
+		"",
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Save Game" }));
+	expect(screen.getByText("Game saved.")).toBeInTheDocument();
+	expect(loadGameSave(project, localStorage)?.state.variables.progress).toBe(
+		42,
+	);
+	first.unmount();
+	const old = JSON.stringify(loadGameSave(project, localStorage));
+	render(<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />);
+	fireEvent.click(screen.getByRole("button", { name: "New Game" }));
+	expect(screen.getByText("Pos: 0, 0")).toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Save Game" }));
+	expect(
+		screen.getByRole("dialog", { name: "Replace saved game" }),
+	).toBeInTheDocument();
+	expect(JSON.stringify(loadGameSave(project, localStorage))).toBe(old);
+	fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+	expect(JSON.stringify(loadGameSave(project, localStorage))).toBe(old);
+	fireEvent.click(screen.getByRole("button", { name: "Save Game" }));
+	fireEvent.click(screen.getByRole("button", { name: "Replace save" }));
+	expect(loadGameSave(project, localStorage)?.player.position).toEqual({
+		x: 0,
+		y: 0,
+	});
+	expect(JSON.stringify(project)).toBe(before);
+});
+
+it("restores fractional traversal coordinates before the first Three scene build", () => {
+	const project = makeProject();
+	project.objects = [
+		{
+			id: "floor",
+			name: "Floor",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+			threeVisual: { mode: "asset", assetId: "world-floor" },
+		},
+	];
+	project.areas[0].objects = [
+		{
+			id: "floor",
+			objectDefinitionId: "floor",
+			areaId: "area_test",
+			x: 2,
+			y: 2,
+		},
+	];
+	const s = createRuntimeSession(project);
+	s.playerPosition = { x: 1, y: 0 };
+	s.traversal = createRuntimeTraversal(
+		createTraversalWorld(s.project, s.project.areas[0]),
+		s.project.areas[0],
+		s.project,
+		s.playerPosition,
+		{ x: 1.2, y: 0.2, height: 1 },
+	);
+	const saveSessionRef = { current: null } as {
+		current: null | (() => typeof s);
+	};
+	const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync: () => new Promise<never>(() => undefined),
+	}));
+	try {
+		render(
+			<ThreeRuntimePanel
+				project={project}
+				onRestart={vi.fn()}
+				initialSave={createGameSave(project, s)}
+				saveSessionRef={saveSessionRef}
+			/>,
+		);
+		expect(saveSessionRef.current!().traversal?.position).toEqual(
+			s.traversal.position,
+		);
+		expect(saveSessionRef.current!().nextMoveAt).toBe(0);
+	} finally {
+		restoreLoader();
+	}
+});
+
+it("shows a corrupt-slot error and allows New Game without deleting the slot", () => {
+	const project = makeProject();
+	const key = GAME_SAVE_PREFIX + gameSaveProjectId(project);
+	localStorage.setItem(key, "broken JSON");
+	render(<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />);
+	expect(screen.getByRole("alert")).toHaveTextContent("corrupt");
+	expect(
+		screen.queryByRole("button", { name: "Continue" }),
+	).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "New Game" }));
+	expect(screen.getByLabelText("Three runtime viewport")).toBeInTheDocument();
+	expect(localStorage.getItem(key)).toBe("broken JSON");
+});
+
+it.each([
+	false,
+	true,
+])("retains the scene through combat and disposes only the defeated NPC (imported=%s)", (imported) => {
+	const skeleton = { dispose: vi.fn() };
+	const disposePresentation = vi.fn();
+	const createMarker = visualRenderer.createThreeVisualMarkerGroup;
+	vi.spyOn(visualRenderer, "createThreeVisualMarkerGroup").mockImplementation(
+		(marker, options) => {
+			const result = createMarker(marker, options);
+			if (imported && marker.id === "guard") {
+				// Model the loaded-clone ownership boundary: meshes can share a
+				// skeleton, geometry/materials belong to the source cache.
+				result.usedAsset = true;
+				result.disposePresentation = disposePresentation;
+				result.group.traverse((object) => {
+					if ("geometry" in object)
+						Object.assign(object, { isSkinnedMesh: true, skeleton });
+				});
+			}
+			return result;
+		},
+	);
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const intervals = vi.spyOn(window, "setInterval");
+	const project = makeProject();
+	project.player.combat = {
+		maxHealth: 100,
+		health: 100,
+		attackDamage: 25,
+		attackRangeTiles: 1,
+		attackCooldownMs: 500,
+	};
+	project.areas[0].npcs = [
+		{
+			id: "guard",
+			nameOverride: "Guard",
+			npcDefinitionId: "guard_def",
+			areaId: "area_test",
+			x: 2,
+			y: 0,
+			facing: "left",
+			blocksMovement: true,
+			movementMode: "stationary",
+			attributes: {
+				maxHealth: 50,
+				health: 50,
+				faction: "guards",
+				alignment: "hostile",
+				canInteract: false,
+				movementSpeed: 1,
+			},
+			enemyBehaviour: {
+				enabled: true,
+				detectionRadiusTiles: 4,
+				chaseRadiusTiles: 5,
+				returnToOrigin: true,
+				contactDamage: 5,
+			},
+		},
+	];
+	const authored = JSON.stringify(project);
+	const { unmount } = render(
+		<ThreeRuntimePanel project={project} onRestart={vi.fn()} />,
+	);
+	const tick = intervals.mock.calls.find(
+		(call) => call[1] === 50,
+	)![0] as () => void;
+	const session = latestSession();
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount;
+	const renderers = threeSpies.WebGLRenderer.mock.calls.length;
+	session.npcMovementStates.set("guard", {
+		movement: { patrolIndex: 0 },
+		nextMoveAt: 0,
+	});
+	act(() => tick());
+	expect(session.project.areas[0].npcs[0].x).toBe(1);
+	now += 2000;
+	act(() => tick());
+	expect(screen.getByText("Health 95/100")).toBeInTheDocument();
+	now += 2000;
+	act(() => tick());
+	expect(screen.getByText("Health 90/100")).toBeInTheDocument();
+	fireEvent.keyDown(window, { key: "ArrowRight" }); // Face the blocking guard.
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(screen.getByText("Guard 25/50")).toBeInTheDocument();
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(renderers);
+	expect(getRuntimeDiagnosticsSnapshot().raf.activeLoopCount).toBe(1);
+	now += 600;
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(session.defeatedNpcIds.has("guard")).toBe(true);
+	expect(session.project.areas[0].npcs).toHaveLength(0);
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(renderers);
+	expect(getRuntimeDiagnosticsSnapshot().scene.entityCount).toBe(1);
+	expect(threeSpies.removeFromScene).toHaveBeenCalledTimes(1);
+	const removed = threeSpies.removeFromScene.mock.calls[0][0];
+	const disposedGeometry = removed.children[0].geometry;
+	expect(disposedGeometry.dispose).toHaveBeenCalledTimes(imported ? 0 : 1);
+	expect(skeleton.dispose).toHaveBeenCalledTimes(imported ? 1 : 0);
+	expect(disposePresentation).toHaveBeenCalledTimes(imported ? 1 : 0);
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	expect(session.playerPosition).toEqual({ x: 1, y: 0 });
+	expect(JSON.stringify(project)).toBe(authored);
+	unmount();
+	expect(disposedGeometry.dispose).toHaveBeenCalledTimes(imported ? 0 : 1);
+	expect(skeleton.dispose).toHaveBeenCalledTimes(imported ? 1 : 0);
+	expect(disposePresentation).toHaveBeenCalledTimes(imported ? 1 : 0);
+	expect(
+		window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel"),
+	).toBeNull();
+});
+
+it("reuses scene terrain lookups for actor and camera frames across terrain modes", () => {
+	render(<ThreeRuntimePanel project={makeProject()} onRestart={vi.fn()} />);
+	for (const mode of ["Smooth terrain", "Blocky terrain"] as const) {
+		fireEvent.click(screen.getByRole("button", { name: mode }));
+		const samples = runtimeSpies.terrainPresentationSample.mock.calls.length;
+		act(() => {
+			runLatestAnimationFrame();
+			runLatestAnimationFrame();
+			runLatestAnimationFrame();
+		});
+		expect(runtimeSpies.terrainPresentationSample).toHaveBeenCalledTimes(
+			samples,
+		);
+	}
 });

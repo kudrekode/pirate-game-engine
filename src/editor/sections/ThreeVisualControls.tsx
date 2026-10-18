@@ -22,6 +22,7 @@ type ThreeVisualControlsProps = {
 	onChange: (visual: ThreeVisualConfig) => void;
 	title?: string;
 	value?: ThreeVisualConfig;
+	showTransformControls?: boolean;
 };
 
 export function ThreeVisualControls({
@@ -31,6 +32,7 @@ export function ThreeVisualControls({
 	onChange,
 	title = "3D Visual",
 	value,
+	showTransformControls = true,
 }: ThreeVisualControlsProps) {
 	const assets = listThreeVisualAssets(projectAssets).filter(
 		(asset) =>
@@ -201,7 +203,7 @@ export function ThreeVisualControls({
 						</select>
 					</label>
 				)}
-				{renderTransformControls()}
+				{showTransformControls && renderTransformControls()}
 			</div>
 			{mode === "asset" && assets.length === 0 ? (
 				<p className="empty-state compact">

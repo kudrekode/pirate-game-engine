@@ -83,7 +83,7 @@ it("assigns player, places and duplicates NPCs, edits transforms, deletes and sa
 		target: { value: "30" },
 	});
 	fireEvent.click(screen.getByText("Duplicate NPC instance"));
-	fireEvent.change(screen.getByLabelText("X", { exact: true }), {
+	fireEvent.change(screen.getByLabelText("Position X"), {
 		target: { value: "6" },
 	});
 	fireEvent.click(screen.getByText("Duplicate NPC instance"));

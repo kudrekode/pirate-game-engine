@@ -1,0 +1,162 @@
+{
+	"errors": [],
+	"observations": {
+		"idle_guide": {
+			"positions": ["2,6"],
+			"states": ["idle"],
+			"heights": [
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+			],
+			"interpolated": false
+		},
+		"wander_west": {
+			"positions": [
+				"4,3",
+				"4,2",
+				"4,1",
+				"3,1",
+				"2,1",
+				"2,2",
+				"1,2",
+				"1,3",
+				"1,1"
+			],
+			"states": ["walk", "idle"],
+			"heights": [
+				1, 1, 1, 1, 1, 0.7949999999999999, 0.7949999999999999,
+				0.7949999999999999, 0.7949999999999999, 0.7949999999999999,
+				0.7992138888753122, 1, 1, 0.8026305555759204, 0.7949999999999999,
+				0.7949999999999999, 0.7949999999999999, 0.7949999999999999,
+				0.7949999999999999, 0.7949999999999999, 0.7949999999999999,
+				0.7949999999999999
+			],
+			"interpolated": true
+		},
+		"wander_east": {
+			"positions": ["7,1", "6,1", "8,1", "8,2", "8,3", "7,2"],
+			"states": ["walk", "idle"],
+			"heights": [
+				1.545, 1.545, 1.545, 1.42, 1.4224305555555554, 1.545, 1.545, 1.545,
+				1.5546055555856888, 2, 2, 1.75, 1.7549999999917216, 2, 2,
+				1.6198222222071554, 1.545, 1.545, 1.545, 1.545, 1.545,
+				1.5728055555555553
+			],
+			"interpolated": true
+		},
+		"sparring_guard": {
+			"positions": ["5,7"],
+			"states": ["idle"],
+			"heights": [
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+			],
+			"interpolated": false
+		},
+		"patrol_lookout": {
+			"positions": ["9,6", "9,7", "8,7", "8,6", "8,5", "9,5"],
+			"states": ["walk", "idle"],
+			"heights": [
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+			],
+			"interpolated": true
+		}
+	},
+	"saved": {
+		"version": 1,
+		"projectId": "41c0627a3887348de2f6fcf59029c5a1",
+		"projectVersion": "1.0.0",
+		"savedAt": "2026-10-17T11:25:16.196Z",
+		"player": {
+			"areaId": "parity_courtyard",
+			"position": {
+				"x": 4,
+				"y": 7
+			},
+			"facing": {
+				"x": 1,
+				"y": 0
+			},
+			"health": 84,
+			"movementMode": "walk",
+			"vehicle": {
+				"active": false
+			}
+		},
+		"state": {
+			"flags": {
+				"npc_defeated_sparring_guard": true
+			},
+			"variables": {},
+			"inventory": {},
+			"npcs": {
+				"idle_guide": {
+					"maxHealth": 100,
+					"health": 100,
+					"faction": "villagers",
+					"alignment": "friendly",
+					"canInteract": true,
+					"movementSpeed": 1
+				},
+				"wander_west": {
+					"maxHealth": 100,
+					"health": 100,
+					"faction": "villagers",
+					"alignment": "friendly",
+					"canInteract": true,
+					"movementSpeed": 1
+				},
+				"wander_east": {
+					"maxHealth": 100,
+					"health": 100,
+					"faction": "villagers",
+					"alignment": "friendly",
+					"canInteract": true,
+					"movementSpeed": 1
+				},
+				"sparring_guard": {
+					"maxHealth": 50,
+					"health": 0,
+					"faction": "guards",
+					"alignment": "hostile",
+					"canInteract": false,
+					"movementSpeed": 1
+				},
+				"patrol_lookout": {
+					"maxHealth": 100,
+					"health": 100,
+					"faction": "villagers",
+					"alignment": "friendly",
+					"canInteract": true,
+					"movementSpeed": 1
+				}
+			},
+			"completedRuleIds": []
+		},
+		"quests": {
+			"statuses": {},
+			"enteredAreaIds": ["parity_courtyard"],
+			"rewardedQuestIds": [],
+			"completedObjectiveIds": [],
+			"facts": [
+				"[\"enter_event\",\"parity_courtyard\",\"entry\"]",
+				"[\"interaction_completed\",\"parity_courtyard\",\"idle_guide\"]"
+			],
+			"completedActionIds": []
+		},
+		"world": {
+			"collectedPickupIds": [],
+			"openedObjectIds": [],
+			"defeatedNpcIds": ["sparring_guard"],
+			"firedInteractionIds": [],
+			"objectPositions": []
+		},
+		"shops": {},
+		"progression": {
+			"index": 1,
+			"waiting": null
+		}
+	},
+	"projectUnchanged": true,
+	"dialoguePaused": true,
+	"contactDamage": true,
+	"defeatContinued": true
+}

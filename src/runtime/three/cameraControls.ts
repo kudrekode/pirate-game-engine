@@ -233,6 +233,7 @@ export function getThirdPersonCameraRig(
 export function resolveCameraRelativeGridDirection(
 	inputDirection: GridDirection,
 	cameraYawDegrees: number,
+	continuous = false,
 ): GridDirection {
 	const yaw = degreesToRadians(cameraYawDegrees);
 	const forward = {
@@ -247,7 +248,9 @@ export function resolveCameraRelativeGridDirection(
 		x: right.x * inputDirection.x + forward.x * -inputDirection.y,
 		y: right.y * inputDirection.x + forward.y * -inputDirection.y,
 	};
-	return snapVectorToCardinalDirection(intended.x, intended.y);
+	return continuous
+		? intended
+		: snapVectorToCardinalDirection(intended.x, intended.y);
 }
 
 export function createThirdPersonMouseLookState(

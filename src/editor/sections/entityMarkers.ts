@@ -12,6 +12,7 @@ import {
 import type {
 	CharacterGameAsset,
 	GameArea,
+	MapEntityTransform,
 	NPCDefinition,
 	ObjectDefinition,
 } from "../../types/game";
@@ -28,6 +29,7 @@ export type EntityMarkerKind =
 export type EntityMarkerShape = "box" | "cylinder";
 
 export type EntityMarker = {
+	transform?: MapEntityTransform;
 	id: string;
 	kind: EntityMarkerKind;
 	shape: EntityMarkerShape;
@@ -162,6 +164,7 @@ export function areaEntitiesToMarkers(
 				gridY: structure.y,
 				height: 1.7,
 				id: structure.id,
+				transform: structure.transform,
 				kind: "structure",
 				opacity: 1,
 				shape: "box",
@@ -206,7 +209,7 @@ export function areaEntitiesToMarkers(
 					interaction: object.interaction ?? definition?.defaultInteraction,
 					kind: "object",
 					name: object.nameOverride ?? definition?.name,
-					threeVisual: definition?.threeVisual,
+					threeVisual: { ...definition?.threeVisual, ...object.threeVisual },
 				},
 				projectAssets,
 			);
@@ -221,6 +224,7 @@ export function areaEntitiesToMarkers(
 				gridY: object.y,
 				height: markerHeight,
 				id: object.id,
+				transform: object.transform,
 				kind: isVehicle ? "vehicle" : "object",
 				opacity: 1,
 				shape: "box",
@@ -257,6 +261,7 @@ export function areaEntitiesToMarkers(
 				gridY: npc.y,
 				height: markerHeight,
 				id: npc.id,
+				transform: npc.transform,
 				kind: "npc",
 				opacity: 1,
 				shape: "cylinder",
@@ -288,6 +293,7 @@ export function areaEntitiesToMarkers(
 				gridY: pickup.y,
 				height: markerHeight,
 				id: pickup.id,
+				transform: pickup.transform,
 				kind: "pickup",
 				opacity: 1,
 				shape: "box",
@@ -331,6 +337,7 @@ export function areaEntitiesToMarkers(
 				gridY: eventBlock.y,
 				height: markerHeight,
 				id: eventBlock.id,
+				transform: eventBlock.transform,
 				kind: "event",
 				opacity: 0.72,
 				shape: "box",

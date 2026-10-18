@@ -6,10 +6,10 @@ import {
 import type {
 	GameArea,
 	MapStructure,
-	ObjectInstance,
 	MovementResult,
 	MovementRule,
 	ObjectBehaviour,
+	ObjectInstance,
 	PlayerConfig,
 } from "../types/game";
 
@@ -67,6 +67,9 @@ export type VehicleMovementConfig = Extract<
 >;
 
 export type MovementResolveOptions = {
+	// Runtime-only geometry profiles supersede their old single-cell footprints.
+	ignoredObjectIds?: ReadonlySet<string>;
+	walkableSurface?: boolean;
 	activeVehicle?: VehicleMovementConfig & {
 		vehicleObjectInstanceId?: string;
 	};
@@ -161,6 +164,7 @@ export function resolveMovementAt(
 	}
 
 	const blockingObject = area.objects.find((object) => {
+		if (options.ignoredObjectIds?.has(object.id)) return false;
 		if (options.activeVehicle?.vehicleObjectInstanceId === object.id) {
 			return false;
 		}
@@ -188,6 +192,7 @@ export function resolveMovementAt(
 	if (options.activeVehicle) {
 		return resolveVehicleMovementAt(area, x, y, options.activeVehicle);
 	}
+	if (options.walkableSurface) return allow();
 
 	const terrainTile = area.terrainTiles.find(
 		(tile) => tile.x === x && tile.y === y,

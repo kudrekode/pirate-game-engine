@@ -6,7 +6,11 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!!**/dist"]
+		"includes": [
+			"**",
+			"!!**/dist",
+			"!!tools/blender-character/clothing/everyday-v1/coverage.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,

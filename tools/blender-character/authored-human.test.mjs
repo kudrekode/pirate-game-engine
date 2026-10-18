@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-	validateCreatorCompileRequest,
 	createRecipeForProportions,
+	validateCreatorCompileRequest,
 } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
+import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
 import {
 	hashProceduralMannequinRecipe,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
-import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
 
 const recipe = JSON.parse(
 	await readFile(

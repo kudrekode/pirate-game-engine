@@ -53,6 +53,7 @@ describe("Three visual asset registry", () => {
 	it("exposes the built-in demo asset", () => {
 		expect(listThreeVisualAssets()).toContainEqual({
 			category: "object",
+			hiddenFromBrowser: true,
 			defaultHeightOffset: 0.45,
 			defaultScale: 0.45,
 			id: "demo-box",

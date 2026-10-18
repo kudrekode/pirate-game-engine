@@ -1,0 +1,180 @@
+[
+	{
+		"window": "miss",
+		"event": {
+			"type": "attackBlocked",
+			"reason": "missed",
+			"time": 10978.699999988079
+		},
+		"transactionMs": 0.5,
+		"transactionToFirstCommitMs": 2.0,
+		"stages": [
+			{
+				"name": "notificationGeneration",
+				"ms": 0.1
+			}
+		]
+	},
+	{
+		"window": "contact",
+		"event": {
+			"type": "playerDamaged",
+			"npcId": "sparring_guard",
+			"damage": 1,
+			"health": 99,
+			"time": 13326.299999982119
+		},
+		"transactionMs": 0.7,
+		"transactionToFirstCommitMs": 1.9,
+		"stages": [
+			{
+				"name": "isEnemyTouchingPlayer",
+				"ms": 0
+			},
+			{
+				"name": "playerHealthMutation",
+				"ms": 0
+			},
+			{
+				"name": "notificationGeneration",
+				"ms": 0.1
+			},
+			{
+				"name": "gameOverCheck",
+				"ms": 0
+			}
+		]
+	},
+	{
+		"window": "contact",
+		"event": {
+			"type": "playerDamaged",
+			"npcId": "sparring_guard",
+			"damage": 1,
+			"health": 98,
+			"time": 15232.90000000596
+		},
+		"transactionMs": 0.6,
+		"transactionToFirstCommitMs": 2.3,
+		"stages": [
+			{
+				"name": "isEnemyTouchingPlayer",
+				"ms": 0
+			},
+			{
+				"name": "isEnemyTouchingPlayer",
+				"ms": 0
+			},
+			{
+				"name": "isEnemyTouchingPlayer",
+				"ms": 0
+			},
+			{
+				"name": "playerHealthMutation",
+				"ms": 0
+			},
+			{
+				"name": "notificationGeneration",
+				"ms": 0.2
+			},
+			{
+				"name": "gameOverCheck",
+				"ms": 0
+			},
+			{
+				"name": "isEnemyTouchingPlayer",
+				"ms": 0
+			}
+		]
+	},
+	{
+		"window": "contact",
+		"event": {
+			"type": "playerDamaged",
+			"npcId": "sparring_guard",
+			"damage": 1,
+			"health": 97,
+			"time": 17123.90000000596
+		},
+		"transactionMs": 0.4,
+		"transactionToFirstCommitMs": 1.6,
+		"stages": [
+			{
+				"name": "isEnemyTouchingPlayer",
+				"ms": 0
+			},
+			{
+				"name": "playerHealthMutation",
+				"ms": 0.1
+			},
+			{
+				"name": "notificationGeneration",
+				"ms": 0.1
+			},
+			{
+				"name": "gameOverCheck",
+				"ms": 0
+			}
+		]
+	},
+	{
+		"window": "nonlethal",
+		"event": {
+			"type": "npcDamaged",
+			"npcId": "sparring_guard",
+			"name": "Sparring Guard",
+			"damage": 25,
+			"health": 25,
+			"maxHealth": 50,
+			"time": 17918.69999998808
+		},
+		"transactionMs": 0.7,
+		"transactionToFirstCommitMs": 2.1,
+		"stages": [
+			{
+				"name": "notificationGeneration",
+				"ms": 0
+			}
+		]
+	},
+	{
+		"window": "nonlethal",
+		"event": {
+			"type": "attackBlocked",
+			"reason": "cooldown",
+			"time": 17934
+		},
+		"transactionMs": 0.1,
+		"transactionToFirstCommitMs": 1.6,
+		"stages": [
+			{
+				"name": "notificationGeneration",
+				"ms": 0.1
+			}
+		]
+	},
+	{
+		"window": "lethal",
+		"event": {
+			"type": "npcDamaged",
+			"npcId": "sparring_guard",
+			"name": "Sparring Guard",
+			"damage": 25,
+			"health": 0,
+			"maxHealth": 50,
+			"time": 18805.40000000596
+		},
+		"transactionMs": 2.8,
+		"transactionToFirstCommitMs": 3.9,
+		"stages": [
+			{
+				"name": "removeNpcPresentation",
+				"ms": 1.5
+			},
+			{
+				"name": "notificationGeneration",
+				"ms": 0.1
+			}
+		]
+	}
+]

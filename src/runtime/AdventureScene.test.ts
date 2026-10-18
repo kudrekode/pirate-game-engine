@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { createProjectFromPreset } from "../data/projectPresets";
 import type { DialogueDefinition, GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
+import { createGameSave, type GameSave } from "./gameSave";
 import type { RuntimeSessionState } from "./runtimeSession";
+import { createRuntimeSession } from "./runtimeSession";
 
 vi.mock("phaser", () => ({
 	default: {
@@ -55,8 +57,17 @@ type Boundary = {
 	readDirection(): { x: number; y: number } | null;
 };
 
-function harness(authored = project()) {
-	const scene = new AdventureScene(authored);
+function harness(authored = project(), saved?: GameSave) {
+	const scene = new AdventureScene(
+		authored,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		saved,
+	);
 	const boundary = scene as unknown as Boundary;
 	const buttons = new Map<string, () => void>();
 	const texts: string[] = [];
@@ -113,6 +124,21 @@ function harness(authored = project()) {
 }
 
 describe("Phaser gameplay boundary", () => {
+	it("pauses gameplay for inventory, resumes on close, and refuses it during dialogue", () => {
+		const { scene, boundary } = harness();
+		scene.create();
+		boundary.checkTouchInteractions = vi.fn(() => false);
+		boundary.checkTrigger = vi.fn();
+		expect(scene.setInventoryOpen(true)).toBe(true);
+		scene.update(1000);
+		expect(boundary.session.playerPosition).toEqual({ x: 0, y: 0 });
+		expect(boundary.updateNpcMovement).not.toHaveBeenCalled();
+		expect(scene.setInventoryOpen(false)).toBe(true);
+		scene.update(1000);
+		expect(boundary.session.playerPosition).toEqual({ x: 1, y: 0 });
+		boundary.isDialogueOpen = true;
+		expect(scene.setInventoryOpen(true)).toBe(false);
+	});
 	it("uses the same movement deadline even if the presentation tween has not completed", () => {
 		const { scene, boundary } = harness();
 		scene.create();
@@ -277,4 +303,32 @@ describe("Phaser dialogue and combat", () => {
 		scene.update(deadline);
 		expect(boundary.session.nextAttackAt).toBeGreaterThan(deadline);
 	});
+});
+
+it("Phaser restores the saved area/position and bypasses startup effects", () => {
+	const authored = project();
+	const second = JSON.parse(JSON.stringify(authored.areas[0]));
+	second.id = "second";
+	authored.areas.push(second);
+	authored.rules = [
+		{
+			id: "startup",
+			name: "Startup",
+			enabled: true,
+			trigger: { type: "on_game_start" },
+			actions: [{ type: "set_variable", variable: "counter", value: 0 }],
+		},
+	];
+	const session = createRuntimeSession(authored);
+	session.currentAreaId = "second";
+	session.playerPosition = { x: 2, y: 1 };
+	session.runtimeState.variables.counter = 12;
+	const saved = createGameSave(authored, session);
+	const { scene, boundary } = harness(authored, saved);
+	scene.create();
+	expect(boundary.spawnPlayer).toHaveBeenCalledWith({ x: 2, y: 1 });
+	expect(boundary.session.currentAreaId).toBe("second");
+	expect(scene.getSaveSession().runtimeState.variables.counter).toBe(12);
+	boundary.isCutsceneOpen = true;
+	expect(() => scene.getSaveSession()).toThrow(/before saving/);
 });

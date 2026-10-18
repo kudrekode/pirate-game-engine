@@ -120,6 +120,13 @@ it("shares a character load but isolates skeletons, transforms and Golden idle/w
 		two.update(0.1);
 		expect(one.getStats().semanticState).toBe("walk");
 		expect(two.getStats().semanticState).toBe("idle");
+		// Golden authored humans only map idle/walk. Space must not permanently
+		// latch an attack state that can never receive a mixer finished event.
+		one.triggerAttack();
+		one.update(1);
+		expect(one.getStats().semanticState).toBe("walk");
+		one.sync({ moving: false, defeated: false });
+		expect(one.getStats().semanticState).toBe("idle");
 		expect(a.skeleton.bones[0].position.y).not.toBe(
 			b.skeleton.bones[0].position.y,
 		);

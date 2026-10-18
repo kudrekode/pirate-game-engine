@@ -1,0 +1,4520 @@
+{
+	"date": "2026-10-17",
+	"method": "Headed Chrome, ANGLE Intel Iris Xe D3D11, 1440x1000 CSS viewport; runtime 1440x830, native DPR 1. Timed windows 10 seconds after readiness/settling. Baseline discovery uses CPU profiling; clean before/after do not. GPU queries async, disjoint samples discarded.",
+	"sets": {
+		"baseline": [
+			{
+				"name": "parity-placeholder",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10467.9,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 4.7,
+					"averageFrameIntervalMs": 4.7,
+					"frameCount": 2240,
+					"fps": 224.2,
+					"lastFrameMs": 4.3,
+					"lastFrameIntervalMs": 4.3,
+					"lastRenderMs": 0.8,
+					"worstFrameMs": 415.2,
+					"worstFrameIntervalMs": 415.2
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0,
+						"count": 2240,
+						"lastMs": 0.1,
+						"worstMs": 1.1
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 2240,
+						"lastMs": 0,
+						"worstMs": 0.7
+					},
+					"frameCallback": {
+						"averageMs": 1.1,
+						"count": 2240,
+						"lastMs": 1.1,
+						"worstMs": 4
+					},
+					"render": {
+						"averageMs": 0.8,
+						"count": 2240,
+						"lastMs": 0.8,
+						"worstMs": 3.7
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 202,
+						"lastMs": 0,
+						"worstMs": 0.1
+					},
+					"visualUpdate": {
+						"averageMs": 0.2,
+						"count": 2240,
+						"lastMs": 0.2,
+						"worstMs": 1.4
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 2240,
+						"lastMs": 0.1,
+						"worstMs": 0.2
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 58,
+					"geometries": 58,
+					"lines": 0,
+					"points": 0,
+					"programs": 7,
+					"textures": 4,
+					"triangles": 1638
+				},
+				"characters": {
+					"activeAssetIds": [],
+					"activeCloneInstances": 0,
+					"assetMetrics": [],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 0,
+						"activeMixers": 0,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": []
+					},
+					"cloneTypes": [],
+					"skinnedMeshCount": 0
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [0, 0],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [21, 21],
+				"reactCommits": 0,
+				"ticks": 202,
+				"glbRequests": {
+					"distinct": 9,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "parity-0-moving",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10534.7,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 4.7,
+					"averageFrameIntervalMs": 4.7,
+					"frameCount": 2243,
+					"fps": 215.8,
+					"lastFrameMs": 4.1,
+					"lastFrameIntervalMs": 4.1,
+					"lastRenderMs": 1.7,
+					"worstFrameMs": 477.1,
+					"worstFrameIntervalMs": 477.1
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.1,
+						"count": 2243,
+						"lastMs": 0,
+						"worstMs": 0.7
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 2243,
+						"lastMs": 0,
+						"worstMs": 1.7
+					},
+					"frameCallback": {
+						"averageMs": 1.9,
+						"count": 2243,
+						"lastMs": 1.9,
+						"worstMs": 6.2
+					},
+					"render": {
+						"averageMs": 1.5,
+						"count": 2243,
+						"lastMs": 1.7,
+						"worstMs": 5.4
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0,
+						"worstMs": 0.1
+					},
+					"visualUpdate": {
+						"averageMs": 0.3,
+						"count": 2243,
+						"lastMs": 0.2,
+						"worstMs": 3.2
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 2243,
+						"lastMs": 0,
+						"worstMs": 0.2
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 66,
+					"geometries": 66,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 20,
+					"triangles": 55366
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 1,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 1,
+						"activeMixers": 1,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 10
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [2, 2],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [48, 48],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "parity-1-moving",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10605.3,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 5.3,
+					"averageFrameIntervalMs": 5.3,
+					"frameCount": 1995,
+					"fps": 206.2,
+					"lastFrameMs": 4.1,
+					"lastFrameIntervalMs": 4.1,
+					"lastRenderMs": 1.9,
+					"worstFrameMs": 537.2,
+					"worstFrameIntervalMs": 537.2
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.1,
+						"count": 1995,
+						"lastMs": 0.1,
+						"worstMs": 1.4
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1995,
+						"lastMs": 0,
+						"worstMs": 0.5
+					},
+					"frameCallback": {
+						"averageMs": 2.5,
+						"count": 1995,
+						"lastMs": 2.2,
+						"worstMs": 7.2
+					},
+					"render": {
+						"averageMs": 1.9,
+						"count": 1995,
+						"lastMs": 1.9,
+						"worstMs": 6.4
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 202,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.4,
+						"count": 1995,
+						"lastMs": 0.3,
+						"worstMs": 2.6
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1995,
+						"lastMs": 0,
+						"worstMs": 0.2
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 76,
+					"geometries": 66,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 30,
+					"triangles": 109162
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 2,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 2,
+						"activeMixers": 2,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 20
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [4, 4],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [37, 37],
+				"reactCommits": 0,
+				"ticks": 202,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "parity-3-moving",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10530.4,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 6.2,
+					"averageFrameIntervalMs": 6.2,
+					"frameCount": 1689,
+					"fps": 158.9,
+					"lastFrameMs": 4.1,
+					"lastFrameIntervalMs": 4.1,
+					"lastRenderMs": 2.2,
+					"worstFrameMs": 467.6,
+					"worstFrameIntervalMs": 467.6
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1689,
+						"lastMs": 0.1,
+						"worstMs": 2.4
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1689,
+						"lastMs": 0,
+						"worstMs": 0.5
+					},
+					"frameCallback": {
+						"averageMs": 3.4,
+						"count": 1689,
+						"lastMs": 2.7,
+						"worstMs": 8
+					},
+					"render": {
+						"averageMs": 2.7,
+						"count": 1689,
+						"lastMs": 2.2,
+						"worstMs": 6.8
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0.1,
+						"worstMs": 0.5
+					},
+					"visualUpdate": {
+						"averageMs": 0.6,
+						"count": 1689,
+						"lastMs": 0.5,
+						"worstMs": 3.1
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1689,
+						"lastMs": 0,
+						"worstMs": 0.2
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 93,
+					"geometries": 66,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 50,
+					"triangles": 214172
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 4,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 4,
+						"activeMixers": 4,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 40
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [8, 8],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [37, 37],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "parity-5-moving",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10582.6,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 7.3,
+					"averageFrameIntervalMs": 7.3,
+					"frameCount": 1445,
+					"fps": 143.3,
+					"lastFrameMs": 3.9,
+					"lastFrameIntervalMs": 3.9,
+					"lastRenderMs": 2.5,
+					"worstFrameMs": 510.6,
+					"worstFrameIntervalMs": 510.6
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1445,
+						"lastMs": 0.1,
+						"worstMs": 2
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1445,
+						"lastMs": 0,
+						"worstMs": 1.1
+					},
+					"frameCallback": {
+						"averageMs": 4.3,
+						"count": 1445,
+						"lastMs": 3.1,
+						"worstMs": 13.9
+					},
+					"render": {
+						"averageMs": 3.4,
+						"count": 1445,
+						"lastMs": 2.5,
+						"worstMs": 11.5
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 203,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.8,
+						"count": 1445,
+						"lastMs": 0.6,
+						"worstMs": 2.7
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1445,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 103,
+					"geometries": 66,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 70,
+					"triangles": 267968
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 6,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 6,
+						"activeMixers": 6,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 60
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [12, 12],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [37, 37],
+				"reactCommits": 0,
+				"ticks": 203,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "parity-5-idle",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10597.7,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 7.1,
+					"averageFrameIntervalMs": 7.1,
+					"frameCount": 1499,
+					"fps": 154.8,
+					"lastFrameMs": 3.2,
+					"lastFrameIntervalMs": 3.2,
+					"lastRenderMs": 2.1,
+					"worstFrameMs": 546.6,
+					"worstFrameIntervalMs": 546.6
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1499,
+						"lastMs": 0.1,
+						"worstMs": 0.8
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1499,
+						"lastMs": 0.1,
+						"worstMs": 0.6
+					},
+					"frameCallback": {
+						"averageMs": 4,
+						"count": 1499,
+						"lastMs": 2.9,
+						"worstMs": 10.7
+					},
+					"render": {
+						"averageMs": 3.2,
+						"count": 1499,
+						"lastMs": 2.1,
+						"worstMs": 9.5
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 202,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"visualUpdate": {
+						"averageMs": 0.7,
+						"count": 1499,
+						"lastMs": 0.7,
+						"worstMs": 2.9
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1499,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 97,
+					"geometries": 66,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 70,
+					"triangles": 224560
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 6,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 6,
+						"activeMixers": 6,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 60
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [12, 12],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [33, 33],
+				"reactCommits": 0,
+				"ticks": 202,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "parity-original",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10589,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 7.2,
+					"averageFrameIntervalMs": 7.2,
+					"frameCount": 1478,
+					"fps": 137.9,
+					"lastFrameMs": 4,
+					"lastFrameIntervalMs": 4,
+					"lastRenderMs": 2.8,
+					"worstFrameMs": 529.3,
+					"worstFrameIntervalMs": 529.3
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1478,
+						"lastMs": 0.2,
+						"worstMs": 1.8
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1478,
+						"lastMs": 0.1,
+						"worstMs": 0.5
+					},
+					"frameCallback": {
+						"averageMs": 4.5,
+						"count": 1478,
+						"lastMs": 3.5,
+						"worstMs": 10.2
+					},
+					"render": {
+						"averageMs": 3.6,
+						"count": 1478,
+						"lastMs": 2.8,
+						"worstMs": 8.7
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 202,
+						"lastMs": 0.1,
+						"worstMs": 0.4
+					},
+					"visualUpdate": {
+						"averageMs": 0.8,
+						"count": 1478,
+						"lastMs": 0.6,
+						"worstMs": 2.9
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1478,
+						"lastMs": 0,
+						"worstMs": 0.2
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 113,
+					"geometries": 66,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 70,
+					"triangles": 321764
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 6,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 6,
+						"activeMixers": 6,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 60
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [12, 12],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [44, 44],
+				"reactCommits": 0,
+				"ticks": 202,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			},
+			{
+				"name": "tidewatch-original",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10563.9,
+				"cpuProfile": true,
+				"frame": {
+					"averageFrameMs": 7.8,
+					"averageFrameIntervalMs": 7.8,
+					"frameCount": 1350,
+					"fps": 135.6,
+					"lastFrameMs": 4.5,
+					"lastFrameIntervalMs": 4.5,
+					"lastRenderMs": 2.2,
+					"worstFrameMs": 494.8,
+					"worstFrameIntervalMs": 494.8
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.1,
+						"count": 1350,
+						"lastMs": 0.1,
+						"worstMs": 1
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1350,
+						"lastMs": 0.1,
+						"worstMs": 1.8
+					},
+					"frameCallback": {
+						"averageMs": 3.5,
+						"count": 1350,
+						"lastMs": 2.9,
+						"worstMs": 7.5
+					},
+					"render": {
+						"averageMs": 2.8,
+						"count": 1350,
+						"lastMs": 2.2,
+						"worstMs": 6.5
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 202,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.6,
+						"count": 1350,
+						"lastMs": 0.6,
+						"worstMs": 4.1
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1350,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 106,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 56,
+					"triangles": 146560
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 2,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 2,
+						"activeMixers": 2,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 20
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [64, 64],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [31, 31],
+				"reactCommits": 0,
+				"ticks": 202,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"errors": []
+			}
+		],
+		"diagnostic": [
+			{
+				"name": "parity-contact",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10043.5,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 7.6,
+					"averageFrameIntervalMs": 7.6,
+					"frameCount": 1224,
+					"fps": 150.3,
+					"lastFrameMs": 8.7,
+					"lastFrameIntervalMs": 8.7,
+					"lastRenderMs": 3.2,
+					"worstFrameMs": 272.6,
+					"worstFrameIntervalMs": 272.6
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1224,
+						"lastMs": 0.2,
+						"worstMs": 1
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1224,
+						"lastMs": 0,
+						"worstMs": 0.6
+					},
+					"frameCallback": {
+						"averageMs": 4.8,
+						"count": 1224,
+						"lastMs": 4.1,
+						"worstMs": 272.1
+					},
+					"render": {
+						"averageMs": 4.1,
+						"count": 1224,
+						"lastMs": 3.2,
+						"worstMs": 271.7
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 163,
+						"lastMs": 0.1,
+						"worstMs": 0.4
+					},
+					"visualUpdate": {
+						"averageMs": 0.6,
+						"count": 1224,
+						"lastMs": 0.7,
+						"worstMs": 1.9
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1224,
+						"lastMs": 0,
+						"worstMs": 0.3
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 121,
+					"geometries": 71,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 70,
+					"triangles": 324356
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 6,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 6,
+						"activeMixers": 6,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 60
+				},
+				"sceneBuilds": [4, 9],
+				"sceneReasons": {
+					"initial runtime build": 2,
+					"npc state changed": 7
+				},
+				"clones": [24, 54],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "npc state changed",
+					"lastStartReason": "npc state changed",
+					"loopCancelCount": 8,
+					"loopRestartCount": 8,
+					"loopStartCount": 9
+				},
+				"editorFrames": [27, 27],
+				"reactCommits": 10,
+				"ticks": 163,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {},
+				"errors": []
+			},
+			{
+				"name": "tidewatch-5-moving",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10029.8,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 9.8,
+					"averageFrameIntervalMs": 9.8,
+					"frameCount": 1028,
+					"fps": 102.4,
+					"lastFrameMs": 10.3,
+					"lastFrameIntervalMs": 10.3,
+					"lastRenderMs": 3.9,
+					"worstFrameMs": 20,
+					"worstFrameIntervalMs": 20
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1028,
+						"lastMs": 0.2,
+						"worstMs": 0.6
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1028,
+						"lastMs": 0.4,
+						"worstMs": 0.6
+					},
+					"frameCallback": {
+						"averageMs": 5.1,
+						"count": 1028,
+						"lastMs": 5.4,
+						"worstMs": 13.2
+					},
+					"render": {
+						"averageMs": 3.9,
+						"count": 1028,
+						"lastMs": 3.9,
+						"worstMs": 10.6
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"visualUpdate": {
+						"averageMs": 1.1,
+						"count": 1028,
+						"lastMs": 1.1,
+						"worstMs": 4.4
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1028,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 33,
+					"averageMs": 7.854
+				},
+				"renderer": {
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [28, 28],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_wander_0": [
+						"5,10",
+						"6,10",
+						"7,10",
+						"8,10",
+						"8,9",
+						"8,8",
+						"7,8",
+						"6,8",
+						"6,9"
+					],
+					"harbour_wander_1": ["3,11"],
+					"harbour_wander_2": [
+						"2,10",
+						"1,10",
+						"3,10",
+						"4,10",
+						"5,10",
+						"6,10",
+						"7,10",
+						"8,10",
+						"9,10",
+						"10,10"
+					],
+					"harbour_wander_3": [
+						"6,10",
+						"7,10",
+						"8,10",
+						"9,10",
+						"10,10",
+						"11,10",
+						"12,10",
+						"13,10",
+						"12,9",
+						"12,8"
+					],
+					"harbour_wander_4": ["13,11"]
+				},
+				"errors": []
+			},
+			{
+				"name": "tidewatch-shadows-off",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10025.8,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 10,
+					"averageFrameIntervalMs": 10,
+					"frameCount": 999,
+					"fps": 97.6,
+					"lastFrameMs": 9.7,
+					"lastFrameIntervalMs": 9.7,
+					"lastRenderMs": 3.4,
+					"worstFrameMs": 16.3,
+					"worstFrameIntervalMs": 16.3
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 999,
+						"lastMs": 0.3,
+						"worstMs": 0.6
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 999,
+						"lastMs": 0.1,
+						"worstMs": 0.5
+					},
+					"frameCallback": {
+						"averageMs": 5.3,
+						"count": 999,
+						"lastMs": 4.6,
+						"worstMs": 12.5
+					},
+					"render": {
+						"averageMs": 3.9,
+						"count": 999,
+						"lastMs": 3.4,
+						"worstMs": 9.8
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 200,
+						"lastMs": 0.2,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 1.2,
+						"count": 999,
+						"lastMs": 1.1,
+						"worstMs": 4.8
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 999,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 32,
+					"averageMs": 8.078
+				},
+				"renderer": {
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [33, 33],
+				"reactCommits": 0,
+				"ticks": 200,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_wander_0": [
+						"7,9",
+						"8,9",
+						"9,9",
+						"10,9",
+						"10,10",
+						"9,10",
+						"6,9",
+						"5,9",
+						"4,9",
+						"4,8",
+						"5,8",
+						"6,8",
+						"7,8"
+					],
+					"harbour_wander_1": [
+						"3,10",
+						"2,10",
+						"4,10",
+						"1,10",
+						"1,9",
+						"2,9",
+						"3,9"
+					],
+					"harbour_wander_2": [
+						"5,10",
+						"6,10",
+						"7,10",
+						"7,9",
+						"6,9",
+						"5,9",
+						"4,9",
+						"4,10"
+					],
+					"harbour_wander_3": [
+						"6,10",
+						"7,10",
+						"8,10",
+						"9,10",
+						"10,10",
+						"11,10",
+						"12,10",
+						"13,10"
+					],
+					"harbour_wander_4": ["13,11", "13,10"]
+				},
+				"errors": []
+			},
+			{
+				"name": "tidewatch-mixers-off",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10023.8,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 9.7,
+					"averageFrameIntervalMs": 9.7,
+					"frameCount": 1037,
+					"fps": 106.5,
+					"lastFrameMs": 8.7,
+					"lastFrameIntervalMs": 8.7,
+					"lastRenderMs": 4.3,
+					"worstFrameMs": 20.3,
+					"worstFrameIntervalMs": 20.3
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0,
+						"count": 1037,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1037,
+						"lastMs": 0,
+						"worstMs": 0.5
+					},
+					"frameCallback": {
+						"averageMs": 5.4,
+						"count": 1037,
+						"lastMs": 5.2,
+						"worstMs": 12.6
+					},
+					"render": {
+						"averageMs": 4.4,
+						"count": 1037,
+						"lastMs": 4.3,
+						"worstMs": 10.6
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 200,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.9,
+						"count": 1037,
+						"lastMs": 0.8,
+						"worstMs": 4.7
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1037,
+						"lastMs": 0.1,
+						"worstMs": 0.3
+					}
+				},
+				"gpuTimer": {
+					"samples": 33,
+					"averageMs": 7.811
+				},
+				"renderer": {
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [35, 35],
+				"reactCommits": 0,
+				"ticks": 200,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_wander_0": [
+						"6,9",
+						"7,9",
+						"8,9",
+						"5,9",
+						"4,9",
+						"3,9",
+						"2,9",
+						"1,9",
+						"1,10",
+						"2,10",
+						"3,10",
+						"4,10"
+					],
+					"harbour_wander_1": ["3,11"],
+					"harbour_wander_2": [
+						"8,9",
+						"9,9",
+						"10,9",
+						"11,9",
+						"12,9",
+						"13,9",
+						"13,10",
+						"12,10",
+						"11,10",
+						"10,10",
+						"9,10"
+					],
+					"harbour_wander_3": [
+						"6,10",
+						"5,10",
+						"4,10",
+						"3,10",
+						"2,10",
+						"1,10",
+						"6,9",
+						"5,9",
+						"4,9",
+						"3,9"
+					],
+					"harbour_wander_4": ["13,11", "13,10", "13,9", "13,8"]
+				},
+				"errors": []
+			},
+			{
+				"name": "tidewatch-dpr2",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 2880,
+					"height": 1660,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10028.3,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 17.5,
+					"averageFrameIntervalMs": 17.5,
+					"frameCount": 572,
+					"fps": 62.7,
+					"lastFrameMs": 15.9,
+					"lastFrameIntervalMs": 15.9,
+					"lastRenderMs": 3.6,
+					"worstFrameMs": 28.1,
+					"worstFrameIntervalMs": 28.1
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 572,
+						"lastMs": 0.2,
+						"worstMs": 0.7
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 572,
+						"lastMs": 0,
+						"worstMs": 0.6
+					},
+					"frameCallback": {
+						"averageMs": 5.6,
+						"count": 572,
+						"lastMs": 4.9,
+						"worstMs": 12.2
+					},
+					"render": {
+						"averageMs": 4.2,
+						"count": 572,
+						"lastMs": 3.6,
+						"worstMs": 9.9
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 200,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"visualUpdate": {
+						"averageMs": 1.2,
+						"count": 572,
+						"lastMs": 1.3,
+						"worstMs": 2.7
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 572,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 18,
+					"averageMs": 14.315
+				},
+				"renderer": {
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [27, 27],
+				"reactCommits": 0,
+				"ticks": 200,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_wander_0": [
+						"7,9",
+						"8,9",
+						"9,9",
+						"10,9",
+						"11,9",
+						"12,9",
+						"13,9",
+						"13,10",
+						"12,10",
+						"11,10",
+						"10,10"
+					],
+					"harbour_wander_1": ["3,11"],
+					"harbour_wander_2": [
+						"6,9",
+						"7,9",
+						"7,10",
+						"8,10",
+						"9,10",
+						"10,10",
+						"11,10"
+					],
+					"harbour_wander_3": [
+						"7,10",
+						"6,10",
+						"5,10",
+						"4,10",
+						"3,10",
+						"2,10",
+						"8,10"
+					],
+					"harbour_wander_4": ["13,11"]
+				},
+				"errors": []
+			},
+			{
+				"name": "tidewatch-dpr1.5",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 2160,
+					"height": 1245,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10018.5,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 12.9,
+					"averageFrameIntervalMs": 12.9,
+					"frameCount": 774,
+					"fps": 74.8,
+					"lastFrameMs": 12.7,
+					"lastFrameIntervalMs": 12.7,
+					"lastRenderMs": 3.9,
+					"worstFrameMs": 16.3,
+					"worstFrameIntervalMs": 16.3
+				},
+				"uninterruptedFrames": null,
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 774,
+						"lastMs": 0.3,
+						"worstMs": 0.6
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 774,
+						"lastMs": 0.1,
+						"worstMs": 0.4
+					},
+					"frameCallback": {
+						"averageMs": 5.2,
+						"count": 774,
+						"lastMs": 5.2,
+						"worstMs": 9.4
+					},
+					"render": {
+						"averageMs": 4,
+						"count": 774,
+						"lastMs": 3.9,
+						"worstMs": 7.2
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0.2,
+						"worstMs": 0.2
+					},
+					"visualUpdate": {
+						"averageMs": 1.1,
+						"count": 774,
+						"lastMs": 1.2,
+						"worstMs": 2.2
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 774,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 25,
+					"averageMs": 10.414
+				},
+				"renderer": {
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [32, 32],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_wander_0": [
+						"7,9",
+						"6,9",
+						"5,9",
+						"4,9",
+						"3,9",
+						"2,9",
+						"1,9",
+						"1,10",
+						"2,10",
+						"3,10",
+						"4,10"
+					],
+					"harbour_wander_1": ["3,11"],
+					"harbour_wander_2": [
+						"8,9",
+						"9,9",
+						"10,9",
+						"10,10",
+						"9,10",
+						"11,10",
+						"12,10",
+						"13,10",
+						"14,10",
+						"14,9",
+						"13,9",
+						"12,9",
+						"11,9"
+					],
+					"harbour_wander_3": [
+						"12,8",
+						"11,8",
+						"10,8",
+						"13,8",
+						"14,8",
+						"10,9",
+						"10,10"
+					],
+					"harbour_wander_4": ["13,11"]
+				},
+				"errors": []
+			}
+		],
+		"before": [
+			{
+				"name": "parity-contact",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10022.6,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 7.8,
+					"averageFrameIntervalMs": 7.8,
+					"frameCount": 1186,
+					"fps": 145.1,
+					"lastFrameMs": 7.1,
+					"lastFrameIntervalMs": 7.1,
+					"lastRenderMs": 2.9,
+					"worstFrameMs": 336.5,
+					"worstFrameIntervalMs": 336.5
+				},
+				"uninterruptedFrames": {
+					"count": 1181,
+					"averageMs": 8.483,
+					"p50": 6.5,
+					"p95": 8.4,
+					"p99": 13.1,
+					"worstMs": 497.2,
+					"over50": 5
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1186,
+						"lastMs": 0.1,
+						"worstMs": 0.5
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1186,
+						"lastMs": 0.1,
+						"worstMs": 0.3
+					},
+					"frameCallback": {
+						"averageMs": 4.9,
+						"count": 1186,
+						"lastMs": 3.6,
+						"worstMs": 336
+					},
+					"render": {
+						"averageMs": 4.2,
+						"count": 1186,
+						"lastMs": 2.9,
+						"worstMs": 335.7
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 161,
+						"lastMs": 0.1,
+						"worstMs": 0.5
+					},
+					"visualUpdate": {
+						"averageMs": 0.6,
+						"count": 1186,
+						"lastMs": 0.5,
+						"worstMs": 1.8
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1186,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 0,
+					"averageMs": null
+				},
+				"renderer": {
+					"drawCalls": 121,
+					"geometries": 71,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 70,
+					"triangles": 324356
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 6,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 6,
+						"activeMixers": 6,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 60
+				},
+				"sceneBuilds": [4, 9],
+				"sceneReasons": {
+					"initial runtime build": 2,
+					"npc state changed": 7
+				},
+				"clones": [24, 54],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "npc state changed",
+					"lastStartReason": "npc state changed",
+					"loopCancelCount": 8,
+					"loopRestartCount": 8,
+					"loopStartCount": 9
+				},
+				"editorFrames": [31, 31],
+				"reactCommits": 10,
+				"ticks": 161,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {},
+				"errors": []
+			},
+			{
+				"name": "harbour-patrol",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10031.5,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 9.7,
+					"averageFrameIntervalMs": 9.7,
+					"frameCount": 1039,
+					"fps": 99.8,
+					"lastFrameMs": 10,
+					"lastFrameIntervalMs": 10,
+					"lastRenderMs": 3.8,
+					"worstFrameMs": 30,
+					"worstFrameIntervalMs": 30
+				},
+				"uninterruptedFrames": {
+					"count": 1039,
+					"averageMs": 9.654,
+					"p50": 9.5,
+					"p95": 11.2,
+					"p99": 12.5,
+					"worstMs": 31.4,
+					"over50": 0
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1039,
+						"lastMs": 0.2,
+						"worstMs": 0.6
+					},
+					"cameraUpdate": {
+						"averageMs": 0.1,
+						"count": 1039,
+						"lastMs": 0.2,
+						"worstMs": 0.4
+					},
+					"frameCallback": {
+						"averageMs": 5.3,
+						"count": 1039,
+						"lastMs": 5.1,
+						"worstMs": 11.3
+					},
+					"render": {
+						"averageMs": 4,
+						"count": 1039,
+						"lastMs": 3.8,
+						"worstMs": 8.6
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"visualUpdate": {
+						"averageMs": 1.2,
+						"count": 1039,
+						"lastMs": 1.1,
+						"worstMs": 4.6
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1039,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 33,
+					"averageMs": 7.876
+				},
+				"renderer": {
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [45, 45],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_patrol_0": ["1,9", "1,10", "1,8"],
+					"harbour_patrol_1": ["3,9", "3,10", "3,8"],
+					"harbour_patrol_2": ["5,9", "5,10", "5,8"],
+					"harbour_patrol_3": ["8,10", "8,9"],
+					"harbour_patrol_4": ["13,9", "13,10", "13,8"]
+				},
+				"errors": []
+			}
+		],
+		"after": [
+			{
+				"name": "parity-contact",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10024.7,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 6.7,
+					"averageFrameIntervalMs": 6.7,
+					"frameCount": 1489,
+					"fps": 140,
+					"lastFrameMs": 7,
+					"lastFrameIntervalMs": 7,
+					"lastRenderMs": 2.9,
+					"worstFrameMs": 11.6,
+					"worstFrameIntervalMs": 11.6
+				},
+				"uninterruptedFrames": {
+					"count": 1489,
+					"averageMs": 6.731,
+					"p50": 6.7,
+					"p95": 8.3,
+					"p99": 9.8,
+					"worstMs": 11.8,
+					"over50": 0
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1489,
+						"lastMs": 0.2,
+						"worstMs": 0.8
+					},
+					"cameraUpdate": {
+						"averageMs": 0,
+						"count": 1489,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"frameCallback": {
+						"averageMs": 3.3,
+						"count": 1489,
+						"lastMs": 3.4,
+						"worstMs": 7.4
+					},
+					"render": {
+						"averageMs": 2.9,
+						"count": 1489,
+						"lastMs": 2.9,
+						"worstMs": 6.9
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.3,
+						"count": 1489,
+						"lastMs": 0.3,
+						"worstMs": 0.9
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1489,
+						"lastMs": 0.1,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 48,
+					"averageMs": 4.327
+				},
+				"renderer": {
+					"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+					"width": 1440,
+					"height": 830,
+					"pixelRatio": 1.0000000298023224,
+					"drawCalls": 121,
+					"geometries": 71,
+					"lines": 0,
+					"points": 0,
+					"programs": 15,
+					"textures": 70,
+					"triangles": 324356
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 6,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 6,
+						"activeMixers": 6,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 60
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [12, 12],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [23, 23],
+				"reactCommits": 10,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 11,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"idle_guide": ["2,6"],
+					"wander_west": [
+						"3,3",
+						"3,2",
+						"3,1",
+						"2,1",
+						"1,1",
+						"1,2",
+						"1,3",
+						"2,2",
+						"4,2",
+						"4,3",
+						"2,3"
+					],
+					"wander_east": [
+						"8,2",
+						"9,2",
+						"7,2",
+						"8,3",
+						"7,3",
+						"7,1",
+						"8,1",
+						"9,1"
+					],
+					"sparring_guard": ["4,7"],
+					"patrol_lookout": ["8,7", "8,6", "8,5", "9,5", "9,6", "9,7"]
+				},
+				"errors": []
+			},
+			{
+				"name": "harbour-patrol",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10028.3,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 9.7,
+					"averageFrameIntervalMs": 9.7,
+					"frameCount": 1039,
+					"fps": 102.3,
+					"lastFrameMs": 9.6,
+					"lastFrameIntervalMs": 9.6,
+					"lastRenderMs": 4.1,
+					"worstFrameMs": 19,
+					"worstFrameIntervalMs": 19
+				},
+				"uninterruptedFrames": {
+					"count": 1039,
+					"averageMs": 9.649,
+					"p50": 9.6,
+					"p95": 11.3,
+					"p99": 12.7,
+					"worstMs": 20.1,
+					"over50": 0
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1039,
+						"lastMs": 0.3,
+						"worstMs": 0.9
+					},
+					"cameraUpdate": {
+						"averageMs": 0,
+						"count": 1039,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"frameCallback": {
+						"averageMs": 4.6,
+						"count": 1039,
+						"lastMs": 4.5,
+						"worstMs": 11.5
+					},
+					"render": {
+						"averageMs": 4.1,
+						"count": 1039,
+						"lastMs": 4.1,
+						"worstMs": 10.8
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 200,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.4,
+						"count": 1039,
+						"lastMs": 0.4,
+						"worstMs": 1.2
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1039,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 33,
+					"averageMs": 7.742
+				},
+				"renderer": {
+					"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+					"width": 1440,
+					"height": 830,
+					"pixelRatio": 1.0000000298023224,
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [32, 32],
+				"reactCommits": 0,
+				"ticks": 200,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_patrol_0": ["1,9", "1,10", "1,8"],
+					"harbour_patrol_1": ["3,9", "3,10", "3,8"],
+					"harbour_patrol_2": ["5,9", "5,10", "5,8"],
+					"harbour_patrol_3": ["8,10", "8,9"],
+					"harbour_patrol_4": ["13,9", "13,10", "13,8"]
+				},
+				"errors": []
+			}
+		],
+		"render-controls": [
+			{
+				"name": "harbour-patrol",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10030.6,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 9.4,
+					"averageFrameIntervalMs": 9.4,
+					"frameCount": 1068,
+					"fps": 110.8,
+					"lastFrameMs": 8.9,
+					"lastFrameIntervalMs": 8.9,
+					"lastRenderMs": 4.1,
+					"worstFrameMs": 12.6,
+					"worstFrameIntervalMs": 12.6
+				},
+				"uninterruptedFrames": {
+					"count": 1068,
+					"averageMs": 9.39,
+					"p50": 9.3,
+					"p95": 11.4,
+					"p99": 12.9,
+					"worstMs": 15.2,
+					"over50": 0
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1068,
+						"lastMs": 0.2,
+						"worstMs": 1.7
+					},
+					"cameraUpdate": {
+						"averageMs": 0,
+						"count": 1068,
+						"lastMs": 0.1,
+						"worstMs": 0.3
+					},
+					"frameCallback": {
+						"averageMs": 4.8,
+						"count": 1068,
+						"lastMs": 4.5,
+						"worstMs": 10
+					},
+					"render": {
+						"averageMs": 4.4,
+						"count": 1068,
+						"lastMs": 4.1,
+						"worstMs": 9.6
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.4,
+						"count": 1068,
+						"lastMs": 0.3,
+						"worstMs": 1.9
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1068,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 34,
+					"averageMs": 7.642
+				},
+				"renderer": {
+					"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+					"width": 1440,
+					"height": 830,
+					"pixelRatio": 1.0000000298023224,
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"resources": {
+					"meshes": 70,
+					"skeletons": 70,
+					"bones": 455,
+					"geometries": 10,
+					"materials": 10,
+					"shadowCasters": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [33, 33],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_patrol_0": ["1,9", "1,10", "1,8"],
+					"harbour_patrol_1": ["3,9", "3,10", "3,8"],
+					"harbour_patrol_2": ["5,9", "5,10", "5,8"],
+					"harbour_patrol_3": ["8,10", "8,9"],
+					"harbour_patrol_4": ["13,9", "13,10", "13,8"]
+				},
+				"errors": []
+			},
+			{
+				"name": "harbour-shadows-off",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10022,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 9,
+					"averageFrameIntervalMs": 9,
+					"frameCount": 1108,
+					"fps": 112.3,
+					"lastFrameMs": 8.4,
+					"lastFrameIntervalMs": 8.4,
+					"lastRenderMs": 2.6,
+					"worstFrameMs": 21.9,
+					"worstFrameIntervalMs": 21.9
+				},
+				"uninterruptedFrames": {
+					"count": 1108,
+					"averageMs": 9.041,
+					"p50": 8.9,
+					"p95": 10.6,
+					"p99": 12.3,
+					"worstMs": 21.6,
+					"over50": 0
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1108,
+						"lastMs": 0.1,
+						"worstMs": 0.7
+					},
+					"cameraUpdate": {
+						"averageMs": 0,
+						"count": 1108,
+						"lastMs": 0,
+						"worstMs": 0.2
+					},
+					"frameCallback": {
+						"averageMs": 3.7,
+						"count": 1108,
+						"lastMs": 3.2,
+						"worstMs": 10.2
+					},
+					"render": {
+						"averageMs": 3.2,
+						"count": 1108,
+						"lastMs": 2.6,
+						"worstMs": 9.1
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0.1,
+						"worstMs": 0.3
+					},
+					"visualUpdate": {
+						"averageMs": 0.4,
+						"count": 1108,
+						"lastMs": 0.5,
+						"worstMs": 0.9
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1108,
+						"lastMs": 0.1,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 35,
+					"averageMs": 7.292
+				},
+				"renderer": {
+					"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+					"width": 1440,
+					"height": 830,
+					"pixelRatio": 1.0000000298023224,
+					"drawCalls": 156,
+					"geometries": 85,
+					"lines": 0,
+					"points": 0,
+					"programs": 16,
+					"textures": 106,
+					"triangles": 415540
+				},
+				"characters": {
+					"activeAssetIds": [
+						"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+					],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+							"materialCount": 10,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 10,
+							"textureCount": 6,
+							"triangleCount": 53796,
+							"vertexCount": 32463
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 70
+				},
+				"resources": {
+					"meshes": 70,
+					"skeletons": 70,
+					"bones": 455,
+					"geometries": 10,
+					"materials": 10,
+					"shadowCasters": 70
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [30, 30],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 34,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_patrol_0": ["1,9", "1,10", "1,8"],
+					"harbour_patrol_1": ["3,9", "3,10", "3,8"],
+					"harbour_patrol_2": ["5,9", "5,10", "5,8"],
+					"harbour_patrol_3": ["8,10", "8,9"],
+					"harbour_patrol_4": ["13,9", "13,10", "13,8"]
+				},
+				"errors": []
+			},
+			{
+				"name": "harbour-simple-character",
+				"gpu": {
+					"devices": [
+						{
+							"vendorId": 32902,
+							"deviceId": 42912,
+							"subSysId": 1721832792,
+							"revision": 4,
+							"vendorString": "",
+							"deviceString": "Intel(R) Iris(R) Xe Graphics",
+							"driverVendor": "Intel",
+							"driverVersion": "32.0.101.5768"
+						},
+						{
+							"vendorId": 4318,
+							"deviceId": 10336,
+							"subSysId": 1721898328,
+							"revision": 161,
+							"vendorString": "",
+							"deviceString": "NVIDIA GeForce RTX 4070 Laptop GPU",
+							"driverVendor": "",
+							"driverVersion": "32.0.15.6636"
+						},
+						{
+							"vendorId": 5140,
+							"deviceId": 140,
+							"subSysId": 0,
+							"revision": 0,
+							"vendorString": "",
+							"deviceString": "Microsoft Basic Render Driver",
+							"driverVendor": "",
+							"driverVersion": "10.0.26100.9278"
+						}
+					],
+					"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+					"features": {
+						"2d_canvas": "enabled",
+						"direct_rendering_display_compositor": "disabled_off_ok",
+						"gpu_compositing": "enabled",
+						"multiple_raster_threads": "enabled_on",
+						"opengl": "enabled_on",
+						"rasterization": "enabled",
+						"raw_draw": "disabled_off_ok",
+						"skia_graphite": "disabled_off",
+						"trees_in_viz": "disabled_off",
+						"video_decode": "enabled",
+						"video_encode": "enabled",
+						"webgl": "enabled",
+						"webgpu": "enabled",
+						"webnn": "disabled_off"
+					}
+				},
+				"webglRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"resolution": {
+					"width": 1440,
+					"height": 830,
+					"dpr": 1.0000000298023224,
+					"css": [1440, 830]
+				},
+				"sampleMs": 10029.5,
+				"cpuProfile": false,
+				"frame": {
+					"averageFrameMs": 8.7,
+					"averageFrameIntervalMs": 8.7,
+					"frameCount": 1150,
+					"fps": 121.8,
+					"lastFrameMs": 7.9,
+					"lastFrameIntervalMs": 7.9,
+					"lastRenderMs": 3.3,
+					"worstFrameMs": 16.6,
+					"worstFrameIntervalMs": 16.6
+				},
+				"uninterruptedFrames": {
+					"count": 1150,
+					"averageMs": 8.721,
+					"p50": 8.3,
+					"p95": 12.9,
+					"p99": 15.4,
+					"worstMs": 18.7,
+					"over50": 0
+				},
+				"phases": {
+					"animationUpdate": {
+						"averageMs": 0.2,
+						"count": 1150,
+						"lastMs": 0.2,
+						"worstMs": 0.8
+					},
+					"cameraUpdate": {
+						"averageMs": 0,
+						"count": 1150,
+						"lastMs": 0,
+						"worstMs": 0.3
+					},
+					"frameCallback": {
+						"averageMs": 3.9,
+						"count": 1150,
+						"lastMs": 3.7,
+						"worstMs": 14.4
+					},
+					"render": {
+						"averageMs": 3.5,
+						"count": 1150,
+						"lastMs": 3.3,
+						"worstMs": 13.5
+					},
+					"runtimeTick": {
+						"averageMs": 0,
+						"count": 201,
+						"lastMs": 0,
+						"worstMs": 1.2
+					},
+					"visualUpdate": {
+						"averageMs": 0.4,
+						"count": 1150,
+						"lastMs": 0.4,
+						"worstMs": 1.3
+					},
+					"waterUpdate": {
+						"averageMs": 0,
+						"count": 1150,
+						"lastMs": 0,
+						"worstMs": 0.1
+					}
+				},
+				"gpuTimer": {
+					"samples": 37,
+					"averageMs": 6.376
+				},
+				"renderer": {
+					"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+					"width": 1440,
+					"height": 830,
+					"pixelRatio": 1.0000000298023224,
+					"drawCalls": 121,
+					"geometries": 80,
+					"lines": 0,
+					"points": 0,
+					"programs": 12,
+					"textures": 65,
+					"triangles": 142148
+				},
+				"characters": {
+					"activeAssetIds": ["procedural-mannequin-v0"],
+					"activeCloneInstances": 7,
+					"assetMetrics": [
+						{
+							"boneCount": 65,
+							"definitionId": "procedural-mannequin-v0",
+							"materialCount": 3,
+							"materialTypes": [
+								"MeshStandardMaterial",
+								"MeshStandardMaterial",
+								"MeshStandardMaterial"
+							],
+							"skinnedMeshCount": 5,
+							"textureCount": 0,
+							"triangleCount": 14740,
+							"vertexCount": 7408
+						}
+					],
+					"animationClips": [],
+					"animation": {
+						"activeLoopingActions": 7,
+						"activeMixers": 7,
+						"incompatibleClipCount": 0,
+						"loadingSourceCount": 0,
+						"missingClipCount": 0,
+						"oneShotActionsTriggered": 0,
+						"playerState": "idle",
+						"sourceAssetIds": [
+							"golden-reference-quaternius-idle-baked-v1",
+							"golden-reference-quaternius-walk-baked-v1"
+						]
+					},
+					"cloneTypes": ["skeleton-utils"],
+					"skinnedMeshCount": 35
+				},
+				"resources": {
+					"meshes": 35,
+					"skeletons": 35,
+					"bones": 455,
+					"geometries": 5,
+					"materials": 3,
+					"shadowCasters": 35
+				},
+				"sceneBuilds": [2, 2],
+				"sceneReasons": {
+					"initial runtime build": 2
+				},
+				"clones": [74, 74],
+				"runtimeRaf": {
+					"activeLoopCount": 1,
+					"lastCancelReason": "initial runtime build",
+					"lastStartReason": "initial runtime build",
+					"loopCancelCount": 1,
+					"loopRestartCount": 1,
+					"loopStartCount": 2
+				},
+				"editorFrames": [25, 25],
+				"reactCommits": 0,
+				"ticks": 201,
+				"glbRequests": {
+					"distinct": 35,
+					"maxPerUrl": 1
+				},
+				"observedNpcPositions": {
+					"npc_instance_108eda9c": ["7,6"],
+					"harbour_patrol_0": ["1,9", "1,10", "1,8"],
+					"harbour_patrol_1": ["3,9", "3,10", "3,8"],
+					"harbour_patrol_2": ["5,9", "5,10", "5,8"],
+					"harbour_patrol_3": ["8,10", "8,9"],
+					"harbour_patrol_4": ["13,9", "13,10", "13,8"]
+				},
+				"errors": []
+			}
+		]
+	}
+}

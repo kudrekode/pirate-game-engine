@@ -45,6 +45,7 @@ export type RuntimeCombatEvent =
 	| { type: "status"; message: string }
 	| { type: "stateChanged" }
 	| { type: "combatChanged" }
+	| { type: "itemFeedback"; message: string }
 	| { type: "inventoryChanged"; inventory: Record<string, number> }
 	| { type: "questsChanged"; quests: QuestView[] }
 	| { type: "flowLog"; message: string };
@@ -68,6 +69,7 @@ function syncQuestProgress(
 		session.runtimeQuestState,
 		session.runtimeState,
 		session.project.items,
+		(message) => emit({ type: "itemFeedback", message }),
 	);
 	if (stateChanged) {
 		emit({

@@ -31,7 +31,13 @@ function formatReasonCounts(reasonCounts: Record<string, number>): string {
 		.join(", ");
 }
 
-export function ThreePerformanceOverlay({
+export function ThreePerformanceOverlay(props: ThreePerformanceOverlayProps) {
+	return import.meta.env.DEV ? (
+		<DevelopmentPerformanceOverlay {...props} />
+	) : null;
+}
+
+function DevelopmentPerformanceOverlay({
 	diagnostics,
 	title,
 }: ThreePerformanceOverlayProps) {
@@ -132,6 +138,19 @@ export function ThreePerformanceOverlay({
 						<strong>
 							{snapshot.raf.loopStartCount}/{snapshot.raf.loopCancelCount}
 						</strong>
+						{snapshot.label === "ThreeRuntimePanel" && (
+							<>
+								<span>Render target / DPR</span>
+								<strong>
+									{snapshot.renderer.width} x {snapshot.renderer.height} /{" "}
+									{formatNumber(snapshot.renderer.pixelRatio)}
+								</strong>
+								<span>WebGL backend</span>
+								<strong>{snapshot.renderer.backend}</strong>
+								<span>Runtime React commits</span>
+								<strong>{snapshot.runtime.reactCommitCount}</strong>
+							</>
+						)}
 						<span>Draw calls</span>
 						<strong>{snapshot.renderer.drawCalls}</strong>
 						<span>Triangles</span>
