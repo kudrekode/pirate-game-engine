@@ -1,4 +1,7 @@
 import {
+	GOLDEN_COMBAT_V1_ASSET,
+	GOLDEN_COMBAT_V2_ASSET,
+	GOLDEN_COMBAT_V3_ASSET,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
@@ -132,6 +135,9 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	},
 	{ ...GOLDEN_REFERENCE_HUMANOID_ASSET, hiddenFromBrowser: true },
 	{ ...GOLDEN_REFERENCE_IDLE_BAKED_ASSET, hiddenFromBrowser: true },
+	{ ...GOLDEN_COMBAT_V1_ASSET, hiddenFromBrowser: true },
+	{ ...GOLDEN_COMBAT_V2_ASSET, hiddenFromBrowser: true },
+	{ ...GOLDEN_COMBAT_V3_ASSET, hiddenFromBrowser: true },
 	{ ...GOLDEN_REFERENCE_WALK_BAKED_ASSET, hiddenFromBrowser: true },
 	{ ...PROCEDURAL_MANNEQUIN_V0_ASSET, hiddenFromBrowser: true },
 	{ ...PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET, hiddenFromBrowser: true },

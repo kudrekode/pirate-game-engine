@@ -120,8 +120,8 @@ it("shares a character load but isolates skeletons, transforms and Golden idle/w
 		two.update(0.1);
 		expect(one.getStats().semanticState).toBe("walk");
 		expect(two.getStats().semanticState).toBe("idle");
-		// Golden authored humans only map idle/walk. Space must not permanently
-		// latch an attack state that can never receive a mixer finished event.
+		// This loader omits the optional combat clips. A missing Attack must
+		// never latch a state that cannot receive a mixer finished event.
 		one.triggerAttack();
 		one.update(1);
 		expect(one.getStats().semanticState).toBe("walk");
@@ -134,7 +134,7 @@ it("shares a character load but isolates skeletons, transforms and Golden idle/w
 		expect(
 			loadAsync.mock.calls.filter(([url]) => url === asset.url),
 		).toHaveLength(1);
-		expect(loadAsync).toHaveBeenCalledTimes(3); // one character, two shared clip sources
+		expect(loadAsync).toHaveBeenCalledTimes(4); // character, two locomotion sources, one combat library
 	} finally {
 		controllers.forEach((controller) => {
 			controller.dispose();
@@ -279,4 +279,184 @@ describe("Three character animation", () => {
 			restoreRegistry();
 		}
 	});
+});
+
+async function combatFixture(
+	run: (
+		controllers: ReturnType<typeof createThreeCharacterAnimationController>[],
+		load: ReturnType<typeof vi.fn>,
+	) => void,
+	available = ["Idle", "Walk", "Attack", "Hit", "Dead"],
+) {
+	const asset: ThreeVisualAssetDefinition = {
+		id: "combat-fixture",
+		kind: "glb",
+		name: "Combat fixture",
+		url: "/combat.glb",
+		animations: {
+			idle: { clipName: "Idle" },
+			walk: { clipName: "Walk" },
+			attack: { clipName: "Attack" },
+			hit: { clipName: "Hit" },
+			defeated: { clipName: "Dead" },
+		},
+	};
+	const restoreRegistry = setThreeVisualAssetRegistryForTests([asset]);
+	const load = vi.fn(async () => ({
+		scene: new THREE.Group(),
+		animations: available.map(createRootMotionClip),
+	}));
+	const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync: load,
+	}));
+	const controllers = [
+		createRenderedCharacter(),
+		createRenderedCharacter(),
+	].map((root) => createThreeCharacterAnimationController({ asset, root }));
+	try {
+		await flushAssetPromises();
+		run(controllers, load);
+	} finally {
+		controllers.forEach((c) => {
+			c.dispose();
+		});
+		restoreLoader();
+		restoreRegistry();
+	}
+}
+
+it("returns one-shots to the latest locomotion without replaying an interrupted Attack", async () => {
+	await combatFixture(([one, two], load) => {
+		one.triggerAttack();
+		one.update(0.2);
+		expect(one.getStats().semanticState).toBe("attack");
+		expect(two.getStats().semanticState).toBe("idle");
+		one.triggerHit();
+		one.sync({ moving: true, defeated: false });
+		expect(one.getStats().semanticState).toBe("hit");
+		const count = one.getStats().oneShotActionsTriggered;
+		one.triggerAttack();
+		expect(one.getStats().oneShotActionsTriggered).toBe(count);
+		one.update(1.1);
+		expect(one.getStats().semanticState).toBe("walk");
+		one.triggerAttack();
+		one.sync({ moving: false, defeated: false });
+		one.update(1.1);
+		expect(one.getStats().semanticState).toBe("idle");
+		expect(two.getStats().oneShotActionsTriggered).toBe(0);
+		expect(load).toHaveBeenCalledTimes(1);
+	});
+});
+it("restarts accepted Attack and Hit requests but gives death irreversible priority while defeated", async () => {
+	await combatFixture(([c]) => {
+		c.triggerAttack();
+		c.update(0.6);
+		c.triggerAttack();
+		c.update(0.6);
+		expect(c.getStats().semanticState).toBe("attack");
+		c.triggerHit();
+		c.update(0.6);
+		c.triggerHit();
+		c.update(0.6);
+		expect(c.getStats().semanticState).toBe("hit");
+		c.sync({ moving: true, defeated: true });
+		expect(c.getDefeatPlayback()).toEqual({ duration: 1, finished: false });
+		const count = c.getStats().oneShotActionsTriggered;
+		c.triggerAttack();
+		c.triggerHit();
+		expect(c.getStats().oneShotActionsTriggered).toBe(count);
+		c.update(1.1);
+		expect(c.getDefeatPlayback()).toEqual({ duration: 1, finished: true });
+		c.update(5);
+		c.sync({ moving: false, defeated: true });
+		expect(c.getStats().semanticState).toBe("defeated");
+		expect(c.getDefeatPlayback()?.finished).toBe(true);
+		c.dispose();
+		c.dispose();
+		expect(c.getDefeatPlayback()).toBeUndefined();
+	});
+});
+it("keeps locomotion for absent actions and makes missing Death immediately removable", async () => {
+	await combatFixture(
+		([c]) => {
+			c.sync({ moving: true, defeated: false });
+			c.triggerAttack();
+			c.triggerHit();
+			c.update(3);
+			expect(c.getStats().semanticState).toBe("walk");
+			c.sync({ moving: false, defeated: true });
+			expect(c.getDefeatPlayback()).toBeUndefined();
+		},
+		["Idle", "Walk"],
+	);
+});
+it("does not defer an unloaded Attack or Hit until its source arrives", async () => {
+	const asset: ThreeVisualAssetDefinition = {
+		id: "pending",
+		name: "Pending",
+		kind: "glb",
+		url: "/pending.glb",
+		animations: {
+			idle: { clipName: "Idle" },
+			attack: { clipName: "Attack" },
+			hit: { clipName: "Hit" },
+			defeated: { clipName: "Dead" },
+		},
+	};
+	let resolve!: (value: {
+		scene: THREE.Group;
+		animations: THREE.AnimationClip[];
+	}) => void;
+	const registry = setThreeVisualAssetRegistryForTests([asset]);
+	const loader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync: () =>
+			new Promise((r) => {
+				resolve = r;
+			}),
+	}));
+	const c = createThreeCharacterAnimationController({
+		asset,
+		root: createRenderedCharacter(),
+	});
+	try {
+		c.triggerAttack();
+		c.triggerHit();
+		expect(c.getDefeatPlayback()).toBeUndefined();
+		await flushAssetPromises();
+		resolve({
+			scene: new THREE.Group(),
+			animations: ["Idle", "Attack", "Hit", "Dead"].map(createRootMotionClip),
+		});
+		await flushAssetPromises();
+		expect(c.getStats().semanticState).toBe("idle");
+		expect(c.getStats().oneShotActionsTriggered).toBe(0);
+	} finally {
+		c.dispose();
+		loader();
+		registry();
+	}
+});
+it("shares prepared source clips without mutating the cached source", () => {
+	const clip = createRootMotionClip("Attack"),
+		root = createRenderedCharacter();
+	const a = prepareThreeCharacterAnimationClip("shared", clip, root),
+		b = prepareThreeCharacterAnimationClip(
+			"shared",
+			clip,
+			createRenderedCharacter(),
+		);
+	expect(a.status).toBe("prepared");
+	expect(b.status).toBe("prepared");
+	if (a.status === "prepared" && b.status === "prepared") {
+		expect(a.clip).toBe(b.clip);
+		expect(a.clip).not.toBe(clip);
+	}
+	expect(
+		resolveCharacterAnimationState({
+			moving: true,
+			defeated: false,
+			attackRequested: true,
+			hitRequested: true,
+		}),
+	).toBe("hit");
 });

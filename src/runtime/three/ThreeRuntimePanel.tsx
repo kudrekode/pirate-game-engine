@@ -500,6 +500,7 @@ export function ThreeRuntimePanel({
 	const mouseLookActiveRef = useRef(false);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const gameOverRef = useRef(false);
+	const playerDefeatedRef = useRef(false);
 	const nextRebuildReasonRef = useRef("initial runtime start");
 	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
 	const isStartingRuntimeRef = useRef(false);
@@ -960,7 +961,7 @@ export function ThreeRuntimePanel({
 			gameOverRef.current = true;
 			characterAnimationControllersRef.current
 				.get("runtime_player")
-				?.sync({ defeated: true, moving: false });
+				?.sync({ defeated: playerDefeatedRef.current, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -1041,11 +1042,12 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
+			if (event.type === "gameOver") playerDefeatedRef.current = true;
 			setMouseLookActive(false);
 			gameOverRef.current = true;
 			characterAnimationControllersRef.current
 				.get("runtime_player")
-				?.sync({ defeated: true, moving: false });
+				?.sync({ defeated: playerDefeatedRef.current, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -1200,7 +1202,17 @@ export function ThreeRuntimePanel({
 			setHudVersion((version) => version + 1);
 			return;
 		}
+		if (event.type === "playerDamaged" && event.damage > 0) {
+			characterAnimationControllersRef.current
+				.get(event.npcId)
+				?.triggerAttack();
+			if (event.health > 0)
+				characterAnimationControllersRef.current
+					.get("runtime_player")
+					?.triggerHit();
+		}
 		if (event.type === "gameOver") {
+			playerDefeatedRef.current = true;
 			gameOverRef.current = true;
 			characterAnimationControllersRef.current
 				.get("runtime_player")
@@ -1217,8 +1229,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "npcDefeated") {
-			// The shared runtime emits npcRemoved immediately after this event. Start
-			// the presentation state without changing that gameplay lifecycle.
+			// Start death before npcRemoved decides whether this loaded visual can finish locally.
 			characterAnimationControllersRef.current
 				.get(event.npcId)
 				?.sync({ defeated: true, moving: false });
@@ -1249,6 +1260,8 @@ export function ThreeRuntimePanel({
 			removeNpcPresentationRef.current?.(event.npcId);
 			return;
 		}
+		if (event.type === "npcDamaged" && event.damage > 0 && event.health > 0)
+			characterAnimationControllersRef.current.get(event.npcId)?.triggerHit();
 		if (
 			event.type === "stateChanged" ||
 			event.type === "combatChanged" ||
@@ -1599,6 +1612,7 @@ export function ThreeRuntimePanel({
 			});
 			setMountError(null);
 			gameOverRef.current = false;
+			playerDefeatedRef.current = session.runtimePlayerHealth <= 0;
 			setGameOver(false);
 			setPendingCutscene(null);
 			setFlowLog([]);
@@ -2263,7 +2277,9 @@ export function ThreeRuntimePanel({
 		// The shared combat transaction already removes the NPC from the live area,
 		// which movement/collision reads directly. Only this actor's presentation
 		// needs disposal; terrain, traversal, renderer and other mixers stay alive.
+		const dyingNpcs = new Map<string, number>();
 		const removeNpcPresentation = (npcId: string) => {
+			dyingNpcs.delete(npcId);
 			const group = npcRenderGroups.get(npcId);
 			if (!group) return;
 			characterAnimationControllers.get(npcId)?.dispose();
@@ -2297,6 +2313,20 @@ export function ThreeRuntimePanel({
 			updateSceneEntityCounts();
 		};
 
+		const finishNpcPresentation = (npcId: string) => {
+			const death = characterAnimationControllers
+				.get(npcId)
+				?.getDefeatPlayback();
+			if (death && !death.finished) {
+				// A deadline also bounds malformed/paused actions. Gameplay is already removed.
+				if (!dyingNpcs.has(npcId))
+					dyingNpcs.set(
+						npcId,
+						performance.now() + Math.min(death.duration * 1000 + 250, 10000),
+					);
+			} else removeNpcPresentation(npcId);
+		};
+
 		let renderer: THREE.WebGLRenderer;
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -2325,7 +2355,7 @@ export function ThreeRuntimePanel({
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
-		removeNpcPresentationRef.current = removeNpcPresentation;
+		removeNpcPresentationRef.current = finishNpcPresentation;
 		if (import.meta.env.DEV) {
 			const gl = renderer.getContext?.();
 			const debug = gl?.getExtension("WEBGL_debug_renderer_info");
@@ -2576,12 +2606,21 @@ export function ThreeRuntimePanel({
 				);
 			const animationUpdateStartedAt = performance.now();
 			characterAnimationControllers.get("runtime_player")?.sync({
-				defeated: gameOverRef.current,
+				defeated: playerDefeatedRef.current || session.runtimePlayerHealth <= 0,
 				moving: !playerVisualGridPosition.done,
 			});
 			characterAnimationControllers.forEach((controller) => {
 				controller.update(deltaMs / 1000);
 			});
+			for (const [npcId, deadline] of dyingNpcs) {
+				const death = characterAnimationControllers
+					.get(npcId)
+					?.getDefeatPlayback();
+				if (!death || death.finished || now >= deadline)
+					removeNpcPresentation(npcId);
+			}
+			if (import.meta.env.DEV)
+				host.dataset.dyingNpcs = JSON.stringify([...dyingNpcs.keys()]);
 			updateCharacterAnimationDiagnostics();
 			diagnostics.recordCharacterAnimationUpdate(
 				performance.now() - animationUpdateStartedAt,
@@ -2681,9 +2720,10 @@ export function ThreeRuntimePanel({
 			diagnostics.recordRafLoopCancel(rebuildReason);
 			for (const label of openedLabels) label.element.remove();
 			diagnostics.recordSceneCleanup();
-			if (removeNpcPresentationRef.current === removeNpcPresentation) {
+			if (removeNpcPresentationRef.current === finishNpcPresentation) {
 				removeNpcPresentationRef.current = null;
 			}
+			for (const npcId of dyingNpcs.keys()) removeNpcPresentation(npcId);
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			renderer.domElement.removeEventListener("pointermove", handlePointerMove);

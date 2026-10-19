@@ -30,9 +30,12 @@ export type ThreeCharacterAnimationControllerStats = {
 export type ThreeCharacterAnimationController = {
 	dispose: () => void;
 	getStats: () => ThreeCharacterAnimationControllerStats;
+	/** Available only after a loaded, finite death action has started. */
+	getDefeatPlayback: () => { duration: number; finished: boolean } | undefined;
 	refresh: () => void;
 	sync: (context: CharacterAnimationContext) => void;
 	triggerAttack: () => void;
+	triggerHit: () => void;
 	update: (deltaSeconds: number) => void;
 };
 
@@ -120,10 +123,16 @@ export function clearThreeCharacterAnimationClipCacheForTests(): void {
 }
 
 export function resolveCharacterAnimationState(
-	context: CharacterAnimationContext & { attackRequested?: boolean },
+	context: CharacterAnimationContext & {
+		attackRequested?: boolean;
+		hitRequested?: boolean;
+	},
 ): CharacterAnimationSemanticState {
 	if (context.defeated) {
 		return "defeated";
+	}
+	if (context.hitRequested) {
+		return "hit";
 	}
 	if (context.attackRequested) {
 		return "attack";
@@ -166,7 +175,8 @@ export function createThreeCharacterAnimationController({
 		defeated: false,
 		moving: false,
 	};
-	let oneShotState: "attack" | "defeated" | undefined;
+	let oneShotState: "attack" | "hit" | "defeated" | undefined;
+	let defeatFinished = false;
 	let semanticState: CharacterAnimationSemanticState = "idle";
 	let missingClipCount = 0;
 	let incompatibleClipCount = 0;
@@ -204,12 +214,15 @@ export function createThreeCharacterAnimationController({
 			activeAction = undefined;
 			return;
 		}
-		const isOneShot = nextState === "attack" || nextState === "defeated";
+		const isOneShot =
+			nextState === "attack" || nextState === "hit" || nextState === "defeated";
+		if (nextState === "defeated") defeatFinished = false;
 		nextAction.enabled = true;
 		nextAction.setEffectiveTimeScale(1);
 		nextAction.setEffectiveWeight(1);
 		nextAction.setLoop(isOneShot ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
-		nextAction.clampWhenFinished = nextState === "defeated";
+		// Hold a one-shot recovery pose during the ordinary short return blend.
+		nextAction.clampWhenFinished = isOneShot;
 		nextAction.reset().play();
 		if (activeAction && activeAction !== nextAction) {
 			nextAction.crossFadeFrom(activeAction, TRANSITION_SECONDS, false);
@@ -222,17 +235,21 @@ export function createThreeCharacterAnimationController({
 			resolveCharacterAnimationState({
 				...currentContext,
 				attackRequested: oneShotState === "attack",
+				hitRequested: oneShotState === "hit",
 			}),
 		);
 	};
 
 	const handleFinished = (event: { action?: THREE.AnimationAction }) => {
-		if (event.action !== activeAction || semanticState === "defeated") {
+		if (event.action !== activeAction) {
 			return;
 		}
-		if (semanticState === "attack") {
+		if (semanticState === "defeated") {
+			defeatFinished = true;
+			return;
+		}
+		if (semanticState === "attack" || semanticState === "hit") {
 			oneShotState = undefined;
-			activeAction = undefined;
 			syncResolvedState();
 		}
 	};
@@ -242,7 +259,13 @@ export function createThreeCharacterAnimationController({
 		if (disposed) {
 			return;
 		}
-		for (const state of ["idle", "walk", "attack", "defeated"] as const) {
+		for (const state of [
+			"idle",
+			"walk",
+			"attack",
+			"hit",
+			"defeated",
+		] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
@@ -288,6 +311,13 @@ export function createThreeCharacterAnimationController({
 				reportIssueOnce(`${sourceKey}:${prepared.reason}`, "incompatible");
 				continue;
 			}
+			if (
+				!Number.isFinite(prepared.clip.duration) ||
+				prepared.clip.duration <= 0
+			) {
+				reportIssueOnce(sourceKey, "incompatible");
+				continue;
+			}
 			actions.set(state, mixer.clipAction(prepared.clip));
 		}
 		syncResolvedState();
@@ -306,6 +336,15 @@ export function createThreeCharacterAnimationController({
 			mixer.uncacheRoot(root);
 			actions.clear();
 		},
+		getDefeatPlayback: () => {
+			const action = actions.get("defeated");
+			return !disposed &&
+				semanticState === "defeated" &&
+				activeAction === action &&
+				action
+				? { duration: action.getClip().duration, finished: defeatFinished }
+				: undefined;
+		},
 		getStats: () => ({
 			activeLoopingActions:
 				(semanticState === "idle" || semanticState === "walk") &&
@@ -321,6 +360,7 @@ export function createThreeCharacterAnimationController({
 		}),
 		refresh,
 		sync: (context) => {
+			if (disposed) return;
 			currentContext = context;
 			if (context.defeated) {
 				oneShotState = "defeated";
@@ -330,12 +370,23 @@ export function createThreeCharacterAnimationController({
 		triggerAttack: () => {
 			// A missing/unloaded attack has no mixer finished event. Keep locomotion
 			// alive and let the combat HUD present the hit/miss instead of latching.
-			if (currentContext.defeated || disposed || !actions.has("attack")) {
+			if (
+				currentContext.defeated ||
+				oneShotState === "hit" ||
+				disposed ||
+				!actions.has("attack")
+			) {
 				return;
 			}
 			oneShotState = "attack";
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
+		},
+		triggerHit: () => {
+			if (currentContext.defeated || disposed || !actions.has("hit")) return;
+			oneShotState = "hit";
+			oneShotActionsTriggered += 1;
+			applySemanticState("hit", true);
 		},
 		update: (deltaSeconds) => {
 			if (!disposed) {

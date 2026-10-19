@@ -5,6 +5,9 @@ import {
 	clearThreeVisualAssetCacheForTests,
 	cloneThreeVisualAssetRoot,
 	disposeThreeVisualAssetCacheEntry,
+	GOLDEN_COMBAT_V1_ASSET,
+	GOLDEN_COMBAT_V2_ASSET,
+	GOLDEN_COMBAT_V3_ASSET,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
@@ -80,6 +83,18 @@ describe("shared Three asset preview", () => {
 
 	test("defines explicit offline-baked animation sources", () => {
 		expect(GOLDEN_REFERENCE_HUMANOID_ASSET.animations).toEqual({
+			attack: {
+				assetId: GOLDEN_COMBAT_V3_ASSET.id,
+				clipName: "GoldenCombat_Attack_V1",
+			},
+			hit: {
+				assetId: GOLDEN_COMBAT_V3_ASSET.id,
+				clipName: "GoldenCombat_Hit_V1",
+			},
+			defeated: {
+				assetId: GOLDEN_COMBAT_V3_ASSET.id,
+				clipName: "GoldenCombat_Death_V1",
+			},
 			idle: {
 				assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
 				clipName: "GoldenReference_Idle",
@@ -88,6 +103,22 @@ describe("shared Three asset preview", () => {
 				assetId: GOLDEN_REFERENCE_WALK_BAKED_ASSET.id,
 				clipName: "GoldenReference_Walk_InPlace",
 			},
+		});
+		expect(GOLDEN_COMBAT_V1_ASSET).toMatchObject({
+			id: "golden-combat-actions-v1",
+			animationOnly: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-combat-v1/actions.glb",
+		});
+		expect(GOLDEN_COMBAT_V2_ASSET).toMatchObject({
+			animationOnly: true,
+			id: "golden-combat-actions-v2",
+			url: "/assets/derived/humanoid-animations/golden-combat-v2/actions.glb",
+		});
+		expect(GOLDEN_COMBAT_V3_ASSET).toMatchObject({
+			animationOnly: true,
+			id: "golden-combat-actions-v3",
+			url: "/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
 		});
 		expect(GOLDEN_REFERENCE_IDLE_BAKED_ASSET).toMatchObject({
 			animationOnly: true,

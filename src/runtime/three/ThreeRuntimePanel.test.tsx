@@ -26,6 +26,7 @@ import { createRuntimeSession } from "../runtimeSession";
 import { createRuntimeTraversal, createTraversalWorld } from "../traversal";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import * as characterAnimation from "./threeCharacterAnimation";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
@@ -1794,4 +1795,188 @@ it("reuses scene terrain lookups for actor and camera frames across terrain mode
 			samples,
 		);
 	}
+});
+
+function mockCombatActors(deathAvailable = true) {
+	const controllers: ReturnType<
+		typeof characterAnimation.createThreeCharacterAnimationController
+	>[] = [];
+	const original = visualRenderer.createThreeVisualMarkerGroup;
+	vi.spyOn(visualRenderer, "createThreeVisualMarkerGroup").mockImplementation(
+		(marker, options) => {
+			const result = original({ ...marker, visual: undefined }, options);
+			result.usedAsset = true;
+			return result;
+		},
+	);
+	vi.spyOn(
+		characterAnimation,
+		"createThreeCharacterAnimationController",
+	).mockImplementation(() => {
+		let state: characterAnimation.CharacterAnimationSemanticState = "idle",
+			finished = false,
+			elapsed = 0;
+		const c = {
+			dispose: vi.fn(),
+			refresh: vi.fn(),
+			triggerAttack: vi.fn(),
+			triggerHit: vi.fn(),
+			sync: vi.fn((ctx: characterAnimation.CharacterAnimationContext) => {
+				state = ctx.defeated ? "defeated" : ctx.moving ? "walk" : "idle";
+			}),
+			update: vi.fn((dt: number) => {
+				if (state === "defeated") {
+					elapsed += dt;
+					finished = elapsed >= 1;
+				}
+			}),
+			getDefeatPlayback: () =>
+				deathAvailable && state === "defeated"
+					? { duration: 1, finished }
+					: undefined,
+			getStats: () => ({
+				activeLoopingActions: 0,
+				incompatibleClipCount: 0,
+				loadingSourceCount: 0,
+				missingClipCount: 0,
+				oneShotActionsTriggered: 0,
+				semanticState: state,
+				sourceAssetIds: [],
+			}),
+		};
+		controllers.push(c);
+		return c;
+	});
+	return controllers;
+}
+function animatedCombatProject() {
+	const p = makeProject();
+	p.player.threeVisual = { mode: "asset", assetId: "procedural-mannequin-v0" };
+	p.player.combat = {
+		health: 100,
+		maxHealth: 100,
+		attackDamage: 25,
+		attackRangeTiles: 1,
+		attackCooldownMs: 500,
+	};
+	p.areas[0].npcs = [
+		{
+			id: "guard",
+			npcDefinitionId: "guard_def",
+			areaId: "area_test",
+			x: 1,
+			y: 0,
+			facing: "left",
+			blocksMovement: true,
+			movementMode: "stationary",
+			threeVisual: { mode: "asset", assetId: "procedural-mannequin-v0" },
+			attributes: {
+				health: 50,
+				maxHealth: 50,
+				alignment: "hostile",
+				faction: "enemy",
+				canInteract: false,
+				movementSpeed: 1,
+			},
+			enemyBehaviour: {
+				enabled: true,
+				detectionRadiusTiles: 4,
+				chaseRadiusTiles: 5,
+				returnToOrigin: true,
+				contactDamage: 5,
+			},
+		},
+	];
+	return p;
+}
+it.each([
+	"complete",
+	"teardown",
+	"missing",
+	"deadline",
+])("keeps gameplay defeat immediate and cleans only the dying visual exactly once: %s", (mode) => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const controllers = mockCombatActors(mode !== "missing"),
+		p = animatedCombatProject(),
+		authored = JSON.stringify(p);
+	const { unmount } = render(
+		<ThreeRuntimePanel project={p} onRestart={vi.fn()} />,
+	);
+	expect(controllers).toHaveLength(2);
+	const [npc, player] = controllers;
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount;
+	fireEvent.keyDown(window, { key: " ", code: "Space" }); // accepted miss, default facing down
+	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
+	now += 600;
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	fireEvent.keyUp(window, { key: "ArrowRight" });
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(npc.triggerHit).toHaveBeenCalledTimes(1);
+	now += 600;
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	const session = latestSession();
+	expect(session.project.areas[0].npcs).toHaveLength(0);
+	expect(session.defeatedNpcIds.has("guard")).toBe(true);
+	expect(npc.triggerHit).toHaveBeenCalledTimes(1);
+	expect(npc.sync).toHaveBeenCalledWith({ defeated: true, moving: false });
+	expect(npc.dispose).toHaveBeenCalledTimes(mode === "missing" ? 1 : 0);
+	// Shared movement sees the removed collider before the visual finishes.
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	fireEvent.keyUp(window, { key: "ArrowRight" });
+	expect(session.playerPosition).toEqual({ x: 1, y: 0 });
+	expect(createGameSave(p, session).world.defeatedNpcIds).toContain("guard");
+	if (mode === "complete")
+		for (let i = 0; i < 15; i++) {
+			now += 100;
+			act(() => runLatestAnimationFrame());
+		}
+	if (mode === "deadline") {
+		vi.mocked(npc.update).mockImplementation(() => undefined);
+		now += 1300;
+		act(() => runLatestAnimationFrame());
+	}
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(player.dispose).not.toHaveBeenCalled();
+	if (mode !== "teardown") expect(npc.dispose).toHaveBeenCalledTimes(1);
+	unmount();
+	expect(npc.dispose).toHaveBeenCalledTimes(1);
+	expect(player.dispose).toHaveBeenCalledTimes(1);
+	expect(JSON.stringify(p)).toBe(authored);
+});
+it.each([
+	5, 0, 100,
+])("wires contact Attack and nonlethal Hit, with actual lethal defeat winning (damage=%s)", (damage) => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const intervals = vi.spyOn(window, "setInterval"),
+		controllers = mockCombatActors(),
+		p = animatedCombatProject();
+	p.areas[0].npcs[0].enemyBehaviour!.contactDamage = damage;
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const tick = intervals.mock.calls.find((c) => c[1] === 50)![0] as () => void;
+	act(() => tick());
+	now += 2000;
+	act(() => tick());
+	act(() => runLatestAnimationFrame());
+	const [npc, player] = controllers;
+	expect(npc.triggerAttack).toHaveBeenCalledTimes(damage > 0 ? 1 : 0);
+	expect(player.triggerHit).toHaveBeenCalledTimes(
+		damage > 0 && damage < 100 ? 1 : 0,
+	);
+	expect(player.getStats().semanticState).toBe(
+		damage === 100 ? "defeated" : "idle",
+	);
+});
+it("successful progression completion keeps the living player out of Death", () => {
+	const controllers = mockCombatActors(),
+		p = animatedCombatProject();
+	p.areas[0].npcs = [];
+	p.progression = [{ id: "finish", action: { type: "end_game" } }];
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	act(() => runLatestAnimationFrame());
+	expect(screen.getByText("Game complete.")).toBeInTheDocument();
+	expect(controllers[0].getStats().semanticState).not.toBe("defeated");
 });

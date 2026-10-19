@@ -45,6 +45,8 @@ const names = new Set([
 	"requestThreeVisualAssetAnimationClip",
 	"prepareThreeCharacterAnimationClip",
 	"triggerAttack",
+	"triggerHit",
+	"finishNpcPresentation",
 	"applySemanticState",
 	"refresh",
 	"dispose",
@@ -334,7 +336,9 @@ try {
 				body = instrument(body, route.request().url());
 			await route.fulfill({ response: r, body });
 		});
-		await page.goto("http://127.0.0.1:5173/");
+		await page.goto("http://127.0.0.1:5173/", {
+			waitUntil: "domcontentloaded",
+		});
 		if (await page.getByRole("button", { name: /Blank Project/ }).isVisible())
 			await page.getByRole("button", { name: /Blank Project/ }).click();
 		await page
@@ -475,7 +479,8 @@ try {
 		await expect(page.locator(".three-runtime-hud")).toContainText(
 			"Sparring Guard 25/50",
 		);
-		await capture("lethal", () => page.keyboard.press("Space"));
+		// Include the bounded Golden death action and its local disposal.
+		await capture("lethal", () => page.keyboard.press("Space"), 1800);
 		await expect(page.locator(".three-runtime-hud")).toContainText(
 			"Sparring Guard defeated.",
 		);
