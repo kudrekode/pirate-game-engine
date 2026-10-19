@@ -11,6 +11,10 @@ export type CharacterAnimationSemanticState = ThreeCharacterAnimationState;
 export type CharacterAnimationContext = {
 	defeated: boolean;
 	moving: boolean;
+	sprinting?: boolean;
+	airborne?: boolean;
+	movementPhase?: "grounded" | "jump" | "fall" | "land";
+	movementSpeed?: number;
 };
 
 export type CharacterAnimationPreparationResult =
@@ -137,7 +141,10 @@ export function resolveCharacterAnimationState(
 	if (context.attackRequested) {
 		return "attack";
 	}
-	return context.moving ? "walk" : "idle";
+	if (context.airborne)
+		return context.movementPhase === "fall" ? "fall" : "jump";
+	if (context.movementPhase === "land") return "land";
+	return context.moving ? (context.sprinting ? "run" : "walk") : "idle";
 }
 
 function getSourceAssetId(
@@ -199,7 +206,33 @@ export function createThreeCharacterAnimationController({
 		nextState: CharacterAnimationSemanticState,
 		forceRestart = false,
 	) => {
-		const nextAction = actions.get(nextState);
+		const fallback =
+			nextState === "run"
+				? "walk"
+				: nextState === "jump" || nextState === "fall"
+					? "idle"
+					: nextState === "land"
+						? currentContext.moving
+							? currentContext.sprinting && actions.has("run")
+								? "run"
+								: "walk"
+							: "idle"
+						: undefined;
+		const nextAction =
+			actions.get(nextState) ?? (fallback ? actions.get(fallback) : undefined);
+		const rate =
+			(nextState === "walk" || nextState === "run") &&
+			currentContext.movementSpeed
+				? Math.max(
+						0.8,
+						Math.min(
+							1.2,
+							currentContext.movementSpeed /
+								(nextState === "run" ? 7.64 : 4.63),
+						),
+					)
+				: 1;
+		nextAction?.setEffectiveTimeScale(rate);
 		if (
 			semanticState === nextState &&
 			activeAction === nextAction &&
@@ -215,10 +248,14 @@ export function createThreeCharacterAnimationController({
 			return;
 		}
 		const isOneShot =
-			nextState === "attack" || nextState === "hit" || nextState === "defeated";
+			nextState === "attack" ||
+			nextState === "hit" ||
+			nextState === "defeated" ||
+			((nextState === "jump" || nextState === "land") &&
+				actions.has(nextState));
 		if (nextState === "defeated") defeatFinished = false;
 		nextAction.enabled = true;
-		nextAction.setEffectiveTimeScale(1);
+		nextAction.setEffectiveTimeScale(rate);
 		nextAction.setEffectiveWeight(1);
 		nextAction.setLoop(isOneShot ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
 		// Hold a one-shot recovery pose during the ordinary short return blend.
@@ -262,6 +299,10 @@ export function createThreeCharacterAnimationController({
 		for (const state of [
 			"idle",
 			"walk",
+			"run",
+			"jump",
+			"fall",
+			"land",
 			"attack",
 			"hit",
 			"defeated",
@@ -347,7 +388,10 @@ export function createThreeCharacterAnimationController({
 		},
 		getStats: () => ({
 			activeLoopingActions:
-				(semanticState === "idle" || semanticState === "walk") &&
+				(semanticState === "idle" ||
+					semanticState === "walk" ||
+					semanticState === "run" ||
+					semanticState === "fall") &&
 				activeAction?.enabled
 					? 1
 					: 0,
@@ -372,6 +416,7 @@ export function createThreeCharacterAnimationController({
 			// alive and let the combat HUD present the hit/miss instead of latching.
 			if (
 				currentContext.defeated ||
+				currentContext.airborne ||
 				oneShotState === "hit" ||
 				disposed ||
 				!actions.has("attack")

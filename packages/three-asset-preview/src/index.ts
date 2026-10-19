@@ -10,6 +10,10 @@ export type ThreeVisualAssetCategory =
 export type ThreeCharacterAnimationState =
 	| "idle"
 	| "walk"
+	| "run"
+	| "jump"
+	| "fall"
+	| "land"
 	| "attack"
 	| "hit"
 	| "defeated";
@@ -65,6 +69,34 @@ export const GOLDEN_COMBAT_V3_ASSET: ThreeVisualAssetDefinition = {
 	name: "Golden Combat V3 (polished)",
 	url: "/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
 };
+export const GOLDEN_MOVEMENT_V1_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	kind: "glb",
+	id: "golden-movement-actions-v1",
+	name: "Golden Movement V1",
+	tags: ["animation", "golden-skeleton", "locomotion"],
+	url: "/assets/derived/humanoid-animations/golden-movement-v1/actions.glb",
+};
+const GOLDEN_MOVEMENT_MAPPINGS = {
+	run: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Run_V1",
+	},
+	jump: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Jump_V1",
+	},
+	fall: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Fall_V1",
+	},
+	land: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Land_V1",
+	},
+};
+
 const GOLDEN_COMBAT_MAPPINGS = {
 	attack: {
 		assetId: GOLDEN_COMBAT_V3_ASSET.id,
@@ -81,6 +113,7 @@ const GOLDEN_COMBAT_MAPPINGS = {
 export const GOLDEN_REFERENCE_HUMANOID_ASSET: ThreeVisualAssetDefinition = {
 	animations: {
 		...GOLDEN_COMBAT_MAPPINGS,
+		...GOLDEN_MOVEMENT_MAPPINGS,
 		idle: {
 			assetId: "golden-reference-quaternius-idle-baked-v1",
 			clipName: "GoldenReference_Idle",
@@ -134,6 +167,7 @@ export const GOLDEN_REFERENCE_WALK_BAKED_ASSET: ThreeVisualAssetDefinition = {
 export const PROCEDURAL_MANNEQUIN_V0_ASSET: ThreeVisualAssetDefinition = {
 	animations: {
 		...GOLDEN_COMBAT_MAPPINGS,
+		...GOLDEN_MOVEMENT_MAPPINGS,
 		idle: {
 			assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
 			clipName: "GoldenReference_Idle",

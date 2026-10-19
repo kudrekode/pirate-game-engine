@@ -349,3 +349,29 @@ separately. Labels beginning with `after` assert preserved scene/controller
 identities and local defeat disposal. Browser-only probes and raw output remain
 outside production; evidence is written to `test-results/combat-hitch/`.
 Do not run other suites concurrently with frame-pacing captures.
+
+## Movement V2 acceptance
+
+One opt-in real-input case covers Walk/Run, rest/moving/sprint jumps, Fall/Land,
+new F attack, grounded interactions/save boundaries, wall collision, explicit low
+floor landing, Continue and unchanged authored data. It uses installed Chrome and
+read-only RAF observations, with no gameplay mutation hooks or character builds:
+
+```powershell
+node node_modules/@playwright/test/cli.js test e2e/movement-v2.spec.ts --grep @movement-v2 --list
+node node_modules/@playwright/test/cli.js test e2e/movement-v2.spec.ts --grep @movement-v2 --output=test-results/movement-v2/browser
+```
+
+Import `movement-v2-demo.project.json`, choose 3D View and Play to try it manually.
+The detailed collision route uses the existing Inspect mode's world-relative input;
+locomotion and jump chains also run at the authored third-person camera. The harness
+restores viewport focus after camera controls. Keep GPU screenshots outside held-key
+measurements: a readback can extend the real key hold and carry the player to a wall.
+Native Space activation on Inventory's focused Close button is preserved.
+
+The animation review selects only four new motions and existing dressed bodies:
+`node tools/blender-character/review-golden-movement.mjs --list`, then
+`--body athletic`, `--body broad` or `--body fuller`. Root Vite must be running.
+No historical matrix or character regeneration is selected. Timed renders and body
+sheets are linked in `MOVEMENT_V2_RESULT.md`; numeric exports alone do not grant
+visual acceptance. Lifecycle counters cover movement before the deliberate reload.

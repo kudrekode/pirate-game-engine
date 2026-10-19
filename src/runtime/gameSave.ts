@@ -5,6 +5,7 @@ import type {
 	QuestStatus,
 } from "../types/game";
 import { getPlayerCombatStats } from "./combat";
+import { isPlayerAirborne } from "./playerLocomotion";
 import {
 	createRuntimeSession,
 	type RuntimeSessionState,
@@ -92,6 +93,8 @@ export function assertGameSaveSafe(
 	session: RuntimeSessionState,
 	presentationBlocked = false,
 ): void {
+	if (isPlayerAirborne(session))
+		throw new Error("Land before saving the game.");
 	if (
 		presentationBlocked ||
 		session.startupPending ||

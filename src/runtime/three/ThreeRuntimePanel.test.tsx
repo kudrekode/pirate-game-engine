@@ -1287,7 +1287,7 @@ describe("Three correctness boundaries", () => {
 		fireEvent.keyDown(window, { key: "e" });
 		expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
 		fireEvent.keyDown(window, { key: "ArrowRight" });
-		fireEvent.keyDown(window, { key: " ", code: "Space" });
+		fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
 		expect(latestSession().nextAttackAt).toBe(0);
 		fireEvent.click(screen.getByRole("button", { name: "Next" }));
@@ -1355,7 +1355,7 @@ describe("Three correctness boundaries", () => {
 				},
 			];
 		render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
-		fireEvent.keyDown(window, { key: " ", code: "Space" });
+		fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 		fireEvent.keyDown(window, { key: "ArrowRight" });
 		expect(latestSession().nextAttackAt).toBe(0);
 		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
@@ -1441,7 +1441,7 @@ it("runs dialogue node cutscenes and cutscene-end rules before resuming the node
 	fireEvent.keyDown(window, { key: "e" });
 	expect(screen.getByText("A vision")).toBeInTheDocument();
 	expect(screen.queryByText("Welcome traveller")).not.toBeInTheDocument();
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(latestSession().nextAttackAt).toBe(0);
 	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 	expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
@@ -1498,14 +1498,14 @@ it("preserves attack cooldown after a shop modal closes", () => {
 	];
 	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
 	fireEvent.click(screen.getByRole("button", { name: "Close" }));
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	const deadline = latestSession().nextAttackAt;
 	expect(deadline).toBeGreaterThan(now);
 	now = deadline - 1;
-	fireEvent.keyDown(window, { key: " ", code: "Space", repeat: true });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF", repeat: true });
 	expect(latestSession().nextAttackAt).toBe(deadline);
 	now = deadline;
-	fireEvent.keyDown(window, { key: " ", code: "Space", repeat: true });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF", repeat: true });
 	expect(latestSession().nextAttackAt).toBeGreaterThan(deadline);
 });
 
@@ -1751,13 +1751,13 @@ it.each([
 	act(() => tick());
 	expect(screen.getByText("Health 90/100")).toBeInTheDocument();
 	fireEvent.keyDown(window, { key: "ArrowRight" }); // Face the blocking guard.
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(screen.getByText("Guard 25/50")).toBeInTheDocument();
 	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
 	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(renderers);
 	expect(getRuntimeDiagnosticsSnapshot().raf.activeLoopCount).toBe(1);
 	now += 600;
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(session.defeatedNpcIds.has("guard")).toBe(true);
 	expect(session.project.areas[0].npcs).toHaveLength(0);
 	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
@@ -1906,17 +1906,17 @@ it.each([
 	expect(controllers).toHaveLength(2);
 	const [npc, player] = controllers;
 	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount;
-	fireEvent.keyDown(window, { key: " ", code: "Space" }); // accepted miss, default facing down
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" }); // accepted miss, default facing down
 	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
 	now += 600;
 	fireEvent.keyDown(window, { key: "ArrowRight" });
 	fireEvent.keyUp(window, { key: "ArrowRight" });
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(npc.triggerHit).toHaveBeenCalledTimes(1);
 	now += 600;
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	const session = latestSession();
 	expect(session.project.areas[0].npcs).toHaveLength(0);
 	expect(session.defeatedNpcIds.has("guard")).toBe(true);
@@ -1979,4 +1979,89 @@ it("successful progression completion keeps the living player out of Death", () 
 	act(() => runLatestAnimationFrame());
 	expect(screen.getByText("Game complete.")).toBeInTheDocument();
 	expect(controllers[0].getStats().semanticState).not.toBe("defeated");
+});
+
+it("maps Three Space to a real jump, F to attack and Shift to sprint without rebuilding the scene", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const p = makeProject(),
+		authored = JSON.stringify(p);
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const session = latestSession(),
+		before = getRuntimeDiagnosticsSnapshot();
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+	expect(session.traversal!.motion.sprinting).toBe(true);
+	const sampler = session.traversal!.world.sampler;
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(session.traversal!.motion.phase).toBe("jump");
+	expect(session.nextAttackAt).toBe(0);
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(session.nextAttackAt).toBe(0);
+	now += 100;
+	act(() => runLatestAnimationFrame());
+	expect(session.traversal!.motion.height).toBeGreaterThan(
+		session.traversal!.position.height,
+	);
+	fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+	fireEvent.keyUp(window, { key: "Shift", code: "ShiftLeft" });
+	for (let i = 0; i < 20; i++) {
+		now += 100;
+		act(() => runLatestAnimationFrame());
+	}
+	expect(session.traversal!.motion).toMatchObject({
+		phase: "grounded",
+		verticalVelocity: 0,
+		sprinting: false,
+	});
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(session.nextAttackAt).toBeGreaterThan(now);
+	const after = getRuntimeDiagnosticsSnapshot();
+	expect(after.scene.buildCount).toBe(before.scene.buildCount);
+	expect(after.raf.activeLoopCount).toBe(1);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
+	expect(session.traversal!.world.sampler).toBe(sampler);
+	expect(JSON.stringify(p)).toBe(authored);
+});
+
+it("keeps a held third-person direction stable while the actor and follow camera turn", async () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	fireEvent.keyDown(window, { key: "a", code: "KeyA" });
+	now += 100;
+	await act(async () => {
+		await new Promise((resolve) => setTimeout(resolve, 40));
+	});
+	const moves = runtimeSpies.attemptPlayerMove.mock.calls;
+	expect(moves.length).toBeGreaterThan(1);
+	expect(
+		moves.every(
+			([, direction]) =>
+				Math.abs(direction.x - 1) < 1e-6 && Math.abs(direction.y) < 1e-6,
+		),
+	).toBe(true);
+	fireEvent.blur(window);
+});
+
+it("hands held legacy grid movement into sprint without another movement keydown", async () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	render(<ThreeRuntimePanel project={makeProject()} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+	const session = latestSession();
+	expect(session.traversal).toBeUndefined();
+	expect(session.playerPosition.x).toBe(1);
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	expect(session.traversal).toBeDefined();
+	now = 1300;
+	await act(async () => {
+		await new Promise((resolve) => setTimeout(resolve, 40));
+	});
+	expect(session.traversal!.position.x).toBeCloseTo(1.2);
+	expect(session.traversal!.motion.sprinting).toBe(true);
+	fireEvent.blur(window);
 });

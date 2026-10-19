@@ -306,3 +306,32 @@ old saves until explicit replacement. Manual save is refused during modal/startu
 end states and asynchronous cutscene action sequences. Inventory/quest displays
 initialize silently on Continue. See [the result report](../RUNTIME_PARITY_SAVE_GAME_RESULT.md)
 and its two opt-in real-input browser checks for current evidence and limits.
+
+## Movement V2
+
+`playerLocomotion.ts` owns renderer-neutral sprint intent, airborne feet, vertical
+velocity, gravity and landing on `RuntimeTraversal.motion` inside the isolated
+session. `traversal.position` and its accepted path retain the supporting floor;
+`motion.height` is the actual airborne foot height. Three advances the shared
+vertical helper in its existing RAF, then presents that physical height. No authored
+schema or saved-game version changes are needed.
+
+Three defaults are WASD/arrows move, Shift sprint (1.65x), Space jump and F attack;
+E/Enter still interact. Phaser retains Space attack and grid walking. Legacy Three
+areas without profiled traversal retain grid walking until sprint/jump first opts
+into the cached continuous traversal world. NPCs retain their existing grid AI.
+
+Horizontal sweeps remain in 4 cm increments. An airborne sample must have valid
+support beneath it, respect existing step-down limits and retain conservative
+solid-prop blockers. Explicit low floors can be reached when the feet clear them;
+objects without walkable surfaces cannot become platforms. Vertical body checks
+reuse the same solids/floor buckets. No unsupported water/void crossing is added.
+Ordinary touch/use interactions and attacks require grounded state. Landing checks
+ordinary touch/quest/waiting-trigger entry again, without a new interaction engine.
+
+Manual save rejects airborne state; a grounded save retains only the existing
+supporting coordinates. Sprint keys, velocity, aerial/landing phase and animation
+state reset on Continue. No renderer objects are serialized. Golden movement clips
+are external cached data; each character retains its own mixer/actions. Priority is
+Defeated > Hit > Attack > Jump/Fall/Land > Run > Walk > Idle. Missing Run uses Walk;
+missing aerial clips use Idle and missing Land returns to available locomotion.

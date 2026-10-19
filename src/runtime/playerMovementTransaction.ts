@@ -6,6 +6,11 @@ import {
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
 import { resolveMovementAt, type VehicleMovementConfig } from "./movement";
+import {
+	AIR_CONTROL_MULTIPLIER,
+	isPlayerAirborne,
+	SPRINT_MULTIPLIER,
+} from "./playerLocomotion";
 import { canAcceptRuntimeInput } from "./runtimeInput";
 import type {
 	RuntimeGridPosition,
@@ -78,7 +83,7 @@ function getActiveVehicleBehaviour(
 	return behaviour.type === "vehicle" ? behaviour : undefined;
 }
 
-function findWaitingTriggerTarget(
+export function findPlayerWaitingTriggerTargets(
 	session: RuntimeSessionState,
 	area: GameArea,
 	position: RuntimeGridPosition,
@@ -189,6 +194,7 @@ export function attemptPlayerMove(
 				session.project,
 				traversal.position,
 				{ x: to.x - from.x, y: to.y - from.y },
+				isPlayerAirborne(session) ? traversal.motion.height : undefined,
 			)
 		: undefined;
 	if (swept) to = { x: swept.position.x, y: swept.position.y };
@@ -229,7 +235,12 @@ export function attemptPlayerMove(
 		getPlayerMoveDurationMs(
 			session.project.player.speed,
 			movement.speedMultiplier,
-		) * (traversal ? Math.hypot(to.x - from.x, to.y - from.y) : 1);
+		) *
+		(traversal
+			? Math.hypot(to.x - from.x, to.y - from.y) /
+				((traversal.motion.sprinting ? SPRINT_MULTIPLIER : 1) *
+					(isPlayerAirborne(session) ? AIR_CONTROL_MULTIPLIER : 1))
+			: 1);
 	session.nextMoveAt = nowMs + moveDurationMs;
 	const grid = traversal ? { x: Math.round(to.x), y: Math.round(to.y) } : to;
 	const enteredCell =
@@ -242,15 +253,21 @@ export function attemptPlayerMove(
 		traversal.startMs = nowMs;
 		traversal.durationMs = moveDurationMs;
 		traversal.lastReason = swept.reason;
+		traversal.motion.speed =
+			moveDurationMs > 0
+				? (Math.hypot(to.x - from.x, to.y - from.y) * 1000) / moveDurationMs
+				: 0;
 	}
-	const touchTarget = findTouchInteractableTarget({
-		project: session.project,
-		area,
-		playerPosition: session.playerPosition,
-		runtimeState: session.runtimeState,
-		collectedPickupIds: session.collectedPickupIds,
-		defeatedNpcIds: session.defeatedNpcIds,
-	});
+	const touchTarget =
+		!isPlayerAirborne(session) &&
+		findTouchInteractableTarget({
+			project: session.project,
+			area,
+			playerPosition: session.playerPosition,
+			runtimeState: session.runtimeState,
+			collectedPickupIds: session.collectedPickupIds,
+			defeatedNpcIds: session.defeatedNpcIds,
+		});
 
 	return {
 		type: "moved",
@@ -260,8 +277,13 @@ export function attemptPlayerMove(
 		moveDurationMs,
 		movementMode: movement.movementMode ?? session.currentMovementMode,
 		touchTargets: enteredCell && touchTarget ? [touchTarget] : [],
-		triggerTargets: !enteredCell
-			? []
-			: findWaitingTriggerTarget(session, area, session.playerPosition),
+		triggerTargets:
+			isPlayerAirborne(session) || !enteredCell
+				? []
+				: findPlayerWaitingTriggerTargets(
+						session,
+						area,
+						session.playerPosition,
+					),
 	};
 }

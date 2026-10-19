@@ -6,11 +6,13 @@ import {
 	removeDefeatedNpc,
 } from "./combat";
 import { resolveNPCInstance } from "./npcResolver";
+import { isPlayerAirborne } from "./playerLocomotion";
 import {
 	getQuestViews,
 	type QuestView,
 	updateQuestProgress,
 } from "./questEngine";
+import { isRuntimeGameplayBlocked } from "./runtimeInput";
 import type { RuntimeSessionState } from "./runtimeSession";
 
 export type RuntimeCombatEvent =
@@ -126,6 +128,12 @@ export function attemptRuntimeCombatAttack(
 	time: number,
 	emit: RuntimeCombatEventEmitter,
 ): boolean {
+	if (
+		isPlayerAirborne(session) ||
+		session.runtimePlayerHealth <= 0 ||
+		isRuntimeGameplayBlocked(session, false)
+	)
+		return false;
 	if (!canAttack(time, session.nextAttackAt)) {
 		emit({ type: "attackBlocked", reason: "cooldown" });
 		emit({ type: "status", message: "Attack cooling down." });

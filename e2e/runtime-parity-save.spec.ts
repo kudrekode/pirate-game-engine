@@ -73,7 +73,7 @@ async function saveSlot(page: Page) {
 	});
 }
 
-test("NPC movement, dialogue, Space combat and durable defeat through real controls @runtime-parity-save", async ({
+test("NPC movement, dialogue, F combat and durable defeat through real controls @runtime-parity-save", async ({
 	page,
 }) => {
 	test.setTimeout(300_000);
@@ -159,7 +159,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	await expect(dialog).toContainText("Everyone pauses while we talk");
 	const paused = (await npcs(page)).map(({ id, x, y }) => ({ id, x, y }));
 	await page.keyboard.press("ArrowRight");
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await page.waitForTimeout(1500);
 	expect((await npcs(page)).map(({ id, x, y }) => ({ id, x, y }))).toEqual(
 		paused,
@@ -196,7 +196,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	await expect(page.locator(".three-runtime-hud")).not.toContainText(
 		"Health 100/100",
 	);
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard 25/50",
 	);
@@ -207,7 +207,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	expect(afterDamage.asset.cloneCount).toBe(beforeContact.asset.cloneCount);
 	expect(afterDamage.raf.activeLoopCount).toBe(1);
 	await page.waitForTimeout(550);
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard defeated.",
 	);
@@ -644,7 +644,7 @@ declare global {
 			dying: string[];
 			frames: number;
 			firstAttackAt: number;
-			firstSpaceAt: number;
+			firstAttackAt: number;
 		};
 	}
 }
@@ -656,14 +656,13 @@ async function observeGoldenCombat(page: Page) {
 			dying: [] as string[],
 			frames: 0,
 			firstAttackAt: 0,
-			firstSpaceAt: 0,
 		};
 		window.__GOLDEN_COMBAT__ = o;
 		window.addEventListener(
 			"keydown",
 			(event) => {
-				if (event.code === "Space" && !o.firstSpaceAt)
-					o.firstSpaceAt = event.timeStamp;
+				if (event.code === "KeyF" && !o.firstAttackAt)
+					o.firstAttackAt = event.timeStamp;
 			},
 			{ capture: true },
 		);
@@ -728,8 +727,8 @@ test("Golden combat actions, immediate collision removal, visible Death and Cont
 	await play(page);
 	const before = await settledGolden(page);
 	await observeGoldenCombat(page);
-	await page.keyboard.press("Space");
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
+	await page.keyboard.press("KeyF");
 	await expect
 		.poll(() =>
 			page.evaluate(() => window.__GOLDEN_COMBAT__?.player.includes("attack")),
@@ -744,7 +743,7 @@ test("Golden combat actions, immediate collision removal, visible Death and Cont
 		).asset.character.animation.oneShotActionsTriggered,
 	).toBe(1);
 	const sinceFirstAttack = await page.evaluate(
-		() => performance.now() - window.__GOLDEN_COMBAT__!.firstSpaceAt,
+		() => performance.now() - window.__GOLDEN_COMBAT__!.firstAttackAt,
 	);
 	await page.waitForTimeout(Math.max(0, 505 - sinceFirstAttack));
 	expect(
@@ -754,7 +753,7 @@ test("Golden combat actions, immediate collision removal, visible Death and Cont
 					.asset.character.animation.playerState,
 		),
 	).toBe("attack");
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	expect(
 		(
 			await page.evaluate(
@@ -791,7 +790,7 @@ test("Golden combat actions, immediate collision removal, visible Death and Cont
 			),
 		)
 		.toBe(true);
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard 25/50",
 	);
@@ -803,7 +802,7 @@ test("Golden combat actions, immediate collision removal, visible Death and Cont
 		)
 		.toBe(true);
 	await page.waitForTimeout(600);
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await expect
 		.poll(async () => (await npcs(page)).some((n) => n.id === "sparring_guard"))
 		.toBe(false);

@@ -134,7 +134,7 @@ it("shares a character load but isolates skeletons, transforms and Golden idle/w
 		expect(
 			loadAsync.mock.calls.filter(([url]) => url === asset.url),
 		).toHaveLength(1);
-		expect(loadAsync).toHaveBeenCalledTimes(4); // character, two locomotion sources, one combat library
+		expect(loadAsync).toHaveBeenCalledTimes(5); // character, two locomotion sources, one combat library
 	} finally {
 		controllers.forEach((controller) => {
 			controller.dispose();
@@ -459,4 +459,168 @@ it("shares prepared source clips without mutating the cached source", () => {
 			hitRequested: true,
 		}),
 	).toBe("hit");
+});
+
+async function movementController(missing: string[] = []) {
+	const states = [
+		"idle",
+		"walk",
+		"run",
+		"jump",
+		"fall",
+		"land",
+		"attack",
+		"hit",
+		"defeated",
+	] as const;
+	const asset: ThreeVisualAssetDefinition = {
+		id: "movement-test",
+		name: "Movement",
+		kind: "glb",
+		url: "/movement-test.glb",
+		animations: Object.fromEntries(
+			states.map((state) => [state, { clipName: state }]),
+		),
+	};
+	const restoreRegistry = setThreeVisualAssetRegistryForTests([asset]);
+	const loadAsync = vi.fn(async () => ({
+		scene: createRenderedCharacter(),
+		animations: states
+			.filter((state) => !missing.includes(state))
+			.map((state) => createRootMotionClip(state)),
+	}));
+	const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync,
+	}));
+	const controller = createThreeCharacterAnimationController({
+		asset,
+		root: createRenderedCharacter(),
+	});
+	await flushAssetPromises();
+	return {
+		controller,
+		loadAsync,
+		dispose: () => {
+			controller.dispose();
+			restoreLoader();
+			restoreRegistry();
+		},
+	};
+}
+it("crossfades Walk/Run and follows Run to Jump/Fall/Land to latest Run or Idle without reloading", async () => {
+	const { controller: c, loadAsync, dispose } = await movementController();
+	const fade = vi.spyOn(THREE.AnimationAction.prototype, "crossFadeFrom");
+	try {
+		const state = (
+			moving: boolean,
+			sprinting: boolean,
+			movementPhase: "grounded" | "jump" | "fall" | "land",
+		) => {
+			c.sync({
+				defeated: false,
+				moving,
+				sprinting,
+				movementPhase,
+				airborne: movementPhase === "jump" || movementPhase === "fall",
+				movementSpeed: sprinting ? 7.6 : 4.6,
+			});
+			c.update(0.03);
+			return c.getStats().semanticState;
+		};
+		expect(state(true, false, "grounded")).toBe("walk");
+		expect(state(true, true, "grounded")).toBe("run");
+		expect(state(true, false, "grounded")).toBe("walk");
+		expect(state(false, false, "grounded")).toBe("idle");
+		expect(state(true, true, "grounded")).toBe("run");
+		expect(state(true, true, "jump")).toBe("jump");
+		expect(state(true, true, "fall")).toBe("fall");
+		expect(state(true, true, "land")).toBe("land");
+		expect(state(true, true, "grounded")).toBe("run");
+		c.triggerAttack();
+		expect(c.getStats().semanticState).toBe("attack");
+		c.update(1.1);
+		expect(c.getStats().semanticState).toBe("run");
+		state(false, false, "jump");
+		c.triggerAttack();
+		expect(c.getStats().semanticState).toBe("jump");
+		expect(state(false, false, "fall")).toBe("fall");
+		expect(state(false, false, "land")).toBe("land");
+		expect(state(false, false, "grounded")).toBe("idle");
+		expect(fade).toHaveBeenCalledWith(expect.anything(), 0.12, false);
+		expect(loadAsync).toHaveBeenCalledTimes(1);
+	} finally {
+		fade.mockRestore();
+		dispose();
+	}
+});
+it("retains combat priority over movement and clamps locomotion playback speed", async () => {
+	const { controller: c, dispose } = await movementController();
+	const speed = vi.spyOn(
+		THREE.AnimationAction.prototype,
+		"setEffectiveTimeScale",
+	);
+	try {
+		c.sync({
+			defeated: false,
+			moving: true,
+			sprinting: true,
+			movementSpeed: 100,
+		});
+		expect(speed).toHaveBeenCalledWith(1.2);
+		c.triggerAttack();
+		c.triggerHit();
+		c.sync({
+			defeated: false,
+			moving: true,
+			airborne: true,
+			movementPhase: "fall",
+		});
+		expect(c.getStats().semanticState).toBe("hit");
+		c.update(1.1);
+		expect(c.getStats().semanticState).toBe("fall");
+		c.sync({ defeated: true, moving: true, airborne: true });
+		expect(c.getStats().semanticState).toBe("defeated");
+	} finally {
+		speed.mockRestore();
+		dispose();
+	}
+});
+it("uses loaded Walk/Idle fallbacks for missing movement clips and never latches recovery", async () => {
+	const { controller: c, dispose } = await movementController([
+		"run",
+		"jump",
+		"fall",
+		"land",
+	]);
+	try {
+		c.sync({ defeated: false, moving: true, sprinting: true });
+		expect(c.getStats()).toMatchObject({
+			semanticState: "run",
+			activeLoopingActions: 1,
+		});
+		c.sync({
+			defeated: false,
+			moving: false,
+			airborne: true,
+			movementPhase: "jump",
+		});
+		c.update(0.5);
+		c.sync({
+			defeated: false,
+			moving: false,
+			airborne: true,
+			movementPhase: "fall",
+		});
+		c.update(0.5);
+		c.sync({ defeated: false, moving: false, movementPhase: "land" });
+		c.update(0.3);
+		c.sync({ defeated: false, moving: false, movementPhase: "grounded" });
+		expect(c.getStats()).toMatchObject({
+			semanticState: "idle",
+			activeLoopingActions: 1,
+			missingClipCount: 4,
+		});
+	} finally {
+		dispose();
+	}
 });

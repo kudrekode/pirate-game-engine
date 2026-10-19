@@ -190,6 +190,23 @@ describe("Three visual asset registry", () => {
 			url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
 		});
 		expect(asset?.animations).toEqual({
+			run: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Run_V1",
+			},
+			jump: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Jump_V1",
+			},
+			fall: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Fall_V1",
+			},
+			land: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Land_V1",
+			},
+
 			attack: {
 				assetId: "golden-combat-actions-v3",
 				clipName: "GoldenCombat_Attack_V1",
