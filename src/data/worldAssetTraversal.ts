@@ -27,6 +27,8 @@ export const WORLD_ASSET_TRAVERSAL: Record<string, AssetTraversalProfile> = {
 	"world-barrel": solid(1.087, 1, 1.087),
 	"world-crate": solid(0.98, 0.7, 1.19),
 	"world-chest": solid(0.5334, 0.5638, 0.5496),
+	// Kenney closed bounds. The body remains solid when the lid opens.
+	"world-animated-chest": solid(1.275, 1.1475, 1.275),
 	"world-table": solid(1.4, 0.775, 0.894),
 	"world-stool": solid(0.4924, 0.4404, 0.48),
 	"world-rock-large": solid(1.8337, 1.1669, 1.3066),

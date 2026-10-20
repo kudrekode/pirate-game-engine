@@ -13,7 +13,9 @@ const [model, library] = await Promise.all([
 	loader.loadAsync(asset),
 	loader.loadAsync(url),
 ]);
-const clip = library.animations.find((c) => c.name.includes("_" + name + "_"));
+const clip = library.animations.find(
+	(c) => c.name === name || c.name.includes("_" + name + "_"),
+);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#cbd3d9");
 scene.add(new THREE.HemisphereLight(0xffffff, 0x536175, 2.2));

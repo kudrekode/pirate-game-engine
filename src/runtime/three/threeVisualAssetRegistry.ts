@@ -2,6 +2,7 @@ import {
 	GOLDEN_COMBAT_V1_ASSET,
 	GOLDEN_COMBAT_V2_ASSET,
 	GOLDEN_COMBAT_V3_ASSET,
+	GOLDEN_INTERACTION_V1_ASSET,
 	GOLDEN_MOVEMENT_V1_ASSET,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
@@ -31,6 +32,20 @@ import type { CharacterGameAsset } from "../../types/game";
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
 export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
+	{
+		id: "world-animated-chest",
+		name: "Animated Chest",
+		kind: "glb",
+		category: "object",
+		browserCategory: "Props",
+		url: "/assets/pirate-demo/crate.glb",
+		defaultScale: 1,
+		castShadow: true,
+		receiveShadow: true,
+		propAnimations: { open: "open" },
+		traversal: WORLD_ASSET_TRAVERSAL["world-animated-chest"],
+		tags: ["chest", "container", "animated", "kenney"],
+	},
 	{
 		hiddenFromBrowser: true,
 		category: "object",
@@ -140,6 +155,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	{ ...GOLDEN_COMBAT_V2_ASSET, hiddenFromBrowser: true },
 	{ ...GOLDEN_COMBAT_V3_ASSET, hiddenFromBrowser: true },
 	{ ...GOLDEN_MOVEMENT_V1_ASSET, hiddenFromBrowser: true },
+	{ ...GOLDEN_INTERACTION_V1_ASSET, hiddenFromBrowser: true },
 	{ ...GOLDEN_REFERENCE_WALK_BAKED_ASSET, hiddenFromBrowser: true },
 	{ ...PROCEDURAL_MANNEQUIN_V0_ASSET, hiddenFromBrowser: true },
 	{ ...PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET, hiddenFromBrowser: true },

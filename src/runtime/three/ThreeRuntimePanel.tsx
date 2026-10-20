@@ -160,6 +160,10 @@ import {
 	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "./threePerformanceDiagnostics";
+import {
+	createThreePropAnimationController,
+	interactionFacingYaw,
+} from "./threePropAnimation";
 import { getThreeRuntimeAction } from "./threeRuntimeInput";
 import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
@@ -506,6 +510,14 @@ export function ThreeRuntimePanel({
 	const characterAnimationControllersRef = useRef<
 		Map<string, ThreeCharacterAnimationController>
 	>(new Map());
+	const physicalInteractionRef = useRef<
+		| ((
+				id: string,
+				action: "interact" | "pickup" | undefined,
+				remove: boolean,
+		  ) => void)
+		| null
+	>(null);
 	const cameraRigRef = useRef<CameraFollowRig | null>(null);
 	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
 	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
@@ -1004,7 +1016,9 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender("rule state changed");
+			// Flags/items/quest rewards update HUD and live session state; rebuilding
+			// here would discard a successful container/pickup's physical feedback.
+			diagnostics.recordObjectStateUpdate("rule state changed");
 			return;
 		}
 		if (event.type === "itemFeedback") {
@@ -1085,11 +1099,13 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "containerOpened") {
+			physicalInteractionRef.current?.(event.objectId, "interact", false);
 			diagnostics.recordObjectStateUpdate("container opened");
 			return;
 		}
 		if (event.type === "objectCollected") {
-			forceRender("object pickup collected");
+			physicalInteractionRef.current?.(event.objectId, undefined, true);
+			diagnostics.recordObjectStateUpdate("object pickup collected");
 			return;
 		}
 
@@ -1167,7 +1183,12 @@ export function ThreeRuntimePanel({
 			diagnostics.recordObjectStateUpdate("movement mode changed");
 			return;
 		}
-		if (event.type === "pickupCollected" || event.type === "objectMoved") {
+		if (event.type === "pickupCollected") {
+			physicalInteractionRef.current?.(event.pickupId, "pickup", event.once);
+			diagnostics.recordObjectStateUpdate("pickup collected");
+			return;
+		}
+		if (event.type === "objectMoved") {
 			forceRender("object interaction changed");
 		}
 	}
@@ -1587,7 +1608,6 @@ export function ThreeRuntimePanel({
 
 		if (target.type === "pickup") {
 			collectRuntimePickup(session, target.pickup, handleObjectEvent);
-			forceRender("pickup collected");
 			return;
 		}
 
@@ -2250,12 +2270,21 @@ export function ThreeRuntimePanel({
 			element: HTMLDivElement;
 			position: THREE.Vector3;
 		}[] = [];
+		const propAnimations = new Map<
+			string,
+			{
+				flag?: string;
+				controller: ReturnType<typeof createThreePropAnimationController>;
+			}
+		>();
+		const markerGroups = new Map<string, THREE.Group>();
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
 				onAssetStateChange: handleAssetStateChange,
 			});
 			const { group } = renderResult;
+			markerGroups.set(marker.id, group);
 			const object =
 				marker.kind === "object"
 					? area.objects.find((o) => o.id === marker.id)
@@ -2264,21 +2293,37 @@ export function ThreeRuntimePanel({
 				? resolveObjectBehaviour(session.project, object)
 				: undefined;
 			if (behaviour?.type === "container") {
-				const element = document.createElement("div");
-				element.className = "runtime-opened-label";
-				element.textContent = "Opened";
-				element.hidden = true;
-				host.append(element);
-				openedLabels.push({
-					id: marker.id,
-					flag: behaviour.openedFlag,
-					element,
-					position: new THREE.Vector3(
-						marker.threeX,
-						marker.threeY + 0.7,
-						marker.threeZ,
-					),
-				});
+				if (renderResult.usedAsset && marker.visual?.asset?.propAnimations) {
+					propAnimations.set(marker.id, {
+						flag: behaviour.openedFlag,
+						controller: createThreePropAnimationController(
+							marker.visual.asset,
+							group,
+							session.openedObjectIds.has(marker.id) ||
+								!!(
+									behaviour.openedFlag &&
+									session.runtimeState.flags[behaviour.openedFlag]
+								),
+						),
+					});
+				}
+				if (!propAnimations.has(marker.id)) {
+					const element = document.createElement("div");
+					element.className = "runtime-opened-label";
+					element.textContent = "Opened";
+					element.hidden = true;
+					host.append(element);
+					openedLabels.push({
+						id: marker.id,
+						flag: behaviour.openedFlag,
+						element,
+						position: new THREE.Vector3(
+							marker.threeX,
+							marker.threeY + 0.7,
+							marker.threeZ,
+						),
+					});
+				}
 			}
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
@@ -2381,6 +2426,48 @@ export function ThreeRuntimePanel({
 			});
 
 		updateSceneEntityCounts();
+		let interactionTarget: { x: number; y: number } | undefined;
+		const presentPhysicalInteraction = (
+			id: string,
+			action: "interact" | "pickup" | undefined,
+			remove: boolean,
+		) => {
+			const group = markerGroups.get(id);
+			if (!group) return;
+			if (
+				action &&
+				!isPlayerAirborne(session) &&
+				characterAnimationControllers
+					.get("runtime_player")
+					?.triggerInteraction(action)
+			)
+				interactionTarget = { x: group.position.x, y: group.position.z };
+			if (action === "interact")
+				propAnimations.get(id)?.controller.setOpened(true);
+			if (!remove) return;
+			// Gameplay has already collected this source. Drop only its local presentation.
+			scene.remove(group);
+			markerGroups.delete(id);
+			propAnimations.get(id)?.controller.dispose();
+			propAnimations.delete(id);
+			const index = markerRenderResults.findIndex((r) => r.group === group);
+			if (index >= 0) {
+				const [result] = markerRenderResults.splice(index, 1);
+				result.disposePresentation?.();
+				if (!result.usedAsset) disposePlaceholderObject(group);
+				else {
+					const skeletons = new Set<THREE.Skeleton>();
+					group.traverse((o) => {
+						if ((o as THREE.SkinnedMesh).isSkinnedMesh)
+							skeletons.add((o as THREE.SkinnedMesh).skeleton);
+					});
+					for (const skeleton of skeletons) skeleton.dispose();
+				}
+			}
+			const renderIndex = renderObjects.findIndex((r) => r.object === group);
+			if (renderIndex >= 0) renderObjects.splice(renderIndex, 1);
+			updateSceneEntityCounts();
+		};
 
 		// The shared combat transaction already removes the NPC from the live area,
 		// which movement/collision reads directly. Only this actor's presentation
@@ -2439,6 +2526,7 @@ export function ThreeRuntimePanel({
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 		} catch (error) {
+			for (const prop of propAnimations.values()) prop.controller.dispose();
 			characterAnimationControllers.forEach((controller) => {
 				controller.dispose();
 			});
@@ -2463,6 +2551,7 @@ export function ThreeRuntimePanel({
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
+		physicalInteractionRef.current = presentPhysicalInteraction;
 		removeNpcPresentationRef.current = finishNpcPresentation;
 		if (import.meta.env.DEV) {
 			const gl = renderer.getContext?.();
@@ -2714,6 +2803,20 @@ export function ThreeRuntimePanel({
 				});
 			}
 			setObjectFacing(playerMesh, playerVisual.facing, playerRenderVisual);
+			const playerAction = characterAnimationControllers
+				.get("runtime_player")
+				?.getStats().semanticState;
+			if (
+				interactionTarget &&
+				(playerAction === "interact" || playerAction === "pickup")
+			) {
+				const yaw = interactionFacingYaw(
+					{ x: playerMesh.position.x, y: playerMesh.position.z },
+					interactionTarget,
+					playerRenderVisual?.rotationOffset,
+				);
+				if (yaw !== undefined) playerMesh.rotation.y = yaw;
+			} else interactionTarget = undefined;
 			playerVisualRef.current = settleVisualEntityState(playerVisual, now);
 
 			npcRenderGroups.forEach((group, npcId) => {
@@ -2771,6 +2874,22 @@ export function ThreeRuntimePanel({
 			characterAnimationControllers.forEach((controller) => {
 				controller.update(deltaMs / 1000);
 			});
+			for (const [id, prop] of propAnimations) {
+				prop.controller.setOpened(
+					session.openedObjectIds.has(id) ||
+						!!(prop.flag && session.runtimeState.flags[prop.flag]),
+				);
+				prop.controller.update(deltaMs / 1000);
+			}
+			if (import.meta.env.DEV)
+				host.dataset.interactionProps = JSON.stringify({
+					props: [...propAnimations].map(([id, p]) => ({
+						id,
+						...p.controller.getStats(),
+					})),
+					visibleIds: [...markerGroups.keys()],
+					playerYaw: playerMesh.rotation.y,
+				});
 			for (const [npcId, deadline] of dyingNpcs) {
 				const death = characterAnimationControllers
 					.get(npcId)
@@ -2876,6 +2995,9 @@ export function ThreeRuntimePanel({
 		render();
 
 		return () => {
+			if (physicalInteractionRef.current === presentPhysicalInteraction)
+				physicalInteractionRef.current = null;
+			for (const prop of propAnimations.values()) prop.controller.dispose();
 			diagnostics.recordRafLoopCancel(rebuildReason);
 			for (const label of openedLabels) label.element.remove();
 			diagnostics.recordSceneCleanup();

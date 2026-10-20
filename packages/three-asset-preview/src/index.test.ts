@@ -84,6 +84,14 @@ describe("shared Three asset preview", () => {
 
 	test("defines explicit offline-baked animation sources", () => {
 		expect(GOLDEN_REFERENCE_HUMANOID_ASSET.animations).toEqual({
+			interact: {
+				assetId: "golden-interaction-actions-v1",
+				clipName: "GoldenInteraction_Interact_V1",
+			},
+			pickup: {
+				assetId: "golden-interaction-actions-v1",
+				clipName: "GoldenInteraction_Pickup_V1",
+			},
 			run: {
 				assetId: "golden-movement-actions-v1",
 				clipName: "GoldenMovement_Run_V1",

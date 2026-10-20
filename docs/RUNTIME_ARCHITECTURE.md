@@ -161,7 +161,17 @@ optional speaker; `interactionMessages` translates those into temporary nodes fo
 the existing dialogue engine. `object_behaviour` supplies explicit activation and
 prompt controls for containers and doors. `collect_item` routes a placed prop
 through the existing pickup transaction, removes only the session clone, and
-refreshes shared traversal descriptors. Legacy direct interactions remain available.
+removes its cached traversal descriptors locally. Legacy direct interactions remain available.
+
+Three physical interaction feedback consumes successful `containerOpened` and
+`pickupCollected` events. The existing character controller plays grounded
+Interact/Pickup below combat priority; presentation faces the target while gameplay
+movement remains authoritative. Collection removes only the local marker, and
+`TraversalWorld.removeObject` preserves the world, terrain sampler and surviving
+collision buckets. Inventory grants alone do not imply a physical animation.
+Registry `propAnimations.open` enables a per-instance closed/opened mixer, clamps
+its one-shot and reconstructs the final pose from opened IDs/flags on Continue.
+Mixer state, clip time and presentation facing never enter project/save data.
 
 Profiled Three areas target within 1.75 metres using continuous position, instance
 offsets, facing, stable distance/ID ordering and existing solid-box occlusion.

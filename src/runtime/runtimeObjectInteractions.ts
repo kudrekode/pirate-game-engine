@@ -18,7 +18,6 @@ import {
 } from "./runtimeRuleActionDispatcher";
 import type { RuntimeSessionState } from "./runtimeSession";
 import { buyShopEntry } from "./shopRuntime";
-import { createTraversalWorld } from "./traversal";
 import { createBoardedVehicleState } from "./vehicleRuntime";
 
 export type RuntimeObjectInteractionEvent =
@@ -273,9 +272,7 @@ export function collectRuntimePickup(
 		session.runtimeState.flags[pickup.collectedFlag] = true;
 	}
 
-	if (pickup.once) {
-		emit({ type: "pickupCollected", pickupId: pickup.id, once: true });
-	}
+	emit({ type: "pickupCollected", pickupId: pickup.id, once: pickup.once });
 	emitInventoryChanged(session, emit);
 	syncQuestProgress(session, emit);
 	emitStateChanged(emit);
@@ -329,11 +326,7 @@ export function collectRuntimeObjectPickup(
 	if (!collected) return false;
 	area.objects = area.objects.filter((entry) => entry.id !== object.id);
 	if (session.traversal?.world.areaId === area.id)
-		session.traversal.world = createTraversalWorld(
-			session.project,
-			area,
-			session.traversal.world.mode,
-		);
+		session.traversal.world.removeObject(object.id);
 	emit({ type: "objectCollected", objectId: object.id });
 	return true;
 }

@@ -1821,6 +1821,7 @@ function mockCombatActors(deathAvailable = true) {
 			refresh: vi.fn(),
 			triggerAttack: vi.fn(),
 			triggerHit: vi.fn(),
+			triggerInteraction: vi.fn(() => false),
 			sync: vi.fn((ctx: characterAnimation.CharacterAnimationContext) => {
 				state = ctx.defeated ? "defeated" : ctx.moving ? "walk" : "idle";
 			}),
@@ -1849,6 +1850,172 @@ function mockCombatActors(deathAvailable = true) {
 	});
 	return controllers;
 }
+it.each([
+	"container",
+	"container quest reward",
+	"prop pickup",
+	"placed pickup",
+	"sign",
+	"dialogue",
+	"rule reward",
+] as const)("keeps the scene and limits physical feedback to successful physical actions: %s", (kind) => {
+	const controllers = mockCombatActors();
+	const project = makeProject();
+	project.player.threeVisual = {
+		mode: "asset",
+		assetId: "procedural-mannequin-v0",
+	};
+	project.items = [
+		{
+			id: "rope",
+			name: "Rope",
+			category: "misc",
+			stackable: true,
+			maxStack: 99,
+		},
+	];
+	project.areas[0].objects = [
+		makeObject({ id: "target", objectDefinitionId: "target-def" }),
+	];
+	project.objects = [
+		{
+			id: "target-def",
+			name: "Target",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+		},
+	];
+	const object = project.areas[0].objects[0];
+	if (kind === "container" || kind === "container quest reward")
+		object.behaviourOverride = {
+			type: "container",
+			once: true,
+			contents: [{ itemId: "rope", quantity: 1 }],
+		};
+	if (kind === "container quest reward")
+		project.quests = [
+			{
+				id: "open-quest",
+				name: "Open the chest",
+				status: "active",
+				objectives: [
+					{
+						id: "open",
+						description: "Open",
+						condition: {
+							type: "container_opened",
+							areaId: "area_test",
+							targetId: "target",
+						},
+					},
+				],
+				completionActions: [{ type: "give_item", itemId: "rope", quantity: 2 }],
+			},
+		];
+	if (kind === "prop pickup")
+		object.interaction = {
+			type: "collect_item",
+			activationMode: "on_interact",
+			itemId: "rope",
+			quantity: 1,
+		};
+	if (kind === "placed pickup") {
+		project.areas[0].objects = [];
+		project.areas[0].pickups = [
+			{
+				id: "pickup",
+				areaId: "area_test",
+				x: 1,
+				y: 0,
+				itemId: "rope",
+				quantity: 1,
+				once: true,
+				pickupMode: "on_interact",
+			},
+		];
+	}
+	if (kind === "sign")
+		object.interaction = {
+			type: "show_message",
+			activationMode: "on_interact",
+			lines: ["Welcome"],
+		};
+	if (kind === "dialogue") {
+		project.areas[0].objects = [];
+		project.npcs = [
+			{
+				id: "guide-def",
+				name: "Guide",
+				mapAvatarId: "scout",
+				portraitId: "portrait_scout",
+			},
+		];
+		project.areas[0].npcs = [
+			{
+				id: "guide",
+				npcDefinitionId: "guide-def",
+				areaId: "area_test",
+				x: 1,
+				y: 0,
+				facing: "left",
+				blocksMovement: true,
+				movementMode: "stationary",
+				attributes: {
+					maxHealth: 100,
+					health: 100,
+					faction: "guide",
+					alignment: "friendly",
+					canInteract: true,
+				},
+				interaction: {
+					type: "show_message",
+					activationMode: "on_interact",
+					speaker: "Guide",
+					lines: ["Hello"],
+				},
+			},
+		];
+	}
+	if (kind === "rule reward")
+		project.rules = [
+			{
+				id: "grant",
+				name: "Grant",
+				enabled: true,
+				trigger: { type: "on_interact", targetId: "target" },
+				actions: [{ type: "give_item", itemId: "rope", quantity: 1 }],
+			},
+		];
+	render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+	const scene = getRuntimeDiagnosticsSnapshot().scene.buildCount;
+	const rendererCount = threeSpies.WebGLRenderer.mock.calls.length;
+	fireEvent.keyDown(window, { key: "e" });
+	const trigger = controllers[0].triggerInteraction;
+	if (
+		kind === "container" ||
+		kind === "container quest reward" ||
+		kind === "prop pickup" ||
+		kind === "placed pickup"
+	)
+		expect(trigger).toHaveBeenCalledWith(
+			kind === "container" || kind === "container quest reward"
+				? "interact"
+				: "pickup",
+		);
+	else expect(trigger).not.toHaveBeenCalled();
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(scene);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(rendererCount);
+	if (kind === "rule reward")
+		expect(screen.getByText("Rope acquired")).toBeInTheDocument();
+	if (kind === "container quest reward")
+		expect(screen.getByText("Rope ×3 acquired")).toBeInTheDocument();
+	if (kind === "container" || kind === "container quest reward") {
+		fireEvent.keyDown(window, { key: "e" });
+		expect(trigger).toHaveBeenCalledTimes(1);
+	}
+});
 function animatedCombatProject() {
 	const p = makeProject();
 	p.player.threeVisual = { mode: "asset", assetId: "procedural-mannequin-v0" };

@@ -377,6 +377,20 @@ export function createTraversalWorld(
 		floors,
 		profiledObjects,
 		labels,
+		// Retain the sampler and all surviving descriptors when a prop is collected.
+		removeObject: (id: string) => {
+			for (const entries of [solids, floors])
+				for (let i = entries.length - 1; i >= 0; i--)
+					if (entries[i].id === id) entries.splice(i, 1);
+			for (const [k, entries] of buckets) {
+				for (let i = entries.length - 1; i >= 0; i--)
+					if ((entries[i].solid ?? entries[i].floor)?.id === id)
+						entries.splice(i, 1);
+				if (!entries.length) buckets.delete(k);
+			}
+			profiledObjects.delete(id);
+			labels.delete(id);
+		},
 		candidates: (x: number, z: number) => buckets.get(key(x, z)) ?? [],
 	};
 }

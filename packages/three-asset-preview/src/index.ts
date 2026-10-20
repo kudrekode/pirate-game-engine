@@ -14,6 +14,8 @@ export type ThreeCharacterAnimationState =
 	| "jump"
 	| "fall"
 	| "land"
+	| "interact"
+	| "pickup"
 	| "attack"
 	| "hit"
 	| "defeated";
@@ -33,6 +35,8 @@ export type ThreeVisualAssetDefinition = {
 	thumbnailUrl?: string;
 	hiddenFromBrowser?: boolean;
 	animationOnly?: boolean;
+	/** Narrow semantic prop playback; clip names belong to the asset, not projects. */
+	propAnimations?: { open: string };
 	animations?: Partial<
 		Record<ThreeCharacterAnimationState, ThreeCharacterAnimationMapping>
 	>;
@@ -78,6 +82,25 @@ export const GOLDEN_MOVEMENT_V1_ASSET: ThreeVisualAssetDefinition = {
 	tags: ["animation", "golden-skeleton", "locomotion"],
 	url: "/assets/derived/humanoid-animations/golden-movement-v1/actions.glb",
 };
+export const GOLDEN_INTERACTION_V1_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	kind: "glb",
+	id: "golden-interaction-actions-v1",
+	name: "Golden Interaction V1",
+	tags: ["animation", "golden-skeleton", "interaction"],
+	url: "/assets/derived/humanoid-animations/golden-interaction-v1/actions.glb",
+};
+const GOLDEN_INTERACTION_MAPPINGS = {
+	interact: {
+		assetId: GOLDEN_INTERACTION_V1_ASSET.id,
+		clipName: "GoldenInteraction_Interact_V1",
+	},
+	pickup: {
+		assetId: GOLDEN_INTERACTION_V1_ASSET.id,
+		clipName: "GoldenInteraction_Pickup_V1",
+	},
+};
 const GOLDEN_MOVEMENT_MAPPINGS = {
 	run: {
 		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
@@ -114,6 +137,7 @@ export const GOLDEN_REFERENCE_HUMANOID_ASSET: ThreeVisualAssetDefinition = {
 	animations: {
 		...GOLDEN_COMBAT_MAPPINGS,
 		...GOLDEN_MOVEMENT_MAPPINGS,
+		...GOLDEN_INTERACTION_MAPPINGS,
 		idle: {
 			assetId: "golden-reference-quaternius-idle-baked-v1",
 			clipName: "GoldenReference_Idle",
@@ -168,6 +192,7 @@ export const PROCEDURAL_MANNEQUIN_V0_ASSET: ThreeVisualAssetDefinition = {
 	animations: {
 		...GOLDEN_COMBAT_MAPPINGS,
 		...GOLDEN_MOVEMENT_MAPPINGS,
+		...GOLDEN_INTERACTION_MAPPINGS,
 		idle: {
 			assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
 			clipName: "GoldenReference_Idle",

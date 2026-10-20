@@ -40,6 +40,7 @@ export type ThreeCharacterAnimationController = {
 	sync: (context: CharacterAnimationContext) => void;
 	triggerAttack: () => void;
 	triggerHit: () => void;
+	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
 };
 
@@ -130,6 +131,7 @@ export function resolveCharacterAnimationState(
 	context: CharacterAnimationContext & {
 		attackRequested?: boolean;
 		hitRequested?: boolean;
+		interactionRequested?: "interact" | "pickup";
 	},
 ): CharacterAnimationSemanticState {
 	if (context.defeated) {
@@ -141,6 +143,8 @@ export function resolveCharacterAnimationState(
 	if (context.attackRequested) {
 		return "attack";
 	}
+	if (context.interactionRequested && !context.airborne)
+		return context.interactionRequested;
 	if (context.airborne)
 		return context.movementPhase === "fall" ? "fall" : "jump";
 	if (context.movementPhase === "land") return "land";
@@ -182,7 +186,13 @@ export function createThreeCharacterAnimationController({
 		defeated: false,
 		moving: false,
 	};
-	let oneShotState: "attack" | "hit" | "defeated" | undefined;
+	let oneShotState:
+		| "attack"
+		| "hit"
+		| "defeated"
+		| "interact"
+		| "pickup"
+		| undefined;
 	let defeatFinished = false;
 	let semanticState: CharacterAnimationSemanticState = "idle";
 	let missingClipCount = 0;
@@ -248,6 +258,8 @@ export function createThreeCharacterAnimationController({
 			return;
 		}
 		const isOneShot =
+			nextState === "interact" ||
+			nextState === "pickup" ||
 			nextState === "attack" ||
 			nextState === "hit" ||
 			nextState === "defeated" ||
@@ -273,6 +285,10 @@ export function createThreeCharacterAnimationController({
 				...currentContext,
 				attackRequested: oneShotState === "attack",
 				hitRequested: oneShotState === "hit",
+				interactionRequested:
+					oneShotState === "interact" || oneShotState === "pickup"
+						? oneShotState
+						: undefined,
 			}),
 		);
 	};
@@ -285,7 +301,12 @@ export function createThreeCharacterAnimationController({
 			defeatFinished = true;
 			return;
 		}
-		if (semanticState === "attack" || semanticState === "hit") {
+		if (
+			semanticState === "attack" ||
+			semanticState === "hit" ||
+			semanticState === "interact" ||
+			semanticState === "pickup"
+		) {
 			oneShotState = undefined;
 			syncResolvedState();
 		}
@@ -303,6 +324,8 @@ export function createThreeCharacterAnimationController({
 			"jump",
 			"fall",
 			"land",
+			"interact",
+			"pickup",
 			"attack",
 			"hit",
 			"defeated",
@@ -406,6 +429,11 @@ export function createThreeCharacterAnimationController({
 		sync: (context) => {
 			if (disposed) return;
 			currentContext = context;
+			if (
+				context.airborne &&
+				(oneShotState === "interact" || oneShotState === "pickup")
+			)
+				oneShotState = undefined;
 			if (context.defeated) {
 				oneShotState = "defeated";
 			}
@@ -432,6 +460,20 @@ export function createThreeCharacterAnimationController({
 			oneShotState = "hit";
 			oneShotActionsTriggered += 1;
 			applySemanticState("hit", true);
+		},
+		triggerInteraction: (state) => {
+			if (
+				disposed ||
+				currentContext.defeated ||
+				currentContext.airborne ||
+				oneShotState ||
+				!actions.has(state)
+			)
+				return false;
+			oneShotState = state;
+			oneShotActionsTriggered += 1;
+			applySemanticState(state, true);
+			return true;
 		},
 		update: (deltaSeconds) => {
 			if (!disposed) {

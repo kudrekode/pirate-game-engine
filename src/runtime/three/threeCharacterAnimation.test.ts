@@ -134,7 +134,7 @@ it("shares a character load but isolates skeletons, transforms and Golden idle/w
 		expect(
 			loadAsync.mock.calls.filter(([url]) => url === asset.url),
 		).toHaveLength(1);
-		expect(loadAsync).toHaveBeenCalledTimes(5); // character, two locomotion sources, one combat library
+		expect(loadAsync).toHaveBeenCalledTimes(6); // character, idle/walk, movement, combat, interactions
 	} finally {
 		controllers.forEach((controller) => {
 			controller.dispose();
@@ -469,6 +469,8 @@ async function movementController(missing: string[] = []) {
 		"jump",
 		"fall",
 		"land",
+		"interact",
+		"pickup",
 		"attack",
 		"hit",
 		"defeated",
@@ -507,6 +509,66 @@ async function movementController(missing: string[] = []) {
 		},
 	};
 }
+it.each([
+	"interact",
+	"pickup",
+] as const)("plays %s once and returns to current locomotion, with combat and airborne priority", async (action) => {
+	const { controller: c, loadAsync, dispose } = await movementController();
+	try {
+		c.sync({ defeated: false, moving: true, sprinting: true });
+		expect(c.triggerInteraction(action)).toBe(true);
+		expect(c.getStats().semanticState).toBe(action);
+		expect(c.triggerInteraction(action)).toBe(false);
+		c.update(1.1);
+		expect(c.getStats().semanticState).toBe("run");
+		c.triggerAttack();
+		expect(c.triggerInteraction(action)).toBe(false);
+		c.update(1.1);
+		c.triggerInteraction(action);
+		c.triggerHit();
+		expect(c.getStats().semanticState).toBe("hit");
+		c.update(1.1);
+		expect(c.getStats().semanticState).toBe("run");
+		c.sync({
+			defeated: false,
+			moving: false,
+			airborne: true,
+			movementPhase: "jump",
+		});
+		expect(c.triggerInteraction(action)).toBe(false);
+		c.sync({ defeated: false, moving: false });
+		c.triggerInteraction(action);
+		c.sync({
+			defeated: false,
+			moving: false,
+			airborne: true,
+			movementPhase: "fall",
+		});
+		c.update(1.1);
+		c.sync({ defeated: false, moving: false });
+		expect(c.getStats().semanticState).toBe("idle");
+		c.triggerInteraction(action);
+		c.sync({ defeated: true, moving: false });
+		expect(c.getStats().semanticState).toBe("defeated");
+		expect(loadAsync).toHaveBeenCalledTimes(1);
+	} finally {
+		dispose();
+	}
+});
+it("does not queue missing interaction clips for later playback", async () => {
+	const { controller: c, dispose } = await movementController([
+		"interact",
+		"pickup",
+	]);
+	try {
+		expect(c.triggerInteraction("interact")).toBe(false);
+		expect(c.triggerInteraction("pickup")).toBe(false);
+		c.update(2);
+		expect(c.getStats().semanticState).toBe("idle");
+	} finally {
+		dispose();
+	}
+});
 it("crossfades Walk/Run and follows Run to Jump/Fall/Land to latest Run or Idle without reloading", async () => {
 	const { controller: c, loadAsync, dispose } = await movementController();
 	const fade = vi.spyOn(THREE.AnimationAction.prototype, "crossFadeFrom");

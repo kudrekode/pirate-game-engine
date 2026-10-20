@@ -25,6 +25,17 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+Interaction animation acceptance is one opt-in case, with no character builds:
+`node node_modules/@playwright/test/cli.js test e2e/interaction-animation.spec.ts --grep '@interaction-animation'`.
+Inspect `--list` first. It imports `interaction-animation-demo.project.json`, uses
+real movement/E to open animated/static chests and collect a physical prop, checks
+target-facing, neutral signs/dialogue, no duplicate Open/rewards, stable scene,
+clone/load/RAF counters and semantic Save/Continue without action replay. It also
+compares saved editor data before/after Play. Two gameplay images and compact
+observations go to `docs/assets/interaction-animation/`. Keep separate from CI.
+The explicit art review is `node tools/blender-character/review-golden-interaction.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `chest`; it reuses installed GLBs.
+
 The quest authoring route is one opt-in case in the existing interaction suite:
 `node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@quest-objectives'`.
 Inspect `--list` first. It imports the interaction showcase, authors three ordered
