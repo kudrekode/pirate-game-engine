@@ -14,6 +14,7 @@ import {
 	panOrbitCamera,
 	resetOrbitCameraState,
 	resolveCameraRelativeGridDirection,
+	resolveRuntimeCameraMovement,
 	rotateOrbitCamera,
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
@@ -221,6 +222,18 @@ describe("Three orbit camera helpers", () => {
 	});
 
 	it("clamps third-person mouse look pitch targets safely", () => {
+		expect(
+			getThirdPersonMouseLookPitchDegrees(
+				89,
+				createThirdPersonMouseLookState(),
+			),
+		).toBe(65);
+		expect(
+			getThirdPersonMouseLookPitchDegrees(
+				-89,
+				createThirdPersonMouseLookState(),
+			),
+		).toBe(-5);
 		const high = updateThirdPersonMouseLookTarget(
 			createThirdPersonMouseLookState(),
 			0,
@@ -234,8 +247,8 @@ describe("Three orbit camera helpers", () => {
 			18,
 		);
 
-		expect(high.targetPitchOffsetDegrees).toBe(57);
-		expect(low.targetPitchOffsetDegrees).toBe(-28);
+		expect(high.targetPitchOffsetDegrees).toBe(47);
+		expect(low.targetPitchOffsetDegrees).toBe(-23);
 	});
 
 	it("smoothly advances third-person mouse look toward target offsets", () => {
@@ -261,6 +274,41 @@ describe("Three orbit camera helpers", () => {
 		expect(direction.x).toBeCloseTo(-Math.SQRT1_2);
 		expect(direction.y).toBeCloseTo(-Math.SQRT1_2);
 		expect(Math.hypot(direction.x, direction.y)).toBeCloseTo(1);
+	});
+
+	it("projects the visible camera onto the ground for forward, strafe and normalized diagonals", () => {
+		for (const height of [-2, 1, 40]) {
+			const rig = {
+				lookAt: { x: 2, y: 1, z: 3 },
+				position: { x: 8, y: height, z: 3 },
+			};
+			const move = (x: number, y: number) =>
+				resolveRuntimeCameraMovement({ x, y }, rig, "follow", true, true);
+			expect(move(0, -1).x).toBeCloseTo(-1);
+			expect(move(0, -1).y).toBeCloseTo(0);
+			expect(move(1, 0).y).toBeCloseTo(-1);
+			expect(move(-1, 0).y).toBeCloseTo(1);
+			expect(Math.hypot(...Object.values(move(1, -1)))).toBeCloseTo(1);
+			expect(move(0, 0)).toEqual({ x: 0, y: 0 });
+			expect(
+				resolveRuntimeCameraMovement(
+					{ x: 0, y: -1 },
+					rig,
+					"inspect",
+					true,
+					true,
+				),
+			).toEqual({ x: 0, y: -1 });
+			expect(
+				resolveRuntimeCameraMovement(
+					{ x: 0, y: -1 },
+					rig,
+					"follow",
+					false,
+					true,
+				),
+			).toEqual({ x: 0, y: -1 });
+		}
 	});
 
 	it("clamps arbitrary camera states safely", () => {

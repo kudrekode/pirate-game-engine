@@ -62,8 +62,8 @@ const DEFAULT_CAMERA_BASE_DISTANCE_SCALE = 0.9;
 const DEFAULT_MIN_DISTANCE = 3;
 const DEFAULT_MIN_PITCH = (3 * Math.PI) / 180;
 const DEFAULT_MAX_PITCH = (86 * Math.PI) / 180;
-const DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES = -10;
-const DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES = 75;
+const DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES = -5;
+const DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES = 65;
 const DEFAULT_THIRD_PERSON_YAW_SENSITIVITY_DEGREES = 0.22;
 const DEFAULT_THIRD_PERSON_PITCH_SENSITIVITY_DEGREES = 0.18;
 const ORBIT_SENSITIVITY = 0.005;
@@ -248,9 +248,31 @@ export function resolveCameraRelativeGridDirection(
 		x: right.x * inputDirection.x + forward.x * -inputDirection.y,
 		y: right.y * inputDirection.x + forward.y * -inputDirection.y,
 	};
+	const length = Math.hypot(intended.x, intended.y);
+	if (length < 1e-8) return { x: 0, y: 0 };
 	return continuous
-		? intended
+		? { x: intended.x / length, y: intended.y / length }
 		: snapVectorToCardinalDirection(intended.x, intended.y);
+}
+
+/** The visible camera's ground-plane basis; pitch never changes walking speed. */
+export function resolveRuntimeCameraMovement(
+	input: GridDirection,
+	rig: CameraRig,
+	mode: "follow" | "inspect",
+	thirdPerson: boolean,
+	continuous: boolean,
+): GridDirection {
+	if (mode !== "follow" || !thirdPerson) return input;
+	const yaw = Math.atan2(
+		rig.position.x - rig.lookAt.x,
+		rig.position.z - rig.lookAt.z,
+	);
+	return resolveCameraRelativeGridDirection(
+		input,
+		(yaw * 180) / Math.PI,
+		continuous,
+	);
 }
 
 export function createThirdPersonMouseLookState(
@@ -269,7 +291,11 @@ export function getThirdPersonMouseLookPitchDegrees(
 	basePitchDegrees: number,
 	state: ThirdPersonMouseLookState,
 ): number {
-	return basePitchDegrees + state.currentPitchOffsetDegrees;
+	return clamp(
+		basePitchDegrees + state.currentPitchOffsetDegrees,
+		DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES,
+		DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES,
+	);
 }
 
 export function getThirdPersonMouseLookYawOffsetDegrees(

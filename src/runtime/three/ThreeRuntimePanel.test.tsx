@@ -35,6 +35,10 @@ import {
 } from "./threeVisualAssetLoader";
 import { setThreeVisualAssetRegistryForTests } from "./threeVisualAssetRegistry";
 import * as visualRenderer from "./threeVisualRenderer";
+import {
+	resolveThreeCharacterFacingYaw,
+	resolveThreeCharacterVisual,
+} from "./threeVisuals";
 
 const runtimeSpies = vi.hoisted(() => ({
 	attemptPlayerMove: vi.fn(),
@@ -1608,6 +1612,7 @@ it("offers Continue or New Game, preserves the slot until explicit replacement, 
 
 it("restores fractional traversal coordinates before the first Three scene build", () => {
 	const project = makeProject();
+	project.camera.three.style = "thirdPerson";
 	project.objects = [
 		{
 			id: "floor",
@@ -1656,9 +1661,176 @@ it("restores fractional traversal coordinates before the first Three scene build
 			s.traversal.position,
 		);
 		expect(saveSessionRef.current!().nextMoveAt).toBe(0);
+		act(() => runLatestAnimationFrame());
+		const camera = readCameraFeel();
+		for (const part of ["lookAt", "position"])
+			for (const axis of ["x", "y", "z"])
+				expect(camera.actual[part][axis]).toBeCloseTo(
+					camera.target[part][axis],
+					8,
+				);
+		expect(camera.actual.lookAt.y).toBeCloseTo(
+			1 + 0.625 + project.camera.three.lookAtHeight,
+		);
 	} finally {
 		restoreLoader();
 	}
+});
+
+function readCameraFeel() {
+	return JSON.parse(
+		document.querySelector<HTMLElement>(".three-runtime-host")!.dataset
+			.cameraFeel!,
+	);
+}
+
+it("steers a held W with visible camera orbit and keeps the same heading after repressing W", async () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	fireEvent.keyDown(window, { key: "w", code: "KeyW" });
+	const canvas = screen.getByLabelText("Three runtime viewport");
+	fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 100 });
+	// Click-to-look continues over HUD/page elements, until Escape releases it.
+	fireEvent.pointerMove(window, { clientX: 90 / 0.22, clientY: 100 });
+	for (let i = 0; i < 4; i++) {
+		now += 100;
+		await act(async () => {
+			runLatestAnimationFrame();
+			await new Promise((r) => setTimeout(r, 25));
+		});
+	}
+	const moves = runtimeSpies.attemptPlayerMove.mock.calls;
+	const last = moves[moves.length - 1][1];
+	expect(last.x).toBeGreaterThan(0.99);
+	expect(Math.abs(last.y)).toBeLessThan(0.03);
+	const yaw = readCameraFeel().yaw;
+	fireEvent.keyUp(window, { key: "w", code: "KeyW" });
+	now += 100;
+	act(() => runLatestAnimationFrame());
+	fireEvent.keyDown(window, { key: "w", code: "KeyW" });
+	const fresh = moves[moves.length - 1][1];
+	expect(fresh.x).toBeCloseTo(last.x, 2);
+	expect(fresh.y).toBeCloseTo(last.y, 2);
+	expect(readCameraFeel().yaw).toBeCloseTo(yaw, 2);
+	fireEvent.blur(window);
+});
+
+it("keeps an accepted attack's facing while movement changes and smoothly recovers afterward", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const controllers = mockCombatActors();
+	const p = animatedCombatProject();
+	p.camera.three.style = "thirdPerson";
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const player = controllers[1];
+	const stats = player.getStats();
+	let attacking = false;
+	vi.mocked(player.triggerAttack).mockImplementation(() => {
+		attacking = true;
+	});
+	vi.spyOn(player, "getStats").mockImplementation(() => ({
+		...stats,
+		semanticState: attacking ? "attack" : "walk",
+	}));
+	fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
+	fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" }); // face the adjacent blocking guard
+	fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalled();
+	fireEvent.click(screen.getByRole("button", { name: "Follow Player" }));
+	fireEvent.keyDown(window, { key: "w", code: "KeyW" }); // camera-forward now differs from attack
+	for (let i = 0; i < 3; i++) {
+		now += 100;
+		act(() => runLatestAnimationFrame());
+	}
+	const visual = resolveThreeCharacterVisual(
+		{ kind: "player", name: p.player.name, threeVisual: p.player.threeVisual },
+		p.characterAssets,
+	);
+	const attackYaw = resolveThreeCharacterFacingYaw({ x: 1, y: 0 }, visual);
+	expect(Math.sin(readCameraFeel().playerYaw - attackYaw)).toBeCloseTo(0, 2);
+	expect(latestSession().playerFacing).toEqual({ x: 0, y: 1 });
+	attacking = false;
+	now += 16;
+	act(() => runLatestAnimationFrame());
+	const recovering = readCameraFeel().playerYaw;
+	expect(Math.abs(Math.sin(recovering - attackYaw))).toBeGreaterThan(0.1);
+	expect(Math.abs(Math.sin(recovering - attackYaw))).toBeLessThan(0.9);
+	fireEvent.blur(window);
+});
+
+it("preserves target-facing interaction and blends back to travel without rebuilding", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const controllers = mockCombatActors();
+	const p = makeProject();
+	p.player.threeVisual = { mode: "asset", assetId: "procedural-mannequin-v0" };
+	p.items = [
+		{
+			id: "coin",
+			name: "Coin",
+			category: "misc",
+			stackable: true,
+			maxStack: 99,
+		},
+	];
+	p.objects = [
+		{
+			id: "chest",
+			name: "Chest",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: true,
+		},
+	];
+	p.areas[0].objects = [
+		makeObject({
+			id: "chest",
+			objectDefinitionId: "chest",
+			behaviourOverride: {
+				type: "container",
+				once: true,
+				contents: [{ itemId: "coin", quantity: 1 }],
+			},
+		}),
+	];
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const player = controllers[0],
+		stats = player.getStats();
+	let interacting = false;
+	vi.mocked(player.triggerInteraction).mockImplementation(() => {
+		interacting = true;
+		return true;
+	});
+	vi.spyOn(player, "getStats").mockImplementation(() => ({
+		...stats,
+		semanticState: interacting ? "interact" : "idle",
+	}));
+	fireEvent.keyDown(window, { key: "e", code: "KeyE" });
+	now += 16;
+	act(() => runLatestAnimationFrame());
+	const facingTarget = readCameraFeel().playerYaw;
+	const visual = resolveThreeCharacterVisual(
+		{ kind: "player", name: p.player.name, threeVisual: p.player.threeVisual },
+		p.characterAssets,
+	);
+	expect(facingTarget).toBeCloseTo(
+		resolveThreeCharacterFacingYaw({ x: 1, y: 0 }, visual),
+	);
+	expect(latestSession().playerFacing).toEqual({ x: 0, y: 1 });
+	expect(latestSession().openedObjectIds.has("chest")).toBe(true);
+	interacting = false;
+	now += 16;
+	act(() => runLatestAnimationFrame());
+	const recovered = readCameraFeel().playerYaw;
+	expect(recovered).not.toBe(facingTarget);
+	expect(Math.abs(recovered - facingTarget)).toBeLessThan(1);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
 });
 
 it("shows a corrupt-slot error and allows New Game without deleting the slot", () => {
