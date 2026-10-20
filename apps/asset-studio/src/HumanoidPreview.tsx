@@ -1,5 +1,6 @@
 import {
 	disposeThreeVisualAssetCacheEntry,
+	GOLDEN_COMBAT_V3_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
 	requestThreeVisualAsset,
@@ -17,7 +18,14 @@ const RETARGET_ARTIFACT_ROOT =
 	"/assets/derived/humanoid-animations/golden-reference-v0";
 
 // This component owns the entire preview lifetime, including animation and disposal.
-type PreviewAnimationState = "idle" | "rest" | "walk";
+type PreviewAnimationState =
+	| "idle"
+	| "rest"
+	| "walk"
+	| "attack"
+	| "hit"
+	| "death";
+const combatDurations = { attack: 0.5, hit: 1 / 3, death: 1.35 };
 type PreviewCameraPreset =
 	| "full-body"
 	| "upper-body"
@@ -185,6 +193,9 @@ export function HumanoidPreview({
 	const [analysis, setAnalysis] = useState<ThreeVisualAssetAnalysis>();
 	const [error, setError] = useState("");
 	const [canResetView, setCanResetView] = useState(false);
+	const offlineBakedPreview =
+		!window.location.search.includes("retarget=runtime-v2") &&
+		!window.location.search.includes("retarget=failed-v1");
 	const [animationState, setAnimationState] =
 		useState<PreviewAnimationState>("rest");
 	const [animationPlaying, setAnimationPlaying] = useState(true);
@@ -416,7 +427,13 @@ export function HumanoidPreview({
 			if (!clip) return;
 			activeAction?.stop();
 			const nextAction = animationMixer.clipAction(clip);
-			nextAction.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+			const oneShot =
+				state === "attack" || state === "hit" || state === "death";
+			nextAction.clampWhenFinished = oneShot;
+			nextAction
+				.reset()
+				.setLoop(oneShot ? THREE.LoopOnce : THREE.LoopRepeat, Infinity)
+				.play();
 			activeAction = nextAction;
 			animationMixer.setTime(0);
 			updateAnimationMetadata(true);
@@ -631,6 +648,17 @@ export function HumanoidPreview({
 						? `${RETARGET_ARTIFACT_ROOT}/diagnostics/failed-v1-walk.json`
 						: `${RETARGET_ARTIFACT_ROOT}/walk-in-place.runtime-retarget.json`,
 				);
+		const combatClipsPromise =
+			offlineBaked && source.authoredHuman
+				? Promise.all(
+						(["Attack", "Hit", "Death"] as const).map((name) =>
+							loadRegisteredAnimationClip(
+								GOLDEN_COMBAT_V3_ASSET,
+								`GoldenCombat_${name}_V1`,
+							),
+						),
+					)
+				: Promise.resolve([]);
 		const offlineBakePromise = offlineBaked
 			? Promise.all([
 					fetchJson<OfflineBakeMetadata>(
@@ -659,11 +687,15 @@ export function HumanoidPreview({
 					),
 			offlineBakePromise,
 			mannequinManifestPromise,
+			combatClipsPromise,
 		])
-			.then(([idleClip, walkClip, report, baked, manifest]) => {
+			.then(([idleClip, walkClip, report, baked, manifest, combatClips]) => {
 				if (disposed) return;
 				animationClips.set("idle", idleClip);
 				animationClips.set("walk", walkClip);
+				combatClips.forEach((clip, i) => {
+					animationClips.set((["attack", "hit", "death"] as const)[i], clip);
+				});
 				host.dataset.retargetProfile =
 					baked?.idle.profileVersion ?? report?.boneMapVersion ?? "unknown";
 				if (baked) {
@@ -862,7 +894,10 @@ export function HumanoidPreview({
 				className="animation-controls"
 				aria-label={`${source.displayName} animation controls`}
 			>
-				{(["rest", "idle", "walk"] as const).map((state) => (
+				{(source.authoredHuman && offlineBakedPreview
+					? (["rest", "idle", "walk", "attack", "hit", "death"] as const)
+					: (["rest", "idle", "walk"] as const)
+				).map((state) => (
 					<button
 						aria-pressed={animationState === state}
 						disabled={state !== "rest" && clipStatus !== "loaded"}
@@ -870,6 +905,7 @@ export function HumanoidPreview({
 						onClick={() => {
 							setAnimationSample(0);
 							setAnimationState(state);
+							applyAnimationStateRef.current(state);
 						}}
 						type="button"
 					>
@@ -943,7 +979,9 @@ export function HumanoidPreview({
 					<dt>Animation clips</dt>
 					<dd>
 						{clipStatus === "loaded"
-							? 2
+							? source.authoredHuman && offlineBakedPreview
+								? 5
+								: 2
 							: (analysis?.animationClips.length ?? "—")}
 					</dd>
 				</div>
@@ -953,9 +991,15 @@ export function HumanoidPreview({
 						{animationState === "rest"
 							? "Rest"
 							: `${animationState} · ${
-									offlineBake?.[animationState].durationSeconds.toFixed(3) ??
-									retargetReport?.[animationState].clip.duration.toFixed(3) ??
-									"—"
+									animationState === "idle" || animationState === "walk"
+										? (offlineBake?.[animationState].durationSeconds.toFixed(
+												3,
+											) ??
+											retargetReport?.[animationState].clip.duration.toFixed(
+												3,
+											) ??
+											"?")
+										: combatDurations[animationState].toFixed(3)
 								}s`}
 					</dd>
 				</div>
@@ -1113,13 +1157,17 @@ export function HumanoidPreview({
 					<dd>
 						{animationState === "rest"
 							? "Rest baseline"
-							: offlineBake
-								? offlineBake.roundTrip[animationState].poseComparison.passed
-									? "Pass · offline round trip and V2 pose comparison"
-									: "Failed offline round trip"
-								: retargetReport?.[animationState].quality.summary.passed
-									? "Pass (visual inspection still required)"
-									: "Failed"}
+							: animationState === "attack" ||
+									animationState === "hit" ||
+									animationState === "death"
+								? "Golden-native action ? inspect deformation and grounding"
+								: offlineBake
+									? offlineBake.roundTrip[animationState].poseComparison.passed
+										? "Pass · offline round trip and V2 pose comparison"
+										: "Failed offline round trip"
+									: retargetReport?.[animationState].quality.summary.passed
+										? "Pass (visual inspection still required)"
+										: "Failed"}
 					</dd>
 				</div>
 				<div>

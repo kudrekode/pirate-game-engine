@@ -147,7 +147,17 @@ describe("interaction authoring contract", () => {
 			{ x: 4, y: 5 },
 		);
 		expect(session.traversal.world.profiledObjects.has("sign")).toBe(true);
+		const cachedWorld = session.traversal.world,
+			sampler = cachedWorld.sampler;
 		expect(collectRuntimeObjectPickup(session, "sign", () => {})).toBe(true);
+		expect(session.traversal.world).toBe(cachedWorld);
+		expect(session.traversal.world.sampler).toBe(sampler);
+		expect(cachedWorld.solids.some((s) => s.id === "sign")).toBe(false);
+		expect(
+			cachedWorld
+				.candidates(4, 4)
+				.some((c) => (c.solid ?? c.floor)?.id === "sign"),
+		).toBe(false);
 		expect(session.runtimeState.inventory.items.supplies).toBe(3);
 		expect(area.objects).toHaveLength(0);
 		expect(session.traversal.world.profiledObjects.has("sign")).toBe(false);

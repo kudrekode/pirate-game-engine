@@ -25,6 +25,30 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The one-sword acceptance route is one opt-in case:
+`node node_modules/@playwright/test/cli.js test e2e/melee-weapon-v1.spec.ts --grep '@melee-weapon-v1'`.
+Inspect `--list` first. It imports `melee-weapon-v1-demo.project.json`, uses real
+movement/F/E and inventory controls, and checks unarmed/sword damage, pickup,
+equip/unequip, hand attachment, movement/airborne gating, Hit/Death, chest/pickup,
+dialogue, equipped and unequipped Continue, project isolation and settled scene,
+clone/load/RAF counters. The harness reads diagnostics; it never writes equip or
+combat state. Keep it separate from CI and art-review browsers on software rendering.
+The exact art selection is `node tools/blender-character/review-golden-sword.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `canonical`; no character builds.
+The canonical selection inspects all existing locomotion and interaction clips
+with the sword visible. Normal Play hides it during Interact/Pickup.
+
+Interaction animation acceptance is one opt-in case, with no character builds:
+`node node_modules/@playwright/test/cli.js test e2e/interaction-animation.spec.ts --grep '@interaction-animation'`.
+Inspect `--list` first. It imports `interaction-animation-demo.project.json`, uses
+real movement/E to open animated/static chests and collect a physical prop, checks
+target-facing, neutral signs/dialogue, no duplicate Open/rewards, stable scene,
+clone/load/RAF counters and semantic Save/Continue without action replay. It also
+compares saved editor data before/after Play. Two gameplay images and compact
+observations go to `docs/assets/interaction-animation/`. Keep separate from CI.
+The explicit art review is `node tools/blender-character/review-golden-interaction.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `chest`; it reuses installed GLBs.
+
 The quest authoring route is one opt-in case in the existing interaction suite:
 `node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@quest-objectives'`.
 Inspect `--list` first. It imports the interaction showcase, authors three ordered
@@ -349,3 +373,29 @@ separately. Labels beginning with `after` assert preserved scene/controller
 identities and local defeat disposal. Browser-only probes and raw output remain
 outside production; evidence is written to `test-results/combat-hitch/`.
 Do not run other suites concurrently with frame-pacing captures.
+
+## Movement V2 acceptance
+
+One opt-in real-input case covers Walk/Run, rest/moving/sprint jumps, Fall/Land,
+new F attack, grounded interactions/save boundaries, wall collision, explicit low
+floor landing, Continue and unchanged authored data. It uses installed Chrome and
+read-only RAF observations, with no gameplay mutation hooks or character builds:
+
+```powershell
+node node_modules/@playwright/test/cli.js test e2e/movement-v2.spec.ts --grep @movement-v2 --list
+node node_modules/@playwright/test/cli.js test e2e/movement-v2.spec.ts --grep @movement-v2 --output=test-results/movement-v2/browser
+```
+
+Import `movement-v2-demo.project.json`, choose 3D View and Play to try it manually.
+The detailed collision route uses the existing Inspect mode's world-relative input;
+locomotion and jump chains also run at the authored third-person camera. The harness
+restores viewport focus after camera controls. Keep GPU screenshots outside held-key
+measurements: a readback can extend the real key hold and carry the player to a wall.
+Native Space activation on Inventory's focused Close button is preserved.
+
+The animation review selects only four new motions and existing dressed bodies:
+`node tools/blender-character/review-golden-movement.mjs --list`, then
+`--body athletic`, `--body broad` or `--body fuller`. Root Vite must be running.
+No historical matrix or character regeneration is selected. Timed renders and body
+sheets are linked in `MOVEMENT_V2_RESULT.md`; numeric exports alone do not grant
+visual acceptance. Lifecycle counters cover movement before the deliberate reload.

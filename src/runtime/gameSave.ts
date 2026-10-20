@@ -5,11 +5,13 @@ import type {
 	QuestStatus,
 } from "../types/game";
 import { getPlayerCombatStats } from "./combat";
+import { isPlayerAirborne } from "./playerLocomotion";
 import {
 	createRuntimeSession,
 	type RuntimeSessionState,
 } from "./runtimeSession";
 import { createRuntimeTraversal, createTraversalWorld } from "./traversal";
+import { getEquippedWeapon } from "./weaponRuntime";
 
 export const GAME_SAVE_PREFIX = "adventure-builder-game-save-v1:";
 export const MAX_GAME_SAVE_CHARS = 1_000_000;
@@ -51,6 +53,7 @@ export type GameSave = {
 		health: number;
 		movementMode: RuntimeSessionState["currentMovementMode"];
 		vehicle: PlayerVehicleState;
+		equippedWeaponId?: string;
 		// Optional shared traversal coordinates; no world descriptors or motion path.
 		traversal?: {
 			x: number;
@@ -92,6 +95,8 @@ export function assertGameSaveSafe(
 	session: RuntimeSessionState,
 	presentationBlocked = false,
 ): void {
+	if (isPlayerAirborne(session))
+		throw new Error("Land before saving the game.");
 	if (
 		presentationBlocked ||
 		session.startupPending ||
@@ -127,6 +132,9 @@ export function createGameSave(
 			health: session.runtimePlayerHealth,
 			movementMode: session.currentMovementMode,
 			vehicle: session.playerVehicleState,
+			...(getEquippedWeapon(session)
+				? { equippedWeaponId: session.equippedWeaponId }
+				: {}),
 			...(traversal
 				? {
 						traversal: {
@@ -243,6 +251,7 @@ const saveShape = shape({
 		health: count,
 		movementMode: oneOf("walk", "sail", "ride", "drive"),
 		vehicle,
+		equippedWeaponId: optional(text),
 		traversal: optional(
 			shape({
 				x: number,
@@ -340,6 +349,16 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 	}
 	const includesAll = (values: string[], known: string[]) =>
 		values.every((id) => known.includes(id));
+	if (save.player.equippedWeaponId !== undefined) {
+		valid(
+			project.items.some(
+				(item) =>
+					item.id === save.player.equippedWeaponId &&
+					item.weapon === "sword" &&
+					(save.state.inventory[item.id] ?? 0) > 0,
+			),
+		);
+	}
 	const npcIds = project.areas.flatMap((a) => a.npcs.map((n) => n.id));
 	const objects = project.areas.flatMap((a) => a.objects);
 	const objectIds = objects.map((o) => o.id);
@@ -487,6 +506,7 @@ export function restoreGameSave(
 	s.runtimePlayerHealth = save.player.health;
 	s.currentMovementMode = save.player.movementMode;
 	s.playerVehicleState = save.player.vehicle;
+	s.equippedWeaponId = save.player.equippedWeaponId;
 	s.runtimeState = {
 		...save.state,
 		inventory: { items: save.state.inventory },

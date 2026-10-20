@@ -45,6 +45,8 @@ export type RuntimeSessionState = {
 	currentMovementMode: Exclude<MovementMode, "swim">;
 	playerVehicleState: PlayerVehicleState;
 	playerCombat: PlayerCombatStats;
+	/** Inventory item ID, never a renderer/bone reference. New games are unarmed. */
+	equippedWeaponId?: string;
 	runtimePlayerHealth: number;
 	runtimeState: RuntimeGameState;
 	runtimeQuestState: RuntimeQuestState;

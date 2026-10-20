@@ -39,7 +39,16 @@ export type TraversalFloor = {
 };
 type Candidate = { solid?: TraversalSolid; floor?: TraversalFloor };
 export type TraversalWorld = ReturnType<typeof createTraversalWorld>;
+export type PlayerLocomotion = {
+	phase: "grounded" | "jump" | "fall" | "land";
+	height: number;
+	verticalVelocity: number;
+	elapsed: number;
+	sprinting: boolean;
+	speed: number;
+};
 export type RuntimeTraversal = {
+	motion: PlayerLocomotion;
 	world: TraversalWorld;
 	position: TraversalPosition;
 	grid: { x: number; y: number };
@@ -368,6 +377,20 @@ export function createTraversalWorld(
 		floors,
 		profiledObjects,
 		labels,
+		// Retain the sampler and all surviving descriptors when a prop is collected.
+		removeObject: (id: string) => {
+			for (const entries of [solids, floors])
+				for (let i = entries.length - 1; i >= 0; i--)
+					if (entries[i].id === id) entries.splice(i, 1);
+			for (const [k, entries] of buckets) {
+				for (let i = entries.length - 1; i >= 0; i--)
+					if ((entries[i].solid ?? entries[i].floor)?.id === id)
+						entries.splice(i, 1);
+				if (!entries.length) buckets.delete(k);
+			}
+			profiledObjects.delete(id);
+			labels.delete(id);
+		},
 		candidates: (x: number, z: number) => buckets.get(key(x, z)) ?? [],
 	};
 }
@@ -378,6 +401,7 @@ export function resolveTraversalFloor(
 	project: GameProject,
 	point: { x: number; y: number },
 	previousHeight: number,
+	maxRise = MAX_STEP_HEIGHT,
 ) {
 	const x = Math.round(point.x),
 		y = Math.round(point.y);
@@ -397,7 +421,7 @@ export function resolveTraversalFloor(
 	return candidates
 		.filter(
 			(c) =>
-				c.height <= previousHeight + MAX_STEP_HEIGHT + EPS &&
+				c.height <= previousHeight + maxRise + EPS &&
 				c.height >= previousHeight - MAX_STEP_DOWN - EPS,
 		)
 		.sort((a, b) => b.height - a.height)[0];
@@ -427,6 +451,7 @@ function checkPosition(
 	project: GameProject,
 	point: { x: number; y: number },
 	height: number,
+	airborneHeight?: number,
 ): { position?: TraversalPosition; reason?: string } {
 	if (
 		point.x < -0.5 + PLAYER_HALF_WIDTH ||
@@ -435,7 +460,16 @@ function checkPosition(
 		point.y > area.height - 0.5 - PLAYER_HALF_WIDTH
 	)
 		return { reason: "Out of bounds." };
-	const floor = resolveTraversalFloor(world, area, project, point, height);
+	const floor = resolveTraversalFloor(
+		world,
+		area,
+		project,
+		point,
+		height,
+		airborneHeight === undefined
+			? MAX_STEP_HEIGHT
+			: Math.max(0, airborneHeight - height),
+	);
 	if (!floor)
 		return { reason: "No reachable floor (water, void or step too high)." };
 	const movement = resolveMovementAt(
@@ -465,7 +499,30 @@ function checkPosition(
 				return { reason: "Raised floor blocks movement." };
 		}
 	}
+	if (
+		airborneHeight !== undefined &&
+		isTraversalBodyBlocked(world, { ...point, height: airborneHeight })
+	)
+		return { reason: "Airborne body blocked." };
 	return { position };
+}
+
+// Shared vertical and horizontal body checks use the same spatial buckets.
+export function isTraversalBodyBlocked(
+	world: TraversalWorld,
+	position: TraversalPosition,
+): boolean {
+	return world.candidates(position.x, position.y).some((candidate) => {
+		if (candidate.solid && intersectsTraversalSolid(candidate.solid, position))
+			return true;
+		const top =
+			candidate.floor && floorHeightAt(candidate.floor, position.x, position.y);
+		return (
+			top !== undefined &&
+			top > position.height + EPS &&
+			top < position.height + PLAYER_BODY_HEIGHT
+		);
+	});
 }
 
 // Sweep in at most 4 cm increments, including diagonals. Never validate just the
@@ -476,6 +533,7 @@ export function sweepTraversal(
 	project: GameProject,
 	from: TraversalPosition,
 	delta: { x: number; y: number },
+	airborneHeight?: number,
 ) {
 	const count = Math.max(1, Math.ceil(Math.hypot(delta.x, delta.y) / 0.04));
 	const path = [from];
@@ -487,6 +545,7 @@ export function sweepTraversal(
 			project,
 			{ x: from.x + (delta.x * i) / count, y: from.y + (delta.y * i) / count },
 			path[path.length - 1].height,
+			airborneHeight,
 		);
 		if (!result.position) {
 			reason = result.reason;
@@ -513,6 +572,14 @@ export function createRuntimeTraversal(
 	return {
 		world,
 		position,
+		motion: {
+			phase: "grounded",
+			height: position.height,
+			verticalVelocity: 0,
+			elapsed: 0,
+			sprinting: false,
+			speed: 0,
+		},
 		grid: { ...grid },
 		path: [position],
 		startMs: 0,
@@ -536,4 +603,17 @@ export function sampleTraversalMotion(
 		y: a.y + (b.y - a.y) * t,
 		height: a.height + (b.height - a.height) * t,
 	};
+}
+
+/** Bridge only the existing 16 ms input poll gap; blocked or released input settles promptly. */
+export function isTraversalMoving(
+	state: RuntimeTraversal,
+	nowMs: number,
+	heldInput = false,
+): boolean {
+	return (
+		state.durationMs > 0 &&
+		nowMs >= state.startMs &&
+		nowMs < state.startMs + state.durationMs + (heldInput ? 32 : 0)
+	);
 }

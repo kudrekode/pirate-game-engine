@@ -570,7 +570,9 @@ export type ItemDefinition = {
 	id: string;
 	name: string;
 	description?: string;
-	category: "key" | "currency" | "consumable" | "quest" | "misc";
+	category: "key" | "currency" | "consumable" | "quest" | "misc" | "weapon";
+	/** Optional behaviour reference; ordinary items carry no combat fields. */
+	weapon?: "sword";
 	iconId?: string;
 	stackable: boolean;
 	maxStack?: number;

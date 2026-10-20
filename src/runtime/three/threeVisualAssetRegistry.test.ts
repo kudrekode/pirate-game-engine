@@ -190,6 +190,43 @@ describe("Three visual asset registry", () => {
 			url: "/assets/source/quaternius/Base%20Characters/Godot%20-%20UE/Superhero_Male_FullBody.gltf",
 		});
 		expect(asset?.animations).toEqual({
+			interact: {
+				assetId: "golden-interaction-actions-v1",
+				clipName: "GoldenInteraction_Interact_V1",
+			},
+			pickup: {
+				assetId: "golden-interaction-actions-v1",
+				clipName: "GoldenInteraction_Pickup_V1",
+			},
+			run: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Run_V1",
+			},
+			jump: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Jump_V1",
+			},
+			fall: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Fall_V1",
+			},
+			land: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Land_V1",
+			},
+
+			attack: {
+				assetId: "golden-combat-actions-v3",
+				clipName: "GoldenCombat_Attack_V1",
+			},
+			hit: {
+				assetId: "golden-combat-actions-v3",
+				clipName: "GoldenCombat_Hit_V1",
+			},
+			defeated: {
+				assetId: "golden-combat-actions-v3",
+				clipName: "GoldenCombat_Death_V1",
+			},
 			idle: {
 				assetId: "golden-reference-quaternius-idle-baked-v1",
 				clipName: "GoldenReference_Idle",
@@ -198,6 +235,28 @@ describe("Three visual asset registry", () => {
 				assetId: "golden-reference-quaternius-walk-baked-v1",
 				clipName: "GoldenReference_Walk_InPlace",
 			},
+		});
+		expect(
+			getThreeVisualAssetDefinition("golden-combat-actions-v1"),
+		).toMatchObject({
+			animationOnly: true,
+			hiddenFromBrowser: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-combat-v1/actions.glb",
+		});
+		expect(
+			getThreeVisualAssetDefinition("golden-combat-actions-v2"),
+		).toMatchObject({
+			animationOnly: true,
+			hiddenFromBrowser: true,
+			url: "/assets/derived/humanoid-animations/golden-combat-v2/actions.glb",
+		});
+		expect(
+			getThreeVisualAssetDefinition("golden-combat-actions-v3"),
+		).toMatchObject({
+			animationOnly: true,
+			hiddenFromBrowser: true,
+			url: "/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
 		});
 		expect(idle).toMatchObject({
 			animationOnly: true,

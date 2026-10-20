@@ -11,6 +11,7 @@ import {
 	createTraversalWorld,
 	floorHeightAt,
 	intersectsTraversalSolid,
+	isTraversalMoving,
 	MAX_STEP_HEIGHT,
 	resolveTraversalFloor,
 	sampleTraversalMotion,
@@ -442,4 +443,20 @@ describe("shared traversal", () => {
 		go(9, 8);
 		expect(session.traversal.position.height).toBe(1);
 	});
+});
+
+it("bridges a held input poll gap without keeping stopped or blocked locomotion alive", () => {
+	const { project, area } = fixture();
+	const state = createRuntimeTraversal(
+		createTraversalWorld(project, area),
+		area,
+		project,
+		{ x: 3, y: 3 },
+	);
+	state.startMs = 1000;
+	state.durationMs = 30;
+	expect(isTraversalMoving(state, 1020)).toBe(true);
+	expect(isTraversalMoving(state, 1040)).toBe(false);
+	expect(isTraversalMoving(state, 1040, true)).toBe(true);
+	expect(isTraversalMoving(state, 1065, true)).toBe(false);
 });

@@ -1,8 +1,9 @@
 // Opt-in combat-event investigation. Browser-only probes; no production mutation API.
 // Start Vite, then --list. CPU_PROFILE=1 is discovery only, never pacing evidence.
 import fs from "node:fs/promises";
-import ts from "typescript";
 import { chromium, expect } from "@playwright/test";
+import ts from "typescript";
+
 const label = process.argv[2];
 if (label === "--list" || !label) {
 	console.log(
@@ -45,6 +46,8 @@ const names = new Set([
 	"requestThreeVisualAssetAnimationClip",
 	"prepareThreeCharacterAnimationClip",
 	"triggerAttack",
+	"triggerHit",
+	"finishNpcPresentation",
 	"applySemanticState",
 	"refresh",
 	"dispose",
@@ -244,7 +247,7 @@ try {
 			console.error(e.message);
 		});
 		await page.addInitScript(() => {
-			const p = (window.__combatProbe = {
+			const p = {
 				active: false,
 				spans: [],
 				events: [],
@@ -254,7 +257,8 @@ try {
 				stack: [],
 				rendered: [],
 				lastFrame: 0,
-			});
+			};
+			window.__combatProbe = p;
 			p.begin = (name) => {
 				if (!p.active) return null;
 				if (
@@ -310,7 +314,7 @@ try {
 				supportsFiber: true,
 				renderers: new Map(),
 				inject: () => 1,
-				onCommitFiberRoot: (_, root) => {
+				onCommitFiberRoot: (_, _root) => {
 					if (!p.active) return;
 					p.commits.push({
 						time: performance.now(),
@@ -334,7 +338,9 @@ try {
 				body = instrument(body, route.request().url());
 			await route.fulfill({ response: r, body });
 		});
-		await page.goto("http://127.0.0.1:5173/");
+		await page.goto("http://127.0.0.1:5173/", {
+			waitUntil: "domcontentloaded",
+		});
 		if (await page.getByRole("button", { name: /Blank Project/ }).isVisible())
 			await page.getByRole("button", { name: /Blank Project/ }).click();
 		await page
@@ -460,7 +466,7 @@ try {
 				),
 			);
 		};
-		await capture("miss", () => page.keyboard.press("Space"));
+		await capture("miss", () => page.keyboard.press("KeyF"));
 		await page.keyboard.press("ArrowRight");
 		await page.waitForFunction(() =>
 			JSON.parse(
@@ -469,13 +475,14 @@ try {
 		);
 		await capture("contact", async () => {}, 4500);
 		await capture("nonlethal", async () => {
-			await page.keyboard.press("Space");
-			await page.keyboard.press("Space");
+			await page.keyboard.press("KeyF");
+			await page.keyboard.press("KeyF");
 		});
 		await expect(page.locator(".three-runtime-hud")).toContainText(
 			"Sparring Guard 25/50",
 		);
-		await capture("lethal", () => page.keyboard.press("Space"));
+		// Include the bounded Golden death action and its local disposal.
+		await capture("lethal", () => page.keyboard.press("KeyF"), 1800);
 		await expect(page.locator(".three-runtime-hud")).toContainText(
 			"Sparring Guard defeated.",
 		);

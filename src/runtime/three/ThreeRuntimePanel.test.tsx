@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../../data/defaultProject";
 import { cloneProject } from "../../data/migrateProject";
+import { SWORD_ITEM } from "../../data/sword";
 import type {
 	GameArea,
 	GameProject,
@@ -26,6 +27,7 @@ import { createRuntimeSession } from "../runtimeSession";
 import { createRuntimeTraversal, createTraversalWorld } from "../traversal";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import * as characterAnimation from "./threeCharacterAnimation";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
@@ -194,6 +196,14 @@ vi.mock("three", () => {
 	}
 
 	class Object3D {
+		name = "";
+		getObjectByName(name: string): Object3D | undefined {
+			return this.name === name
+				? this
+				: this.children
+						.map((child) => child.getObjectByName?.(name))
+						.find(Boolean);
+		}
 		children: Object3D[] = [];
 		castShadow = false;
 		position = {
@@ -1286,7 +1296,7 @@ describe("Three correctness boundaries", () => {
 		fireEvent.keyDown(window, { key: "e" });
 		expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
 		fireEvent.keyDown(window, { key: "ArrowRight" });
-		fireEvent.keyDown(window, { key: " ", code: "Space" });
+		fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
 		expect(latestSession().nextAttackAt).toBe(0);
 		fireEvent.click(screen.getByRole("button", { name: "Next" }));
@@ -1354,7 +1364,7 @@ describe("Three correctness boundaries", () => {
 				},
 			];
 		render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
-		fireEvent.keyDown(window, { key: " ", code: "Space" });
+		fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 		fireEvent.keyDown(window, { key: "ArrowRight" });
 		expect(latestSession().nextAttackAt).toBe(0);
 		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
@@ -1440,7 +1450,7 @@ it("runs dialogue node cutscenes and cutscene-end rules before resuming the node
 	fireEvent.keyDown(window, { key: "e" });
 	expect(screen.getByText("A vision")).toBeInTheDocument();
 	expect(screen.queryByText("Welcome traveller")).not.toBeInTheDocument();
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(latestSession().nextAttackAt).toBe(0);
 	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 	expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
@@ -1497,14 +1507,14 @@ it("preserves attack cooldown after a shop modal closes", () => {
 	];
 	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
 	fireEvent.click(screen.getByRole("button", { name: "Close" }));
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	const deadline = latestSession().nextAttackAt;
 	expect(deadline).toBeGreaterThan(now);
 	now = deadline - 1;
-	fireEvent.keyDown(window, { key: " ", code: "Space", repeat: true });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF", repeat: true });
 	expect(latestSession().nextAttackAt).toBe(deadline);
 	now = deadline;
-	fireEvent.keyDown(window, { key: " ", code: "Space", repeat: true });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF", repeat: true });
 	expect(latestSession().nextAttackAt).toBeGreaterThan(deadline);
 });
 
@@ -1750,13 +1760,13 @@ it.each([
 	act(() => tick());
 	expect(screen.getByText("Health 90/100")).toBeInTheDocument();
 	fireEvent.keyDown(window, { key: "ArrowRight" }); // Face the blocking guard.
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(screen.getByText("Guard 25/50")).toBeInTheDocument();
 	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
 	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(renderers);
 	expect(getRuntimeDiagnosticsSnapshot().raf.activeLoopCount).toBe(1);
 	now += 600;
-	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(session.defeatedNpcIds.has("guard")).toBe(true);
 	expect(session.project.areas[0].npcs).toHaveLength(0);
 	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
@@ -1794,4 +1804,466 @@ it("reuses scene terrain lookups for actor and camera frames across terrain mode
 			samples,
 		);
 	}
+});
+
+function mockCombatActors(deathAvailable = true) {
+	const controllers: ReturnType<
+		typeof characterAnimation.createThreeCharacterAnimationController
+	>[] = [];
+	const original = visualRenderer.createThreeVisualMarkerGroup;
+	vi.spyOn(visualRenderer, "createThreeVisualMarkerGroup").mockImplementation(
+		(marker, options) => {
+			const result = original({ ...marker, visual: undefined }, options);
+			result.usedAsset = true;
+			return result;
+		},
+	);
+	vi.spyOn(
+		characterAnimation,
+		"createThreeCharacterAnimationController",
+	).mockImplementation(() => {
+		let state: characterAnimation.CharacterAnimationSemanticState = "idle",
+			finished = false,
+			elapsed = 0;
+		const c = {
+			dispose: vi.fn(),
+			refresh: vi.fn(),
+			triggerAttack: vi.fn(),
+			triggerHit: vi.fn(),
+			triggerInteraction: vi.fn(() => false),
+			sync: vi.fn((ctx: characterAnimation.CharacterAnimationContext) => {
+				state = ctx.defeated ? "defeated" : ctx.moving ? "walk" : "idle";
+			}),
+			update: vi.fn((dt: number) => {
+				if (state === "defeated") {
+					elapsed += dt;
+					finished = elapsed >= 1;
+				}
+			}),
+			getDefeatPlayback: () =>
+				deathAvailable && state === "defeated"
+					? { duration: 1, finished }
+					: undefined,
+			getStats: () => ({
+				activeLoopingActions: 0,
+				incompatibleClipCount: 0,
+				loadingSourceCount: 0,
+				missingClipCount: 0,
+				oneShotActionsTriggered: 0,
+				semanticState: state,
+				sourceAssetIds: [],
+			}),
+		};
+		controllers.push(c);
+		return c;
+	});
+	return controllers;
+}
+it.each([
+	"container",
+	"container quest reward",
+	"prop pickup",
+	"placed pickup",
+	"sign",
+	"dialogue",
+	"rule reward",
+] as const)("keeps the scene and limits physical feedback to successful physical actions: %s", (kind) => {
+	const controllers = mockCombatActors();
+	const project = makeProject();
+	project.player.threeVisual = {
+		mode: "asset",
+		assetId: "procedural-mannequin-v0",
+	};
+	project.items = [
+		{
+			id: "rope",
+			name: "Rope",
+			category: "misc",
+			stackable: true,
+			maxStack: 99,
+		},
+	];
+	project.areas[0].objects = [
+		makeObject({ id: "target", objectDefinitionId: "target-def" }),
+	];
+	project.objects = [
+		{
+			id: "target-def",
+			name: "Target",
+			category: "prop",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: false,
+		},
+	];
+	const object = project.areas[0].objects[0];
+	if (kind === "container" || kind === "container quest reward")
+		object.behaviourOverride = {
+			type: "container",
+			once: true,
+			contents: [{ itemId: "rope", quantity: 1 }],
+		};
+	if (kind === "container quest reward")
+		project.quests = [
+			{
+				id: "open-quest",
+				name: "Open the chest",
+				status: "active",
+				objectives: [
+					{
+						id: "open",
+						description: "Open",
+						condition: {
+							type: "container_opened",
+							areaId: "area_test",
+							targetId: "target",
+						},
+					},
+				],
+				completionActions: [{ type: "give_item", itemId: "rope", quantity: 2 }],
+			},
+		];
+	if (kind === "prop pickup")
+		object.interaction = {
+			type: "collect_item",
+			activationMode: "on_interact",
+			itemId: "rope",
+			quantity: 1,
+		};
+	if (kind === "placed pickup") {
+		project.areas[0].objects = [];
+		project.areas[0].pickups = [
+			{
+				id: "pickup",
+				areaId: "area_test",
+				x: 1,
+				y: 0,
+				itemId: "rope",
+				quantity: 1,
+				once: true,
+				pickupMode: "on_interact",
+			},
+		];
+	}
+	if (kind === "sign")
+		object.interaction = {
+			type: "show_message",
+			activationMode: "on_interact",
+			lines: ["Welcome"],
+		};
+	if (kind === "dialogue") {
+		project.areas[0].objects = [];
+		project.npcs = [
+			{
+				id: "guide-def",
+				name: "Guide",
+				mapAvatarId: "scout",
+				portraitId: "portrait_scout",
+			},
+		];
+		project.areas[0].npcs = [
+			{
+				id: "guide",
+				npcDefinitionId: "guide-def",
+				areaId: "area_test",
+				x: 1,
+				y: 0,
+				facing: "left",
+				blocksMovement: true,
+				movementMode: "stationary",
+				attributes: {
+					maxHealth: 100,
+					health: 100,
+					faction: "guide",
+					alignment: "friendly",
+					canInteract: true,
+				},
+				interaction: {
+					type: "show_message",
+					activationMode: "on_interact",
+					speaker: "Guide",
+					lines: ["Hello"],
+				},
+			},
+		];
+	}
+	if (kind === "rule reward")
+		project.rules = [
+			{
+				id: "grant",
+				name: "Grant",
+				enabled: true,
+				trigger: { type: "on_interact", targetId: "target" },
+				actions: [{ type: "give_item", itemId: "rope", quantity: 1 }],
+			},
+		];
+	render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+	const scene = getRuntimeDiagnosticsSnapshot().scene.buildCount;
+	const rendererCount = threeSpies.WebGLRenderer.mock.calls.length;
+	fireEvent.keyDown(window, { key: "e" });
+	const trigger = controllers[0].triggerInteraction;
+	if (
+		kind === "container" ||
+		kind === "container quest reward" ||
+		kind === "prop pickup" ||
+		kind === "placed pickup"
+	)
+		expect(trigger).toHaveBeenCalledWith(
+			kind === "container" || kind === "container quest reward"
+				? "interact"
+				: "pickup",
+		);
+	else expect(trigger).not.toHaveBeenCalled();
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(scene);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(rendererCount);
+	if (kind === "rule reward")
+		expect(screen.getByText("Rope acquired")).toBeInTheDocument();
+	if (kind === "container quest reward")
+		expect(screen.getByText("Rope ×3 acquired")).toBeInTheDocument();
+	if (kind === "container" || kind === "container quest reward") {
+		fireEvent.keyDown(window, { key: "e" });
+		expect(trigger).toHaveBeenCalledTimes(1);
+	}
+});
+it("equips and unequips through inventory, keeps combat modal gating and preserves the scene/controllers", () => {
+	const controllers = mockCombatActors(),
+		project = animatedCombatProject();
+	project.items = [{ ...SWORD_ITEM }];
+	project.gameState.inventory = { sword: 1 };
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount,
+		player = controllers[1];
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+	expect(latestSession().equippedWeaponId).toBe("sword");
+	expect(screen.getByText("Equipped", { exact: true })).toBeInTheDocument();
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).not.toHaveBeenCalled();
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledWith("sword");
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Unequip" }));
+	expect(latestSession().equippedWeaponId).toBeUndefined();
+	expect(screen.getByText("Unequipped", { exact: true })).toBeInTheDocument();
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(controllers).toHaveLength(2);
+	expect(player.dispose).not.toHaveBeenCalled();
+});
+
+function animatedCombatProject() {
+	const p = makeProject();
+	p.player.threeVisual = { mode: "asset", assetId: "procedural-mannequin-v0" };
+	p.player.combat = {
+		health: 100,
+		maxHealth: 100,
+		attackDamage: 25,
+		attackRangeTiles: 1,
+		attackCooldownMs: 500,
+	};
+	p.areas[0].npcs = [
+		{
+			id: "guard",
+			npcDefinitionId: "guard_def",
+			areaId: "area_test",
+			x: 1,
+			y: 0,
+			facing: "left",
+			blocksMovement: true,
+			movementMode: "stationary",
+			threeVisual: { mode: "asset", assetId: "procedural-mannequin-v0" },
+			attributes: {
+				health: 50,
+				maxHealth: 50,
+				alignment: "hostile",
+				faction: "enemy",
+				canInteract: false,
+				movementSpeed: 1,
+			},
+			enemyBehaviour: {
+				enabled: true,
+				detectionRadiusTiles: 4,
+				chaseRadiusTiles: 5,
+				returnToOrigin: true,
+				contactDamage: 5,
+			},
+		},
+	];
+	return p;
+}
+it.each([
+	"complete",
+	"teardown",
+	"missing",
+	"deadline",
+])("keeps gameplay defeat immediate and cleans only the dying visual exactly once: %s", (mode) => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const controllers = mockCombatActors(mode !== "missing"),
+		p = animatedCombatProject(),
+		authored = JSON.stringify(p);
+	const { unmount } = render(
+		<ThreeRuntimePanel project={p} onRestart={vi.fn()} />,
+	);
+	expect(controllers).toHaveLength(2);
+	const [npc, player] = controllers;
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount;
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" }); // accepted miss, default facing down
+	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
+	now += 600;
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	fireEvent.keyUp(window, { key: "ArrowRight" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(npc.triggerHit).toHaveBeenCalledTimes(1);
+	now += 600;
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	const session = latestSession();
+	expect(session.project.areas[0].npcs).toHaveLength(0);
+	expect(session.defeatedNpcIds.has("guard")).toBe(true);
+	expect(npc.triggerHit).toHaveBeenCalledTimes(1);
+	expect(npc.sync).toHaveBeenCalledWith({ defeated: true, moving: false });
+	expect(npc.dispose).toHaveBeenCalledTimes(mode === "missing" ? 1 : 0);
+	// Shared movement sees the removed collider before the visual finishes.
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	fireEvent.keyUp(window, { key: "ArrowRight" });
+	expect(session.playerPosition).toEqual({ x: 1, y: 0 });
+	expect(createGameSave(p, session).world.defeatedNpcIds).toContain("guard");
+	if (mode === "complete")
+		for (let i = 0; i < 15; i++) {
+			now += 100;
+			act(() => runLatestAnimationFrame());
+		}
+	if (mode === "deadline") {
+		vi.mocked(npc.update).mockImplementation(() => undefined);
+		now += 1300;
+		act(() => runLatestAnimationFrame());
+	}
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(player.dispose).not.toHaveBeenCalled();
+	if (mode !== "teardown") expect(npc.dispose).toHaveBeenCalledTimes(1);
+	unmount();
+	expect(npc.dispose).toHaveBeenCalledTimes(1);
+	expect(player.dispose).toHaveBeenCalledTimes(1);
+	expect(JSON.stringify(p)).toBe(authored);
+});
+it.each([
+	5, 0, 100,
+])("wires contact Attack and nonlethal Hit, with actual lethal defeat winning (damage=%s)", (damage) => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const intervals = vi.spyOn(window, "setInterval"),
+		controllers = mockCombatActors(),
+		p = animatedCombatProject();
+	p.areas[0].npcs[0].enemyBehaviour!.contactDamage = damage;
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const tick = intervals.mock.calls.find((c) => c[1] === 50)![0] as () => void;
+	act(() => tick());
+	now += 2000;
+	act(() => tick());
+	act(() => runLatestAnimationFrame());
+	const [npc, player] = controllers;
+	expect(npc.triggerAttack).toHaveBeenCalledTimes(damage > 0 ? 1 : 0);
+	expect(player.triggerHit).toHaveBeenCalledTimes(
+		damage > 0 && damage < 100 ? 1 : 0,
+	);
+	expect(player.getStats().semanticState).toBe(
+		damage === 100 ? "defeated" : "idle",
+	);
+});
+it("successful progression completion keeps the living player out of Death", () => {
+	const controllers = mockCombatActors(),
+		p = animatedCombatProject();
+	p.areas[0].npcs = [];
+	p.progression = [{ id: "finish", action: { type: "end_game" } }];
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	act(() => runLatestAnimationFrame());
+	expect(screen.getByText("Game complete.")).toBeInTheDocument();
+	expect(controllers[0].getStats().semanticState).not.toBe("defeated");
+});
+
+it("maps Three Space to a real jump, F to attack and Shift to sprint without rebuilding the scene", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const p = makeProject(),
+		authored = JSON.stringify(p);
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const session = latestSession(),
+		before = getRuntimeDiagnosticsSnapshot();
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+	expect(session.traversal!.motion.sprinting).toBe(true);
+	const sampler = session.traversal!.world.sampler;
+	fireEvent.keyDown(window, { key: " ", code: "Space" });
+	expect(session.traversal!.motion.phase).toBe("jump");
+	expect(session.nextAttackAt).toBe(0);
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(session.nextAttackAt).toBe(0);
+	now += 100;
+	act(() => runLatestAnimationFrame());
+	expect(session.traversal!.motion.height).toBeGreaterThan(
+		session.traversal!.position.height,
+	);
+	fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+	fireEvent.keyUp(window, { key: "Shift", code: "ShiftLeft" });
+	for (let i = 0; i < 20; i++) {
+		now += 100;
+		act(() => runLatestAnimationFrame());
+	}
+	expect(session.traversal!.motion).toMatchObject({
+		phase: "grounded",
+		verticalVelocity: 0,
+		sprinting: false,
+	});
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(session.nextAttackAt).toBeGreaterThan(now);
+	const after = getRuntimeDiagnosticsSnapshot();
+	expect(after.scene.buildCount).toBe(before.scene.buildCount);
+	expect(after.raf.activeLoopCount).toBe(1);
+	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
+	expect(session.traversal!.world.sampler).toBe(sampler);
+	expect(JSON.stringify(p)).toBe(authored);
+});
+
+it("keeps a held third-person direction stable while the actor and follow camera turn", async () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	fireEvent.keyDown(window, { key: "a", code: "KeyA" });
+	now += 100;
+	await act(async () => {
+		await new Promise((resolve) => setTimeout(resolve, 40));
+	});
+	const moves = runtimeSpies.attemptPlayerMove.mock.calls;
+	expect(moves.length).toBeGreaterThan(1);
+	expect(
+		moves.every(
+			([, direction]) =>
+				Math.abs(direction.x - 1) < 1e-6 && Math.abs(direction.y) < 1e-6,
+		),
+	).toBe(true);
+	fireEvent.blur(window);
+});
+
+it("hands held legacy grid movement into sprint without another movement keydown", async () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	render(<ThreeRuntimePanel project={makeProject()} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+	const session = latestSession();
+	expect(session.traversal).toBeUndefined();
+	expect(session.playerPosition.x).toBe(1);
+	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
+	expect(session.traversal).toBeDefined();
+	now = 1300;
+	await act(async () => {
+		await new Promise((resolve) => setTimeout(resolve, 40));
+	});
+	expect(session.traversal!.position.x).toBeCloseTo(1.2);
+	expect(session.traversal!.motion.sprinting).toBe(true);
+	fireEvent.blur(window);
 });

@@ -11,6 +11,10 @@ export type CharacterAnimationSemanticState = ThreeCharacterAnimationState;
 export type CharacterAnimationContext = {
 	defeated: boolean;
 	moving: boolean;
+	sprinting?: boolean;
+	airborne?: boolean;
+	movementPhase?: "grounded" | "jump" | "fall" | "land";
+	movementSpeed?: number;
 };
 
 export type CharacterAnimationPreparationResult =
@@ -25,14 +29,19 @@ export type ThreeCharacterAnimationControllerStats = {
 	oneShotActionsTriggered: number;
 	semanticState: CharacterAnimationSemanticState;
 	sourceAssetIds: string[];
+	activeClip?: string;
 };
 
 export type ThreeCharacterAnimationController = {
 	dispose: () => void;
 	getStats: () => ThreeCharacterAnimationControllerStats;
+	/** Available only after a loaded, finite death action has started. */
+	getDefeatPlayback: () => { duration: number; finished: boolean } | undefined;
 	refresh: () => void;
 	sync: (context: CharacterAnimationContext) => void;
-	triggerAttack: () => void;
+	triggerAttack: (variant?: "sword") => void;
+	triggerHit: () => void;
+	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
 };
 
@@ -120,15 +129,27 @@ export function clearThreeCharacterAnimationClipCacheForTests(): void {
 }
 
 export function resolveCharacterAnimationState(
-	context: CharacterAnimationContext & { attackRequested?: boolean },
+	context: CharacterAnimationContext & {
+		attackRequested?: boolean;
+		hitRequested?: boolean;
+		interactionRequested?: "interact" | "pickup";
+	},
 ): CharacterAnimationSemanticState {
 	if (context.defeated) {
 		return "defeated";
 	}
+	if (context.hitRequested) {
+		return "hit";
+	}
 	if (context.attackRequested) {
 		return "attack";
 	}
-	return context.moving ? "walk" : "idle";
+	if (context.interactionRequested && !context.airborne)
+		return context.interactionRequested;
+	if (context.airborne)
+		return context.movementPhase === "fall" ? "fall" : "jump";
+	if (context.movementPhase === "land") return "land";
+	return context.moving ? (context.sprinting ? "run" : "walk") : "idle";
 }
 
 function getSourceAssetId(
@@ -148,13 +169,17 @@ function getAnimationMapping(
 export function createThreeCharacterAnimationController({
 	asset,
 	root,
+	attackVariants,
 }: {
 	asset: ThreeVisualAssetDefinition;
 	root: THREE.Object3D;
+	attackVariants?: Partial<
+		Record<"sword", { assetId?: string; clipName: string }>
+	>;
 }): ThreeCharacterAnimationController {
 	const mixer = new THREE.AnimationMixer(root);
 	const actions = new Map<
-		CharacterAnimationSemanticState,
+		CharacterAnimationSemanticState | "sword",
 		THREE.AnimationAction
 	>();
 	const loadingSourceIds = new Set<string>();
@@ -166,12 +191,20 @@ export function createThreeCharacterAnimationController({
 		defeated: false,
 		moving: false,
 	};
-	let oneShotState: "attack" | "defeated" | undefined;
+	let oneShotState:
+		| "attack"
+		| "hit"
+		| "defeated"
+		| "interact"
+		| "pickup"
+		| undefined;
+	let defeatFinished = false;
 	let semanticState: CharacterAnimationSemanticState = "idle";
 	let missingClipCount = 0;
 	let incompatibleClipCount = 0;
 	let oneShotActionsTriggered = 0;
 	let disposed = false;
+	let attackVariant: "sword" | undefined;
 
 	const reportIssueOnce = (key: string, type: "missing" | "incompatible") => {
 		if (reportedIssueKeys.has(key)) {
@@ -189,7 +222,37 @@ export function createThreeCharacterAnimationController({
 		nextState: CharacterAnimationSemanticState,
 		forceRestart = false,
 	) => {
-		const nextAction = actions.get(nextState);
+		const fallback =
+			nextState === "run"
+				? "walk"
+				: nextState === "jump" || nextState === "fall"
+					? "idle"
+					: nextState === "land"
+						? currentContext.moving
+							? currentContext.sprinting && actions.has("run")
+								? "run"
+								: "walk"
+							: "idle"
+						: undefined;
+		const nextAction =
+			(nextState === "attack" && attackVariant
+				? actions.get(attackVariant)
+				: undefined) ??
+			actions.get(nextState) ??
+			(fallback ? actions.get(fallback) : undefined);
+		const rate =
+			(nextState === "walk" || nextState === "run") &&
+			currentContext.movementSpeed
+				? Math.max(
+						0.8,
+						Math.min(
+							1.2,
+							currentContext.movementSpeed /
+								(nextState === "run" ? 7.64 : 4.63),
+						),
+					)
+				: 1;
+		nextAction?.setEffectiveTimeScale(rate);
 		if (
 			semanticState === nextState &&
 			activeAction === nextAction &&
@@ -204,12 +267,21 @@ export function createThreeCharacterAnimationController({
 			activeAction = undefined;
 			return;
 		}
-		const isOneShot = nextState === "attack" || nextState === "defeated";
+		const isOneShot =
+			nextState === "interact" ||
+			nextState === "pickup" ||
+			nextState === "attack" ||
+			nextState === "hit" ||
+			nextState === "defeated" ||
+			((nextState === "jump" || nextState === "land") &&
+				actions.has(nextState));
+		if (nextState === "defeated") defeatFinished = false;
 		nextAction.enabled = true;
-		nextAction.setEffectiveTimeScale(1);
+		nextAction.setEffectiveTimeScale(rate);
 		nextAction.setEffectiveWeight(1);
 		nextAction.setLoop(isOneShot ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
-		nextAction.clampWhenFinished = nextState === "defeated";
+		// Hold a one-shot recovery pose during the ordinary short return blend.
+		nextAction.clampWhenFinished = isOneShot;
 		nextAction.reset().play();
 		if (activeAction && activeAction !== nextAction) {
 			nextAction.crossFadeFrom(activeAction, TRANSITION_SECONDS, false);
@@ -222,17 +294,30 @@ export function createThreeCharacterAnimationController({
 			resolveCharacterAnimationState({
 				...currentContext,
 				attackRequested: oneShotState === "attack",
+				hitRequested: oneShotState === "hit",
+				interactionRequested:
+					oneShotState === "interact" || oneShotState === "pickup"
+						? oneShotState
+						: undefined,
 			}),
 		);
 	};
 
 	const handleFinished = (event: { action?: THREE.AnimationAction }) => {
-		if (event.action !== activeAction || semanticState === "defeated") {
+		if (event.action !== activeAction) {
 			return;
 		}
-		if (semanticState === "attack") {
+		if (semanticState === "defeated") {
+			defeatFinished = true;
+			return;
+		}
+		if (
+			semanticState === "attack" ||
+			semanticState === "hit" ||
+			semanticState === "interact" ||
+			semanticState === "pickup"
+		) {
 			oneShotState = undefined;
-			activeAction = undefined;
 			syncResolvedState();
 		}
 	};
@@ -242,15 +327,32 @@ export function createThreeCharacterAnimationController({
 		if (disposed) {
 			return;
 		}
-		for (const state of ["idle", "walk", "attack", "defeated"] as const) {
+		for (const state of [
+			"idle",
+			"walk",
+			"run",
+			"jump",
+			"fall",
+			"land",
+			"interact",
+			"pickup",
+			"attack",
+			"hit",
+			"defeated",
+			"sword",
+		] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
-			const mapping = getAnimationMapping(asset, state);
+			const mapping =
+				state === "sword"
+					? attackVariants?.sword
+					: getAnimationMapping(asset, state);
 			if (!mapping) {
 				continue;
 			}
-			const sourceAssetId = getSourceAssetId(asset, state);
+			const sourceAssetId =
+				state === "sword" ? mapping.assetId : getSourceAssetId(asset, state);
 			const sourceAsset = getThreeVisualAssetDefinition(sourceAssetId);
 			if (sourceAssetId) {
 				sourceAssetIds.add(sourceAssetId);
@@ -288,6 +390,13 @@ export function createThreeCharacterAnimationController({
 				reportIssueOnce(`${sourceKey}:${prepared.reason}`, "incompatible");
 				continue;
 			}
+			if (
+				!Number.isFinite(prepared.clip.duration) ||
+				prepared.clip.duration <= 0
+			) {
+				reportIssueOnce(sourceKey, "incompatible");
+				continue;
+			}
 			actions.set(state, mixer.clipAction(prepared.clip));
 		}
 		syncResolvedState();
@@ -306,9 +415,21 @@ export function createThreeCharacterAnimationController({
 			mixer.uncacheRoot(root);
 			actions.clear();
 		},
+		getDefeatPlayback: () => {
+			const action = actions.get("defeated");
+			return !disposed &&
+				semanticState === "defeated" &&
+				activeAction === action &&
+				action
+				? { duration: action.getClip().duration, finished: defeatFinished }
+				: undefined;
+		},
 		getStats: () => ({
 			activeLoopingActions:
-				(semanticState === "idle" || semanticState === "walk") &&
+				(semanticState === "idle" ||
+					semanticState === "walk" ||
+					semanticState === "run" ||
+					semanticState === "fall") &&
 				activeAction?.enabled
 					? 1
 					: 0,
@@ -318,24 +439,58 @@ export function createThreeCharacterAnimationController({
 			oneShotActionsTriggered,
 			semanticState,
 			sourceAssetIds: Array.from(sourceAssetIds).sort(),
+			activeClip: activeAction?.getClip().name,
 		}),
 		refresh,
 		sync: (context) => {
+			if (disposed) return;
 			currentContext = context;
+			if (
+				context.airborne &&
+				(oneShotState === "interact" || oneShotState === "pickup")
+			)
+				oneShotState = undefined;
 			if (context.defeated) {
 				oneShotState = "defeated";
 			}
 			syncResolvedState();
 		},
-		triggerAttack: () => {
+		triggerAttack: (variant) => {
 			// A missing/unloaded attack has no mixer finished event. Keep locomotion
 			// alive and let the combat HUD present the hit/miss instead of latching.
-			if (currentContext.defeated || disposed || !actions.has("attack")) {
+			if (
+				currentContext.defeated ||
+				currentContext.airborne ||
+				oneShotState === "hit" ||
+				disposed ||
+				!actions.has("attack")
+			) {
 				return;
 			}
 			oneShotState = "attack";
+			attackVariant = variant;
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
+		},
+		triggerHit: () => {
+			if (currentContext.defeated || disposed || !actions.has("hit")) return;
+			oneShotState = "hit";
+			oneShotActionsTriggered += 1;
+			applySemanticState("hit", true);
+		},
+		triggerInteraction: (state) => {
+			if (
+				disposed ||
+				currentContext.defeated ||
+				currentContext.airborne ||
+				oneShotState ||
+				!actions.has(state)
+			)
+				return false;
+			oneShotState = state;
+			oneShotActionsTriggered += 1;
+			applySemanticState(state, true);
+			return true;
 		},
 		update: (deltaSeconds) => {
 			if (!disposed) {

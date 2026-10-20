@@ -6,10 +6,14 @@ export function InventoryPanel({
 	items,
 	inventory,
 	onClose,
+	equippedWeaponId,
+	onEquipWeapon,
 }: {
 	items: ItemDefinition[];
 	inventory: Record<string, number>;
 	onClose: () => void;
+	equippedWeaponId?: string;
+	onEquipWeapon?: (itemId: string | undefined) => void;
 }) {
 	const panelRef = useRef<HTMLDialogElement>(null);
 	const closeRef = useRef(onClose);
@@ -125,6 +129,23 @@ export function InventoryPanel({
 								{item ? itemCategoryLabels[item.category] : "General"}
 							</span>
 							<p>{item?.description || "No description provided."}</p>
+							{item?.weapon && onEquipWeapon && (
+								<div>
+									<p>
+										{equippedWeaponId === item.id ? "Equipped" : "Unequipped"}
+									</p>
+									<button
+										type="button"
+										onClick={() =>
+											onEquipWeapon(
+												equippedWeaponId === item.id ? undefined : item.id,
+											)
+										}
+									>
+										{equippedWeaponId === item.id ? "Unequip" : "Equip"}
+									</button>
+								</div>
+							)}
 							<dl>
 								<dt>Quantity</dt>
 								<dd>{selected[1]}</dd>

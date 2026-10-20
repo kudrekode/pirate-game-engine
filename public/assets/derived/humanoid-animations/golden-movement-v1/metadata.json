@@ -1,0 +1,38 @@
+{
+	"version": "golden-movement-v1",
+	"rigProfile": "golden-humanoid-v0",
+	"blender": "5.2.0 LTS",
+	"clips": {
+		"Run": {
+			"name": "GoldenMovement_Run_V1",
+			"duration": 0.6666666666666666
+		},
+		"Jump": {
+			"name": "GoldenMovement_Jump_V1",
+			"duration": 0.3
+		},
+		"Fall": {
+			"name": "GoldenMovement_Fall_V1",
+			"duration": 0.6
+		},
+		"Land": {
+			"name": "GoldenMovement_Land_V1",
+			"duration": 0.21666666666666667
+		}
+	},
+	"packaging": "one mesh-free armature and four named clips",
+	"bytes": 81428,
+	"sha256": "8e3678b41513221ffd6a314e4f5fb6006962a545fcf733f38a21f7407ffb375e",
+	"binaryDeterministic": true,
+	"sourceHashes": {
+		"tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/animations/golden-movement-v1/actions.blend": "4954e16cd2e83005d8053d87fae8d9e3c7f502cc7248260eed6ec06d9f65ce7d",
+		"tools/blender-character/animations/golden-movement-v1/author.py": "b04fc33f2858c699b643877e1aab1c7fe05280cf6bb776c7b316fe73f050a620",
+		"tools/blender-character/animations/golden-movement-v1/export.py": "1e4ec988023f55fdfd018d77e9014a1de32b99f4917eeafbec59eecbcc847b2c",
+		"public/assets/derived/authored-humans/everyday-v1/mannequin.glb": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb": "00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c"
+	},
+	"rootPolicy": "No root tracks; vertical-only pelvis, gameplay owns airborne displacement",
+	"provenance": "tools/blender-character/animations/golden-movement-v1/README.md"
+}

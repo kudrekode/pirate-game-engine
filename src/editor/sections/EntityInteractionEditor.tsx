@@ -303,6 +303,12 @@ export function EntityInteractionEditor({
 									)}
 								</>
 							)}
+							{type === "container" && (
+								<p className="muted">
+									Choose Animated Chest in 3D Visual for a moving lid. Container
+									rewards and opened state work with static assets too.
+								</p>
+							)}
 							{kind !== "event" && (
 								<label>
 									Prompt label

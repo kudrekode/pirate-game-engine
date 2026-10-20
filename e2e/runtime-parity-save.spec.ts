@@ -42,7 +42,7 @@ async function authored(page: Page) {
 	return page.evaluate((key) => localStorage.getItem(key), projectKey);
 }
 async function importProject(page: Page, file: string) {
-	await page.goto("/");
+	await page.goto("/", { waitUntil: "domcontentloaded" });
 	if (await page.getByRole("button", { name: /Blank Project/ }).isVisible())
 		await page.getByRole("button", { name: /Blank Project/ }).click();
 	await page.locator('input[type="file"]').setInputFiles(file);
@@ -73,7 +73,7 @@ async function saveSlot(page: Page) {
 	});
 }
 
-test("NPC movement, dialogue, Space combat and durable defeat through real controls @runtime-parity-save", async ({
+test("NPC movement, dialogue, F combat and durable defeat through real controls @runtime-parity-save", async ({
 	page,
 }) => {
 	test.setTimeout(300_000);
@@ -159,7 +159,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	await expect(dialog).toContainText("Everyone pauses while we talk");
 	const paused = (await npcs(page)).map(({ id, x, y }) => ({ id, x, y }));
 	await page.keyboard.press("ArrowRight");
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await page.waitForTimeout(1500);
 	expect((await npcs(page)).map(({ id, x, y }) => ({ id, x, y }))).toEqual(
 		paused,
@@ -196,7 +196,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	await expect(page.locator(".three-runtime-hud")).not.toContainText(
 		"Health 100/100",
 	);
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard 25/50",
 	);
@@ -207,7 +207,7 @@ test("NPC movement, dialogue, Space combat and durable defeat through real contr
 	expect(afterDamage.asset.cloneCount).toBe(beforeContact.asset.cloneCount);
 	expect(afterDamage.raf.activeLoopCount).toBe(1);
 	await page.waitForTimeout(550);
-	await page.keyboard.press("Space");
+	await page.keyboard.press("KeyF");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard defeated.",
 	);
@@ -632,4 +632,327 @@ test("five harbour patrols retain actors and pause hidden editor rendering @runt
 			2,
 		),
 	);
+});
+
+// Golden combat extends this existing real-input/save route. The observer reads
+// only diagnostic state; no runtime mutation or animation timing hook is used.
+declare global {
+	interface Window {
+		__GOLDEN_COMBAT__?: {
+			player: string[];
+			npc: Record<string, string[]>;
+			dying: string[];
+			frames: number;
+			firstAttackAt: number;
+			firstAttackAt: number;
+		};
+	}
+}
+async function observeGoldenCombat(page: Page) {
+	await page.evaluate(() => {
+		const o = {
+			player: [] as string[],
+			npc: {} as Record<string, string[]>,
+			dying: [] as string[],
+			frames: 0,
+			firstAttackAt: 0,
+		};
+		window.__GOLDEN_COMBAT__ = o;
+		window.addEventListener(
+			"keydown",
+			(event) => {
+				if (event.code === "KeyF" && !o.firstAttackAt)
+					o.firstAttackAt = event.timeStamp;
+			},
+			{ capture: true },
+		);
+		const sample = () => {
+			const host = document.querySelector<HTMLElement>(".three-runtime-host");
+			if (!host) return;
+			const d =
+				window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel");
+			if (d) {
+				o.frames++;
+				const state = d.asset.character.animation.playerState;
+				if (state === "attack" && !o.firstAttackAt)
+					o.firstAttackAt = performance.now();
+				if (!o.player.includes(state)) o.player.push(state);
+			}
+			for (const n of JSON.parse(host.dataset.npcs ?? "[]")) {
+				o.npc[n.id] ??= [];
+				if (!o.npc[n.id].includes(n.animation)) o.npc[n.id].push(n.animation);
+			}
+			for (const id of JSON.parse(host.dataset.dyingNpcs ?? "[]"))
+				if (!o.dying.includes(id)) o.dying.push(id);
+			requestAnimationFrame(sample);
+		};
+		requestAnimationFrame(sample);
+	});
+}
+async function settledGolden(page: Page) {
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const d =
+					window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel");
+				return (
+					d &&
+					d.asset.statusCounts.loading === 0 &&
+					d.asset.character.animation.loadingSourceCount === 0 &&
+					d.frame.frameCount > 30
+				);
+			}),
+		)
+		.toBe(true);
+	const d = await page.evaluate(
+		() => window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+	);
+	expect(d.asset.character.animation.missingClipCount).toBe(0);
+	expect(d.asset.character.animation.incompatibleClipCount).toBe(0);
+	return d;
+}
+test("Golden combat actions, immediate collision removal, visible Death and Continue @golden-combat", async ({
+	page,
+}) => {
+	test.setTimeout(180_000);
+	const out =
+		process.env.GOLDEN_COMBAT_OUTPUT ?? "docs/assets/golden-combat-v1";
+	await fs.mkdir(out, { recursive: true });
+	const errors: string[] = [];
+	page.on("pageerror", (e) => errors.push(e.message));
+	const original = await importProject(
+		page,
+		"golden-combat-animation-demo.project.json",
+	);
+	await play(page);
+	const before = await settledGolden(page);
+	await observeGoldenCombat(page);
+	await page.keyboard.press("KeyF");
+	await page.keyboard.press("KeyF");
+	await expect
+		.poll(() =>
+			page.evaluate(() => window.__GOLDEN_COMBAT__?.player.includes("attack")),
+		)
+		.toBe(true);
+	expect(
+		(
+			await page.evaluate(
+				() =>
+					window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+			)
+		).asset.character.animation.oneShotActionsTriggered,
+	).toBe(1);
+	const sinceFirstAttack = await page.evaluate(
+		() => performance.now() - window.__GOLDEN_COMBAT__!.firstAttackAt,
+	);
+	await page.waitForTimeout(Math.max(0, 505 - sinceFirstAttack));
+	expect(
+		await page.evaluate(
+			() =>
+				window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!
+					.asset.character.animation.playerState,
+		),
+	).toBe("attack");
+	await page.keyboard.press("KeyF");
+	expect(
+		(
+			await page.evaluate(
+				() =>
+					window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+			)
+		).asset.character.animation.oneShotActionsTriggered,
+	).toBe(2);
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel")
+						?.asset.character.animation.playerState,
+			),
+		)
+		.toBe("idle");
+	await page.keyboard.press("ArrowRight");
+	await expect(page.locator(".three-runtime-hud")).toContainText("Pos: 3, 7");
+	await expect
+		.poll(() =>
+			page.evaluate(() => window.__GOLDEN_COMBAT__?.player.includes("walk")),
+		)
+		.toBe(true);
+	await expect
+		.poll(() =>
+			page.evaluate(() => window.__GOLDEN_COMBAT__?.player.includes("hit")),
+		)
+		.toBe(true);
+	await expect
+		.poll(() =>
+			page.evaluate(() =>
+				window.__GOLDEN_COMBAT__?.npc.sparring_guard?.includes("attack"),
+			),
+		)
+		.toBe(true);
+	await page.keyboard.press("KeyF");
+	await expect(page.locator(".three-runtime-hud")).toContainText(
+		"Sparring Guard 25/50",
+	);
+	await expect
+		.poll(() =>
+			page.evaluate(() =>
+				window.__GOLDEN_COMBAT__?.npc.sparring_guard?.includes("hit"),
+			),
+		)
+		.toBe(true);
+	await page.waitForTimeout(600);
+	await page.keyboard.press("KeyF");
+	await expect
+		.poll(async () => (await npcs(page)).some((n) => n.id === "sparring_guard"))
+		.toBe(false);
+	await expect
+		.poll(() =>
+			page.locator(".three-runtime-host").getAttribute("data-dying-npcs"),
+		)
+		.toContain("sparring_guard");
+	// Real movement crosses the old collider while its dying group remains.
+	await page.keyboard.press("ArrowRight");
+	await expect(page.locator(".three-runtime-hud")).toContainText("Pos: 4, 7");
+	await page.getByRole("button", { name: "Save Game", exact: true }).click();
+	const saved = await saveSlot(page);
+	expect(saved.world.defeatedNpcIds).toContain("sparring_guard");
+	expect(JSON.stringify(saved)).not.toContain("dying");
+	await page.screenshot({ path: `${out}/gameplay-death.png` });
+	await expect
+		.poll(() =>
+			page.locator(".three-runtime-host").getAttribute("data-dying-npcs"),
+		)
+		.toBe("[]");
+	const after = await page.evaluate(
+		() => window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
+	);
+	expect(after.scene.buildCount).toBe(before.scene.buildCount);
+	expect(after.scene.cleanupCount).toBe(before.scene.cleanupCount);
+	expect(after.asset.cloneCount).toBe(before.asset.cloneCount);
+	expect(after.asset.character.animation.activeMixers).toBe(
+		before.asset.character.animation.activeMixers - 1,
+	);
+	const observation = await page.evaluate(() => window.__GOLDEN_COMBAT__);
+	await fs.writeFile(
+		`${out}/browser-observations.json`,
+		JSON.stringify(
+			{
+				before,
+				after,
+				observation,
+				acceptedRepeatWhileAttack: true,
+				savedDuringDeath: true,
+				errors,
+			},
+			null,
+			2,
+		),
+	);
+	await exitAndCheck(page, original);
+	await play(page, true);
+	await settledGolden(page);
+	expect((await npcs(page)).some((n) => n.id === "sparring_guard")).toBe(false);
+	expect(
+		await page.locator(".three-runtime-host").getAttribute("data-dying-npcs"),
+	).toBe("[]");
+	await exitAndCheck(page, original);
+	expect(errors).toEqual([]);
+});
+test("Golden player actual death holds its pose @golden-combat", async ({
+	page,
+}, info) => {
+	test.setTimeout(120_000);
+	const fixture = JSON.parse(
+		await fs.readFile("golden-combat-animation-demo.project.json", "utf8"),
+	);
+	fixture.metadata.name = "Golden actual defeat acceptance";
+	fixture.player.combat.health = 1;
+	const file = info.outputPath("actual-death.project.json");
+	await fs.writeFile(file, JSON.stringify(fixture));
+	const original = await importProject(page, file);
+	await play(page);
+	await settledGolden(page);
+	await observeGoldenCombat(page);
+	await page.keyboard.press("ArrowRight");
+	await expect(page.locator(".three-runtime-hud")).toContainText(
+		"Health 0/100",
+	);
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel")
+						?.asset.character.animation.playerState,
+			),
+		)
+		.toBe("defeated");
+	await page.waitForTimeout(1700);
+	await page.screenshot({
+		path: `${process.env.GOLDEN_COMBAT_OUTPUT ?? "docs/assets/golden-combat-v1"}/player-death.png`,
+	});
+	expect(
+		await page.evaluate(
+			() =>
+				window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel")
+					?.asset.character.animation.playerState,
+		),
+	).toBe("defeated");
+	await exitAndCheck(page, original);
+});
+test("Golden successful completion never selects Death @golden-combat", async ({
+	page,
+}, info) => {
+	test.setTimeout(120_000);
+	const fixture = JSON.parse(
+		await fs.readFile("golden-combat-animation-demo.project.json", "utf8"),
+	);
+	fixture.metadata.name = "Golden success acceptance";
+	fixture.areas[0].npcs = [];
+	fixture.areas[0].eventBlocks.push({
+		id: "finish",
+		name: "Finish",
+		x: 3,
+		y: 7,
+		kind: "trigger",
+		tag: "finish",
+	});
+	fixture.progression.push(
+		{
+			id: "wait",
+			action: {
+				type: "wait_for_trigger",
+				areaId: fixture.areas[0].id,
+				eventBlockId: "finish",
+			},
+		},
+		{ id: "end", action: { type: "end_game" } },
+	);
+	const file = info.outputPath("successful-end.project.json");
+	await fs.writeFile(file, JSON.stringify(fixture));
+	const original = await importProject(page, file);
+	await play(page);
+	await settledGolden(page);
+	await observeGoldenCombat(page);
+	await page.keyboard.press("ArrowRight");
+	await expect(page.locator(".three-runtime-hud")).toContainText(
+		"Game complete.",
+	);
+	await page.waitForTimeout(1500);
+	expect(
+		await page.evaluate(() =>
+			window.__GOLDEN_COMBAT__?.player.includes("defeated"),
+		),
+	).toBe(false);
+	expect(
+		await page.evaluate(
+			() =>
+				window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel")
+					?.asset.character.animation.playerState,
+		),
+	).toBe("idle");
+	await page.screenshot({
+		path: `${process.env.GOLDEN_COMBAT_OUTPUT ?? "docs/assets/golden-combat-v1"}/successful-completion.png`,
+	});
+	await exitAndCheck(page, original);
 });

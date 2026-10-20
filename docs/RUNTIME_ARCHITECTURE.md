@@ -161,7 +161,17 @@ optional speaker; `interactionMessages` translates those into temporary nodes fo
 the existing dialogue engine. `object_behaviour` supplies explicit activation and
 prompt controls for containers and doors. `collect_item` routes a placed prop
 through the existing pickup transaction, removes only the session clone, and
-refreshes shared traversal descriptors. Legacy direct interactions remain available.
+removes its cached traversal descriptors locally. Legacy direct interactions remain available.
+
+Three physical interaction feedback consumes successful `containerOpened` and
+`pickupCollected` events. The existing character controller plays grounded
+Interact/Pickup below combat priority; presentation faces the target while gameplay
+movement remains authoritative. Collection removes only the local marker, and
+`TraversalWorld.removeObject` preserves the world, terrain sampler and surviving
+collision buckets. Inventory grants alone do not imply a physical animation.
+Registry `propAnimations.open` enables a per-instance closed/opened mixer, clamps
+its one-shot and reconstructs the final pose from opened IDs/flags on Continue.
+Mixer state, clip time and presentation facing never enter project/save data.
 
 Profiled Three areas target within 1.75 metres using continuous position, instance
 offsets, facing, stable distance/ID ordering and existing solid-box occlusion.
@@ -284,6 +294,30 @@ layout parity are presentation work, outside this correctness pass.
 
 ## Save games
 
+### One equipped sword
+
+Items may optionally reference the bounded `sword` behaviour in `data/sword.ts`.
+`weaponRuntime` validates inventory ownership and the one session-owned
+`equippedWeaponId` (an item ID). The existing combat transaction resolves effective
+damage/range/cooldown and emits the accepted attack's variant; unarmed defaults,
+targeting, immediate damage and defeat/quest semantics stay authoritative.
+Inventory detail supplies Equip/Unequip in both adapters. Equip never resets an
+accepted attack's cooldown or changes the authored player combat defaults.
+
+Three prepares the optional Golden sword clip once in the existing controller and
+uses the same Attack semantic/priority. `threeWeaponAttachment` resolves the actual
+instance `hand_r`, uses the registry/marker factory with the authored grip origin,
+and parents one cached sword instance to the bone. The source's right-finger grip
+is applied after the existing mixer. Equip/unequip only attaches/detaches that
+instance. Interact/Pickup hide it temporarily; locomotion, Hit and Death retain it.
+There is no blade collider, second mixer, RAF, traversal rebuild or character load.
+
+Version-1 saves optionally include `player.equippedWeaponId`, validated against
+an owned sword item. Absent fields restore unarmed for older saves. Continue loads
+the attachment from semantic state without replaying Pickup/Equip. No renderer
+objects, bone references, grip pose or animation clocks are persisted. See
+`MELEE_WEAPON_V1_RESULT.md` for the bounded acceptance and art review.
+
 `gameSave.ts` stores semantic session progress in version 1 plain JSON. Both
 adapters restore a fresh cloned session and rebuild visuals without rerunning
 startup/entry actions. Flags, variables, inventory, NPC attributes/defeats,
@@ -306,3 +340,32 @@ old saves until explicit replacement. Manual save is refused during modal/startu
 end states and asynchronous cutscene action sequences. Inventory/quest displays
 initialize silently on Continue. See [the result report](../RUNTIME_PARITY_SAVE_GAME_RESULT.md)
 and its two opt-in real-input browser checks for current evidence and limits.
+
+## Movement V2
+
+`playerLocomotion.ts` owns renderer-neutral sprint intent, airborne feet, vertical
+velocity, gravity and landing on `RuntimeTraversal.motion` inside the isolated
+session. `traversal.position` and its accepted path retain the supporting floor;
+`motion.height` is the actual airborne foot height. Three advances the shared
+vertical helper in its existing RAF, then presents that physical height. No authored
+schema or saved-game version changes are needed.
+
+Three defaults are WASD/arrows move, Shift sprint (1.65x), Space jump and F attack;
+E/Enter still interact. Phaser retains Space attack and grid walking. Legacy Three
+areas without profiled traversal retain grid walking until sprint/jump first opts
+into the cached continuous traversal world. NPCs retain their existing grid AI.
+
+Horizontal sweeps remain in 4 cm increments. An airborne sample must have valid
+support beneath it, respect existing step-down limits and retain conservative
+solid-prop blockers. Explicit low floors can be reached when the feet clear them;
+objects without walkable surfaces cannot become platforms. Vertical body checks
+reuse the same solids/floor buckets. No unsupported water/void crossing is added.
+Ordinary touch/use interactions and attacks require grounded state. Landing checks
+ordinary touch/quest/waiting-trigger entry again, without a new interaction engine.
+
+Manual save rejects airborne state; a grounded save retains only the existing
+supporting coordinates. Sprint keys, velocity, aerial/landing phase and animation
+state reset on Continue. No renderer objects are serialized. Golden movement clips
+are external cached data; each character retains its own mixer/actions. Priority is
+Defeated > Hit > Attack > Jump/Fall/Land > Run > Walk > Idle. Missing Run uses Walk;
+missing aerial clips use Idle and missing Land returns to available locomotion.

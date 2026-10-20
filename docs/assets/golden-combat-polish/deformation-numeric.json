@@ -1,0 +1,184 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
+	"sha256": "25a4d4475bffe7be4fb71000134bcca6a4b03f8242d3e2f77248542ea8e5b6b2",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "public/assets/derived/authored-humans/everyday-v1/mannequin.glb",
+			"heightScale": 1,
+			"restError": 0,
+			"clips": [
+				{
+					"name": "GoldenCombat_Attack_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 52,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009911732859981665,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8229039060039307,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Death_V1",
+					"duration": 1.649999976158142,
+					"tracks": 23,
+					"horizontalRange": [1.5102467778555173e-15, 1.5548309856977527e-7],
+					"minimumY": 0.00509544050485447,
+					"finalMinimumY": 0.009820468106377628,
+					"finalMaximumY": 0.37412540341401285,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Hit_V1",
+					"duration": 0.44999998807907104,
+					"tracks": 22,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.00983244871758994,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8224364075443171,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				}
+			],
+			"targetSha256": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/athletic/mannequin.glb",
+			"heightScale": 1,
+			"restError": 0,
+			"clips": [
+				{
+					"name": "GoldenCombat_Attack_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 52,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009911732859981665,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8229039060039307,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Death_V1",
+					"duration": 1.649999976158142,
+					"tracks": 23,
+					"horizontalRange": [1.5102467778555173e-15, 1.5548309856977527e-7],
+					"minimumY": 0.00509544050485447,
+					"finalMinimumY": 0.009820468106377628,
+					"finalMaximumY": 0.37412540341401285,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Hit_V1",
+					"duration": 0.44999998807907104,
+					"tracks": 22,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.00983244871758994,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8224364075443171,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				}
+			],
+			"targetSha256": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/broad/mannequin.glb",
+			"heightScale": 1,
+			"restError": 0,
+			"clips": [
+				{
+					"name": "GoldenCombat_Attack_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 52,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009911732859981665,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8229039059976087,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Death_V1",
+					"duration": 1.649999976158142,
+					"tracks": 23,
+					"horizontalRange": [1.5102467778555173e-15, 1.5548309856977527e-7],
+					"minimumY": 0.00509544050485447,
+					"finalMinimumY": 0.009820468106377628,
+					"finalMaximumY": 0.37416025829611016,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Hit_V1",
+					"duration": 0.44999998807907104,
+					"tracks": 22,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.00983244871758994,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8224364075424329,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				}
+			],
+			"targetSha256": "e8c6d9ce95f398f54e3949b857d741d95f003c74a439ff5d7231fc87f09a06c1"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/fuller/mannequin.glb",
+			"heightScale": 1,
+			"restError": 0,
+			"clips": [
+				{
+					"name": "GoldenCombat_Attack_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 52,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009911732859981665,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8229038525963175,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Death_V1",
+					"duration": 1.649999976158142,
+					"tracks": 23,
+					"horizontalRange": [1.5102467778555173e-15, 1.5548309856977527e-7],
+					"minimumY": -0.00032813754082491875,
+					"finalMinimumY": 0.0008054924771518195,
+					"finalMaximumY": 0.37801931222652907,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Hit_V1",
+					"duration": 0.44999998807907104,
+					"tracks": 22,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.00983244871758994,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8224363915677102,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				}
+			],
+			"targetSha256": "904e67d3a66e5d006c6c3dc6d510a7414d7b48bf5ffbf93bcaab944af6d518a9"
+		}
+	]
+}
