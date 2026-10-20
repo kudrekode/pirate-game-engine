@@ -25,6 +25,79 @@ function createRenderedCharacter(): THREE.Group {
 	return root;
 }
 
+it("prepares a sword variant once, keeps Attack priority and independent controllers, then restores unarmed/locomotion", async () => {
+	const clips = ["Idle", "Fist", "Sword", "Hit"].map(createRootMotionClip);
+	const prepareSword = vi.spyOn(clips[2], "clone");
+	const asset: ThreeVisualAssetDefinition = {
+		id: "weapon-actor",
+		name: "Actor",
+		kind: "glb",
+		url: "/actor.glb",
+		animations: {
+			idle: { clipName: "Idle" },
+			attack: { clipName: "Fist" },
+			hit: { clipName: "Hit" },
+		},
+	};
+	const swordSource: ThreeVisualAssetDefinition = {
+		...asset,
+		id: "sword-source",
+		url: "/sword-actions.glb",
+	};
+	const registry = setThreeVisualAssetRegistryForTests([asset, swordSource]);
+	const loadAsync = vi.fn(async (_url: string) => ({
+		scene: createRenderedCharacter(),
+		animations: clips,
+	}));
+	const loader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync,
+	}));
+	const options = {
+		asset,
+		attackVariants: { sword: { assetId: swordSource.id, clipName: "Sword" } },
+	};
+	const one = createThreeCharacterAnimationController({
+			...options,
+			root: createRenderedCharacter(),
+		}),
+		two = createThreeCharacterAnimationController({
+			...options,
+			root: createRenderedCharacter(),
+		});
+	try {
+		await flushAssetPromises();
+		for (let i = 0; i < 3; i++) {
+			one.triggerAttack("sword");
+			expect(one.getStats()).toMatchObject({
+				semanticState: "attack",
+				activeClip: "Sword",
+			});
+			one.update(1.1);
+		}
+		expect(prepareSword).toHaveBeenCalledTimes(1);
+		expect(loadAsync).toHaveBeenCalledTimes(2);
+		expect(two.getStats()).toMatchObject({
+			semanticState: "idle",
+			activeClip: "Idle",
+		});
+		one.triggerAttack();
+		expect(one.getStats().activeClip).toBe("Fist");
+		one.triggerHit();
+		one.triggerAttack("sword");
+		expect(one.getStats().activeClip).toBe("Hit");
+		one.update(1.1);
+		expect(one.getStats().semanticState).toBe("idle");
+		one.sync({ defeated: false, moving: true, airborne: true });
+		one.triggerAttack("sword");
+		expect(one.getStats().semanticState).toBe("jump");
+	} finally {
+		one.dispose();
+		two.dispose();
+		loader();
+		registry();
+	}
+});
+
 function createRootMotionClip(name: string): THREE.AnimationClip {
 	return new THREE.AnimationClip(name, 1, [
 		new THREE.VectorKeyframeTrack(

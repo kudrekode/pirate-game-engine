@@ -1245,7 +1245,8 @@ function migrateItems(value: unknown): ItemDefinition[] {
 			item.category === "currency" ||
 			item.category === "consumable" ||
 			item.category === "quest" ||
-			item.category === "misc"
+			item.category === "misc" ||
+			item.category === "weapon"
 				? item.category
 				: "misc";
 		const description = readString(item.description, "");
@@ -1264,6 +1265,7 @@ function migrateItems(value: unknown): ItemDefinition[] {
 				name: readString(item.name, `Item ${index + 1}`),
 				...(description ? { description } : {}),
 				category,
+				...(item.weapon === "sword" ? { weapon: "sword" as const } : {}),
 				...(iconId ? { iconId } : {}),
 				stackable,
 				...(maxStack ? { maxStack } : {}),

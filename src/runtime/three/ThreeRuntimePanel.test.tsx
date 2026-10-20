@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../../data/defaultProject";
 import { cloneProject } from "../../data/migrateProject";
+import { SWORD_ITEM } from "../../data/sword";
 import type {
 	GameArea,
 	GameProject,
@@ -195,6 +196,14 @@ vi.mock("three", () => {
 	}
 
 	class Object3D {
+		name = "";
+		getObjectByName(name: string): Object3D | undefined {
+			return this.name === name
+				? this
+				: this.children
+						.map((child) => child.getObjectByName?.(name))
+						.find(Boolean);
+		}
 		children: Object3D[] = [];
 		castShadow = false;
 		position = {
@@ -2016,6 +2025,32 @@ it.each([
 		expect(trigger).toHaveBeenCalledTimes(1);
 	}
 });
+it("equips and unequips through inventory, keeps combat modal gating and preserves the scene/controllers", () => {
+	const controllers = mockCombatActors(),
+		project = animatedCombatProject();
+	project.items = [{ ...SWORD_ITEM }];
+	project.gameState.inventory = { sword: 1 };
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount,
+		player = controllers[1];
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+	expect(latestSession().equippedWeaponId).toBe("sword");
+	expect(screen.getByText("Equipped", { exact: true })).toBeInTheDocument();
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).not.toHaveBeenCalled();
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledWith("sword");
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Unequip" }));
+	expect(latestSession().equippedWeaponId).toBeUndefined();
+	expect(screen.getByText("Unequipped", { exact: true })).toBeInTheDocument();
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(controllers).toHaveLength(2);
+	expect(player.dispose).not.toHaveBeenCalled();
+});
+
 function animatedCombatProject() {
 	const p = makeProject();
 	p.player.threeVisual = { mode: "asset", assetId: "procedural-mannequin-v0" };

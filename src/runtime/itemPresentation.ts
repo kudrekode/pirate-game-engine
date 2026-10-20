@@ -6,6 +6,7 @@ export const itemCategoryLabels: Record<ItemDefinition["category"], string> = {
 	currency: "Currency",
 	quest: "Quest Item",
 	consumable: "Consumable",
+	weapon: "Weapon",
 };
 
 // Small authored symbols, with category fallbacks for missing/legacy icon ids.

@@ -41,14 +41,14 @@ const bones = (root) => {
 	});
 	return r;
 };
-export function validateInteractionTracks(clips) {
+export function validateInteractionTracks(clips, specs = INTERACTION_CLIPS) {
 	assert.deepEqual(
 		clips.map((c) => c.name).sort(),
-		Object.values(INTERACTION_CLIPS)
+		Object.values(specs)
 			.map((c) => c.name)
 			.sort(),
 	);
-	for (const [id, spec] of Object.entries(INTERACTION_CLIPS)) {
+	for (const [id, spec] of Object.entries(specs)) {
 		const clip = clips.find((c) => c.name === spec.name);
 		assert(Math.abs(clip.duration - spec.duration) < 1e-6, `${id} duration`);
 		assert.deepEqual(
@@ -75,14 +75,14 @@ export function validateInteractionTracks(clips) {
 					assert(Math.abs(t.values[i] - t.values[0]) < 1e-6);
 					assert(Math.abs(t.values[i + 1] - t.values[1]) < 1e-6);
 				}
-			if (id === "Interact" || id === "Pickup")
-				assert(
-					diff(
-						Array.from(t.values.slice(0, t.getValueSize())),
-						Array.from(t.values.slice(-t.getValueSize())),
-					) < 1e-5,
-					`${id} neutral recovery`,
-				);
+			// Each physical-action library returns to its authored opening pose.
+			assert(
+				diff(
+					Array.from(t.values.slice(0, t.getValueSize())),
+					Array.from(t.values.slice(-t.getValueSize())),
+				) < 1e-5,
+				`${id} neutral recovery`,
+			);
 		}
 	}
 }
@@ -91,9 +91,10 @@ export async function validateGoldenInteraction(
 	targetPaths = [
 		"public/assets/derived/authored-humans/everyday-v1/mannequin.glb",
 	],
+	specs = INTERACTION_CLIPS,
 ) {
 	const source = await loadGlb(artifactPath);
-	validateInteractionTracks(source.animations);
+	validateInteractionTracks(source.animations, specs);
 	let meshCount = 0;
 	source.scene.traverse((o) => {
 		if (o.isMesh) meshCount++;

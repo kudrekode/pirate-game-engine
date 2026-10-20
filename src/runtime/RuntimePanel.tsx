@@ -148,6 +148,7 @@ function RuntimePlayPanel({
 	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 	const inventoryOpenRef = useRef(false);
+	const [, refreshEquipment] = useState(0);
 	const { quests, setQuests, resetQuests } =
 		useQuestPresentation(showItemFeedback);
 	const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
@@ -424,6 +425,11 @@ function RuntimePlayPanel({
 							<InventoryPanel
 								items={project.items}
 								inventory={inventory}
+								equippedWeaponId={sceneRef.current?.getEquippedWeaponId()}
+								onEquipWeapon={(itemId) => {
+									if (sceneRef.current?.equipWeapon(itemId))
+										refreshEquipment((v) => v + 1);
+								}}
 								onClose={toggleInventory}
 							/>
 						)}

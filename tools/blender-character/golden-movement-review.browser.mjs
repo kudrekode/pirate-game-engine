@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { SWORD } from "/src/data/sword.ts";
+import { createThreeWeaponAttachment } from "/src/runtime/three/threeWeaponAttachment.ts";
 const p = new URLSearchParams(location.search);
 const asset =
 	p.get("asset") || "/assets/derived/authored-humans/everyday-v1/mannequin.glb";
@@ -24,6 +26,10 @@ light.position.set(3, 5, 4);
 scene.add(light);
 const actor = clone(model.scene);
 scene.add(actor);
+const weaponAttachment = p.has("sword")
+	? createThreeWeaponAttachment(actor)
+	: undefined;
+weaponAttachment?.sync(SWORD);
 const mixer = new THREE.AnimationMixer(actor);
 const action = mixer.clipAction(clip);
 action.setLoop(THREE.LoopOnce, 1);
@@ -83,6 +89,8 @@ for (let i = 0; i < 4; i++) {
 window.sample = (t) => {
 	action.reset().play();
 	mixer.setTime(Math.min(t, clip.duration));
+	weaponAttachment?.sync(SWORD);
+	weaponAttachment?.updateGrip();
 	actor.updateMatrixWorld(true);
 	actor.traverse((o) => {
 		if (o.isSkinnedMesh) o.skeleton.update();

@@ -25,6 +25,19 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The one-sword acceptance route is one opt-in case:
+`node node_modules/@playwright/test/cli.js test e2e/melee-weapon-v1.spec.ts --grep '@melee-weapon-v1'`.
+Inspect `--list` first. It imports `melee-weapon-v1-demo.project.json`, uses real
+movement/F/E and inventory controls, and checks unarmed/sword damage, pickup,
+equip/unequip, hand attachment, movement/airborne gating, Hit/Death, chest/pickup,
+dialogue, equipped and unequipped Continue, project isolation and settled scene,
+clone/load/RAF counters. The harness reads diagnostics; it never writes equip or
+combat state. Keep it separate from CI and art-review browsers on software rendering.
+The exact art selection is `node tools/blender-character/review-golden-sword.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `canonical`; no character builds.
+The canonical selection inspects all existing locomotion and interaction clips
+with the sword visible. Normal Play hides it during Interact/Pickup.
+
 Interaction animation acceptance is one opt-in case, with no character builds:
 `node node_modules/@playwright/test/cli.js test e2e/interaction-animation.spec.ts --grep '@interaction-animation'`.
 Inspect `--list` first. It imports `interaction-animation-demo.project.json`, uses

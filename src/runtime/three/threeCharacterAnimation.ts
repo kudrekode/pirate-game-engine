@@ -29,6 +29,7 @@ export type ThreeCharacterAnimationControllerStats = {
 	oneShotActionsTriggered: number;
 	semanticState: CharacterAnimationSemanticState;
 	sourceAssetIds: string[];
+	activeClip?: string;
 };
 
 export type ThreeCharacterAnimationController = {
@@ -38,7 +39,7 @@ export type ThreeCharacterAnimationController = {
 	getDefeatPlayback: () => { duration: number; finished: boolean } | undefined;
 	refresh: () => void;
 	sync: (context: CharacterAnimationContext) => void;
-	triggerAttack: () => void;
+	triggerAttack: (variant?: "sword") => void;
 	triggerHit: () => void;
 	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
@@ -168,13 +169,17 @@ function getAnimationMapping(
 export function createThreeCharacterAnimationController({
 	asset,
 	root,
+	attackVariants,
 }: {
 	asset: ThreeVisualAssetDefinition;
 	root: THREE.Object3D;
+	attackVariants?: Partial<
+		Record<"sword", { assetId?: string; clipName: string }>
+	>;
 }): ThreeCharacterAnimationController {
 	const mixer = new THREE.AnimationMixer(root);
 	const actions = new Map<
-		CharacterAnimationSemanticState,
+		CharacterAnimationSemanticState | "sword",
 		THREE.AnimationAction
 	>();
 	const loadingSourceIds = new Set<string>();
@@ -199,6 +204,7 @@ export function createThreeCharacterAnimationController({
 	let incompatibleClipCount = 0;
 	let oneShotActionsTriggered = 0;
 	let disposed = false;
+	let attackVariant: "sword" | undefined;
 
 	const reportIssueOnce = (key: string, type: "missing" | "incompatible") => {
 		if (reportedIssueKeys.has(key)) {
@@ -229,7 +235,11 @@ export function createThreeCharacterAnimationController({
 							: "idle"
 						: undefined;
 		const nextAction =
-			actions.get(nextState) ?? (fallback ? actions.get(fallback) : undefined);
+			(nextState === "attack" && attackVariant
+				? actions.get(attackVariant)
+				: undefined) ??
+			actions.get(nextState) ??
+			(fallback ? actions.get(fallback) : undefined);
 		const rate =
 			(nextState === "walk" || nextState === "run") &&
 			currentContext.movementSpeed
@@ -329,15 +339,20 @@ export function createThreeCharacterAnimationController({
 			"attack",
 			"hit",
 			"defeated",
+			"sword",
 		] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
-			const mapping = getAnimationMapping(asset, state);
+			const mapping =
+				state === "sword"
+					? attackVariants?.sword
+					: getAnimationMapping(asset, state);
 			if (!mapping) {
 				continue;
 			}
-			const sourceAssetId = getSourceAssetId(asset, state);
+			const sourceAssetId =
+				state === "sword" ? mapping.assetId : getSourceAssetId(asset, state);
 			const sourceAsset = getThreeVisualAssetDefinition(sourceAssetId);
 			if (sourceAssetId) {
 				sourceAssetIds.add(sourceAssetId);
@@ -424,6 +439,7 @@ export function createThreeCharacterAnimationController({
 			oneShotActionsTriggered,
 			semanticState,
 			sourceAssetIds: Array.from(sourceAssetIds).sort(),
+			activeClip: activeAction?.getClip().name,
 		}),
 		refresh,
 		sync: (context) => {
@@ -439,7 +455,7 @@ export function createThreeCharacterAnimationController({
 			}
 			syncResolvedState();
 		},
-		triggerAttack: () => {
+		triggerAttack: (variant) => {
 			// A missing/unloaded attack has no mixer finished event. Keep locomotion
 			// alive and let the combat HUD present the hit/miss instead of latching.
 			if (
@@ -452,6 +468,7 @@ export function createThreeCharacterAnimationController({
 				return;
 			}
 			oneShotState = "attack";
+			attackVariant = variant;
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
 		},

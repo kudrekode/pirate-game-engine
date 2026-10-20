@@ -685,6 +685,22 @@ describe("editor smoke tests", () => {
 			screen.getByText(/Currency items are physical inventory items/),
 		).toBeInTheDocument();
 	});
+	it("authors one stable sword item from the existing Items Editor without duplicating it", () => {
+		render(<ItemsEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Add Sword" }));
+		fireEvent.click(screen.getByRole("button", { name: "Add Sword" }));
+		const items = useProjectStore
+			.getState()
+			.project.items.filter((item) => item.id === "sword");
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			name: "Sword",
+			category: "weapon",
+			weapon: "sword",
+			stackable: false,
+		});
+		expect(screen.getByText(/Sword: 35 damage/)).toBeInTheDocument();
+	});
 
 	it("renders Dialogue Editor", () => {
 		render(<DialogueEditor />);

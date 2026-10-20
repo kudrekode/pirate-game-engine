@@ -1,5 +1,6 @@
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { SWORD } from "../../data/sword";
 import {
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
@@ -122,6 +123,7 @@ import {
 	InventoryNotifications,
 	useInventoryPresentation,
 } from "../useInventoryPresentation";
+import { equipRuntimeWeapon, getEquippedWeapon } from "../weaponRuntime";
 import {
 	advanceThirdPersonMouseLook,
 	clampOrbitCameraState,
@@ -171,6 +173,10 @@ import {
 	resolveThreeCharacterFacingYaw,
 	resolveThreeCharacterVisual,
 } from "./threeVisuals";
+import {
+	createThreeWeaponAttachment,
+	resolveCharacterHand,
+} from "./threeWeaponAttachment";
 import { createTraversalDebugGroup } from "./traversalDebug";
 import {
 	advanceCameraFollowRig,
@@ -1269,7 +1275,7 @@ export function ThreeRuntimePanel({
 		if (event.type === "attackStarted") {
 			characterAnimationControllersRef.current
 				.get("runtime_player")
-				?.triggerAttack();
+				?.triggerAttack(event.weapon);
 			return;
 		}
 		if (event.type === "npcDefeated") {
@@ -2244,6 +2250,12 @@ export function ThreeRuntimePanel({
 				createThreeCharacterAnimationController({
 					asset: visual.asset,
 					root: group,
+					attackVariants:
+						id === "runtime_player" &&
+						session.project.items.some((item) => item.weapon === "sword") &&
+						resolveCharacterHand(group, "rightHand")
+							? { sword: SWORD.attackAnimation }
+							: undefined,
 				}),
 			);
 		};
@@ -2377,6 +2389,10 @@ export function ThreeRuntimePanel({
 			},
 		);
 		const playerMesh = playerRenderResult.group;
+		const weaponAttachment = createThreeWeaponAttachment(
+			playerMesh,
+			diagnostics,
+		);
 		if (!playerRenderResult.usedAsset) {
 			applyShadowRole(playerMesh, { cast: true });
 		}
@@ -2527,6 +2543,7 @@ export function ThreeRuntimePanel({
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 		} catch (error) {
 			for (const prop of propAnimations.values()) prop.controller.dispose();
+			weaponAttachment.dispose();
 			characterAnimationControllers.forEach((controller) => {
 				controller.dispose();
 			});
@@ -2863,6 +2880,23 @@ export function ThreeRuntimePanel({
 					}),
 				);
 			const animationUpdateStartedAt = performance.now();
+			const playerAnimation = characterAnimationControllers
+				.get("runtime_player")
+				?.getStats();
+			// A sword in the reaching hand intersects containers. Hide only this cosmetic action.
+			weaponAttachment.sync(
+				getEquippedWeapon(session),
+				playerAnimation?.semanticState === "interact" ||
+					playerAnimation?.semanticState === "pickup",
+			);
+			if (import.meta.env.DEV)
+				host.dataset.weapon = JSON.stringify({
+					...weaponAttachment.getStats(),
+					equippedWeaponId: getEquippedWeapon(session)
+						? session.equippedWeaponId
+						: undefined,
+					activeClip: playerAnimation?.activeClip,
+				});
 			characterAnimationControllers.get("runtime_player")?.sync({
 				defeated: playerDefeatedRef.current || session.runtimePlayerHealth <= 0,
 				moving: playerMoving,
@@ -2874,6 +2908,7 @@ export function ThreeRuntimePanel({
 			characterAnimationControllers.forEach((controller) => {
 				controller.update(deltaMs / 1000);
 			});
+			weaponAttachment.updateGrip();
 			for (const [id, prop] of propAnimations) {
 				prop.controller.setOpened(
 					session.openedObjectIds.has(id) ||
@@ -2997,6 +3032,7 @@ export function ThreeRuntimePanel({
 		return () => {
 			if (physicalInteractionRef.current === presentPhysicalInteraction)
 				physicalInteractionRef.current = null;
+			weaponAttachment.dispose();
 			for (const prop of propAnimations.values()) prop.controller.dispose();
 			diagnostics.recordRafLoopCancel(rebuildReason);
 			for (const label of openedLabels) label.element.remove();
@@ -3067,6 +3103,16 @@ export function ThreeRuntimePanel({
 				<InventoryPanel
 					items={project.items}
 					inventory={inventory}
+					equippedWeaponId={session?.equippedWeaponId}
+					onEquipWeapon={(itemId) => {
+						const current = getSession();
+						if (current && equipRuntimeWeapon(current, itemId))
+							setHudVersion((v) => v + 1);
+						else
+							showItemFeedback(
+								"Land and finish the current action before equipping.",
+							);
+					}}
 					onClose={toggleInventory}
 				/>
 			)}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SWORD_ITEM } from "../../data/sword";
 import {
 	itemCategoryLabels,
 	itemIcon,
@@ -16,6 +17,7 @@ const categories: ItemDefinition["category"][] = [
 	"currency",
 	"quest",
 	"misc",
+	"weapon",
 ];
 
 function makeId(prefix: string): string {
@@ -157,6 +159,18 @@ export function ItemsEditor() {
 					Add item
 				</button>
 				<div className="list-stack item-list">
+					<button
+						type="button"
+						onClick={() => {
+							if (!project.items.some((item) => item.id === SWORD_ITEM.id))
+								updateProject((draft) => {
+									draft.items.push({ ...SWORD_ITEM });
+								});
+							setSelectedItemId(SWORD_ITEM.id);
+						}}
+					>
+						Add Sword
+					</button>
 					{project.items.map((item) => (
 						<button
 							className={`list-item ${item.id === selectedItemId ? "selected" : ""}`}
@@ -184,6 +198,13 @@ export function ItemsEditor() {
 				{selectedItem ? (
 					<>
 						<div className="panel-title">Item Definition</div>
+						{selectedItem.weapon === "sword" && (
+							<p className="helper-text">
+								Sword: 35 damage, 2-cell reach, 750 ms cooldown. Place a Collect
+								Item object in the Map Inspector and select this item and the
+								Sword visual.
+							</p>
+						)}
 						<p className="helper-text">
 							Items are project definitions. Inventory quantities are copied
 							into runtime state when play starts. Currency items are physical

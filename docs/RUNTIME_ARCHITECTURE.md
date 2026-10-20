@@ -294,6 +294,30 @@ layout parity are presentation work, outside this correctness pass.
 
 ## Save games
 
+### One equipped sword
+
+Items may optionally reference the bounded `sword` behaviour in `data/sword.ts`.
+`weaponRuntime` validates inventory ownership and the one session-owned
+`equippedWeaponId` (an item ID). The existing combat transaction resolves effective
+damage/range/cooldown and emits the accepted attack's variant; unarmed defaults,
+targeting, immediate damage and defeat/quest semantics stay authoritative.
+Inventory detail supplies Equip/Unequip in both adapters. Equip never resets an
+accepted attack's cooldown or changes the authored player combat defaults.
+
+Three prepares the optional Golden sword clip once in the existing controller and
+uses the same Attack semantic/priority. `threeWeaponAttachment` resolves the actual
+instance `hand_r`, uses the registry/marker factory with the authored grip origin,
+and parents one cached sword instance to the bone. The source's right-finger grip
+is applied after the existing mixer. Equip/unequip only attaches/detaches that
+instance. Interact/Pickup hide it temporarily; locomotion, Hit and Death retain it.
+There is no blade collider, second mixer, RAF, traversal rebuild or character load.
+
+Version-1 saves optionally include `player.equippedWeaponId`, validated against
+an owned sword item. Absent fields restore unarmed for older saves. Continue loads
+the attachment from semantic state without replaying Pickup/Equip. No renderer
+objects, bone references, grip pose or animation clocks are persisted. See
+`MELEE_WEAPON_V1_RESULT.md` for the bounded acceptance and art review.
+
 `gameSave.ts` stores semantic session progress in version 1 plain JSON. Both
 adapters restore a fresh cloned session and rebuild visuals without rerunning
 startup/entry actions. Flags, variables, inventory, NPC attributes/defeats,

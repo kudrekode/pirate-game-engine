@@ -33,6 +33,8 @@ export type ThreeVisualRenderOptions = {
 	metadata?: PlaceholderSelectionMetadata;
 	onAssetStateChange?: () => void;
 	selected?: boolean;
+	/** Bone attachments use the authored grip origin, rather than ground bounds. */
+	preserveAssetOrigin?: boolean;
 };
 
 function getBaseY(marker: EntityMarker): number {
@@ -62,7 +64,8 @@ function createAssetGroup(
 	const group = new THREE.Group();
 	const transform = resolveThreeVisualAssetTransform(marker.visual, analysis);
 	applyMarkerTransform(group, marker, transform);
-	assetObject.position.y += transform.normalizationOffsetY;
+	if (!options.preserveAssetOrigin)
+		assetObject.position.y += transform.normalizationOffsetY;
 	applyShadowRole(assetObject, {
 		cast: marker.visual?.asset?.castShadow ?? false,
 		receive: marker.visual?.asset?.receiveShadow ?? false,

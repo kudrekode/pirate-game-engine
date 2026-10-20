@@ -14,11 +14,13 @@ import {
 } from "./questEngine";
 import { isRuntimeGameplayBlocked } from "./runtimeInput";
 import type { RuntimeSessionState } from "./runtimeSession";
+import { getEquippedWeapon, getRuntimeAttackStats } from "./weaponRuntime";
 
 export type RuntimeCombatEvent =
 	| {
 			type: "attackStarted";
 			nextAttackAt: number;
+			weapon?: "sword";
 	  }
 	| {
 			type: "attackBlocked";
@@ -140,8 +142,13 @@ export function attemptRuntimeCombatAttack(
 		return false;
 	}
 
-	session.nextAttackAt = time + session.playerCombat.attackCooldownMs;
-	emit({ type: "attackStarted", nextAttackAt: session.nextAttackAt });
+	const attack = getRuntimeAttackStats(session);
+	session.nextAttackAt = time + attack.attackCooldownMs;
+	emit({
+		type: "attackStarted",
+		nextAttackAt: session.nextAttackAt,
+		weapon: getEquippedWeapon(session)?.id,
+	});
 
 	const target = findAttackTarget(
 		area.npcs,
@@ -149,7 +156,7 @@ export function attemptRuntimeCombatAttack(
 		session.defeatedNpcIds,
 		session.playerPosition,
 		session.playerFacing,
-		session.playerCombat.attackRangeTiles,
+		attack.attackRangeTiles,
 	);
 
 	if (!target) {
@@ -159,7 +166,7 @@ export function attemptRuntimeCombatAttack(
 	}
 
 	const attributes = session.runtimeState.npcs[target.id] ?? target.attributes;
-	const result = damageNpc(attributes, session.playerCombat.attackDamage);
+	const result = damageNpc(attributes, attack.attackDamage);
 	const enemyName = getNpcName(session, target);
 	updateRecentEnemy(
 		session,
@@ -172,7 +179,7 @@ export function attemptRuntimeCombatAttack(
 		type: "npcDamaged",
 		npcId: target.id,
 		name: enemyName,
-		damage: session.playerCombat.attackDamage,
+		damage: attack.attackDamage,
 		health: result.health,
 		maxHealth: attributes.maxHealth,
 	});
@@ -182,7 +189,7 @@ export function attemptRuntimeCombatAttack(
 	} else {
 		emit({
 			type: "status",
-			message: `Hit ${enemyName} for ${session.playerCombat.attackDamage}.`,
+			message: `Hit ${enemyName} for ${attack.attackDamage}.`,
 		});
 	}
 

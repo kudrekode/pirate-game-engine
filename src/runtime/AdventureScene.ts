@@ -94,6 +94,7 @@ import {
 	type RuntimeSessionState,
 } from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
+import { equipRuntimeWeapon, getEquippedWeapon } from "./weaponRuntime";
 
 type WasdKeys = {
 	W: Phaser.Input.Keyboard.Key;
@@ -164,6 +165,21 @@ export class AdventureScene extends Phaser.Scene {
 	private readonly onItemFeedback?: (message: string) => void;
 	private isCutsceneOpen = false;
 	private isInventoryOpen = false;
+
+	getEquippedWeaponId(): string | undefined {
+		return getEquippedWeapon(this.session)
+			? this.session.equippedWeaponId
+			: undefined;
+	}
+
+	equipWeapon(itemId: string | undefined): boolean {
+		return (
+			this.isInventoryOpen &&
+			!this.isCutsceneOpen &&
+			!this.isFinished &&
+			equipRuntimeWeapon(this.session, itemId)
+		);
+	}
 
 	setInventoryOpen(open: boolean): boolean {
 		if (

@@ -33,6 +33,28 @@ import type { CharacterGameAsset } from "../../types/game";
 // them from the same stable URLs in dev and production builds.
 export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	{
+		id: "weapon-sword-v1",
+		name: "Sword",
+		kind: "glb",
+		category: "item",
+		browserCategory: "Props",
+		url: "/assets/weapons/sword-v1.glb",
+		defaultScale: 1,
+		defaultRotationOffset: 0,
+		castShadow: true,
+		tags: ["sword", "weapon", "pickup"],
+	},
+	{
+		id: "golden-sword-actions-v1",
+		name: "Golden Sword V1",
+		kind: "glb",
+		category: "character",
+		animationOnly: true,
+		hiddenFromBrowser: true,
+		url: "/assets/derived/humanoid-animations/golden-sword-v1/actions.glb",
+		tags: ["animation", "golden-skeleton", "sword"],
+	},
+	{
 		id: "world-animated-chest",
 		name: "Animated Chest",
 		kind: "glb",
