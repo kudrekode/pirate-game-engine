@@ -4,6 +4,7 @@ import { cloneProject } from "../data/migrateProject";
 import type { GameArea, GameProject, ObjectBehaviour } from "../types/game";
 import {
 	attemptPlayerMove,
+	getContinuousPlayerMoveStartMs,
 	getPlayerMoveDurationMs,
 } from "./playerMovementTransaction";
 import { createRuntimeSession } from "./runtimeSession";
@@ -80,6 +81,13 @@ function makeProject(area: GameArea): GameProject {
 }
 
 describe("player movement transaction", () => {
+	it("joins held segment deadlines while bounding late polls and keeping fresh presses immediate", () => {
+		expect(getContinuousPlayerMoveStartMs(1064, 1060, true)).toBe(1060);
+		expect(getContinuousPlayerMoveStartMs(1100, 1060, true)).toBe(1084);
+		expect(getContinuousPlayerMoveStartMs(1064, 1060, false)).toBe(1064);
+		expect(getContinuousPlayerMoveStartMs(1000, 0, true)).toBe(1000);
+		expect(getContinuousPlayerMoveStartMs(1064, 1080, true)).toBe(1064);
+	});
 	it("returns blocked for blocked terrain without moving the player", () => {
 		const project = makeProject(
 			makeArea({

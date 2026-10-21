@@ -39,6 +39,19 @@ export type PlayerMoveMovedResult = {
 
 export type PlayerMoveResult = PlayerMoveBlockedResult | PlayerMoveMovedResult;
 
+/** Join held continuous segments across a late input poll without replaying a backlog.
+ * Fresh presses always start now; suspended tabs can recover at most one 16 ms poll.
+ */
+export function getContinuousPlayerMoveStartMs(
+	nowMs: number,
+	nextMoveAt: number,
+	continuing: boolean,
+): number {
+	return continuing && nextMoveAt > 0 && nextMoveAt <= nowMs
+		? Math.max(nextMoveAt, nowMs - 16)
+		: nowMs;
+}
+
 export function getPlayerMoveDurationMs(
 	playerSpeed: number,
 	speedMultiplier = 1,

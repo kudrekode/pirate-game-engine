@@ -1,8 +1,18 @@
 import fs from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
 
-test.use({ channel: "chrome", viewport: { width: 1280, height: 900 } });
-const output = "docs/assets/melee-weapon-v1";
+test.use({
+	channel: "chrome",
+	viewport: { width: 1280, height: 900 },
+	video: process.env.CAMERA_REVIEW_LABEL
+		? { mode: "on", size: { width: 1280, height: 900 } }
+		: "off",
+	trace: process.env.CAMERA_REVIEW_LABEL
+		? "off"
+		: { mode: "retain-on-failure", screenshots: false, snapshots: true },
+});
+const output =
+	process.env.WEAPON_REVIEW_OUTPUT ?? "docs/assets/melee-weapon-v1";
 async function snapshot(page: Page) {
 	return page.evaluate(
 		() => window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!,
@@ -14,7 +24,7 @@ async function weapon(page: Page) {
 	);
 }
 async function state(page: Page) {
-	return (await snapshot(page)).asset.character.animation.playerState;
+	return (await weapon(page)).semanticState;
 }
 async function go(page: Page, x: number, y: number) {
 	await page.getByRole("button", { name: "Inspect", exact: true }).click();
@@ -151,18 +161,19 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 		const host = document.querySelector<HTMLElement>(".three-runtime-host")!;
 		new MutationObserver(() => {
 			const w = JSON.parse(host.dataset.weapon ?? "{}");
-			const state =
-				window.__THREE_PERF_DIAGNOSTICS__!.getSnapshot("ThreeRuntimePanel")!
-					.asset.character.animation.playerState;
+			const state = w.semanticState;
 			(window as unknown as { swordStates: unknown[] }).swordStates.push({
 				state,
+				time: performance.now(),
+				activeClip: w.activeClip,
 				attached: w.attached,
 				instanceId: w.instanceId,
 			});
 		}).observe(host, { attributes: true, attributeFilter: ["data-weapon"] });
 	});
 	await go(page, 7, 10);
-	await page.keyboard.down("ArrowRight");
+	await follow(page);
+	await page.keyboard.down("ArrowLeft");
 	await expect.poll(() => state(page)).toBe("walk");
 	await page.keyboard.press("f");
 	await expect
@@ -174,14 +185,33 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 	await page.keyboard.press("f");
 	await expect.poll(() => state(page)).toBe("attack");
 	await expect.poll(() => state(page)).toBe("run");
-	await page.keyboard.up("ArrowRight");
+	await page.keyboard.up("ArrowLeft");
 	await page.keyboard.up("Shift");
 	await expect.poll(() => state(page)).toBe("idle");
-	await page.keyboard.press("Space");
-	await expect.poll(() => state(page)).toBe("jump");
 	const aerial = (await snapshot(page)).asset.character.animation
 		.oneShotActionsTriggered;
+	await page.evaluate(() => {
+		const capture = (event: KeyboardEvent) => {
+			if (event.code !== "KeyF" && event.key.toLowerCase() !== "f") return;
+			const host = document.querySelector<HTMLElement>(".three-runtime-host")!;
+			(window as unknown as { aerialInputPhase: string }).aerialInputPhase =
+				JSON.parse(host.dataset.traversal!).motion.phase;
+			window.removeEventListener("keydown", capture);
+		};
+		window.addEventListener("keydown", capture);
+	});
+	await page.keyboard.press("Space");
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+	);
 	await page.keyboard.press("f");
+	expect(
+		await page.evaluate(
+			() =>
+				(window as unknown as { aerialInputPhase: string }).aerialInputPhase,
+		),
+	).toMatch(/jump|fall/);
 	expect(
 		(await snapshot(page)).asset.character.animation.oneShotActionsTriggered,
 	).toBe(aerial);
@@ -193,35 +223,62 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 	await page.mouse.click(850, 650);
 	await page.mouse.move(710, 650, { steps: 5 });
 	await page.keyboard.press("Escape");
-	const capture = await page.context().newCDPSession(page),
+	// The camera review already records a timed video; avoid a second PNG screencast.
+	const capture = process.env.CAMERA_REVIEW_LABEL
+			? null
+			: await page.context().newCDPSession(page),
 		attackFrames: string[] = [];
-	capture.on("Page.screencastFrame", (frame) => {
-		attackFrames.push(frame.data);
-		void capture.send("Page.screencastFrameAck", {
+	capture?.on("Page.screencastFrame", (frame) => {
+		if (attackFrames.length < 120) attackFrames.push(frame.data);
+		void capture?.send("Page.screencastFrameAck", {
 			sessionId: frame.sessionId,
 		});
 	});
-	await capture.send("Page.startScreencast", {
+	await capture?.send("Page.startScreencast", {
 		format: "png",
 		maxWidth: 1280,
 		maxHeight: 900,
 		everyNthFrame: 1,
 	});
 	// Two-cell reach; each accepted sword hit deals 35 through the ordinary transaction.
+	const attackSince = await page.evaluate(() => performance.now());
 	await page.keyboard.press("f");
 	await page.keyboard.press("f");
 	await expect(page.locator(".three-runtime-hud")).toContainText(
 		"Sparring Guard 40/100",
 	);
-	await expect.poll(() => state(page)).toBe("attack");
+	await expect
+		.poll(() =>
+			page.evaluate(
+				(since) =>
+					(
+						window as unknown as {
+							swordStates: {
+								time: number;
+								state: string;
+								activeClip: string;
+							}[];
+						}
+					).swordStates.some(
+						(s) =>
+							s.time >= since &&
+							s.state === "attack" &&
+							s.activeClip === "GoldenSword_Attack_V1",
+					),
+				attackSince,
+			),
+		)
+		.toBe(true);
 	await expect.poll(() => state(page)).toBe("idle");
-	await capture.send("Page.stopScreencast");
-	await capture.detach();
-	await fs.mkdir("test-results/melee-weapon-v1", { recursive: true });
-	await fs.writeFile(
-		"test-results/melee-weapon-v1/runtime-attack-frames.json",
-		JSON.stringify(attackFrames),
-	);
+	await capture?.send("Page.stopScreencast");
+	await capture?.detach();
+	if (capture) {
+		await fs.mkdir("test-results/melee-weapon-v1", { recursive: true });
+		await fs.writeFile(
+			"test-results/melee-weapon-v1/runtime-attack-frames.json",
+			JSON.stringify(attackFrames),
+		);
+	}
 	await page.waitForTimeout(800);
 	await page.keyboard.press("f");
 	await expect(page.locator(".three-runtime-hud")).toContainText(

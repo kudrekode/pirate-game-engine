@@ -5,10 +5,248 @@ import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerform
 test.use({
 	channel: "chrome",
 	viewport: { width: 1280, height: 900 },
-	trace: { mode: "retain-on-failure", screenshots: false, snapshots: true },
+	trace: process.env.CAMERA_REVIEW_LABEL
+		? "off"
+		: { mode: "retain-on-failure", screenshots: false, snapshots: true },
+	video: process.env.CAMERA_REVIEW_LABEL
+		? { mode: "on", size: { width: 1280, height: 900 } }
+		: "off",
 });
-const output = "docs/assets/movement-v2";
+const output = process.env.MOVEMENT_REVIEW_OUTPUT ?? "docs/assets/movement-v2";
+
+// Opt-in comparable real-input motion, separate from the traversal route below.
+test.describe("third-person camera feel", () => {
+	test("stairs and tight prop navigation with Follow Player controls @camera-v3-obstacles", async ({
+		page,
+	}) => {
+		test.setTimeout(240_000);
+		const directory = "test-results/camera-v3/obstacles";
+		await fs.mkdir(directory, { recursive: true });
+		const errors: string[] = [];
+		page.on("pageerror", (error) => errors.push(error.message));
+		await page.goto("/");
+		await page.getByRole("button", { name: /Blank Project/ }).click();
+		await page
+			.locator('input[type="file"]')
+			.setInputFiles("movement-v2-demo.project.json");
+		await page.getByRole("button", { name: "3D View", exact: true }).click();
+		await page.getByRole("button", { name: "Play", exact: true }).click();
+		await expect
+			.poll(
+				async () =>
+					(await snapshot(page)).asset.character.animation.loadingSourceCount,
+				{ timeout: 30_000 },
+			)
+			.toBe(0);
+		const canvas = page.getByLabel("Three runtime viewport", { exact: true });
+		const inspect = () =>
+			page.getByRole("button", { name: "Inspect", exact: true }).click();
+		const follow = async () => {
+			await page
+				.getByRole("button", { name: "Follow Player", exact: true })
+				.click();
+			await canvas.focus();
+		};
+		const held = async (key: string, ms: number) => {
+			const from = await target(page);
+			await page.keyboard.down(key);
+			await page.waitForTimeout(ms);
+			await page.keyboard.up(key);
+			await page.waitForTimeout(90);
+			const to = await target(page);
+			expect(Math.hypot(to.x - from.x, to.y - from.y)).toBeGreaterThan(0.2);
+			return to;
+		};
+		await inspect();
+		await go(page, 6.8, 13);
+		await go(page, 8, 13);
+		await page.keyboard.press("ArrowUp"); // face the stair approach with ordinary input
+		await follow();
+		await page.getByRole("button", { name: "Recenter", exact: true }).click();
+		await page.waitForTimeout(250);
+		await canvas.focus();
+		await held("KeyW", 600);
+		const stairs = await position(page);
+		expect(stairs.supportHeight).toBeGreaterThan(1.5);
+		expect(stairs.motion.phase).toBe("grounded");
+		await page.screenshot({ path: `${directory}/stairs.png` });
+		await held("KeyS", 900);
+		expect((await position(page)).supportHeight).toBeCloseTo(1, 2);
+		await inspect();
+		await go(page, 6.8, 14); // pass south of the separate jump-only platform
+		await go(page, 18, 8.2);
+		await follow(); // camera remains north-facing; WASD now follows that visible basis
+		const crate = [];
+		for (const [key, ms] of [
+			["KeyD", 600],
+			["KeyW", 650],
+			["KeyA", 600],
+			["KeyS", 650],
+		] as const)
+			crate.push(await held(key, ms));
+		await page.screenshot({ path: `${directory}/crate.png` });
+		await inspect();
+		await go(page, 21, 4.2);
+		await go(page, 20, 4.2);
+		await follow();
+		const rock = [];
+		for (const [key, ms] of [
+			["KeyD", 240],
+			["KeyS", 480],
+			["KeyA", 480],
+			["KeyW", 480],
+			["KeyD", 240],
+		] as const)
+			rock.push(await held(key, ms));
+		await page.screenshot({ path: `${directory}/rock.png` });
+		expect(errors).toEqual([]);
+		await fs.writeFile(
+			`${directory}/acceptance.json`,
+			JSON.stringify({ stairs, crate, rock, errors }, null, 2),
+		);
+	});
+
+	test("orbit, reversal, sprint, jump and wall motion @camera-v3", async ({
+		page,
+	}, testInfo) => {
+		test.setTimeout(240_000);
+		const label = process.env.CAMERA_REVIEW_LABEL ?? "after";
+		const directory = `test-results/camera-v3/${label}`;
+		await fs.mkdir(directory, { recursive: true });
+		await page.goto("/");
+		await page.getByRole("button", { name: /Blank Project/ }).click();
+		await page
+			.locator('input[type="file"]')
+			.setInputFiles("movement-v2-demo.project.json");
+		await page.getByRole("button", { name: "3D View", exact: true }).click();
+		await page.getByRole("button", { name: "Play", exact: true }).click();
+		const canvas = page.getByLabel("Three runtime viewport", { exact: true });
+		await expect
+			.poll(
+				async () =>
+					(await snapshot(page)).asset.character.animation.loadingSourceCount,
+				{ timeout: 30_000 },
+			)
+			.toBe(0);
+		await observe(page);
+		const before = await snapshot(page);
+		const cameraFeel = async () =>
+			JSON.parse(
+				(await page
+					.locator(".three-runtime-host")
+					.getAttribute("data-camera-feel"))!,
+			);
+		const marks: { action: string; time: number; position: Sample }[] = [];
+		const mark = async (action: string) =>
+			marks.push({
+				action,
+				time: await page.evaluate(() => performance.now()),
+				position: await position(page),
+			});
+		const orbit = async (dx: number, dy = 0) => {
+			const box = (await canvas.boundingBox())!;
+			await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+			await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+			await page.mouse.move(
+				box.x + box.width / 2 + dx,
+				box.y + box.height / 2 + dy,
+				{ steps: 30 },
+			);
+			await page.keyboard.press("Escape");
+		};
+		await canvas.focus();
+		await mark("walk + orbit");
+		await page.keyboard.down("KeyW");
+		await page.waitForTimeout(350);
+		await orbit(250);
+		await page.waitForTimeout(450);
+		await page.keyboard.up("KeyW");
+		const heldFacing =
+			label === "before" ? null : (await cameraFeel()).desiredFacing;
+		await mark("release + press W again");
+		await page.keyboard.down("KeyW");
+		await page.waitForTimeout(300);
+		await page.keyboard.up("KeyW");
+		if (heldFacing) {
+			const fresh = (await cameraFeel()).desiredFacing;
+			expect(heldFacing.x * fresh.x + heldFacing.y * fresh.y).toBeGreaterThan(
+				0.995,
+			);
+		}
+		await mark("strafe / reversal / diagonals");
+		const strafeYaw = label === "before" ? null : (await cameraFeel()).yaw;
+		for (const keys of [
+			["KeyA"],
+			["KeyD"],
+			["KeyS"],
+			["KeyW", "KeyD"],
+			["KeyS", "KeyA"],
+		]) {
+			for (const key of keys) await page.keyboard.down(key);
+			await page.waitForTimeout(280);
+			for (const key of keys) await page.keyboard.up(key);
+		}
+		if (strafeYaw !== null)
+			expect((await cameraFeel()).yaw).toBeCloseTo(strafeYaw, 2);
+		await mark("sprint turn");
+		await page.keyboard.down("ShiftLeft");
+		await page.keyboard.down("KeyW");
+		await orbit(-250);
+		await page.waitForTimeout(450);
+		await page.keyboard.up("ShiftLeft");
+		await page.waitForTimeout(300);
+		await mark("jump + orbit");
+		await page.keyboard.press("Space");
+		await orbit(180, -90);
+		await page.waitForTimeout(900);
+		await page.keyboard.up("KeyW");
+		await mark("attack + movement recovery");
+		await page.keyboard.press("KeyF");
+		await page.keyboard.down("KeyD");
+		await page.waitForTimeout(850);
+		await page.keyboard.up("KeyD");
+		await page.getByRole("button", { name: "Inspect", exact: true }).click();
+		await go(page, 13.6, 8);
+		await page
+			.getByRole("button", { name: "Follow Player", exact: true })
+			.click();
+		await page.getByRole("button", { name: "Recenter", exact: true }).click();
+		await canvas.focus();
+		await mark("wall obstruction orbit");
+		await orbit(600);
+		await page.waitForTimeout(600);
+		await page.screenshot({ path: `${directory}/wall.png` });
+		if (label !== "before") {
+			expect((await cameraFeel()).clearance).toBeLessThan(0.9);
+			await orbit(-600);
+			await page.waitForTimeout(1000);
+			expect((await cameraFeel()).clearance).toBeGreaterThan(0.99);
+		}
+		const after = await snapshot(page);
+		expect(after.scene.buildCount).toBe(before.scene.buildCount);
+		expect(after.raf.activeLoopCount).toBe(1);
+		expect(after.asset.cloneCount).toBe(before.asset.cloneCount);
+		await fs.writeFile(
+			`${directory}/motion.json`,
+			JSON.stringify(
+				{
+					marks,
+					observations: await page.evaluate(() => window.__movementV2),
+					before,
+					after,
+				},
+				null,
+				2,
+			),
+		);
+		await testInfo.attach(`${label}-motion`, {
+			path: `${directory}/motion.json`,
+			contentType: "application/json",
+		});
+	});
+});
 type Sample = {
+	camera?: unknown;
 	x: number;
 	y: number;
 	height: number;
@@ -64,6 +302,7 @@ async function observe(page: Page) {
 				if (window.__movementV2.samples.length < 12000)
 					window.__movementV2.samples.push({
 						...p,
+						camera: JSON.parse(host?.dataset.cameraFeel ?? "null"),
 						state,
 						time: performance.now(),
 					});
@@ -76,7 +315,12 @@ async function observe(page: Page) {
 async function state(page: Page, expected: string) {
 	await expect
 		.poll(
-			async () => (await snapshot(page)).asset.character.animation.playerState,
+			async () =>
+				JSON.parse(
+					(await page
+						.locator(".three-runtime-host")
+						.getAttribute("data-weapon")) ?? "{}",
+				).semanticState,
 		)
 		.toBe(expected);
 }
@@ -210,7 +454,8 @@ test("Walk Run Jump Fall Land collision combat and grounded Continue via real in
 	await page.keyboard.up("KeyW");
 	await state(page, "idle");
 	await page.getByRole("button", { name: "Inspect", exact: true }).click();
-	await go(page, 3, 8);
+	// Leave room for the independent camera's +Z heading at full sprint speed.
+	await go(page, 3, 4);
 	await page
 		.getByRole("button", { name: "Follow Player", exact: true })
 		.click();
@@ -358,4 +603,163 @@ test("Walk Run Jump Fall Land collision combat and grounded Continue via real in
 			2,
 		) + "\n",
 	);
+});
+
+// Uses real browser lock and mouse input; no injected lock or gameplay state.
+test("pointer lock relative rotations and UI lifecycle @pointer-lock", async ({
+	page,
+}) => {
+	test.setTimeout(180_000);
+	const errors: string[] = [];
+	page.on("pageerror", (e) => errors.push(e.message));
+	await page.goto("/");
+	await page.getByRole("button", { name: /Blank Project/ }).click();
+	await page
+		.locator('input[type="file"]')
+		.setInputFiles("melee-weapon-v1-demo.project.json");
+	await page.getByRole("button", { name: "3D View", exact: true }).click();
+	await page.getByRole("button", { name: "Play", exact: true }).click();
+	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
+	await expect
+		.poll(
+			async () =>
+				(await snapshot(page)).asset.character.animation.loadingSourceCount,
+			{ timeout: 30000 },
+		)
+		.toBe(0);
+	const locked = () =>
+		page.evaluate(
+			() => document.pointerLockElement?.getAttribute("aria-label") ?? null,
+		);
+	const acquire = async () => {
+		await canvas.click();
+		await expect.poll(locked).toBe("Three runtime viewport");
+	};
+	const release = async () => {
+		await page.keyboard.press("Escape");
+		await expect.poll(locked).toBeNull();
+	};
+	const camera = async () =>
+		JSON.parse(
+			(await page
+				.locator(".three-runtime-host")
+				.getAttribute("data-camera-feel"))!,
+		);
+	await expect.poll(locked).toBeNull();
+	await acquire();
+	const initial = await snapshot(page);
+	let mouseX = 400;
+	for (const sign of [1, -1]) {
+		const before = (await camera()).yaw;
+		for (let i = 0; i < 60; i++) {
+			mouseX += sign * 100;
+			await page.mouse.move(mouseX, 400);
+		}
+		await page.waitForTimeout(500);
+		expect(sign * ((await camera()).yaw - before)).toBeGreaterThan(1080);
+	}
+	for (const key of ["w", "s", "a", "d", "w+d", "Shift+w"]) {
+		const keys = key.split("+");
+		for (const held of keys) await page.keyboard.down(held);
+		mouseX += 20;
+		await page.mouse.move(mouseX, 400);
+		await page.waitForTimeout(150);
+		for (const held of keys.reverse()) await page.keyboard.up(held);
+	}
+	await page.keyboard.press("Space");
+	await expect
+		.poll(async () => (await position(page)).motion.phase)
+		.not.toBe("grounded");
+	await expect
+		.poll(async () => (await position(page)).motion.phase)
+		.toBe("grounded");
+	await page.keyboard.press("f");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await page.keyboard.press("i");
+	await expect(page.getByRole("dialog", { name: "Inventory" })).toBeVisible();
+	await expect.poll(locked).toBeNull();
+	await page
+		.getByRole("dialog", { name: "Inventory" })
+		.getByRole("button", { name: /Close/ })
+		.click();
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await release();
+	await acquire();
+	await release();
+	await page.getByRole("button", { name: "Inspect", exact: true }).click();
+	await canvas.click();
+	await expect.poll(locked).toBeNull();
+	await page
+		.getByRole("button", { name: "Follow Player", exact: true })
+		.click();
+	await acquire();
+	await release();
+	const route = async (x: number, y: number) => {
+		await page.getByRole("button", { name: "Inspect", exact: true }).click();
+		await go(page, x, y);
+	};
+	const followAndLock = async () => {
+		await page
+			.getByRole("button", { name: "Follow Player", exact: true })
+			.click();
+		await acquire();
+	};
+	await route(3, 9.2);
+	await route(5.2, 9.2);
+	await route(5.2, 8);
+	await followAndLock();
+	await page.keyboard.press("e");
+	await expect(page.locator(".inventory-notifications")).toContainText("Sword");
+	await state(page, "idle");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await page.keyboard.press("i");
+	await expect.poll(locked).toBeNull();
+	await page.getByRole("button", { name: "Equip", exact: true }).click();
+	await page.keyboard.press("Escape");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await page.keyboard.press("f");
+	await expect
+		.poll(
+			async () =>
+				JSON.parse(
+					(await page
+						.locator(".three-runtime-host")
+						.getAttribute("data-weapon"))!,
+				).activeClip,
+		)
+		.toBe("GoldenSword_Attack_V1");
+	await state(page, "idle");
+	mouseX += 100;
+	await page.mouse.move(mouseX, 400);
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await release();
+	await route(5.2, 9.2);
+	await route(9, 9.2);
+	await route(9, 8);
+	await followAndLock();
+	await page.keyboard.press("e");
+	await state(page, "idle");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await release();
+	await route(9, 9.2);
+	await route(14.2, 9.2);
+	await route(14.2, 8);
+	await followAndLock();
+	await page.keyboard.press("e");
+	await expect(
+		page.getByRole("dialog", { name: "Conversation" }),
+	).toBeVisible();
+	await expect.poll(locked).toBeNull();
+	await page.keyboard.press("e");
+	await expect(page.getByRole("dialog", { name: "Conversation" })).toBeHidden();
+	await expect.poll(locked).toBeNull();
+	await acquire();
+
+	const final = await snapshot(page);
+	expect(final.raf.loopStartCount).toBe(initial.raf.loopStartCount);
+	// Back to Edit is keyboard accessible while locked; teardown must release it.
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).focus();
+	await page.keyboard.press("Enter");
+	await expect.poll(locked).toBeNull();
+	expect(errors).toEqual([]);
 });

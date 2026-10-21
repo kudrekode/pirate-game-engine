@@ -1,4 +1,10 @@
-import { type MutableRefObject, useEffect, useRef, useState } from "react";
+import {
+	type MutableRefObject,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import * as THREE from "three";
 import { SWORD } from "../../data/sword";
 import {
@@ -65,6 +71,7 @@ import {
 import {
 	attemptPlayerMove,
 	findPlayerWaitingTriggerTargets,
+	getContinuousPlayerMoveStartMs,
 } from "../playerMovementTransaction";
 import {
 	QuestObjectiveTracker,
@@ -137,12 +144,17 @@ import {
 	getThirdPersonMouseLookYawOffsetDegrees,
 	type OrbitCameraState,
 	panOrbitCamera,
-	resolveCameraRelativeGridDirection,
+	resolveRuntimeCameraMovement,
 	rotateOrbitCamera,
 	type ThirdPersonMouseLookState,
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
+import {
+	advanceCameraClearance,
+	applyCameraClearance,
+	getCameraClearFraction,
+} from "./cameraObstruction";
 import {
 	createGroundPresentation,
 	createWorldEdgePresentation,
@@ -180,6 +192,8 @@ import {
 import { createTraversalDebugGroup } from "./traversalDebug";
 import {
 	advanceCameraFollowRig,
+	advancePlayerYaw,
+	advanceThirdPersonFocus,
 	type CameraFollowRig,
 	facingToYawRadians,
 	getCameraFollowTarget,
@@ -187,7 +201,6 @@ import {
 	getVisualGridPosition,
 	getVisualStateTargetPosition,
 	gridPositionsEqual,
-	lerpWorldPosition,
 	resetVisualEntityState,
 	settleVisualEntityState,
 	startVisualGridMove,
@@ -502,9 +515,10 @@ export function ThreeRuntimePanel({
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const heldMovementKeys = useRef(new Map<string, RuntimeGridPosition>());
 	const heldSprintKeys = useRef(new Set<string>());
-	// Hold the input frame while the follow camera turns behind the actor.
-	// Mouse-look offsets still apply during the gesture.
-	const movementYawRef = useRef<number | null>(null);
+	// Camera orientation is independent of travel/facing; only reset/recenter changes this base.
+	const cameraFacingRef = useRef<VisualGridPosition | null>(null);
+	const cameraFocusRef = useRef<CameraFollowRig | null>(null);
+	const attackFacingRef = useRef<VisualGridPosition | null>(null);
 	const showCollisionRef = useRef(false);
 	const traversalWorldRef = useRef<ReturnType<
 		typeof createTraversalWorld
@@ -532,6 +546,10 @@ export function ThreeRuntimePanel({
 		createThirdPersonMouseLookState(),
 	);
 	const mouseLookActiveRef = useRef(false);
+	const pointerLockRequestedRef = useRef(false);
+	const requestMouseLookRef = useRef<(() => void) | null>(null);
+	const resumeInventoryMouseLookRef = useRef(false);
+	const pointerLockCanvasRef = useRef<HTMLCanvasElement | null>(null);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const gameOverRef = useRef(false);
 	const playerDefeatedRef = useRef(false);
@@ -588,12 +606,19 @@ export function ThreeRuntimePanel({
 				isRuntimeGameplayBlocked(current, gameplayBlocked(current)))
 		)
 			return;
-		inventoryOpenRef.current = !inventoryOpenRef.current;
+		const opening = !inventoryOpenRef.current;
+		if (opening)
+			resumeInventoryMouseLookRef.current = mouseLookActiveRef.current;
+		inventoryOpenRef.current = opening;
 		heldMovementKeys.current.clear();
-		movementYawRef.current = null;
 		heldSprintKeys.current.clear();
 		setMouseLookActive(false);
-		setIsInventoryOpen(inventoryOpenRef.current);
+		setIsInventoryOpen(opening);
+		if (!opening && resumeInventoryMouseLookRef.current) {
+			resumeInventoryMouseLookRef.current = false;
+			// Run inside the close click/keypress so browser user activation is retained.
+			requestMouseLookRef.current?.();
+		}
 	}
 
 	function closeDialogue() {
@@ -719,10 +744,18 @@ export function ThreeRuntimePanel({
 		setCameraModeState(mode);
 	}
 
-	function setMouseLookActive(active: boolean): void {
+	const setMouseLookActive = useCallback((active: boolean): void => {
+		if (!active) pointerLockRequestedRef.current = false;
+		if (
+			!active &&
+			pointerLockCanvasRef.current &&
+			document.pointerLockElement === pointerLockCanvasRef.current
+		) {
+			document.exitPointerLock();
+		}
 		mouseLookActiveRef.current = active;
 		setMouseLookActiveState(active);
-	}
+	}, []);
 
 	function resetCameraPresentation({
 		resetMode = false,
@@ -732,6 +765,9 @@ export function ThreeRuntimePanel({
 		cameraRigRef.current = null;
 		visibleCameraRigRef.current = null;
 		inspectCameraRef.current = null;
+		cameraFacingRef.current = null;
+		cameraFocusRef.current = null;
+		attackFacingRef.current = null;
 		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState();
 		setMouseLookActive(false);
 		if (resetMode) {
@@ -740,7 +776,26 @@ export function ThreeRuntimePanel({
 	}
 
 	function recenterThirdPersonCamera(): void {
-		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState();
+		const session = getSession();
+		if (!session) return;
+		const config = session.project.camera.three;
+		const look = thirdPersonRuntimeLookRef.current;
+		const oldYaw = getThirdPersonYawDegrees(
+			cameraFacingRef.current ?? session.playerFacing,
+			config,
+			look,
+		);
+		cameraFacingRef.current = { ...session.playerFacing };
+		const baseYaw =
+			radiansToDegrees(facingToYawRadians(session.playerFacing)) +
+			config.yawOffsetDegrees;
+		const difference = ((oldYaw - baseYaw) * Math.PI) / 180;
+		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState({
+			currentYawOffsetDegrees: radiansToDegrees(
+				Math.atan2(Math.sin(difference), Math.cos(difference)),
+			),
+			currentPitchOffsetDegrees: look.currentPitchOffsetDegrees,
+		});
 		if (visibleCameraRigRef.current) {
 			cameraRigRef.current = {
 				lookAt: { ...visibleCameraRigRef.current.lookAt },
@@ -762,20 +817,18 @@ export function ThreeRuntimePanel({
 			return rawDirection;
 		}
 
-		return resolveCameraRelativeGridDirection(
+		cameraFacingRef.current ??= { ...session.playerFacing };
+		return resolveRuntimeCameraMovement(
 			rawDirection,
-			movementYawRef.current === null
-				? getThirdPersonYawDegrees(
-						session.traversal
-							? (playerVisualRef.current?.facing ?? session.playerFacing)
-							: session.playerFacing,
-						threeCameraConfig,
-						thirdPersonRuntimeLookRef.current,
-					)
-				: movementYawRef.current +
-						getThirdPersonMouseLookYawOffsetDegrees(
-							thirdPersonRuntimeLookRef.current,
-						),
+			visibleCameraRigRef.current ??
+				getThirdPersonFollowTarget(
+					{ x: 0, y: 0, z: 0 },
+					cameraFacingRef.current,
+					threeCameraConfig,
+					thirdPersonRuntimeLookRef.current,
+				),
+			cameraModeRef.current,
+			true,
 			Boolean(session.traversal && !session.playerVehicleState.active),
 		);
 	}
@@ -783,7 +836,8 @@ export function ThreeRuntimePanel({
 	function hasPointerBlockingOverlay(): boolean {
 		const session = getSession();
 		return Boolean(
-			pendingCutsceneRef.current ||
+			inventoryOpenRef.current ||
+				pendingCutsceneRef.current ||
 				sessionRef.current?.dialogue ||
 				gameOverRef.current ||
 				session?.activeShopId,
@@ -854,6 +908,7 @@ export function ThreeRuntimePanel({
 	}
 
 	function enterFollowCameraMode(): void {
+		cameraFocusRef.current = null;
 		if (visibleCameraRigRef.current) {
 			cameraRigRef.current = {
 				lookAt: { ...visibleCameraRigRef.current.lookAt },
@@ -1273,6 +1328,9 @@ export function ThreeRuntimePanel({
 
 	function handleCombatEvent(event: RuntimeCombatEvent): void {
 		if (event.type === "attackStarted") {
+			attackFacingRef.current = {
+				...(getSession()?.playerFacing ?? { x: 0, y: 1 }),
+			};
 			characterAnimationControllersRef.current
 				.get("runtime_player")
 				?.triggerAttack(event.weapon);
@@ -1495,15 +1553,15 @@ export function ThreeRuntimePanel({
 		return true;
 	}
 
-	function handleMove(direction: RuntimeGridPosition): void {
+	function handleMove(
+		direction: RuntimeGridPosition,
+		continuingHeld = false,
+	): void {
 		const session = getSession();
+		const now = performance.now();
 		if (
 			!session ||
-			!canAcceptRuntimeInput(
-				session,
-				performance.now(),
-				gameplayBlocked(session),
-			)
+			!canAcceptRuntimeInput(session, now, gameplayBlocked(session))
 		) {
 			return;
 		}
@@ -1529,10 +1587,17 @@ export function ThreeRuntimePanel({
 			heldMovementKeys.current.size > 0,
 			gameplayBlocked(session),
 		);
+		const moveStartMs = getContinuousPlayerMoveStartMs(
+			now,
+			session.nextMoveAt,
+			continuingHeld &&
+				!!session.traversal &&
+				!session.playerVehicleState.active,
+		);
 		const move = attemptPlayerMove(
 			session,
 			direction,
-			performance.now(),
+			moveStartMs,
 			session.traversal && !session.playerVehicleState.active ? 0.2 : 1,
 		);
 		if (move.type === "blocked") {
@@ -1558,7 +1623,7 @@ export function ThreeRuntimePanel({
 				from: move.from,
 				to: move.to,
 			},
-			performance.now(),
+			moveStartMs,
 		);
 		setStatus(
 			`Moved to ${Number(move.to.x.toFixed(2))}, ${Number(move.to.y.toFixed(2))}.`,
@@ -1641,18 +1706,16 @@ export function ThreeRuntimePanel({
 	useEffect(() => {
 		pendingCutsceneRef.current = pendingCutscene;
 		if (pendingCutscene) {
-			mouseLookActiveRef.current = false;
-			setMouseLookActiveState(false);
+			setMouseLookActive(false);
 		}
-	}, [pendingCutscene]);
+	}, [pendingCutscene, setMouseLookActive]);
 
 	useEffect(() => {
 		gameOverRef.current = gameOver;
 		if (gameOver) {
-			mouseLookActiveRef.current = false;
-			setMouseLookActiveState(false);
+			setMouseLookActive(false);
 		}
-	}, [gameOver]);
+	}, [gameOver, setMouseLookActive]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: session startup owns fresh runtime state; callbacks read sessionRef.
 	useEffect(() => {
@@ -1743,7 +1806,6 @@ export function ThreeRuntimePanel({
 			) {
 				event.preventDefault();
 				heldMovementKeys.current.clear();
-				movementYawRef.current = null;
 				heldSprintKeys.current.clear();
 				if (event.key === "Escape") closeDialogue();
 				else if (dialogueNode?.type !== "choice") advanceConversation();
@@ -1774,20 +1836,6 @@ export function ThreeRuntimePanel({
 				event.preventDefault();
 				if (event.repeat) return;
 				// Track a second held direction even during an accepted move's deadline.
-				if (
-					!heldMovementKeys.current.size &&
-					session.project.camera.three.style === "thirdPerson"
-				) {
-					movementYawRef.current =
-						getThirdPersonYawDegrees(
-							playerVisualRef.current?.facing ?? session.playerFacing,
-							session.project.camera.three,
-							thirdPersonRuntimeLookRef.current,
-						) -
-						getThirdPersonMouseLookYawOffsetDegrees(
-							thirdPersonRuntimeLookRef.current,
-						);
-				}
 				heldMovementKeys.current.set(event.code, direction);
 				handleMove(getRuntimeMovementDirection(direction));
 				return;
@@ -1809,19 +1857,6 @@ export function ThreeRuntimePanel({
 						session.project,
 						session.playerPosition,
 					);
-				if (
-					heldMovementKeys.current.size &&
-					session.project.camera.three.style === "thirdPerson"
-				)
-					movementYawRef.current =
-						getThirdPersonYawDegrees(
-							playerVisualRef.current?.facing ?? session.playerFacing,
-							session.project.camera.three,
-							thirdPersonRuntimeLookRef.current,
-						) -
-						getThirdPersonMouseLookYawOffsetDegrees(
-							thirdPersonRuntimeLookRef.current,
-						);
 			}
 			if (session && action === "sprint") {
 				if (!isRuntimeGameplayBlocked(session, gameplayBlocked(session)))
@@ -1875,12 +1910,10 @@ export function ThreeRuntimePanel({
 
 		const handleKeyUp = (event: KeyboardEvent) => {
 			heldMovementKeys.current.delete(event.code);
-			if (!heldMovementKeys.current.size) movementYawRef.current = null;
 			heldSprintKeys.current.delete(event.code);
 		};
 		const clearKeys = () => {
 			heldMovementKeys.current.clear();
-			movementYawRef.current = null;
 			heldSprintKeys.current.clear();
 		};
 		const interval = window.setInterval(() => {
@@ -1902,6 +1935,7 @@ export function ThreeRuntimePanel({
 						x: direction.x / length,
 						y: direction.y / length,
 					}),
+					true,
 				);
 		}, 16);
 		window.addEventListener("keydown", handleKeyDown);
@@ -2036,11 +2070,21 @@ export function ThreeRuntimePanel({
 			performance.now(),
 		).position;
 		const threeCameraConfig = session.project.camera.three;
+		cameraFacingRef.current ??= { ...initialPlayerVisual.facing };
 		let cameraRig: CameraFollowRig =
 			cameraRigRef.current ??
 			getFollowCameraTarget(
-				getVisualPlayerCenter(area, initialPlayerPosition, terrainRenderMode),
-				initialPlayerVisual.facing,
+				{
+					...getVisualPlayerCenter(
+						area,
+						initialPlayerPosition,
+						terrainRenderMode,
+					),
+					...(session.traversal
+						? { y: session.traversal.motion.height + 0.625 }
+						: {}),
+				},
+				cameraFacingRef.current,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
 			);
@@ -2588,7 +2632,22 @@ export function ThreeRuntimePanel({
 			x: number;
 			y: number;
 		} | null = null;
-		let lastMouseLookPointer: { x: number; y: number } | null = null;
+		let inputDisposed = false;
+		pointerLockCanvasRef.current = renderer.domElement;
+		const handlePointerLockChange = () => {
+			setMouseLookActive(
+				document.pointerLockElement === renderer.domElement &&
+					pointerLockRequestedRef.current &&
+					canUseThirdPersonMouseLook(threeCameraConfig),
+			);
+		};
+		const handlePointerLockError = () => {
+			setMouseLookActive(false);
+		};
+		const handleFocusLoss = () => {
+			resumeInventoryMouseLookRef.current = false;
+			setMouseLookActive(false);
+		};
 		const updateInspectCamera = (
 			updater: (state: OrbitCameraState) => OrbitCameraState,
 		) => {
@@ -2636,11 +2695,36 @@ export function ThreeRuntimePanel({
 				return;
 			}
 			event.preventDefault();
-			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
-			setMouseLookActive(true);
-			renderer.domElement.focus();
+			requestMouseLook();
 		};
+		const requestMouseLook = () => {
+			if (inputDisposed || !canUseThirdPersonMouseLook(threeCameraConfig))
+				return;
+			renderer.domElement.focus();
+			if (document.pointerLockElement === renderer.domElement) return;
+			try {
+				pointerLockRequestedRef.current = true;
+				const request = renderer.domElement.requestPointerLock?.();
+				// Older implementations return void. State comes only from lockchange.
+				void Promise.resolve(request).then(
+					() => {
+						if (inputDisposed) {
+							if (document.pointerLockElement === renderer.domElement)
+								document.exitPointerLock();
+						} else if (document.pointerLockElement === renderer.domElement)
+							handlePointerLockChange();
+					},
+					() => {
+						if (!inputDisposed) handlePointerLockError();
+					},
+				);
+			} catch {
+				handlePointerLockError();
+			}
+		};
+		requestMouseLookRef.current = requestMouseLook;
 		const handlePointerMove = (event: PointerEvent) => {
+			if (!cameraDrag) return;
 			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				event.preventDefault();
@@ -2661,32 +2745,20 @@ export function ThreeRuntimePanel({
 				}
 				return;
 			}
-
-			if (!mouseLookActiveRef.current) {
+		};
+		const handleMouseMove = (event: MouseEvent) => {
+			if (
+				document.pointerLockElement !== renderer.domElement ||
+				!mouseLookActiveRef.current
+			)
 				return;
-			}
 			if (!canUseThirdPersonMouseLook(threeCameraConfig)) {
 				setMouseLookActive(false);
-				lastMouseLookPointer = null;
 				return;
 			}
-
-			const movementEvent = event as PointerEvent & {
-				movementX?: number;
-				movementY?: number;
-			};
-			const rawMovementX = movementEvent.movementX ?? 0;
-			const rawMovementY = movementEvent.movementY ?? 0;
-			const hasRawMovementDelta = rawMovementX !== 0 || rawMovementY !== 0;
-			const fallbackDelta = lastMouseLookPointer
-				? {
-						x: event.clientX - lastMouseLookPointer.x,
-						y: event.clientY - lastMouseLookPointer.y,
-					}
-				: { x: 0, y: 0 };
-			const deltaX = hasRawMovementDelta ? rawMovementX : fallbackDelta.x;
-			const deltaY = hasRawMovementDelta ? rawMovementY : fallbackDelta.y;
-			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
+			diagnostics.recordPointerMove();
+			const deltaX = event.movementX;
+			const deltaY = event.movementY;
 			if (deltaX !== 0 || deltaY !== 0) {
 				event.preventDefault();
 				thirdPersonRuntimeLookRef.current = updateThirdPersonMouseLookTarget(
@@ -2719,12 +2791,21 @@ export function ThreeRuntimePanel({
 			);
 		};
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
-		renderer.domElement.addEventListener("pointermove", handlePointerMove);
+		window.addEventListener("pointermove", handlePointerMove);
+		document.addEventListener("mousemove", handleMouseMove);
+		document.addEventListener("pointerlockchange", handlePointerLockChange);
+		document.addEventListener("pointerlockerror", handlePointerLockError);
+		window.addEventListener("blur", handleFocusLoss);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
 		renderer.domElement.addEventListener("wheel", handleWheel, {
 			passive: false,
 		});
 
+		let cameraClearance = 1;
+		const cameraWorldOffset = previewGridPositionToThreePoint(area, {
+			x: 0,
+			y: 0,
+		});
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
 		const render = () => {
@@ -2819,10 +2900,28 @@ export function ThreeRuntimePanel({
 					reason: traversal?.lastReason,
 				});
 			}
-			setObjectFacing(playerMesh, playerVisual.facing, playerRenderVisual);
 			const playerAction = characterAnimationControllers
 				.get("runtime_player")
 				?.getStats().semanticState;
+			const attacking = playerAction === "attack";
+			if (!attacking) attackFacingRef.current = null;
+			if (playerAction !== "defeated" && playerAction !== "hit") {
+				playerMesh.rotation.y = advancePlayerYaw(
+					playerMesh.rotation.y,
+					resolveThreeCharacterFacingYaw(
+						attacking
+							? (attackFacingRef.current ?? session.playerFacing)
+							: playerVisual.facing,
+						playerRenderVisual,
+					),
+					deltaMs,
+					{
+						attacking,
+						sprinting: traversal?.motion.sprinting,
+						airborne: isPlayerAirborne(session),
+					},
+				);
+			}
 			if (
 				interactionTarget &&
 				(playerAction === "interact" || playerAction === "pickup")
@@ -2896,6 +2995,7 @@ export function ThreeRuntimePanel({
 						? session.equippedWeaponId
 						: undefined,
 					activeClip: playerAnimation?.activeClip,
+					semanticState: playerAnimation?.semanticState,
 				});
 			characterAnimationControllers.get("runtime_player")?.sync({
 				defeated: playerDefeatedRef.current || session.runtimePlayerHealth <= 0,
@@ -2945,52 +3045,91 @@ export function ThreeRuntimePanel({
 			) {
 				thirdPersonRuntimeLookRef.current = advanceThirdPersonMouseLook(
 					thirdPersonRuntimeLookRef.current,
-					getFrameLerpAlpha(deltaMs, 22),
+					getFrameLerpAlpha(deltaMs, 30),
 				);
 			}
 			diagnostics.recordVisualUpdate(performance.now() - visualUpdateStartedAt);
 
 			const cameraUpdateStartedAt = performance.now();
+			const cameraAnchor = {
+				...getVisualPlayerCenter(
+					area,
+					playerVisualPosition,
+					terrainRenderMode,
+					traversalWorld.sampler,
+				),
+				...(grounded ? { y: grounded.height + 0.625 } : {}),
+			};
 			const nextCameraTarget = getFollowCameraTarget(
-				{
-					...getVisualPlayerCenter(
-						area,
-						playerVisualPosition,
-						terrainRenderMode,
-						traversalWorld.sampler,
-					),
-					...(grounded ? { y: grounded.height + 0.625 } : {}),
-				},
-				playerVisual.facing,
+				cameraAnchor,
+				cameraFacingRef.current ?? session.playerFacing,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
 			);
 			if (cameraModeRef.current === "inspect") {
 				applyInspectCamera();
 			} else {
-				const currentRig = cameraRigRef.current ?? cameraRig;
-				cameraRig =
-					threeCameraConfig.style === "thirdPerson"
-						? {
-								lookAt: lerpWorldPosition(
-									currentRig.lookAt,
-									nextCameraTarget.lookAt,
-									getFrameLerpAlpha(deltaMs, threeCameraConfig.lookSmoothing),
-								),
-								position: lerpWorldPosition(
-									currentRig.position,
-									nextCameraTarget.position,
-									getFrameLerpAlpha(deltaMs, threeCameraConfig.followSmoothing),
-								),
-							}
-						: advanceCameraFollowRig(
-								currentRig,
-								nextCameraTarget,
-								getFrameLerpAlpha(deltaMs),
-							);
+				if (threeCameraConfig.style === "thirdPerson") {
+					if (!cameraFocusRef.current) cameraClearance = 1;
+					const focus = advanceThirdPersonFocus(
+						cameraFocusRef.current,
+						cameraAnchor,
+						nextCameraTarget.lookAt,
+						deltaMs,
+						threeCameraConfig.followSmoothing,
+						threeCameraConfig.lookSmoothing,
+					);
+					cameraFocusRef.current = focus;
+					cameraRig = {
+						lookAt: focus.lookAt,
+						position: {
+							x:
+								focus.position.x + nextCameraTarget.position.x - cameraAnchor.x,
+							y:
+								focus.position.y + nextCameraTarget.position.y - cameraAnchor.y,
+							z:
+								focus.position.z + nextCameraTarget.position.z - cameraAnchor.z,
+						},
+					};
+					cameraClearance = advanceCameraClearance(
+						cameraClearance,
+						getCameraClearFraction(
+							traversalWorld,
+							cameraRig.lookAt,
+							cameraRig.position,
+							cameraWorldOffset,
+						),
+						deltaMs,
+					);
+					cameraRig = applyCameraClearance(cameraRig, cameraClearance);
+				} else
+					cameraRig = advanceCameraFollowRig(
+						cameraRigRef.current ?? cameraRig,
+						nextCameraTarget,
+						getFrameLerpAlpha(deltaMs),
+					);
 				cameraRigRef.current = cameraRig;
 				applyCameraRig(cameraRig);
 			}
+			if (import.meta.env.DEV)
+				host.dataset.cameraFeel = JSON.stringify({
+					mode: cameraModeRef.current,
+					yaw: getThirdPersonYawDegrees(
+						cameraFacingRef.current ?? session.playerFacing,
+						threeCameraConfig,
+						thirdPersonRuntimeLookRef.current,
+					),
+					pitch: getThirdPersonMouseLookPitchDegrees(
+						threeCameraConfig.pitchDegrees,
+						thirdPersonRuntimeLookRef.current,
+					),
+					playerYaw: playerMesh.rotation.y,
+					facing: session.playerFacing,
+					desiredFacing: playerVisual.facing,
+					clearance: cameraClearance,
+					target: nextCameraTarget,
+					actual: visibleCameraRigRef.current,
+				});
 			diagnostics.recordCameraUpdate(performance.now() - cameraUpdateStartedAt);
 			if (
 				waterSurfaceMeshCount > 0 ||
@@ -3043,7 +3182,21 @@ export function ThreeRuntimePanel({
 			for (const npcId of dyingNpcs.keys()) removeNpcPresentation(npcId);
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
-			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
+			window.removeEventListener("pointermove", handlePointerMove);
+			inputDisposed = true;
+			if (requestMouseLookRef.current === requestMouseLook)
+				requestMouseLookRef.current = null;
+			resumeInventoryMouseLookRef.current = false;
+			setMouseLookActive(false);
+			if (pointerLockCanvasRef.current === renderer.domElement)
+				pointerLockCanvasRef.current = null;
+			document.removeEventListener("mousemove", handleMouseMove);
+			document.removeEventListener(
+				"pointerlockchange",
+				handlePointerLockChange,
+			);
+			document.removeEventListener("pointerlockerror", handlePointerLockError);
+			window.removeEventListener("blur", handleFocusLoss);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			characterAnimationControllers.forEach((controller) => {
