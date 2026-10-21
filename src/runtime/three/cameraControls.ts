@@ -62,7 +62,8 @@ const DEFAULT_CAMERA_BASE_DISTANCE_SCALE = 0.9;
 const DEFAULT_MIN_DISTANCE = 3;
 const DEFAULT_MIN_PITCH = (3 * Math.PI) / 180;
 const DEFAULT_MAX_PITCH = (86 * Math.PI) / 180;
-const DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES = -5;
+// Orbit elevation: negative angles look UP. Keep the authored downward range.
+const DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES = -82;
 const DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES = 65;
 const DEFAULT_THIRD_PERSON_YAW_SENSITIVITY_DEGREES = 0.22;
 const DEFAULT_THIRD_PERSON_PITCH_SENSITIVITY_DEGREES = 0.18;
@@ -212,20 +213,40 @@ export function getThirdPersonCameraRig(
 	playerPosition: CameraVector3,
 	options: ThirdPersonCameraOptions,
 ): CameraRig {
-	const distance = Math.max(0.1, options.distance);
+	let distance = Math.max(0.1, options.distance);
 	const pitch = degreesToRadians(clamp(options.pitchDegrees, -89, 89));
 	const yaw = degreesToRadians(options.yawDegrees);
+	// Blend out the authored camera/target height difference only in sky-look.
+	// Otherwise that difference overwhelms a contracted boom and points it down.
+	const upward = clamp(-options.pitchDegrees / 45, 0, 1);
+	const blend = upward * upward * (3 - 2 * upward);
+	const height = lerp(options.height, options.lookAtHeight, blend);
+	if (pitch < 0) {
+		// Player anchor is foot + 0.625. Leave 0.24 m below the camera for its
+		// near plane. World clearance is checked again after follow translation.
+		const available = Math.max(0.1, height + 0.625 - 0.24);
+		// Smoothly approach the floor-limited radius instead of hitting a hard
+		// distance knee. This is algebraic in the already time-damped pitch.
+		distance = 1 / Math.hypot(1 / distance, Math.sin(pitch) / available);
+	}
 	const horizontalDistance = Math.cos(pitch) * distance;
+	// A near-vertical orbit through a fixed player target ends inside the body.
+	// Slide both points rearward by at most 2.2 m, retaining the requested ray,
+	// yaw basis and an external camera. No upward auto-composition is needed.
+	const setback = Math.max(
+		0,
+		Math.min(2.2, options.distance / 2) * blend - horizontalDistance,
+	);
 	return {
 		lookAt: {
-			x: playerPosition.x,
+			x: playerPosition.x + Math.sin(yaw) * setback,
 			y: playerPosition.y + options.lookAtHeight,
-			z: playerPosition.z,
+			z: playerPosition.z + Math.cos(yaw) * setback,
 		},
 		position: {
-			x: playerPosition.x + Math.sin(yaw) * horizontalDistance,
-			y: playerPosition.y + options.height + Math.sin(pitch) * distance,
-			z: playerPosition.z + Math.cos(yaw) * horizontalDistance,
+			x: playerPosition.x + Math.sin(yaw) * (horizontalDistance + setback),
+			y: playerPosition.y + height + Math.sin(pitch) * distance,
+			z: playerPosition.z + Math.cos(yaw) * (horizontalDistance + setback),
 		},
 	};
 }
@@ -323,7 +344,7 @@ export function updateThirdPersonMouseLookTarget(
 		options.maxPitchDegrees ?? DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES;
 	const targetPitch = clamp(
 		basePitchDegrees +
-			state.targetPitchOffsetDegrees -
+			state.targetPitchOffsetDegrees +
 			deltaY * pitchSensitivity,
 		minPitch,
 		maxPitch,

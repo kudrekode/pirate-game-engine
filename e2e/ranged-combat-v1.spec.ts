@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
+import { BOW } from "../src/data/bow";
 
 test.use({
 	channel: "chrome",
@@ -7,6 +8,91 @@ test.use({
 	trace: { mode: "retain-on-failure", screenshots: false, snapshots: true },
 });
 const output = "docs/assets/ranged-combat-v1";
+
+test("current Bow fires into the sky from the visible camera ray @camera-v4-bow", async ({
+	page,
+}) => {
+	const directory = "test-results/camera-v4";
+	await fs.mkdir(directory, { recursive: true });
+	const errors: string[] = [];
+	page.on("pageerror", (e) => errors.push(e.message));
+	await page.goto("/");
+	await page.getByRole("button", { name: /Blank Project/ }).click();
+	await page
+		.locator('input[type="file"]')
+		.setInputFiles("ranged-combat-v1-demo.project.json");
+	await page.getByRole("button", { name: "3D View", exact: true }).click();
+	await page.getByRole("button", { name: "Play", exact: true }).click();
+	await expect
+		.poll(
+			async () =>
+				(await snapshot(page)).asset.character.animation.loadingSourceCount,
+			{ timeout: 30000 },
+		)
+		.toBe(0);
+	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
+	await canvas.click();
+	await expect
+		.poll(() => page.evaluate(() => !!document.pointerLockElement))
+		.toBe(true);
+	await page.keyboard.press("e");
+	await expect(page.locator(".inventory-notifications")).toContainText("Bow");
+	await expect
+		.poll(async () => (await data(page, "weapon")).semanticState)
+		.toBe("idle");
+	await page.keyboard.press("i");
+	await page.getByRole("button", { name: /^Bow ×/ }).click();
+	await page.getByRole("button", { name: "Equip", exact: true }).click();
+	await page.keyboard.press("Escape");
+	await expect
+		.poll(() => page.evaluate(() => !!document.pointerLockElement))
+		.toBe(true);
+	await page.mouse.move(640, -2000, { steps: 50 });
+	await expect
+		.poll(async () => (await data(page, "camera-feel")).pitch)
+		.toBeLessThan(-81.9);
+	await page.waitForTimeout(400);
+	const camera = (await data(page, "camera-feel")).actual;
+	await page.keyboard.press("f");
+	await expect
+		.poll(async () => (await data(page, "projectiles")).arrows.length)
+		.toBe(1);
+	const arrow = (await data(page, "projectiles")).arrows[0];
+	expect(arrow.direction.y).toBeGreaterThan(0.97);
+	const ray = {
+		x: camera.lookAt.x - camera.position.x,
+		y: camera.lookAt.y - camera.position.y,
+		z: camera.lookAt.z - camera.position.z,
+	};
+	const length = Math.hypot(ray.x, ray.y, ray.z);
+	// Existing muzzle parallax aims at a point on the visible ray, rather than
+	// firing parallel to it. Verify convergence at the unchanged 48 m range.
+	const convergence = {
+		x:
+			camera.position.x +
+			23.5 +
+			(ray.x / length) * BOW.maxRange -
+			arrow.position.x,
+		y: camera.position.y + (ray.y / length) * BOW.maxRange - arrow.position.y,
+		z:
+			camera.position.z +
+			11.5 +
+			(ray.z / length) * BOW.maxRange -
+			arrow.position.z,
+	};
+	expect(
+		(convergence.x * arrow.direction.x +
+			convergence.y * arrow.direction.y +
+			convergence.z * arrow.direction.z) /
+			Math.hypot(convergence.x, convergence.y, convergence.z),
+	).toBeGreaterThan(0.99999);
+	await page.screenshot({ path: `${directory}/bow-sky.png` });
+	expect(errors).toEqual([]);
+	await fs.writeFile(
+		`${directory}/bow.json`,
+		JSON.stringify({ camera, arrow, errors }, null, 2),
+	);
+});
 async function data(page: Page, name: string) {
 	return JSON.parse(
 		(await page.locator(".three-runtime-host").getAttribute(`data-${name}`)) ??
@@ -166,7 +252,7 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 				Math.PI;
 			if (Math.abs(yaw) < 0.12 && Math.abs(pitch) < 0.12) break;
 			mouseX += yaw / 0.22;
-			mouseY -= pitch / 0.18;
+			mouseY += pitch / 0.18;
 			await page.mouse.move(mouseX, mouseY);
 			await page.waitForTimeout(180);
 		}

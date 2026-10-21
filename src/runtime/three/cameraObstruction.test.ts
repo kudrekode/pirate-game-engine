@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
+import demo from "../../../movement-v2-demo.project.json";
+import { migrateProject } from "../../data/migrateProject";
 import type { TraversalSolid } from "../traversal";
+import {
+	createTraversalWorld,
+	floorHeightAt,
+	sampleTraversalTerrain,
+} from "../traversal";
+import { getThirdPersonCameraRig } from "./cameraControls";
 import {
 	advanceCameraClearance,
 	applyCameraClearance,
@@ -18,6 +26,111 @@ const wall: TraversalSolid = {
 };
 const rig = { lookAt: { x: 0, y: 2, z: 0 }, position: { x: 0, y: 2, z: 6 } };
 describe("camera clearance using cached traversal boxes", () => {
+	it.each([
+		"blocky",
+		"smooth",
+	] as const)("clears actual %s terrain, stairs and platform supports without flattening sky-look", (mode) => {
+		const project = migrateProject(demo);
+		const world = createTraversalWorld(project, project.areas[0], mode);
+		const points = [
+			{ x: 3, y: 8 },
+			{ x: 8, y: 11 },
+			{ x: 12, y: 12 },
+			{ x: 1.4, y: 8 },
+		];
+		for (const point of points) {
+			let foot = sampleTraversalTerrain(world, point);
+			for (const candidate of world.candidates(point.x, point.y)) {
+				if (candidate.floor)
+					foot = Math.max(
+						foot,
+						floorHeightAt(candidate.floor, point.x, point.y) ?? foot,
+					);
+			}
+			for (let yaw = 0; yaw < 360; yaw += 45) {
+				const desired = getThirdPersonCameraRig(
+					{ x: point.x, y: foot + 0.625, z: point.y },
+					{
+						distance: 6,
+						height: 1.5,
+						lookAtHeight: 0.3,
+						pitchDegrees: -82,
+						yawDegrees: yaw,
+					},
+				);
+				const fraction = getCameraClearFraction(
+					world,
+					desired.lookAt,
+					desired.position,
+				);
+				const actual = applyCameraClearance(desired, fraction);
+				expect(actual.position.y).toBeGreaterThanOrEqual(
+					sampleTraversalTerrain(world, {
+						x: actual.position.x,
+						y: actual.position.z,
+					}) + 0.219,
+				);
+				if (fraction > 0)
+					expect(
+						(actual.lookAt.y - actual.position.y) /
+							Math.hypot(
+								actual.lookAt.x - actual.position.x,
+								actual.lookAt.z - actual.position.z,
+							),
+					).toBeCloseTo(Math.tan((82 * Math.PI) / 180));
+			}
+		}
+	});
+
+	it("contracts for a floor-crossing segment with footprint clearance, but ordinary sky-look clears flat ground", () => {
+		const project = migrateProject(demo);
+		const world = createTraversalWorld(project, project.areas[0]);
+		world.solids.length = 0;
+		const from = { x: 3, y: 2, z: 8 };
+		const to = { x: 3, y: 0, z: 9 };
+		const fraction = getCameraClearFraction(world, from, to);
+		expect(fraction).toBeGreaterThan(0);
+		expect(fraction).toBeLessThan(1);
+		expect(
+			applyCameraClearance({ lookAt: from, position: to }, fraction).position.y,
+		).toBeCloseTo(1.22, 3);
+		const desired = getThirdPersonCameraRig(
+			{ x: 3, y: 1.625, z: 8 },
+			{
+				distance: 6,
+				height: 1.5,
+				lookAtHeight: 0.3,
+				pitchDegrees: -82,
+				yawDegrees: 0,
+			},
+		);
+		expect(
+			getCameraClearFraction(world, desired.lookAt, desired.position),
+		).toBe(1);
+	});
+
+	it("still contracts a sky-looking boom at a true wall without changing its aim", () => {
+		const sky = {
+			lookAt: { x: 0, y: 2, z: 0 },
+			position: { x: 0, y: 0.3, z: 1 },
+		};
+		const blocker = {
+			...wall,
+			center: [0, 1, 0.6] as [number, number, number],
+		};
+		const fraction = getCameraClearFraction(
+			{ solids: [blocker] },
+			sky.lookAt,
+			sky.position,
+		);
+		expect(fraction).toBeGreaterThan(0);
+		expect(fraction).toBeLessThan(1);
+		const actual = applyCameraClearance(sky, fraction);
+		expect(actual.lookAt).toEqual(sky.lookAt);
+		expect(
+			(actual.lookAt.y - actual.position.y) / actual.position.z,
+		).toBeCloseTo(1.7);
+	});
 	it("stops in front of a wall with near-plane clearance and leaves inputs untouched", () => {
 		const boxes = [wall];
 		const before = JSON.stringify({ boxes, rig });

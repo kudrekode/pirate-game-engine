@@ -18,6 +18,7 @@ import {
 } from "./runtimeCombat";
 import { collectRuntimeObjectPickup } from "./runtimeObjectInteractions";
 import { createRuntimeSession } from "./runtimeSession";
+import { getThirdPersonCameraRig } from "./three/cameraControls";
 import {
 	createRuntimeTraversal,
 	createTraversalWorld,
@@ -76,6 +77,34 @@ function setup(enemyX?: number) {
 }
 
 describe("one shared bow projectile loop", () => {
+	it("fires upward along the visible sky-look ray without changing projectile ballistics", () => {
+		const s = setup();
+		const camera = getThirdPersonCameraRig(
+			{ x: 3, y: 1.625, z: 8 },
+			{
+				distance: 6,
+				height: 1.5,
+				lookAtHeight: 1,
+				pitchDegrees: -82,
+				yawDegrees: -90,
+			},
+		);
+		const direction = {
+			x: camera.lookAt.x - camera.position.x,
+			y: camera.lookAt.y - camera.position.y,
+			z: camera.lookAt.z - camera.position.z,
+		};
+		expect(s.fire(0, { origin: camera.position, direction })).toBe(true);
+		s.advance(400, {
+			body: { x: 3, y: 2, z: 8 },
+			muzzle: { x: 3.45, y: 2.25, z: 8 },
+		});
+		const arrow = s.session.projectiles!.arrows[0];
+		expect(arrow).toBeDefined();
+		expect(arrow.position.y).toBeGreaterThan(4.8);
+		expect(arrow.direction.y).toBeGreaterThan(0.98);
+		expect(arrow.direction.x).toBeGreaterThan(0);
+	});
 	it("migrates only explicit bow references and collects/equips via ordinary inventory", () => {
 		const project = migrateProject(demo);
 		project.items.push({ ...BOW_ITEM });

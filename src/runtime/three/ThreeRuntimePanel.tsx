@@ -3189,14 +3189,38 @@ export function ThreeRuntimePanel({
 					const focus = advanceThirdPersonFocus(
 						cameraFocusRef.current,
 						cameraAnchor,
-						nextCameraTarget.lookAt,
+						{ ...cameraAnchor, y: nextCameraTarget.lookAt.y },
 						deltaMs,
 						threeCameraConfig.followSmoothing,
 						threeCameraConfig.lookSmoothing,
 					);
 					cameraFocusRef.current = focus;
+					// At steep pitch the projected boom is short. Separate anchor/look
+					// translation lag could cross that ray while sprinting and flip yaw.
+					const skyTranslation = Math.min(
+						1,
+						Math.max(
+							0,
+							-getThirdPersonMouseLookPitchDegrees(
+								threeCameraConfig.pitchDegrees,
+								thirdPersonRuntimeLookRef.current,
+							) / 45,
+						),
+					);
 					cameraRig = {
-						lookAt: focus.lookAt,
+						lookAt: {
+							x:
+								focus.lookAt.x +
+								(focus.position.x - focus.lookAt.x) * skyTranslation +
+								nextCameraTarget.lookAt.x -
+								cameraAnchor.x,
+							y: focus.lookAt.y,
+							z:
+								focus.lookAt.z +
+								(focus.position.z - focus.lookAt.z) * skyTranslation +
+								nextCameraTarget.lookAt.z -
+								cameraAnchor.z,
+						},
 						position: {
 							x:
 								focus.position.x + nextCameraTarget.position.x - cameraAnchor.x,
@@ -3206,6 +3230,30 @@ export function ThreeRuntimePanel({
 								focus.position.z + nextCameraTarget.position.z - cameraAnchor.z,
 						},
 					};
+					// The bounded sky-look setback (and existing bow offset) must not
+					// move the obstruction ray's origin through a nearby wall.
+					const pivotFraction =
+						Math.hypot(
+							cameraRig.lookAt.x - focus.lookAt.x,
+							cameraRig.lookAt.z - focus.lookAt.z,
+						) < 1e-8
+							? 1
+							: getCameraClearFraction(
+									traversalWorld,
+									focus.lookAt,
+									cameraRig.lookAt,
+									cameraWorldOffset,
+								);
+					// Leave room for a nonzero view ray even when the translated
+					// target itself meets a wall. Exact contact collapses the boom.
+					const pivotClearance = pivotFraction < 1 ? pivotFraction * 0.9 : 1;
+					for (const axis of ["x", "z"] as const) {
+						const correction =
+							(cameraRig.lookAt[axis] - focus.lookAt[axis]) *
+							(1 - pivotClearance);
+						cameraRig.lookAt[axis] -= correction;
+						cameraRig.position[axis] -= correction;
+					}
 					cameraClearance = advanceCameraClearance(
 						cameraClearance,
 						getCameraClearFraction(

@@ -19,6 +19,7 @@ import {
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
+import { getFrameLerpAlpha } from "./visualSmoothing";
 
 const dimensions = { height: 12, width: 16 };
 
@@ -216,7 +217,7 @@ describe("Three orbit camera helpers", () => {
 		);
 
 		expect(look.targetYawOffsetDegrees).toBeCloseTo(25);
-		expect(look.targetPitchOffsetDegrees).toBeCloseTo(10);
+		expect(look.targetPitchOffsetDegrees).toBeCloseTo(-10);
 		expect(getThirdPersonMouseLookYawOffsetDegrees(look)).toBe(0);
 		expect(getThirdPersonMouseLookPitchDegrees(20, look)).toBe(20);
 	});
@@ -233,7 +234,7 @@ describe("Three orbit camera helpers", () => {
 				-89,
 				createThirdPersonMouseLookState(),
 			),
-		).toBe(-5);
+		).toBe(-82);
 		const high = updateThirdPersonMouseLookTarget(
 			createThirdPersonMouseLookState(),
 			0,
@@ -247,8 +248,111 @@ describe("Three orbit camera helpers", () => {
 			18,
 		);
 
-		expect(high.targetPitchOffsetDegrees).toBe(47);
-		expect(low.targetPitchOffsetDegrees).toBe(-23);
+		expect(high.targetPitchOffsetDegrees).toBe(-100);
+		expect(low.targetPitchOffsetDegrees).toBe(47);
+	});
+
+	it("looks 82 degrees into the sky outside the body and above foot height at any elevation", () => {
+		for (const foot of [0, 1, 1.65, 12]) {
+			for (let yaw = -1080; yaw <= 1080; yaw += 15) {
+				const rig = getThirdPersonCameraRig(
+					{ x: 4, y: foot + 0.625, z: 8 },
+					{
+						distance: 6,
+						height: 1.5,
+						lookAtHeight: 0.3,
+						pitchDegrees: -82,
+						yawDegrees: yaw,
+					},
+				);
+				const horizontal = Math.hypot(
+					rig.position.x - rig.lookAt.x,
+					rig.position.z - rig.lookAt.z,
+				);
+				expect(
+					(Math.atan2(rig.lookAt.y - rig.position.y, horizontal) * 180) /
+						Math.PI,
+				).toBeCloseTo(82);
+				expect(rig.position.y).toBeCloseTo(foot + 0.24);
+				expect(Math.hypot(rig.position.x - 4, rig.position.z - 8)).toBeCloseTo(
+					2.2,
+				);
+				const forward = resolveRuntimeCameraMovement(
+					{ x: 0, y: -1 },
+					rig,
+					"follow",
+					true,
+					true,
+				);
+				expect(forward.x).toBeCloseTo(-Math.sin((yaw * Math.PI) / 180));
+				expect(forward.y).toBeCloseTo(-Math.cos((yaw * Math.PI) / 180));
+			}
+		}
+	});
+
+	it("contracts and restores continuously with no vertical wrap or accumulating clamp debt", () => {
+		const options = {
+			distance: 6,
+			height: 1.5,
+			lookAtHeight: 0.3,
+			yawDegrees: 0,
+		};
+		let previous = getThirdPersonCameraRig(
+			{ x: 0, y: 0.625, z: 0 },
+			{ ...options, pitchDegrees: 18 },
+		);
+		for (let pitch = 17.9; pitch >= -82; pitch -= 0.1) {
+			const rig = getThirdPersonCameraRig(
+				{ x: 0, y: 0.625, z: 0 },
+				{ ...options, pitchDegrees: pitch },
+			);
+			expect(rig.position.y).toBeGreaterThanOrEqual(0.24 - 1e-9);
+			expect(
+				Math.hypot(
+					rig.position.y - previous.position.y,
+					rig.position.z - previous.position.z,
+				),
+			).toBeLessThan(0.035);
+			previous = rig;
+		}
+		let look = updateThirdPersonMouseLookTarget(
+			createThirdPersonMouseLookState(),
+			0,
+			-1e6,
+			18,
+		);
+		expect(look.targetPitchOffsetDegrees + 18).toBe(-82);
+		look = updateThirdPersonMouseLookTarget(look, 0, 10, 18);
+		expect(look.targetPitchOffsetDegrees + 18).toBeCloseTo(-80.2);
+	});
+
+	it("recovers the boom and target with identical 30/60/120 Hz response", () => {
+		const results = [30, 60, 120].map((fps) => {
+			let look = createThirdPersonMouseLookState({
+				currentPitchOffsetDegrees: -100,
+				targetPitchOffsetDegrees: 0,
+			});
+			for (let i = 0; i < fps / 2; i++)
+				look = advanceThirdPersonMouseLook(
+					look,
+					getFrameLerpAlpha(1000 / fps, 30),
+				);
+			return getThirdPersonCameraRig(
+				{ x: 0, y: 0.625, z: 0 },
+				{
+					distance: 6,
+					height: 1.5,
+					lookAtHeight: 0.3,
+					yawDegrees: 0,
+					pitchDegrees: getThirdPersonMouseLookPitchDegrees(18, look),
+				},
+			);
+		});
+		for (const rig of results) {
+			expect(rig.position.y).toBeCloseTo(results[0].position.y, 10);
+			expect(rig.position.z).toBeCloseTo(Math.cos((18 * Math.PI) / 180) * 6, 4);
+			expect(rig.lookAt).toEqual({ x: 0, y: 0.925, z: 0 });
+		}
 	});
 
 	it("smoothly advances third-person mouse look toward target offsets", () => {

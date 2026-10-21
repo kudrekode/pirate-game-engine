@@ -1725,7 +1725,9 @@ function readCameraFeel() {
 	);
 }
 
-it("steers a held W with visible camera orbit and keeps the same heading after repressing W", async () => {
+it.each([
+	0, -82,
+])("steers a held W at pitch %s with visible camera orbit and keeps the same heading after repressing W", async (pitch) => {
 	let now = 1000;
 	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const p = makeProject();
@@ -1736,7 +1738,11 @@ it("steers a held W with visible camera orbit and keeps the same heading after r
 	const canvas = screen.getByLabelText("Three runtime viewport");
 	fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 100 });
 	// Locked relative motion has no HUD hit testing or screen position.
-	relativeMouseMove(document, 90 / 0.22);
+	relativeMouseMove(
+		document,
+		90 / 0.22,
+		(pitch - p.camera.three.pitchDegrees) / 0.18,
+	);
 	for (let i = 0; i < 4; i++) {
 		now += 100;
 		await act(async () => {
@@ -2591,7 +2597,7 @@ it("requires actual lock success, ignores unlocked motion and safely handles den
 			act(() => runLatestAnimationFrame());
 		}
 		expect(readCameraFeel().yaw - initial).toBeCloseTo(sign * 1080, 2);
-		expect(readCameraFeel().pitch).toBeCloseTo(sign === 1 ? -5 : 65);
+		expect(readCameraFeel().pitch).toBeCloseTo(sign === 1 ? 65 : -82);
 	}
 	act(() => exitLock()); // browser-driven loss, rather than runtime Escape
 	const before = readCameraFeel().yaw;
