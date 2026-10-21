@@ -446,7 +446,44 @@ function makeBoatProject(areaPatch: Partial<GameArea> = {}): GameProject {
 	});
 }
 
+let lockedElement: Element | null = null;
+const requestLock = vi.fn(function (this: HTMLCanvasElement) {
+	lockedElement = this;
+	document.dispatchEvent(new Event("pointerlockchange"));
+});
+const exitLock = vi.fn(() => {
+	lockedElement = null;
+	document.dispatchEvent(new Event("pointerlockchange"));
+});
+function relativeMouseMove(
+	target: Document | Element | Window,
+	x: number,
+	y = 0,
+) {
+	const event = new MouseEvent("mousemove", { bubbles: true });
+	Object.defineProperties(event, {
+		movementX: { value: x },
+		movementY: { value: y },
+	});
+	fireEvent(target, event);
+}
+
 beforeEach(() => {
+	lockedElement = null;
+	requestLock.mockClear();
+	exitLock.mockClear();
+	Object.defineProperty(document, "pointerLockElement", {
+		configurable: true,
+		get: () => lockedElement,
+	});
+	Object.defineProperty(HTMLCanvasElement.prototype, "requestPointerLock", {
+		configurable: true,
+		value: requestLock,
+	});
+	Object.defineProperty(document, "exitPointerLock", {
+		configurable: true,
+		value: exitLock,
+	});
 	runtimeSpies.terrainPresentationSample.mockClear();
 	runtimeSpies.attemptPlayerMove.mockClear();
 	runtimeSpies.createRuntimeSession.mockClear();
@@ -460,6 +497,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	Reflect.deleteProperty(document, "pointerLockElement");
+	delete (document as Partial<Document>).exitPointerLock;
+	delete (HTMLCanvasElement.prototype as Partial<HTMLCanvasElement>)
+		.requestPointerLock;
 	clearThreeVisualAssetCacheForTests();
 	vi.restoreAllMocks();
 });
@@ -683,12 +724,18 @@ describe("ThreeRuntimePanel", () => {
 				lines: ["Harbour welcome", "Watch the tide"],
 			},
 		});
-		const saved = JSON.stringify(project);
+		project.camera.three.style = "thirdPerson";
+		const authored = JSON.stringify(project);
 		render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
 		await waitFor(() =>
 			expect(screen.getByText("E — Read sign")).toBeInTheDocument(),
 		);
+		fireEvent.pointerDown(screen.getByLabelText("Three runtime viewport"), {
+			button: 0,
+		});
+		expect(lockedElement).not.toBeNull();
 		fireEvent.keyDown(window, { key: "e" });
+		expect(lockedElement).toBeNull();
 		expect(screen.getByRole("dialog")).toHaveTextContent("Harbour welcome");
 		fireEvent.keyDown(window, { key: "ArrowRight" });
 		expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
@@ -702,7 +749,8 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByRole("dialog")).toHaveTextContent("Watch the tide");
 		fireEvent.keyDown(window, { key: "Escape" });
 		expect(screen.queryByRole("dialog")).toBeNull();
-		expect(JSON.stringify(project)).toBe(saved);
+		expect(lockedElement).toBeNull();
+		expect(JSON.stringify(project)).toBe(authored);
 	});
 
 	it("collects an authored prop through real interaction input without changing editor data", async () => {
@@ -802,10 +850,7 @@ describe("ThreeRuntimePanel", () => {
 		);
 		const canvas = screen.getByLabelText("Three runtime viewport");
 		fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 120 });
-		fireEvent.pointerMove(canvas, {
-			clientX: 90 / 0.22,
-			clientY: 120,
-		});
+		relativeMouseMove(document, 90 / 0.22);
 		now += 1000;
 		runLatestAnimationFrame();
 		fireEvent.keyDown(window, { key: "w" });
@@ -832,10 +877,7 @@ describe("ThreeRuntimePanel", () => {
 		);
 		const canvas = screen.getByLabelText("Three runtime viewport");
 		fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 120 });
-		fireEvent.pointerMove(canvas, {
-			clientX: 90 / 0.22,
-			clientY: 120,
-		});
+		relativeMouseMove(document, 90 / 0.22);
 		now += 1000;
 		runLatestAnimationFrame();
 		fireEvent.keyDown(window, { key: "w" });
@@ -1078,10 +1120,7 @@ describe("ThreeRuntimePanel", () => {
 			screen.getByRole("button", { name: "Recenter" }),
 		).toBeInTheDocument();
 		fireEvent.pointerDown(canvas, { button: 0, clientX: 120, clientY: 120 });
-		fireEvent.pointerMove(canvas, {
-			clientX: 180,
-			clientY: 80,
-		});
+		relativeMouseMove(document, 60, -40);
 		fireEvent.wheel(canvas, { deltaY: -220 });
 		fireEvent.keyDown(window, { key: "Escape" });
 		fireEvent.click(screen.getByRole("button", { name: "Recenter" }));
@@ -1694,8 +1733,8 @@ it("steers a held W with visible camera orbit and keeps the same heading after r
 	fireEvent.keyDown(window, { key: "w", code: "KeyW" });
 	const canvas = screen.getByLabelText("Three runtime viewport");
 	fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 100 });
-	// Click-to-look continues over HUD/page elements, until Escape releases it.
-	fireEvent.pointerMove(window, { clientX: 90 / 0.22, clientY: 100 });
+	// Locked relative motion has no HUD hit testing or screen position.
+	relativeMouseMove(document, 90 / 0.22);
 	for (let i = 0; i < 4; i++) {
 		now += 100;
 		await act(async () => {
@@ -2200,6 +2239,7 @@ it.each([
 it("equips and unequips through inventory, keeps combat modal gating and preserves the scene/controllers", () => {
 	const controllers = mockCombatActors(),
 		project = animatedCombatProject();
+	project.camera.three.style = "thirdPerson";
 	project.items = [{ ...SWORD_ITEM }];
 	project.gameState.inventory = { sword: 1 };
 	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
@@ -2212,8 +2252,13 @@ it("equips and unequips through inventory, keeps combat modal gating and preserv
 	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(player.triggerAttack).not.toHaveBeenCalled();
 	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.pointerDown(screen.getByLabelText("Three runtime viewport"), {
+		button: 0,
+	});
+	expect(lockedElement).not.toBeNull();
 	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(player.triggerAttack).toHaveBeenCalledWith("sword");
+	expect(lockedElement).not.toBeNull();
 	fireEvent.keyDown(window, { key: "i" });
 	fireEvent.click(screen.getByRole("button", { name: "Unequip" }));
 	expect(latestSession().equippedWeaponId).toBeUndefined();
@@ -2438,4 +2483,153 @@ it("hands held legacy grid movement into sprint without another movement keydown
 	expect(session.traversal!.position.x).toBeCloseTo(1.2);
 	expect(session.traversal!.motion.sprinting).toBe(true);
 	fireEvent.blur(window);
+});
+
+it("restores inventory pointer lock while Escape, focus loss, Inspect and teardown release it", () => {
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	const { unmount } = render(
+		<ThreeRuntimePanel project={p} onRestart={vi.fn()} />,
+	);
+	const canvas = screen.getByLabelText("Three runtime viewport");
+	const acquire = () => fireEvent.pointerDown(canvas, { button: 0 });
+	expect(requestLock).not.toHaveBeenCalled();
+	acquire();
+	expect(lockedElement).toBe(canvas);
+	expect(requestLock).toHaveBeenCalledTimes(1);
+	expect(runtimeSpies.attemptPlayerMove).not.toHaveBeenCalled();
+	fireEvent.keyDown(window, { key: "i" });
+	expect(screen.getByRole("dialog", { name: "Inventory" })).toBeInTheDocument();
+	expect(lockedElement).toBeNull();
+	acquire();
+	expect(requestLock).toHaveBeenCalledTimes(1);
+	fireEvent.keyDown(window, { key: "Escape" });
+	expect(lockedElement).toBe(canvas);
+	expect(requestLock).toHaveBeenCalledTimes(2);
+	fireEvent.keyDown(window, { key: "Escape" });
+	expect(lockedElement).toBeNull();
+	acquire();
+	fireEvent.blur(window);
+	expect(lockedElement).toBeNull();
+	acquire();
+	fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
+	expect(lockedElement).toBeNull();
+	const requests = requestLock.mock.calls.length;
+	acquire();
+	expect(requestLock).toHaveBeenCalledTimes(requests);
+	fireEvent.click(screen.getByRole("button", { name: "Follow Player" }));
+	expect(lockedElement).toBeNull();
+	acquire();
+	unmount();
+	expect(lockedElement).toBeNull();
+	act(() => document.dispatchEvent(new Event("pointerlockchange")));
+});
+
+it("requires actual lock success, ignores unlocked motion and safely handles denied requests", async () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const canvas = screen.getByLabelText("Three runtime viewport");
+	const yaw = readCameraFeel().yaw;
+	requestLock.mockImplementationOnce(() => {
+		throw new Error("Denied");
+	});
+	fireEvent.pointerDown(canvas, { button: 0 });
+	relativeMouseMove(document, 1000);
+	now += 1000;
+	act(() => runLatestAnimationFrame());
+	expect(readCameraFeel().yaw).toBeCloseTo(yaw);
+	fireEvent.pointerDown(canvas, { button: 0 });
+	for (const sign of [1, -1]) {
+		const initial = readCameraFeel().yaw;
+		for (let i = 0; i < 12; i++) {
+			relativeMouseMove(document, (sign * 90) / 0.22, sign * 1000);
+			now += 1000;
+			act(() => runLatestAnimationFrame());
+		}
+		for (let settle = 0; settle < 3; settle++) {
+			now += 1000;
+			act(() => runLatestAnimationFrame());
+		}
+		expect(readCameraFeel().yaw - initial).toBeCloseTo(sign * 1080, 2);
+		expect(readCameraFeel().pitch).toBeCloseTo(sign === 1 ? -5 : 65);
+	}
+	act(() => exitLock()); // browser-driven loss, rather than runtime Escape
+	const before = readCameraFeel().yaw;
+	relativeMouseMove(document, 1000);
+	now += 1000;
+	act(() => runLatestAnimationFrame());
+	expect(readCameraFeel().yaw).toBeCloseTo(before);
+	fireEvent.pointerDown(canvas, { button: 0 });
+	fireEvent(document, new Event("pointerlockerror"));
+	expect(lockedElement).toBeNull();
+});
+
+it("rejects a late lock grant after inventory closes, and cleans a pending grant after unmount", async () => {
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	let finishRequest!: () => void;
+	requestLock.mockImplementationOnce(function (this: HTMLCanvasElement) {
+		return new Promise<void>((resolve) => {
+			finishRequest = () => {
+				lockedElement = this;
+				document.dispatchEvent(new Event("pointerlockchange"));
+				resolve();
+			};
+		});
+	});
+	const { unmount } = render(
+		<ThreeRuntimePanel project={p} onRestart={vi.fn()} />,
+	);
+	const canvas = screen.getByLabelText("Three runtime viewport");
+	fireEvent.pointerDown(canvas, { button: 0 });
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.keyDown(window, { key: "Escape" });
+	await act(async () => finishRequest());
+	expect(lockedElement).toBeNull();
+	requestLock.mockImplementationOnce(function (this: HTMLCanvasElement) {
+		return new Promise<void>((resolve) => {
+			finishRequest = () => {
+				lockedElement = this;
+				resolve();
+			};
+		});
+	});
+	fireEvent.pointerDown(canvas, { button: 0 });
+	unmount();
+	await act(async () => finishRequest());
+	expect(lockedElement).toBeNull();
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	requestLock.mockClear();
+	fireEvent.pointerDown(screen.getByLabelText("Three runtime viewport"), {
+		button: 0,
+	});
+	expect(requestLock).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+	"i",
+	"button",
+])("restores locked mouse look when inventory closes with %s, but preserves an initially free cursor", (close) => {
+	const p = makeProject();
+	p.camera.three.style = "thirdPerson";
+	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	const canvas = screen.getByLabelText("Three runtime viewport");
+	const closeInventory = () =>
+		close === "button"
+			? fireEvent.click(screen.getByRole("button", { name: /Close/ }))
+			: fireEvent.keyDown(window, { key: close });
+	fireEvent.keyDown(window, { key: "i" });
+	closeInventory();
+	expect(requestLock).not.toHaveBeenCalled();
+	fireEvent.pointerDown(canvas, { button: 0 });
+	fireEvent.keyDown(window, { key: "i" });
+	closeInventory();
+	expect(lockedElement).toBe(canvas);
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.blur(window);
+	closeInventory();
+	expect(lockedElement).toBeNull();
 });

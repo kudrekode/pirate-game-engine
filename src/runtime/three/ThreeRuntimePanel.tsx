@@ -1,4 +1,10 @@
-import { type MutableRefObject, useEffect, useRef, useState } from "react";
+import {
+	type MutableRefObject,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import * as THREE from "three";
 import { SWORD } from "../../data/sword";
 import {
@@ -540,6 +546,10 @@ export function ThreeRuntimePanel({
 		createThirdPersonMouseLookState(),
 	);
 	const mouseLookActiveRef = useRef(false);
+	const pointerLockRequestedRef = useRef(false);
+	const requestMouseLookRef = useRef<(() => void) | null>(null);
+	const resumeInventoryMouseLookRef = useRef(false);
+	const pointerLockCanvasRef = useRef<HTMLCanvasElement | null>(null);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const gameOverRef = useRef(false);
 	const playerDefeatedRef = useRef(false);
@@ -596,11 +606,19 @@ export function ThreeRuntimePanel({
 				isRuntimeGameplayBlocked(current, gameplayBlocked(current)))
 		)
 			return;
-		inventoryOpenRef.current = !inventoryOpenRef.current;
+		const opening = !inventoryOpenRef.current;
+		if (opening)
+			resumeInventoryMouseLookRef.current = mouseLookActiveRef.current;
+		inventoryOpenRef.current = opening;
 		heldMovementKeys.current.clear();
 		heldSprintKeys.current.clear();
 		setMouseLookActive(false);
-		setIsInventoryOpen(inventoryOpenRef.current);
+		setIsInventoryOpen(opening);
+		if (!opening && resumeInventoryMouseLookRef.current) {
+			resumeInventoryMouseLookRef.current = false;
+			// Run inside the close click/keypress so browser user activation is retained.
+			requestMouseLookRef.current?.();
+		}
 	}
 
 	function closeDialogue() {
@@ -726,10 +744,18 @@ export function ThreeRuntimePanel({
 		setCameraModeState(mode);
 	}
 
-	function setMouseLookActive(active: boolean): void {
+	const setMouseLookActive = useCallback((active: boolean): void => {
+		if (!active) pointerLockRequestedRef.current = false;
+		if (
+			!active &&
+			pointerLockCanvasRef.current &&
+			document.pointerLockElement === pointerLockCanvasRef.current
+		) {
+			document.exitPointerLock();
+		}
 		mouseLookActiveRef.current = active;
 		setMouseLookActiveState(active);
-	}
+	}, []);
 
 	function resetCameraPresentation({
 		resetMode = false,
@@ -810,7 +836,8 @@ export function ThreeRuntimePanel({
 	function hasPointerBlockingOverlay(): boolean {
 		const session = getSession();
 		return Boolean(
-			pendingCutsceneRef.current ||
+			inventoryOpenRef.current ||
+				pendingCutsceneRef.current ||
 				sessionRef.current?.dialogue ||
 				gameOverRef.current ||
 				session?.activeShopId,
@@ -1679,18 +1706,16 @@ export function ThreeRuntimePanel({
 	useEffect(() => {
 		pendingCutsceneRef.current = pendingCutscene;
 		if (pendingCutscene) {
-			mouseLookActiveRef.current = false;
-			setMouseLookActiveState(false);
+			setMouseLookActive(false);
 		}
-	}, [pendingCutscene]);
+	}, [pendingCutscene, setMouseLookActive]);
 
 	useEffect(() => {
 		gameOverRef.current = gameOver;
 		if (gameOver) {
-			mouseLookActiveRef.current = false;
-			setMouseLookActiveState(false);
+			setMouseLookActive(false);
 		}
-	}, [gameOver]);
+	}, [gameOver, setMouseLookActive]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: session startup owns fresh runtime state; callbacks read sessionRef.
 	useEffect(() => {
@@ -2607,7 +2632,22 @@ export function ThreeRuntimePanel({
 			x: number;
 			y: number;
 		} | null = null;
-		let lastMouseLookPointer: { x: number; y: number } | null = null;
+		let inputDisposed = false;
+		pointerLockCanvasRef.current = renderer.domElement;
+		const handlePointerLockChange = () => {
+			setMouseLookActive(
+				document.pointerLockElement === renderer.domElement &&
+					pointerLockRequestedRef.current &&
+					canUseThirdPersonMouseLook(threeCameraConfig),
+			);
+		};
+		const handlePointerLockError = () => {
+			setMouseLookActive(false);
+		};
+		const handleFocusLoss = () => {
+			resumeInventoryMouseLookRef.current = false;
+			setMouseLookActive(false);
+		};
 		const updateInspectCamera = (
 			updater: (state: OrbitCameraState) => OrbitCameraState,
 		) => {
@@ -2655,12 +2695,36 @@ export function ThreeRuntimePanel({
 				return;
 			}
 			event.preventDefault();
-			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
-			setMouseLookActive(true);
-			renderer.domElement.focus();
+			requestMouseLook();
 		};
+		const requestMouseLook = () => {
+			if (inputDisposed || !canUseThirdPersonMouseLook(threeCameraConfig))
+				return;
+			renderer.domElement.focus();
+			if (document.pointerLockElement === renderer.domElement) return;
+			try {
+				pointerLockRequestedRef.current = true;
+				const request = renderer.domElement.requestPointerLock?.();
+				// Older implementations return void. State comes only from lockchange.
+				void Promise.resolve(request).then(
+					() => {
+						if (inputDisposed) {
+							if (document.pointerLockElement === renderer.domElement)
+								document.exitPointerLock();
+						} else if (document.pointerLockElement === renderer.domElement)
+							handlePointerLockChange();
+					},
+					() => {
+						if (!inputDisposed) handlePointerLockError();
+					},
+				);
+			} catch {
+				handlePointerLockError();
+			}
+		};
+		requestMouseLookRef.current = requestMouseLook;
 		const handlePointerMove = (event: PointerEvent) => {
-			if (!cameraDrag && !mouseLookActiveRef.current) return;
+			if (!cameraDrag) return;
 			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				event.preventDefault();
@@ -2681,32 +2745,20 @@ export function ThreeRuntimePanel({
 				}
 				return;
 			}
-
-			if (!mouseLookActiveRef.current) {
+		};
+		const handleMouseMove = (event: MouseEvent) => {
+			if (
+				document.pointerLockElement !== renderer.domElement ||
+				!mouseLookActiveRef.current
+			)
 				return;
-			}
 			if (!canUseThirdPersonMouseLook(threeCameraConfig)) {
 				setMouseLookActive(false);
-				lastMouseLookPointer = null;
 				return;
 			}
-
-			const movementEvent = event as PointerEvent & {
-				movementX?: number;
-				movementY?: number;
-			};
-			const rawMovementX = movementEvent.movementX ?? 0;
-			const rawMovementY = movementEvent.movementY ?? 0;
-			const hasRawMovementDelta = rawMovementX !== 0 || rawMovementY !== 0;
-			const fallbackDelta = lastMouseLookPointer
-				? {
-						x: event.clientX - lastMouseLookPointer.x,
-						y: event.clientY - lastMouseLookPointer.y,
-					}
-				: { x: 0, y: 0 };
-			const deltaX = hasRawMovementDelta ? rawMovementX : fallbackDelta.x;
-			const deltaY = hasRawMovementDelta ? rawMovementY : fallbackDelta.y;
-			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
+			diagnostics.recordPointerMove();
+			const deltaX = event.movementX;
+			const deltaY = event.movementY;
 			if (deltaX !== 0 || deltaY !== 0) {
 				event.preventDefault();
 				thirdPersonRuntimeLookRef.current = updateThirdPersonMouseLookTarget(
@@ -2740,6 +2792,10 @@ export function ThreeRuntimePanel({
 		};
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
 		window.addEventListener("pointermove", handlePointerMove);
+		document.addEventListener("mousemove", handleMouseMove);
+		document.addEventListener("pointerlockchange", handlePointerLockChange);
+		document.addEventListener("pointerlockerror", handlePointerLockError);
+		window.addEventListener("blur", handleFocusLoss);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
 		renderer.domElement.addEventListener("wheel", handleWheel, {
 			passive: false,
@@ -3127,6 +3183,20 @@ export function ThreeRuntimePanel({
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
 			window.removeEventListener("pointermove", handlePointerMove);
+			inputDisposed = true;
+			if (requestMouseLookRef.current === requestMouseLook)
+				requestMouseLookRef.current = null;
+			resumeInventoryMouseLookRef.current = false;
+			setMouseLookActive(false);
+			if (pointerLockCanvasRef.current === renderer.domElement)
+				pointerLockCanvasRef.current = null;
+			document.removeEventListener("mousemove", handleMouseMove);
+			document.removeEventListener(
+				"pointerlockchange",
+				handlePointerLockChange,
+			);
+			document.removeEventListener("pointerlockerror", handlePointerLockError);
+			window.removeEventListener("blur", handleFocusLoss);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			characterAnimationControllers.forEach((controller) => {

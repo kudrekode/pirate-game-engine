@@ -604,3 +604,162 @@ test("Walk Run Jump Fall Land collision combat and grounded Continue via real in
 		) + "\n",
 	);
 });
+
+// Uses real browser lock and mouse input; no injected lock or gameplay state.
+test("pointer lock relative rotations and UI lifecycle @pointer-lock", async ({
+	page,
+}) => {
+	test.setTimeout(180_000);
+	const errors: string[] = [];
+	page.on("pageerror", (e) => errors.push(e.message));
+	await page.goto("/");
+	await page.getByRole("button", { name: /Blank Project/ }).click();
+	await page
+		.locator('input[type="file"]')
+		.setInputFiles("melee-weapon-v1-demo.project.json");
+	await page.getByRole("button", { name: "3D View", exact: true }).click();
+	await page.getByRole("button", { name: "Play", exact: true }).click();
+	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
+	await expect
+		.poll(
+			async () =>
+				(await snapshot(page)).asset.character.animation.loadingSourceCount,
+			{ timeout: 30000 },
+		)
+		.toBe(0);
+	const locked = () =>
+		page.evaluate(
+			() => document.pointerLockElement?.getAttribute("aria-label") ?? null,
+		);
+	const acquire = async () => {
+		await canvas.click();
+		await expect.poll(locked).toBe("Three runtime viewport");
+	};
+	const release = async () => {
+		await page.keyboard.press("Escape");
+		await expect.poll(locked).toBeNull();
+	};
+	const camera = async () =>
+		JSON.parse(
+			(await page
+				.locator(".three-runtime-host")
+				.getAttribute("data-camera-feel"))!,
+		);
+	await expect.poll(locked).toBeNull();
+	await acquire();
+	const initial = await snapshot(page);
+	let mouseX = 400;
+	for (const sign of [1, -1]) {
+		const before = (await camera()).yaw;
+		for (let i = 0; i < 60; i++) {
+			mouseX += sign * 100;
+			await page.mouse.move(mouseX, 400);
+		}
+		await page.waitForTimeout(500);
+		expect(sign * ((await camera()).yaw - before)).toBeGreaterThan(1080);
+	}
+	for (const key of ["w", "s", "a", "d", "w+d", "Shift+w"]) {
+		const keys = key.split("+");
+		for (const held of keys) await page.keyboard.down(held);
+		mouseX += 20;
+		await page.mouse.move(mouseX, 400);
+		await page.waitForTimeout(150);
+		for (const held of keys.reverse()) await page.keyboard.up(held);
+	}
+	await page.keyboard.press("Space");
+	await expect
+		.poll(async () => (await position(page)).motion.phase)
+		.not.toBe("grounded");
+	await expect
+		.poll(async () => (await position(page)).motion.phase)
+		.toBe("grounded");
+	await page.keyboard.press("f");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await page.keyboard.press("i");
+	await expect(page.getByRole("dialog", { name: "Inventory" })).toBeVisible();
+	await expect.poll(locked).toBeNull();
+	await page
+		.getByRole("dialog", { name: "Inventory" })
+		.getByRole("button", { name: /Close/ })
+		.click();
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await release();
+	await acquire();
+	await release();
+	await page.getByRole("button", { name: "Inspect", exact: true }).click();
+	await canvas.click();
+	await expect.poll(locked).toBeNull();
+	await page
+		.getByRole("button", { name: "Follow Player", exact: true })
+		.click();
+	await acquire();
+	await release();
+	const route = async (x: number, y: number) => {
+		await page.getByRole("button", { name: "Inspect", exact: true }).click();
+		await go(page, x, y);
+	};
+	const followAndLock = async () => {
+		await page
+			.getByRole("button", { name: "Follow Player", exact: true })
+			.click();
+		await acquire();
+	};
+	await route(3, 9.2);
+	await route(5.2, 9.2);
+	await route(5.2, 8);
+	await followAndLock();
+	await page.keyboard.press("e");
+	await expect(page.locator(".inventory-notifications")).toContainText("Sword");
+	await state(page, "idle");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await page.keyboard.press("i");
+	await expect.poll(locked).toBeNull();
+	await page.getByRole("button", { name: "Equip", exact: true }).click();
+	await page.keyboard.press("Escape");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await page.keyboard.press("f");
+	await expect
+		.poll(
+			async () =>
+				JSON.parse(
+					(await page
+						.locator(".three-runtime-host")
+						.getAttribute("data-weapon"))!,
+				).activeClip,
+		)
+		.toBe("GoldenSword_Attack_V1");
+	await state(page, "idle");
+	mouseX += 100;
+	await page.mouse.move(mouseX, 400);
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await release();
+	await route(5.2, 9.2);
+	await route(9, 9.2);
+	await route(9, 8);
+	await followAndLock();
+	await page.keyboard.press("e");
+	await state(page, "idle");
+	await expect.poll(locked).toBe("Three runtime viewport");
+	await release();
+	await route(9, 9.2);
+	await route(14.2, 9.2);
+	await route(14.2, 8);
+	await followAndLock();
+	await page.keyboard.press("e");
+	await expect(
+		page.getByRole("dialog", { name: "Conversation" }),
+	).toBeVisible();
+	await expect.poll(locked).toBeNull();
+	await page.keyboard.press("e");
+	await expect(page.getByRole("dialog", { name: "Conversation" })).toBeHidden();
+	await expect.poll(locked).toBeNull();
+	await acquire();
+
+	const final = await snapshot(page);
+	expect(final.raf.loopStartCount).toBe(initial.raf.loopStartCount);
+	// Back to Edit is keyboard accessible while locked; teardown must release it.
+	await page.getByRole("button", { name: "Back to Edit", exact: true }).focus();
+	await page.keyboard.press("Enter");
+	await expect.poll(locked).toBeNull();
+	expect(errors).toEqual([]);
+});
