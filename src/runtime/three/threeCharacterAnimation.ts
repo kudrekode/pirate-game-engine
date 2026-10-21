@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BOW } from "../../data/bow";
 import { requestThreeVisualAssetAnimationClip } from "./threeVisualAssetLoader";
 import {
 	getThreeVisualAssetDefinition,
@@ -30,6 +31,8 @@ export type ThreeCharacterAnimationControllerStats = {
 	semanticState: CharacterAnimationSemanticState;
 	sourceAssetIds: string[];
 	activeClip?: string;
+	bowPhase?: "draw" | "hold" | "release";
+	clipTime?: number;
 };
 
 export type ThreeCharacterAnimationController = {
@@ -39,7 +42,8 @@ export type ThreeCharacterAnimationController = {
 	getDefeatPlayback: () => { duration: number; finished: boolean } | undefined;
 	refresh: () => void;
 	sync: (context: CharacterAnimationContext) => void;
-	triggerAttack: (variant?: "sword") => void;
+	syncBowDraw: (charge: number | undefined) => void;
+	triggerAttack: (variant?: "sword" | "bow") => void;
 	triggerHit: () => void;
 	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
@@ -174,12 +178,12 @@ export function createThreeCharacterAnimationController({
 	asset: ThreeVisualAssetDefinition;
 	root: THREE.Object3D;
 	attackVariants?: Partial<
-		Record<"sword", { assetId?: string; clipName: string }>
+		Record<"sword" | "bow", { assetId?: string; clipName: string }>
 	>;
 }): ThreeCharacterAnimationController {
 	const mixer = new THREE.AnimationMixer(root);
 	const actions = new Map<
-		CharacterAnimationSemanticState | "sword",
+		CharacterAnimationSemanticState | "sword" | "bow",
 		THREE.AnimationAction
 	>();
 	const loadingSourceIds = new Set<string>();
@@ -204,7 +208,8 @@ export function createThreeCharacterAnimationController({
 	let incompatibleClipCount = 0;
 	let oneShotActionsTriggered = 0;
 	let disposed = false;
-	let attackVariant: "sword" | undefined;
+	let attackVariant: "sword" | "bow" | undefined;
+	let bowDrawCharge: number | undefined;
 
 	const reportIssueOnce = (key: string, type: "missing" | "incompatible") => {
 		if (reportedIssueKeys.has(key)) {
@@ -293,7 +298,8 @@ export function createThreeCharacterAnimationController({
 		applySemanticState(
 			resolveCharacterAnimationState({
 				...currentContext,
-				attackRequested: oneShotState === "attack",
+				attackRequested:
+					oneShotState === "attack" || bowDrawCharge !== undefined,
 				hitRequested: oneShotState === "hit",
 				interactionRequested:
 					oneShotState === "interact" || oneShotState === "pickup"
@@ -340,19 +346,22 @@ export function createThreeCharacterAnimationController({
 			"hit",
 			"defeated",
 			"sword",
+			"bow",
 		] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
 			const mapping =
-				state === "sword"
-					? attackVariants?.sword
+				state === "sword" || state === "bow"
+					? attackVariants?.[state]
 					: getAnimationMapping(asset, state);
 			if (!mapping) {
 				continue;
 			}
 			const sourceAssetId =
-				state === "sword" ? mapping.assetId : getSourceAssetId(asset, state);
+				state === "sword" || state === "bow"
+					? mapping.assetId
+					: getSourceAssetId(asset, state);
 			const sourceAsset = getThreeVisualAssetDefinition(sourceAssetId);
 			if (sourceAssetId) {
 				sourceAssetIds.add(sourceAssetId);
@@ -440,6 +449,15 @@ export function createThreeCharacterAnimationController({
 			semanticState,
 			sourceAssetIds: Array.from(sourceAssetIds).sort(),
 			activeClip: activeAction?.getClip().name,
+			clipTime: activeAction?.time,
+			bowPhase:
+				bowDrawCharge !== undefined
+					? bowDrawCharge >= 1
+						? "hold"
+						: "draw"
+					: semanticState === "attack" && attackVariant === "bow"
+						? "release"
+						: undefined,
 		}),
 		refresh,
 		sync: (context) => {
@@ -451,9 +469,39 @@ export function createThreeCharacterAnimationController({
 			)
 				oneShotState = undefined;
 			if (context.defeated) {
+				bowDrawCharge = undefined;
 				oneShotState = "defeated";
 			}
+			if (context.airborne) bowDrawCharge = undefined;
 			syncResolvedState();
+		},
+		syncBowDraw: (charge) => {
+			if (disposed) return;
+			if (
+				currentContext.defeated ||
+				currentContext.airborne ||
+				oneShotState === "hit" ||
+				!actions.has("bow")
+			)
+				charge = undefined;
+			const starting = bowDrawCharge === undefined && charge !== undefined;
+			bowDrawCharge =
+				charge === undefined ? undefined : Math.max(0, Math.min(1, charge));
+			if (starting) {
+				oneShotState = undefined;
+				attackVariant = "bow";
+				applySemanticState("attack", true);
+			}
+			syncResolvedState();
+			if (
+				bowDrawCharge !== undefined &&
+				activeAction &&
+				activeAction === actions.get("bow")
+			) {
+				// Sample the cached action once per frame; never restart Draw or loop Hold.
+				activeAction.time = bowDrawCharge * BOW.drawPoseSeconds;
+				activeAction.paused = true;
+			}
 		},
 		triggerAttack: (variant) => {
 			// A missing/unloaded attack has no mixer finished event. Keep locomotion
@@ -468,12 +516,20 @@ export function createThreeCharacterAnimationController({
 				return;
 			}
 			oneShotState = "attack";
+			bowDrawCharge = undefined;
 			attackVariant = variant;
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
+			if (
+				variant === "bow" &&
+				activeAction &&
+				activeAction === actions.get("bow")
+			)
+				activeAction.time = BOW.drawPoseSeconds;
 		},
 		triggerHit: () => {
 			if (currentContext.defeated || disposed || !actions.has("hit")) return;
+			bowDrawCharge = undefined;
 			oneShotState = "hit";
 			oneShotActionsTriggered += 1;
 			applySemanticState("hit", true);
@@ -484,6 +540,7 @@ export function createThreeCharacterAnimationController({
 				currentContext.defeated ||
 				currentContext.airborne ||
 				oneShotState ||
+				bowDrawCharge !== undefined ||
 				!actions.has(state)
 			)
 				return false;

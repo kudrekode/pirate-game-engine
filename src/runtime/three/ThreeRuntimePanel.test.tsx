@@ -6,6 +6,7 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BOW_ITEM } from "../../data/bow";
 import { defaultProject } from "../../data/defaultProject";
 import { cloneProject } from "../../data/migrateProject";
 import { SWORD_ITEM } from "../../data/sword";
@@ -27,6 +28,7 @@ import { createRuntimeSession } from "../runtimeSession";
 import { createRuntimeTraversal, createTraversalWorld } from "../traversal";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import * as arrowPresentation from "./threeArrowPresentation";
 import * as characterAnimation from "./threeCharacterAnimation";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {
@@ -1723,7 +1725,9 @@ function readCameraFeel() {
 	);
 }
 
-it("steers a held W with visible camera orbit and keeps the same heading after repressing W", async () => {
+it.each([
+	0, -82,
+])("steers a held W at pitch %s with visible camera orbit and keeps the same heading after repressing W", async (pitch) => {
 	let now = 1000;
 	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const p = makeProject();
@@ -1734,7 +1738,11 @@ it("steers a held W with visible camera orbit and keeps the same heading after r
 	const canvas = screen.getByLabelText("Three runtime viewport");
 	fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 100 });
 	// Locked relative motion has no HUD hit testing or screen position.
-	relativeMouseMove(document, 90 / 0.22);
+	relativeMouseMove(
+		document,
+		90 / 0.22,
+		(pitch - p.camera.three.pitchDegrees) / 0.18,
+	);
 	for (let i = 0; i < 4; i++) {
 		now += 100;
 		await act(async () => {
@@ -2040,6 +2048,7 @@ function mockCombatActors(deathAvailable = true) {
 			dispose: vi.fn(),
 			refresh: vi.fn(),
 			triggerAttack: vi.fn(),
+			syncBowDraw: vi.fn(),
 			triggerHit: vi.fn(),
 			triggerInteraction: vi.fn(() => false),
 			sync: vi.fn((ctx: characterAnimation.CharacterAnimationContext) => {
@@ -2268,6 +2277,58 @@ it("equips and unequips through inventory, keeps combat modal gating and preserv
 	expect(player.dispose).not.toHaveBeenCalled();
 });
 
+it("fires Bow while locked, releases for Inventory and keeps the scene and player controller", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	vi.spyOn(arrowPresentation, "createThreeArrowPresentation").mockReturnValue({
+		sync: vi.fn(),
+		getStats: () => ({ pooled: 3, visible: 0 }),
+		dispose: vi.fn(),
+	});
+	const controllers = mockCombatActors(),
+		project = animatedCombatProject();
+	project.camera.three.style = "thirdPerson";
+	project.items = [{ ...BOW_ITEM }];
+	project.gameState.inventory = { bow: 1 };
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount,
+		player = controllers[1];
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.pointerDown(screen.getByLabelText("Three runtime viewport"), {
+		button: 0,
+	});
+	act(() => runLatestAnimationFrame());
+	expect(screen.getByLabelText("Bow aim reticle")).toBeInTheDocument();
+	// Modal cancellation clears the held gesture before any release/cooldown.
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	now += 600;
+	act(() => runLatestAnimationFrame());
+	expect(latestSession().bowDraw?.charge).toBe(0.5);
+	expect(player.syncBowDraw).toHaveBeenCalledWith(0.5);
+	fireEvent.keyDown(window, { key: "i" });
+	expect(latestSession().bowDraw).toBeUndefined();
+	fireEvent.keyUp(window, { key: "f", code: "KeyF" });
+	expect(latestSession().nextAttackAt).toBe(0);
+	expect(player.triggerAttack).not.toHaveBeenCalled();
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(latestSession().bowDraw).toBeDefined();
+	expect(player.triggerAttack).not.toHaveBeenCalled();
+	fireEvent.keyUp(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledWith("bow");
+	expect(lockedElement).not.toBeNull();
+	expect(latestSession().projectiles?.pending).toBeDefined();
+	fireEvent.keyDown(window, { key: "i" });
+	expect(lockedElement).toBeNull();
+	expect(screen.queryByLabelText("Bow aim reticle")).toBeNull();
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
+	expect(player.dispose).not.toHaveBeenCalled();
+});
+
 function animatedCombatProject() {
 	const p = makeProject();
 	p.player.threeVisual = { mode: "asset", assetId: "procedural-mannequin-v0" };
@@ -2368,13 +2429,25 @@ it.each([
 it.each([
 	5, 0, 100,
 ])("wires contact Attack and nonlethal Hit, with actual lethal defeat winning (damage=%s)", (damage) => {
+	vi.spyOn(arrowPresentation, "createThreeArrowPresentation").mockReturnValue({
+		sync: vi.fn(),
+		getStats: () => ({ pooled: 5, visible: 0 }),
+		dispose: vi.fn(),
+	});
 	let now = 1000;
 	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const intervals = vi.spyOn(window, "setInterval"),
 		controllers = mockCombatActors(),
 		p = animatedCombatProject();
 	p.areas[0].npcs[0].enemyBehaviour!.contactDamage = damage;
+	p.items = [{ ...BOW_ITEM }];
+	p.gameState.inventory = { bow: 1 };
 	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(latestSession().bowDraw).toBeDefined();
 	const tick = intervals.mock.calls.find((c) => c[1] === 50)![0] as () => void;
 	act(() => tick());
 	now += 2000;
@@ -2382,6 +2455,8 @@ it.each([
 	act(() => runLatestAnimationFrame());
 	const [npc, player] = controllers;
 	expect(npc.triggerAttack).toHaveBeenCalledTimes(damage > 0 ? 1 : 0);
+	if (damage > 0) expect(latestSession().bowDraw).toBeUndefined();
+	expect(latestSession().nextAttackAt).toBe(0);
 	expect(player.triggerHit).toHaveBeenCalledTimes(
 		damage > 0 && damage < 100 ? 1 : 0,
 	);
@@ -2554,7 +2629,7 @@ it("requires actual lock success, ignores unlocked motion and safely handles den
 			act(() => runLatestAnimationFrame());
 		}
 		expect(readCameraFeel().yaw - initial).toBeCloseTo(sign * 1080, 2);
-		expect(readCameraFeel().pitch).toBeCloseTo(sign === 1 ? -5 : 65);
+		expect(readCameraFeel().pitch).toBeCloseTo(sign === 1 ? 65 : -82);
 	}
 	act(() => exitLock()); // browser-driven loss, rather than runtime Escape
 	const before = readCameraFeel().yaw;

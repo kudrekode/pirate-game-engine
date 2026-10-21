@@ -354,7 +354,7 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 			project.items.some(
 				(item) =>
 					item.id === save.player.equippedWeaponId &&
-					item.weapon === "sword" &&
+					(item.weapon === "sword" || item.weapon === "bow") &&
 					(save.state.inventory[item.id] ?? 0) > 0,
 			),
 		);

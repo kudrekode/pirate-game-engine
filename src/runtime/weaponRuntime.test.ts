@@ -144,7 +144,7 @@ describe("one equipped sword through existing transactions", () => {
 		expect(
 			migrateProject({
 				...defaultProject,
-				items: [{ ...SWORD_ITEM, weapon: "bow" }],
+				items: [{ ...SWORD_ITEM, weapon: "unsupported" }],
 			}).items[0].weapon,
 		).toBeUndefined();
 	});

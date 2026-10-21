@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { afterEach, expect, it, vi } from "vitest";
+import { BOW } from "../../data/bow";
 import { SWORD } from "../../data/sword";
 import {
 	clearThreeVisualAssetCacheForTests,
@@ -11,6 +12,50 @@ import {
 } from "./threeWeaponAttachment";
 
 afterEach(() => clearThreeVisualAssetCacheForTests());
+it("switches one active hand attachment between Bow and Sword and reuses both cached clones", async () => {
+	const source = new THREE.Group();
+	source.add(
+		new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+	);
+	const loadAsync = vi.fn(async () => ({ scene: source, animations: [] }));
+	const restore = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync,
+	}));
+	const a = actor(),
+		left = new THREE.Bone();
+	left.name = "hand_l";
+	a.root.add(left);
+	const attachment = createThreeWeaponAttachment(a.root);
+	try {
+		attachment.sync(BOW);
+		await new Promise((r) => setTimeout(r, 0));
+		expect(attachment.getStats()).toMatchObject({
+			attached: true,
+			bone: "hand_l",
+		});
+		const bow = left.children[0];
+		expect(attachment.getProjectileSpawn()).toBeDefined();
+		attachment.sync(SWORD);
+		await new Promise((r) => setTimeout(r, 0));
+		expect(left.children).toHaveLength(0);
+		const sword = a.hand.children[0];
+		expect(attachment.getProjectileSpawn()).toBeUndefined();
+		const loads = loadAsync.mock.calls.length;
+		attachment.sync(BOW);
+		expect(left.children[0]).toBe(bow);
+		expect(a.hand.children).toHaveLength(0);
+		attachment.sync(SWORD);
+		expect(a.hand.children[0]).toBe(sword);
+		expect(left.children).toHaveLength(0);
+		expect(loadAsync).toHaveBeenCalledTimes(loads);
+		attachment.dispose();
+		expect(a.hand.children).toHaveLength(0);
+		expect(left.children).toHaveLength(0);
+	} finally {
+		attachment.dispose();
+		restore();
+	}
+});
 function actor() {
 	const root = new THREE.Group(),
 		hand = new THREE.Bone();

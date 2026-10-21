@@ -1,3 +1,4 @@
+import { BOW } from "../data/bow";
 import { SWORD } from "../data/sword";
 import { hasItem } from "./inventory";
 import { isPlayerAirborne } from "./playerLocomotion";
@@ -8,10 +9,13 @@ export function getEquippedWeapon(session: RuntimeSessionState) {
 	const item = session.project.items.find(
 		(item) => item.id === session.equippedWeaponId,
 	);
-	return item?.weapon === "sword" &&
-		hasItem(session.runtimeState.inventory, item.id)
+	if (!item || !hasItem(session.runtimeState.inventory, item.id))
+		return undefined;
+	return item.weapon === "sword"
 		? SWORD
-		: undefined;
+		: item.weapon === "bow"
+			? BOW
+			: undefined;
 }
 
 /** The inventory menu may call this while open; other modal/airborne gates remain. */
@@ -21,6 +25,7 @@ export function equipRuntimeWeapon(
 ): boolean {
 	if (
 		isRuntimeGameplayBlocked(session, false) ||
+		session.projectiles?.pending ||
 		isPlayerAirborne(session) ||
 		session.runtimePlayerHealth <= 0
 	)
@@ -28,11 +33,12 @@ export function equipRuntimeWeapon(
 	if (itemId !== undefined) {
 		const item = session.project.items.find((item) => item.id === itemId);
 		if (
-			item?.weapon !== "sword" ||
+			(item?.weapon !== "sword" && item?.weapon !== "bow") ||
 			!hasItem(session.runtimeState.inventory, itemId)
 		)
 			return false;
 	}
+	if (session.equippedWeaponId !== itemId) session.bowDraw = undefined;
 	session.equippedWeaponId = itemId;
 	// An equip change never resets the accepted attack's cooldown.
 	return true;
@@ -44,7 +50,10 @@ export function getRuntimeAttackStats(session: RuntimeSessionState) {
 		? {
 				...session.playerCombat,
 				attackDamage: weapon.attackDamage,
-				attackRangeTiles: weapon.attackRangeTiles,
+				attackRangeTiles:
+					weapon.id === "sword"
+						? weapon.attackRangeTiles
+						: session.playerCombat.attackRangeTiles,
 				attackCooldownMs: weapon.attackCooldownMs,
 			}
 		: session.playerCombat;

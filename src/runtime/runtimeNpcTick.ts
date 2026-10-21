@@ -89,6 +89,7 @@ function applyEnemyContact(
 	if (damage > 0) {
 		const result = damagePlayer(session.runtimePlayerHealth, damage);
 		session.runtimePlayerHealth = result.health;
+		session.bowDraw = undefined;
 		emit({
 			type: "playerDamaged",
 			npcId: npc.id,

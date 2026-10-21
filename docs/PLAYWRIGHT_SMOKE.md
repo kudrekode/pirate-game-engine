@@ -25,6 +25,22 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The charged archery acceptance route is one opt-in case in the existing ranged suite:
+`node node_modules/@playwright/test/cli.js test e2e/ranged-combat-v1.spec.ts --grep @archery-v2`.
+Inspect `--list` first. It imports `archery-v2-demo.project.json`, uses real
+E/Inventory/F holds/releases and pointer-lock mouse input, tests quick/partial/full
+draw, prolonged Hold, weak-shot drop, compensated long-range and elevated hits,
+wall/corner obstruction, draw cancellation, walking/sprint suppression, airborne
+rejection, Sword/unarmed switching and Continue. The old `@ranged-combat-v1` tag
+aliases this current route. `--grep @camera-v4-bow` selects the separate sky-aim regression.
+Only diagnostics are read; projectile positions and health are never injected.
+The selected Golden review is `node tools/blender-character/review-golden-bow.mjs --list`,
+then `--body athletic --charged`, `--body broad --charged` or `--body fuller --charged`;
+it reuses installed dressed characters and the production controller, checks an
+unchanged five-second Hold and captures Draw/Hold/Release from four views. Omitting
+`--charged` retains the original source-clip review. Run browser/art review separately
+from CI. Current compact evidence is under `docs/assets/archery-v2/`.
+
 The one-sword acceptance route is one opt-in case:
 `node node_modules/@playwright/test/cli.js test e2e/melee-weapon-v1.spec.ts --grep '@melee-weapon-v1'`.
 Inspect `--list` first. It imports `melee-weapon-v1-demo.project.json`, uses real

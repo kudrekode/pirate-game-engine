@@ -1,6 +1,7 @@
 import { PROCEDURAL_MANNEQUIN_V0_ASSET } from "@adventure-game-builder/three-asset-preview";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BOW } from "../../data/bow";
 import {
 	clearThreeCharacterAnimationClipCacheForTests,
 	createThreeCharacterAnimationController,
@@ -26,8 +27,11 @@ function createRenderedCharacter(): THREE.Group {
 }
 
 it("prepares a sword variant once, keeps Attack priority and independent controllers, then restores unarmed/locomotion", async () => {
-	const clips = ["Idle", "Fist", "Sword", "Hit"].map(createRootMotionClip);
+	const clips = ["Idle", "Fist", "Sword", "Hit", "Bow"].map(
+		createRootMotionClip,
+	);
 	const prepareSword = vi.spyOn(clips[2], "clone");
+	const prepareBow = vi.spyOn(clips[4], "clone");
 	const asset: ThreeVisualAssetDefinition = {
 		id: "weapon-actor",
 		name: "Actor",
@@ -54,7 +58,10 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 	}));
 	const options = {
 		asset,
-		attackVariants: { sword: { assetId: swordSource.id, clipName: "Sword" } },
+		attackVariants: {
+			sword: { assetId: swordSource.id, clipName: "Sword" },
+			bow: { assetId: swordSource.id, clipName: "Bow" },
+		},
 	};
 	const one = createThreeCharacterAnimationController({
 			...options,
@@ -66,6 +73,45 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 		});
 	try {
 		await flushAssetPromises();
+		one.syncBowDraw(0.5);
+		one.update(0.6);
+		expect(one.getStats()).toMatchObject({
+			semanticState: "attack",
+			bowPhase: "draw",
+			clipTime: BOW.drawPoseSeconds / 2,
+		});
+		one.syncBowDraw(1);
+		for (let frame = 0; frame < 300; frame++) {
+			one.sync({ defeated: false, moving: true, sprinting: true });
+			one.syncBowDraw(1);
+			one.update(1 / 60);
+		}
+		expect(one.getStats()).toMatchObject({
+			bowPhase: "hold",
+			clipTime: BOW.drawPoseSeconds,
+			oneShotActionsTriggered: 0,
+		});
+		one.triggerAttack("bow");
+		one.syncBowDraw(undefined);
+		one.update(BOW.releaseDelayMs / 1000);
+		expect(one.getStats()).toMatchObject({
+			bowPhase: "release",
+			clipTime: BOW.releasePoseSeconds,
+		});
+		one.update(1);
+		expect(one.getStats().semanticState).toBe("run");
+		one.syncBowDraw(0.4);
+		one.triggerHit();
+		one.syncBowDraw(1);
+		expect(one.getStats()).toMatchObject({
+			semanticState: "hit",
+			bowPhase: undefined,
+		});
+		one.update(1.1);
+		one.syncBowDraw(0.8);
+		one.syncBowDraw(undefined);
+		expect(one.getStats().semanticState).toBe("run");
+		one.sync({ defeated: false, moving: false });
 		for (let i = 0; i < 3; i++) {
 			one.triggerAttack("sword");
 			expect(one.getStats()).toMatchObject({
@@ -75,6 +121,12 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 			one.update(1.1);
 		}
 		expect(prepareSword).toHaveBeenCalledTimes(1);
+		for (let i = 0; i < 3; i++) {
+			one.triggerAttack("bow");
+			expect(one.getStats().activeClip).toBe("Bow");
+			one.update(1.1);
+		}
+		expect(prepareBow).toHaveBeenCalledTimes(1);
 		expect(loadAsync).toHaveBeenCalledTimes(2);
 		expect(two.getStats()).toMatchObject({
 			semanticState: "idle",

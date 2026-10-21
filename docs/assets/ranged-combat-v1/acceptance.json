@@ -1,0 +1,851 @@
+{
+	"before": {
+		"asset": {
+			"activeImportedAssetInstances": 10,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"weapon-sword-v1",
+				"world-animated-chest",
+				"world-crate",
+				"world-wall"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 5,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 5,
+					"activeMixers": 5,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 1,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-bow-actions-v1",
+						"golden-combat-actions-v3",
+						"golden-interaction-actions-v1",
+						"golden-movement-actions-v1",
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1",
+						"golden-sword-actions-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 50
+			},
+			"activeCloneInstances": 10,
+			"cacheHitCount": 11,
+			"cloneCount": 26,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: weapon-bow-v1",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 8,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 10,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 0
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 6.3,
+			"averageFrameIntervalMs": 6.3,
+			"frameCount": 543,
+			"fps": 240,
+			"lastFrameMs": 5.3,
+			"lastFrameIntervalMs": 5.3,
+			"lastRenderMs": 2.1,
+			"worstFrameMs": 264.2,
+			"worstFrameIntervalMs": 264.2
+		},
+		"hitches": {
+			"lastDurationMs": 53.4,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 0,
+			"over100MsCount": 9,
+			"over500MsCount": 4,
+			"over50MsCount": 13,
+			"recent": [
+				{
+					"detail": "initial runtime build",
+					"durationMs": 739,
+					"phase": "scene rebuild",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "renderer.render",
+					"durationMs": 262.7,
+					"phase": "render",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "RAF callback synchronous work",
+					"durationMs": 263.3,
+					"phase": "frame_callback",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 264.2,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 85.5,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 85.4,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 51.8,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 53.4,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.3,
+				"count": 543,
+				"lastMs": 0.2,
+				"worstMs": 3.3
+			},
+			"cameraUpdate": {
+				"averageMs": 0.1,
+				"count": 543,
+				"lastMs": 0,
+				"worstMs": 0.7
+			},
+			"frameCallback": {
+				"averageMs": 3.6,
+				"count": 543,
+				"lastMs": 2.5,
+				"worstMs": 263.3
+			},
+			"render": {
+				"averageMs": 3,
+				"count": 543,
+				"lastMs": 2.1,
+				"worstMs": 262.7
+			},
+			"runtimeTick": {
+				"averageMs": 0,
+				"count": 53,
+				"lastMs": 0,
+				"worstMs": 0.7
+			},
+			"visualUpdate": {
+				"averageMs": 0.5,
+				"count": 543,
+				"lastMs": 0.4,
+				"worstMs": 3.8
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build",
+			"clone: weapon-arrow-v1",
+			"clone: weapon-arrow-v1",
+			"clone: weapon-arrow-v1",
+			"clone: weapon-bow-v1"
+		],
+		"renderer": {
+			"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1280,
+			"height": 729,
+			"pixelRatio": 1,
+			"drawCalls": 28,
+			"geometries": 20,
+			"lines": 0,
+			"points": 0,
+			"programs": 13,
+			"textures": 62,
+			"triangles": 119720
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"reactCommitCount": 10,
+			"averageTickMs": 0,
+			"lastTickMs": 0,
+			"tickCount": 53,
+			"worstTickMs": 0.7
+		},
+		"scene": {
+			"areaId": "parity_courtyard",
+			"areaName": "Arrow Practice Yard",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 10,
+			"lastBuildMs": 739,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Ranged Combat V1",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 3428.2
+		},
+		"terrain": {
+			"coastlineEdgeCount": 0,
+			"lastDurationMs": 718.2,
+			"meshCount": 1,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 1152,
+			"triangleCount": 2304,
+			"vertexCount": 1225,
+			"waterMeshCount": 0
+		}
+	},
+	"after": {
+		"asset": {
+			"activeImportedAssetInstances": 7,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"world-animated-chest",
+				"world-crate",
+				"world-wall"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 3,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 3,
+					"activeMixers": 3,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 16,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-bow-actions-v1",
+						"golden-combat-actions-v3",
+						"golden-interaction-actions-v1",
+						"golden-movement-actions-v1",
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1",
+						"golden-sword-actions-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 30
+			},
+			"activeCloneInstances": 7,
+			"cacheHitCount": 11,
+			"cloneCount": 27,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: weapon-sword-v1",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 8,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 7,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 0
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 4.4,
+			"averageFrameIntervalMs": 4.4,
+			"frameCount": 15458,
+			"fps": 236.5,
+			"lastFrameMs": 4.9,
+			"lastFrameIntervalMs": 4.9,
+			"lastRenderMs": 1.5,
+			"worstFrameMs": 264.2,
+			"worstFrameIntervalMs": 264.2
+		},
+		"hitches": {
+			"lastDurationMs": 53.4,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 0,
+			"over100MsCount": 9,
+			"over500MsCount": 4,
+			"over50MsCount": 13,
+			"recent": [
+				{
+					"detail": "initial runtime build",
+					"durationMs": 739,
+					"phase": "scene rebuild",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "renderer.render",
+					"durationMs": 262.7,
+					"phase": "render",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "RAF callback synchronous work",
+					"durationMs": 263.3,
+					"phase": "frame_callback",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 264.2,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 85.5,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 85.4,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 51.8,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 53.4,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.2,
+				"count": 15458,
+				"lastMs": 0.2,
+				"worstMs": 12.5
+			},
+			"cameraUpdate": {
+				"averageMs": 0,
+				"count": 15458,
+				"lastMs": 0,
+				"worstMs": 2.9
+			},
+			"frameCallback": {
+				"averageMs": 1.8,
+				"count": 15458,
+				"lastMs": 1.9,
+				"worstMs": 263.3
+			},
+			"render": {
+				"averageMs": 1.4,
+				"count": 15458,
+				"lastMs": 1.5,
+				"worstMs": 262.7
+			},
+			"runtimeTick": {
+				"averageMs": 0,
+				"count": 1323,
+				"lastMs": 0,
+				"worstMs": 0.7
+			},
+			"visualUpdate": {
+				"averageMs": 0.3,
+				"count": 15458,
+				"lastMs": 0.3,
+				"worstMs": 12.7
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 0,
+				"lastMs": 0,
+				"worstMs": 0
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 44,
+			"pointerMovesPerSecond": 3.9
+		},
+		"recentEvents": [
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build",
+			"clone: weapon-arrow-v1",
+			"clone: weapon-arrow-v1",
+			"clone: weapon-arrow-v1",
+			"clone: weapon-bow-v1",
+			"clone: weapon-sword-v1"
+		],
+		"renderer": {
+			"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1280,
+			"height": 729,
+			"pixelRatio": 1,
+			"drawCalls": 41,
+			"geometries": 21,
+			"lines": 0,
+			"points": 0,
+			"programs": 14,
+			"textures": 45,
+			"triangles": 168720
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"reactCommitCount": 264,
+			"averageTickMs": 0,
+			"lastTickMs": 0,
+			"tickCount": 1323,
+			"worstTickMs": 0.7
+		},
+		"scene": {
+			"areaId": "parity_courtyard",
+			"areaName": "Arrow Practice Yard",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 7,
+			"lastBuildMs": 739,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Ranged Combat V1",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 67595.4
+		},
+		"terrain": {
+			"coastlineEdgeCount": 0,
+			"lastDurationMs": 718.2,
+			"meshCount": 1,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 1152,
+			"triangleCount": 2304,
+			"vertexCount": 1225,
+			"waterMeshCount": 0
+		}
+	},
+	"requests": [
+		"http://127.0.0.1:5173/assets/pirate-demo/structure-platform-dock.glb",
+		"http://127.0.0.1:5173/assets/pirate-character/Meshy_AI_Captain_Patchbeard_biped_Animation_Walking_withSkin.glb",
+		"http://127.0.0.1:5173/assets/weapons/bow-v1.glb",
+		"http://127.0.0.1:5173/assets/pirate-demo/crate.glb",
+		"http://127.0.0.1:5173/assets/pirate-demo/chest.glb",
+		"http://127.0.0.1:5173/assets/pirate-demo/rocks-a.glb",
+		"http://127.0.0.1:5173/assets/pirate-demo/palm-straight.glb",
+		"http://127.0.0.1:5173/assets/weapons/sword-v1.glb",
+		"http://127.0.0.1:5173/assets/pirate-demo/ship-pirate-small.glb",
+		"http://127.0.0.1:5173/assets/pirate-demo/flag-pirate.glb",
+		"http://127.0.0.1:5173/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.glb",
+		"http://127.0.0.1:5173/assets/world-kit/wall.glb",
+		"http://127.0.0.1:5173/assets/world-kit/crate.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-movement-v1/actions.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-interaction-v1/actions.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-sword-v1/actions.glb",
+		"http://127.0.0.1:5173/assets/derived/humanoid-animations/golden-bow-v1/actions.glb",
+		"http://127.0.0.1:5173/assets/weapons/arrow-v1.glb"
+	],
+	"savedEquipment": "bow",
+	"savedInventory": {
+		"bow": 1,
+		"sword": 1,
+		"harbour_key": 1
+	},
+	"errors": [],
+	"sampleCount": 2418,
+	"peakArrows": 1,
+	"clips": [
+		"GoldenReference_Idle",
+		"GoldenBow_Fire_V1",
+		"GoldenMovement_Run_V1",
+		"GoldenMovement_Jump_V1",
+		"GoldenMovement_Fall_V1",
+		"GoldenMovement_Land_V1",
+		"GoldenReference_Walk_InPlace",
+		"GoldenInteraction_Pickup_V1",
+		"GoldenSword_Attack_V1",
+		"GoldenCombat_Attack_V1",
+		"GoldenInteraction_Interact_V1"
+	],
+	"npcStates": ["idle", "hit"],
+	"defeated": ["close-target", "medium-target"],
+	"arrowTracks": {
+		"1": [
+			{
+				"x": 5.791466949522374,
+				"y": 2.454718999158046,
+				"z": 11.805966871319434
+			},
+			{
+				"x": 6.874694933923843,
+				"y": 2.4030687656674776,
+				"z": 11.870884880493701
+			},
+			{
+				"x": 7.6843240972741285,
+				"y": 2.3644642097198934,
+				"z": 11.919406072902857
+			},
+			{
+				"x": 8.502328734644836,
+				"y": 2.3254602963009567,
+				"z": 11.968429208676778
+			},
+			{
+				"x": 9.317541547480742,
+				"y": 2.286589502032525,
+				"z": 12.01728503000409
+			}
+		],
+		"2": [
+			{
+				"x": 6.338664562692951,
+				"y": 2.4286276450160167,
+				"z": 11.83876040869085
+			},
+			{
+				"x": 7.081289932269561,
+				"y": 2.3932179501005595,
+				"z": 11.883266075072832
+			},
+			{
+				"x": 7.779246106449073,
+				"y": 2.3599381616573685,
+				"z": 11.925094708876422
+			},
+			{
+				"x": 8.477202280628585,
+				"y": 2.3266583732141775,
+				"z": 11.966923342680012
+			},
+			{
+				"x": 9.292415091737446,
+				"y": 2.2877875803284,
+				"z": 12.015779186942662
+			}
+		],
+		"3": [
+			{
+				"x": 6.036522896957796,
+				"y": 2.4512771325841256,
+				"z": 11.853833295415617
+			},
+			{
+				"x": 6.786788320282013,
+				"y": 2.4397216429871738,
+				"z": 11.862105241926015
+			},
+			{
+				"x": 7.486662782416014,
+				"y": 2.4289422683619524,
+				"z": 11.869821609940303
+			},
+			{
+				"x": 8.30411615427196,
+				"y": 2.4163519587984092,
+				"z": 11.87883432778191
+			},
+			{
+				"x": 8.998391620625455,
+				"y": 2.4056588191714754,
+				"z": 11.88648896485116
+			},
+			{
+				"x": 9.76265453319235,
+				"y": 2.3938877420820193,
+				"z": 11.894915238721842
+			},
+			{
+				"x": 10.594105394290976,
+				"y": 2.3810818450259714,
+				"z": 11.904082283923735
+			},
+			{
+				"x": 19.381729140595198,
+				"y": 2.24573601723555,
+				"z": 12.000969000708364
+			}
+		],
+		"4": [
+			{
+				"x": 6.596421089113356,
+				"y": 2.4426536341747584,
+				"z": 11.859999471266612
+			},
+			{
+				"x": 7.2962955471936946,
+				"y": 2.4318742606778683,
+				"z": 11.867716208515445
+			},
+			{
+				"x": 8.11654841198042,
+				"y": 2.4192408349407977,
+				"z": 11.876760224570155
+			},
+			{
+				"x": 8.934001779101687,
+				"y": 2.406650526695145,
+				"z": 11.885773373677706
+			},
+			{
+				"x": 9.726259665565196,
+				"y": 2.3944482758979495,
+				"z": 11.894508720242461
+			},
+			{
+				"x": 10.445730608555216,
+				"y": 2.383367079941861,
+				"z": 11.902441526135178
+			},
+			{
+				"x": 11.176399542624225,
+				"y": 2.3721134140136777,
+				"z": 11.910497799821119
+			},
+			{
+				"x": 18.967402009891103,
+				"y": 2.2521174282475775,
+				"z": 11.996400518874177
+			}
+		],
+		"5": [
+			{
+				"x": 6.005147466383578,
+				"y": 2.453307426935765,
+				"z": 11.864423729577258
+			},
+			{
+				"x": 6.707916036785745,
+				"y": 2.4476164750167797,
+				"z": 11.867857368030382
+			},
+			{
+				"x": 7.519879723415359,
+				"y": 2.4410412716067484,
+				"z": 11.871824520026601
+			},
+			{
+				"x": 8.337443159274166,
+				"y": 2.4344207219690057,
+				"z": 11.875819031690135
+			},
+			{
+				"x": 9.152206720935592,
+				"y": 2.42782284544174,
+				"z": 11.87979986352205
+			},
+			{
+				"x": 9.87177453985976,
+				"y": 2.421995854832864,
+				"z": 11.883315580981177
+			},
+			{
+				"x": 10.60254185765953,
+				"y": 2.416078171765187,
+				"z": 11.886886017776963
+			},
+			{
+				"x": 34.58906911069442,
+				"y": 2.221837593786096,
+				"z": 12.004081159679519
+			}
+		],
+		"6": [
+			{
+				"x": 5.137121915218097,
+				"y": 2.454193762346406,
+				"z": 12.87908103179356
+			},
+			{
+				"x": 5.13844362296127,
+				"y": 2.445078152398564,
+				"z": 13.814235670907367
+			},
+			{
+				"x": 5.139583299098773,
+				"y": 2.437217985739167,
+				"z": 14.620596557101514
+			},
+			{
+				"x": 5.140572601301569,
+				"y": 2.43039492440218,
+				"z": 15.320562604217477
+			},
+			{
+				"x": 5.141565860712941,
+				"y": 2.423544570821471,
+				"z": 16.023328515355015
+			},
+			{
+				"x": 5.142642221509701,
+				"y": 2.4161210800860156,
+				"z": 16.78489157470062
+			},
+			{
+				"x": 5.143829384153055,
+				"y": 2.407933406481631,
+				"z": 17.624850831239765
+			},
+			{
+				"x": 5.203887942280511,
+				"y": 1.993718998834982,
+				"z": 60.118389619639096
+			}
+		],
+		"7": [
+			{
+				"x": 13.272583144916268,
+				"y": 2.45444516077142,
+				"z": 7.984168299360406
+			}
+		],
+		"9": [
+			{
+				"x": 6.160541730464032,
+				"y": 2.45104875191922,
+				"z": 17.16150075375788
+			},
+			{
+				"x": 6.162525292627826,
+				"y": 2.442297641755777,
+				"z": 17.970651001747804
+			},
+			{
+				"x": 6.164241176852207,
+				"y": 2.4347274772560903,
+				"z": 18.670607963532436
+			},
+			{
+				"x": 6.166272783773465,
+				"y": 2.425764402490266,
+				"z": 19.499357006118558
+			},
+			{
+				"x": 6.168276936547746,
+				"y": 2.4169224503537294,
+				"z": 20.31690673756645
+			},
+			{
+				"x": 6.17024677163754,
+				"y": 2.408231901507187,
+				"z": 21.12045732977865
+			},
+			{
+				"x": 6.172189152579334,
+				"y": 2.3996624752944444,
+				"z": 21.91280861043541
+			},
+			{
+				"x": 6.182553093294593,
+				"y": 2.3539386817163384,
+				"z": 26.140548659614602
+			}
+		]
+	}
+}

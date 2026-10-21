@@ -1,8 +1,12 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { BOW } from "/src/data/bow.ts";
 import { SWORD } from "/src/data/sword.ts";
+import { createThreeCharacterAnimationController } from "/src/runtime/three/threeCharacterAnimation.ts";
+import { getThreeVisualAssetDefinition } from "/src/runtime/three/threeVisualAssetRegistry.ts";
 import { createThreeWeaponAttachment } from "/src/runtime/three/threeWeaponAttachment.ts";
+
 const p = new URLSearchParams(location.search);
 const asset =
 	p.get("asset") || "/assets/derived/authored-humans/everyday-v1/mannequin.glb";
@@ -26,15 +30,31 @@ light.position.set(3, 5, 4);
 scene.add(light);
 const actor = clone(model.scene);
 scene.add(actor);
-const weaponAttachment = p.has("sword")
-	? createThreeWeaponAttachment(actor)
-	: undefined;
-weaponAttachment?.sync(SWORD);
+const weaponAttachment =
+	p.has("sword") || p.has("bow")
+		? createThreeWeaponAttachment(actor)
+		: undefined;
+weaponAttachment?.sync(p.has("bow") ? BOW : SWORD);
 const mixer = new THREE.AnimationMixer(actor);
 const action = mixer.clipAction(clip);
 action.setLoop(THREE.LoopOnce, 1);
 action.clampWhenFinished = true;
 action.play();
+const charged = p.has("charged");
+const controller = charged
+	? createThreeCharacterAnimationController({
+			root: actor,
+			asset: getThreeVisualAssetDefinition("procedural-mannequin-v0"),
+			attackVariants: { bow: BOW.attackAnimation },
+		})
+	: undefined;
+if (controller) {
+	mixer.stopAllAction();
+	while (controller.getStats().loadingSourceCount)
+		await new Promise((resolve) => setTimeout(resolve, 20));
+}
+let previousTime = 0;
+const releaseAt = 6.2;
 const floor = new THREE.Mesh(
 	new THREE.PlaneGeometry(50, 50),
 	new THREE.MeshStandardMaterial({ color: 0x849493 }),
@@ -49,13 +69,13 @@ const cameras = [
 	[-2.8, 1.9, -3.6],
 ].map((v, i) => {
 	const c = new THREE.PerspectiveCamera(
-		i === 0 ? 55 : 38,
+		i === 0 ? 55 : p.has("bow") ? 42 : 38,
 		640 / 380,
 		0.01,
 		100,
 	);
 	c.position.set(...v);
-	c.lookAt(0, i === 0 ? 0.05 : 0.8, 0);
+	c.lookAt(0, i === 0 ? 0.05 : p.has("bow") ? 1.0 : 0.8, 0);
 	return c;
 });
 const renderer = new THREE.WebGLRenderer({
@@ -87,9 +107,22 @@ for (let i = 0; i < 4; i++) {
 	document.body.append(d);
 }
 window.sample = (t) => {
-	action.reset().play();
-	mixer.setTime(Math.min(t, clip.duration));
-	weaponAttachment?.sync(SWORD);
+	if (controller) {
+		controller.sync({ defeated: false, moving: false });
+		if (t <= releaseAt) {
+			controller.syncBowDraw(Math.min(1, t / (BOW.fullDrawMs / 1000)));
+			controller.update(Math.max(0, t - previousTime));
+		} else {
+			if (previousTime <= releaseAt) controller.triggerAttack("bow");
+			controller.syncBowDraw(undefined);
+			controller.update(t - Math.max(previousTime, releaseAt));
+		}
+		previousTime = t;
+	} else {
+		action.reset().play();
+		mixer.setTime(Math.min(t, clip.duration));
+	}
+	weaponAttachment?.sync(p.has("bow") ? BOW : SWORD);
 	weaponAttachment?.updateGrip();
 	actor.updateMatrixWorld(true);
 	actor.traverse((o) => {
@@ -122,7 +155,17 @@ window.sample = (t) => {
 		renderer.render(scene, cameras[i]);
 	}
 	document.querySelector("#clock").textContent =
-		t.toFixed(3) + " / " + clip.duration.toFixed(3) + " s";
+		t.toFixed(3) +
+		" / " +
+		(charged ? "6.900" : clip.duration.toFixed(3)) +
+		" s";
+};
+window.bowReview = () => {
+	const bones = {};
+	actor.traverse((o) => {
+		if (o.isBone) bones[o.name] = o.matrixWorld.toArray();
+	});
+	return { animation: controller?.getStats(), bones };
 };
 let playing = false,
 	start = 0;
@@ -153,4 +196,4 @@ window.sample(0);
 window.reviewReady = true;
 document.querySelector("#title").textContent =
 	name + " / " + (p.get("label") || "V1");
-window.play();
+if (!charged) window.play();
