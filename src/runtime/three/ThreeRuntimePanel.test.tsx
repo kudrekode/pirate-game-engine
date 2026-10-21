@@ -2048,6 +2048,7 @@ function mockCombatActors(deathAvailable = true) {
 			dispose: vi.fn(),
 			refresh: vi.fn(),
 			triggerAttack: vi.fn(),
+			syncBowDraw: vi.fn(),
 			triggerHit: vi.fn(),
 			triggerInteraction: vi.fn(() => false),
 			sync: vi.fn((ctx: characterAnimation.CharacterAnimationContext) => {
@@ -2277,6 +2278,8 @@ it("equips and unequips through inventory, keeps combat modal gating and preserv
 });
 
 it("fires Bow while locked, releases for Inventory and keeps the scene and player controller", () => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	vi.spyOn(arrowPresentation, "createThreeArrowPresentation").mockReturnValue({
 		sync: vi.fn(),
 		getStats: () => ({ pooled: 3, visible: 0 }),
@@ -2298,7 +2301,22 @@ it("fires Bow while locked, releases for Inventory and keeps the scene and playe
 	});
 	act(() => runLatestAnimationFrame());
 	expect(screen.getByLabelText("Bow aim reticle")).toBeInTheDocument();
+	// Modal cancellation clears the held gesture before any release/cooldown.
 	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	now += 600;
+	act(() => runLatestAnimationFrame());
+	expect(latestSession().bowDraw?.charge).toBe(0.5);
+	expect(player.syncBowDraw).toHaveBeenCalledWith(0.5);
+	fireEvent.keyDown(window, { key: "i" });
+	expect(latestSession().bowDraw).toBeUndefined();
+	fireEvent.keyUp(window, { key: "f", code: "KeyF" });
+	expect(latestSession().nextAttackAt).toBe(0);
+	expect(player.triggerAttack).not.toHaveBeenCalled();
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(latestSession().bowDraw).toBeDefined();
+	expect(player.triggerAttack).not.toHaveBeenCalled();
+	fireEvent.keyUp(window, { key: "f", code: "KeyF" });
 	expect(player.triggerAttack).toHaveBeenCalledWith("bow");
 	expect(lockedElement).not.toBeNull();
 	expect(latestSession().projectiles?.pending).toBeDefined();
@@ -2411,13 +2429,25 @@ it.each([
 it.each([
 	5, 0, 100,
 ])("wires contact Attack and nonlethal Hit, with actual lethal defeat winning (damage=%s)", (damage) => {
+	vi.spyOn(arrowPresentation, "createThreeArrowPresentation").mockReturnValue({
+		sync: vi.fn(),
+		getStats: () => ({ pooled: 5, visible: 0 }),
+		dispose: vi.fn(),
+	});
 	let now = 1000;
 	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const intervals = vi.spyOn(window, "setInterval"),
 		controllers = mockCombatActors(),
 		p = animatedCombatProject();
 	p.areas[0].npcs[0].enemyBehaviour!.contactDamage = damage;
+	p.items = [{ ...BOW_ITEM }];
+	p.gameState.inventory = { bow: 1 };
 	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(latestSession().bowDraw).toBeDefined();
 	const tick = intervals.mock.calls.find((c) => c[1] === 50)![0] as () => void;
 	act(() => tick());
 	now += 2000;
@@ -2425,6 +2455,8 @@ it.each([
 	act(() => runLatestAnimationFrame());
 	const [npc, player] = controllers;
 	expect(npc.triggerAttack).toHaveBeenCalledTimes(damage > 0 ? 1 : 0);
+	if (damage > 0) expect(latestSession().bowDraw).toBeUndefined();
+	expect(latestSession().nextAttackAt).toBe(0);
 	expect(player.triggerHit).toHaveBeenCalledTimes(
 		damage > 0 && damage < 100 ? 1 : 0,
 	);

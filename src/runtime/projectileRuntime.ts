@@ -1,11 +1,13 @@
 import { BOW } from "../data/bow";
 import { getStructurePreset } from "../data/mapVisuals";
 import type { GameArea } from "../types/game";
+import { isPlayerAirborne } from "./playerLocomotion";
 import {
 	beginRuntimeCombatAttack,
 	damageRuntimeNpc,
 	type RuntimeCombatEventEmitter,
 } from "./runtimeCombat";
+import { isRuntimeGameplayBlocked } from "./runtimeInput";
 import type { RuntimeSessionState } from "./runtimeSession";
 import type { TraversalSolid, TraversalWorld } from "./traversal";
 import { getEquippedWeapon } from "./weaponRuntime";
@@ -13,12 +15,20 @@ import { getEquippedWeapon } from "./weaponRuntime";
 /** Grid metres: x east, y height, z south. No renderer objects in gameplay. */
 export type ProjectilePoint = { x: number; y: number; z: number };
 export type BowAim = { origin: ProjectilePoint; direction: ProjectilePoint };
+export type BowDrawState = {
+	areaId: string;
+	weaponItemId: string;
+	startedAt: number;
+	durationMs: number;
+	charge: number;
+	fullyDrawn: boolean;
+};
 export type ArrowProjectile = {
 	id: number;
 	position: ProjectilePoint;
 	previous: ProjectilePoint;
 	direction: ProjectilePoint;
-	speed: number;
+	velocity: ProjectilePoint;
 	remainingRange: number;
 	remainingMs: number;
 	sourceActor: "player";
@@ -28,7 +38,7 @@ export type ArrowProjectile = {
 export type RuntimeProjectiles = {
 	areaId: string;
 	nextId: number;
-	pending?: { remainingMs: number; aim: BowAim };
+	pending?: { remainingMs: number; aim: BowAim; speed: number; damage: number };
 	arrows: ArrowProjectile[];
 	spawned: number;
 	removed: number;
@@ -283,14 +293,99 @@ export function resolveBowAimPoint(
 	return mix(aim.origin, far, hit?.fraction ?? 1);
 }
 
-export function attemptRuntimeBowAttack(
+/** Charge stays runtime-local. Holding past full draw never increases launch power. */
+export function getBowCharge(durationMs: number): number {
+	return Math.min(1, Math.max(0, durationMs / BOW.fullDrawMs));
+}
+
+export function getBowLaunch(charge: number) {
+	const minimumCharge = BOW.minimumDrawMs / BOW.fullDrawMs;
+	const power =
+		(Math.min(1, Math.max(minimumCharge, charge)) - minimumCharge) /
+		(1 - minimumCharge);
+	return {
+		speed: BOW.minimumSpeed + (BOW.projectileSpeed - BOW.minimumSpeed) * power,
+		damage: Math.round(
+			BOW.minimumDamage + (BOW.attackDamage - BOW.minimumDamage) * power,
+		),
+	};
+}
+
+function canDraw(session: RuntimeSessionState, blocked: boolean): boolean {
+	return (
+		getEquippedWeapon(session)?.id === "bow" &&
+		!isPlayerAirborne(session) &&
+		session.runtimePlayerHealth > 0 &&
+		!isRuntimeGameplayBlocked(session, blocked)
+	);
+}
+
+export function cancelRuntimeBowDraw(session: RuntimeSessionState): void {
+	session.bowDraw = undefined;
+}
+
+export function beginRuntimeBowDraw(
+	session: RuntimeSessionState,
+	time: number,
+	blocked = false,
+): boolean {
+	if (
+		!Number.isFinite(time) ||
+		!canDraw(session, blocked) ||
+		session.bowDraw ||
+		session.projectiles?.pending ||
+		time < session.nextAttackAt
+	)
+		return false;
+	session.bowDraw = {
+		areaId: session.currentAreaId,
+		weaponItemId: session.equippedWeaponId!,
+		startedAt: time,
+		durationMs: 0,
+		charge: 0,
+		fullyDrawn: false,
+	};
+	if (session.traversal) session.traversal.motion.sprinting = false;
+	return true;
+}
+
+export function updateRuntimeBowDraw(
+	session: RuntimeSessionState,
+	time: number,
+	blocked = false,
+): void {
+	const draw = session.bowDraw;
+	if (!draw) return;
+	if (
+		!canDraw(session, blocked) ||
+		draw.areaId !== session.currentAreaId ||
+		draw.weaponItemId !== session.equippedWeaponId ||
+		!Number.isFinite(time)
+	) {
+		cancelRuntimeBowDraw(session);
+		return;
+	}
+	draw.durationMs = Math.min(
+		BOW.fullDrawMs,
+		Math.max(0, time - draw.startedAt),
+	);
+	draw.charge = getBowCharge(draw.durationMs);
+	draw.fullyDrawn = draw.charge === 1;
+}
+
+/** Key-up commits the shot and cooldown once; aim is the visible ray at release. */
+export function releaseRuntimeBowDraw(
 	session: RuntimeSessionState,
 	time: number,
 	aim: BowAim,
 	emit: RuntimeCombatEventEmitter,
+	blocked = false,
 ): boolean {
+	updateRuntimeBowDraw(session, time, blocked);
+	const draw = session.bowDraw;
+	cancelRuntimeBowDraw(session);
 	if (
-		getEquippedWeapon(session)?.id !== "bow" ||
+		!draw ||
 		session.projectiles?.pending ||
 		!normalizedProjectileDirection(aim.direction) ||
 		!vector(aim.origin).every(Number.isFinite)
@@ -308,6 +403,7 @@ export function attemptRuntimeBowAttack(
 	session.projectiles.pending = {
 		remainingMs: BOW.releaseDelayMs,
 		aim: { origin: { ...aim.origin }, direction: { ...aim.direction } },
+		...getBowLaunch(draw.charge),
 	};
 	return true;
 }
@@ -325,12 +421,16 @@ export function advanceRuntimeProjectiles(
 	const state = session.projectiles;
 	if (!state) return;
 	if (state.areaId !== area.id || session.runtimePlayerHealth <= 0) {
+		cancelRuntimeBowDraw(session);
 		session.projectiles = undefined;
 		return;
 	}
 	if (!Number.isFinite(deltaMs) || deltaMs < 0) return;
 	// Menus suspend the same transient clock as NPC gameplay. Continue never restores it.
-	if (blocked) return;
+	if (blocked) {
+		cancelRuntimeBowDraw(session);
+		return;
+	}
 	let newArrow: ArrowProjectile | undefined,
 		newDelta = deltaMs;
 	if (state.pending) {
@@ -361,12 +461,16 @@ export function advanceRuntimeProjectiles(
 				position: { ...origin },
 				previous: { ...origin },
 				direction,
-				speed: BOW.projectileSpeed,
+				velocity: {
+					x: direction.x * pending.speed,
+					y: direction.y * pending.speed,
+					z: direction.z * pending.speed,
+				},
 				remainingRange: BOW.maxRange,
 				remainingMs: BOW.lifetimeMs,
 				sourceActor: "player",
 				weapon: "bow",
-				damage: BOW.attackDamage,
+				damage: pending.damage,
 			};
 			state.spawned++;
 			if (obstruction) {
@@ -390,32 +494,57 @@ export function advanceRuntimeProjectiles(
 		}
 	}
 	for (let i = state.arrows.length - 1; i >= 0; i--) {
-		const arrow = state.arrows[i],
-			elapsed = Math.min(
-				arrow.remainingMs,
-				arrow === newArrow ? newDelta : deltaMs,
-			);
-		const distance = Math.min(
-			arrow.remainingRange,
-			(arrow.speed * elapsed) / 1000,
+		const arrow = state.arrows[i];
+		let remaining = Math.min(
+			arrow.remainingMs,
+			arrow === newArrow ? newDelta : deltaMs,
 		);
 		arrow.previous = { ...arrow.position };
-		const to = {
-			x: arrow.position.x + arrow.direction.x * distance,
-			y: arrow.position.y + arrow.direction.y * distance,
-			z: arrow.position.z + arrow.direction.z * distance,
-		};
-		const hit = traceProjectile(session, area, world, arrow.position, to);
-		arrow.position = mix(arrow.position, to, hit?.fraction ?? 1);
-		arrow.remainingMs -= elapsed;
-		arrow.remainingRange -= distance;
-		if (hit) {
-			state.arrows.splice(i, 1);
-			impact(hit, arrow);
-		} else if (arrow.remainingMs <= 0 || arrow.remainingRange <= 1e-8) {
-			state.arrows.splice(i, 1);
-			state.removed++;
-			state.lastImpact = { kind: "expired", position: { ...arrow.position } };
+		// Exact constant acceleration gives frame-partition-independent flight.
+		// Short swept chords follow the curve even after a long/suspended frame.
+		while (remaining > 1e-8) {
+			const dt = Math.min(1 / 120, remaining / 1000);
+			const to = {
+				x: arrow.position.x + arrow.velocity.x * dt,
+				y:
+					arrow.position.y +
+					arrow.velocity.y * dt -
+					(BOW.gravity * dt * dt) / 2,
+				z: arrow.position.z + arrow.velocity.z * dt,
+			};
+			const distance = Math.hypot(
+				to.x - arrow.position.x,
+				to.y - arrow.position.y,
+				to.z - arrow.position.z,
+			);
+			const rangeFraction =
+				distance > 0 ? Math.min(1, arrow.remainingRange / distance) : 1;
+			const endpoint = mix(arrow.position, to, rangeFraction);
+			const hit = traceProjectile(
+				session,
+				area,
+				world,
+				arrow.position,
+				endpoint,
+			);
+			arrow.position = mix(arrow.position, endpoint, hit?.fraction ?? 1);
+			arrow.velocity.y -= BOW.gravity * dt;
+			arrow.direction =
+				normalizedProjectileDirection(arrow.velocity) ?? arrow.direction;
+			arrow.remainingMs -= dt * 1000;
+			arrow.remainingRange -= distance * rangeFraction;
+			remaining -= dt * 1000;
+			if (hit) {
+				state.arrows.splice(i, 1);
+				impact(hit, arrow);
+				break;
+			}
+			if (arrow.remainingMs <= 1e-8 || arrow.remainingRange <= 1e-8) {
+				state.arrows.splice(i, 1);
+				state.removed++;
+				state.lastImpact = { kind: "expired", position: { ...arrow.position } };
+				break;
+			}
 		}
 	}
 }

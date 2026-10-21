@@ -26,6 +26,7 @@ export function setPlayerSprint(
 	if (session.traversal)
 		session.traversal.motion.sprinting =
 			held &&
+			!session.bowDraw &&
 			moving &&
 			!session.playerVehicleState.active &&
 			session.runtimePlayerHealth > 0 &&
@@ -67,6 +68,7 @@ export function tryPlayerJump(
 	)
 		return false;
 	traversal.motion.phase = "jump";
+	session.bowDraw = undefined;
 	traversal.motion.height = support.height;
 	traversal.motion.verticalVelocity = JUMP_SPEED;
 	traversal.motion.elapsed = 0;

@@ -3075,6 +3075,15 @@ label {
 .runtime-save-confirm button {
 	margin-right: 0.75rem;
 }
+.runtime-bow-charge {
+	position: absolute;
+	top: 14px;
+	left: -22px;
+	width: 48px;
+	height: 5px;
+	accent-color: #f5d785;
+}
+
 .runtime-bow-reticle {
 	position: absolute;
 	left: 50%;

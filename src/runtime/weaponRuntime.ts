@@ -38,6 +38,7 @@ export function equipRuntimeWeapon(
 		)
 			return false;
 	}
+	if (session.equippedWeaponId !== itemId) session.bowDraw = undefined;
 	session.equippedWeaponId = itemId;
 	// An equip change never resets the accepted attack's cooldown.
 	return true;

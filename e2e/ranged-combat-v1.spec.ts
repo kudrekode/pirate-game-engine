@@ -7,7 +7,21 @@ test.use({
 	viewport: { width: 1280, height: 900 },
 	trace: { mode: "retain-on-failure", screenshots: false, snapshots: true },
 });
-const output = "docs/assets/ranged-combat-v1";
+const output = "docs/assets/archery-v2";
+test.afterEach(async ({ page }, info) => {
+	if (info.status !== info.expectedStatus) {
+		const state = await page
+			.evaluate(() => {
+				const host = document.querySelector<HTMLElement>(".three-runtime-host");
+				return host ? { ...host.dataset } : {};
+			})
+			.catch(() => ({}));
+		await fs.writeFile(
+			info.outputPath("runtime-state.json"),
+			JSON.stringify(state, null, 2),
+		);
+	}
+});
 
 test("current Bow fires into the sky from the visible camera ray @camera-v4-bow", async ({
 	page,
@@ -53,7 +67,9 @@ test("current Bow fires into the sky from the visible camera ray @camera-v4-bow"
 		.toBeLessThan(-81.9);
 	await page.waitForTimeout(400);
 	const camera = (await data(page, "camera-feel")).actual;
-	await page.keyboard.press("f");
+	await page.keyboard.down("f");
+	await page.waitForTimeout(1300);
+	await page.keyboard.up("f");
 	await expect
 		.poll(async () => (await data(page, "projectiles")).arrows.length)
 		.toBe(1);
@@ -66,7 +82,7 @@ test("current Bow fires into the sky from the visible camera ray @camera-v4-bow"
 	};
 	const length = Math.hypot(ray.x, ray.y, ray.z);
 	// Existing muzzle parallax aims at a point on the visible ray, rather than
-	// firing parallel to it. Verify convergence at the unchanged 48 m range.
+	// firing parallel to it. Allow the small gravity change after release.
 	const convergence = {
 		x:
 			camera.position.x +
@@ -85,7 +101,7 @@ test("current Bow fires into the sky from the visible camera ray @camera-v4-bow"
 			convergence.y * arrow.direction.y +
 			convergence.z * arrow.direction.z) /
 			Math.hypot(convergence.x, convergence.y, convergence.z),
-	).toBeGreaterThan(0.99999);
+	).toBeGreaterThan(0.999);
 	await page.screenshot({ path: `${directory}/bow-sky.png` });
 	expect(errors).toEqual([]);
 	await fs.writeFile(
@@ -138,7 +154,7 @@ async function go(page: Page, x: number, y: number) {
 	await page.waitForTimeout(150);
 }
 
-test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue @ranged-combat-v1", async ({
+test("charged Bow, ballistic drop, cancellation, world impacts, switching and Continue @archery-v2 @ranged-combat-v1", async ({
 	page,
 }) => {
 	test.setTimeout(240000);
@@ -153,7 +169,7 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 	await page.getByRole("button", { name: /Blank Project/ }).click();
 	await page
 		.locator('input[type="file"]')
-		.setInputFiles("ranged-combat-v1-demo.project.json");
+		.setInputFiles("archery-v2-demo.project.json");
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
@@ -166,7 +182,7 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 		.toBe(0);
 	await expect
 		.poll(async () => (await data(page, "projectiles"))?.pooled)
-		.toBe(3);
+		.toBe(5);
 	const locked = () => page.evaluate(() => !!document.pointerLockElement);
 	const follow = async () => {
 		await page
@@ -259,9 +275,26 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 	};
 	const health = async (id: string) =>
 		(await data(page, "npcs")).find((n: { id: string }) => n.id === id)?.health;
-	const shoot = async () => {
+	const shoot = async (duration = 1300, extraHold = 0) => {
+		await page.waitForTimeout(1100);
 		const count = (await data(page, "projectiles")).spawned;
-		await page.keyboard.press("f");
+		await page.keyboard.down("f");
+		await page.waitForTimeout(duration);
+		if (extraHold) {
+			await expect(page.getByLabel("Bow draw charge")).toBeVisible();
+			await expect(page.getByLabel("Bow draw charge")).toHaveJSProperty(
+				"value",
+				1,
+			);
+			expect((await data(page, "projectiles")).draw.charge).toBe(1);
+			expect((await data(page, "weapon")).bowPhase).toBe("hold");
+			const time = (await data(page, "weapon")).clipTime;
+			await page.waitForTimeout(extraHold);
+			expect((await data(page, "projectiles")).draw.charge).toBe(1);
+			expect((await data(page, "weapon")).clipTime).toBe(time);
+			await page.screenshot({ path: `${output}/full-hold.png` });
+		}
+		await page.keyboard.up("f");
 		await expect
 			.poll(async () => (await data(page, "projectiles")).spawned)
 			.toBe(count + 1);
@@ -269,14 +302,21 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 	};
 	await aimAt(10, 2.25, 12);
 	await page.screenshot({ path: `${output}/equipped.png` });
-	await shoot();
+	await shoot(60);
 	await page.keyboard.press("f");
-	await expect.poll(() => health("close-target")).toBe(32);
-	await page.waitForTimeout(700);
-	await shoot();
+	await expect.poll(() => health("close-target")).toBe(46);
+	await shoot(690);
+	// Browser scheduling adds a few milliseconds to physical hold duration.
+	await expect.poll(() => health("close-target")).toBeLessThanOrEqual(22);
+	expect(await health("close-target")).toBeGreaterThanOrEqual(18);
+	await shoot(1300, 4000);
 	await expect.poll(() => health("close-target")).toBeUndefined();
 	await aimAt(20, 2.25, 12);
-	await page.waitForTimeout(1100);
+	await shoot(60);
+	await expect
+		.poll(async () => (await data(page, "projectiles")).active)
+		.toBe(0);
+	expect(await health("medium-target")).toBe(64);
 	await shoot();
 	await page.screenshot({ path: `${output}/arrow-flight.png` });
 	await expect.poll(() => health("medium-target")).toBe(32);
@@ -286,20 +326,55 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 	await aimAt(35, 2.25, 12);
 	await page.waitForTimeout(1100);
 	await shoot();
+	await expect
+		.poll(async () => (await data(page, "projectiles")).active)
+		.toBe(0);
+	expect(await health("far-target")).toBe(64);
+	// Raising the ray above a small body uses the far aim point. Offset the
+	// reticle slightly right as well for the existing shoulder/bow parallax.
+	await aimAt(35, 5, 12.5);
+	await shoot();
 	await expect.poll(() => health("far-target")).toBe(32);
-	await aimAt(5, 2.25, 45);
+	await page.screenshot({ path: `${output}/long-range-hit.png` });
+	await aimAt(25, 6.6, 18);
+	await shoot();
+	await expect.poll(() => health("elevated-target")).toBe(32);
+	await aimAt(5, 100, 45);
 	await page.waitForTimeout(1100);
 	await shoot();
 	await expect
 		.poll(async () => (await data(page, "projectiles")).active)
 		.toBe(0);
 	expect((await data(page, "projectiles")).lastImpact.kind).toBe("expired");
+	// UI, jump and weapon-switch cancellation use real key holds.
+	await page.keyboard.down("f");
+	await page.waitForTimeout(500);
+	const canceledCount = (await data(page, "projectiles")).spawned;
+	await page.keyboard.press("i");
+	await expect.poll(locked).toBe(false);
+	expect((await data(page, "projectiles")).draw).toBeUndefined();
+	await page.keyboard.up("f");
+	await page.keyboard.press("Escape");
+	await expect.poll(locked).toBe(true);
+	expect((await data(page, "projectiles")).spawned).toBe(canceledCount);
 	await page.keyboard.down("Shift");
 	await page.keyboard.down("w");
 	await page.waitForTimeout(180);
 	await page.keyboard.up("w");
 	await page.keyboard.up("Shift");
+	await page.keyboard.down("f");
+	await page.waitForTimeout(400);
+	await page.keyboard.down("Shift");
+	await page.keyboard.down("w");
+	await page.waitForTimeout(150);
+	expect((await data(page, "traversal")).motion.sprinting).toBe(false);
+	await page.keyboard.up("w");
+	await page.keyboard.up("Shift");
 	await page.keyboard.press("Space");
+	await page.keyboard.up("f");
+	await expect
+		.poll(async () => (await data(page, "projectiles")).draw)
+		.toBeUndefined();
 	await expect
 		.poll(async () => (await data(page, "traversal")).motion.phase)
 		.not.toBe("grounded");
@@ -337,7 +412,11 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 	await expect
 		.poll(async () => (await data(page, "weapon")).semanticState)
 		.toBe("idle");
+	await page.keyboard.down("f");
+	await page.waitForTimeout(500);
 	await equip("Sword");
+	await page.keyboard.up("f");
+	expect((await data(page, "projectiles")).draw).toBeUndefined();
 	await expect
 		.poll(async () => (await data(page, "weapon")).bone)
 		.toBe("hand_r");
@@ -383,7 +462,9 @@ test("one Bow pickup, camera-aimed arrows, world impacts, switching and Continue
 	});
 	expect(save.player.equippedWeaponId).toBe("bow");
 	expect(save.state.inventory.bow).toBe(1);
-	expect(JSON.stringify(save)).not.toMatch(/projectiles|remainingMs|GoldenBow/);
+	expect(JSON.stringify(save)).not.toMatch(
+		/bowDraw|charge|velocity|projectiles|remainingMs|GoldenBow/,
+	);
 	const samples = await page.evaluate(
 		() =>
 			(

@@ -1,6 +1,7 @@
 import { PROCEDURAL_MANNEQUIN_V0_ASSET } from "@adventure-game-builder/three-asset-preview";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BOW } from "../../data/bow";
 import {
 	clearThreeCharacterAnimationClipCacheForTests,
 	createThreeCharacterAnimationController,
@@ -72,6 +73,45 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 		});
 	try {
 		await flushAssetPromises();
+		one.syncBowDraw(0.5);
+		one.update(0.6);
+		expect(one.getStats()).toMatchObject({
+			semanticState: "attack",
+			bowPhase: "draw",
+			clipTime: BOW.drawPoseSeconds / 2,
+		});
+		one.syncBowDraw(1);
+		for (let frame = 0; frame < 300; frame++) {
+			one.sync({ defeated: false, moving: true, sprinting: true });
+			one.syncBowDraw(1);
+			one.update(1 / 60);
+		}
+		expect(one.getStats()).toMatchObject({
+			bowPhase: "hold",
+			clipTime: BOW.drawPoseSeconds,
+			oneShotActionsTriggered: 0,
+		});
+		one.triggerAttack("bow");
+		one.syncBowDraw(undefined);
+		one.update(BOW.releaseDelayMs / 1000);
+		expect(one.getStats()).toMatchObject({
+			bowPhase: "release",
+			clipTime: BOW.releasePoseSeconds,
+		});
+		one.update(1);
+		expect(one.getStats().semanticState).toBe("run");
+		one.syncBowDraw(0.4);
+		one.triggerHit();
+		one.syncBowDraw(1);
+		expect(one.getStats()).toMatchObject({
+			semanticState: "hit",
+			bowPhase: undefined,
+		});
+		one.update(1.1);
+		one.syncBowDraw(0.8);
+		one.syncBowDraw(undefined);
+		expect(one.getStats().semanticState).toBe("run");
+		one.sync({ defeated: false, moving: false });
 		for (let i = 0; i < 3; i++) {
 			one.triggerAttack("sword");
 			expect(one.getStats()).toMatchObject({

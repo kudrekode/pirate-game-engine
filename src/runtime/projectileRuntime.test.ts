@@ -3,13 +3,18 @@ import demo from "../../melee-weapon-v1-demo.project.json";
 import { BOW, BOW_ITEM } from "../data/bow";
 import { migrateProject } from "../data/migrateProject";
 import { createGameSave, parseGameSave, restoreGameSave } from "./gameSave";
+import { setPlayerSprint, tryPlayerJump } from "./playerLocomotion";
 import {
 	advanceRuntimeProjectiles,
-	attemptRuntimeBowAttack,
 	type BowAim,
+	beginRuntimeBowDraw,
+	getBowCharge,
+	getBowLaunch,
 	projectileBoxFraction,
+	releaseRuntimeBowDraw,
 	resolveBowAimPoint,
 	traceProjectile,
+	updateRuntimeBowDraw,
 } from "./projectileRuntime";
 import { createRuntimeQuestState } from "./questEngine";
 import {
@@ -51,6 +56,16 @@ function setup(enemyX?: number) {
 		area = session.project.areas[0];
 	area.objects = [];
 	area.structures = [];
+	// A flat zero-height range keeps the muzzle 1.25 m above the actual ground.
+	area.terrainTiles = area.terrainTiles.map((tile) => ({
+		...tile,
+		tileId: "grass",
+	}));
+	area.terrainHeights = area.terrainTiles.map(({ x, y }) => ({
+		x,
+		y,
+		height: -1,
+	}));
 	area.npcs =
 		enemyX === undefined
 			? []
@@ -69,14 +84,154 @@ function setup(enemyX?: number) {
 		emit = (event: RuntimeCombatEvent) => {
 			events.push(event);
 		};
-	const fire = (time = 0, ray = aim) =>
-		attemptRuntimeBowAttack(session, time, ray, emit);
+	const fire = (time = 0, ray = aim, duration = BOW.fullDrawMs as number) =>
+		beginRuntimeBowDraw(session, time) &&
+		releaseRuntimeBowDraw(session, time + duration, ray, emit);
 	const advance = (ms: number, source = spawn, blocked = false) =>
 		advanceRuntimeProjectiles(session, area, world, ms, source, emit, blocked);
 	return { project, session, area, world, events, emit, fire, advance };
 }
 
 describe("one shared bow projectile loop", () => {
+	it("starts on down, charges from held duration, clamps indefinitely and commits cooldown only once on up", () => {
+		const s = setup();
+		expect(beginRuntimeBowDraw(s.session, 100)).toBe(true);
+		expect(beginRuntimeBowDraw(s.session, 200)).toBe(false);
+		updateRuntimeBowDraw(s.session, 700);
+		expect(s.session.bowDraw).toMatchObject({
+			startedAt: 100,
+			durationMs: 600,
+			charge: 0.5,
+			fullyDrawn: false,
+		});
+		expect(s.session.nextAttackAt).toBe(0);
+		expect(s.session.projectiles).toBeUndefined();
+		updateRuntimeBowDraw(s.session, 100000);
+		expect(s.session.bowDraw).toMatchObject({
+			durationMs: 1200,
+			charge: 1,
+			fullyDrawn: true,
+		});
+		expect(releaseRuntimeBowDraw(s.session, 100000, aim, s.emit)).toBe(true);
+		expect(s.session.bowDraw).toBeUndefined();
+		expect(s.session.nextAttackAt).toBe(101000);
+		expect(releaseRuntimeBowDraw(s.session, 100001, aim, s.emit)).toBe(false);
+		s.advance(BOW.releaseDelayMs);
+		expect(s.session.projectiles?.spawned).toBe(1);
+		expect(beginRuntimeBowDraw(s.session, 100999)).toBe(false);
+		expect(beginRuntimeBowDraw(s.session, 101000)).toBe(true);
+	});
+	it.each([
+		[0, 16, 18],
+		[100, 16, 18],
+		[180, 16, 18],
+		[690, 28, 25],
+		[1200, 40, 32],
+		[8000, 40, 32],
+	])("maps %s ms to useful bounded launch speed %s and damage %s", (duration, speed, damage) => {
+		expect(getBowLaunch(getBowCharge(duration))).toEqual({ speed, damage });
+		const s = setup();
+		expect(s.fire(0, aim, duration)).toBe(true);
+		s.advance(BOW.releaseDelayMs);
+		expect(s.session.projectiles?.arrows[0]).toMatchObject({
+			velocity: { x: speed, y: 0, z: 0 },
+			damage,
+		});
+	});
+	it.each([
+		0, 1200,
+	])("sweeps close targets even for a %s ms shot with parallax", (duration) => {
+		const s = setup(4.5);
+		s.fire(0, aim, duration);
+		s.advance(2000, { ...spawn, muzzle: { x: 3.45, y: 1.1, z: 8.28 } });
+		expect(s.events.filter((e) => e.type === "npcDamaged")).toMatchObject([
+			{ damage: duration ? 32 : 18 },
+		]);
+		expect(s.session.projectiles?.arrows).toHaveLength(0);
+	});
+	it("shows more drop at equal distance for quick shots and requires elevated aim at long range", () => {
+		for (const duration of [0, 1200]) {
+			const s = setup();
+			const highSpawn = {
+				body: { ...spawn.body, y: 10 },
+				muzzle: { ...spawn.muzzle, y: 10 },
+			};
+			s.fire(0, { ...aim, origin: { ...aim.origin, y: 10 } }, duration);
+			const speed = duration ? 40 : 16,
+				seconds = 12 / speed;
+			s.advance(BOW.releaseDelayMs + seconds * 1000, highSpawn);
+			const arrow = s.session.projectiles!.arrows[0];
+			expect(arrow.position.x).toBeCloseTo(spawn.muzzle.x + 12, 8);
+			expect(arrow.position.y).toBeCloseTo(
+				10 - (BOW.gravity * seconds ** 2) / 2,
+				8,
+			);
+			expect(arrow.velocity.y).toBeCloseTo(-BOW.gravity * seconds, 8);
+			expect(arrow.direction.y).toBeLessThan(0);
+		}
+		const level = setup(35);
+		level.fire();
+		level.advance(2000);
+		expect(level.events.some((e) => e.type === "npcDamaged")).toBe(false);
+		expect(level.session.projectiles?.lastImpact?.id).toBe("terrain");
+		const compensated = setup(35);
+		compensated.fire(0, {
+			origin: spawn.muzzle,
+			direction: { x: 1, y: 0.1, z: 0 },
+		});
+		compensated.advance(2000);
+		expect(
+			compensated.events.filter((e) => e.type === "npcDamaged"),
+		).toHaveLength(1);
+	});
+	it.each([
+		"modal",
+		"dialogue",
+		"jump",
+		"death",
+		"unequip",
+		"area",
+	])("cancels %s without a shot or cooldown", (reason) => {
+		const s = setup();
+		s.session.traversal = createRuntimeTraversal(
+			s.world,
+			s.area,
+			s.project,
+			s.session.playerPosition,
+		);
+		beginRuntimeBowDraw(s.session, 100);
+		setPlayerSprint(s.session, true, true);
+		expect(s.session.traversal.motion.sprinting).toBe(false);
+		if (reason === "jump") expect(tryPlayerJump(s.session, 200)).toBe(true);
+		if (reason === "death") s.session.runtimePlayerHealth = 0;
+		if (reason === "dialogue")
+			s.session.dialogue = {
+				dialogueId: "guide",
+				nodeId: "hello",
+				enteredNodeIds: new Set(),
+			};
+		if (reason === "unequip")
+			expect(equipRuntimeWeapon(s.session, undefined)).toBe(true);
+		if (reason === "area") s.session.currentAreaId = "other";
+		updateRuntimeBowDraw(s.session, 800, reason === "modal");
+		expect(s.session.bowDraw).toBeUndefined();
+		expect(releaseRuntimeBowDraw(s.session, 900, aim, s.emit)).toBe(false);
+		expect(s.session.nextAttackAt).toBe(0);
+		expect(s.session.projectiles).toBeUndefined();
+	});
+	it("excludes an actively held charge from Save/Continue", () => {
+		const s = setup();
+		beginRuntimeBowDraw(s.session, 0);
+		updateRuntimeBowDraw(s.session, 5000);
+		const save = createGameSave(s.project, s.session);
+		expect(JSON.stringify(save)).not.toMatch(
+			/bowDraw|charge|projectiles|velocity|startedAt/,
+		);
+		const restored = restoreGameSave(s.project, save);
+		expect(restored.bowDraw).toBeUndefined();
+		expect(restored.projectiles).toBeUndefined();
+		expect(getEquippedWeapon(restored)?.id).toBe("bow");
+	});
 	it("fires upward along the visible sky-look ray without changing projectile ballistics", () => {
 		const s = setup();
 		const camera = getThirdPersonCameraRig(
@@ -151,10 +306,10 @@ describe("one shared bow projectile loop", () => {
 			false,
 		);
 		expect(s.fire()).toBe(true);
-		expect(s.session.nextAttackAt).toBe(1000);
+		expect(s.session.nextAttackAt).toBe(2200);
 		expect(s.fire(999)).toBe(false);
 		expect(s.events.filter((e) => e.type === "attackStarted")).toEqual([
-			{ type: "attackStarted", weapon: "bow", nextAttackAt: 1000 },
+			{ type: "attackStarted", weapon: "bow", nextAttackAt: 2200 },
 		]);
 		expect(s.session.runtimeState.npcs[s.area.npcs[0].id].health).toBe(health);
 		s.session.runtimeState.inventory.items.sword = 1;
@@ -171,12 +326,12 @@ describe("one shared bow projectile loop", () => {
 	it("spawns exactly one arrow at the explicit release boundary and advances the remaining frame time", () => {
 		const s = setup();
 		s.fire();
-		s.advance(299);
+		s.advance(BOW.releaseDelayMs - 1);
 		expect(s.session.projectiles?.arrows).toHaveLength(0);
 		s.advance(101);
 		expect(s.session.projectiles?.spawned).toBe(1);
 		expect(s.session.projectiles?.arrows[0].position.x).toBeCloseTo(
-			spawn.muzzle.x + 2.8,
+			spawn.muzzle.x + 4,
 		);
 		s.advance(100);
 		expect(s.session.projectiles?.spawned).toBe(1);
@@ -186,10 +341,18 @@ describe("one shared bow projectile loop", () => {
 			b = setup();
 		a.fire();
 		b.fire();
-		a.advance(800);
-		for (let i = 0; i < 80; i++) b.advance(10);
+		a.advance(400);
+		for (let i = 0; i < 40; i++) b.advance(10);
 		expect(a.session.projectiles?.arrows[0].position.x).toBeCloseTo(
 			b.session.projectiles!.arrows[0].position.x,
+			10,
+		);
+		expect(a.session.projectiles!.arrows[0].position.y).toBeCloseTo(
+			b.session.projectiles!.arrows[0].position.y,
+			10,
+		);
+		expect(a.session.projectiles!.arrows[0].velocity.y).toBeCloseTo(
+			b.session.projectiles!.arrows[0].velocity.y,
 			10,
 		);
 	});
@@ -217,7 +380,7 @@ describe("one shared bow projectile loop", () => {
 		]);
 		s.advance(1000);
 		expect(s.events.filter((e) => e.type === "npcDamaged")).toHaveLength(1);
-		s.fire(1000);
+		s.fire(2200);
 		s.advance(700);
 		expect(s.events).toContainEqual({
 			type: "npcDefeated",
@@ -230,7 +393,7 @@ describe("one shared bow projectile loop", () => {
 		expect(s.events.some((e) => e.type === "questsChanged")).toBe(true);
 		expect(s.session.projectiles?.removed).toBe(2);
 	});
-	it.each([4.5, 12, 25])("corrects camera/bow parallax at %s metres", (x) => {
+	it.each([4.5, 12, 20])("corrects camera/bow parallax at %s metres", (x) => {
 		const s = setup(x),
 			ray = {
 				origin: { x: 0, y: 1.25, z: 8 },
@@ -324,15 +487,19 @@ describe("one shared bow projectile loop", () => {
 	});
 	it("expires a miss by range, and independently by lifetime", () => {
 		const s = setup();
-		s.fire();
-		s.advance(300);
-		s.advance(2000);
+		const highSpawn = {
+			body: { ...spawn.body, y: 100 },
+			muzzle: { ...spawn.muzzle, y: 100 },
+		};
+		const highAim = { ...aim, origin: { ...aim.origin, y: 100 } };
+		s.fire(0, highAim);
+		s.advance(BOW.lifetimeMs + BOW.releaseDelayMs, highSpawn);
 		expect(s.session.projectiles?.arrows).toHaveLength(0);
 		expect(s.session.projectiles?.lastImpact?.kind).toBe("expired");
-		s.fire(2000);
-		s.advance(300);
-		s.session.projectiles!.arrows[0].speed = 1;
-		s.advance(2000);
+		s.fire(5000, highAim);
+		s.advance(BOW.releaseDelayMs, highSpawn);
+		s.session.projectiles!.arrows[0].velocity = { x: 1, y: 0, z: 0 };
+		s.advance(BOW.lifetimeMs, highSpawn);
 		expect(s.session.projectiles?.arrows).toHaveLength(0);
 		expect(s.session.projectiles?.removed).toBe(2);
 	});
@@ -363,7 +530,7 @@ describe("one shared bow projectile loop", () => {
 		const save = createGameSave(s.project, s.session),
 			json = JSON.stringify(save);
 		expect(json).not.toMatch(
-			/projectiles|remainingMs|sourceActor|nextAttackAt/,
+			/bowDraw|charge|velocity|projectiles|remainingMs|sourceActor|nextAttackAt/,
 		);
 		expect(save.player.equippedWeaponId).toBe("bow");
 		const restored = restoreGameSave(s.project, parseGameSave(json, s.project));
@@ -388,11 +555,11 @@ describe("one shared bow projectile loop", () => {
 	it("pauses a pending release for menus without duplicate shots or an equipment change", () => {
 		const s = setup();
 		s.fire();
-		s.advance(200);
+		s.advance(BOW.releaseDelayMs - 1);
 		s.advance(2000, spawn, true);
 		expect(s.session.projectiles?.spawned).toBe(0);
 		expect(equipRuntimeWeapon(s.session, undefined)).toBe(false);
-		s.advance(100);
+		s.advance(1);
 		expect(s.session.projectiles?.spawned).toBe(1);
 		expect(s.session.projectiles?.pending).toBeUndefined();
 		expect(equipRuntimeWeapon(s.session, undefined)).toBe(true);
@@ -438,7 +605,7 @@ describe("one shared bow projectile loop", () => {
 		const s = setup();
 		let peak = 0;
 		for (let shot = 0; shot < 30; shot++) {
-			expect(s.fire(shot * 1000)).toBe(true);
+			expect(s.fire(shot * 2200)).toBe(true);
 			for (let step = 0; step < 10; step++) {
 				s.advance(100);
 				peak = Math.max(peak, s.session.projectiles!.arrows.length);

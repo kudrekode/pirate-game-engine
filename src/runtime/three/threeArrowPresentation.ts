@@ -9,7 +9,7 @@ import {
 } from "./threeVisualRenderer";
 import { resolveThreeVisual } from "./threeVisuals";
 
-/** Three reusable world arrows. One cached asset, no mixer or RAF. */
+/** Prewarmed world arrows bounded by lifetime/cooldown. One cached asset, no mixer or RAF. */
 export function createThreeArrowPresentation(
 	scene: THREE.Scene,
 	offset: { x: number; z: number },
@@ -21,7 +21,7 @@ export function createThreeArrowPresentation(
 		unavailable = false;
 	const prepare = () => {
 		if (disposed || pending || unavailable) return;
-		while (pool.length < 3) {
+		while (pool.length < Math.ceil(BOW.lifetimeMs / BOW.attackCooldownMs) + 1) {
 			const result = createThreeVisualMarkerGroup(
 				{
 					id: `arrow_${pool.length}`,
@@ -80,7 +80,9 @@ export function createThreeArrowPresentation(
 					arrow.position.y,
 					arrow.position.z + offset.z,
 				);
-				direction.set(arrow.direction.x, arrow.direction.y, arrow.direction.z);
+				direction
+					.set(arrow.velocity.x, arrow.velocity.y, arrow.velocity.z)
+					.normalize();
 				entry.group.quaternion.setFromUnitVectors(forward, direction);
 			});
 		},

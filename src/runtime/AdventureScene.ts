@@ -50,7 +50,9 @@ import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
 import {
 	advanceRuntimeProjectiles,
-	attemptRuntimeBowAttack,
+	beginRuntimeBowDraw,
+	releaseRuntimeBowDraw,
+	updateRuntimeBowDraw,
 } from "./projectileRuntime";
 import { getQuestViews, type QuestView } from "./questEngine";
 import {
@@ -452,6 +454,36 @@ export class AdventureScene extends Phaser.Scene {
 
 	// Input translation into shared runtime transactions.
 	update(time: number, delta = 0) {
+		const bowBlocked =
+			this.isInventoryOpen ||
+			this.isCutsceneOpen ||
+			this.isDialogueOpen ||
+			this.isFinished;
+		updateRuntimeBowDraw(this.session, time, bowBlocked);
+		if (
+			this.combatKeys?.SPACE &&
+			Phaser.Input.Keyboard.JustUp(this.combatKeys.SPACE)
+		) {
+			const height =
+				this.projectileWorld?.sampler.sampleSurfaceY(this.playerPosition) ?? 0;
+			releaseRuntimeBowDraw(
+				this.session,
+				time,
+				{
+					origin: {
+						x: this.playerPosition.x,
+						y: height + 1.25,
+						z: this.playerPosition.y,
+					},
+					direction: { x: this.playerFacing.x, y: 0, z: this.playerFacing.y },
+				},
+				(event) => this.handleRuntimeCombatEvent(event),
+				bowBlocked,
+			);
+		} else if (this.session.bowDraw && !this.combatKeys?.SPACE.isDown) {
+			// Lost focus/reset keys must not leave a held gesture behind.
+			this.session.bowDraw = undefined;
+		}
 		if (this.isFinished) {
 			this.session.projectiles = undefined;
 			this.arrowGraphics?.clear();
@@ -2027,21 +2059,7 @@ export class AdventureScene extends Phaser.Scene {
 
 	private tryAttack(time: number): boolean {
 		if (getEquippedWeapon(this.session)?.id === "bow") {
-			const height =
-				this.projectileWorld?.sampler.sampleSurfaceY(this.playerPosition) ?? 0;
-			return attemptRuntimeBowAttack(
-				this.session,
-				time,
-				{
-					origin: {
-						x: this.playerPosition.x,
-						y: height + 1.25,
-						z: this.playerPosition.y,
-					},
-					direction: { x: this.playerFacing.x, y: 0, z: this.playerFacing.y },
-				},
-				(event) => this.handleRuntimeCombatEvent(event),
-			);
+			return beginRuntimeBowDraw(this.session, time);
 		}
 		return attemptRuntimeCombatAttack(
 			this.session,
