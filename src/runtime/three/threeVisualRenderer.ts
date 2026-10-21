@@ -14,9 +14,11 @@ import {
 } from "./threeVisualAssetLoader";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 import { resolveThreeVisualAssetTransform } from "./threeVisuals";
+import { applyWorldKitMaterials } from "./worldKitMaterials";
 import { applyShadowRole } from "./worldPresentation";
 
 export type ThreeVisualRenderResult = {
+	disposePresentation?: () => void;
 	assetAnalysis?: ThreeVisualAssetAnalysis;
 	assetCategory?: ThreeVisualAssetDefinition["category"];
 	assetDefinitionId?: string;
@@ -31,6 +33,8 @@ export type ThreeVisualRenderOptions = {
 	metadata?: PlaceholderSelectionMetadata;
 	onAssetStateChange?: () => void;
 	selected?: boolean;
+	/** Bone attachments use the authored grip origin, rather than ground bounds. */
+	preserveAssetOrigin?: boolean;
 };
 
 function getBaseY(marker: EntityMarker): number {
@@ -60,7 +64,8 @@ function createAssetGroup(
 	const group = new THREE.Group();
 	const transform = resolveThreeVisualAssetTransform(marker.visual, analysis);
 	applyMarkerTransform(group, marker, transform);
-	assetObject.position.y += transform.normalizationOffsetY;
+	if (!options.preserveAssetOrigin)
+		assetObject.position.y += transform.normalizationOffsetY;
 	applyShadowRole(assetObject, {
 		cast: marker.visual?.asset?.castShadow ?? false,
 		receive: marker.visual?.asset?.receiveShadow ?? false,
@@ -104,7 +109,7 @@ function createFallbackGroup(
 	};
 }
 
-export function createThreeVisualMarkerGroup(
+function createMarkerGroup(
 	marker: EntityMarker,
 	options: ThreeVisualRenderOptions = {},
 ): ThreeVisualRenderResult {
@@ -134,6 +139,11 @@ export function createThreeVisualMarkerGroup(
 	options.diagnostics?.recordAssetClone(assetRequest.definition.id);
 	return {
 		assetAnalysis: assetRequest.analysis,
+		disposePresentation: applyWorldKitMaterials(
+			assetRequest.object,
+			assetRequest.definition.id,
+			marker.id,
+		),
 		assetCategory: assetRequest.definition.category,
 		assetDefinitionId: assetRequest.definition.id,
 		assetStatus: "loaded",
@@ -146,4 +156,49 @@ export function createThreeVisualMarkerGroup(
 		),
 		usedAsset: true,
 	};
+}
+
+// Both editor and runtime apply the same instance transform after the existing
+// asset normalization/default transform. Cached GLTF sources are never modified.
+export function createThreeVisualMarkerGroup(
+	marker: EntityMarker,
+	options: ThreeVisualRenderOptions = {},
+): ThreeVisualRenderResult {
+	const result = createMarkerGroup(marker, options);
+	updateThreeVisualMarkerTransform(result.group, marker);
+	return result;
+}
+
+export function updateThreeVisualMarkerTransform(
+	group: THREE.Group,
+	marker: EntityMarker,
+) {
+	applyMarkerTransform(
+		group,
+		marker,
+		resolveThreeVisualAssetTransform(marker.visual, undefined),
+	);
+	group.rotation.x = 0;
+	group.rotation.z = 0;
+	const transform = marker.transform;
+	if (transform) {
+		group.position.add(
+			new THREE.Vector3(
+				transform.position.x,
+				transform.position.y,
+				transform.position.z,
+			),
+		);
+		group.rotation.x += THREE.MathUtils.degToRad(transform.rotation.x);
+		group.rotation.y += THREE.MathUtils.degToRad(transform.rotation.y);
+		group.rotation.z += THREE.MathUtils.degToRad(transform.rotation.z);
+		group.scale.multiply(
+			new THREE.Vector3(
+				transform.scale.x,
+				transform.scale.y,
+				transform.scale.z,
+			),
+		);
+	}
+	group.userData.mapEntityTransform = transform;
 }

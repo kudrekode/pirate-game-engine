@@ -1,15 +1,15 @@
-import { validateClothing } from "../../../tools/blender-character/clothing-contract.mjs";
 import { randomUUID } from "node:crypto";
-import { validateAuthoredGeometry } from "../../../tools/blender-character/authored-human-contract.mjs";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
+import { validateAuthoredGeometry } from "../../../tools/blender-character/authored-human-contract.mjs";
 import {
 	CHARACTER_HAIR_COMPONENT_IDS,
 	NO_HAIR_COMPONENT_ID,
 } from "../../../tools/blender-character/character-component-registry.mjs";
+import { validateClothing } from "../../../tools/blender-character/clothing-contract.mjs";
 import {
 	compileProceduralMannequin,
 	PROCEDURAL_MANNEQUIN_PATHS,

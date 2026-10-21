@@ -5,6 +5,7 @@ import {
 	failQuest,
 	getQuestViews,
 	type QuestView,
+	runQuestCompletionActionsOnce,
 	updateQuestProgress,
 } from "./questEngine";
 import type { RuleActionContext } from "./ruleEngine";
@@ -14,6 +15,7 @@ export type RuntimeRuleEvent =
 	| { type: "status"; message: string }
 	| { type: "flowLog"; message: string }
 	| { type: "stateChanged" }
+	| { type: "itemFeedback"; message: string }
 	| { type: "inventoryChanged"; inventory: Record<string, number> }
 	| { type: "questsChanged"; quests: QuestView[] }
 	| { type: "questRewardsGranted"; questIds: string[] }
@@ -29,6 +31,52 @@ export type RuntimeRuleEvent =
 	  };
 
 export type RuntimeRuleEventEmitter = (event: RuntimeRuleEvent) => void;
+
+// All meaningful gameplay transactions settle through this shared boundary.
+// Guard re-entry while completion actions change flags/items or start another quest.
+export function updateSessionQuestProgress(
+	session: RuntimeSessionState,
+	emit: RuntimeRuleEventEmitter,
+): boolean {
+	const state = session.runtimeQuestState;
+	if (session.startupPending || state.syncing) return false;
+	state.syncing = true;
+	let changed = false;
+	try {
+		let ranActions: boolean;
+		do {
+			changed =
+				updateQuestProgress(
+					state,
+					session.runtimeState,
+					session.project.items,
+					(message) => emit({ type: "itemFeedback", message }),
+				) || changed;
+			ranActions = false;
+			for (const quest of state.quests) {
+				if (
+					quest.status !== "completed" ||
+					!state.rewardedQuestIds.has(quest.id)
+				)
+					continue;
+				if (
+					runQuestCompletionActionsOnce(
+						quest,
+						state.completedActionIds,
+						createRuntimeRuleContext(session, emit),
+						() => {
+							if (!state.syncing) syncQuestProgress(session, emit);
+						},
+					)
+				)
+					ranActions = changed = true;
+			}
+		} while (ranActions);
+	} finally {
+		state.syncing = false;
+	}
+	return changed;
+}
 
 function emitInventoryChanged(
 	session: RuntimeSessionState,
@@ -72,15 +120,11 @@ function syncQuestProgress(
 	session: RuntimeSessionState,
 	emit: RuntimeRuleEventEmitter,
 ): void {
-	if (session.startupPending) return;
+	if (session.startupPending || session.runtimeQuestState.syncing) return;
 	const beforeRewardedQuestIds = new Set(
 		session.runtimeQuestState.rewardedQuestIds,
 	);
-	const stateChanged = updateQuestProgress(
-		session.runtimeQuestState,
-		session.runtimeState,
-		session.project.items,
-	);
+	const stateChanged = updateSessionQuestProgress(session, emit);
 
 	if (stateChanged) {
 		emitInventoryChanged(session, emit);
@@ -158,6 +202,7 @@ export function createRuntimeRuleContext(
 					questId,
 					session.runtimeState,
 					session.project.items,
+					(message) => emit({ type: "itemFeedback", message }),
 				)
 			) {
 				emitInventoryChanged(session, emit);
@@ -190,5 +235,6 @@ export function createRuntimeRuleContext(
 		itemDefinitions: session.project.items,
 		shopDefinitions: session.project.shops,
 		stateChanged: () => handleStateChanged(session, emit),
+		showItemFeedback: (message) => emit({ type: "itemFeedback", message }),
 	};
 }

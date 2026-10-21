@@ -25,6 +25,77 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The charged archery acceptance route is one opt-in case in the existing ranged suite:
+`node node_modules/@playwright/test/cli.js test e2e/ranged-combat-v1.spec.ts --grep @archery-v2`.
+Inspect `--list` first. It imports `archery-v2-demo.project.json`, uses real
+E/Inventory/F holds/releases and pointer-lock mouse input, tests quick/partial/full
+draw, prolonged Hold, weak-shot drop, compensated long-range and elevated hits,
+wall/corner obstruction, draw cancellation, walking/sprint suppression, airborne
+rejection, Sword/unarmed switching and Continue. The old `@ranged-combat-v1` tag
+aliases this current route. `--grep @camera-v4-bow` selects the separate sky-aim regression.
+Only diagnostics are read; projectile positions and health are never injected.
+The selected Golden review is `node tools/blender-character/review-golden-bow.mjs --list`,
+then `--body athletic --charged`, `--body broad --charged` or `--body fuller --charged`;
+it reuses installed dressed characters and the production controller, checks an
+unchanged five-second Hold and captures Draw/Hold/Release from four views. Omitting
+`--charged` retains the original source-clip review. Run browser/art review separately
+from CI. Current compact evidence is under `docs/assets/archery-v2/`.
+
+The one-sword acceptance route is one opt-in case:
+`node node_modules/@playwright/test/cli.js test e2e/melee-weapon-v1.spec.ts --grep '@melee-weapon-v1'`.
+Inspect `--list` first. It imports `melee-weapon-v1-demo.project.json`, uses real
+movement/F/E and inventory controls, and checks unarmed/sword damage, pickup,
+equip/unequip, hand attachment, movement/airborne gating, Hit/Death, chest/pickup,
+dialogue, equipped and unequipped Continue, project isolation and settled scene,
+clone/load/RAF counters. The harness reads diagnostics; it never writes equip or
+combat state. Keep it separate from CI and art-review browsers on software rendering.
+The exact art selection is `node tools/blender-character/review-golden-sword.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `canonical`; no character builds.
+The canonical selection inspects all existing locomotion and interaction clips
+with the sword visible. Normal Play hides it during Interact/Pickup.
+
+Interaction animation acceptance is one opt-in case, with no character builds:
+`node node_modules/@playwright/test/cli.js test e2e/interaction-animation.spec.ts --grep '@interaction-animation'`.
+Inspect `--list` first. It imports `interaction-animation-demo.project.json`, uses
+real movement/E to open animated/static chests and collect a physical prop, checks
+target-facing, neutral signs/dialogue, no duplicate Open/rewards, stable scene,
+clone/load/RAF counters and semantic Save/Continue without action replay. It also
+compares saved editor data before/after Play. Two gameplay images and compact
+observations go to `docs/assets/interaction-animation/`. Keep separate from CI.
+The explicit art review is `node tools/blender-character/review-golden-interaction.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `chest`; it reuses installed GLBs.
+
+The quest authoring route is one opt-in case in the existing interaction suite:
+`node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@quest-objectives'`.
+Inspect `--list` first. It imports the interaction showcase, authors three ordered
+steps and the Keeper's Start Quest field through real controls, saves a separate
+showcase under `docs/assets/quest-objectives/`, then walks, talks, opens the chest
+and enters the keyed shack. It checks objective/completion feedback, exact project
+equality after Edit/Save/reload, and completes the route again in fresh Play.
+The harness only reads positions and saved data; it never writes quest progress
+or invokes runtime interactions. Run separately from CI to avoid contention with
+the software-rendered browser. No Blender or performance matrix is involved.
+
+The interaction authoring route is one opt-in case:
+`node node_modules/@playwright/test/cli.js test e2e/gameplay-interactions.spec.ts --grep '@gameplay-interactions'`.
+Inspect `--list` first. It imports the original Tidewatch project and uses real
+Inspector controls to author sign/barrel text, NPC lines, a chest reward, a keyed
+door and a cell trigger. It moves only the showcase chest through ordinary
+transform fields, saves the new project under `docs/assets/gameplay-interactions/`,
+then uses keyboard movement/E and dialogue controls through Play, Edit and reload.
+It does not write runtime positions or invoke interaction helpers from the browser.
+Keep this software-rendered route separate from CI; no Blender or visual matrix.
+
+The traversal acceptance course is one opt-in case (no compiler or Blender):
+`node node_modules/@playwright/test/cli.js test e2e/traversal-collision.spec.ts --grep '@traversal'`.
+Use `--list` first. It imports the unchanged Tidewatch Harbour, walks via real
+keyboard input, checks steps/dock seams/props/walls/water, observes authored
+Walk/Idle, then checks complete saved-project equality and replay after reload.
+Two screenshots and a compact checkpoint trace are written to
+`docs/assets/traversal/`. The chest physically obstructs the saved scene's doorway;
+the test records that limitation instead of moving it. Unobstructed doorway and
+interior behavior have deterministic geometry coverage. Run separately from CI.
+
 Install Chromium once if needed: `npx playwright install chromium`.
 On Windows use `npm.cmd`/`npx.cmd` when forwarding flags; the PowerShell shim can
 swallow them. For regex arguments containing `|`, prefer an existing quoted npm
@@ -63,6 +134,23 @@ accepted. All cases retain failure screenshots and traces. Root perf/asset succe
 images are optional with `CAPTURE_VISUALS=1`; normal summaries omit uncaptured paths.
 
 ## Screenshot selection and inspection
+
+The world-library acceptance is one opt-in editor workflow:
+`node node_modules/@playwright/test/cli.js test e2e/world-asset-library.spec.ts --grep '@world-kit' --output=test-results/world-kit/browser`.
+Use `--list` first. It drags all 23 curated assets, exercises transforms and
+duplication, composes a 30-object harbour, places an already finalised character,
+plays, saves and reloads. It records cache requests, diagnostics, three screenshots
+and ordinary project JSON. No character compiler or Blender matrix runs. Keep
+this software-rendered browser check separate from CI to avoid timing contention.
+The content-only GLB/thumbnail round trip is `node tools/world-kit/thumbnails.mjs`
+against the running editor; it uses the shared cached loader and thumbnail helper.
+
+The Map Editor product workflow is opt-in and uses one already finalised imported
+character, with no Blender work:
+`node node_modules/@playwright/test/cli.js test e2e/map-editor-product.spec.ts --grep '@map-product' --output=test-results/map-product-browser`.
+It covers native asset drag/drop, transform handles, hierarchy and inspector edits,
+history, character placement, Play isolation and full saved-project equality after
+reload. It captures editor, Play and reloaded screenshots plus persistence evidence.
 
 Finalised character game integration is opt-in:
 `node node_modules/@playwright/test/cli.js test e2e/asset-creator.spec.ts --grep '@game-character'`.
@@ -254,3 +342,76 @@ Current assets can log missing `Textures/colormap.png`; screenshots can produce
 WebGL ReadPixels warnings. Record relevant warnings separately from test failures.
 Both Playwright configs preserve failure screenshots and traces. Do not rerun a
 failed unchanged matrix/smoke without inspecting its first error and artifacts.
+
+## Runtime parity and saved-game acceptance
+
+Two opt-in real-input flows use ordinary checked-in projects, existing authored
+humanoids and read-only diagnostics. They do not compile assets or run performance
+matrices. Inspect the selection first:
+
+```powershell
+node node_modules/@playwright/test/cli.js test e2e/runtime-parity-save.spec.ts --grep '@runtime-parity-save' --list
+node node_modules/@playwright/test/cli.js test e2e/runtime-parity-save.spec.ts --grep '@runtime-parity-save' --output=test-results/runtime-parity-save
+```
+
+The courtyard case observes independent wander/patrol, interpolation and Golden
+idle/walk, dialogue pause, Space damage/defeat, enemy contact and defeat persistence.
+The Tidewatch case starts Harbour Trouble, gets the key, saves, reloads/continues,
+checks exact position, opened chest and one-time trigger suppression, completes
+the quest and continues the completed save. Both compare complete authored JSON.
+Screenshots and compact observation records go to `docs/assets/runtime-parity/`.
+Run separately from CI; the software WebGL browser can be slow. The save route
+contains no gameplay state injection and the diagnostics expose no mutation API.
+
+## Targeted runtime performance investigation
+
+The [current performance result](../THREE_RUNTIME_PERFORMANCE_RESULT.md) separates
+hardware frame pacing, CPU phases and asynchronous GPU timing. Run
+`node tools/profile-three-runtime.mjs --list` before selecting exact headed cases;
+`node tools/profile-three-runtime.mjs local-check parity-contact,harbour-patrol`
+uses the existing parity/harbour projects after starting the root Vite server.
+This is opt-in investigation, with no FPS assertions or production mutation hooks.
+
+`node node_modules/@playwright/test/cli.js test e2e/runtime-parity-save.spec.ts --grep '@runtime-performance' --list`
+selects the one five-patrol lifecycle acceptance case. Its checks cover actor
+movement/animation, load/clone/rebuild stability, hidden-editor rendering and
+Play/Edit preservation. The existing `@runtime-parity-save` pair covers gameplay,
+quests and Continue. Set `RUNTIME_PARITY_OUTPUT` to a task-specific directory to
+keep fresh evidence separate from the historical parity artifacts.
+
+## Combat-event frame gaps
+
+The combat-only investigation is documented in [COMBAT_HITCH_RESULT.md](../COMBAT_HITCH_RESULT.md).
+After starting root Vite, inspect `node tools/profile-combat-hitch.mjs --list`,
+then use `node tools/profile-combat-hitch.mjs after-local-check 5` for the unchanged
+Runtime Parity Demo. Miss, contact, nonlethal and lethal events are recorded
+separately. Labels beginning with `after` assert preserved scene/controller
+identities and local defeat disposal. Browser-only probes and raw output remain
+outside production; evidence is written to `test-results/combat-hitch/`.
+Do not run other suites concurrently with frame-pacing captures.
+
+## Movement V2 acceptance
+
+One opt-in real-input case covers Walk/Run, rest/moving/sprint jumps, Fall/Land,
+new F attack, grounded interactions/save boundaries, wall collision, explicit low
+floor landing, Continue and unchanged authored data. It uses installed Chrome and
+read-only RAF observations, with no gameplay mutation hooks or character builds:
+
+```powershell
+node node_modules/@playwright/test/cli.js test e2e/movement-v2.spec.ts --grep @movement-v2 --list
+node node_modules/@playwright/test/cli.js test e2e/movement-v2.spec.ts --grep @movement-v2 --output=test-results/movement-v2/browser
+```
+
+Import `movement-v2-demo.project.json`, choose 3D View and Play to try it manually.
+The detailed collision route uses the existing Inspect mode's world-relative input;
+locomotion and jump chains also run at the authored third-person camera. The harness
+restores viewport focus after camera controls. Keep GPU screenshots outside held-key
+measurements: a readback can extend the real key hold and carry the player to a wall.
+Native Space activation on Inventory's focused Close button is preserved.
+
+The animation review selects only four new motions and existing dressed bodies:
+`node tools/blender-character/review-golden-movement.mjs --list`, then
+`--body athletic`, `--body broad` or `--body fuller`. Root Vite must be running.
+No historical matrix or character regeneration is selected. Timed renders and body
+sheets are linked in `MOVEMENT_V2_RESULT.md`; numeric exports alone do not grant
+visual acceptance. Lifecycle counters cover movement before the deliberate reload.

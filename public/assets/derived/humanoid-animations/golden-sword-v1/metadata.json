@@ -1,0 +1,27 @@
+{
+	"version": "golden-sword-v1",
+	"rigProfile": "golden-humanoid-v0",
+	"blender": "5.2.0 LTS",
+	"clips": {
+		"Attack": {
+			"name": "GoldenSword_Attack_V1",
+			"duration": 0.75
+		}
+	},
+	"packaging": "one mesh-free armature and one sword attack",
+	"bytes": 71156,
+	"sha256": "bcea515ab14a22a26439e87dc594c57930c25db4e698a8080fb54c42ee0852d4",
+	"binaryDeterministic": true,
+	"sourceHashes": {
+		"tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/animations/golden-sword-v1/actions.blend": "8cc8497cb65035b00a4f9aa4c0cc6948865856d1d4df9f1336b27f538cc57a79",
+		"tools/blender-character/animations/golden-sword-v1/author.py": "de3f6cff8cd9c1128681a5f72eb4ced333a8a022dee7f67cbd746e5dd49d17ca",
+		"tools/blender-character/animations/golden-movement-v1/author.py": "24d76c799463efcb467b52cbc38a7bf48baef976ec940f232aa849e2a7f3b0a6",
+		"tools/blender-character/animations/golden-sword-v1/export.py": "6c950f04e33bb745cef90ea16a18bea7187ea4d42bc7bb6a661ccbdf173ab2b5",
+		"public/assets/derived/authored-humans/everyday-v1/mannequin.glb": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb": "00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c"
+	},
+	"rootPolicy": "No root tracks; vertical-only pelvis, gameplay owns movement",
+	"provenance": "tools/blender-character/animations/golden-sword-v1/README.md"
+}

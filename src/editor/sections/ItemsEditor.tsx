@@ -1,4 +1,11 @@
 import { useEffect, useState } from "react";
+import { BOW_ITEM } from "../../data/bow";
+import { SWORD_ITEM } from "../../data/sword";
+import {
+	itemCategoryLabels,
+	itemIcon,
+	itemIcons,
+} from "../../runtime/itemPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	ConditionExpression,
@@ -9,9 +16,9 @@ import type {
 const categories: ItemDefinition["category"][] = [
 	"key",
 	"currency",
-	"consumable",
 	"quest",
 	"misc",
+	"weapon",
 ];
 
 function makeId(prefix: string): string {
@@ -153,6 +160,30 @@ export function ItemsEditor() {
 					Add item
 				</button>
 				<div className="list-stack item-list">
+					<button
+						type="button"
+						onClick={() => {
+							if (!project.items.some((item) => item.id === SWORD_ITEM.id))
+								updateProject((draft) => {
+									draft.items.push({ ...SWORD_ITEM });
+								});
+							setSelectedItemId(SWORD_ITEM.id);
+						}}
+					>
+						Add Sword
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							if (!project.items.some((item) => item.id === BOW_ITEM.id))
+								updateProject((draft) => {
+									draft.items.push({ ...BOW_ITEM });
+								});
+							setSelectedItemId(BOW_ITEM.id);
+						}}
+					>
+						Add Bow
+					</button>
 					{project.items.map((item) => (
 						<button
 							className={`list-item ${item.id === selectedItemId ? "selected" : ""}`}
@@ -163,12 +194,10 @@ export function ItemsEditor() {
 							}}
 							type="button"
 						>
-							<span className="item-icon">
-								{item.name.slice(0, 1).toUpperCase()}
-							</span>
+							<span className="item-icon">{itemIcon(item)}</span>
 							<span>
 								<strong>{item.name}</strong>
-								<small>{item.category}</small>
+								<small>{itemCategoryLabels[item.category]}</small>
 							</span>
 						</button>
 					))}
@@ -182,6 +211,20 @@ export function ItemsEditor() {
 				{selectedItem ? (
 					<>
 						<div className="panel-title">Item Definition</div>
+						{selectedItem.weapon === "bow" && (
+							<p className="helper-text">
+								Bow: 32 damage, 1000 ms cooldown, unlimited arrows. Place a
+								Collect Item object in the Map Inspector and select this item
+								and the Bow visual.
+							</p>
+						)}
+						{selectedItem.weapon === "sword" && (
+							<p className="helper-text">
+								Sword: 35 damage, 2-cell reach, 750 ms cooldown. Place a Collect
+								Item object in the Map Inspector and select this item and the
+								Sword visual.
+							</p>
+						)}
 						<p className="helper-text">
 							Items are project definitions. Inventory quantities are copied
 							into runtime state when play starts. Currency items are physical
@@ -191,10 +234,6 @@ export function ItemsEditor() {
 							<div className="validation-message">{message}</div>
 						) : null}
 						<div className="form-grid">
-							<label>
-								ID
-								<input disabled value={selectedItem.id} />
-							</label>
 							<label>
 								Name
 								<input
@@ -215,9 +254,36 @@ export function ItemsEditor() {
 								>
 									{categories.map((category) => (
 										<option key={category} value={category}>
-											{category}
+											{itemCategoryLabels[category]}
 										</option>
 									))}
+									{selectedItem.category === "consumable" && (
+										<option value="consumable">
+											Consumable (legacy label)
+										</option>
+									)}
+								</select>
+							</label>
+							<label>
+								Icon
+								<select
+									value={selectedItem.iconId ?? ""}
+									onChange={(event) =>
+										updateItem({ iconId: event.target.value || undefined })
+									}
+								>
+									<option value="">Category icon</option>
+									{Object.entries(itemIcons).map(([id, symbol]) => (
+										<option key={id} value={id}>
+											{symbol} {id[0].toUpperCase() + id.slice(1)}
+										</option>
+									))}
+									{selectedItem.iconId &&
+										!Object.keys(itemIcons).includes(selectedItem.iconId) && (
+											<option value={selectedItem.iconId}>
+												Legacy icon (category fallback)
+											</option>
+										)}
 								</select>
 							</label>
 						</div>
@@ -248,12 +314,21 @@ export function ItemsEditor() {
 						</label>
 						{selectedItem.stackable ? (
 							<label>
-								Maximum stack
+								Stack limit
 								<input
 									min={1}
 									onChange={(event) =>
 										updateItem({
-											maxStack: Math.max(1, Number(event.target.value)),
+											maxStack:
+												event.target.value === ""
+													? undefined
+													: Math.min(
+															9999,
+															Math.max(
+																1,
+																Math.round(Number(event.target.value)),
+															),
+														),
 										})
 									}
 									placeholder="Unlimited"
@@ -262,6 +337,11 @@ export function ItemsEditor() {
 								/>
 							</label>
 						) : null}
+						{!selectedItem.stackable && (
+							<p className="helper-text">
+								Stack limit: 1. Enable Stackable for larger quantities.
+							</p>
+						)}
 						<button
 							className="danger-button"
 							onClick={deleteItem}

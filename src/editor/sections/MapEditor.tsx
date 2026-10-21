@@ -27,6 +27,7 @@ import type {
 	PickupObject,
 	PixelAsset,
 } from "../../types/game";
+import { AssetBrowser } from "./AssetBrowser";
 import { MapInspector } from "./MapInspector";
 import { resolveMapEditorSelection } from "./mapEditorSelection";
 import {
@@ -38,6 +39,17 @@ import {
 	toggleMapOverlayFilter,
 	writeStoredMapOverlayFilters,
 } from "./overlayFilters";
+import { SceneHierarchy } from "./SceneHierarchy";
+import { SceneTransformInspector } from "./SceneTransformInspector";
+import {
+	deleteSceneSelection,
+	duplicateSceneSelection,
+	getSceneEntity,
+	placeSceneAsset,
+	SCENE_ASSET_MIME,
+	type SceneAsset,
+	sceneAssets,
+} from "./sceneEditing";
 import { ThreeDPreview } from "./ThreeDPreview";
 import {
 	resolveTerrainBrushSamples,
@@ -157,7 +169,9 @@ function readStoredPaletteWidth(): number {
 	}
 
 	const storedWidth = Number(localStorage.getItem(PALETTE_WIDTH_STORAGE_KEY));
-	return Number.isFinite(storedWidth) ? clampPaletteWidth(storedWidth) : 260;
+	return storedWidth > 0 && Number.isFinite(storedWidth)
+		? clampPaletteWidth(storedWidth)
+		: 240;
 }
 
 function clampInspectorWidth(value: number): number {
@@ -173,7 +187,9 @@ function readStoredInspectorWidth(): number {
 	}
 
 	const storedWidth = Number(localStorage.getItem(INSPECTOR_WIDTH_STORAGE_KEY));
-	return Number.isFinite(storedWidth) ? clampInspectorWidth(storedWidth) : 260;
+	return storedWidth > 0 && Number.isFinite(storedWidth)
+		? clampInspectorWidth(storedWidth)
+		: 290;
 }
 
 function isInBounds(
@@ -226,7 +242,13 @@ function emptyPixels(
 	);
 }
 
-export function MapEditor() {
+export function MapEditor({
+	onViewChange,
+}: {
+	onViewChange?: (view: "2d" | "3d") => void;
+} = {}) {
+	const editorRootRef = useRef<HTMLElement>(null);
+	const pointerHistoryRef = useRef(false);
 	const project = useProjectStore((state) => state.project);
 	const setTiles = useProjectStore((state) => state.setTiles);
 	const setTerrainHeights = useProjectStore((state) => state.setTerrainHeights);
@@ -281,13 +303,50 @@ export function MapEditor() {
 	} | null>(null);
 	const panRef = useRef({ isPanning: false, lastX: 0, lastY: 0 });
 	const activeArea = getEditorActiveArea(project);
-	const { recordMapEdit, undoMapEdit, redoMapEdit, canUndo, canRedo } =
-		useMapEditHistory(activeArea.id);
+	const {
+		recordMapEdit,
+		undoMapEdit,
+		redoMapEdit,
+		canUndo,
+		canRedo,
+		beginMapEdit,
+		endMapEdit,
+	} = useMapEditHistory(activeArea.id, true);
+	const [transformMode, setTransformMode] = useState<
+		"translate" | "rotate" | "scale"
+	>("translate");
+	const [positionSnap, setPositionSnap] = useState(1);
+	const [rotationSnap, setRotationSnap] = useState(15);
+	const [focusRequest, setFocusRequest] = useState(0);
+	const [addAssetRequest, setAddAssetRequest] = useState<{
+		asset: SceneAsset;
+		serial: number;
+	}>();
 
 	const [activeTool, setActiveTool] = useState<MapEditorTool>(
 		incomingNpcId ? "paint" : "select",
 	);
-	const [mapView, setMapView] = useState<MapWorkspaceView>("2d");
+	const [mapView, setMapView] = useState<MapWorkspaceView>(() =>
+		localStorage.getItem("map-workspace-view-v1") === "3d" ? "3d" : "2d",
+	);
+	useEffect(() => {
+		onViewChange?.(mapView);
+		try {
+			localStorage.setItem("map-workspace-view-v1", mapView);
+		} catch {
+			/* Workspace preferences must not block editing. */
+		}
+	}, [mapView, onViewChange]);
+	useEffect(() => {
+		if (!focusRequest || mapView !== "2d") return;
+		const entity = getSceneEntity(project, selection);
+		if (entity)
+			mapStageRef.current
+				?.querySelector<HTMLElement>(
+					`[data-tile-x="${entity.x}"][data-tile-y="${entity.y}"]`,
+				)
+				?.scrollIntoView?.({ block: "center", inline: "center" });
+	}, [focusRequest, mapView, project, selection]);
 	const [paintTarget, setPaintTarget] = useState<PaintTarget>(
 		incomingNpcId ? "npc" : "terrain",
 	);
@@ -414,6 +473,7 @@ export function MapEditor() {
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (
+				editorRootRef.current?.closest("[hidden]") ||
 				event.defaultPrevented ||
 				event.altKey ||
 				event.ctrlKey ||
@@ -446,6 +506,65 @@ export function MapEditor() {
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [setMapPaletteSelection]);
+
+	useEffect(() => {
+		function shortcut(event: KeyboardEvent) {
+			if (
+				editorRootRef.current?.closest("[hidden]") ||
+				event.defaultPrevented ||
+				isTypingTarget(event.target) ||
+				event.altKey
+			)
+				return;
+			const key = event.key.toLowerCase();
+			const modifier = event.ctrlKey || event.metaKey;
+			if (modifier && key === "z") {
+				event.preventDefault();
+				event.shiftKey ? redoMapEdit() : undoMapEdit();
+			} else if (modifier && key === "y") {
+				event.preventDefault();
+				redoMapEdit();
+			} else if (modifier && key === "d") {
+				event.preventDefault();
+				duplicateSceneSelection(selection);
+			} else if (!modifier && (key === "delete" || key === "backspace")) {
+				event.preventDefault();
+				deleteSceneSelection(selection);
+			} else if (!modifier && key === "f") {
+				event.preventDefault();
+				setFocusRequest((value) => value + 1);
+			} else if (!modifier && ["w", "e", "r"].includes(key)) {
+				event.preventDefault();
+				setTransformMode(
+					key === "w" ? "translate" : key === "e" ? "rotate" : "scale",
+				);
+				setActiveTool("select");
+				setIsTerrainPaintArmed(false);
+				setMapPaletteSelection({ type: "none" });
+			}
+		}
+		window.addEventListener("keydown", shortcut);
+		return () => window.removeEventListener("keydown", shortcut);
+	});
+
+	function addAsset(asset: SceneAsset, position?: { x: number; y: number }) {
+		setActiveTool("select");
+		setIsTerrainPaintArmed(false);
+		setTransformMode("translate");
+		if (mapView === "3d" && !position) {
+			setAddAssetRequest({ asset, serial: Date.now() });
+			return;
+		}
+		const before = cloneCurrentProject();
+		placeSceneAsset(
+			asset,
+			position ?? {
+				x: Math.floor(activeArea.width / 2),
+				y: Math.floor(activeArea.height / 2),
+			},
+		);
+		recordMapEdit(before);
+	}
 
 	const terrainLookup = useMemo(() => {
 		const lookup = new Map<string, string>();
@@ -1672,6 +1791,35 @@ export function MapEditor() {
 	return (
 		<section
 			className="editor-panel map-editor"
+			ref={editorRootRef}
+			onPointerDownCapture={(event) => {
+				if (
+					event.button === 0 &&
+					event.target instanceof HTMLElement &&
+					event.target.closest(".map-stage, .three-d-preview-host")
+				) {
+					pointerHistoryRef.current = true;
+					beginMapEdit();
+				}
+			}}
+			onPointerUp={() => {
+				if (pointerHistoryRef.current) {
+					pointerHistoryRef.current = false;
+					endMapEdit();
+				}
+			}}
+			onPointerCancel={() => {
+				if (pointerHistoryRef.current) {
+					pointerHistoryRef.current = false;
+					endMapEdit();
+				}
+			}}
+			onFocusCapture={(event) => {
+				if (isTypingTarget(event.target)) beginMapEdit();
+			}}
+			onBlurCapture={(event) => {
+				if (isTypingTarget(event.target)) endMapEdit();
+			}}
 			style={
 				{
 					"--map-inspector-width": `${inspectorWidth}px`,
@@ -1681,707 +1829,717 @@ export function MapEditor() {
 		>
 			<aside className="tool-panel map-tool-panel">
 				<div className="map-tool-panel-content">
-					<div className="panel-title">Area</div>
-					<div className="form-stack area-panel">
-						<label>
-							Editing
-							<select
-								onChange={(event) => setActiveArea(event.target.value)}
-								value={activeArea.id}
+					<AssetBrowser project={project} onAdd={(asset) => addAsset(asset)} />
+					<details className="map-authoring-tools" open={mapView === "2d"}>
+						<summary>Map tools & area settings</summary>
+						<div className="panel-title">Area</div>
+						<div className="form-stack area-panel">
+							<label>
+								Editing
+								<select
+									onChange={(event) => setActiveArea(event.target.value)}
+									value={activeArea.id}
+								>
+									{project.areas.map((area) => (
+										<option key={area.id} value={area.id}>
+											{area.name}
+										</option>
+									))}
+								</select>
+							</label>
+							<label>
+								Name
+								<input
+									onChange={(event) =>
+										updateActiveArea({ name: event.target.value })
+									}
+									value={activeArea.name}
+								/>
+							</label>
+							<label>
+								Kind
+								<select
+									onChange={(event) =>
+										updateActiveArea({
+											kind: event.target.value as GameAreaKind,
+										})
+									}
+									value={activeArea.kind}
+								>
+									{areaKindOptions.map((kind) => (
+										<option key={kind} value={kind}>
+											{kind}
+										</option>
+									))}
+								</select>
+							</label>
+							<div className="area-create-row">
+								<select
+									onChange={(event) =>
+										setNewAreaTemplateId(event.target.value as AreaTemplateId)
+									}
+									value={newAreaTemplateId}
+								>
+									{areaTemplates.map((template) => (
+										<option key={template.id} value={template.id}>
+											{template.label}
+										</option>
+									))}
+								</select>
+								<button onClick={createNewArea} type="button">
+									Add
+								</button>
+							</div>
+							<button
+								className="danger-button compact"
+								disabled={project.areas.length <= 1}
+								onClick={() => deleteArea(activeArea.id)}
+								type="button"
 							>
-								{project.areas.map((area) => (
-									<option key={area.id} value={area.id}>
-										{area.name}
-									</option>
-								))}
-							</select>
-						</label>
-						<label>
-							Name
-							<input
-								onChange={(event) =>
-									updateActiveArea({ name: event.target.value })
-								}
-								value={activeArea.name}
-							/>
-						</label>
-						<label>
-							Kind
-							<select
-								onChange={(event) =>
-									updateActiveArea({ kind: event.target.value as GameAreaKind })
-								}
-								value={activeArea.kind}
-							>
-								{areaKindOptions.map((kind) => (
-									<option key={kind} value={kind}>
-										{kind}
-									</option>
-								))}
-							</select>
-						</label>
-						<div className="area-create-row">
-							<select
-								onChange={(event) =>
-									setNewAreaTemplateId(event.target.value as AreaTemplateId)
-								}
-								value={newAreaTemplateId}
-							>
-								{areaTemplates.map((template) => (
-									<option key={template.id} value={template.id}>
-										{template.label}
-									</option>
-								))}
-							</select>
-							<button onClick={createNewArea} type="button">
-								Add
+								Delete area
 							</button>
+							{areaLinks.length > 0 ? (
+								<div className="area-link-list">
+									{areaLinks.map((eventBlock) => {
+										const targetArea = project.areas.find(
+											(area) => area.id === eventBlock.link?.targetAreaId,
+										);
+										return (
+											<div key={eventBlock.id}>
+												{eventBlock.name} {"->"}{" "}
+												{targetArea?.name ?? "Unlinked"}
+											</div>
+										);
+									})}
+								</div>
+							) : null}
+						</div>
+						<div className="panel-title">Map size</div>
+						<div className="map-size-readout">
+							{activeArea.width} x {activeArea.height} tiles
+						</div>
+						<div className="form-grid map-size-grid">
+							<label>
+								Width
+								<input
+									min={1}
+									onChange={(event) =>
+										setDraftMapSize((size) => ({
+											...size,
+											width: Number(event.target.value),
+										}))
+									}
+									type="number"
+									value={draftMapSize.width}
+								/>
+							</label>
+							<label>
+								Height
+								<input
+									min={1}
+									onChange={(event) =>
+										setDraftMapSize((size) => ({
+											...size,
+											height: Number(event.target.value),
+										}))
+									}
+									type="number"
+									value={draftMapSize.height}
+								/>
+							</label>
 						</div>
 						<button
-							className="danger-button compact"
-							disabled={project.areas.length <= 1}
-							onClick={() => deleteArea(activeArea.id)}
+							className="full-width"
+							onClick={applyMapResize}
 							type="button"
 						>
-							Delete area
+							Apply Resize
 						</button>
-						{areaLinks.length > 0 ? (
-							<div className="area-link-list">
-								{areaLinks.map((eventBlock) => {
-									const targetArea = project.areas.find(
-										(area) => area.id === eventBlock.link?.targetAreaId,
-									);
+						<div className="quick-grow-actions">
+							<button onClick={() => growMap(10, 0)} type="button">
+								Add 10 Right
+							</button>
+							<button onClick={() => growMap(0, 10)} type="button">
+								Add 10 Down
+							</button>
+						</div>
+						{resizeMessage ? (
+							<p className="tool-note">{resizeMessage}</p>
+						) : null}
+
+						<details open className="palette-section">
+							<summary>Terrain</summary>
+							<div className="palette-list tile-palette">
+								{terrainPresets.map((tile) => {
+									const style = project.tileStyles[tile.id] ?? {
+										color: tile.color,
+										label: tile.label,
+									};
 									return (
-										<div key={eventBlock.id}>
-											{eventBlock.name} {"->"} {targetArea?.name ?? "Unlinked"}
-										</div>
+										<button
+											className={`palette-item ${
+												selectedTerrainId === tile.id &&
+												paintTarget === "terrain"
+													? "selected"
+													: ""
+											}`}
+											key={tile.id}
+											onClick={() => selectTerrain(tile.id)}
+											type="button"
+										>
+											<span
+												className="swatch pixel-swatch"
+												style={{
+													background: style.color,
+													backgroundImage: pixelAssetUrls[tile.id],
+												}}
+											/>
+											{style.label ?? tile.label}
+										</button>
 									);
 								})}
 							</div>
-						) : null}
-					</div>
-					<div className="panel-title">Map size</div>
-					<div className="map-size-readout">
-						{activeArea.width} x {activeArea.height} tiles
-					</div>
-					<div className="form-grid map-size-grid">
-						<label>
-							Width
-							<input
-								min={1}
-								onChange={(event) =>
-									setDraftMapSize((size) => ({
-										...size,
-										width: Number(event.target.value),
-									}))
-								}
-								type="number"
-								value={draftMapSize.width}
-							/>
-						</label>
-						<label>
-							Height
-							<input
-								min={1}
-								onChange={(event) =>
-									setDraftMapSize((size) => ({
-										...size,
-										height: Number(event.target.value),
-									}))
-								}
-								type="number"
-								value={draftMapSize.height}
-							/>
-						</label>
-					</div>
-					<button className="full-width" onClick={applyMapResize} type="button">
-						Apply Resize
-					</button>
-					<div className="quick-grow-actions">
-						<button onClick={() => growMap(10, 0)} type="button">
-							Add 10 Right
-						</button>
-						<button onClick={() => growMap(0, 10)} type="button">
-							Add 10 Down
-						</button>
-					</div>
-					{resizeMessage ? <p className="tool-note">{resizeMessage}</p> : null}
+						</details>
 
-					<details open className="palette-section">
-						<summary>Terrain</summary>
-						<div className="palette-list tile-palette">
+						<details className="palette-section">
+							<summary>Overlays</summary>
+							<div className="palette-list tile-palette">
+								{overlayPresets.map((overlay) => (
+									<button
+										className={`palette-item ${
+											selectedOverlayId === overlay.id &&
+											paintTarget === "overlay"
+												? "selected"
+												: ""
+										}`}
+										key={overlay.id}
+										onClick={() => selectOverlay(overlay.id)}
+										type="button"
+									>
+										<span
+											className="swatch pixel-swatch"
+											style={{
+												background: overlay.color,
+												backgroundImage: pixelAssetUrls[overlay.id],
+											}}
+										/>
+										{overlay.label}
+									</button>
+								))}
+							</div>
+						</details>
+
+						<details className="palette-section">
+							<summary>Structures</summary>
+							<div className="palette-list tile-palette">
+								{structurePresets.map((structure) => (
+									<button
+										className={`palette-item ${
+											selectedStructureId === structure.id &&
+											paintTarget === "structure"
+												? "selected"
+												: ""
+										}`}
+										key={structure.id}
+										onClick={() => selectStructure(structure.id)}
+										type="button"
+									>
+										<span
+											className="swatch structure-swatch"
+											style={{ background: structure.roofColor }}
+										/>
+										{structure.label}
+									</button>
+								))}
+							</div>
+						</details>
+
+						<details className="palette-section">
+							<summary>Objects</summary>
+							<label>
+								Object definition
+								<select
+									onChange={(event) => {
+										setSelectedObjectDefinitionId(event.target.value);
+										if (paintTarget === "object") {
+											setMapPaletteSelection({
+												objectDefinitionId: event.target.value,
+												type: "object",
+											});
+										}
+									}}
+									value={selectedObjectDefinitionId}
+								>
+									{project.objects.map((object) => (
+										<option key={object.id} value={object.id}>
+											{object.name}
+										</option>
+									))}
+								</select>
+							</label>
+							<button
+								className={`palette-item ${paintTarget === "object" ? "selected" : ""}`}
+								disabled={!selectedObjectDefinitionId}
+								onClick={() => {
+									setActiveTool("paint");
+									setPaintTarget("object");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({
+										objectDefinitionId: selectedObjectDefinitionId,
+										type: "object",
+									});
+								}}
+								type="button"
+							>
+								<span className="swatch object-swatch">O</span>
+								{selectedObjectDefinition?.name ?? "Object"}
+							</button>
+						</details>
+
+						<details className="palette-section">
+							<summary>Special</summary>
+							<button
+								className={`palette-item ${paintTarget === "eventBlock" ? "selected" : ""}`}
+								onClick={() => {
+									setActiveTool("paint");
+									setPaintTarget("eventBlock");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "eventBlock" });
+								}}
+								type="button"
+							>
+								<span className="swatch event-swatch">E</span>
+								Event block
+							</button>
+							<button
+								className={`palette-item ${paintTarget === "pickup" ? "selected" : ""}`}
+								onClick={() => {
+									setActiveTool("paint");
+									setPaintTarget("pickup");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({
+										itemId: project.items[0]?.id,
+										type: "pickup",
+									});
+								}}
+								type="button"
+							>
+								<span className="swatch pickup-swatch">P</span>
+								Pickup
+							</button>
+							<label>
+								NPC definition
+								<select
+									onChange={(event) => {
+										setSelectedNpcDefinitionId(event.target.value);
+										if (paintTarget === "npc") {
+											setMapPaletteSelection({
+												npcDefinitionId: event.target.value,
+												type: "npc",
+											});
+										}
+									}}
+									value={selectedNpcDefinitionId}
+								>
+									{project.npcs.map((npc) => (
+										<option key={npc.id} value={npc.id}>
+											{npc.name}
+										</option>
+									))}
+								</select>
+							</label>
+							<button
+								className={`palette-item ${paintTarget === "npc" ? "selected" : ""}`}
+								disabled={!selectedNpcDefinitionId}
+								onClick={() => {
+									setActiveTool("paint");
+									setPaintTarget("npc");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({
+										npcDefinitionId: selectedNpcDefinitionId,
+										type: "npc",
+									});
+								}}
+								type="button"
+							>
+								<span className="swatch npc-swatch">N</span>
+								NPC
+							</button>
+						</details>
+
+						<div className="panel-title">Tools</div>
+						<div className="tool-button-grid">
+							<button
+								className={activeTool === "select" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("select");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Select
+							</button>
+							<button
+								className={activeTool === "paint" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("paint");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Paint
+							</button>
+							<button
+								className={activeTool === "erase" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("erase");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Erase
+							</button>
+							<button
+								className={activeTool === "pan" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("pan");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Pan
+							</button>
+						</div>
+						<div className="panel-title secondary">Height</div>
+						<div className="tool-button-grid">
+							<button
+								className={activeTool === "raise-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("raise-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Raise
+							</button>
+							<button
+								className={activeTool === "lower-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("lower-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Lower
+							</button>
+							<button
+								className={activeTool === "flatten-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("flatten-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Flatten
+							</button>
+							<button
+								className={activeTool === "slope-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("slope-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Slope
+							</button>
+							<button
+								className={activeTool === "set-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("set-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Set Height
+							</button>
+							<button
+								className={activeTool === "smooth-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("smooth-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Smooth
+							</button>
+							<button
+								className={activeTool === "roughen-height" ? "selected" : ""}
+								onClick={() => {
+									setActiveTool("roughen-height");
+									setPaintTarget("terrain");
+									setIsTerrainPaintArmed(false);
+									setMapPaletteSelection({ type: "none" });
+								}}
+								type="button"
+							>
+								Roughen
+							</button>
+						</div>
+						{activeTool === "set-height" || activeTool === "slope-height" ? (
+							<label>
+								{activeTool === "slope-height"
+									? "Slope end height"
+									: "Height value"}
+								<input
+									max="8"
+									min="-2"
+									onChange={(event) =>
+										setHeightToolValue(Number(event.target.value))
+									}
+									type="number"
+									value={heightToolValue}
+								/>
+							</label>
+						) : null}
+						<p className="tool-note">
+							Hotkeys: 1 Select, 2 Paint, 3 Erase. Erase removes entities, then
+							overlays, then resets terrain to grass.
+						</p>
+
+						<div className="panel-title">Brush</div>
+						<div className="segmented-control">
+							{(["brush", "line", "rectangle", "fill"] as TerrainGesture[]).map(
+								(gesture) => (
+									<button
+										className={terrainGesture === gesture ? "selected" : ""}
+										key={gesture}
+										onClick={() => selectTerrainGesture(gesture)}
+										type="button"
+									>
+										{gesture === "brush"
+											? "Brush"
+											: gesture === "line"
+												? "Line"
+												: gesture === "rectangle"
+													? "Rectangle"
+													: "Fill"}
+									</button>
+								),
+							)}
+						</div>
+						{terrainGesture !== "fill" ? (
+							<label>
+								Mode
+								<select
+									onChange={(event) =>
+										selectTerrainBrushMode(
+											event.target.value as TerrainBrushMode,
+										)
+									}
+									value={getTerrainBrushMode()}
+								>
+									<option value="paint">Paint terrain</option>
+									<option value="raise-height">Raise height</option>
+									<option value="lower-height">Lower height</option>
+									<option value="flatten-height">Flatten height</option>
+									<option value="slope-height">Slope height</option>
+									<option value="set-height">Set height</option>
+									<option value="smooth-height">Smooth height</option>
+									<option value="roughen-height">Roughen height</option>
+								</select>
+							</label>
+						) : null}
+						{terrainGesture === "brush" ? (
+							<>
+								<div className="segmented-control">
+									{([1, 2, 3, 4, 5, 6, 7, 8] as BrushSize[]).map((size) => (
+										<button
+											className={brushSize === size ? "selected" : ""}
+											key={size}
+											onClick={() => setBrushSize(size)}
+											type="button"
+										>
+											{size}
+										</button>
+									))}
+								</div>
+								<div className="segmented-control">
+									{(["square", "circle"] as TerrainBrushShape[]).map(
+										(shape) => (
+											<button
+												className={brushShape === shape ? "selected" : ""}
+												key={shape}
+												onClick={() => setBrushShape(shape)}
+												type="button"
+											>
+												{shape === "square" ? "Square" : "Circle"}
+											</button>
+										),
+									)}
+								</div>
+							</>
+						) : null}
+						{terrainGesture !== "fill" && isHeightTool(activeTool) ? (
+							<label>
+								Strength
+								<input
+									max="4"
+									min="1"
+									onChange={(event) =>
+										setBrushStrength(Number(event.target.value))
+									}
+									step="1"
+									type="range"
+									value={brushStrength}
+								/>
+								<span>{brushStrength}</span>
+							</label>
+						) : null}
+						{terrainGesture === "brush" &&
+						(activeTool === "raise-height" ||
+							activeTool === "lower-height" ||
+							activeTool === "smooth-height" ||
+							activeTool === "slope-height" ||
+							activeTool === "roughen-height") ? (
+							<label>
+								Falloff
+								<select
+									onChange={(event) =>
+										setBrushFalloff(event.target.value as TerrainBrushFalloff)
+									}
+									value={brushFalloff}
+								>
+									<option value="hard">Hard</option>
+									<option value="linear">Linear</option>
+									<option value="smooth">Smooth</option>
+								</select>
+							</label>
+						) : null}
+
+						<div className="panel-title secondary">View</div>
+						<div className="inline-actions">
+							<button
+								onClick={() =>
+									setZoom((value) =>
+										Math.max(0.4, Number((value - 0.2).toFixed(1))),
+									)
+								}
+								type="button"
+							>
+								-
+							</button>
+							<span className="zoom-readout">{Math.round(zoom * 100)}%</span>
+							<button
+								onClick={() =>
+									setZoom((value) =>
+										Math.min(2.4, Number((value + 0.2).toFixed(1))),
+									)
+								}
+								type="button"
+							>
+								+
+							</button>
+						</div>
+						<button
+							className="full-width reset-zoom-button"
+							onClick={() => setZoom(1)}
+							type="button"
+						>
+							Reset Zoom
+						</button>
+						<label className="checkbox-row standalone">
+							<input
+								checked={showGrid}
+								onChange={(event) => setShowGrid(event.target.checked)}
+								type="checkbox"
+							/>
+							Show grid
+						</label>
+						<div className="panel-title">Filters</div>
+						<div className="filter-button-row">
+							<button
+								onClick={() => setOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)}
+								type="button"
+							>
+								Show All
+							</button>
+							<button
+								onClick={() => setOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)}
+								type="button"
+							>
+								Hide All
+							</button>
+							<button
+								onClick={() => setOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)}
+								type="button"
+							>
+								Gameplay View
+							</button>
+						</div>
+						<div className="filter-grid">
+							{OVERLAY_FILTER_OPTIONS.map((option) => (
+								<label className="checkbox-row compact" key={option.key}>
+									<input
+										checked={overlayFilters[option.key]}
+										onChange={() =>
+											setOverlayFilters((filters) =>
+												toggleMapOverlayFilter(filters, option.key),
+											)
+										}
+										type="checkbox"
+									/>
+									{option.label}
+								</label>
+							))}
+						</div>
+
+						<button
+							className="primary-button full-width"
+							onClick={() => setIsPixelEditorOpen(true)}
+							type="button"
+						>
+							Tile Editor
+						</button>
+
+						<div className="panel-title secondary">Tile style</div>
+						<div className="tile-style-list">
 							{terrainPresets.map((tile) => {
 								const style = project.tileStyles[tile.id] ?? {
 									color: tile.color,
 									label: tile.label,
 								};
 								return (
-									<button
-										className={`palette-item ${
-											selectedTerrainId === tile.id && paintTarget === "terrain"
-												? "selected"
-												: ""
-										}`}
-										key={tile.id}
-										onClick={() => selectTerrain(tile.id)}
-										type="button"
-									>
-										<span
-											className="swatch pixel-swatch"
-											style={{
-												background: style.color,
-												backgroundImage: pixelAssetUrls[tile.id],
-											}}
+									<label className="tile-style-row" key={tile.id}>
+										<span>{style.label ?? tile.label}</span>
+										<input
+											aria-label={`${tile.label} color`}
+											onChange={(event) =>
+												updateTileStyle(tile.id, { color: event.target.value })
+											}
+											type="color"
+											value={style.color}
 										/>
-										{style.label ?? tile.label}
-									</button>
+									</label>
 								);
 							})}
 						</div>
 					</details>
-
-					<details className="palette-section">
-						<summary>Overlays</summary>
-						<div className="palette-list tile-palette">
-							{overlayPresets.map((overlay) => (
-								<button
-									className={`palette-item ${
-										selectedOverlayId === overlay.id &&
-										paintTarget === "overlay"
-											? "selected"
-											: ""
-									}`}
-									key={overlay.id}
-									onClick={() => selectOverlay(overlay.id)}
-									type="button"
-								>
-									<span
-										className="swatch pixel-swatch"
-										style={{
-											background: overlay.color,
-											backgroundImage: pixelAssetUrls[overlay.id],
-										}}
-									/>
-									{overlay.label}
-								</button>
-							))}
-						</div>
-					</details>
-
-					<details className="palette-section">
-						<summary>Structures</summary>
-						<div className="palette-list tile-palette">
-							{structurePresets.map((structure) => (
-								<button
-									className={`palette-item ${
-										selectedStructureId === structure.id &&
-										paintTarget === "structure"
-											? "selected"
-											: ""
-									}`}
-									key={structure.id}
-									onClick={() => selectStructure(structure.id)}
-									type="button"
-								>
-									<span
-										className="swatch structure-swatch"
-										style={{ background: structure.roofColor }}
-									/>
-									{structure.label}
-								</button>
-							))}
-						</div>
-					</details>
-
-					<details className="palette-section">
-						<summary>Objects</summary>
-						<label>
-							Object definition
-							<select
-								onChange={(event) => {
-									setSelectedObjectDefinitionId(event.target.value);
-									if (paintTarget === "object") {
-										setMapPaletteSelection({
-											objectDefinitionId: event.target.value,
-											type: "object",
-										});
-									}
-								}}
-								value={selectedObjectDefinitionId}
-							>
-								{project.objects.map((object) => (
-									<option key={object.id} value={object.id}>
-										{object.name}
-									</option>
-								))}
-							</select>
-						</label>
-						<button
-							className={`palette-item ${paintTarget === "object" ? "selected" : ""}`}
-							disabled={!selectedObjectDefinitionId}
-							onClick={() => {
-								setActiveTool("paint");
-								setPaintTarget("object");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({
-									objectDefinitionId: selectedObjectDefinitionId,
-									type: "object",
-								});
-							}}
-							type="button"
-						>
-							<span className="swatch object-swatch">O</span>
-							{selectedObjectDefinition?.name ?? "Object"}
-						</button>
-					</details>
-
-					<details className="palette-section">
-						<summary>Special</summary>
-						<button
-							className={`palette-item ${paintTarget === "eventBlock" ? "selected" : ""}`}
-							onClick={() => {
-								setActiveTool("paint");
-								setPaintTarget("eventBlock");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "eventBlock" });
-							}}
-							type="button"
-						>
-							<span className="swatch event-swatch">E</span>
-							Event block
-						</button>
-						<button
-							className={`palette-item ${paintTarget === "pickup" ? "selected" : ""}`}
-							onClick={() => {
-								setActiveTool("paint");
-								setPaintTarget("pickup");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({
-									itemId: project.items[0]?.id,
-									type: "pickup",
-								});
-							}}
-							type="button"
-						>
-							<span className="swatch pickup-swatch">P</span>
-							Pickup
-						</button>
-						<label>
-							NPC definition
-							<select
-								onChange={(event) => {
-									setSelectedNpcDefinitionId(event.target.value);
-									if (paintTarget === "npc") {
-										setMapPaletteSelection({
-											npcDefinitionId: event.target.value,
-											type: "npc",
-										});
-									}
-								}}
-								value={selectedNpcDefinitionId}
-							>
-								{project.npcs.map((npc) => (
-									<option key={npc.id} value={npc.id}>
-										{npc.name}
-									</option>
-								))}
-							</select>
-						</label>
-						<button
-							className={`palette-item ${paintTarget === "npc" ? "selected" : ""}`}
-							disabled={!selectedNpcDefinitionId}
-							onClick={() => {
-								setActiveTool("paint");
-								setPaintTarget("npc");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({
-									npcDefinitionId: selectedNpcDefinitionId,
-									type: "npc",
-								});
-							}}
-							type="button"
-						>
-							<span className="swatch npc-swatch">N</span>
-							NPC
-						</button>
-					</details>
-
-					<div className="panel-title">Tools</div>
-					<div className="tool-button-grid">
-						<button
-							className={activeTool === "select" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("select");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Select
-						</button>
-						<button
-							className={activeTool === "paint" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("paint");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Paint
-						</button>
-						<button
-							className={activeTool === "erase" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("erase");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Erase
-						</button>
-						<button
-							className={activeTool === "pan" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("pan");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Pan
-						</button>
-					</div>
-					<div className="panel-title secondary">Height</div>
-					<div className="tool-button-grid">
-						<button
-							className={activeTool === "raise-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("raise-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Raise
-						</button>
-						<button
-							className={activeTool === "lower-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("lower-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Lower
-						</button>
-						<button
-							className={activeTool === "flatten-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("flatten-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Flatten
-						</button>
-						<button
-							className={activeTool === "slope-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("slope-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Slope
-						</button>
-						<button
-							className={activeTool === "set-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("set-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Set Height
-						</button>
-						<button
-							className={activeTool === "smooth-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("smooth-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Smooth
-						</button>
-						<button
-							className={activeTool === "roughen-height" ? "selected" : ""}
-							onClick={() => {
-								setActiveTool("roughen-height");
-								setPaintTarget("terrain");
-								setIsTerrainPaintArmed(false);
-								setMapPaletteSelection({ type: "none" });
-							}}
-							type="button"
-						>
-							Roughen
-						</button>
-					</div>
-					{activeTool === "set-height" || activeTool === "slope-height" ? (
-						<label>
-							{activeTool === "slope-height"
-								? "Slope end height"
-								: "Height value"}
-							<input
-								max="8"
-								min="-2"
-								onChange={(event) =>
-									setHeightToolValue(Number(event.target.value))
-								}
-								type="number"
-								value={heightToolValue}
-							/>
-						</label>
-					) : null}
-					<p className="tool-note">
-						Hotkeys: 1 Select, 2 Paint, 3 Erase. Erase removes entities, then
-						overlays, then resets terrain to grass.
-					</p>
-					<div className="inline-actions map-history-actions">
-						<button disabled={!canUndo} onClick={undoMapEdit} type="button">
-							Undo
-						</button>
-						<button disabled={!canRedo} onClick={redoMapEdit} type="button">
-							Redo
-						</button>
-					</div>
-
-					<div className="panel-title">Brush</div>
-					<div className="segmented-control">
-						{(["brush", "line", "rectangle", "fill"] as TerrainGesture[]).map(
-							(gesture) => (
-								<button
-									className={terrainGesture === gesture ? "selected" : ""}
-									key={gesture}
-									onClick={() => selectTerrainGesture(gesture)}
-									type="button"
-								>
-									{gesture === "brush"
-										? "Brush"
-										: gesture === "line"
-											? "Line"
-											: gesture === "rectangle"
-												? "Rectangle"
-												: "Fill"}
-								</button>
-							),
-						)}
-					</div>
-					{terrainGesture !== "fill" ? (
-						<label>
-							Mode
-							<select
-								onChange={(event) =>
-									selectTerrainBrushMode(event.target.value as TerrainBrushMode)
-								}
-								value={getTerrainBrushMode()}
-							>
-								<option value="paint">Paint terrain</option>
-								<option value="raise-height">Raise height</option>
-								<option value="lower-height">Lower height</option>
-								<option value="flatten-height">Flatten height</option>
-								<option value="slope-height">Slope height</option>
-								<option value="set-height">Set height</option>
-								<option value="smooth-height">Smooth height</option>
-								<option value="roughen-height">Roughen height</option>
-							</select>
-						</label>
-					) : null}
-					{terrainGesture === "brush" ? (
-						<>
-							<div className="segmented-control">
-								{([1, 2, 3, 4, 5, 6, 7, 8] as BrushSize[]).map((size) => (
-									<button
-										className={brushSize === size ? "selected" : ""}
-										key={size}
-										onClick={() => setBrushSize(size)}
-										type="button"
-									>
-										{size}
-									</button>
-								))}
-							</div>
-							<div className="segmented-control">
-								{(["square", "circle"] as TerrainBrushShape[]).map((shape) => (
-									<button
-										className={brushShape === shape ? "selected" : ""}
-										key={shape}
-										onClick={() => setBrushShape(shape)}
-										type="button"
-									>
-										{shape === "square" ? "Square" : "Circle"}
-									</button>
-								))}
-							</div>
-						</>
-					) : null}
-					{terrainGesture !== "fill" && isHeightTool(activeTool) ? (
-						<label>
-							Strength
-							<input
-								max="4"
-								min="1"
-								onChange={(event) =>
-									setBrushStrength(Number(event.target.value))
-								}
-								step="1"
-								type="range"
-								value={brushStrength}
-							/>
-							<span>{brushStrength}</span>
-						</label>
-					) : null}
-					{terrainGesture === "brush" &&
-					(activeTool === "raise-height" ||
-						activeTool === "lower-height" ||
-						activeTool === "smooth-height" ||
-						activeTool === "slope-height" ||
-						activeTool === "roughen-height") ? (
-						<label>
-							Falloff
-							<select
-								onChange={(event) =>
-									setBrushFalloff(event.target.value as TerrainBrushFalloff)
-								}
-								value={brushFalloff}
-							>
-								<option value="hard">Hard</option>
-								<option value="linear">Linear</option>
-								<option value="smooth">Smooth</option>
-							</select>
-						</label>
-					) : null}
-
-					<div className="panel-title secondary">View</div>
-					<div className="inline-actions">
-						<button
-							onClick={() =>
-								setZoom((value) =>
-									Math.max(0.4, Number((value - 0.2).toFixed(1))),
-								)
-							}
-							type="button"
-						>
-							-
-						</button>
-						<span className="zoom-readout">{Math.round(zoom * 100)}%</span>
-						<button
-							onClick={() =>
-								setZoom((value) =>
-									Math.min(2.4, Number((value + 0.2).toFixed(1))),
-								)
-							}
-							type="button"
-						>
-							+
-						</button>
-					</div>
-					<button
-						className="full-width reset-zoom-button"
-						onClick={() => setZoom(1)}
-						type="button"
-					>
-						Reset Zoom
-					</button>
-					<label className="checkbox-row standalone">
-						<input
-							checked={showGrid}
-							onChange={(event) => setShowGrid(event.target.checked)}
-							type="checkbox"
-						/>
-						Show grid
-					</label>
-					<div className="panel-title">Filters</div>
-					<div className="filter-button-row">
-						<button
-							onClick={() => setOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)}
-							type="button"
-						>
-							Show All
-						</button>
-						<button
-							onClick={() => setOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)}
-							type="button"
-						>
-							Hide All
-						</button>
-						<button
-							onClick={() => setOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)}
-							type="button"
-						>
-							Gameplay View
-						</button>
-					</div>
-					<div className="filter-grid">
-						{OVERLAY_FILTER_OPTIONS.map((option) => (
-							<label className="checkbox-row compact" key={option.key}>
-								<input
-									checked={overlayFilters[option.key]}
-									onChange={() =>
-										setOverlayFilters((filters) =>
-											toggleMapOverlayFilter(filters, option.key),
-										)
-									}
-									type="checkbox"
-								/>
-								{option.label}
-							</label>
-						))}
-					</div>
-
-					<button
-						className="primary-button full-width"
-						onClick={() => setIsPixelEditorOpen(true)}
-						type="button"
-					>
-						Tile Editor
-					</button>
-
-					<div className="panel-title secondary">Tile style</div>
-					<div className="tile-style-list">
-						{terrainPresets.map((tile) => {
-							const style = project.tileStyles[tile.id] ?? {
-								color: tile.color,
-								label: tile.label,
-							};
-							return (
-								<label className="tile-style-row" key={tile.id}>
-									<span>{style.label ?? tile.label}</span>
-									<input
-										aria-label={`${tile.label} color`}
-										onChange={(event) =>
-											updateTileStyle(tile.id, { color: event.target.value })
-										}
-										type="color"
-										value={style.color}
-									/>
-								</label>
-							);
-						})}
-					</div>
 				</div>
 				<div
 					aria-hidden="true"
@@ -2411,8 +2569,24 @@ export function MapEditor() {
 						</button>
 					</div>
 					<div className="map-workspace-status">
-						<span>{mapWorkspaceStatus}</span>
-						<span>View: {mapView === "3d" ? "3D" : "2D"}</span>
+						<strong title={mapWorkspaceStatus}>{activeArea.name}</strong>
+						<span className="edit-mode-badge">Editing</span>
+						<button
+							disabled={!canUndo}
+							onClick={undoMapEdit}
+							type="button"
+							title="Undo (Ctrl/Cmd+Z)"
+						>
+							Undo
+						</button>
+						<button
+							disabled={!canRedo}
+							onClick={redoMapEdit}
+							type="button"
+							title="Redo (Ctrl/Cmd+Shift+Z)"
+						>
+							Redo
+						</button>
 					</div>
 				</div>
 				{mapView === "2d" ? (
@@ -2432,6 +2606,42 @@ export function MapEditor() {
 						}}
 						ref={mapStageRef}
 						role="application"
+						onDragOver={(event) => {
+							if (event.dataTransfer.types.includes(SCENE_ASSET_MIME)) {
+								event.preventDefault();
+								event.dataTransfer.dropEffect = "copy";
+							}
+						}}
+						onDrop={(event) => {
+							event.preventDefault();
+							try {
+								const identity = JSON.parse(
+									event.dataTransfer.getData(SCENE_ASSET_MIME),
+								);
+								const asset = sceneAssets(project).find(
+									(entry) =>
+										entry.id === identity.id && entry.kind === identity.kind,
+								);
+								const tile = (event.target as HTMLElement).closest<HTMLElement>(
+									"[data-tile-x]",
+								);
+								if (asset)
+									addAsset(
+										asset,
+										tile
+											? {
+													x: Number(tile.dataset.tileX),
+													y: Number(tile.dataset.tileY),
+												}
+											: {
+													x: Math.floor(activeArea.width / 2),
+													y: Math.floor(activeArea.height / 2),
+												},
+									);
+							} catch {
+								/* Ignore unrelated or malformed drag data. */
+							}
+						}}
 					>
 						<div
 							aria-label="Map editor status"
@@ -2519,6 +2729,8 @@ export function MapEditor() {
 									return (
 										<button
 											aria-label={`Tile ${x}, ${y}`}
+											data-tile-x={x}
+											data-tile-y={y}
 											className={`map-cell ${isOutsideMap ? "map-cell-outside" : ""} ${
 												isSelectedTerrain || isSelectedOverlay
 													? "selected-cell"
@@ -2792,6 +3004,19 @@ export function MapEditor() {
 					</div>
 				) : (
 					<ThreeDPreview
+						transformMode={transformMode}
+						onTransformModeChange={(mode) => {
+							setTransformMode(mode);
+							setActiveTool("select");
+							setIsTerrainPaintArmed(false);
+						}}
+						positionSnap={positionSnap}
+						onPositionSnapChange={setPositionSnap}
+						rotationSnap={rotationSnap}
+						onRotationSnapChange={setRotationSnap}
+						focusRequest={focusRequest}
+						addAssetRequest={addAssetRequest}
+						onAssetDrop={addAsset}
 						brushFalloff={brushFalloff}
 						brushShape={brushShape}
 						brushSize={brushSize}
@@ -2844,14 +3069,58 @@ export function MapEditor() {
 					onPointerMove={handleInspectorResizeMove}
 					onPointerUp={handleInspectorResizeEnd}
 				/>
-				<MapInspector
+				<SceneHierarchy
 					project={project}
-					activeArea={activeArea}
-					selected={selected}
-					selectedTerrainId={selectedTerrainId}
-					selectedOverlayId={selectedOverlayId}
-					recordMapEdit={recordMapEdit}
+					area={activeArea}
+					selection={selection}
+					onSelect={(next) => {
+						setSelection(next);
+						setMapPaletteSelection({ type: "none" });
+						setActiveTool("select");
+						setIsTerrainPaintArmed(false);
+					}}
 				/>
+				<fieldset className="scene-selection-actions">
+					<legend className="sr-only">Selected object actions</legend>
+					<button
+						type="button"
+						disabled={!getSceneEntity(project, selection)}
+						onClick={() => setFocusRequest((value) => value + 1)}
+						title="Focus selected (F)"
+					>
+						Focus
+					</button>
+					<button
+						type="button"
+						disabled={!getSceneEntity(project, selection)}
+						onClick={() => duplicateSceneSelection(selection)}
+						title="Duplicate (Ctrl/Cmd+D)"
+					>
+						Duplicate
+					</button>
+					<button
+						type="button"
+						disabled={!getSceneEntity(project, selection)}
+						onClick={() => deleteSceneSelection(selection)}
+						title="Delete selected (Delete)"
+					>
+						Delete
+					</button>
+				</fieldset>
+				<div className="scene-inspector-scroll">
+					<SceneTransformInspector project={project} selection={selection} />
+					<details className="scene-gameplay" open={mapView === "2d"}>
+						<summary>Properties & gameplay</summary>
+						<MapInspector
+							project={project}
+							activeArea={activeArea}
+							selected={selected}
+							selectedTerrainId={selectedTerrainId}
+							selectedOverlayId={selectedOverlayId}
+							recordMapEdit={recordMapEdit}
+						/>
+					</details>
+				</div>
 			</aside>
 
 			{isPixelEditorOpen && editingPixelAsset ? (

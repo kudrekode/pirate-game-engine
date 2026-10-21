@@ -1,0 +1,33 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-interaction-v1/actions.glb",
+	"sha256": "b5258c36bf76c7f3a1a541864f51b921ebefeba49ce9591d65b1b7c94556cd5c",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "public/assets/derived/authored-humans/everyday-v1/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenInteraction_Interact_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 53,
+					"horizontalRange": [4.4418964086295057e-17, 4.310447901390013e-9],
+					"minimumY": 0.009953606846668277,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenInteraction_Pickup_V1",
+					"duration": 0.800000011920929,
+					"tracks": 53,
+					"horizontalRange": [4.886089292779154e-16, 4.361831343335787e-8],
+					"minimumY": 0.009823241273525926,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			]
+		}
+	]
+}

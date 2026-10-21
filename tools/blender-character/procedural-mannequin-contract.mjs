@@ -1,10 +1,10 @@
-import { validateClothing } from "./clothing-contract.mjs";
 import { createHash } from "node:crypto";
 import { validateAuthoredGeometry } from "./authored-human-contract.mjs";
 import {
 	CHARACTER_HAIR_COMPONENT_IDS,
 	NO_HAIR_COMPONENT_ID,
 } from "./character-component-registry.mjs";
+import { validateClothing } from "./clothing-contract.mjs";
 
 export const PROCEDURAL_MANNEQUIN_RECIPE_VERSION = 6;
 export const PROCEDURAL_MANNEQUIN_COMPILER_VERSION =
@@ -487,7 +487,9 @@ export function validateProceduralMannequinRecipe(value) {
 		),
 	);
 	const recipe = {
-		...(value.clothing === undefined ? {} : { clothing: structuredClone(value.clothing) }),
+		...(value.clothing === undefined
+			? {}
+			: { clothing: structuredClone(value.clothing) }),
 		...(value.geometrySource === undefined
 			? {}
 			: { geometrySource: structuredClone(value.geometrySource) }),

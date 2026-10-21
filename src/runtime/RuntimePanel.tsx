@@ -1,29 +1,156 @@
 import Phaser from "phaser";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameProject } from "../types/game";
 import { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { RuntimeDebugEvent } from "./debugLog";
+import {
+	createGameSave,
+	type GameSave,
+	loadGameSave,
+	storeGameSave,
+} from "./gameSave";
+import { InventoryPanel } from "./InventoryPanel";
+import {
+	QuestObjectiveTracker,
+	useQuestPresentation,
+} from "./QuestPresentation";
 import type { QuestView } from "./questEngine";
-import { getCurrencyHudEntries, getQuestTrackerState } from "./runtimeHud";
+import { getCurrencyHudEntries } from "./runtimeHud";
+import type { RuntimeSessionState } from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
+import {
+	InventoryNotifications,
+	useInventoryPresentation,
+} from "./useInventoryPresentation";
 
 const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
 
 type RuntimePanelProps = {
+	initialMode?: "2d" | "3d";
 	project: GameProject;
 	onClose: () => void;
 };
 
-export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
+export function RuntimePanel(props: RuntimePanelProps) {
+	const [entry, setEntry] = useState(() => {
+		try {
+			const save = loadGameSave(props.project, localStorage);
+			return { save, choosing: !!save, error: "" };
+		} catch (error) {
+			return {
+				save: null,
+				choosing: true,
+				error:
+					error instanceof Error ? error.message : "Could not read save game.",
+			};
+		}
+	});
+	const [continued, setContinued] = useState<GameSave | undefined>();
+	if (entry.choosing)
+		return (
+			<section className="runtime-panel">
+				<div className="runtime-toolbar">
+					<strong>{props.project.metadata.name}</strong>
+					<button type="button" onClick={props.onClose}>
+						Back to Edit
+					</button>
+				</div>
+				<div className="runtime-entry">
+					<h2>Ready to play</h2>
+					{entry.error && <p role="alert">{entry.error}</p>}
+					{entry.save && (
+						<button
+							type="button"
+							onClick={() => {
+								setContinued(entry.save!);
+								setEntry({ ...entry, choosing: false });
+							}}
+						>
+							Continue
+						</button>
+					)}
+					<button
+						type="button"
+						onClick={() => {
+							setContinued(undefined);
+							setEntry({ ...entry, choosing: false });
+						}}
+					>
+						New Game
+					</button>
+					<p>
+						New Game keeps your previous save. Save Game will ask before
+						replacing it.
+					</p>
+				</div>
+			</section>
+		);
+	return (
+		<RuntimePlayPanel
+			{...props}
+			initialSave={continued}
+			protectPreviousSave={!continued && (!!entry.save || !!entry.error)}
+		/>
+	);
+}
+
+function RuntimePlayPanel({
+	project,
+	onClose,
+	initialMode = "2d",
+	initialSave,
+	protectPreviousSave,
+}: RuntimePanelProps & {
+	initialSave?: GameSave;
+	protectPreviousSave: boolean;
+}) {
+	const [resumeSave, setResumeSave] = useState(initialSave);
+	const [protectSave, setProtectSave] = useState(protectPreviousSave);
+	const [saveMessage, setSaveMessage] = useState("");
+	const [replacePending, setReplacePending] = useState(false);
+	const saveSessionRef = useRef<(() => RuntimeSessionState) | null>(null);
+	function saveGame(replace = false) {
+		try {
+			const session = saveSessionRef.current?.();
+			if (!session) throw new Error("Game is still starting.");
+			if (protectSave && !replace) {
+				setReplacePending(true);
+				return;
+			}
+			storeGameSave(project, createGameSave(project, session), localStorage);
+			setProtectSave(false);
+			setReplacePending(false);
+			setSaveMessage("Game saved.");
+		} catch (error) {
+			setSaveMessage(
+				error instanceof Error ? error.message : "Could not save game.",
+			);
+		}
+	}
+	function restartGame() {
+		setResumeSave(undefined);
+		setProtectSave(true);
+		setSaveMessage("");
+		setRuntimeKey((key) => key + 1);
+	}
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sceneRef = useRef<AdventureScene | null>(null);
-	const [playMode, setPlayMode] = useState<"2d" | "3d">("2d");
-	const [inventory, setInventory] = useState<Record<string, number>>({});
+	const [playMode, setPlayMode] = useState<"2d" | "3d">(initialMode);
+	const {
+		inventory,
+		updateInventory: setInventory,
+		resetInventory,
+		showItemFeedback,
+		notices,
+	} = useInventoryPresentation(project.gameState.inventory);
 	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
-	const [quests, setQuests] = useState<QuestView[]>([]);
+	const inventoryOpenRef = useRef(false);
+	const [, refreshEquipment] = useState(0);
+	const { quests, setQuests, resetQuests } =
+		useQuestPresentation(showItemFeedback);
 	const [isQuestPanelOpen, setIsQuestPanelOpen] = useState(false);
 	const [shopState, setShopState] = useState<RuntimeShopPanelState | null>(
 		null,
@@ -37,10 +164,26 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 		gameOver: false,
 	});
 
+	const toggleInventory = useCallback(() => {
+		const next = !inventoryOpenRef.current;
+		if (!sceneRef.current?.setInventoryOpen(next)) return;
+		inventoryOpenRef.current = next;
+		setIsInventoryOpen(next);
+	}, []);
+
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (
+				playMode !== "2d" ||
+				event.repeat ||
+				event.defaultPrevented ||
+				(event.target instanceof HTMLElement &&
+					/INPUT|TEXTAREA|SELECT/.test(event.target.tagName))
+			)
+				return;
 			if (event.key.toLowerCase() === "i") {
-				setIsInventoryOpen((isOpen) => !isOpen);
+				event.preventDefault();
+				toggleInventory();
 			}
 			if (event.key.toLowerCase() === "j") {
 				setIsQuestPanelOpen((isOpen) => !isOpen);
@@ -49,7 +192,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, []);
+	}, [playMode, toggleInventory]);
 
 	useEffect(() => {
 		// Restart signal for Phaser sessions.
@@ -59,8 +202,12 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 		}
 		void runtimeKey;
 
-		setInventory({});
-		setQuests([]);
+		resetInventory(
+			resumeSave?.state.inventory ?? project.gameState.inventory ?? {},
+		);
+		inventoryOpenRef.current = false;
+		setIsInventoryOpen(false);
+		resetQuests([]);
 		setShopState(null);
 		setDebugEvents([]);
 		setCombat({
@@ -69,15 +216,25 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 			gameOver: false,
 		});
 
+		let restoringQuests = !!resumeSave;
+		const presentQuests = (next: QuestView[]) => {
+			if (restoringQuests) {
+				resetQuests(next);
+				restoringQuests = false;
+			} else setQuests(next);
+		};
 		const scene = new AdventureScene(
 			project,
 			setInventory,
-			setQuests,
+			presentQuests,
 			setShopState,
 			setCombat,
 			setDebugEvents,
+			showItemFeedback,
+			resumeSave,
 		);
 		sceneRef.current = scene;
+		saveSessionRef.current = () => scene.getSaveSession();
 		const game = new Phaser.Game({
 			type: Phaser.AUTO,
 			parent: containerRef.current,
@@ -94,6 +251,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 		return () => {
 			game.destroy(true);
 			sceneRef.current = null;
+			saveSessionRef.current = null;
 		};
 	}, [
 		initialCombat.health,
@@ -101,21 +259,19 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 		playMode,
 		project,
 		runtimeKey,
+		resumeSave,
+		resetInventory,
+		resetQuests,
+		setInventory,
+		setQuests,
+		showItemFeedback,
 	]);
 
-	const inventoryItems = Object.entries(inventory)
-		.filter(([, quantity]) => quantity > 0)
-		.map(([itemId, quantity]) => ({
-			item: project.items.find((candidate) => candidate.id === itemId),
-			itemId,
-			quantity,
-		}));
 	const currencyHudEntries = getCurrencyHudEntries(project, inventory);
 	const activeQuests = quests.filter((quest) => quest.status === "active");
 	const completedQuests = quests.filter(
 		(quest) => quest.status === "completed",
 	);
-	const questTracker = getQuestTrackerState(project, quests);
 	const activeShop = shopState
 		? project.shops.find((shop) => shop.id === shopState.shopId)
 		: undefined;
@@ -141,42 +297,82 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 
 	return (
 		<section className="runtime-panel">
-			<div className="runtime-toolbar">
-				<div>
-					<strong>Play Test</strong>
-					<span>{project.metadata.name}</span>
-				</div>
-				<div className="runtime-mode-selector">
-					<button
-						className={playMode === "2d" ? "selected" : ""}
-						onClick={() => setPlayMode("2d")}
-						type="button"
-					>
-						Play 2D
+			<div className="runtime-toolbar-shell">
+				<div className="runtime-toolbar">
+					<div>
+						<strong className="play-mode-badge">Playing</strong>
+						<span>{project.metadata.name}</span>
+					</div>
+					<div className="runtime-mode-selector">
+						<button
+							className={playMode === "2d" ? "selected" : ""}
+							onClick={() => {
+								if (playMode !== "2d") {
+									setPlayMode("2d");
+									setProtectSave(true);
+									setSaveMessage("");
+								}
+							}}
+							type="button"
+						>
+							Play 2D
+						</button>
+						<button
+							className={playMode === "3d" ? "selected" : ""}
+							onClick={() => {
+								if (playMode !== "3d") {
+									setPlayMode("3d");
+									setProtectSave(true);
+									setSaveMessage("");
+								}
+							}}
+							type="button"
+						>
+							Play 3D Experimental
+						</button>
+					</div>
+					<button type="button" onClick={() => saveGame()}>
+						Save Game
 					</button>
-					<button
-						className={playMode === "3d" ? "selected" : ""}
-						onClick={() => setPlayMode("3d")}
-						type="button"
-					>
-						Play 3D Experimental
+					<button onClick={onClose} type="button">
+						Back to Edit
 					</button>
 				</div>
-				<button onClick={onClose} type="button">
-					Back to editor
-				</button>
+				<div className="runtime-save-status" role="status">
+					{saveMessage}
+				</div>
+				{replacePending && (
+					<div
+						role="dialog"
+						aria-label="Replace saved game"
+						className="runtime-save-confirm"
+					>
+						<p>Replace your previous saved progress with this game?</p>
+						<button type="button" onClick={() => saveGame(true)}>
+							Replace save
+						</button>
+						<button type="button" onClick={() => setReplacePending(false)}>
+							Cancel
+						</button>
+					</div>
+				)}
 			</div>
 			<div className="runtime-stage">
 				{playMode === "3d" ? (
 					<ThreeRuntimePanel
 						key={runtimeKey}
-						onRestart={() => setRuntimeKey((key) => key + 1)}
+						onRestart={restartGame}
+						initialSave={resumeSave}
+						saveSessionRef={saveSessionRef}
 						project={project}
 					/>
 				) : (
 					<>
 						<div className="phaser-host" ref={containerRef} />
 						<div className="inventory-hud">
+							<button type="button" onClick={toggleInventory}>
+								Inventory <kbd>I</kbd>
+							</button>
 							{currencyHudEntries.length > 0 ? (
 								currencyHudEntries.map((entry) => (
 									<span key={entry.id}>
@@ -203,7 +399,7 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 						{combat.gameOver ? (
 							<button
 								className="runtime-restart-button"
-								onClick={() => setRuntimeKey((key) => key + 1)}
+								onClick={restartGame}
 								type="button"
 							>
 								Restart
@@ -223,38 +419,20 @@ export function RuntimePanel({ project, onClose }: RuntimePanelProps) {
 								)}
 							</div>
 						</details>
-						{questTracker.kind === "quest" ? (
-							<aside className="quest-tracker">
-								<span>{questTracker.label}</span>
-								{renderQuest(questTracker.quest)}
-							</aside>
-						) : (
-							<aside className="quest-tracker empty">
-								<span>{questTracker.label}</span>
-								<strong>{questTracker.title}</strong>
-								<p>{questTracker.message}</p>
-							</aside>
+						<QuestObjectiveTracker project={project} quests={quests} />
+						<InventoryNotifications items={project.items} notices={notices} />
+						{isInventoryOpen && (
+							<InventoryPanel
+								items={project.items}
+								inventory={inventory}
+								equippedWeaponId={sceneRef.current?.getEquippedWeaponId()}
+								onEquipWeapon={(itemId) => {
+									if (sceneRef.current?.equipWeapon(itemId))
+										refreshEquipment((v) => v + 1);
+								}}
+								onClose={toggleInventory}
+							/>
 						)}
-						{isInventoryOpen ? (
-							<aside className="inventory-panel">
-								<div className="inventory-heading">
-									<strong>Inventory</strong>
-									<span>Press I to close</span>
-								</div>
-								{inventoryItems.length > 0 ? (
-									<div className="inventory-list">
-										{inventoryItems.map(({ item, itemId, quantity }) => (
-											<div className="inventory-row" key={itemId}>
-												<span>{item?.name ?? itemId}</span>
-												<strong>x{quantity}</strong>
-											</div>
-										))}
-									</div>
-								) : (
-									<p className="inventory-empty">No items collected.</p>
-								)}
-							</aside>
-						) : null}
 						{isQuestPanelOpen ? (
 							<aside className="quest-panel">
 								<div className="inventory-heading">

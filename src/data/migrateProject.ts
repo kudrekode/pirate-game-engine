@@ -53,6 +53,7 @@ import type {
 import { THREE_PLACEHOLDER_VISUAL_TYPES } from "../types/game";
 import { migrateCharacterAssets } from "./characterAssets";
 import { defaultProject } from "./defaultProject";
+import { migrateMapEntityTransform } from "./mapEntityTransform";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
 import {
@@ -221,6 +222,9 @@ function withInteractionBase(
 			fallbackActivationMode,
 		),
 		...(prompt ? { prompt } : {}),
+		...(Array.isArray(source.completionActions)
+			? { completionActions: migrateActions(source.completionActions) }
+			: {}),
 	};
 }
 
@@ -230,6 +234,30 @@ function migrateInteraction(
 ): Interaction | undefined {
 	if (!isRecord(value)) {
 		return undefined;
+	}
+
+	if (value.type === "collect_item") {
+		return withInteractionBase(value, fallbackActivationMode, {
+			type: "collect_item",
+			itemId: readString(value.itemId, ""),
+			quantity: Math.max(1, Math.floor(readNumber(value.quantity, 1))),
+		});
+	}
+	if (value.type === "show_message" || value.type === "object_behaviour") {
+		return withInteractionBase(value, fallbackActivationMode, {
+			type: value.type,
+			...(value.type === "show_message"
+				? {
+						lines: Array.isArray(value.lines)
+							? value.lines.filter(
+									(line): line is string => typeof line === "string",
+								)
+							: [],
+						speaker: readString(value.speaker, ""),
+						once: readBoolean(value.once, false),
+					}
+				: {}),
+		});
 	}
 
 	if (value.type === "area_link" || value.type === "teleport") {
@@ -334,6 +362,9 @@ function migrateEventBlocks(
 		return [
 			{
 				id: readString(item.id, `event_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
 				name: readString(item.name, "Event"),
 				x: readNumber(item.x, 0, 0),
 				y: readNumber(item.y, 0, 0),
@@ -361,6 +392,9 @@ function migrateStructures(value: unknown): MapStructure[] {
 		return [
 			{
 				id: readString(item.id, `structure_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
 				structureId: readString(item.structureId, "small_house"),
 				name: readString(item.name, "Structure"),
 				x: readNumber(item.x, 0, 0),
@@ -500,6 +534,12 @@ function migrateObjectInstances(
 		return [
 			{
 				id: readString(item.id, `object_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
+				...(migrateThreeVisualConfig(item.threeVisual)
+					? { threeVisual: migrateThreeVisualConfig(item.threeVisual) }
+					: {}),
 				objectDefinitionId: readString(
 					item.objectDefinitionId,
 					readString(item.objectId, ""),
@@ -539,6 +579,9 @@ function migratePickups(value: unknown, areaId: string): PickupObject[] {
 		return [
 			{
 				id: readString(item.id, `pickup_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
 				itemId: readString(item.itemId, ""),
 				quantity: Math.round(readNumber(item.quantity, 1, 1, 9999)),
 				areaId,
@@ -727,6 +770,12 @@ function migrateNpcInstances(
 		return [
 			{
 				id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
+				...(item.transform
+					? { transform: migrateMapEntityTransform(item.transform) }
+					: {}),
+				...(readString(item.nameOverride, "")
+					? { nameOverride: readString(item.nameOverride, "") }
+					: {}),
 				npcDefinitionId,
 				...(migrateThreeVisualConfig(item.threeVisual)
 					? { threeVisual: migrateThreeVisualConfig(item.threeVisual) }
@@ -1196,7 +1245,8 @@ function migrateItems(value: unknown): ItemDefinition[] {
 			item.category === "currency" ||
 			item.category === "consumable" ||
 			item.category === "quest" ||
-			item.category === "misc"
+			item.category === "misc" ||
+			item.category === "weapon"
 				? item.category
 				: "misc";
 		const description = readString(item.description, "");
@@ -1215,6 +1265,9 @@ function migrateItems(value: unknown): ItemDefinition[] {
 				name: readString(item.name, `Item ${index + 1}`),
 				...(description ? { description } : {}),
 				category,
+				...(item.weapon === "sword" || item.weapon === "bow"
+					? { weapon: item.weapon }
+					: {}),
 				...(iconId ? { iconId } : {}),
 				stackable,
 				...(maxStack ? { maxStack } : {}),
@@ -1395,6 +1448,18 @@ function migrateObjectiveCondition(value: unknown): ObjectiveCondition | null {
 	if (!isRecord(value)) {
 		return null;
 	}
+	if (
+		value.type === "interaction_completed" ||
+		value.type === "container_opened" ||
+		value.type === "enter_event" ||
+		value.type === "door_used"
+	) {
+		return {
+			type: value.type,
+			areaId: readString(value.areaId, ""),
+			targetId: readString(value.targetId, ""),
+		};
+	}
 
 	if (value.type === "flag") {
 		return {
@@ -1520,6 +1585,12 @@ function migrateQuests(value: unknown): Quest[] {
 			{
 				id: readString(quest.id, `quest_${index + 1}`),
 				name: readString(quest.name, `Quest ${index + 1}`),
+				...(quest.objectiveMode === "sequence"
+					? { objectiveMode: "sequence" as const }
+					: {}),
+				...(readString(quest.completionMessage, "")
+					? { completionMessage: readString(quest.completionMessage, "") }
+					: {}),
 				...(description ? { description } : {}),
 				status,
 				objectives: migrateObjectives(quest.objectives),

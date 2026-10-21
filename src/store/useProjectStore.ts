@@ -571,7 +571,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
 	setEditorSelection: (selection) => set({ editorSelection: selection }),
 	setMapPaletteSelection: (selection) =>
-		set({ mapPaletteSelection: selection }),
+		set((state) =>
+			JSON.stringify(state.mapPaletteSelection) === JSON.stringify(selection)
+				? state
+				: { mapPaletteSelection: selection },
+		),
 
 	saveToLocalStorage: () => {
 		localStorage.setItem(

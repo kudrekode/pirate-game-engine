@@ -1,9 +1,9 @@
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import registry from "../../packages/character-contract/src/character-component-registry.json" with {
 	type: "json",
 };
-import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import path from "node:path";
 export const CLOTHING_SLOTS = ["top", "bottoms", "footwear"];
 export const NO_CLOTHING = { top: "none", bottoms: "none", footwear: "none" };
 export function validateClothing(value, geometry) {

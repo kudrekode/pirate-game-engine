@@ -1,0 +1,164 @@
+{
+	"errors": [],
+	"legacy": {
+		"initiallyGrid": true,
+		"sprint": {
+			"x": 12.18562500009106,
+			"y": 7,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": true,
+				"speed": 7.638888888888888
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 7
+			}
+		},
+		"jump": {
+			"x": 12.199999999999996,
+			"y": 7,
+			"height": 1.4439413599191564,
+			"motion": {
+				"phase": "jump",
+				"height": 1.4439413599191564,
+				"verticalVelocity": 3.3908000003099477,
+				"elapsed": 0.10839999997615817,
+				"sprinting": false,
+				"speed": 7.638888888888888
+			},
+			"supportHeight": 1,
+			"rootY": 1.4439413599191564,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 7
+			}
+		}
+	},
+	"captures": {
+		"idle": {
+			"motion": {
+				"x": 3,
+				"y": 8,
+				"height": 1,
+				"motion": {
+					"phase": "grounded",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0,
+					"sprinting": false,
+					"speed": 0
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 8
+				}
+			},
+			"animation": "idle"
+		},
+		"run": {
+			"motion": {
+				"x": 3,
+				"y": 9.056100000262257,
+				"height": 1,
+				"motion": {
+					"phase": "grounded",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0,
+					"sprinting": true,
+					"speed": 5.499999999999999
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": true,
+				"grid": {
+					"x": 3,
+					"y": 9
+				}
+			},
+			"animation": "run"
+		},
+		"jump": {
+			"motion": {
+				"x": 3,
+				"y": 11.799999999999986,
+				"height": 1.5493513600705515,
+				"motion": {
+					"phase": "jump",
+					"height": 1.5493513600705515,
+					"verticalVelocity": 2.9591999996900586,
+					"elapsed": 0.14160000002384188,
+					"sprinting": false,
+					"speed": 5.499999999999999
+				},
+				"supportHeight": 1,
+				"rootY": 1.5493513600705515,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 12
+				}
+			},
+			"animation": "jump"
+		},
+		"fall": {
+			"motion": {
+				"x": 3,
+				"y": 11.799999999999986,
+				"height": 1.8851753749999975,
+				"motion": {
+					"phase": "fall",
+					"height": 1.8851753749999975,
+					"verticalVelocity": -0.15949999999999695,
+					"elapsed": 0.38150000000000023,
+					"sprinting": false,
+					"speed": 5.499999999999999
+				},
+				"supportHeight": 1,
+				"rootY": 1.8851753749999975,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 12
+				}
+			},
+			"animation": "fall"
+		},
+		"land": {
+			"motion": {
+				"x": 3,
+				"y": 11.799999999999986,
+				"height": 1,
+				"motion": {
+					"phase": "land",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0.02530000001192093,
+					"sprinting": false,
+					"speed": 5.499999999999999
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 12
+				}
+			},
+			"animation": "land"
+		}
+	},
+	"projectUnchanged": true
+}

@@ -1,12 +1,12 @@
+import {
+	AUTHORED_HUMAN_REVISION,
+	AUTHORED_HUMAN_SOURCE,
+} from "./authored-human-contract.mjs";
 import { clothingProvenance } from "./clothing-contract.mjs";
 import {
 	canonicalSrgbHexToLinear,
 	GOLDEN_REFERENCE_ANIMATION_SET,
 } from "./procedural-mannequin-contract.mjs";
-import {
-	AUTHORED_HUMAN_REVISION,
-	AUTHORED_HUMAN_SOURCE,
-} from "./authored-human-contract.mjs";
 
 export function authoredHumanManifest({
 	recipe,

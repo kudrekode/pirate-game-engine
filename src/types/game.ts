@@ -27,6 +27,14 @@ export type ThreeVisualConfig = {
 	rotationOffset?: number;
 };
 
+// Instance-owned transforms. X/Z offsets stay relative to integer gameplay
+// anchors; profiled world assets also use these transforms for runtime traversal.
+export type MapEntityTransform = {
+	position: { x: number; y: number; z: number };
+	rotation: { x: number; y: number; z: number };
+	scale: { x: number; y: number; z: number };
+};
+
 export type GameProject = {
 	characterAssets?: CharacterGameAsset[];
 	metadata: ProjectMetadata;
@@ -114,6 +122,9 @@ export type InteractionActivationMode =
 	| "disabled";
 
 export type InteractionType =
+	| "show_message"
+	| "object_behaviour"
+	| "collect_item"
 	| "area_link"
 	| "teleport"
 	| "play_cutscene"
@@ -124,6 +135,14 @@ export type InteractionType =
 
 export type Interaction = {
 	type: InteractionType;
+	// Inline, ordered text uses the existing dialogue engine during Play.
+	lines?: string[];
+	itemId?: string;
+	quantity?: number;
+	speaker?: string;
+	once?: boolean;
+	// Runs through the shared action dispatcher after a successful interaction.
+	completionActions?: GameAction[];
 	activationMode: InteractionActivationMode;
 	prompt?: string;
 	targetAreaId?: string;
@@ -186,6 +205,7 @@ export type OverlayTile = {
 };
 
 export type MapStructure = {
+	transform?: MapEntityTransform;
 	id: string;
 	structureId: string;
 	name: string;
@@ -247,6 +267,8 @@ export type ObjectBehaviour =
 	  };
 
 export type ObjectInstance = {
+	transform?: MapEntityTransform;
+	threeVisual?: ThreeVisualConfig;
 	id: string;
 	objectDefinitionId: string;
 	areaId: string;
@@ -262,6 +284,7 @@ export type ObjectInstance = {
 };
 
 export type PickupObject = {
+	transform?: MapEntityTransform;
 	id: string;
 	itemId: string;
 	quantity: number;
@@ -332,6 +355,8 @@ export type EnemyBehaviour = {
 };
 
 export type NPCInstance = {
+	transform?: MapEntityTransform;
+	nameOverride?: string;
 	threeVisual?: ThreeVisualConfig;
 	id: string;
 	npcDefinitionId: string;
@@ -374,6 +399,7 @@ export type MapOverlayFilter =
 	| "none";
 
 export type EventBlock = {
+	transform?: MapEntityTransform;
 	id: string;
 	name: string;
 	x: number;
@@ -544,7 +570,9 @@ export type ItemDefinition = {
 	id: string;
 	name: string;
 	description?: string;
-	category: "key" | "currency" | "consumable" | "quest" | "misc";
+	category: "key" | "currency" | "consumable" | "quest" | "misc" | "weapon";
+	/** Optional behaviour reference; ordinary items carry no combat fields. */
+	weapon?: "sword" | "bow";
 	iconId?: string;
 	stackable: boolean;
 	maxStack?: number;
@@ -571,6 +599,9 @@ export type Quest = {
 	name: string;
 	description?: string;
 	status: QuestStatus;
+	// Missing retains legacy independent objectives; new quests use sequence.
+	objectiveMode?: "sequence";
+	completionMessage?: string;
 	objectives: Objective[];
 	completionActions?: GameAction[];
 	// Legacy compatibility. Imported projects migrate these into completionActions.
@@ -584,6 +615,10 @@ export type Objective = {
 };
 
 export type ObjectiveCondition =
+	| { type: "interaction_completed"; areaId: string; targetId: string }
+	| { type: "container_opened"; areaId: string; targetId: string }
+	| { type: "enter_event"; areaId: string; targetId: string }
+	| { type: "door_used"; areaId: string; targetId: string }
 	| { type: "flag"; flag: string; value: boolean }
 	| { type: "has_item"; itemId: string; quantity?: number }
 	| {

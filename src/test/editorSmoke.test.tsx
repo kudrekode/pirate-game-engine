@@ -685,6 +685,38 @@ describe("editor smoke tests", () => {
 			screen.getByText(/Currency items are physical inventory items/),
 		).toBeInTheDocument();
 	});
+	it("authors one stable sword item from the existing Items Editor without duplicating it", () => {
+		render(<ItemsEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Add Sword" }));
+		fireEvent.click(screen.getByRole("button", { name: "Add Sword" }));
+		const items = useProjectStore
+			.getState()
+			.project.items.filter((item) => item.id === "sword");
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			name: "Sword",
+			category: "weapon",
+			weapon: "sword",
+			stackable: false,
+		});
+		expect(screen.getByText(/Sword: 35 damage/)).toBeInTheDocument();
+	});
+	it("authors one stable Bow for ordinary pickup placement without duplicating it", () => {
+		render(<ItemsEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Add Bow" }));
+		fireEvent.click(screen.getByRole("button", { name: "Add Bow" }));
+		const items = useProjectStore
+			.getState()
+			.project.items.filter((item) => item.id === "bow");
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			name: "Bow",
+			weapon: "bow",
+			category: "weapon",
+			stackable: false,
+		});
+		expect(screen.getByText(/Bow: 32 damage/)).toBeInTheDocument();
+	});
 
 	it("renders Dialogue Editor", () => {
 		render(<DialogueEditor />);
@@ -762,12 +794,12 @@ describe("editor smoke tests", () => {
 
 		expect(
 			screen.getByText(
-				"Inactive quests do not progress until activated by a rule.",
+				"Not started. Select Start Quest on a map interaction, or use the existing Activate quest rule action.",
 			),
 		).toBeInTheDocument();
 	});
 
-	it("creates new quests active by default", () => {
+	it("creates sequential quests waiting for an explicit start", () => {
 		const project = cloneProject(defaultProject);
 		project.quests = [];
 		project.trackedQuestId = undefined;
@@ -776,9 +808,14 @@ describe("editor smoke tests", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Add quest" }));
 
-		expect(useProjectStore.getState().project.quests[0].status).toBe("active");
+		expect(useProjectStore.getState().project.quests[0].status).toBe(
+			"inactive",
+		);
+		expect(useProjectStore.getState().project.quests[0].objectiveMode).toBe(
+			"sequence",
+		);
 		expect(
-			screen.getByDisplayValue("Active - can progress during play"),
+			screen.getByDisplayValue("From an interaction or Start Quest action"),
 		).toBeInTheDocument();
 	});
 

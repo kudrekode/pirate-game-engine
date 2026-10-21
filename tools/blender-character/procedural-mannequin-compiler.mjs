@@ -1,4 +1,3 @@
-import { clothingSourcePaths } from "./clothing-contract.mjs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
@@ -12,7 +11,10 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { promisify, isDeepStrictEqual } from "node:util";
+import { isDeepStrictEqual, promisify } from "node:util";
+import { AUTHORED_HUMAN_SOURCE } from "./authored-human-contract.mjs";
+import { authoredHumanManifest } from "./authored-human-family.mjs";
+import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
 import {
 	buildHeadlessBlenderArguments,
 	discoverBlender,
@@ -24,6 +26,7 @@ import {
 	resolveCharacterComponent,
 	validateCharacterComponentRegistry,
 } from "./character-component-registry.mjs";
+import { clothingSourcePaths } from "./clothing-contract.mjs";
 import {
 	canonicalizeProceduralMannequinRecipe,
 	canonicalSrgbHexToLinear,
@@ -37,8 +40,8 @@ import {
 	PROCEDURAL_EYE_MATERIAL_NAME,
 	PROCEDURAL_EYE_MATERIAL_SCHEMA_VERSION,
 	PROCEDURAL_FACE_FEATURE_VERSION,
-	PROCEDURAL_HEAD_CONTRACT_VERSION,
 	PROCEDURAL_HAIR_MATERIAL_SCHEMA_VERSION,
+	PROCEDURAL_HEAD_CONTRACT_VERSION,
 	PROCEDURAL_HUMANOID_TOPOLOGY_VERSION,
 	PROCEDURAL_MANNEQUIN_COMPILER_VERSION,
 	PROCEDURAL_MANNEQUIN_VALIDATION_VERSION,
@@ -49,9 +52,6 @@ import {
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
 import { validateProceduralMannequinArtifact } from "./procedural-mannequin-roundtrip.mjs";
-import { AUTHORED_HUMAN_SOURCE } from "./authored-human-contract.mjs";
-import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
-import { authoredHumanManifest } from "./authored-human-family.mjs";
 
 const execFileAsync = promisify(execFile);
 export const PROCEDURAL_MANNEQUIN_PATHS = Object.freeze({

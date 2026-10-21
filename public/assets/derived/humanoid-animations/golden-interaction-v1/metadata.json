@@ -1,0 +1,31 @@
+{
+	"version": "golden-interaction-v1",
+	"rigProfile": "golden-humanoid-v0",
+	"blender": "5.2.0 LTS",
+	"clips": {
+		"Interact": {
+			"name": "GoldenInteraction_Interact_V1",
+			"duration": 0.6
+		},
+		"Pickup": {
+			"name": "GoldenInteraction_Pickup_V1",
+			"duration": 0.8
+		}
+	},
+	"packaging": "one mesh-free armature and two named clips",
+	"bytes": 116788,
+	"sha256": "b5258c36bf76c7f3a1a541864f51b921ebefeba49ce9591d65b1b7c94556cd5c",
+	"binaryDeterministic": true,
+	"sourceHashes": {
+		"tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/animations/golden-interaction-v1/actions.blend": "6fcfa397a2c3dedb2ea0ae57c3ccb754ec88e0da07c2cd70a13ee2b89c4a3bc4",
+		"tools/blender-character/animations/golden-interaction-v1/author.py": "482af049d1dfe720197f7bd5aed340b71f2e6e34bd3309e958cce965114f37ee",
+		"tools/blender-character/animations/golden-movement-v1/author.py": "24d76c799463efcb467b52cbc38a7bf48baef976ec940f232aa849e2a7f3b0a6",
+		"tools/blender-character/animations/golden-interaction-v1/export.py": "b095dbf789497c8afff6465a1940e00354ea2937d194f80853cbe28e67eb6e01",
+		"public/assets/derived/authored-humans/everyday-v1/mannequin.glb": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb": "00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c"
+	},
+	"rootPolicy": "No root tracks; vertical-only pelvis, gameplay owns movement",
+	"provenance": "tools/blender-character/animations/golden-interaction-v1/README.md"
+}

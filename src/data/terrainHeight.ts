@@ -49,8 +49,8 @@ export function getTerrainSurfaceY(
 	x: number,
 	y: number,
 ): number {
-	// Height is editor/3D-preview presentation data for V1. Runtime movement
-	// should stay in movement.ts until step, ramp, and water-depth rules exist.
+	// The shared traversal helper uses these surfaces in profiled 3D areas;
+	// legacy grid movement keeps its original terrain rules.
 	const tile = area.terrainTiles.find(
 		(candidate) => candidate.x === x && candidate.y === y,
 	);

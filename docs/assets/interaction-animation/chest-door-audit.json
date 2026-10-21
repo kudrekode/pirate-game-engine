@@ -1,0 +1,96 @@
+{
+	"source": "Kenney Pirate Kit",
+	"licence": "CC0-1.0",
+	"sourceReference": "public/assets/world-kit/PROVENANCE.md",
+	"files": [
+		{
+			"path": "public/assets/pirate-demo/crate.glb",
+			"sha256": "26d26c4c032a12320fe05b5005a72eba96db7167db0d35873639a4b7dcc06bcb",
+			"nodes": [
+				{
+					"name": "chest",
+					"mesh": 0,
+					"children": [1]
+				},
+				{
+					"name": "lid",
+					"mesh": 1
+				}
+			],
+			"animations": [
+				{
+					"name": "open",
+					"channels": [
+						{
+							"node": "lid",
+							"path": "rotation"
+						}
+					],
+					"duration": 0.30000001192092896
+				},
+				{
+					"name": "close",
+					"channels": [
+						{
+							"node": "lid",
+							"path": "rotation"
+						}
+					],
+					"duration": 1
+				},
+				{
+					"name": "open-close",
+					"channels": [
+						{
+							"node": "lid",
+							"path": "rotation"
+						}
+					],
+					"duration": 2
+				}
+			]
+		},
+		{
+			"path": "public/assets/pirate-demo/castle-door.glb",
+			"sha256": "0e8ae9889b35bb43c0da779a7eed3c2a7a204b80350516f7c4ad523a550d8867",
+			"nodes": [
+				{
+					"name": "cannon-mobile",
+					"mesh": 0,
+					"children": [1, 2]
+				},
+				{
+					"name": "Group",
+					"mesh": 1
+				},
+				{
+					"name": "Group",
+					"mesh": 2
+				}
+			],
+			"animations": []
+		},
+		{
+			"path": "public/assets/pirate-demo/castle-gate.glb",
+			"sha256": "e91a7c08e36a1ca5d85189f8b375c6dc9ac27a4b6567d64d0bc3b517ab68cbbd",
+			"nodes": [
+				{
+					"name": "castle-door",
+					"mesh": 0
+				}
+			],
+			"animations": []
+		},
+		{
+			"path": "public/assets/world-kit/shack.glb",
+			"sha256": "606771ec1a891dec78d2686e4b7a0db9725cd90ee3687bf5bc6b18087dbbd40d",
+			"nodes": [
+				{
+					"name": "Small Shack",
+					"mesh": 0
+				}
+			],
+			"animations": []
+		}
+	]
+}

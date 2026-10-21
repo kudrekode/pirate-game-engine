@@ -1,0 +1,53 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-bow-v1/actions.glb",
+	"sha256": "b0b018dd1a756aab985282599a83c6df796e8e978762d1cc846630b8b68eb4e4",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "test-results/first-outfit/compiled/athletic/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenBow_Fire_V1",
+					"duration": 0.8999999761581421,
+					"tracks": 53,
+					"horizontalRange": [0, 6.938893903907228e-18],
+					"minimumY": 0.009955564093399986,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			]
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/broad/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenBow_Fire_V1",
+					"duration": 0.8999999761581421,
+					"tracks": 53,
+					"horizontalRange": [0, 6.938893903907228e-18],
+					"minimumY": 0.009955564093399986,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			]
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/fuller/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenBow_Fire_V1",
+					"duration": 0.8999999761581421,
+					"tracks": 53,
+					"horizontalRange": [0, 6.938893903907228e-18],
+					"minimumY": 0.009955564093399986,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			]
+		}
+	]
+}

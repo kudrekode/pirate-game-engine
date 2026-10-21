@@ -88,6 +88,55 @@ function makeRule(actions: GameRule["actions"]): GameRule {
 }
 
 describe("runtime rule action dispatcher", () => {
+	it("reports capped rewards and publishes actual removal quantities without changing defaults", () => {
+		const project = makeProject();
+		project.gameState.inventory = { gem: 98 };
+		const { events, session } = runRule(
+			project,
+			makeRule([
+				{ type: "give_item", itemId: "gem", quantity: 3 },
+				{ type: "remove_item", itemId: "gem", quantity: 2 },
+			]),
+		);
+		expect(events).toContainEqual({
+			type: "itemFeedback",
+			message:
+				"Stack limit reached for Gem. Added 1 of 3; 2 could not be added.",
+		});
+		expect(events).toContainEqual({
+			type: "inventoryChanged",
+			inventory: { gem: 99 },
+		});
+		expect(events).toContainEqual({
+			type: "inventoryChanged",
+			inventory: { gem: 97 },
+		});
+		expect(session.runtimeState.inventory.items.gem).toBe(97);
+		expect(project.gameState.inventory).toEqual({ gem: 98 });
+	});
+	it("reports capped quest rewards through the same item feedback event", () => {
+		const project = makeProject({
+			quests: [
+				{
+					id: "reward",
+					name: "Reward",
+					status: "inactive",
+					objectives: [],
+					rewards: [{ type: "item", itemId: "gem", quantity: 3 }],
+				},
+			],
+		});
+		project.gameState.inventory = { gem: 98 };
+		const { events } = runRule(
+			project,
+			makeRule([{ type: "complete_quest", questId: "reward" }]),
+		);
+		expect(events).toContainEqual({
+			type: "itemFeedback",
+			message:
+				"Stack limit reached for Gem. Added 1 of 3; 2 could not be added.",
+		});
+	});
 	it("updates flags and emits state events", () => {
 		const { events, session } = runRule(
 			makeProject(),

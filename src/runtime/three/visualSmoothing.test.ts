@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+	advanceThirdPersonMouseLook,
+	createThirdPersonMouseLookState,
+} from "./cameraControls";
+import {
 	advanceCameraFollowRig,
+	advancePlayerYaw,
+	advanceThirdPersonFocus,
 	facingToYawRadians,
 	getCameraFollowTarget,
 	getFrameLerpAlpha,
@@ -12,6 +18,79 @@ import {
 	startVisualGridMove,
 	type VisualEntityState,
 } from "./visualSmoothing";
+
+describe("third-person turning and follow", () => {
+	it("takes the short arc across wrap and smooths a reversal without snapping", () => {
+		const yaw = advancePlayerYaw(Math.PI - 0.1, -Math.PI + 0.1, 16);
+		expect(yaw).toBeGreaterThan(Math.PI - 0.1);
+		expect(yaw).toBeLessThan(Math.PI + 0.1);
+		const reversal = advancePlayerYaw(0, Math.PI, 16);
+		expect(reversal).toBeGreaterThan(0);
+		expect(reversal).toBeLessThan(Math.PI / 2);
+		expect(advancePlayerYaw(1, 2, 0)).toBe(1);
+	});
+
+	it("turns faster during sprint, gently in air, and aligns an accepted attack promptly", () => {
+		const walk = advancePlayerYaw(0, Math.PI / 2, 16);
+		expect(
+			advancePlayerYaw(0, Math.PI / 2, 16, { sprinting: true }),
+		).toBeGreaterThan(walk);
+		expect(
+			advancePlayerYaw(0, Math.PI / 2, 16, { sprinting: true, airborne: true }),
+		).toBeLessThan(walk);
+		expect(
+			advancePlayerYaw(0, Math.PI / 2, 100, { attacking: true }),
+		).toBeGreaterThan(1.49);
+	});
+
+	it("has comparable turn, orbit and focus response at 30, 60 and 120 FPS", () => {
+		const results = [30, 60, 120].map((fps) => {
+			let yaw = 0;
+			let look = createThirdPersonMouseLookState({
+				targetYawOffsetDegrees: 90,
+				targetPitchOffsetDegrees: 20,
+			});
+			let focus = {
+				position: { x: 0, y: 0, z: 0 },
+				lookAt: { x: 0, y: 0, z: 0 },
+			};
+			for (let i = 0; i < fps / 2; i++) {
+				yaw = advancePlayerYaw(yaw, 2, 1000 / fps);
+				look = advanceThirdPersonMouseLook(
+					look,
+					getFrameLerpAlpha(1000 / fps, 30),
+				);
+				focus = advanceThirdPersonFocus(
+					focus,
+					{ x: 4, y: 2, z: 6 },
+					{ x: 4, y: 3, z: 6 },
+					1000 / fps,
+					9,
+					9,
+				);
+			}
+			return { yaw, focus, look };
+		});
+		for (const r of results.slice(1)) {
+			expect(r.yaw).toBeCloseTo(results[0].yaw, 10);
+			expect(r.look.currentYawOffsetDegrees).toBeCloseTo(
+				results[0].look.currentYawOffsetDegrees,
+				10,
+			);
+			expect(r.focus.position.y).toBeCloseTo(results[0].focus.position.y, 10);
+			expect(r.focus.lookAt.x).toBeCloseTo(results[0].focus.lookAt.x, 10);
+		}
+	});
+
+	it("initializes around restored support immediately, without old damping coordinates", () => {
+		const anchor = { x: 100, y: 2.275, z: -80 };
+		const look = { ...anchor, y: anchor.y + 0.3 };
+		expect(advanceThirdPersonFocus(null, anchor, look, 16, 9, 9)).toEqual({
+			position: anchor,
+			lookAt: look,
+		});
+	});
+});
 
 describe("Three visual smoothing helpers", () => {
 	it("interpolates presentation position while preserving a discrete target", () => {

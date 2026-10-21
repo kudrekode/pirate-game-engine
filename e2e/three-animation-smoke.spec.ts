@@ -174,7 +174,7 @@ test("observes Three runtime movement and animation transitions @integration", a
 		);
 
 		await observeAnimation(page);
-		await page.keyboard.press("Space");
+		await page.keyboard.press("KeyF");
 		await expectObservedState(page, "attack");
 		await expectIdle(page);
 		observations.attack = await page.evaluate(

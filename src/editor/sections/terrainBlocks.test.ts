@@ -37,7 +37,7 @@ describe("terrainTilesToBlocks", () => {
 
 		expect(blocks).toMatchObject([
 			{
-				color: 0x4f8f45,
+				color: 0x78835c,
 				gridX: 0,
 				gridY: 0,
 				height: 1,
@@ -76,7 +76,7 @@ describe("terrainTilesToBlocks", () => {
 		expect(water.height).toBe(0.18);
 		expect(water.surfaceY).toBe(0.18);
 		expect(water.yOffset).toBe(0.09);
-		expect(water.color).toBe(0x2f9fd8);
+		expect(water.color).toBe(0x27777d);
 		expect(water.materialKey).toBe("water");
 	});
 

@@ -1,0 +1,8780 @@
+{
+	"errors": [],
+	"walkSpeed": 3.3333333333333335,
+	"runSpeed": 5.499999999999999,
+	"wall": {
+		"x": 14.67999999999998,
+		"y": 7.999999999999999,
+		"height": 1
+	},
+	"platform": {
+		"x": 11.87999999999999,
+		"y": 11.999999999999986,
+		"height": 1.65,
+		"motion": {
+			"phase": "grounded",
+			"height": 1.65,
+			"verticalVelocity": 0,
+			"elapsed": 0.2250999999642373,
+			"sprinting": false,
+			"speed": 3.3333333333333335
+		},
+		"supportHeight": 1.65,
+		"rootY": 1.65,
+		"moving": false,
+		"grid": {
+			"x": 12,
+			"y": 12
+		}
+	},
+	"restored": {
+		"x": 11.87999999999999,
+		"y": 11.999999999999986,
+		"height": 1.65
+	},
+	"states": ["idle", "walk", "run", "jump", "fall", "land", "attack"],
+	"before": {
+		"asset": {
+			"activeImportedAssetInstances": 10,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"world-crate",
+				"world-floor",
+				"world-rock-small",
+				"world-stairs",
+				"world-wall"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 2,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 2,
+					"activeMixers": 2,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 0,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-combat-actions-v3",
+						"golden-movement-actions-v1",
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 20
+			},
+			"activeCloneInstances": 10,
+			"cacheHitCount": 10,
+			"cloneCount": 20,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 4,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 10,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 0
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 13.9,
+			"averageFrameIntervalMs": 13.9,
+			"frameCount": 140,
+			"fps": 195.9,
+			"lastFrameMs": 7.3,
+			"lastFrameIntervalMs": 7.3,
+			"lastRenderMs": 5,
+			"worstFrameMs": 514.9,
+			"worstFrameIntervalMs": 514.9
+		},
+		"hitches": {
+			"lastDurationMs": 56,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 4,
+			"over100MsCount": 10,
+			"over500MsCount": 9,
+			"over50MsCount": 13,
+			"recent": [
+				{
+					"detail": "initial runtime build",
+					"durationMs": 1891.8,
+					"phase": "scene rebuild",
+					"thresholdMs": 1000
+				},
+				{
+					"detail": "renderer.render",
+					"durationMs": 512.5,
+					"phase": "render",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "RAF callback synchronous work",
+					"durationMs": 513.7,
+					"phase": "frame_callback",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 514.9,
+					"phase": "raf_interval",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 67.2,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 112.1,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 87.4,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 56,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.1,
+				"count": 140,
+				"lastMs": 0.1,
+				"worstMs": 1.7
+			},
+			"cameraUpdate": {
+				"averageMs": 0.1,
+				"count": 140,
+				"lastMs": 0.2,
+				"worstMs": 0.6
+			},
+			"frameCallback": {
+				"averageMs": 10.3,
+				"count": 140,
+				"lastMs": 5.7,
+				"worstMs": 513.7
+			},
+			"render": {
+				"averageMs": 9.9,
+				"count": 140,
+				"lastMs": 5,
+				"worstMs": 512.5
+			},
+			"runtimeTick": {
+				"averageMs": 0.1,
+				"count": 23,
+				"lastMs": 0,
+				"worstMs": 0.4
+			},
+			"visualUpdate": {
+				"averageMs": 0.3,
+				"count": 140,
+				"lastMs": 0.3,
+				"worstMs": 1.8
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 140,
+				"lastMs": 0,
+				"worstMs": 0.2
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"clone: world-floor",
+			"clone: world-floor",
+			"clone: world-stairs",
+			"clone: world-rock-small",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build"
+		],
+		"renderer": {
+			"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1280,
+			"height": 729,
+			"pixelRatio": 1,
+			"drawCalls": 68,
+			"geometries": 72,
+			"lines": 0,
+			"points": 0,
+			"programs": 15,
+			"textures": 34,
+			"triangles": 56594
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"reactCommitCount": 3,
+			"averageTickMs": 0.1,
+			"lastTickMs": 0,
+			"tickCount": 23,
+			"worstTickMs": 0.4
+		},
+		"scene": {
+			"areaId": "parity_courtyard",
+			"areaName": "Movement Course",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 10,
+			"lastBuildMs": 1891.8,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Movement V2 Demo",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 1953.7
+		},
+		"terrain": {
+			"coastlineEdgeCount": 84,
+			"lastDurationMs": 1855.4,
+			"meshCount": 170,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 504,
+			"triangleCount": 1344,
+			"vertexCount": 1307,
+			"waterMeshCount": 1
+		}
+	},
+	"after": {
+		"asset": {
+			"activeImportedAssetInstances": 10,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+				"world-crate",
+				"world-floor",
+				"world-rock-small",
+				"world-stairs",
+				"world-wall"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 2,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 2,
+					"activeMixers": 2,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 1,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-combat-actions-v3",
+						"golden-movement-actions-v1",
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 20
+			},
+			"activeCloneInstances": 10,
+			"cacheHitCount": 10,
+			"cloneCount": 20,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 4,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 10,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 0
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 5.4,
+			"averageFrameIntervalMs": 5.4,
+			"frameCount": 8537,
+			"fps": 160.8,
+			"lastFrameMs": 11.7,
+			"lastFrameIntervalMs": 11.7,
+			"lastRenderMs": 3,
+			"worstFrameMs": 514.9,
+			"worstFrameIntervalMs": 514.9
+		},
+		"hitches": {
+			"lastDurationMs": 60.6,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 4,
+			"over100MsCount": 10,
+			"over500MsCount": 9,
+			"over50MsCount": 15,
+			"recent": [
+				{
+					"detail": "RAF callback synchronous work",
+					"durationMs": 513.7,
+					"phase": "frame_callback",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 514.9,
+					"phase": "raf_interval",
+					"thresholdMs": 500
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 67.2,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 112.1,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 87.4,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 56,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 79.9,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 60.6,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.1,
+				"count": 8537,
+				"lastMs": 0.2,
+				"worstMs": 10.6
+			},
+			"cameraUpdate": {
+				"averageMs": 0,
+				"count": 8537,
+				"lastMs": 0.1,
+				"worstMs": 0.6
+			},
+			"frameCallback": {
+				"averageMs": 2.7,
+				"count": 8537,
+				"lastMs": 3.6,
+				"worstMs": 513.7
+			},
+			"render": {
+				"averageMs": 2.3,
+				"count": 8537,
+				"lastMs": 3,
+				"worstMs": 512.5
+			},
+			"runtimeTick": {
+				"averageMs": 0,
+				"count": 904,
+				"lastMs": 0,
+				"worstMs": 0.4
+			},
+			"visualUpdate": {
+				"averageMs": 0.3,
+				"count": 8537,
+				"lastMs": 0.3,
+				"worstMs": 10.8
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 8537,
+				"lastMs": 0,
+				"worstMs": 0.2
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"clone: world-floor",
+			"clone: world-floor",
+			"clone: world-stairs",
+			"clone: world-rock-small",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build"
+		],
+		"renderer": {
+			"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1280,
+			"height": 729,
+			"pixelRatio": 1,
+			"drawCalls": 29,
+			"geometries": 106,
+			"lines": 0,
+			"points": 0,
+			"programs": 15,
+			"textures": 34,
+			"triangles": 2146
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"reactCommitCount": 278,
+			"averageTickMs": 0,
+			"lastTickMs": 0,
+			"tickCount": 904,
+			"worstTickMs": 0.4
+		},
+		"scene": {
+			"areaId": "parity_courtyard",
+			"areaName": "Movement Course",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 10,
+			"lastBuildMs": 1891.8,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Movement V2 Demo",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 46134.8
+		},
+		"terrain": {
+			"coastlineEdgeCount": 84,
+			"lastDurationMs": 1855.4,
+			"meshCount": 170,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 504,
+			"triangleCount": 1344,
+			"vertexCount": 1307,
+			"waterMeshCount": 1
+		}
+	},
+	"projectUnchanged": true,
+	"glbRequestsDuringMovement": [],
+	"combatDefeated": true,
+	"sampleCount": 8413,
+	"maxApexHeight": 0.8861520149999178,
+	"transitions": [
+		{
+			"x": 3,
+			"y": 8,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 0
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 18098.30000001192
+		},
+		{
+			"x": 3,
+			"y": 8.011999999880791,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 18820.80000001192
+		},
+		{
+			"x": 3,
+			"y": 9.684333333373065,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": true,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "run",
+			"time": 19400.80000001192
+		},
+		{
+			"x": 3,
+			"y": 12.103400000065552,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 5.499999999999999
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 19964.399999976158
+		},
+		{
+			"x": 3,
+			"y": 13.199999999999982,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 20347
+		},
+		{
+			"x": 3,
+			"y": 13.199999999999982,
+			"height": 1.0238375,
+			"motion": {
+				"phase": "jump",
+				"height": 1.0238375,
+				"verticalVelocity": 4.734999999999999,
+				"elapsed": 0.005,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1.0238375,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "jump",
+			"time": 20422
+		},
+		{
+			"x": 3,
+			"y": 13.199999999999982,
+			"height": 1.8861260149996792,
+			"motion": {
+				"phase": "fall",
+				"height": 1.8861260149996792,
+				"verticalVelocity": -0.026900000154972424,
+				"elapsed": 0.3713000000119211,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1.8861260149996792,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "fall",
+			"time": 20788.399999976158
+		},
+		{
+			"x": 3,
+			"y": 13.199999999999982,
+			"height": 1,
+			"motion": {
+				"phase": "land",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "land",
+			"time": 21158.19999998808
+		},
+		{
+			"x": 3,
+			"y": 13.199999999999982,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 21378.30000001192
+		},
+		{
+			"x": 3,
+			"y": 13.189333333373051,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 22744
+		},
+		{
+			"x": 3,
+			"y": 12.999999999999982,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 22802.599999964237
+		},
+		{
+			"x": 3,
+			"y": 12.991333333452525,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 22944.099999964237
+		},
+		{
+			"x": 3,
+			"y": 12.799999999999983,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 23005
+		},
+		{
+			"x": 3,
+			"y": 12.789666666785859,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 23132.599999964237
+		},
+		{
+			"x": 3,
+			"y": 12.599999999999984,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 23189.30000001192
+		},
+		{
+			"x": 3,
+			"y": 12.595999999841037,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 23295.899999976158
+		},
+		{
+			"x": 3,
+			"y": 12.399999999999984,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 23358.099999964237
+		},
+		{
+			"x": 3,
+			"y": 12.39533333341279,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 23460.399999976158
+		},
+		{
+			"x": 3,
+			"y": 12.199999999999985,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 23523.69999998808
+		},
+		{
+			"x": 3,
+			"y": 12.192666666507707,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 23622.599999964237
+		},
+		{
+			"x": 3,
+			"y": 11.999999999999986,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 23685.099999964237
+		},
+		{
+			"x": 3,
+			"y": 11.99266666670639,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 23796.19999998808
+		},
+		{
+			"x": 3,
+			"y": 11.799999999999986,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 23858
+		},
+		{
+			"x": 3,
+			"y": 11.793999999960251,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 23970.5
+		},
+		{
+			"x": 3,
+			"y": 11.599999999999987,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 24032.899999976158
+		},
+		{
+			"x": 3,
+			"y": 11.592666666706391,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 24143.69999998808
+		},
+		{
+			"x": 3,
+			"y": 11.399999999999988,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 24202.5
+		},
+		{
+			"x": 3,
+			"y": 11.393333333333322,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 24300.399999976158
+		},
+		{
+			"x": 3,
+			"y": 11.199999999999989,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 24362.099999964237
+		},
+		{
+			"x": 3,
+			"y": 11.193666666746129,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 24472
+		},
+		{
+			"x": 3,
+			"y": 10.99999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 24532.30000001192
+		},
+		{
+			"x": 3,
+			"y": 10.995666666825603,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 24629.69999998808
+		},
+		{
+			"x": 3,
+			"y": 10.79999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 24695
+		},
+		{
+			"x": 3,
+			"y": 10.795333333214113,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 24802.80000001192
+		},
+		{
+			"x": 3,
+			"y": 10.59999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 24860.19999998808
+		},
+		{
+			"x": 3,
+			"y": 10.591333333253852,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 24965.599999964237
+		},
+		{
+			"x": 3,
+			"y": 10.399999999999991,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 25026.399999976158
+		},
+		{
+			"x": 3,
+			"y": 10.391333333452534,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 25155
+		},
+		{
+			"x": 3,
+			"y": 10.199999999999992,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 25215.30000001192
+		},
+		{
+			"x": 3,
+			"y": 10.192666666706396,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 25338.399999976158
+		},
+		{
+			"x": 3,
+			"y": 9.999999999999993,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 25402.19999998808
+		},
+		{
+			"x": 3,
+			"y": 9.99166666666666,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 25530.19999998808
+		},
+		{
+			"x": 3,
+			"y": 9.799999999999994,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 25592.899999976158
+		},
+		{
+			"x": 3,
+			"y": 9.78966666678587,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 25710.399999976158
+		},
+		{
+			"x": 3,
+			"y": 9.599999999999994,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 25770
+		},
+		{
+			"x": 3,
+			"y": 9.589999999999995,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 25877.099999964237
+		},
+		{
+			"x": 3,
+			"y": 9.399999999999995,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 25936.69999998808
+		},
+		{
+			"x": 3,
+			"y": 9.390333333412801,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 26055.5
+		},
+		{
+			"x": 3,
+			"y": 9.199999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 26117.899999976158
+		},
+		{
+			"x": 3,
+			"y": 9.194666666587189,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 26234.19999998808
+		},
+		{
+			"x": 3,
+			"y": 8.999999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 26294.80000001192
+		},
+		{
+			"x": 3,
+			"y": 8.990333333412803,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 26434.899999976158
+		},
+		{
+			"x": 3,
+			"y": 8.799999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 26495.899999976158
+		},
+		{
+			"x": 3,
+			"y": 8.791333333253858,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 26635.19999998808
+		},
+		{
+			"x": 3,
+			"y": 8.599999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 26694.5
+		},
+		{
+			"x": 3,
+			"y": 8.593333333333332,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 26815.5
+		},
+		{
+			"x": 3,
+			"y": 8.399999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 26874.30000001192
+		},
+		{
+			"x": 3,
+			"y": 8.389666666785875,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 27009.599999964237
+		},
+		{
+			"x": 3,
+			"y": 8.2,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 27065.69999998808
+		},
+		{
+			"x": 3,
+			"y": 8.191333333452542,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 27202.399999976158
+		},
+		{
+			"x": 3,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 27261.099999964237
+		},
+		{
+			"x": 3,
+			"y": 7.95633333325386,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22300000000000011,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 27727.80000001192
+		},
+		{
+			"x": 3,
+			"y": 7.7988666665653374,
+			"height": 1.2670096600956586,
+			"motion": {
+				"phase": "jump",
+				"height": 1.2670096600956586,
+				"verticalVelocity": 4.012199999690055,
+				"elapsed": 0.06060000002384186,
+				"sprinting": false,
+				"speed": 2.8333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1.2670096600956586,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "jump",
+			"time": 27806.399999976158
+		},
+		{
+			"x": 3,
+			"y": 7.040483333299556,
+			"height": 1.8860614999999985,
+			"motion": {
+				"phase": "fall",
+				"height": 1.8860614999999985,
+				"verticalVelocity": -0.049000000000001806,
+				"elapsed": 0.37300000000000016,
+				"sprinting": false,
+				"speed": 2.8333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1.8860614999999985,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "fall",
+			"time": 28120.69999998808
+		},
+		{
+			"x": 3,
+			"y": 6.166283333400883,
+			"height": 1,
+			"motion": {
+				"phase": "land",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 2.8333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "land",
+			"time": 28486.899999976158
+		},
+		{
+			"x": 3,
+			"y": 5.5713333332538575,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 5
+			},
+			"state": "walk",
+			"time": 28706.19999998808
+		},
+		{
+			"x": 3,
+			"y": 5.199999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 5
+			},
+			"state": "idle",
+			"time": 28829.099999964237
+		},
+		{
+			"x": 3,
+			"y": 5.207333333293594,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 5
+			},
+			"state": "walk",
+			"time": 29308.599999964237
+		},
+		{
+			"x": 3,
+			"y": 5.399999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 5
+			},
+			"state": "idle",
+			"time": 29366.899999976158
+		},
+		{
+			"x": 3,
+			"y": 5.410666666626927,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "walk",
+			"time": 29497.69999998808
+		},
+		{
+			"x": 3,
+			"y": 5.599999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "idle",
+			"time": 29557.599999964237
+		},
+		{
+			"x": 3,
+			"y": 5.60833333333333,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "walk",
+			"time": 29685.099999964237
+		},
+		{
+			"x": 3,
+			"y": 5.799999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "idle",
+			"time": 29744.399999976158
+		},
+		{
+			"x": 3,
+			"y": 5.80833333333333,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "walk",
+			"time": 29891
+		},
+		{
+			"x": 3,
+			"y": 5.999999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "idle",
+			"time": 29950.599999964237
+		},
+		{
+			"x": 3,
+			"y": 6.009333333174385,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "walk",
+			"time": 30091
+		},
+		{
+			"x": 3,
+			"y": 6.1999999999999975,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "idle",
+			"time": 30153.69999998808
+		},
+		{
+			"x": 3,
+			"y": 6.209666666785873,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "walk",
+			"time": 30294.899999976158
+		},
+		{
+			"x": 3,
+			"y": 6.399999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 6
+			},
+			"state": "idle",
+			"time": 30353.5
+		},
+		{
+			"x": 3,
+			"y": 6.409666666785873,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "walk",
+			"time": 30510.899999976158
+		},
+		{
+			"x": 3,
+			"y": 6.599999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "idle",
+			"time": 30569.5
+		},
+		{
+			"x": 3,
+			"y": 6.609333333373067,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "walk",
+			"time": 30707.69999998808
+		},
+		{
+			"x": 3,
+			"y": 6.799999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "idle",
+			"time": 30768.399999976158
+		},
+		{
+			"x": 3,
+			"y": 6.8093333333730675,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "walk",
+			"time": 30910.80000001192
+		},
+		{
+			"x": 3,
+			"y": 6.999999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "idle",
+			"time": 30971.80000001192
+		},
+		{
+			"x": 3,
+			"y": 7.008666666547455,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "walk",
+			"time": 31119
+		},
+		{
+			"x": 3,
+			"y": 7.199999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "idle",
+			"time": 31180
+		},
+		{
+			"x": 3,
+			"y": 7.207999999920525,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "walk",
+			"time": 31322.80000001192
+		},
+		{
+			"x": 3,
+			"y": 7.399999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 7
+			},
+			"state": "idle",
+			"time": 31384.30000001192
+		},
+		{
+			"x": 3,
+			"y": 7.411000000039735,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 31567.5
+		},
+		{
+			"x": 3,
+			"y": 7.599999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 31631.5
+		},
+		{
+			"x": 3,
+			"y": 7.611333333452541,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 31797.899999976158
+		},
+		{
+			"x": 3,
+			"y": 7.799999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 31855.69999998808
+		},
+		{
+			"x": 3,
+			"y": 7.8253333334128055,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 32023.5
+		},
+		{
+			"x": 3,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 32074.5
+		},
+		{
+			"x": 3,
+			"y": 8.011549999803304,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22160000002384195,
+				"sprinting": true,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "run",
+			"time": 32661.80000001192
+		},
+		{
+			"x": 3,
+			"y": 8.1595,
+			"height": 1.0181461400566316,
+			"motion": {
+				"phase": "jump",
+				"height": 1.0181461400566316,
+				"verticalVelocity": 4.7505999998450275,
+				"elapsed": 0.003800000011920929,
+				"sprinting": true,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1.0181461400566316,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 8
+			},
+			"state": "jump",
+			"time": 32688.599999964237
+		},
+		{
+			"x": 3,
+			"y": 9.522952500055725,
+			"height": 1.8860462149993693,
+			"motion": {
+				"phase": "fall",
+				"height": 1.8860462149993693,
+				"verticalVelocity": -0.052900000154972156,
+				"elapsed": 0.37330000001192115,
+				"sprinting": true,
+				"speed": 4.675
+			},
+			"supportHeight": 1,
+			"rootY": 1.8860462149993693,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 10
+			},
+			"state": "fall",
+			"time": 33059.39999997616
+		},
+		{
+			"x": 3,
+			"y": 10.90892750005572,
+			"height": 1,
+			"motion": {
+				"phase": "land",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": true,
+				"speed": 4.675
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 11
+			},
+			"state": "land",
+			"time": 33426.30000001192
+		},
+		{
+			"x": 3,
+			"y": 11.803849999934421,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": true,
+				"speed": 5.499999999999999
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "run",
+			"time": 33655.09999996424
+		},
+		{
+			"x": 3,
+			"y": 12.399999999999984,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": true,
+				"speed": 5.499999999999999
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 12
+			},
+			"state": "attack",
+			"time": 33796.30000001192
+		},
+		{
+			"x": 3,
+			"y": 14.999999999999975,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": true,
+				"speed": 5.499999999999999
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 15
+			},
+			"state": "run",
+			"time": 34392.69999998808
+		},
+		{
+			"x": 3,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 5.499999999999999
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 34658.19999998808
+		},
+		{
+			"x": 3.01,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 34978.19999998808
+		},
+		{
+			"x": 3.2,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 35034.89999997616
+		},
+		{
+			"x": 3.2060000000397366,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 3,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 35150.19999998808
+		},
+		{
+			"x": 3.4000000000000004,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 3,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 35213.89999997616
+		},
+		{
+			"x": 3.4079999999205275,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 35312.59999996424
+		},
+		{
+			"x": 3.6000000000000005,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 35374.19999998808
+		},
+		{
+			"x": 3.603999999960264,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 35477.89999997616
+		},
+		{
+			"x": 3.8000000000000007,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 35539.89999997616
+		},
+		{
+			"x": 3.80733333349228,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 35655.89999997616
+		},
+		{
+			"x": 4.000000000000001,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 35716.09999996424
+		},
+		{
+			"x": 4.005666666626931,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 35829.30000001192
+		},
+		{
+			"x": 4.200000000000001,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 35897.59999996424
+		},
+		{
+			"x": 4.210000000000001,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 36001
+		},
+		{
+			"x": 4.400000000000001,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 4,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 36060.69999998808
+		},
+		{
+			"x": 4.405999999841056,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 36170.19999998808
+		},
+		{
+			"x": 4.600000000000001,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 36233.59999996424
+		},
+		{
+			"x": 4.6053333332141255,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 36338
+		},
+		{
+			"x": 4.800000000000002,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 36398.69999998808
+		},
+		{
+			"x": 4.805666666626932,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 36513.19999998808
+		},
+		{
+			"x": 5.000000000000002,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 36574.5
+		},
+		{
+			"x": 5.009333333373071,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 36700.39999997616
+		},
+		{
+			"x": 5.200000000000002,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 36759.59999996424
+		},
+		{
+			"x": 5.210333333412808,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 36891.5
+		},
+		{
+			"x": 5.400000000000002,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 5,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 36949.39999997616
+		},
+		{
+			"x": 5.410333333412808,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 37082.59999996424
+		},
+		{
+			"x": 5.600000000000002,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 37147.89999997616
+		},
+		{
+			"x": 5.609333333373072,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 37268.19999998808
+		},
+		{
+			"x": 5.8000000000000025,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 37327.69999998808
+		},
+		{
+			"x": 5.805333333214127,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 37446.09999996424
+		},
+		{
+			"x": 6.000000000000003,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 37510
+		},
+		{
+			"x": 6.009666666587196,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 37634.59999996424
+		},
+		{
+			"x": 6.200000000000003,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 37694.69999998808
+		},
+		{
+			"x": 6.2073333332936,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 37820.30000001192
+		},
+		{
+			"x": 6.400000000000003,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 6,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 37880.5
+		},
+		{
+			"x": 6.411999999880794,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 38005.5
+		},
+		{
+			"x": 6.600000000000003,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 38065.5
+		},
+		{
+			"x": 6.610333333214127,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 38189.59999996424
+		},
+		{
+			"x": 6.800000000000003,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 38249.69999998808
+		},
+		{
+			"x": 6.807666666706407,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 38369.89999997616
+		},
+		{
+			"x": 7.0000000000000036,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 38429.59999996424
+		},
+		{
+			"x": 7.0086666667461435,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 38542.5
+		},
+		{
+			"x": 7.200000000000004,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 38603.09999996424
+		},
+		{
+			"x": 7.204333333174391,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 38690.09999996424
+		},
+		{
+			"x": 7.400000000000004,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 7,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 38752.59999996424
+		},
+		{
+			"x": 7.408333333333337,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 38847.39999997616
+		},
+		{
+			"x": 7.600000000000004,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 38907.39999997616
+		},
+		{
+			"x": 7.608000000119214,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 39005.89999997616
+		},
+		{
+			"x": 7.800000000000004,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 39065
+		},
+		{
+			"x": 7.80533333341281,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 39165.59999996424
+		},
+		{
+			"x": 8.000000000000004,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 39226.59999996424
+		},
+		{
+			"x": 8.003666666547462,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 39345.30000001192
+		},
+		{
+			"x": 8.200000000000003,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 39406.39999997616
+		},
+		{
+			"x": 8.208666666746142,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 39519.5
+		},
+		{
+			"x": 8.400000000000002,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 8,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 39579.5
+		},
+		{
+			"x": 8.409333333373072,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 39724.89999997616
+		},
+		{
+			"x": 8.600000000000001,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 39787
+		},
+		{
+			"x": 8.608333333333334,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 39924.09999996424
+		},
+		{
+			"x": 8.8,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 39985.89999997616
+		},
+		{
+			"x": 8.806666666666667,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 40097.30000001192
+		},
+		{
+			"x": 9,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 40156.80000001192
+		},
+		{
+			"x": 9.00433333337307,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 40263.69999998808
+		},
+		{
+			"x": 9.2,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 40326.89999997616
+		},
+		{
+			"x": 9.205333333412806,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 40418.59999996424
+		},
+		{
+			"x": 9.399999999999999,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 9,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 40478
+		},
+		{
+			"x": 9.408333333333331,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 40577.5
+		},
+		{
+			"x": 9.599999999999998,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 40635.5
+		},
+		{
+			"x": 9.60833333333333,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 40749.19999998808
+		},
+		{
+			"x": 9.799999999999997,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 40810.59999996424
+		},
+		{
+			"x": 9.80899999996026,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 40963.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 16.19999999999997,
+			"height": 0.7130000000000121,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7130000000000121,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7130000000000121,
+			"rootY": 0.7130000000000121,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 41022.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 16.19366666654743,
+			"height": 0.7155966667155544,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7155966667155544,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7155966667155544,
+			"rootY": 0.7155966667155544,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 41272.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.999999999999972,
+			"height": 0.7950000000000117,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7950000000000117,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7950000000000117,
+			"rootY": 0.7950000000000117,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 41334.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.990333333412778,
+			"height": 0.7989633333007611,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.7989633333007611,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.7989633333007611,
+			"rootY": 0.7989633333007611,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 41459.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.799999999999972,
+			"height": 0.8770000000000113,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.8770000000000113,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.8770000000000113,
+			"rootY": 0.8770000000000113,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 41518.5
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.790666666626903,
+			"height": 0.8808266666829699,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.8808266666829699,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.8808266666829699,
+			"rootY": 0.8808266666829699,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "walk",
+			"time": 41634.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.599999999999973,
+			"height": 0.9590000000000111,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.9590000000000111,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.9590000000000111,
+			"rootY": 0.9590000000000111,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 16
+			},
+			"state": "idle",
+			"time": 41694.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.591333333253834,
+			"height": 0.9625533333659282,
+			"motion": {
+				"phase": "grounded",
+				"height": 0.9625533333659282,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 0.9625533333659282,
+			"rootY": 0.9625533333659282,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "walk",
+			"time": 41828.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.399999999999974,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "idle",
+			"time": 41890.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.392666666706377,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "walk",
+			"time": 42020.5
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.199999999999974,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "idle",
+			"time": 42082
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 15.191333333452517,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "walk",
+			"time": 42211.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.999999999999975,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "idle",
+			"time": 42268.89999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.992333333293573,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "walk",
+			"time": 42382.80000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.799999999999976,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "idle",
+			"time": 42444
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.791666666666643,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "walk",
+			"time": 42548.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.599999999999977,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 15
+			},
+			"state": "idle",
+			"time": 42606.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.58833333333331,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "walk",
+			"time": 42764
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.399999999999977,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "idle",
+			"time": 42819.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.387999999920504,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "walk",
+			"time": 42994.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.199999999999978,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "idle",
+			"time": 43056.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 14.189999999999978,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "walk",
+			"time": 43230.80000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.999999999999979,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "idle",
+			"time": 43289.89999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.991333333452522,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "walk",
+			"time": 43426.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.79999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "idle",
+			"time": 43487.89999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.789000000158925,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "walk",
+			"time": 43620
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.59999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 14
+			},
+			"state": "idle",
+			"time": 43676.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.591999999880771,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 43785.89999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.39999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 43847.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.393999999960245,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 43948.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.199999999999982,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 44012.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 13.192666666706385,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 44111.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.999999999999982,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 44172.5
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.987666666706385,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 44255.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.799999999999983,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 44315
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.794666666587176,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "walk",
+			"time": 44398.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.599999999999984,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 13
+			},
+			"state": "idle",
+			"time": 44460.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.594333333373054,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 44553.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.399999999999984,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 44613.80000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.394999999999984,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 44703.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.199999999999985,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 44765.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 12.193666666746125,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 44869.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.999999999999986,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 44932.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.980666666626917,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 45104.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.799999999999986,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 45159.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.787333333293583,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 45368.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.599999999999987,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 45427
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.588666666746127,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 45568.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.399999999999988,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 45627.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.385999999841042,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 45776.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.199999999999989,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 45832.5
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 11.193333333333323,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 45959
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.99999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 46018.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.995333333214113,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 46112.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.79999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 46175.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.792000000079463,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 46286.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.59999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 46350.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.592000000079464,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 46464.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.399999999999991,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 46528
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.391333333253852,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 46695.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.199999999999992,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 46755.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 10.18799999992052,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 46903
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.999999999999993,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 46964.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.991333333253854,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 47127.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.799999999999994,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 47186.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.796333333253854,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 47314
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.599999999999994,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 47376.09999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.591000000039731,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 47509.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.399999999999995,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 47568.39999997616
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.390333333412801,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 47733.80000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.199999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 47794
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 9.194999999999995,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 47898.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.999999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 47959.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.995333333412802,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 48048.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.799999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 48109.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.794666666785874,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 48194.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.599999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 48255.19999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.593666666547456,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 48349.30000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.399999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 48409.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.393666666746139,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 48503.59999996424
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.2,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 48563.69999998808
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 8.193333333333333,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 48659.80000001192
+		},
+		{
+			"x": 9.999999999999996,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 48718.09999996424
+		},
+		{
+			"x": 10.005333333412803,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49031.30000001192
+		},
+		{
+			"x": 10.199999999999996,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 49093.5
+		},
+		{
+			"x": 10.205333333412803,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49195.5
+		},
+		{
+			"x": 10.399999999999995,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 10,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 49255.39999997616
+		},
+		{
+			"x": 10.405333333412802,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49357.5
+		},
+		{
+			"x": 10.599999999999994,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 49418
+		},
+		{
+			"x": 10.607333333492273,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49521.5
+		},
+		{
+			"x": 10.799999999999994,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 49580.39999997616
+		},
+		{
+			"x": 10.804999999999994,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49671.09999996424
+		},
+		{
+			"x": 10.999999999999993,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 49730.19999998808
+		},
+		{
+			"x": 11.00433333317438,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49824.69999998808
+		},
+		{
+			"x": 11.199999999999992,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 49884.5
+		},
+		{
+			"x": 11.205333333214115,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 49973.59999996424
+		},
+		{
+			"x": 11.399999999999991,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50034.69999998808
+		},
+		{
+			"x": 11.40866666674613,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 50120.19999998808
+		},
+		{
+			"x": 11.59999999999999,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50180.89999997616
+		},
+		{
+			"x": 11.604666666785867,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 50274
+		},
+		{
+			"x": 11.79999999999999,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50335.89999997616
+		},
+		{
+			"x": 11.80933333337306,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 50465.69999998808
+		},
+		{
+			"x": 11.99999999999999,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50522.5
+		},
+		{
+			"x": 12.005333333214113,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 50621.30000001192
+		},
+		{
+			"x": 12.199999999999989,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50680.39999997616
+		},
+		{
+			"x": 12.205666666626918,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 50773.30000001192
+		},
+		{
+			"x": 12.399999999999988,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50835.09999996424
+		},
+		{
+			"x": 12.40633333345253,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 50934.69999998808
+		},
+		{
+			"x": 12.599999999999987,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 50992.89999997616
+		},
+		{
+			"x": 12.604999999999988,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 51088.69999998808
+		},
+		{
+			"x": 12.799999999999986,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 51151.69999998808
+		},
+		{
+			"x": 12.805333333412793,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 51236.80000001192
+		},
+		{
+			"x": 12.999999999999986,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 51297.09999996424
+		},
+		{
+			"x": 13.008800000131115,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": true,
+				"speed": 5.499999999999999
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "run",
+			"time": 51599
+		},
+		{
+			"x": 14.67999999999998,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22719999998807916,
+				"sprinting": false,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 15,
+				"y": 8
+			},
+			"reason": "Blocked by world-wall.",
+			"state": "idle",
+			"time": 52038.09999996424
+		},
+		{
+			"x": 14.67999999999998,
+			"y": 7.999999999999999,
+			"height": 1.0162448598866127,
+			"motion": {
+				"phase": "jump",
+				"height": 1.0162448598866127,
+				"verticalVelocity": 4.755800000309944,
+				"elapsed": 0.003399999976158142,
+				"sprinting": false,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1.0162448598866127,
+			"moving": false,
+			"grid": {
+				"x": 15,
+				"y": 8
+			},
+			"reason": "Blocked by world-wall.",
+			"state": "jump",
+			"time": 52446.59999996424
+		},
+		{
+			"x": 14.67999999999998,
+			"y": 7.999999999999999,
+			"height": 1.8861464150006608,
+			"motion": {
+				"phase": "fall",
+				"height": 1.8861464150006608,
+				"verticalVelocity": -0.013899999380107955,
+				"elapsed": 0.3702999999523165,
+				"sprinting": false,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1.8861464150006608,
+			"moving": false,
+			"grid": {
+				"x": 15,
+				"y": 8
+			},
+			"reason": "Blocked by world-wall.",
+			"state": "fall",
+			"time": 52813.89999997616
+		},
+		{
+			"x": 14.67999999999998,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "land",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 15,
+				"y": 8
+			},
+			"reason": "Blocked by world-wall.",
+			"state": "land",
+			"time": 53184.69999998808
+		},
+		{
+			"x": 14.67999999999998,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 5.5
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 15,
+				"y": 8
+			},
+			"reason": "Blocked by world-wall.",
+			"state": "idle",
+			"time": 53405
+		},
+		{
+			"x": 14.672000000079453,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 53644.80000001192
+		},
+		{
+			"x": 14.47999999999998,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 53707.09999996424
+		},
+		{
+			"x": 14.473333333333315,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 53823.5
+		},
+		{
+			"x": 14.279999999999982,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 53884.80000001192
+		},
+		{
+			"x": 14.272666666706385,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 53992.09999996424
+		},
+		{
+			"x": 14.079999999999982,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54051.39999997616
+		},
+		{
+			"x": 14.073999999960247,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 54152.19999998808
+		},
+		{
+			"x": 13.879999999999983,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54214.69999998808
+		},
+		{
+			"x": 13.874666666587176,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 54306.89999997616
+		},
+		{
+			"x": 13.679999999999984,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 14,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54367.89999997616
+		},
+		{
+			"x": 13.673666666746124,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 54452.69999998808
+		},
+		{
+			"x": 13.479999999999984,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54513.69999998808
+		},
+		{
+			"x": 13.474999999999984,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 54610.89999997616
+		},
+		{
+			"x": 13.279999999999985,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54672.19999998808
+		},
+		{
+			"x": 13.274666666587178,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 54761.09999996424
+		},
+		{
+			"x": 13.079999999999986,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54823.19999998808
+		},
+		{
+			"x": 13.074999999999985,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 54899.39999997616
+		},
+		{
+			"x": 12.879999999999987,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 54960.69999998808
+		},
+		{
+			"x": 12.874333333373057,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 55043.89999997616
+		},
+		{
+			"x": 12.679999999999987,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 13,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 55105.69999998808
+		},
+		{
+			"x": 12.671666666666654,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 55193.80000001192
+		},
+		{
+			"x": 12.479999999999988,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 55255.09999996424
+		},
+		{
+			"x": 12.476000000039724,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 55331.69999998808
+		},
+		{
+			"x": 12.279999999999989,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 55393.69999998808
+		},
+		{
+			"x": 12.270666666825601,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 55504.39999997616
+		},
+		{
+			"x": 12.07999999999999,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 55562.69999998808
+		},
+		{
+			"x": 12.074999999999989,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 55665.19999998808
+		},
+		{
+			"x": 11.87999999999999,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 55726.30000001192
+		},
+		{
+			"x": 11.873999999960255,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 55820.30000001192
+		},
+		{
+			"x": 11.67999999999999,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 55880.39999997616
+		},
+		{
+			"x": 11.671000000039728,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 56004.5
+		},
+		{
+			"x": 11.479999999999992,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 56063
+		},
+		{
+			"x": 11.471000000039728,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 56202.89999997616
+		},
+		{
+			"x": 11.279999999999992,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 56259.59999996424
+		},
+		{
+			"x": 11.273666666746132,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 56367.39999997616
+		},
+		{
+			"x": 11.079999999999993,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 56425.89999997616
+		},
+		{
+			"x": 11.075333333214116,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 56523.30000001192
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 7.999999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 56584.69999998808
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.006666666666666,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 56722.69999998808
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.2,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.333333333333333
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 56784.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.205333333412806,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "walk",
+			"time": 56883.59999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.399999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 8
+			},
+			"state": "idle",
+			"time": 56943.5
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.404333333373069,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 57037.80000001192
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.599999999999998,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 57098.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.607999999920525,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 57207.80000001192
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.799999999999997,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 57266.19999998808
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.805666666626927,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 57412.69999998808
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 8.999999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 57474.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.006666666666662,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 57581.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.199999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 57643.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.205333333214119,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "walk",
+			"time": 57735.19999998808
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.399999999999995,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 9
+			},
+			"state": "idle",
+			"time": 57796.89999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.404999999999996,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 57892
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.599999999999994,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 57951
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.60466666678587,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 58043.89999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.799999999999994,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 58105.5
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.803333333333327,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 58192.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 9.999999999999993,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 58258.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.012333333492272,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 58373.5
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.199999999999992,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 58431
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.209999999999992,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "walk",
+			"time": 58781.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.399999999999991,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 10
+			},
+			"state": "idle",
+			"time": 58839.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.408333333333324,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 59024.69999998808
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.59999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 59086.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.611000000039727,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 59230.80000001192
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.79999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 59288.89999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.807333333293586,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 59406
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 10.99999999999999,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 59469
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.007000000079461,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 59604.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.199999999999989,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 59667.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.20766666650771,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "walk",
+			"time": 59782.5
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.399999999999988,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 11
+			},
+			"state": "idle",
+			"time": 59843.59999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.40766666670639,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 59965.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.599999999999987,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 60024.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.609666666785863,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 60172.09999996424
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.799999999999986,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 60238.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.811000000039723,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "walk",
+			"time": 60466.30000001192
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.999999999999986,
+			"height": 1,
+			"motion": {
+				"phase": "grounded",
+				"height": 1,
+				"verticalVelocity": 0,
+				"elapsed": 0.22069999998807915,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 60524.39999997616
+		},
+		{
+			"x": 10.879999999999994,
+			"y": 11.999999999999986,
+			"height": 1.0233639348870778,
+			"motion": {
+				"phase": "jump",
+				"height": 1.0233639348870778,
+				"verticalVelocity": 4.736300000309944,
+				"elapsed": 0.004899999976158142,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1,
+			"rootY": 1.0233639348870778,
+			"moving": false,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "jump",
+			"time": 60858.89999997616
+		},
+		{
+			"x": 11.09898333329955,
+			"y": 11.999999999999986,
+			"height": 1.8861109400015927,
+			"motion": {
+				"phase": "fall",
+				"height": 1.8861109400015927,
+				"verticalVelocity": -0.033399999380111886,
+				"elapsed": 0.3717999999523165,
+				"sprinting": false,
+				"speed": 2.8333333333333335
+			},
+			"supportHeight": 1.65,
+			"rootY": 1.8861109400015927,
+			"moving": true,
+			"grid": {
+				"x": 11,
+				"y": 12
+			},
+			"state": "fall",
+			"time": 61224.80000001192
+		},
+		{
+			"x": 11.621100000033767,
+			"y": 11.999999999999986,
+			"height": 1.65,
+			"motion": {
+				"phase": "land",
+				"height": 1.65,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 2.8333333333333335
+			},
+			"supportHeight": 1.65,
+			"rootY": 1.65,
+			"moving": true,
+			"grid": {
+				"x": 12,
+				"y": 12
+			},
+			"state": "land",
+			"time": 61414.89999997616
+		},
+		{
+			"x": 11.87999999999999,
+			"y": 11.999999999999986,
+			"height": 1.65,
+			"motion": {
+				"phase": "grounded",
+				"height": 1.65,
+				"verticalVelocity": 0,
+				"elapsed": 0.2250999999642373,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1.65,
+			"rootY": 1.65,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 12
+			},
+			"state": "idle",
+			"time": 61639.30000001192
+		}
+	]
+}

@@ -1,0 +1,135 @@
+{
+	"before": {
+		"repressHeadingChangeDegrees": 55.007089387323866,
+		"sceneBuilds": [2, 2],
+		"assetClones": [20, 20],
+		"activeRuntimeRAF": 1,
+		"cameraUpdate": {
+			"averageMs": 0,
+			"count": 4377,
+			"lastMs": 0.1,
+			"worstMs": 0.4
+		}
+	},
+	"after": {
+		"repressHeadingChangeDegrees": 0.0004187957725610499,
+		"sceneBuilds": [2, 2],
+		"assetClones": [20, 20],
+		"activeRuntimeRAF": 1,
+		"cameraUpdate": {
+			"averageMs": 0.1,
+			"count": 1563,
+			"lastMs": 0.1,
+			"worstMs": 1.1
+		}
+	},
+	"movement": {
+		"errors": [],
+		"walkSpeed": 3.3333333333333335,
+		"runSpeed": 5.499999999999999,
+		"wall": {
+			"x": 14.67999999999998,
+			"y": 7.999999999999999,
+			"height": 1
+		},
+		"platform": {
+			"x": 12.07999999999999,
+			"y": 11.999999999999986,
+			"height": 1.65,
+			"motion": {
+				"phase": "grounded",
+				"height": 1.65,
+				"verticalVelocity": 0,
+				"elapsed": 0.22299999999999998,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1.65,
+			"rootY": 1.65,
+			"moving": false,
+			"grid": {
+				"x": 12,
+				"y": 12
+			}
+		},
+		"restored": {
+			"x": 12.07999999999999,
+			"y": 11.999999999999986,
+			"height": 1.65
+		},
+		"projectUnchanged": true
+	},
+	"obstacles": {
+		"stairs": {
+			"x": 8.000000267124252,
+			"y": 10.60000000000011,
+			"height": 1.54,
+			"motion": {
+				"phase": "grounded",
+				"height": 1.54,
+				"verticalVelocity": 0,
+				"elapsed": 0,
+				"sprinting": false,
+				"speed": 3.3333333333333335
+			},
+			"supportHeight": 1.54,
+			"rootY": 1.54,
+			"moving": false,
+			"grid": {
+				"x": 8,
+				"y": 11
+			}
+		},
+		"crate": [
+			{
+				"x": 20.199950799747825,
+				"y": 8.21363290619914,
+				"height": 1
+			},
+			{
+				"x": 20.201483399921024,
+				"y": 6.013634967968213,
+				"height": 1
+			},
+			{
+				"x": 18.001532842949825,
+				"y": 6.027254076721201,
+				"height": 1
+			},
+			{
+				"x": 18.002604743820207,
+				"y": 8.42725284242911,
+				"height": 1
+			}
+		],
+		"rock": [
+			{
+				"x": 21.002592892160322,
+				"y": 4.231393452245647,
+				"height": 1
+			},
+			{
+				"x": 21.001664538262652,
+				"y": 6.031392677782424,
+				"height": 1
+			},
+			{
+				"x": 19.201700734336068,
+				"y": 6.041749402672914,
+				"height": 1
+			},
+			{
+				"x": 19.201082299820946,
+				"y": 4.441749803874256,
+				"height": 1
+			},
+			{
+				"x": 20.201069994732705,
+				"y": 4.44597035726437,
+				"height": 1
+			}
+		],
+		"errors": []
+	},
+	"reviewLimit": "Real keyboard/mouse replay and recorded visual review; no connected hands-on browser; timings are not a controlled performance comparison."
+}

@@ -1,0 +1,53 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-movement-v1/actions.glb",
+	"sha256": "8e3678b41513221ffd6a314e4f5fb6006962a545fcf733f38a21f7407ffb375e",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "public/assets/derived/authored-humans/everyday-v1/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenMovement_Fall_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 22,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.002353030495112261,
+					"finalMinimumY": 0.002353030495112261,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenMovement_Jump_V1",
+					"duration": 0.30000001192092896,
+					"tracks": 23,
+					"horizontalRange": [1.3880940755904606e-16, 1.535882308834058e-8],
+					"minimumY": -0.0012460505047845061,
+					"finalMinimumY": 0.01445163575345039,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenMovement_Land_V1",
+					"duration": 0.21666666865348816,
+					"tracks": 23,
+					"horizontalRange": [4.404885961052832e-16, 2.3058664998243383e-8],
+					"minimumY": 0.00461610177711399,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenMovement_Run_V1",
+					"duration": 0.6666666865348816,
+					"tracks": 23,
+					"horizontalRange": [6.47778492876933e-17, 8.536119935897979e-9],
+					"minimumY": 0.009394346916119796,
+					"finalMinimumY": 0.06874978446070709,
+					"independentClones": true,
+					"restRestored": true
+				}
+			]
+		}
+	]
+}

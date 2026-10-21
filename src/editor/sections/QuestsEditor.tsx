@@ -79,7 +79,8 @@ export function QuestsEditor() {
 			draft.quests.push({
 				id,
 				name: `Quest ${draft.quests.length + 1}`,
-				status: "active",
+				status: "inactive",
+				objectiveMode: "sequence",
 				objectives: [],
 				completionActions: [],
 				rewards: [],
@@ -93,13 +94,32 @@ export function QuestsEditor() {
 			return;
 		}
 
-		const isReferenced = project.rules.some((rule) =>
-			[...rule.actions, ...(rule.elseActions ?? [])].some((action) =>
-				actionReferencesQuest(action, selectedQuest.id),
-			),
-		);
+		const interactions = [
+			...project.npcs.map((npc) => npc.defaultInteraction),
+			...project.objects.map((object) => object.defaultInteraction),
+			...project.areas.flatMap((area) => [
+				...area.npcs.flatMap((npc) => [
+					npc.interactionOverride,
+					npc.interaction,
+				]),
+				...area.objects.map((object) => object.interaction),
+				...area.eventBlocks.map((event) => event.interaction),
+				...area.structures.map((structure) => structure.interaction),
+			]),
+		];
+		const isReferenced =
+			interactions.some((interaction) =>
+				interaction?.completionActions?.some((action) =>
+					actionReferencesQuest(action, selectedQuest.id),
+				),
+			) ||
+			project.rules.some((rule) =>
+				[...rule.actions, ...(rule.elseActions ?? [])].some((action) =>
+					actionReferencesQuest(action, selectedQuest.id),
+				),
+			);
 		const confirmation = isReferenced
-			? `Delete quest "${selectedQuest.name}"? Rules referencing it will remain and appear as validation warnings.`
+			? `Delete quest "${selectedQuest.name}"? Actions referencing it will remain and appear as validation warnings.`
 			: `Delete quest "${selectedQuest.name}"?`;
 		if (!window.confirm(confirmation)) {
 			return;
@@ -116,6 +136,15 @@ export function QuestsEditor() {
 	}
 
 	function makeCondition(type: ObjectiveCondition["type"]): ObjectiveCondition {
+		if (
+			type === "interaction_completed" ||
+			type === "container_opened" ||
+			type === "enter_event" ||
+			type === "door_used"
+		) {
+			const target = objectiveTargets(type)[0];
+			return { type, areaId: target?.areaId ?? "", targetId: target?.id ?? "" };
+		}
 		if (type === "flag") {
 			return { type, flag: flagNames[0] ?? "flag_1", value: true };
 		}
@@ -148,7 +177,7 @@ export function QuestsEditor() {
 				{
 					id: makeId("objective"),
 					description: "New objective",
-					condition: makeCondition("flag"),
+					condition: makeCondition("interaction_completed"),
 				},
 			],
 		});
@@ -175,6 +204,55 @@ export function QuestsEditor() {
 			objectives: selectedQuest.objectives.filter(
 				(objective) => objective.id !== id,
 			),
+		});
+	}
+
+	function moveObjective(index: number, offset: number) {
+		if (!selectedQuest) return;
+		const objectives = [...selectedQuest.objectives];
+		[objectives[index], objectives[index + offset]] = [
+			objectives[index + offset],
+			objectives[index],
+		];
+		updateQuest({ objectives });
+	}
+
+	function objectiveTargets(type: ObjectiveCondition["type"]) {
+		return project.areas.flatMap((area) => {
+			if (type === "enter_event")
+				return area.eventBlocks.map((event) => ({
+					id: event.id,
+					areaId: area.id,
+					name: `${area.name} / ${event.name}`,
+				}));
+			if (type === "interaction_completed")
+				return [
+					...area.npcs.map((npc) => ({
+						id: npc.id,
+						areaId: area.id,
+						name: `${area.name} / ${npc.nameOverride ?? project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "NPC"}`,
+					})),
+					...area.objects.map((object) => ({
+						id: object.id,
+						areaId: area.id,
+						name: `${area.name} / ${object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object"}`,
+					})),
+				];
+			return area.objects
+				.filter(
+					(object) =>
+						(
+							object.behaviourOverride ??
+							project.objects.find(
+								(definition) => definition.id === object.objectDefinitionId,
+							)?.defaultBehaviour
+						)?.type === (type === "container_opened" ? "container" : "door"),
+				)
+				.map((object) => ({
+					id: object.id,
+					areaId: area.id,
+					name: `${area.name} / ${object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object"}`,
+				}));
 		});
 	}
 
@@ -511,6 +589,15 @@ export function QuestsEditor() {
 
 	function getObjectiveReferenceWarning(condition: ObjectiveCondition) {
 		if (
+			"targetId" in condition &&
+			!objectiveTargets(condition.type).some(
+				(target) =>
+					target.id === condition.targetId &&
+					target.areaId === condition.areaId,
+			)
+		)
+			return "Choose an existing gameplay target. The previous target is missing or no longer supports this condition.";
+		if (
 			condition.type === "flag" &&
 			!(condition.flag in project.gameState.flags)
 		) {
@@ -554,11 +641,48 @@ export function QuestsEditor() {
 						}
 						value={condition.type}
 					>
-						<option value="flag">Flag is</option>
-						<option value="has_item">Player has item</option>
+						<option value="interaction_completed">
+							Talk to NPC / Examine object
+						</option>
+						<option value="has_item">Obtain Item</option>
+						<option value="container_opened">Open Container</option>
+						<option value="enter_event">Enter Area / Arrival point</option>
+						<option value="door_used">Use Door</option>
+						<option value="flag">Set Flag</option>
 						<option value="variable_compare">Variable comparison</option>
 						<option value="enter_area">Player enters area</option>
 					</select>
+					{"targetId" in condition && (
+						<select
+							aria-label="Objective target"
+							value={JSON.stringify([condition.areaId, condition.targetId])}
+							onChange={(event) => {
+								const [areaId, targetId] = JSON.parse(event.target.value) as [
+									string,
+									string,
+								];
+								updateObjective(objective.id, {
+									condition: { ...condition, areaId, targetId },
+								});
+							}}
+						>
+							{warning && (
+								<option
+									value={JSON.stringify([condition.areaId, condition.targetId])}
+								>
+									Choose a target (missing)
+								</option>
+							)}
+							{objectiveTargets(condition.type).map((target) => (
+								<option
+									key={JSON.stringify([target.areaId, target.id])}
+									value={JSON.stringify([target.areaId, target.id])}
+								>
+									{target.name}
+								</option>
+							))}
+						</select>
+					)}
 					{condition.type === "flag" ? (
 						<>
 							<select
@@ -598,6 +722,7 @@ export function QuestsEditor() {
 					{condition.type === "has_item" ? (
 						<>
 							<select
+								aria-label="Objective item"
 								onChange={(event) =>
 									updateObjective(objective.id, {
 										condition: { ...condition, itemId: event.target.value },
@@ -610,17 +735,21 @@ export function QuestsEditor() {
 								) : null}
 								{project.items.map((item) => (
 									<option key={item.id} value={item.id}>
-										{item.name} ({item.id})
+										{item.name}
 									</option>
 								))}
 							</select>
 							<input
+								aria-label="Objective quantity"
 								min={1}
 								onChange={(event) =>
 									updateObjective(objective.id, {
 										condition: {
 											...condition,
-											quantity: Math.max(1, Number(event.target.value)),
+											quantity: Math.max(
+												1,
+												Math.floor(Number(event.target.value) || 1),
+											),
 										},
 									})
 								}
@@ -892,7 +1021,7 @@ export function QuestsEditor() {
 								/>
 							</label>
 							<label>
-								Default status
+								Quest start
 								<select
 									onChange={(event) =>
 										updateQuest({
@@ -901,22 +1030,27 @@ export function QuestsEditor() {
 									}
 									value={selectedQuest.status}
 								>
-									<option value="active">
-										Active - can progress during play
-									</option>
+									<option value="active">At Play start (explicit)</option>
 									<option value="inactive">
-										Inactive - waits for a rule to activate it
+										From an interaction or Start Quest action
 									</option>
-									<option value="completed">
-										Completed - completed at play start
-									</option>
-									<option value="failed">Failed - failed at play start</option>
+									{selectedQuest.status === "completed" && (
+										<option value="completed">
+											Completed - completed at play start
+										</option>
+									)}
+									{selectedQuest.status === "failed" && (
+										<option value="failed">
+											Failed - failed at play start
+										</option>
+									)}
 								</select>
 							</label>
 						</div>
 						{selectedQuest.status === "inactive" ? (
 							<div className="validation-message">
-								Inactive quests do not progress until activated by a rule.
+								Not started. Select Start Quest on a map interaction, or use the
+								existing Activate quest rule action.
 							</div>
 						) : null}
 						<label>
@@ -936,9 +1070,31 @@ export function QuestsEditor() {
 									Add objective
 								</button>
 							</div>
-							{selectedQuest.objectives.map((objective) => (
+							<label>
+								Objective order
+								<select
+									value={selectedQuest.objectiveMode ?? "legacy"}
+									onChange={(event) =>
+										updateQuest({
+											objectiveMode:
+												event.target.value === "sequence"
+													? "sequence"
+													: undefined,
+										})
+									}
+								>
+									<option value="sequence">In order, one step at a time</option>
+									<option value="legacy">Independent (legacy)</option>
+								</select>
+							</label>
+							<p className="helper-text">
+								Authoring is saved with the project. Progress belongs to the
+								current Play session.
+							</p>
+							{selectedQuest.objectives.map((objective, index) => (
 								<div className="quest-objective" key={objective.id}>
 									<input
+										aria-label={`Objective ${index + 1} text`}
 										onChange={(event) =>
 											updateObjective(objective.id, {
 												description: event.target.value,
@@ -947,6 +1103,24 @@ export function QuestsEditor() {
 										value={objective.description}
 									/>
 									{renderCondition(objective)}
+									<div className="button-row">
+										<button
+											type="button"
+											disabled={index === 0}
+											onClick={() => moveObjective(index, -1)}
+											aria-label={`Move objective ${index + 1} up`}
+										>
+											Move up
+										</button>
+										<button
+											type="button"
+											disabled={index === selectedQuest.objectives.length - 1}
+											onClick={() => moveObjective(index, 1)}
+											aria-label={`Move objective ${index + 1} down`}
+										>
+											Move down
+										</button>
+									</div>
 									<button
 										className="danger-button compact"
 										onClick={() => deleteObjective(objective.id)}
@@ -967,6 +1141,15 @@ export function QuestsEditor() {
 									Add action
 								</button>
 							</div>
+							<label>
+								Quest completion message
+								<textarea
+									value={selectedQuest.completionMessage ?? ""}
+									onChange={(event) =>
+										updateQuest({ completionMessage: event.target.value })
+									}
+								/>
+							</label>
 							{(selectedQuest.completionActions ?? []).map(
 								renderCompletionAction,
 							)}

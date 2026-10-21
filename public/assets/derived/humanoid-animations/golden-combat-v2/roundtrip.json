@@ -1,0 +1,51 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-combat-v2/actions.glb",
+	"sha256": "d59b65fe4f5616eff34753e6173c14d184438f367aae969191fe27a6f4d212e2",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "public/assets/derived/authored-humans/everyday-v1/mannequin.glb",
+			"heightScale": 1,
+			"restError": 0,
+			"clips": [
+				{
+					"name": "GoldenCombat_Attack_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 52,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009911732859981665,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8224364075443171,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Death_V1",
+					"duration": 1.649999976158142,
+					"tracks": 23,
+					"horizontalRange": [1.5102467778555173e-15, 1.5548309856977527e-7],
+					"minimumY": 0.00509544050485447,
+					"finalMinimumY": 0.009820468106377628,
+					"finalMaximumY": 0.37412540341401285,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				},
+				{
+					"name": "GoldenCombat_Hit_V1",
+					"duration": 0.44999998807907104,
+					"tracks": 22,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.00983244871758994,
+					"finalMinimumY": 0.009965684056300425,
+					"finalMaximumY": 1.8224364075443171,
+					"independentClones": true,
+					"restRestored": true,
+					"finalPoseHeld": true
+				}
+			]
+		}
+	]
+}
