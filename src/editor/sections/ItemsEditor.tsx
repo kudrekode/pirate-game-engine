@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BOW_ITEM } from "../../data/bow";
 import { SWORD_ITEM } from "../../data/sword";
 import {
 	itemCategoryLabels,
@@ -171,6 +172,18 @@ export function ItemsEditor() {
 					>
 						Add Sword
 					</button>
+					<button
+						type="button"
+						onClick={() => {
+							if (!project.items.some((item) => item.id === BOW_ITEM.id))
+								updateProject((draft) => {
+									draft.items.push({ ...BOW_ITEM });
+								});
+							setSelectedItemId(BOW_ITEM.id);
+						}}
+					>
+						Add Bow
+					</button>
 					{project.items.map((item) => (
 						<button
 							className={`list-item ${item.id === selectedItemId ? "selected" : ""}`}
@@ -198,6 +211,13 @@ export function ItemsEditor() {
 				{selectedItem ? (
 					<>
 						<div className="panel-title">Item Definition</div>
+						{selectedItem.weapon === "bow" && (
+							<p className="helper-text">
+								Bow: 32 damage, 1000 ms cooldown, unlimited arrows. Place a
+								Collect Item object in the Map Inspector and select this item
+								and the Bow visual.
+							</p>
+						)}
 						{selectedItem.weapon === "sword" && (
 							<p className="helper-text">
 								Sword: 35 damage, 2-cell reach, 750 ms cooldown. Place a Collect

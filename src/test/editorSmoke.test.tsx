@@ -701,6 +701,22 @@ describe("editor smoke tests", () => {
 		});
 		expect(screen.getByText(/Sword: 35 damage/)).toBeInTheDocument();
 	});
+	it("authors one stable Bow for ordinary pickup placement without duplicating it", () => {
+		render(<ItemsEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Add Bow" }));
+		fireEvent.click(screen.getByRole("button", { name: "Add Bow" }));
+		const items = useProjectStore
+			.getState()
+			.project.items.filter((item) => item.id === "bow");
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			name: "Bow",
+			weapon: "bow",
+			category: "weapon",
+			stackable: false,
+		});
+		expect(screen.getByText(/Bow: 32 damage/)).toBeInTheDocument();
+	});
 
 	it("renders Dialogue Editor", () => {
 		render(<DialogueEditor />);

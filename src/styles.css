@@ -3075,3 +3075,18 @@ label {
 .runtime-save-confirm button {
 	margin-right: 0.75rem;
 }
+.runtime-bow-reticle {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow:
+		0 0 0 1px #18202a,
+		0 0 3px #18202a;
+	transform: translate(-50%, -50%);
+	pointer-events: none;
+	z-index: 2;
+}

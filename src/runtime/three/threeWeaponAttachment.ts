@@ -1,4 +1,5 @@
-import type * as THREE from "three";
+import * as THREE from "three";
+import { BOW } from "../../data/bow";
 import type { SWORD } from "../../data/sword";
 import { disposePlaceholderObject } from "./placeholderMeshes";
 import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
@@ -13,9 +14,11 @@ import { resolveThreeVisual } from "./threeVisuals";
 /** Resolve once on the instance skeleton, then let the hierarchy follow animation. */
 export function resolveCharacterHand(
 	root: THREE.Object3D,
-	socket: "rightHand",
+	socket: "rightHand" | "leftHand",
 ) {
-	const hand = root.getObjectByName(socket === "rightHand" ? "hand_r" : "");
+	const hand = root.getObjectByName(
+		socket === "rightHand" ? "hand_r" : "hand_l",
+	);
 	return hand && (hand as THREE.Bone).isBone ? hand : undefined;
 }
 
@@ -23,8 +26,44 @@ export function createThreeWeaponAttachment(
 	root: THREE.Object3D,
 	diagnostics?: ThreePerformanceDiagnostics,
 ) {
-	const hand = resolveCharacterHand(root, "rightHand");
-	let equipped: typeof SWORD | undefined;
+	type Weapon = typeof SWORD | typeof BOW;
+	const attachments = new Map<
+		string,
+		ReturnType<typeof createHandAttachment>
+	>();
+	let active: ReturnType<typeof createHandAttachment> | undefined;
+	let disposed = false;
+	return {
+		sync: (weapon: Weapon | undefined, hidden = false) => {
+			if (disposed) return;
+			const next = weapon
+				? (attachments.get(weapon.id) ??
+					createHandAttachment(root, weapon, diagnostics))
+				: undefined;
+			if (weapon && next) attachments.set(weapon.id, next);
+			if (active !== next) active?.sync(undefined);
+			active = next;
+			active?.sync(weapon, hidden);
+		},
+		getStats: () => active?.getStats() ?? { attached: false, visible: false },
+		getProjectileSpawn: () => active?.getProjectileSpawn(),
+		updateGrip: () => active?.updateGrip(),
+		dispose: () => {
+			disposed = true;
+			for (const attachment of attachments.values()) attachment.dispose();
+			attachments.clear();
+			active = undefined;
+		},
+	};
+}
+
+function createHandAttachment(
+	root: THREE.Object3D,
+	definition: typeof SWORD | typeof BOW,
+	diagnostics?: ThreePerformanceDiagnostics,
+) {
+	const hand = resolveCharacterHand(root, definition.socket);
+	let equipped: typeof SWORD | typeof BOW | undefined;
 	let presentation: ThreeVisualRenderResult | undefined;
 	let disposed = false;
 	let pending = false;
@@ -51,9 +90,9 @@ export function createThreeWeaponAttachment(
 			if (request.status === "loaded")
 				gripPose = request.clip.tracks.flatMap((track) => {
 					if (
-						!/^(index|middle|ring|pinky|thumb)_0[123]_r\.quaternion$/.test(
-							track.name,
-						)
+						!new RegExp(
+							`^(index|middle|ring|pinky|thumb)_0[123]_${definition.socket === "leftHand" ? "l" : "r"}\\.quaternion$`,
+						).test(track.name)
 					)
 						return [];
 					const bone = root.getObjectByName(track.name.split(".")[0]);
@@ -109,14 +148,22 @@ export function createThreeWeaponAttachment(
 			presentation = result;
 			const grip = equipped.grip;
 			result.group.name = "equipped_weapon";
-			result.group.position.set(...grip.position);
-			result.group.rotation.set(...grip.rotation);
+			result.group.position.set(
+				grip.position[0],
+				grip.position[1],
+				grip.position[2],
+			);
+			result.group.rotation.set(
+				grip.rotation[0],
+				grip.rotation[1],
+				grip.rotation[2],
+			);
 			result.group.scale.multiplyScalar(grip.scale);
 		}
 		if (presentation.group.parent !== hand) hand.add(presentation.group);
 	};
 	return {
-		sync: (weapon: typeof SWORD | undefined, hidden = false) => {
+		sync: (weapon: typeof SWORD | typeof BOW | undefined, hidden = false) => {
 			equipped = weapon;
 			if (!weapon) presentation?.group.removeFromParent();
 			else if (!pending) refresh();
@@ -128,6 +175,14 @@ export function createThreeWeaponAttachment(
 			bone: hand?.name,
 			instanceId: presentation?.group.uuid,
 		}),
+		getProjectileSpawn: () => {
+			if (!presentation?.group.parent || equipped?.id !== "bow")
+				return undefined;
+			const point = presentation.group.localToWorld(
+				new THREE.Vector3(...BOW.projectileSocket),
+			);
+			return { x: point.x, y: point.y, z: point.z };
+		},
 		/** Fixed finger pose from the sword source, after the existing mixer. No weapon transforms. */
 		updateGrip: () => {
 			if (!disposed && equipped && presentation?.group.visible)

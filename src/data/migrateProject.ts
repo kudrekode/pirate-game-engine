@@ -1265,7 +1265,9 @@ function migrateItems(value: unknown): ItemDefinition[] {
 				name: readString(item.name, `Item ${index + 1}`),
 				...(description ? { description } : {}),
 				category,
-				...(item.weapon === "sword" ? { weapon: "sword" as const } : {}),
+				...(item.weapon === "sword" || item.weapon === "bow"
+					? { weapon: item.weapon }
+					: {}),
 				...(iconId ? { iconId } : {}),
 				stackable,
 				...(maxStack ? { maxStack } : {}),

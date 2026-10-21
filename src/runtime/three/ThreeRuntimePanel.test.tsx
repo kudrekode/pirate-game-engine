@@ -6,6 +6,7 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BOW_ITEM } from "../../data/bow";
 import { defaultProject } from "../../data/defaultProject";
 import { cloneProject } from "../../data/migrateProject";
 import { SWORD_ITEM } from "../../data/sword";
@@ -27,6 +28,7 @@ import { createRuntimeSession } from "../runtimeSession";
 import { createRuntimeTraversal, createTraversalWorld } from "../traversal";
 import { ThreeRuntimePanel } from "./ThreeRuntimePanel";
 import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
+import * as arrowPresentation from "./threeArrowPresentation";
 import * as characterAnimation from "./threeCharacterAnimation";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
 import {
@@ -2265,6 +2267,41 @@ it("equips and unequips through inventory, keeps combat modal gating and preserv
 	expect(screen.getByText("Unequipped", { exact: true })).toBeInTheDocument();
 	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
 	expect(controllers).toHaveLength(2);
+	expect(player.dispose).not.toHaveBeenCalled();
+});
+
+it("fires Bow while locked, releases for Inventory and keeps the scene and player controller", () => {
+	vi.spyOn(arrowPresentation, "createThreeArrowPresentation").mockReturnValue({
+		sync: vi.fn(),
+		getStats: () => ({ pooled: 3, visible: 0 }),
+		dispose: vi.fn(),
+	});
+	const controllers = mockCombatActors(),
+		project = animatedCombatProject();
+	project.camera.three.style = "thirdPerson";
+	project.items = [{ ...BOW_ITEM }];
+	project.gameState.inventory = { bow: 1 };
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount,
+		player = controllers[1];
+	fireEvent.keyDown(window, { key: "i" });
+	fireEvent.click(screen.getByRole("button", { name: "Equip" }));
+	fireEvent.keyDown(window, { key: "Escape" });
+	fireEvent.pointerDown(screen.getByLabelText("Three runtime viewport"), {
+		button: 0,
+	});
+	act(() => runLatestAnimationFrame());
+	expect(screen.getByLabelText("Bow aim reticle")).toBeInTheDocument();
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledWith("bow");
+	expect(lockedElement).not.toBeNull();
+	expect(latestSession().projectiles?.pending).toBeDefined();
+	fireEvent.keyDown(window, { key: "i" });
+	expect(lockedElement).toBeNull();
+	expect(screen.queryByLabelText("Bow aim reticle")).toBeNull();
+	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+	expect(player.triggerAttack).toHaveBeenCalledTimes(1);
+	expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(builds);
 	expect(player.dispose).not.toHaveBeenCalled();
 });
 

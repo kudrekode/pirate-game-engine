@@ -25,6 +25,16 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+The ranged acceptance route is one opt-in case:
+`node node_modules/@playwright/test/cli.js test e2e/ranged-combat-v1.spec.ts --grep @ranged-combat-v1`.
+Inspect `--list` first. It imports `ranged-combat-v1-demo.project.json`, uses real
+E/Inventory/F and pointer-lock mouse input, tests close/medium/far hits, misses,
+wall/corner obstruction, airborne rejection, Sword/unarmed switching and Continue.
+Only diagnostics are read; projectile positions and health are never injected.
+The selected Golden review is `node tools/blender-character/review-golden-bow.mjs --list`,
+then `--body athletic`, `broad`, `fuller` or `canonical`; it reuses installed characters.
+Run browser/art review separately from CI. Compact evidence is under `docs/assets/ranged-combat-v1/`.
+
 The one-sword acceptance route is one opt-in case:
 `node node_modules/@playwright/test/cli.js test e2e/melee-weapon-v1.spec.ts --grep '@melee-weapon-v1'`.
 Inspect `--list` first. It imports `melee-weapon-v1-demo.project.json`, uses real

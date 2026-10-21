@@ -11,6 +11,7 @@ import type {
 import { getPlayerCombatStats } from "./combat";
 import type { RuntimeDialogueState } from "./dialogueEngine";
 import type { NPCMovementState } from "./npcMovement";
+import type { RuntimeProjectiles } from "./projectileRuntime";
 import { createRuntimeQuestState, type RuntimeQuestState } from "./questEngine";
 import { createRuntimeState, type RuntimeGameState } from "./ruleEngine";
 import { createRuntimeShopStocks, type RuntimeShopStocks } from "./shopRuntime";
@@ -36,6 +37,8 @@ export type RuntimeRecentEnemyState = {
 };
 
 export type RuntimeSessionState = {
+	/** Transient arrows/release clock. Explicit game-save serialization excludes this. */
+	projectiles?: RuntimeProjectiles;
 	// Optional metre-space traversal; integer playerPosition still owns triggers.
 	traversal?: RuntimeTraversal;
 	project: GameProject;

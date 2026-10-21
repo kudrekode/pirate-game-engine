@@ -48,6 +48,10 @@ import { interactionPrompt } from "./interactionPrompt";
 import type { VehicleMovementConfig } from "./movement";
 import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
+import {
+	advanceRuntimeProjectiles,
+	attemptRuntimeBowAttack,
+} from "./projectileRuntime";
 import { getQuestViews, type QuestView } from "./questEngine";
 import {
 	finishQuestConversation,
@@ -94,6 +98,7 @@ import {
 	type RuntimeSessionState,
 } from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
+import { createTraversalWorld, type TraversalWorld } from "./traversal";
 import { equipRuntimeWeapon, getEquippedWeapon } from "./weaponRuntime";
 
 type WasdKeys = {
@@ -130,6 +135,8 @@ export class AdventureScene extends Phaser.Scene {
 	private readonly session: RuntimeSessionState;
 	private currentArea: GameArea;
 	private tileSize: number;
+	private projectileWorld?: TraversalWorld;
+	private arrowGraphics?: Phaser.GameObjects.Graphics;
 
 	// Phaser rendering cache.
 	private readonly pixelTextureKeys = new Map<string, string>();
@@ -444,7 +451,55 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	// Input translation into shared runtime transactions.
-	update(time: number) {
+	update(time: number, delta = 0) {
+		if (this.isFinished) {
+			this.session.projectiles = undefined;
+			this.arrowGraphics?.clear();
+		}
+		if (this.session.projectiles && this.projectileWorld) {
+			const body = {
+				x: this.playerPosition.x,
+				y:
+					this.projectileWorld.sampler.sampleSurfaceY(this.playerPosition) +
+					1.25,
+				z: this.playerPosition.y,
+			};
+			advanceRuntimeProjectiles(
+				this.session,
+				this.currentArea,
+				this.projectileWorld,
+				delta,
+				{
+					body,
+					muzzle: {
+						x: body.x + this.playerFacing.x * 0.45,
+						y: body.y,
+						z: body.z + this.playerFacing.y * 0.45,
+					},
+				},
+				(event) => this.handleRuntimeCombatEvent(event),
+				isRuntimeGameplayBlocked(
+					this.session,
+					this.isInventoryOpen ||
+						this.isCutsceneOpen ||
+						this.isDialogueOpen ||
+						this.isFinished,
+				),
+			);
+			this.arrowGraphics?.clear();
+			for (const arrow of this.session.projectiles?.arrows ?? []) {
+				const x = (arrow.position.x + 0.5) * this.tileSize,
+					y = (arrow.position.z + 0.5) * this.tileSize;
+				this.arrowGraphics
+					?.lineStyle(2, 0xe8dfcd)
+					.lineBetween(
+						x - arrow.direction.x * this.tileSize * 0.6,
+						y - arrow.direction.z * this.tileSize * 0.6,
+						x,
+						y,
+					);
+			}
+		}
 		if (this.isInventoryOpen) return;
 		if (this.isDialogueOpen && this.activeDialogue) {
 			if (this.wasInteractPressed()) {
@@ -681,6 +736,16 @@ export class AdventureScene extends Phaser.Scene {
 	// Phaser world rendering.
 	private renderMap() {
 		this.worldLayer?.removeAll(true);
+		this.session.projectiles = undefined;
+		this.projectileWorld = this.session.project.items.some(
+			(item) => item.weapon === "bow",
+		)
+			? createTraversalWorld(this.session.project, this.currentArea, "blocky")
+			: undefined;
+		this.arrowGraphics = this.projectileWorld
+			? this.add.graphics().setDepth(50)
+			: undefined;
+		if (this.arrowGraphics) this.worldLayer?.add(this.arrowGraphics);
 		this.playerMarker = undefined;
 		this.npcMarkers.clear();
 		this.objectMarkers.clear();
@@ -1075,6 +1140,7 @@ export class AdventureScene extends Phaser.Scene {
 			return;
 		}
 		if (event.type === "objectCollected") {
+			this.projectileWorld?.removeObject(event.objectId);
 			this.objectMarkers.get(event.objectId)?.destroy();
 			this.objectMarkers.delete(event.objectId);
 			return;
@@ -1960,6 +2026,23 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	private tryAttack(time: number): boolean {
+		if (getEquippedWeapon(this.session)?.id === "bow") {
+			const height =
+				this.projectileWorld?.sampler.sampleSurfaceY(this.playerPosition) ?? 0;
+			return attemptRuntimeBowAttack(
+				this.session,
+				time,
+				{
+					origin: {
+						x: this.playerPosition.x,
+						y: height + 1.25,
+						z: this.playerPosition.y,
+					},
+					direction: { x: this.playerFacing.x, y: 0, z: this.playerFacing.y },
+				},
+				(event) => this.handleRuntimeCombatEvent(event),
+			);
+		}
 		return attemptRuntimeCombatAttack(
 			this.session,
 			this.currentArea,

@@ -3,6 +3,7 @@ import {
 	canAttack,
 	damageNpc,
 	findAttackTarget,
+	isNpcAttackable,
 	removeDefeatedNpc,
 } from "./combat";
 import { resolveNPCInstance } from "./npcResolver";
@@ -20,7 +21,7 @@ export type RuntimeCombatEvent =
 	| {
 			type: "attackStarted";
 			nextAttackAt: number;
-			weapon?: "sword";
+			weapon?: "sword" | "bow";
 	  }
 	| {
 			type: "attackBlocked";
@@ -124,9 +125,9 @@ function updateRecentEnemy(
 	};
 }
 
-export function attemptRuntimeCombatAttack(
+/** Common acceptance/cooldown seam. Projectile impacts never start a second attack. */
+export function beginRuntimeCombatAttack(
 	session: RuntimeSessionState,
-	area: GameArea,
 	time: number,
 	emit: RuntimeCombatEventEmitter,
 ): boolean {
@@ -142,13 +143,27 @@ export function attemptRuntimeCombatAttack(
 		return false;
 	}
 
-	const attack = getRuntimeAttackStats(session);
-	session.nextAttackAt = time + attack.attackCooldownMs;
+	const weapon = getEquippedWeapon(session);
+	session.nextAttackAt =
+		time + (weapon?.attackCooldownMs ?? session.playerCombat.attackCooldownMs);
 	emit({
 		type: "attackStarted",
 		nextAttackAt: session.nextAttackAt,
-		weapon: getEquippedWeapon(session)?.id,
+		weapon: weapon?.id,
 	});
+	return true;
+}
+
+export function attemptRuntimeCombatAttack(
+	session: RuntimeSessionState,
+	area: GameArea,
+	time: number,
+	emit: RuntimeCombatEventEmitter,
+): boolean {
+	// Bow acceptance requires an explicit aim ray and the shared projectile loop.
+	if (getEquippedWeapon(session)?.id === "bow") return false;
+	if (!beginRuntimeCombatAttack(session, time, emit)) return false;
+	const attack = getRuntimeAttackStats(session);
 
 	const target = findAttackTarget(
 		area.npcs,
@@ -165,8 +180,28 @@ export function attemptRuntimeCombatAttack(
 		return false;
 	}
 
+	return damageRuntimeNpc(session, area, target, attack.attackDamage, emit);
+}
+
+/** Melee and arrow impact share health, reactions, defeat flags and quest rewards. */
+export function damageRuntimeNpc(
+	session: RuntimeSessionState,
+	area: GameArea,
+	target: NPCInstance,
+	damage: number,
+	emit: RuntimeCombatEventEmitter,
+): boolean {
+	if (
+		!area.npcs.includes(target) ||
+		!isNpcAttackable(
+			target,
+			session.runtimeState.npcs[target.id],
+			session.defeatedNpcIds,
+		)
+	)
+		return false;
 	const attributes = session.runtimeState.npcs[target.id] ?? target.attributes;
-	const result = damageNpc(attributes, attack.attackDamage);
+	const result = damageNpc(attributes, damage);
 	const enemyName = getNpcName(session, target);
 	updateRecentEnemy(
 		session,
@@ -179,7 +214,7 @@ export function attemptRuntimeCombatAttack(
 		type: "npcDamaged",
 		npcId: target.id,
 		name: enemyName,
-		damage: attack.attackDamage,
+		damage,
 		health: result.health,
 		maxHealth: attributes.maxHealth,
 	});
@@ -189,7 +224,7 @@ export function attemptRuntimeCombatAttack(
 	} else {
 		emit({
 			type: "status",
-			message: `Hit ${enemyName} for ${attack.attackDamage}.`,
+			message: `Hit ${enemyName} for ${damage}.`,
 		});
 	}
 

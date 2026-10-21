@@ -26,8 +26,11 @@ function createRenderedCharacter(): THREE.Group {
 }
 
 it("prepares a sword variant once, keeps Attack priority and independent controllers, then restores unarmed/locomotion", async () => {
-	const clips = ["Idle", "Fist", "Sword", "Hit"].map(createRootMotionClip);
+	const clips = ["Idle", "Fist", "Sword", "Hit", "Bow"].map(
+		createRootMotionClip,
+	);
 	const prepareSword = vi.spyOn(clips[2], "clone");
+	const prepareBow = vi.spyOn(clips[4], "clone");
 	const asset: ThreeVisualAssetDefinition = {
 		id: "weapon-actor",
 		name: "Actor",
@@ -54,7 +57,10 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 	}));
 	const options = {
 		asset,
-		attackVariants: { sword: { assetId: swordSource.id, clipName: "Sword" } },
+		attackVariants: {
+			sword: { assetId: swordSource.id, clipName: "Sword" },
+			bow: { assetId: swordSource.id, clipName: "Bow" },
+		},
 	};
 	const one = createThreeCharacterAnimationController({
 			...options,
@@ -75,6 +81,12 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 			one.update(1.1);
 		}
 		expect(prepareSword).toHaveBeenCalledTimes(1);
+		for (let i = 0; i < 3; i++) {
+			one.triggerAttack("bow");
+			expect(one.getStats().activeClip).toBe("Bow");
+			one.update(1.1);
+		}
+		expect(prepareBow).toHaveBeenCalledTimes(1);
 		expect(loadAsync).toHaveBeenCalledTimes(2);
 		expect(two.getStats()).toMatchObject({
 			semanticState: "idle",

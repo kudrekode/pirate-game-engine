@@ -6,6 +6,7 @@ import {
 	useState,
 } from "react";
 import * as THREE from "three";
+import { BOW } from "../../data/bow";
 import { SWORD } from "../../data/sword";
 import {
 	getTerrainPresentationSurfaceY,
@@ -73,6 +74,11 @@ import {
 	findPlayerWaitingTriggerTargets,
 	getContinuousPlayerMoveStartMs,
 } from "../playerMovementTransaction";
+import {
+	advanceRuntimeProjectiles,
+	attemptRuntimeBowAttack,
+	type BowAim,
+} from "../projectileRuntime";
 import {
 	QuestObjectiveTracker,
 	useQuestPresentation,
@@ -165,6 +171,7 @@ import {
 } from "./placeholderMeshes";
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
+import { createThreeArrowPresentation } from "./threeArrowPresentation";
 import {
 	createThreeCharacterAnimationController,
 	type ThreeCharacterAnimationController,
@@ -519,6 +526,7 @@ export function ThreeRuntimePanel({
 	const cameraFacingRef = useRef<VisualGridPosition | null>(null);
 	const cameraFocusRef = useRef<CameraFollowRig | null>(null);
 	const attackFacingRef = useRef<VisualGridPosition | null>(null);
+	const bowAimRef = useRef<BowAim | null>(null);
 	const showCollisionRef = useRef(false);
 	const traversalWorldRef = useRef<ReturnType<
 		typeof createTraversalWorld
@@ -1328,9 +1336,15 @@ export function ThreeRuntimePanel({
 
 	function handleCombatEvent(event: RuntimeCombatEvent): void {
 		if (event.type === "attackStarted") {
-			attackFacingRef.current = {
-				...(getSession()?.playerFacing ?? { x: 0, y: 1 }),
-			};
+			attackFacingRef.current =
+				event.weapon === "bow" && bowAimRef.current
+					? {
+							x: bowAimRef.current.direction.x,
+							y: bowAimRef.current.direction.z,
+						}
+					: {
+							...(getSession()?.playerFacing ?? { x: 0, y: 1 }),
+						};
 			characterAnimationControllersRef.current
 				.get("runtime_player")
 				?.triggerAttack(event.weapon);
@@ -1875,7 +1889,15 @@ export function ThreeRuntimePanel({
 					tryPlayerJump(session, performance.now(), gameplayBlocked(session));
 				else {
 					const area = getArea(session);
-					if (area)
+					if (area && getEquippedWeapon(session)?.id === "bow") {
+						if (bowAimRef.current)
+							attemptRuntimeBowAttack(
+								session,
+								performance.now(),
+								bowAimRef.current,
+								handleCombatEvent,
+							);
+					} else if (area)
 						attemptRuntimeCombatAttack(
 							session,
 							area,
@@ -2295,10 +2317,19 @@ export function ThreeRuntimePanel({
 					asset: visual.asset,
 					root: group,
 					attackVariants:
-						id === "runtime_player" &&
-						session.project.items.some((item) => item.weapon === "sword") &&
-						resolveCharacterHand(group, "rightHand")
-							? { sword: SWORD.attackAnimation }
+						id === "runtime_player"
+							? {
+									...(session.project.items.some(
+										(item) => item.weapon === "sword",
+									) && resolveCharacterHand(group, "rightHand")
+										? { sword: SWORD.attackAnimation }
+										: {}),
+									...(session.project.items.some(
+										(item) => item.weapon === "bow",
+									) && resolveCharacterHand(group, "leftHand")
+										? { bow: BOW.attackAnimation }
+										: {}),
+								}
 							: undefined,
 				}),
 			);
@@ -2806,6 +2837,11 @@ export function ThreeRuntimePanel({
 			x: 0,
 			y: 0,
 		});
+		const arrowPresentation = session.project.items.some(
+			(item) => item.weapon === "bow",
+		)
+			? createThreeArrowPresentation(scene, cameraWorldOffset, diagnostics)
+			: undefined;
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
 		const render = () => {
@@ -3005,10 +3041,67 @@ export function ThreeRuntimePanel({
 				movementPhase: traversal?.motion.phase,
 				movementSpeed: traversal?.motion.speed,
 			});
-			characterAnimationControllers.forEach((controller) => {
+			characterAnimationControllers.forEach((controller, id) => {
+				if (
+					id === "runtime_player" &&
+					session.projectiles?.pending &&
+					isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+				)
+					return;
 				controller.update(deltaMs / 1000);
 			});
 			weaponAttachment.updateGrip();
+			if (gameOverRef.current) session.projectiles = undefined;
+			if (session.projectiles) {
+				const body = {
+					x: playerMesh.position.x - cameraWorldOffset.x,
+					y:
+						(grounded?.height ??
+							traversalWorld.sampler.sampleSurfaceY(
+								playerVisualPosition,
+								terrainRenderMode,
+							)) + 1.25,
+					z: playerMesh.position.z - cameraWorldOffset.z,
+				};
+				const socket = weaponAttachment.getProjectileSpawn();
+				const facing = bowAimRef.current?.direction ?? { x: 0, y: 0, z: 1 };
+				const length = Math.hypot(facing.x, facing.z) || 1;
+				const muzzle = socket
+					? {
+							x: socket.x - cameraWorldOffset.x,
+							y: socket.y,
+							z: socket.z - cameraWorldOffset.z,
+						}
+					: {
+							x: body.x + (facing.x / length) * 0.45,
+							y: body.y,
+							z: body.z + (facing.z / length) * 0.45,
+						};
+				advanceRuntimeProjectiles(
+					session,
+					area,
+					traversalWorld,
+					deltaMs,
+					{ body, muzzle },
+					handleCombatEvent,
+					isRuntimeGameplayBlocked(session, gameplayBlocked(session)),
+				);
+			}
+			arrowPresentation?.sync(session.projectiles?.arrows ?? []);
+			if (import.meta.env.DEV && arrowPresentation)
+				host.dataset.projectiles = JSON.stringify({
+					...arrowPresentation.getStats(),
+					active: session.projectiles?.arrows.length ?? 0,
+					pending: !!session.projectiles?.pending,
+					spawned: session.projectiles?.spawned ?? 0,
+					removed: session.projectiles?.removed ?? 0,
+					lastImpact: session.projectiles?.lastImpact,
+					arrows: session.projectiles?.arrows.map((a) => ({
+						id: a.id,
+						position: a.position,
+						direction: a.direction,
+					})),
+				});
 			for (const [id, prop] of propAnimations) {
 				prop.controller.setOpened(
 					session.openedObjectIds.has(id) ||
@@ -3060,12 +3153,34 @@ export function ThreeRuntimePanel({
 				),
 				...(grounded ? { y: grounded.height + 0.625 } : {}),
 			};
+			const bowFraming =
+				getEquippedWeapon(session)?.id === "bow" &&
+				threeCameraConfig.style === "thirdPerson";
 			const nextCameraTarget = getFollowCameraTarget(
 				cameraAnchor,
 				cameraFacingRef.current ?? session.playerFacing,
-				threeCameraConfig,
+				bowFraming
+					? {
+							...threeCameraConfig,
+							lookAtHeight: Math.max(1, threeCameraConfig.lookAtHeight),
+						}
+					: threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
 			);
+			if (bowFraming) {
+				// A small shoulder shift clears the centre reticle; the existing rig,
+				// damping, pitch limits and obstruction still own the camera.
+				const dx = nextCameraTarget.lookAt.x - nextCameraTarget.position.x,
+					dz = nextCameraTarget.lookAt.z - nextCameraTarget.position.z;
+				const length = Math.hypot(dx, dz) || 1;
+				for (const point of [
+					nextCameraTarget.position,
+					nextCameraTarget.lookAt,
+				]) {
+					point.x -= (dz / length) * 0.45;
+					point.z += (dx / length) * 0.45;
+				}
+			}
 			if (cameraModeRef.current === "inspect") {
 				applyInspectCamera();
 			} else {
@@ -3131,6 +3246,21 @@ export function ThreeRuntimePanel({
 					actual: visibleCameraRigRef.current,
 				});
 			diagnostics.recordCameraUpdate(performance.now() - cameraUpdateStartedAt);
+			// Actual visible centre ray, including camera obstruction and orbit damping.
+			const visibleRig = visibleCameraRigRef.current;
+			if (visibleRig)
+				bowAimRef.current = {
+					origin: {
+						x: visibleRig.position.x - cameraWorldOffset.x,
+						y: visibleRig.position.y,
+						z: visibleRig.position.z - cameraWorldOffset.z,
+					},
+					direction: {
+						x: visibleRig.lookAt.x - visibleRig.position.x,
+						y: visibleRig.lookAt.y - visibleRig.position.y,
+						z: visibleRig.lookAt.z - visibleRig.position.z,
+					},
+				};
 			if (
 				waterSurfaceMeshCount > 0 ||
 				coastlinePresentation.meshes.length > 0
@@ -3182,6 +3312,9 @@ export function ThreeRuntimePanel({
 			for (const npcId of dyingNpcs.keys()) removeNpcPresentation(npcId);
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
+			arrowPresentation?.dispose();
+			bowAimRef.current = null;
+			session.projectiles = undefined;
 			window.removeEventListener("pointermove", handlePointerMove);
 			inputDisposed = true;
 			if (requestMouseLookRef.current === requestMouseLook)
@@ -3246,6 +3379,16 @@ export function ThreeRuntimePanel({
 					reimport it through Asset Creator. Saved assignments are preserved.
 				</p>
 			)}
+			{session &&
+				getEquippedWeapon(session)?.id === "bow" &&
+				!gameplayBlocked(session) &&
+				cameraMode === "follow" && (
+					<div
+						className="runtime-bow-reticle"
+						role="img"
+						aria-label="Bow aim reticle"
+					/>
+				)}
 			<div className="three-runtime-host" ref={hostRef}>
 				{mountError ? (
 					<div className="three-runtime-error">{mountError}</div>

@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { BOW } from "/src/data/bow.ts";
 import { SWORD } from "/src/data/sword.ts";
 import { createThreeWeaponAttachment } from "/src/runtime/three/threeWeaponAttachment.ts";
+
 const p = new URLSearchParams(location.search);
 const asset =
 	p.get("asset") || "/assets/derived/authored-humans/everyday-v1/mannequin.glb";
@@ -26,10 +28,11 @@ light.position.set(3, 5, 4);
 scene.add(light);
 const actor = clone(model.scene);
 scene.add(actor);
-const weaponAttachment = p.has("sword")
-	? createThreeWeaponAttachment(actor)
-	: undefined;
-weaponAttachment?.sync(SWORD);
+const weaponAttachment =
+	p.has("sword") || p.has("bow")
+		? createThreeWeaponAttachment(actor)
+		: undefined;
+weaponAttachment?.sync(p.has("bow") ? BOW : SWORD);
 const mixer = new THREE.AnimationMixer(actor);
 const action = mixer.clipAction(clip);
 action.setLoop(THREE.LoopOnce, 1);
@@ -49,13 +52,13 @@ const cameras = [
 	[-2.8, 1.9, -3.6],
 ].map((v, i) => {
 	const c = new THREE.PerspectiveCamera(
-		i === 0 ? 55 : 38,
+		i === 0 ? 55 : p.has("bow") ? 42 : 38,
 		640 / 380,
 		0.01,
 		100,
 	);
 	c.position.set(...v);
-	c.lookAt(0, i === 0 ? 0.05 : 0.8, 0);
+	c.lookAt(0, i === 0 ? 0.05 : p.has("bow") ? 1.0 : 0.8, 0);
 	return c;
 });
 const renderer = new THREE.WebGLRenderer({
@@ -89,7 +92,7 @@ for (let i = 0; i < 4; i++) {
 window.sample = (t) => {
 	action.reset().play();
 	mixer.setTime(Math.min(t, clip.duration));
-	weaponAttachment?.sync(SWORD);
+	weaponAttachment?.sync(p.has("bow") ? BOW : SWORD);
 	weaponAttachment?.updateGrip();
 	actor.updateMatrixWorld(true);
 	actor.traverse((o) => {

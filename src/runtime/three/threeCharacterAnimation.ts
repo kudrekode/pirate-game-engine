@@ -39,7 +39,7 @@ export type ThreeCharacterAnimationController = {
 	getDefeatPlayback: () => { duration: number; finished: boolean } | undefined;
 	refresh: () => void;
 	sync: (context: CharacterAnimationContext) => void;
-	triggerAttack: (variant?: "sword") => void;
+	triggerAttack: (variant?: "sword" | "bow") => void;
 	triggerHit: () => void;
 	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
@@ -174,12 +174,12 @@ export function createThreeCharacterAnimationController({
 	asset: ThreeVisualAssetDefinition;
 	root: THREE.Object3D;
 	attackVariants?: Partial<
-		Record<"sword", { assetId?: string; clipName: string }>
+		Record<"sword" | "bow", { assetId?: string; clipName: string }>
 	>;
 }): ThreeCharacterAnimationController {
 	const mixer = new THREE.AnimationMixer(root);
 	const actions = new Map<
-		CharacterAnimationSemanticState | "sword",
+		CharacterAnimationSemanticState | "sword" | "bow",
 		THREE.AnimationAction
 	>();
 	const loadingSourceIds = new Set<string>();
@@ -204,7 +204,7 @@ export function createThreeCharacterAnimationController({
 	let incompatibleClipCount = 0;
 	let oneShotActionsTriggered = 0;
 	let disposed = false;
-	let attackVariant: "sword" | undefined;
+	let attackVariant: "sword" | "bow" | undefined;
 
 	const reportIssueOnce = (key: string, type: "missing" | "incompatible") => {
 		if (reportedIssueKeys.has(key)) {
@@ -340,19 +340,22 @@ export function createThreeCharacterAnimationController({
 			"hit",
 			"defeated",
 			"sword",
+			"bow",
 		] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
 			const mapping =
-				state === "sword"
-					? attackVariants?.sword
+				state === "sword" || state === "bow"
+					? attackVariants?.[state]
 					: getAnimationMapping(asset, state);
 			if (!mapping) {
 				continue;
 			}
 			const sourceAssetId =
-				state === "sword" ? mapping.assetId : getSourceAssetId(asset, state);
+				state === "sword" || state === "bow"
+					? mapping.assetId
+					: getSourceAssetId(asset, state);
 			const sourceAsset = getThreeVisualAssetDefinition(sourceAssetId);
 			if (sourceAssetId) {
 				sourceAssetIds.add(sourceAssetId);

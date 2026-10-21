@@ -85,6 +85,8 @@ Shared helpers are renderer-independent and own gameplay semantics:
 - `runtimeObjectInteractions`: object behaviours, pickups, shops, and vehicle transactions.
 - `runtimeNpcTick`: NPC movement, hostile chase, and contact damage.
 - `runtimeCombat`: player attacks, NPC damage, defeat state, combat flags, and defeat trigger requests.
+- `weaponRuntime`: one inventory-owned active weapon (Sword or Bow), shared equip gates and effective attack parameters.
+- `projectileRuntime`: transient player arrows, explicit 300 ms release, camera-ray aim correction, swept world/NPC collision and shared combat impacts. Session saves exclude arrows and pending releases. Three supplies a camera ray and a bone socket; Phaser supplies facing and a simple world origin. Both call the same update helper in their existing loop.
 
 Shared gameplay helpers must not depend on Phaser, Three.js, React, WebGL, DOM state, or editor store state.
 
