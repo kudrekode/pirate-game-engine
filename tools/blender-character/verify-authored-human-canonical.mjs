@@ -2,8 +2,8 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { cloneThreeVisualAssetRoot } from "../../packages/three-asset-preview/src/index.ts";
-import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
 import { validateAuthoredHumanArtifact } from "./authored-human-roundtrip.mjs";
+import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
 
 const base = JSON.parse(
 	await readFile(

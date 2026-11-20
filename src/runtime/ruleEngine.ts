@@ -39,6 +39,7 @@ export type RuleActionContext = {
 	shopDefinitions?: ShopDefinition[];
 	stateChanged?: () => void;
 	logEvent?: (message: string) => void;
+	showItemFeedback?: (message: string) => void;
 };
 
 function describeAction(action: GameAction): string {
@@ -297,6 +298,7 @@ export function runAction(
 			context.itemDefinitions ?? [],
 			itemId,
 			action.quantity,
+			context.showItemFeedback,
 		);
 		context.stateChanged?.();
 		onDone();

@@ -1,8 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import {
+	type MutableRefObject,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import * as THREE from "three";
+import { BOW } from "../../data/bow";
+import { SWORD } from "../../data/sword";
 import {
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
+	type TerrainSurfaceSampler,
 } from "../../data/terrainSurface";
 import {
 	areaEntitiesToMarkers,
@@ -33,15 +42,56 @@ import {
 	getDialogueNode,
 } from "../dialogueEngine";
 import {
+	assertGameSaveSafe,
+	type GameSave,
+	restoreGameSave,
+} from "../gameSave";
+import { InventoryPanel } from "../InventoryPanel";
+import {
 	canInteractActivate,
 	canTouchActivate,
 	findNearestInteractableTarget,
+	findTouchInteractableTarget,
 	type InteractableTarget,
 	isPickupCollected,
 	resolveEventInteraction,
+	resolveObjectBehaviour,
 	type TouchInteractableTarget,
 } from "../interactionDiscovery";
-import { attemptPlayerMove } from "../playerMovementTransaction";
+import {
+	getRuntimeDialogueDefinition,
+	prepareInteractionMessage,
+} from "../interactionMessages";
+import { interactionPrompt } from "../interactionPrompt";
+import {
+	advancePlayerLocomotion,
+	isPlayerAirborne,
+	setPlayerSprint,
+	tryPlayerJump,
+} from "../playerLocomotion";
+import {
+	attemptPlayerMove,
+	findPlayerWaitingTriggerTargets,
+	getContinuousPlayerMoveStartMs,
+} from "../playerMovementTransaction";
+import {
+	advanceRuntimeProjectiles,
+	type BowAim,
+	beginRuntimeBowDraw,
+	cancelRuntimeBowDraw,
+	releaseRuntimeBowDraw,
+	updateRuntimeBowDraw,
+} from "../projectileRuntime";
+import {
+	QuestObjectiveTracker,
+	useQuestPresentation,
+} from "../QuestPresentation";
+import { getQuestViews } from "../questEngine";
+import {
+	finishQuestConversation,
+	finishQuestInteraction,
+	observeQuestLocation,
+} from "../questInteractions";
 import { fireTrigger } from "../ruleEngine";
 import {
 	attemptRuntimeCombatAttack,
@@ -55,6 +105,7 @@ import { type RuntimeNpcTickEvent, tickRuntimeNpcs } from "../runtimeNpcTick";
 import {
 	buyRuntimeShopEntry,
 	closeRuntimeShop,
+	collectRuntimeObjectPickup,
 	collectRuntimePickup,
 	dismountRuntimeVehicle,
 	openRuntimeShop,
@@ -66,7 +117,6 @@ import {
 	completeRuntimeProgressionCutscene,
 	type RuntimeProgressionEvent,
 	startRuntimeSession,
-	syncRuntimeQuestProgress,
 	transitionRuntimeArea,
 } from "../runtimeProgression";
 import {
@@ -78,6 +128,18 @@ import {
 	type RuntimeGridPosition,
 	type RuntimeSessionState,
 } from "../runtimeSession";
+import {
+	createRuntimeTraversal,
+	createTraversalWorld,
+	isTraversalMoving,
+	sampleTraversalMotion,
+	sampleTraversalTerrain,
+} from "../traversal";
+import {
+	InventoryNotifications,
+	useInventoryPresentation,
+} from "../useInventoryPresentation";
+import { equipRuntimeWeapon, getEquippedWeapon } from "../weaponRuntime";
 import {
 	advanceThirdPersonMouseLook,
 	clampOrbitCameraState,
@@ -91,18 +153,28 @@ import {
 	getThirdPersonMouseLookYawOffsetDegrees,
 	type OrbitCameraState,
 	panOrbitCamera,
-	resolveCameraRelativeGridDirection,
+	resolveRuntimeCameraMovement,
 	rotateOrbitCamera,
 	type ThirdPersonMouseLookState,
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
 import {
+	advanceCameraClearance,
+	applyCameraClearance,
+	getCameraClearFraction,
+} from "./cameraObstruction";
+import {
+	createGroundPresentation,
+	createWorldEdgePresentation,
+} from "./groundPresentation";
+import {
 	disposePlaceholderObject,
 	type ThreeResourceDisposeTracker,
 } from "./placeholderMeshes";
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
+import { createThreeArrowPresentation } from "./threeArrowPresentation";
 import {
 	createThreeCharacterAnimationController,
 	type ThreeCharacterAnimationController,
@@ -112,6 +184,11 @@ import {
 	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "./threePerformanceDiagnostics";
+import {
+	createThreePropAnimationController,
+	interactionFacingYaw,
+} from "./threePropAnimation";
+import { getThreeRuntimeAction } from "./threeRuntimeInput";
 import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
 import {
 	type ResolvedThreeVisual,
@@ -119,7 +196,14 @@ import {
 	resolveThreeCharacterVisual,
 } from "./threeVisuals";
 import {
+	createThreeWeaponAttachment,
+	resolveCharacterHand,
+} from "./threeWeaponAttachment";
+import { createTraversalDebugGroup } from "./traversalDebug";
+import {
 	advanceCameraFollowRig,
+	advancePlayerYaw,
+	advanceThirdPersonFocus,
 	type CameraFollowRig,
 	facingToYawRadians,
 	getCameraFollowTarget,
@@ -127,7 +211,6 @@ import {
 	getVisualGridPosition,
 	getVisualStateTargetPosition,
 	gridPositionsEqual,
-	lerpWorldPosition,
 	resetVisualEntityState,
 	settleVisualEntityState,
 	startVisualGridMove,
@@ -199,6 +282,8 @@ function resolveThreeRuntimeBuildReason(
 type ThreeRuntimePanelProps = {
 	project: GameProject;
 	onRestart: () => void;
+	initialSave?: GameSave;
+	saveSessionRef?: MutableRefObject<(() => RuntimeSessionState) | null>;
 };
 
 type RuntimeCameraMode = "follow" | "inspect";
@@ -274,17 +359,20 @@ function getVisualWorldBase(
 	area: GameArea,
 	position: VisualGridPosition,
 	terrainMode: TerrainSurfaceMode,
+	sampler?: TerrainSurfaceSampler,
 ): VisualWorldPosition {
 	const point = previewGridPositionToThreePoint(area, position);
 	const terrainX = clampGridCoordinate(position.x, area.width - 1);
 	const terrainY = clampGridCoordinate(position.y, area.height - 1);
 	return {
 		x: point.x,
-		y: getTerrainPresentationSurfaceY(
-			area,
-			{ x: terrainX, y: terrainY },
-			terrainMode,
-		),
+		y: sampler
+			? sampler.sampleSurfaceY({ x: terrainX, y: terrainY }, terrainMode)
+			: getTerrainPresentationSurfaceY(
+					area,
+					{ x: terrainX, y: terrainY },
+					terrainMode,
+				),
 		z: point.z,
 	};
 }
@@ -293,8 +381,9 @@ function getVisualPlayerCenter(
 	area: GameArea,
 	position: VisualGridPosition,
 	terrainMode: TerrainSurfaceMode,
+	sampler?: TerrainSurfaceSampler,
 ): VisualWorldPosition {
-	const base = getVisualWorldBase(area, position, terrainMode);
+	const base = getVisualWorldBase(area, position, terrainMode, sampler);
 	return {
 		x: base.x,
 		y: base.y + 0.625,
@@ -308,9 +397,16 @@ function setObjectBasePosition(
 	position: VisualGridPosition,
 	terrainMode: TerrainSurfaceMode,
 	visual?: ResolvedThreeVisual,
+	groundHeight?: number,
+	sampler?: TerrainSurfaceSampler,
 ): void {
-	const base = getVisualWorldBase(area, position, terrainMode);
-	object.position.set(base.x, base.y + (visual?.heightOffset ?? 0), base.z);
+	const base = getVisualWorldBase(area, position, terrainMode, sampler);
+	const offset = object.userData.mapEntityTransform?.position;
+	object.position.set(
+		base.x + (offset?.x ?? 0),
+		(groundHeight ?? base.y) + (visual?.heightOffset ?? 0) + (offset?.y ?? 0),
+		base.z + (offset?.z ?? 0),
+	);
 }
 
 function setObjectFacing(
@@ -318,7 +414,11 @@ function setObjectFacing(
 	facing: VisualGridPosition,
 	visual?: ResolvedThreeVisual,
 ): void {
-	object.rotation.y = resolveThreeCharacterFacingYaw(facing, visual);
+	object.rotation.y =
+		resolveThreeCharacterFacingYaw(facing, visual) +
+		THREE.MathUtils.degToRad(
+			object.userData.mapEntityTransform?.rotation.y ?? 0,
+		);
 }
 
 function getRuntimeCameraDimensions(area: GameArea): {
@@ -410,6 +510,8 @@ function createRuntimePlayerMarker(
 export function ThreeRuntimePanel({
 	project,
 	onRestart,
+	initialSave,
+	saveSessionRef,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
@@ -421,10 +523,33 @@ export function ThreeRuntimePanel({
 	const diagnostics = diagnosticsRef.current;
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
+	const heldMovementKeys = useRef(new Map<string, RuntimeGridPosition>());
+	const heldSprintKeys = useRef(new Set<string>());
+	// Camera orientation is independent of travel/facing; only reset/recenter changes this base.
+	const cameraFacingRef = useRef<VisualGridPosition | null>(null);
+	const cameraFocusRef = useRef<CameraFollowRig | null>(null);
+	const attackFacingRef = useRef<VisualGridPosition | null>(null);
+	const bowAimRef = useRef<BowAim | null>(null);
+	const bowChargeRef = useRef<HTMLProgressElement | null>(null);
+	const showCollisionRef = useRef(false);
+	const traversalWorldRef = useRef<ReturnType<
+		typeof createTraversalWorld
+	> | null>(null);
 	const npcVisualsRef = useRef<Map<string, VisualEntityState>>(new Map());
+	const removeNpcPresentationRef = useRef<((npcId: string) => void) | null>(
+		null,
+	);
 	const characterAnimationControllersRef = useRef<
 		Map<string, ThreeCharacterAnimationController>
 	>(new Map());
+	const physicalInteractionRef = useRef<
+		| ((
+				id: string,
+				action: "interact" | "pickup" | undefined,
+				remove: boolean,
+		  ) => void)
+		| null
+	>(null);
 	const cameraRigRef = useRef<CameraFollowRig | null>(null);
 	const visibleCameraRigRef = useRef<CameraFollowRig | null>(null);
 	const cameraModeRef = useRef<RuntimeCameraMode>("follow");
@@ -433,28 +558,43 @@ export function ThreeRuntimePanel({
 		createThirdPersonMouseLookState(),
 	);
 	const mouseLookActiveRef = useRef(false);
+	const pointerLockRequestedRef = useRef(false);
+	const requestMouseLookRef = useRef<(() => void) | null>(null);
+	const resumeInventoryMouseLookRef = useRef(false);
+	const pointerLockCanvasRef = useRef<HTMLCanvasElement | null>(null);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const gameOverRef = useRef(false);
+	const playerDefeatedRef = useRef(false);
 	const nextRebuildReasonRef = useRef("initial runtime start");
 	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
 	const isStartingRuntimeRef = useRef(false);
 	const [renderVersion, setRenderVersion] = useState(0);
+	const [, setHudVersion] = useState(0);
 	const [cameraMode, setCameraModeState] =
 		useState<RuntimeCameraMode>("follow");
-	const [terrainRenderMode, setTerrainRenderMode] =
-		useState<TerrainRenderMode>("smooth");
+	const [terrainRenderMode, setTerrainRenderMode] = useState<TerrainRenderMode>(
+		initialSave?.player.traversal?.mode ?? "smooth",
+	);
 	const [mouseLookActive, setMouseLookActiveState] = useState(false);
 	const [status, setStatus] = useState("Starting 3D runtime.");
 	const [flowLog, setFlowLog] = useState<string[]>([]);
-	const [inventory, setInventory] = useState<Record<string, number>>({});
-	const [quests, setQuests] = useState<
-		Array<{ id: string; name: string; status: string }>
-	>([]);
+	const {
+		inventory,
+		updateInventory: setInventory,
+		resetInventory,
+		showItemFeedback,
+		notices,
+	} = useInventoryPresentation(project.gameState.inventory);
+	const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+	const inventoryOpenRef = useRef(false);
+	const { quests, setQuests, resetQuests } =
+		useQuestPresentation(showItemFeedback);
 	const [shopMessage, setShopMessage] = useState<string | undefined>();
 	const [pendingCutscene, setPendingCutsceneState] =
 		useState<PendingCutscene | null>(null);
 	const [gameOver, setGameOver] = useState(false);
 	const [dialogueNode, setDialogueNode] = useState<DialogueNode | null>(null);
+	const [primaryPrompt, setPrimaryPrompt] = useState("");
 
 	function setPendingCutscene(value: PendingCutscene | null) {
 		pendingCutsceneRef.current = value;
@@ -463,22 +603,51 @@ export function ThreeRuntimePanel({
 
 	function gameplayBlocked(session: RuntimeSessionState): boolean {
 		return Boolean(
-			pendingCutsceneRef.current || session.dialogue || gameOverRef.current,
+			inventoryOpenRef.current ||
+				pendingCutsceneRef.current ||
+				session.dialogue ||
+				gameOverRef.current,
 		);
+	}
+
+	function toggleInventory() {
+		const current = getSession();
+		if (
+			!current ||
+			(!inventoryOpenRef.current &&
+				isRuntimeGameplayBlocked(current, gameplayBlocked(current)))
+		)
+			return;
+		const opening = !inventoryOpenRef.current;
+		if (opening) cancelRuntimeBowDraw(current);
+		if (opening)
+			resumeInventoryMouseLookRef.current = mouseLookActiveRef.current;
+		inventoryOpenRef.current = opening;
+		heldMovementKeys.current.clear();
+		heldSprintKeys.current.clear();
+		setMouseLookActive(false);
+		setIsInventoryOpen(opening);
+		if (!opening && resumeInventoryMouseLookRef.current) {
+			resumeInventoryMouseLookRef.current = false;
+			// Run inside the close click/keypress so browser user activation is retained.
+			requestMouseLookRef.current?.();
+		}
 	}
 
 	function closeDialogue() {
 		const session = getSession();
 		if (session) session.dialogue = undefined;
 		setDialogueNode(null);
+		if (session)
+			finishQuestConversation(session, handleRuleEvent, handleProgressionEvent);
 	}
 
 	function renderDialogueNode() {
 		const session = getSession();
 		const state = session?.dialogue;
-		const definition = session?.project.dialogues.find(
-			(entry) => entry.id === state?.dialogueId,
-		);
+		const definition = session
+			? getRuntimeDialogueDefinition(session)
+			: undefined;
 		const node =
 			state && definition
 				? getDialogueNode(definition, state.nodeId)
@@ -505,9 +674,9 @@ export function ThreeRuntimePanel({
 
 	function showDialogue(dialogueId: string | undefined) {
 		const session = getSession();
-		const definition = session?.project.dialogues.find(
-			(entry) => entry.id === dialogueId,
-		);
+		const definition = session
+			? getRuntimeDialogueDefinition(session, dialogueId)
+			: undefined;
 		if (
 			!session ||
 			!definition ||
@@ -525,9 +694,9 @@ export function ThreeRuntimePanel({
 	function advanceConversation(choiceId?: string) {
 		const session = getSession();
 		const state = session?.dialogue;
-		const definition = session?.project.dialogues.find(
-			(entry) => entry.id === state?.dialogueId,
-		);
+		const definition = session
+			? getRuntimeDialogueDefinition(session)
+			: undefined;
 		if (
 			!session ||
 			!state ||
@@ -560,6 +729,10 @@ export function ThreeRuntimePanel({
 		};
 	}, [diagnostics]);
 
+	useEffect(() => {
+		if (import.meta.env.DEV) diagnostics.recordReactCommit();
+	});
+
 	function forceRender(reason = "runtime state changed") {
 		nextRebuildReasonRef.current = reason;
 		if (isStartingRuntimeRef.current) {
@@ -584,10 +757,18 @@ export function ThreeRuntimePanel({
 		setCameraModeState(mode);
 	}
 
-	function setMouseLookActive(active: boolean): void {
+	const setMouseLookActive = useCallback((active: boolean): void => {
+		if (!active) pointerLockRequestedRef.current = false;
+		if (
+			!active &&
+			pointerLockCanvasRef.current &&
+			document.pointerLockElement === pointerLockCanvasRef.current
+		) {
+			document.exitPointerLock();
+		}
 		mouseLookActiveRef.current = active;
 		setMouseLookActiveState(active);
-	}
+	}, []);
 
 	function resetCameraPresentation({
 		resetMode = false,
@@ -597,6 +778,9 @@ export function ThreeRuntimePanel({
 		cameraRigRef.current = null;
 		visibleCameraRigRef.current = null;
 		inspectCameraRef.current = null;
+		cameraFacingRef.current = null;
+		cameraFocusRef.current = null;
+		attackFacingRef.current = null;
 		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState();
 		setMouseLookActive(false);
 		if (resetMode) {
@@ -605,7 +789,26 @@ export function ThreeRuntimePanel({
 	}
 
 	function recenterThirdPersonCamera(): void {
-		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState();
+		const session = getSession();
+		if (!session) return;
+		const config = session.project.camera.three;
+		const look = thirdPersonRuntimeLookRef.current;
+		const oldYaw = getThirdPersonYawDegrees(
+			cameraFacingRef.current ?? session.playerFacing,
+			config,
+			look,
+		);
+		cameraFacingRef.current = { ...session.playerFacing };
+		const baseYaw =
+			radiansToDegrees(facingToYawRadians(session.playerFacing)) +
+			config.yawOffsetDegrees;
+		const difference = ((oldYaw - baseYaw) * Math.PI) / 180;
+		thirdPersonRuntimeLookRef.current = createThirdPersonMouseLookState({
+			currentYawOffsetDegrees: radiansToDegrees(
+				Math.atan2(Math.sin(difference), Math.cos(difference)),
+			),
+			currentPitchOffsetDegrees: look.currentPitchOffsetDegrees,
+		});
 		if (visibleCameraRigRef.current) {
 			cameraRigRef.current = {
 				lookAt: { ...visibleCameraRigRef.current.lookAt },
@@ -627,20 +830,27 @@ export function ThreeRuntimePanel({
 			return rawDirection;
 		}
 
-		return resolveCameraRelativeGridDirection(
+		cameraFacingRef.current ??= { ...session.playerFacing };
+		return resolveRuntimeCameraMovement(
 			rawDirection,
-			getThirdPersonYawDegrees(
-				session.playerFacing,
-				threeCameraConfig,
-				thirdPersonRuntimeLookRef.current,
-			),
+			visibleCameraRigRef.current ??
+				getThirdPersonFollowTarget(
+					{ x: 0, y: 0, z: 0 },
+					cameraFacingRef.current,
+					threeCameraConfig,
+					thirdPersonRuntimeLookRef.current,
+				),
+			cameraModeRef.current,
+			true,
+			Boolean(session.traversal && !session.playerVehicleState.active),
 		);
 	}
 
 	function hasPointerBlockingOverlay(): boolean {
 		const session = getSession();
 		return Boolean(
-			pendingCutsceneRef.current ||
+			inventoryOpenRef.current ||
+				pendingCutsceneRef.current ||
 				sessionRef.current?.dialogue ||
 				gameOverRef.current ||
 				session?.activeShopId,
@@ -663,12 +873,18 @@ export function ThreeRuntimePanel({
 		{
 			resetCamera = false,
 			resetCameraMode = false,
-		}: { resetCamera?: boolean; resetCameraMode?: boolean } = {},
+			preserveTraversal = false,
+		}: {
+			resetCamera?: boolean;
+			resetCameraMode?: boolean;
+			preserveTraversal?: boolean;
+		} = {},
 	) {
+		if (session && !preserveTraversal) session.traversal = undefined;
 		playerVisualRef.current = session
 			? resetVisualEntityState(
 					session.currentAreaId,
-					session.playerPosition,
+					session.traversal?.position ?? session.playerPosition,
 					session.playerFacing,
 				)
 			: null;
@@ -679,11 +895,12 @@ export function ThreeRuntimePanel({
 
 	function resetPresentationVisuals(
 		session: RuntimeSessionState | null = getSession(),
-		options: { resetCameraMode?: boolean } = {},
+		options: { resetCameraMode?: boolean; preserveTraversal?: boolean } = {},
 	) {
 		resetPlayerVisual(session, {
 			resetCamera: true,
 			resetCameraMode: options.resetCameraMode,
+			preserveTraversal: options.preserveTraversal,
 		});
 		npcVisualsRef.current = new Map();
 	}
@@ -704,6 +921,7 @@ export function ThreeRuntimePanel({
 	}
 
 	function enterFollowCameraMode(): void {
+		cameraFocusRef.current = null;
 		if (visibleCameraRigRef.current) {
 			cameraRigRef.current = {
 				lookAt: { ...visibleCameraRigRef.current.lookAt },
@@ -720,7 +938,7 @@ export function ThreeRuntimePanel({
 			visual.areaId !== session.currentAreaId ||
 			!gridPositionsEqual(
 				getVisualStateTargetPosition(visual),
-				session.playerPosition,
+				session.traversal?.position ?? session.playerPosition,
 			)
 		) {
 			resetPlayerVisual(session);
@@ -764,6 +982,10 @@ export function ThreeRuntimePanel({
 	}
 
 	function handleProgressionEvent(event: RuntimeProgressionEvent): void {
+		if (event.type === "questAction") {
+			handleRuleEvent(event.event);
+			return;
+		}
 		const session = getSession();
 		if (!session) {
 			return;
@@ -775,6 +997,10 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "flowLog") {
 			appendFlow(event.message);
+			return;
+		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -844,7 +1070,7 @@ export function ThreeRuntimePanel({
 			gameOverRef.current = true;
 			characterAnimationControllersRef.current
 				.get("runtime_player")
-				?.sync({ defeated: true, moving: false });
+				?.sync({ defeated: playerDefeatedRef.current, moving: false });
 			setGameOver(true);
 		}
 	}
@@ -864,7 +1090,13 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged") {
-			forceRender("rule state changed");
+			// Flags/items/quest rewards update HUD and live session state; rebuilding
+			// here would discard a successful container/pickup's physical feedback.
+			diagnostics.recordObjectStateUpdate("rule state changed");
+			return;
+		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -921,18 +1153,33 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "gameEnded" || event.type === "gameOver") {
+			if (event.type === "gameOver") playerDefeatedRef.current = true;
 			setMouseLookActive(false);
 			gameOverRef.current = true;
 			characterAnimationControllersRef.current
 				.get("runtime_player")
-				?.sync({ defeated: true, moving: false });
+				?.sync({ defeated: playerDefeatedRef.current, moving: false });
 			setGameOver(true);
 		}
 	}
 
 	function handleObjectEvent(event: RuntimeObjectInteractionEvent): void {
+		if (event.type === "questAction") {
+			handleRuleEvent(event.event);
+			return;
+		}
 		const session = getSession();
 		if (!session) {
+			return;
+		}
+		if (event.type === "containerOpened") {
+			physicalInteractionRef.current?.(event.objectId, "interact", false);
+			diagnostics.recordObjectStateUpdate("container opened");
+			return;
+		}
+		if (event.type === "objectCollected") {
+			physicalInteractionRef.current?.(event.objectId, undefined, true);
+			diagnostics.recordObjectStateUpdate("object pickup collected");
 			return;
 		}
 
@@ -946,6 +1193,10 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "stateChanged") {
 			diagnostics.recordObjectStateUpdate("object state changed");
+			return;
+		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
 			return;
 		}
 		if (event.type === "inventoryChanged") {
@@ -1006,7 +1257,12 @@ export function ThreeRuntimePanel({
 			diagnostics.recordObjectStateUpdate("movement mode changed");
 			return;
 		}
-		if (event.type === "pickupCollected" || event.type === "objectMoved") {
+		if (event.type === "pickupCollected") {
+			physicalInteractionRef.current?.(event.pickupId, "pickup", event.once);
+			diagnostics.recordObjectStateUpdate("pickup collected");
+			return;
+		}
+		if (event.type === "objectMoved") {
 			forceRender("object interaction changed");
 		}
 	}
@@ -1060,10 +1316,21 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "stateChanged" || event.type === "combatChanged") {
-			forceRender("npc state changed");
+			// Health/contact updates need a HUD commit, not a new WebGL scene.
+			setHudVersion((version) => version + 1);
 			return;
 		}
+		if (event.type === "playerDamaged" && event.damage > 0) {
+			characterAnimationControllersRef.current
+				.get(event.npcId)
+				?.triggerAttack();
+			if (event.health > 0)
+				characterAnimationControllersRef.current
+					.get("runtime_player")
+					?.triggerHit();
+		}
 		if (event.type === "gameOver") {
+			playerDefeatedRef.current = true;
 			gameOverRef.current = true;
 			characterAnimationControllersRef.current
 				.get("runtime_player")
@@ -1074,14 +1341,22 @@ export function ThreeRuntimePanel({
 
 	function handleCombatEvent(event: RuntimeCombatEvent): void {
 		if (event.type === "attackStarted") {
+			attackFacingRef.current =
+				event.weapon === "bow" && bowAimRef.current
+					? {
+							x: bowAimRef.current.direction.x,
+							y: bowAimRef.current.direction.z,
+						}
+					: {
+							...(getSession()?.playerFacing ?? { x: 0, y: 1 }),
+						};
 			characterAnimationControllersRef.current
 				.get("runtime_player")
-				?.triggerAttack();
+				?.triggerAttack(event.weapon);
 			return;
 		}
 		if (event.type === "npcDefeated") {
-			// The shared runtime emits npcRemoved immediately after this event. Start
-			// the presentation state without changing that gameplay lifecycle.
+			// Start death before npcRemoved decides whether this loaded visual can finish locally.
 			characterAnimationControllersRef.current
 				.get(event.npcId)
 				?.sync({ defeated: true, moving: false });
@@ -1095,6 +1370,10 @@ export function ThreeRuntimePanel({
 			appendFlow(event.message);
 			return;
 		}
+		if (event.type === "itemFeedback") {
+			showItemFeedback(event.message);
+			return;
+		}
 		if (event.type === "inventoryChanged") {
 			setInventory(event.inventory);
 			return;
@@ -1105,15 +1384,18 @@ export function ThreeRuntimePanel({
 		}
 		if (event.type === "npcRemoved") {
 			npcVisualsRef.current.delete(event.npcId);
-			forceRender("npc removed");
+			removeNpcPresentationRef.current?.(event.npcId);
 			return;
 		}
+		if (event.type === "npcDamaged" && event.damage > 0 && event.health > 0)
+			characterAnimationControllersRef.current.get(event.npcId)?.triggerHit();
 		if (
 			event.type === "stateChanged" ||
 			event.type === "combatChanged" ||
 			event.type === "npcDamaged"
 		) {
-			forceRender("combat changed");
+			// Health and defeat feedback retain the scene and surviving actors.
+			setHudVersion((version) => version + 1);
 		}
 	}
 
@@ -1135,9 +1417,35 @@ export function ThreeRuntimePanel({
 		);
 	}
 
-	function runDirectInteraction(interaction: Interaction, label: string): void {
+	function runDirectInteraction(
+		interaction: Interaction,
+		label: string,
+		targetId: string,
+	): void {
 		const session = getSession();
 		if (!session || interaction.activationMode === "disabled") {
+			return;
+		}
+		if (interaction.type === "show_message") {
+			const definition = prepareInteractionMessage(
+				session,
+				interaction,
+				targetId,
+				label,
+			);
+			if (definition) {
+				session.pendingInteraction = {
+					areaId: session.currentAreaId,
+					targetId,
+					interaction,
+				};
+				showDialogue(definition.id);
+			}
+			return;
+		}
+		if (interaction.type === "object_behaviour") return;
+		if (interaction.type === "collect_item") {
+			collectRuntimeObjectPickup(session, targetId, handleObjectEvent);
 			return;
 		}
 
@@ -1178,6 +1486,12 @@ export function ThreeRuntimePanel({
 		}
 
 		if (interaction.type === "start_dialogue") {
+			if (getRuntimeDialogueDefinition(session, interaction.dialogueId))
+				session.pendingInteraction = {
+					areaId: session.currentAreaId,
+					targetId,
+					interaction,
+				};
 			showDialogue(interaction.dialogueId);
 			return;
 		}
@@ -1198,7 +1512,14 @@ export function ThreeRuntimePanel({
 			}
 			const value = interaction.value ?? true;
 			session.runtimeState.flags[interaction.flag] = value;
-			syncRuntimeQuestProgress(session, handleProgressionEvent);
+			finishQuestInteraction(
+				session,
+				session.currentAreaId,
+				targetId,
+				interaction,
+				handleRuleEvent,
+				handleProgressionEvent,
+			);
 			setStatus(`${interaction.flag}: ${value ? "true" : "false"}.`);
 			forceRender("direct interaction changed flag");
 			return;
@@ -1225,9 +1546,14 @@ export function ThreeRuntimePanel({
 			fireRuntimeTrigger(
 				{ type: "on_touch", targetId: target.object.id },
 				() => {
-					runRuntimeObjectBehaviour(session, target.object, handleObjectEvent);
+					runRuntimeObjectBehaviour(
+						session,
+						target.object,
+						handleObjectEvent,
+						"on_touch",
+					);
 					if (target.interaction && canTouchActivate(target.interaction)) {
-						runDirectInteraction(target.interaction, target.label);
+						runDirectInteraction(target.interaction, target.label, target.id);
 					}
 				},
 			);
@@ -1239,27 +1565,60 @@ export function ThreeRuntimePanel({
 			{ type: "on_touch", targetId: target.eventBlock.id },
 			() => {
 				if (interaction && canTouchActivate(interaction)) {
-					runDirectInteraction(interaction, target.label);
+					runDirectInteraction(interaction, target.label, target.id);
 				}
 			},
 		);
 		return true;
 	}
 
-	function handleMove(direction: RuntimeGridPosition): void {
+	function handleMove(
+		direction: RuntimeGridPosition,
+		continuingHeld = false,
+	): void {
 		const session = getSession();
+		const now = performance.now();
 		if (
 			!session ||
-			!canAcceptRuntimeInput(
-				session,
-				performance.now(),
-				gameplayBlocked(session),
-			)
+			!canAcceptRuntimeInput(session, now, gameplayBlocked(session))
 		) {
 			return;
 		}
 
-		const move = attemptPlayerMove(session, direction, performance.now());
+		const area = getArea(session);
+		if (!area) return;
+		if (!session.traversal && !session.playerVehicleState.active) {
+			const world =
+				traversalWorldRef.current?.areaId === area.id
+					? traversalWorldRef.current
+					: createTraversalWorld(session.project, area, terrainRenderMode);
+			if (world.profiledObjects.size || heldSprintKeys.current.size)
+				session.traversal = createRuntimeTraversal(
+					world,
+					area,
+					session.project,
+					session.playerPosition,
+				);
+		}
+		setPlayerSprint(
+			session,
+			heldSprintKeys.current.size > 0,
+			heldMovementKeys.current.size > 0,
+			gameplayBlocked(session),
+		);
+		const moveStartMs = getContinuousPlayerMoveStartMs(
+			now,
+			session.nextMoveAt,
+			continuingHeld &&
+				!!session.traversal &&
+				!session.playerVehicleState.active,
+		);
+		const move = attemptPlayerMove(
+			session,
+			direction,
+			moveStartMs,
+			session.traversal && !session.playerVehicleState.active ? 0.2 : 1,
+		);
 		if (move.type === "blocked") {
 			playerVisualRef.current = playerVisualRef.current
 				? { ...playerVisualRef.current, facing: move.facing }
@@ -1272,6 +1631,8 @@ export function ThreeRuntimePanel({
 			return;
 		}
 
+		if (!isPlayerAirborne(session))
+			observeQuestLocation(session, handleProgressionEvent);
 		playerVisualRef.current = startVisualGridMove(
 			playerVisualRef.current ?? undefined,
 			session.currentAreaId,
@@ -1281,9 +1642,11 @@ export function ThreeRuntimePanel({
 				from: move.from,
 				to: move.to,
 			},
-			performance.now(),
+			moveStartMs,
 		);
-		setStatus(`Moved to ${move.to.x}, ${move.to.y}.`);
+		setStatus(
+			`Moved to ${Number(move.to.x.toFixed(2))}, ${Number(move.to.y.toFixed(2))}.`,
+		);
 		const handledTouch = move.touchTargets.some((target) =>
 			runTouchTarget(target),
 		);
@@ -1302,6 +1665,7 @@ export function ThreeRuntimePanel({
 		if (
 			!session ||
 			!area ||
+			isPlayerAirborne(session) ||
 			!canAcceptRuntimeInput(
 				session,
 				performance.now(),
@@ -1320,7 +1684,10 @@ export function ThreeRuntimePanel({
 			area,
 			collectedPickupIds: session.collectedPickupIds,
 			defeatedNpcIds: session.defeatedNpcIds,
-			playerPosition: session.playerPosition,
+			playerPosition: session.traversal?.position ?? session.playerPosition,
+			playerFacing: session.playerFacing,
+			traversal: session.traversal,
+			firedInteractionIds: session.firedInteractionIds,
 			project: session.project,
 			runtimeState: session.runtimeState,
 		});
@@ -1331,19 +1698,23 @@ export function ThreeRuntimePanel({
 
 		if (target.type === "pickup") {
 			collectRuntimePickup(session, target.pickup, handleObjectEvent);
-			forceRender("pickup collected");
 			return;
 		}
 
 		fireRuntimeTrigger(
 			{ type: "on_interact", targetId: getTargetId(target) },
 			() => {
+				let handled = false;
 				if (target.type === "object") {
-					runRuntimeObjectBehaviour(session, target.object, handleObjectEvent);
+					handled = runRuntimeObjectBehaviour(
+						session,
+						target.object,
+						handleObjectEvent,
+					);
 				}
 				if (target.interaction && canInteractActivate(target.interaction)) {
-					runDirectInteraction(target.interaction, target.label);
-				} else {
+					runDirectInteraction(target.interaction, target.label, target.id);
+				} else if (!handled) {
 					setStatus(`Interacted with ${target.label}.`);
 				}
 				diagnostics.recordObjectStateUpdate("interaction completed");
@@ -1354,42 +1725,51 @@ export function ThreeRuntimePanel({
 	useEffect(() => {
 		pendingCutsceneRef.current = pendingCutscene;
 		if (pendingCutscene) {
-			mouseLookActiveRef.current = false;
-			setMouseLookActiveState(false);
+			setMouseLookActive(false);
 		}
-	}, [pendingCutscene]);
+	}, [pendingCutscene, setMouseLookActive]);
 
 	useEffect(() => {
 		gameOverRef.current = gameOver;
 		if (gameOver) {
-			mouseLookActiveRef.current = false;
-			setMouseLookActiveState(false);
+			setMouseLookActive(false);
 		}
-	}, [gameOver]);
+	}, [gameOver, setMouseLookActive]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: session startup owns fresh runtime state; callbacks read sessionRef.
 	useEffect(() => {
 		isStartingRuntimeRef.current = true;
 		try {
-			const session = createRuntimeSession(project);
+			const session = initialSave
+				? restoreGameSave(project, initialSave)
+				: createRuntimeSession(project);
 			sessionRef.current = session;
 			previousBuildInputsRef.current = null;
-			resetPresentationVisuals(session, { resetCameraMode: true });
+			resetPresentationVisuals(session, {
+				resetCameraMode: true,
+				preserveTraversal: !!initialSave,
+			});
 			setMountError(null);
 			gameOverRef.current = false;
+			playerDefeatedRef.current = session.runtimePlayerHealth <= 0;
 			setGameOver(false);
 			setPendingCutscene(null);
 			setFlowLog([]);
-			setInventory({ ...session.runtimeState.inventory.items });
-			setQuests([]);
-			setStatus("3D runtime started.");
+			resetInventory({ ...session.runtimeState.inventory.items });
+			resetQuests(
+				initialSave
+					? getQuestViews(session.runtimeQuestState, session.runtimeState)
+					: [],
+			);
+			setStatus(initialSave ? "Saved game continued." : "3D runtime started.");
 
 			setDialogueNode(null);
-			startRuntimeSession(
-				session,
-				(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
-				handleProgressionEvent,
-			);
+			if (!initialSave)
+				startRuntimeSession(
+					session,
+					(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
+					handleProgressionEvent,
+				);
 			nextRebuildReasonRef.current = "initial runtime start";
 		} catch (error) {
 			sessionRef.current = null;
@@ -1405,10 +1785,59 @@ export function ThreeRuntimePanel({
 			sessionRef.current = null;
 			resetPresentationVisuals(null);
 		};
-	}, [project]);
+	}, [project, initialSave]);
+
+	useEffect(() => {
+		if (!saveSessionRef) return;
+		saveSessionRef.current = () => {
+			const session = getSession();
+			if (!session) throw new Error("Game is still starting.");
+			assertGameSaveSafe(session, gameplayBlocked(session));
+			return session;
+		};
+		return () => {
+			saveSessionRef.current = null;
+		};
+	});
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented) return;
+			if (
+				event.target instanceof HTMLElement &&
+				/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)
+			)
+				return;
+			if (
+				event.repeat &&
+				["e", "enter", "escape", "i"].includes(event.key.toLowerCase())
+			)
+				return;
+			if (event.key.toLowerCase() === "i") {
+				event.preventDefault();
+				toggleInventory();
+				return;
+			}
+			if (inventoryOpenRef.current) return;
+			if (
+				getSession()?.dialogue &&
+				["e", "E", "Enter", "Escape"].includes(event.key)
+			) {
+				event.preventDefault();
+				heldMovementKeys.current.clear();
+				heldSprintKeys.current.clear();
+				if (event.key === "Escape") closeDialogue();
+				else if (dialogueNode?.type !== "choice") advanceConversation();
+				return;
+			}
+			if (
+				pendingCutsceneRef.current &&
+				["e", "E", "Enter", "Escape"].includes(event.key)
+			) {
+				event.preventDefault();
+				pendingCutsceneRef.current.onContinue();
+				return;
+			}
 			if (event.key === "Escape" && mouseLookActiveRef.current) {
 				event.preventDefault();
 				setMouseLookActive(false);
@@ -1416,6 +1845,67 @@ export function ThreeRuntimePanel({
 			}
 
 			const session = getSession();
+			const direction = keyToDirection(event);
+			if (
+				session?.traversal &&
+				!session.playerVehicleState.active &&
+				direction
+			) {
+				if (isRuntimeGameplayBlocked(session, gameplayBlocked(session))) return;
+				event.preventDefault();
+				if (event.repeat) return;
+				// Track a second held direction even during an accepted move's deadline.
+				heldMovementKeys.current.set(event.code, direction);
+				handleMove(getRuntimeMovementDirection(direction));
+				return;
+			}
+			const action = getThreeRuntimeAction(event);
+			if (
+				session &&
+				(action === "sprint" || action === "jump") &&
+				!session.traversal &&
+				!session.playerVehicleState.active &&
+				!isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+			) {
+				const area = getArea(session);
+				const world = traversalWorldRef.current;
+				if (area && world?.areaId === area.id)
+					session.traversal = createRuntimeTraversal(
+						world,
+						area,
+						session.project,
+						session.playerPosition,
+					);
+			}
+			if (session && action === "sprint") {
+				if (!isRuntimeGameplayBlocked(session, gameplayBlocked(session)))
+					heldSprintKeys.current.add(event.code);
+				event.preventDefault();
+				return;
+			}
+			if (session && (action === "jump" || action === "attack")) {
+				event.preventDefault();
+				if (
+					(event.repeat && action === "jump") ||
+					isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+				)
+					return;
+				if (action === "jump")
+					tryPlayerJump(session, performance.now(), gameplayBlocked(session));
+				else {
+					const area = getArea(session);
+					if (area && getEquippedWeapon(session)?.id === "bow") {
+						if (!event.repeat) beginRuntimeBowDraw(session, performance.now());
+					} else if (area)
+						attemptRuntimeCombatAttack(
+							session,
+							area,
+							performance.now(),
+							handleCombatEvent,
+						);
+				}
+				return;
+			}
 			if (
 				!session ||
 				!canAcceptRuntimeInput(
@@ -1425,25 +1915,11 @@ export function ThreeRuntimePanel({
 				)
 			)
 				return;
-			const direction = keyToDirection(event);
 			if (direction) {
 				event.preventDefault();
+				// Remember physical keys in legacy grid areas so Shift/Jump can hand off a held gesture.
+				heldMovementKeys.current.set(event.code, direction);
 				handleMove(getRuntimeMovementDirection(direction));
-				return;
-			}
-
-			if (event.key === " " || event.code === "Space") {
-				const session = getSession();
-				const area = session ? getArea(session) : undefined;
-				if (session && area) {
-					event.preventDefault();
-					attemptRuntimeCombatAttack(
-						session,
-						area,
-						performance.now(),
-						handleCombatEvent,
-					);
-				}
 				return;
 			}
 
@@ -1453,8 +1929,94 @@ export function ThreeRuntimePanel({
 			}
 		};
 
+		const handleKeyUp = (event: KeyboardEvent) => {
+			const session = getSession();
+			if (
+				session &&
+				getThreeRuntimeAction(event) === "attack" &&
+				session.bowDraw
+			) {
+				event.preventDefault();
+				if (bowAimRef.current)
+					releaseRuntimeBowDraw(
+						session,
+						performance.now(),
+						bowAimRef.current,
+						handleCombatEvent,
+						gameplayBlocked(session),
+					);
+				else cancelRuntimeBowDraw(session);
+			}
+			heldMovementKeys.current.delete(event.code);
+			heldSprintKeys.current.delete(event.code);
+		};
+		const clearKeys = () => {
+			const session = getSession();
+			if (session) cancelRuntimeBowDraw(session);
+			heldMovementKeys.current.clear();
+			heldSprintKeys.current.clear();
+		};
+		const interval = window.setInterval(() => {
+			const current = getSession();
+			if (
+				!current?.traversal ||
+				current.playerVehicleState.active ||
+				!heldMovementKeys.current.size
+			)
+				return;
+			const direction = [...heldMovementKeys.current.values()].reduce(
+				(sum, d) => ({ x: sum.x + d.x, y: sum.y + d.y }),
+				{ x: 0, y: 0 },
+			);
+			const length = Math.hypot(direction.x, direction.y);
+			if (length)
+				handleMove(
+					getRuntimeMovementDirection({
+						x: direction.x / length,
+						y: direction.y / length,
+					}),
+					true,
+				);
+		}, 16);
 		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		window.addEventListener("blur", clearKeys);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+			window.removeEventListener("blur", clearKeys);
+			window.clearInterval(interval);
+		};
+	});
+
+	useEffect(() => {
+		const refresh = () => {
+			const current = getSession();
+			const currentArea = current ? getArea(current) : undefined;
+			if (!current || !currentArea || gameplayBlocked(current)) {
+				setPrimaryPrompt("");
+				return;
+			}
+			const target = findNearestInteractableTarget({
+				area: currentArea,
+				project: current.project,
+				playerPosition: current.traversal?.position ?? current.playerPosition,
+				playerFacing: current.playerFacing,
+				traversal: current.traversal,
+				runtimeState: current.runtimeState,
+				collectedPickupIds: current.collectedPickupIds,
+				defeatedNpcIds: current.defeatedNpcIds,
+				firedInteractionIds: current.firedInteractionIds,
+			});
+			setPrimaryPrompt(
+				current.playerVehicleState.active
+					? "E — Dismount"
+					: interactionPrompt(current, target),
+			);
+		};
+		refresh();
+		const timer = window.setInterval(refresh, 100);
+		return () => window.clearInterval(timer);
 	});
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: NPC ticking reads current sessionRef state.
@@ -1475,7 +2037,7 @@ export function ThreeRuntimePanel({
 				tickRuntimeNpcs(session, area, performance.now(), handleNpcEvent);
 				diagnostics.recordRuntimeTick(performance.now() - tickStartedAt);
 			}
-		}, 500);
+		}, 50);
 
 		return () => window.clearInterval(interval);
 	}, [gameOver, pendingCutscene]);
@@ -1500,12 +2062,40 @@ export function ThreeRuntimePanel({
 		);
 		previousBuildInputsRef.current = nextBuildInputs;
 		const sceneBuildStartedAt = performance.now();
+		const traversalWorld = createTraversalWorld(
+			session.project,
+			area,
+			terrainRenderMode,
+		);
+		traversalWorldRef.current = traversalWorld;
+		if (
+			traversalWorld.profiledObjects.size ||
+			session.traversal?.world.areaId === area.id
+		) {
+			if (
+				session.traversal?.world.areaId === area.id &&
+				session.traversal.world.mode === terrainRenderMode
+			)
+				session.traversal.world = traversalWorld;
+			else
+				session.traversal = createRuntimeTraversal(
+					traversalWorld,
+					area,
+					session.project,
+					session.playerPosition,
+					session.traversal?.world.areaId === area.id
+						? session.traversal.position
+						: undefined,
+				);
+		} else session.traversal = undefined;
 
 		syncPlayerVisual(session);
 		syncNpcVisuals(session, area);
 
 		host.replaceChildren();
 		const scene = new THREE.Scene();
+		const collisionDebug = createTraversalDebugGroup(traversalWorld, area);
+		scene.add(collisionDebug);
 		const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
 		const initialPlayerVisual =
 			playerVisualRef.current ??
@@ -1520,11 +2110,21 @@ export function ThreeRuntimePanel({
 			performance.now(),
 		).position;
 		const threeCameraConfig = session.project.camera.three;
+		cameraFacingRef.current ??= { ...initialPlayerVisual.facing };
 		let cameraRig: CameraFollowRig =
 			cameraRigRef.current ??
 			getFollowCameraTarget(
-				getVisualPlayerCenter(area, initialPlayerPosition, terrainRenderMode),
-				initialPlayerVisual.facing,
+				{
+					...getVisualPlayerCenter(
+						area,
+						initialPlayerPosition,
+						terrainRenderMode,
+					),
+					...(session.traversal
+						? { y: session.traversal.motion.height + 0.625 }
+						: {}),
+				},
+				cameraFacingRef.current,
 				threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
 			);
@@ -1574,6 +2174,7 @@ export function ThreeRuntimePanel({
 
 		const terrainRebuildStartedAt = performance.now();
 		const waterPresentation = createWaterPresentationState();
+		const groundPresentation = createGroundPresentation(area);
 		let terrainMeshCount = 0;
 		let terrainTriangleCount = 0;
 		let terrainVertexCount = 0;
@@ -1602,8 +2203,9 @@ export function ThreeRuntimePanel({
 					markWaterPresentationMesh(mesh);
 				}
 				applyShadowRole(mesh, {
-					receive: !usesWaterPresentation,
+					receive: true,
 				});
+				if (!usesWaterPresentation) groundPresentation.apply(mesh);
 				addRenderObject(mesh);
 			});
 		} else {
@@ -1627,6 +2229,7 @@ export function ThreeRuntimePanel({
 				}
 				applyShadowRole(mesh, { receive: !usesWaterPresentation });
 				mesh.position.set(block.threeX, block.yOffset, block.threeZ);
+				if (!usesWaterPresentation) groundPresentation.apply(mesh);
 				addRenderObject(mesh);
 			});
 		}
@@ -1635,6 +2238,13 @@ export function ThreeRuntimePanel({
 			waterPresentation,
 		);
 		coastlinePresentation.meshes.forEach((mesh) => {
+			addRenderObject(mesh);
+		});
+		createWorldEdgePresentation(
+			area,
+			waterPresentation.waterMaterial,
+			terrainRenderMode,
+		).forEach((mesh) => {
 			addRenderObject(mesh);
 		});
 		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
@@ -1652,6 +2262,11 @@ export function ThreeRuntimePanel({
 
 		const runtimeArea: GameArea = {
 			...area,
+			// Spawn helpers stay in Edit; the player's feet and shadow sit on the
+			// authored ground in Play. This copy is only used to build visual markers.
+			eventBlocks: area.eventBlocks.filter(
+				(block) => block.kind === "area_link",
+			),
 			npcs: area.npcs.filter((npc) => !session.defeatedNpcIds.has(npc.id)),
 			pickups: area.pickups.filter(
 				(pickup) =>
@@ -1719,6 +2334,21 @@ export function ThreeRuntimePanel({
 				createThreeCharacterAnimationController({
 					asset: visual.asset,
 					root: group,
+					attackVariants:
+						id === "runtime_player"
+							? {
+									...(session.project.items.some(
+										(item) => item.weapon === "sword",
+									) && resolveCharacterHand(group, "rightHand")
+										? { sword: SWORD.attackAnimation }
+										: {}),
+									...(session.project.items.some(
+										(item) => item.weapon === "bow",
+									) && resolveCharacterHand(group, "leftHand")
+										? { bow: BOW.attackAnimation }
+										: {}),
+								}
+							: undefined,
 				}),
 			);
 		};
@@ -1739,12 +2369,67 @@ export function ThreeRuntimePanel({
 			terrainRenderMode,
 			session.project.characterAssets,
 		);
+		const openedLabels: {
+			id: string;
+			flag?: string;
+			element: HTMLDivElement;
+			position: THREE.Vector3;
+		}[] = [];
+		const propAnimations = new Map<
+			string,
+			{
+				flag?: string;
+				controller: ReturnType<typeof createThreePropAnimationController>;
+			}
+		>();
+		const markerGroups = new Map<string, THREE.Group>();
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
 				onAssetStateChange: handleAssetStateChange,
 			});
 			const { group } = renderResult;
+			markerGroups.set(marker.id, group);
+			const object =
+				marker.kind === "object"
+					? area.objects.find((o) => o.id === marker.id)
+					: undefined;
+			const behaviour = object
+				? resolveObjectBehaviour(session.project, object)
+				: undefined;
+			if (behaviour?.type === "container") {
+				if (renderResult.usedAsset && marker.visual?.asset?.propAnimations) {
+					propAnimations.set(marker.id, {
+						flag: behaviour.openedFlag,
+						controller: createThreePropAnimationController(
+							marker.visual.asset,
+							group,
+							session.openedObjectIds.has(marker.id) ||
+								!!(
+									behaviour.openedFlag &&
+									session.runtimeState.flags[behaviour.openedFlag]
+								),
+						),
+					});
+				}
+				if (!propAnimations.has(marker.id)) {
+					const element = document.createElement("div");
+					element.className = "runtime-opened-label";
+					element.textContent = "Opened";
+					element.hidden = true;
+					host.append(element);
+					openedLabels.push({
+						id: marker.id,
+						flag: behaviour.openedFlag,
+						element,
+						position: new THREE.Vector3(
+							marker.threeX,
+							marker.threeY + 0.7,
+							marker.threeZ,
+						),
+					});
+				}
+			}
 			if (marker.kind === "npc") {
 				const npcVisual = npcVisualsRef.current.get(marker.id);
 				if (npcVisual) {
@@ -1797,6 +2482,10 @@ export function ThreeRuntimePanel({
 			},
 		);
 		const playerMesh = playerRenderResult.group;
+		const weaponAttachment = createThreeWeaponAttachment(
+			playerMesh,
+			diagnostics,
+		);
 		if (!playerRenderResult.usedAsset) {
 			applyShadowRole(playerMesh, { cast: true });
 		}
@@ -1825,29 +2514,129 @@ export function ThreeRuntimePanel({
 					result.assetStatus === "error" || result.assetStatus === "missing",
 			),
 		);
-		diagnostics.setSceneEntityCounts({
-			assetStatuses: [...markerRenderResults, playerRenderResult].map(
-				(result) => ({
-					analysis: result.assetAnalysis,
-					category: result.assetCategory,
-					cloneType: result.cloneType,
-					definitionId: result.assetDefinitionId,
-					status: result.assetStatus,
-					usedAsset: result.usedAsset,
-				}),
-			),
-			entityCount: runtimeMarkers.length + 1,
-			sceneIdentity: {
-				areaId: area.id,
-				areaName: area.name,
-				projectName: session.project.metadata.name,
-			},
-		});
+		const updateSceneEntityCounts = () =>
+			diagnostics.setSceneEntityCounts({
+				assetStatuses: [...markerRenderResults, playerRenderResult].map(
+					(result) => ({
+						analysis: result.assetAnalysis,
+						category: result.assetCategory,
+						cloneType: result.cloneType,
+						definitionId: result.assetDefinitionId,
+						status: result.assetStatus,
+						usedAsset: result.usedAsset,
+					}),
+				),
+				entityCount: markerRenderResults.length + 1,
+				sceneIdentity: {
+					areaId: area.id,
+					areaName: area.name,
+					projectName: session.project.metadata.name,
+				},
+			});
+
+		updateSceneEntityCounts();
+		let interactionTarget: { x: number; y: number } | undefined;
+		const presentPhysicalInteraction = (
+			id: string,
+			action: "interact" | "pickup" | undefined,
+			remove: boolean,
+		) => {
+			const group = markerGroups.get(id);
+			if (!group) return;
+			if (
+				action &&
+				!isPlayerAirborne(session) &&
+				characterAnimationControllers
+					.get("runtime_player")
+					?.triggerInteraction(action)
+			)
+				interactionTarget = { x: group.position.x, y: group.position.z };
+			if (action === "interact")
+				propAnimations.get(id)?.controller.setOpened(true);
+			if (!remove) return;
+			// Gameplay has already collected this source. Drop only its local presentation.
+			scene.remove(group);
+			markerGroups.delete(id);
+			propAnimations.get(id)?.controller.dispose();
+			propAnimations.delete(id);
+			const index = markerRenderResults.findIndex((r) => r.group === group);
+			if (index >= 0) {
+				const [result] = markerRenderResults.splice(index, 1);
+				result.disposePresentation?.();
+				if (!result.usedAsset) disposePlaceholderObject(group);
+				else {
+					const skeletons = new Set<THREE.Skeleton>();
+					group.traverse((o) => {
+						if ((o as THREE.SkinnedMesh).isSkinnedMesh)
+							skeletons.add((o as THREE.SkinnedMesh).skeleton);
+					});
+					for (const skeleton of skeletons) skeleton.dispose();
+				}
+			}
+			const renderIndex = renderObjects.findIndex((r) => r.object === group);
+			if (renderIndex >= 0) renderObjects.splice(renderIndex, 1);
+			updateSceneEntityCounts();
+		};
+
+		// The shared combat transaction already removes the NPC from the live area,
+		// which movement/collision reads directly. Only this actor's presentation
+		// needs disposal; terrain, traversal, renderer and other mixers stay alive.
+		const dyingNpcs = new Map<string, number>();
+		const removeNpcPresentation = (npcId: string) => {
+			dyingNpcs.delete(npcId);
+			const group = npcRenderGroups.get(npcId);
+			if (!group) return;
+			characterAnimationControllers.get(npcId)?.dispose();
+			characterAnimationControllers.delete(npcId);
+			npcRenderGroups.delete(npcId);
+			npcRenderVisuals.delete(npcId);
+			scene.remove(group);
+
+			const resultIndex = markerRenderResults.findIndex(
+				(result) => result.group === group,
+			);
+			const [result] = markerRenderResults.splice(resultIndex, 1);
+			result.disposePresentation?.();
+			if (result.usedAsset) {
+				// Skeleton clones own their bone textures; GLTF geometry/materials
+				// remain shared with the loader cache and surviving actors.
+				const skeletons = new Set<THREE.Skeleton>();
+				group.traverse((object) => {
+					const mesh = object as THREE.SkinnedMesh;
+					if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton);
+				});
+				for (const skeleton of skeletons) skeleton.dispose();
+			} else {
+				disposePlaceholderObject(group);
+			}
+			const objectIndex = renderObjects.findIndex(
+				(entry) => entry.object === group,
+			);
+			renderObjects.splice(objectIndex, 1);
+			updateCharacterAnimationDiagnostics();
+			updateSceneEntityCounts();
+		};
+
+		const finishNpcPresentation = (npcId: string) => {
+			const death = characterAnimationControllers
+				.get(npcId)
+				?.getDefeatPlayback();
+			if (death && !death.finished) {
+				// A deadline also bounds malformed/paused actions. Gameplay is already removed.
+				if (!dyingNpcs.has(npcId))
+					dyingNpcs.set(
+						npcId,
+						performance.now() + Math.min(death.duration * 1000 + 250, 10000),
+					);
+			} else removeNpcPresentation(npcId);
+		};
 
 		let renderer: THREE.WebGLRenderer;
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 		} catch (error) {
+			for (const prop of propAnimations.values()) prop.controller.dispose();
+			weaponAttachment.dispose();
 			characterAnimationControllers.forEach((controller) => {
 				controller.dispose();
 			});
@@ -1872,13 +2661,42 @@ export function ThreeRuntimePanel({
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		host.appendChild(renderer.domElement);
+		physicalInteractionRef.current = presentPhysicalInteraction;
+		removeNpcPresentationRef.current = finishNpcPresentation;
+		if (import.meta.env.DEV) {
+			const gl = renderer.getContext?.();
+			const debug = gl?.getExtension("WEBGL_debug_renderer_info");
+			diagnostics.setRenderContext({
+				backend: debug
+					? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL))
+					: "unavailable",
+				width: renderer.domElement.width,
+				height: renderer.domElement.height,
+				pixelRatio: renderer.getPixelRatio?.() ?? 1,
+			});
+		}
 
 		let cameraDrag: {
 			mode: "inspectOrbit" | "inspectPan";
 			x: number;
 			y: number;
 		} | null = null;
-		let lastMouseLookPointer: { x: number; y: number } | null = null;
+		let inputDisposed = false;
+		pointerLockCanvasRef.current = renderer.domElement;
+		const handlePointerLockChange = () => {
+			setMouseLookActive(
+				document.pointerLockElement === renderer.domElement &&
+					pointerLockRequestedRef.current &&
+					canUseThirdPersonMouseLook(threeCameraConfig),
+			);
+		};
+		const handlePointerLockError = () => {
+			setMouseLookActive(false);
+		};
+		const handleFocusLoss = () => {
+			resumeInventoryMouseLookRef.current = false;
+			setMouseLookActive(false);
+		};
 		const updateInspectCamera = (
 			updater: (state: OrbitCameraState) => OrbitCameraState,
 		) => {
@@ -1926,11 +2744,36 @@ export function ThreeRuntimePanel({
 				return;
 			}
 			event.preventDefault();
-			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
-			setMouseLookActive(true);
-			renderer.domElement.focus();
+			requestMouseLook();
 		};
+		const requestMouseLook = () => {
+			if (inputDisposed || !canUseThirdPersonMouseLook(threeCameraConfig))
+				return;
+			renderer.domElement.focus();
+			if (document.pointerLockElement === renderer.domElement) return;
+			try {
+				pointerLockRequestedRef.current = true;
+				const request = renderer.domElement.requestPointerLock?.();
+				// Older implementations return void. State comes only from lockchange.
+				void Promise.resolve(request).then(
+					() => {
+						if (inputDisposed) {
+							if (document.pointerLockElement === renderer.domElement)
+								document.exitPointerLock();
+						} else if (document.pointerLockElement === renderer.domElement)
+							handlePointerLockChange();
+					},
+					() => {
+						if (!inputDisposed) handlePointerLockError();
+					},
+				);
+			} catch {
+				handlePointerLockError();
+			}
+		};
+		requestMouseLookRef.current = requestMouseLook;
 		const handlePointerMove = (event: PointerEvent) => {
+			if (!cameraDrag) return;
 			diagnostics.recordPointerMove();
 			if (cameraDrag) {
 				event.preventDefault();
@@ -1951,32 +2794,20 @@ export function ThreeRuntimePanel({
 				}
 				return;
 			}
-
-			if (!mouseLookActiveRef.current) {
+		};
+		const handleMouseMove = (event: MouseEvent) => {
+			if (
+				document.pointerLockElement !== renderer.domElement ||
+				!mouseLookActiveRef.current
+			)
 				return;
-			}
 			if (!canUseThirdPersonMouseLook(threeCameraConfig)) {
 				setMouseLookActive(false);
-				lastMouseLookPointer = null;
 				return;
 			}
-
-			const movementEvent = event as PointerEvent & {
-				movementX?: number;
-				movementY?: number;
-			};
-			const rawMovementX = movementEvent.movementX ?? 0;
-			const rawMovementY = movementEvent.movementY ?? 0;
-			const hasRawMovementDelta = rawMovementX !== 0 || rawMovementY !== 0;
-			const fallbackDelta = lastMouseLookPointer
-				? {
-						x: event.clientX - lastMouseLookPointer.x,
-						y: event.clientY - lastMouseLookPointer.y,
-					}
-				: { x: 0, y: 0 };
-			const deltaX = hasRawMovementDelta ? rawMovementX : fallbackDelta.x;
-			const deltaY = hasRawMovementDelta ? rawMovementY : fallbackDelta.y;
-			lastMouseLookPointer = { x: event.clientX, y: event.clientY };
+			diagnostics.recordPointerMove();
+			const deltaX = event.movementX;
+			const deltaY = event.movementY;
 			if (deltaX !== 0 || deltaY !== 0) {
 				event.preventDefault();
 				thirdPersonRuntimeLookRef.current = updateThirdPersonMouseLookTarget(
@@ -2009,12 +2840,26 @@ export function ThreeRuntimePanel({
 			);
 		};
 		renderer.domElement.addEventListener("pointerdown", handlePointerDown);
-		renderer.domElement.addEventListener("pointermove", handlePointerMove);
+		window.addEventListener("pointermove", handlePointerMove);
+		document.addEventListener("mousemove", handleMouseMove);
+		document.addEventListener("pointerlockchange", handlePointerLockChange);
+		document.addEventListener("pointerlockerror", handlePointerLockError);
+		window.addEventListener("blur", handleFocusLoss);
 		renderer.domElement.addEventListener("pointerup", handlePointerUp);
 		renderer.domElement.addEventListener("wheel", handleWheel, {
 			passive: false,
 		});
 
+		let cameraClearance = 1;
+		const cameraWorldOffset = previewGridPositionToThreePoint(area, {
+			x: 0,
+			y: 0,
+		});
+		const arrowPresentation = session.project.items.some(
+			(item) => item.weapon === "bow",
+		)
+			? createThreeArrowPresentation(scene, cameraWorldOffset, diagnostics)
+			: undefined;
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
 		const render = () => {
@@ -2024,7 +2869,43 @@ export function ThreeRuntimePanel({
 			lastFrameMs = now;
 			diagnostics.recordFrameInterval(deltaMs);
 
+			// The scene owns a terrain lookup already. Reuse it for every actor
+			// and the camera instead of allocating full tile maps per frame.
+			const landed = advancePlayerLocomotion(session, deltaMs / 1000, now);
+			if (
+				landed &&
+				!isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+			) {
+				observeQuestLocation(session, handleProgressionEvent);
+				const touch = findTouchInteractableTarget({
+					project: session.project,
+					area,
+					playerPosition: session.playerPosition,
+					runtimeState: session.runtimeState,
+					collectedPickupIds: session.collectedPickupIds,
+					defeatedNpcIds: session.defeatedNpcIds,
+				});
+				if (touch) runTouchTarget(touch);
+				checkRuntimeWaitingTrigger(
+					session,
+					handleProgressionEvent,
+					findPlayerWaitingTriggerTargets(
+						session,
+						area,
+						session.playerPosition,
+					),
+				);
+			}
 			const visualUpdateStartedAt = performance.now();
+			updateRuntimeBowDraw(session, now, gameplayBlocked(session));
+			characterAnimationControllers
+				.get("runtime_player")
+				?.syncBowDraw(session.bowDraw?.charge);
+			const chargeMeter = bowChargeRef.current;
+			if (chargeMeter) {
+				chargeMeter.hidden = !session.bowDraw;
+				chargeMeter.value = session.bowDraw?.charge ?? 0;
+			}
 			const playerVisual =
 				playerVisualRef.current ??
 				resetVisualEntityState(
@@ -2033,15 +2914,93 @@ export function ThreeRuntimePanel({
 					session.playerFacing,
 				);
 			const playerVisualGridPosition = getVisualGridPosition(playerVisual, now);
-			const playerVisualPosition = playerVisualGridPosition.position;
+			const traversal = !session.playerVehicleState.active
+				? session.traversal
+				: undefined;
+			const playerMoving =
+				!playerVisualGridPosition.done ||
+				!!(
+					traversal &&
+					isTraversalMoving(
+						traversal,
+						now,
+						heldMovementKeys.current.size > 0 && !gameplayBlocked(session),
+					)
+				);
+			setPlayerSprint(
+				session,
+				heldSprintKeys.current.size > 0,
+				playerMoving,
+				gameplayBlocked(session),
+			);
+			const support = traversal
+				? sampleTraversalMotion(traversal, now)
+				: undefined;
+			const grounded =
+				support && traversal
+					? { ...support, height: traversal.motion.height }
+					: undefined;
+			const playerVisualPosition =
+				grounded ?? playerVisualGridPosition.position;
 			setObjectBasePosition(
 				playerMesh,
 				area,
 				playerVisualPosition,
 				terrainRenderMode,
 				playerRenderVisual,
+				grounded?.height,
+				traversalWorld.sampler,
 			);
-			setObjectFacing(playerMesh, playerVisual.facing, playerRenderVisual);
+			collisionDebug.visible = showCollisionRef.current;
+			if (grounded) {
+				host.dataset.traversal = JSON.stringify({
+					...grounded,
+					motion: traversal?.motion,
+					supportHeight: support?.height,
+					rootY: playerMesh.position.y,
+					moving: playerMoving,
+					grid: session.playerPosition,
+					reason: traversal?.lastReason,
+				});
+			}
+			const playerAction = characterAnimationControllers
+				.get("runtime_player")
+				?.getStats().semanticState;
+			const attacking = playerAction === "attack";
+			if (session.bowDraw && bowAimRef.current)
+				attackFacingRef.current = {
+					x: bowAimRef.current.direction.x,
+					y: bowAimRef.current.direction.z,
+				};
+			if (!attacking) attackFacingRef.current = null;
+			if (playerAction !== "defeated" && playerAction !== "hit") {
+				playerMesh.rotation.y = advancePlayerYaw(
+					playerMesh.rotation.y,
+					resolveThreeCharacterFacingYaw(
+						attacking
+							? (attackFacingRef.current ?? session.playerFacing)
+							: playerVisual.facing,
+						playerRenderVisual,
+					),
+					deltaMs,
+					{
+						attacking,
+						sprinting: traversal?.motion.sprinting,
+						airborne: isPlayerAirborne(session),
+					},
+				);
+			}
+			if (
+				interactionTarget &&
+				(playerAction === "interact" || playerAction === "pickup")
+			) {
+				const yaw = interactionFacingYaw(
+					{ x: playerMesh.position.x, y: playerMesh.position.z },
+					interactionTarget,
+					playerRenderVisual?.rotationOffset,
+				);
+				if (yaw !== undefined) playerMesh.rotation.y = yaw;
+			} else interactionTarget = undefined;
 			playerVisualRef.current = settleVisualEntityState(playerVisual, now);
 
 			npcRenderGroups.forEach((group, npcId) => {
@@ -2058,6 +3017,8 @@ export function ThreeRuntimePanel({
 					npcPosition,
 					terrainRenderMode,
 					visual,
+					sampleTraversalTerrain(traversalWorld, npcPosition),
+					traversalWorld.sampler,
 				);
 				setObjectFacing(group, npcVisual.facing, visual);
 				npcVisualsRef.current.set(
@@ -2069,14 +3030,140 @@ export function ThreeRuntimePanel({
 					moving: !npcVisualGridPosition.done,
 				});
 			});
+			if (import.meta.env.DEV)
+				host.dataset.npcs = JSON.stringify(
+					area.npcs.map((npc) => {
+						const group = npcRenderGroups.get(npc.id);
+						return {
+							id: npc.id,
+							x: npc.x,
+							y: npc.y,
+							facing: npc.facing,
+							health: session.runtimeState.npcs[npc.id]?.health,
+							position: group?.position.toArray(),
+							animation: characterAnimationControllers.get(npc.id)?.getStats()
+								.semanticState,
+						};
+					}),
+				);
 			const animationUpdateStartedAt = performance.now();
+			const playerAnimation = characterAnimationControllers
+				.get("runtime_player")
+				?.getStats();
+			// A sword in the reaching hand intersects containers. Hide only this cosmetic action.
+			weaponAttachment.sync(
+				getEquippedWeapon(session),
+				playerAnimation?.semanticState === "interact" ||
+					playerAnimation?.semanticState === "pickup",
+			);
+			if (import.meta.env.DEV)
+				host.dataset.weapon = JSON.stringify({
+					...weaponAttachment.getStats(),
+					equippedWeaponId: getEquippedWeapon(session)
+						? session.equippedWeaponId
+						: undefined,
+					activeClip: playerAnimation?.activeClip,
+					bowPhase: playerAnimation?.bowPhase,
+					clipTime: playerAnimation?.clipTime,
+					semanticState: playerAnimation?.semanticState,
+				});
 			characterAnimationControllers.get("runtime_player")?.sync({
-				defeated: gameOverRef.current,
-				moving: !playerVisualGridPosition.done,
+				defeated: playerDefeatedRef.current || session.runtimePlayerHealth <= 0,
+				moving: playerMoving,
+				sprinting: traversal?.motion.sprinting,
+				airborne: isPlayerAirborne(session),
+				movementPhase: traversal?.motion.phase,
+				movementSpeed: traversal?.motion.speed,
 			});
-			characterAnimationControllers.forEach((controller) => {
+			characterAnimationControllers.forEach((controller, id) => {
+				if (
+					id === "runtime_player" &&
+					session.projectiles?.pending &&
+					isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+				)
+					return;
 				controller.update(deltaMs / 1000);
 			});
+			weaponAttachment.updateGrip();
+			if (gameOverRef.current) session.projectiles = undefined;
+			if (session.projectiles) {
+				const body = {
+					x: playerMesh.position.x - cameraWorldOffset.x,
+					y:
+						(grounded?.height ??
+							traversalWorld.sampler.sampleSurfaceY(
+								playerVisualPosition,
+								terrainRenderMode,
+							)) + 1.25,
+					z: playerMesh.position.z - cameraWorldOffset.z,
+				};
+				const socket = weaponAttachment.getProjectileSpawn();
+				const facing = bowAimRef.current?.direction ?? { x: 0, y: 0, z: 1 };
+				const length = Math.hypot(facing.x, facing.z) || 1;
+				const muzzle = socket
+					? {
+							x: socket.x - cameraWorldOffset.x,
+							y: socket.y,
+							z: socket.z - cameraWorldOffset.z,
+						}
+					: {
+							x: body.x + (facing.x / length) * 0.45,
+							y: body.y,
+							z: body.z + (facing.z / length) * 0.45,
+						};
+				advanceRuntimeProjectiles(
+					session,
+					area,
+					traversalWorld,
+					deltaMs,
+					{ body, muzzle },
+					handleCombatEvent,
+					isRuntimeGameplayBlocked(session, gameplayBlocked(session)),
+				);
+			}
+			arrowPresentation?.sync(session.projectiles?.arrows ?? []);
+			if (import.meta.env.DEV && arrowPresentation)
+				host.dataset.projectiles = JSON.stringify({
+					...arrowPresentation.getStats(),
+					active: session.projectiles?.arrows.length ?? 0,
+					pending: !!session.projectiles?.pending,
+					draw: session.bowDraw,
+					spawned: session.projectiles?.spawned ?? 0,
+					removed: session.projectiles?.removed ?? 0,
+					lastImpact: session.projectiles?.lastImpact,
+					arrows: session.projectiles?.arrows.map((a) => ({
+						id: a.id,
+						position: a.position,
+						direction: a.direction,
+						velocity: a.velocity,
+						damage: a.damage,
+					})),
+				});
+			for (const [id, prop] of propAnimations) {
+				prop.controller.setOpened(
+					session.openedObjectIds.has(id) ||
+						!!(prop.flag && session.runtimeState.flags[prop.flag]),
+				);
+				prop.controller.update(deltaMs / 1000);
+			}
+			if (import.meta.env.DEV)
+				host.dataset.interactionProps = JSON.stringify({
+					props: [...propAnimations].map(([id, p]) => ({
+						id,
+						...p.controller.getStats(),
+					})),
+					visibleIds: [...markerGroups.keys()],
+					playerYaw: playerMesh.rotation.y,
+				});
+			for (const [npcId, deadline] of dyingNpcs) {
+				const death = characterAnimationControllers
+					.get(npcId)
+					?.getDefeatPlayback();
+				if (!death || death.finished || now >= deadline)
+					removeNpcPresentation(npcId);
+			}
+			if (import.meta.env.DEV)
+				host.dataset.dyingNpcs = JSON.stringify([...dyingNpcs.keys()]);
 			updateCharacterAnimationDiagnostics();
 			diagnostics.recordCharacterAnimationUpdate(
 				performance.now() - animationUpdateStartedAt,
@@ -2088,45 +3175,177 @@ export function ThreeRuntimePanel({
 			) {
 				thirdPersonRuntimeLookRef.current = advanceThirdPersonMouseLook(
 					thirdPersonRuntimeLookRef.current,
-					getFrameLerpAlpha(deltaMs, 22),
+					getFrameLerpAlpha(deltaMs, 30),
 				);
 			}
 			diagnostics.recordVisualUpdate(performance.now() - visualUpdateStartedAt);
 
 			const cameraUpdateStartedAt = performance.now();
+			const cameraAnchor = {
+				...getVisualPlayerCenter(
+					area,
+					playerVisualPosition,
+					terrainRenderMode,
+					traversalWorld.sampler,
+				),
+				...(grounded ? { y: grounded.height + 0.625 } : {}),
+			};
+			const bowFraming =
+				getEquippedWeapon(session)?.id === "bow" &&
+				threeCameraConfig.style === "thirdPerson";
 			const nextCameraTarget = getFollowCameraTarget(
-				getVisualPlayerCenter(area, playerVisualPosition, terrainRenderMode),
-				playerVisual.facing,
-				threeCameraConfig,
+				cameraAnchor,
+				cameraFacingRef.current ?? session.playerFacing,
+				bowFraming
+					? {
+							...threeCameraConfig,
+							lookAtHeight: Math.max(1, threeCameraConfig.lookAtHeight),
+						}
+					: threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
 			);
+			if (bowFraming) {
+				// A small shoulder shift clears the centre reticle; the existing rig,
+				// damping, pitch limits and obstruction still own the camera.
+				const dx = nextCameraTarget.lookAt.x - nextCameraTarget.position.x,
+					dz = nextCameraTarget.lookAt.z - nextCameraTarget.position.z;
+				const length = Math.hypot(dx, dz) || 1;
+				for (const point of [
+					nextCameraTarget.position,
+					nextCameraTarget.lookAt,
+				]) {
+					point.x -= (dz / length) * 0.45;
+					point.z += (dx / length) * 0.45;
+				}
+			}
 			if (cameraModeRef.current === "inspect") {
 				applyInspectCamera();
 			} else {
-				const currentRig = cameraRigRef.current ?? cameraRig;
-				cameraRig =
-					threeCameraConfig.style === "thirdPerson"
-						? {
-								lookAt: lerpWorldPosition(
-									currentRig.lookAt,
-									nextCameraTarget.lookAt,
-									getFrameLerpAlpha(deltaMs, threeCameraConfig.lookSmoothing),
-								),
-								position: lerpWorldPosition(
-									currentRig.position,
-									nextCameraTarget.position,
-									getFrameLerpAlpha(deltaMs, threeCameraConfig.followSmoothing),
-								),
-							}
-						: advanceCameraFollowRig(
-								currentRig,
-								nextCameraTarget,
-								getFrameLerpAlpha(deltaMs),
-							);
+				if (threeCameraConfig.style === "thirdPerson") {
+					if (!cameraFocusRef.current) cameraClearance = 1;
+					const focus = advanceThirdPersonFocus(
+						cameraFocusRef.current,
+						cameraAnchor,
+						{ ...cameraAnchor, y: nextCameraTarget.lookAt.y },
+						deltaMs,
+						threeCameraConfig.followSmoothing,
+						threeCameraConfig.lookSmoothing,
+					);
+					cameraFocusRef.current = focus;
+					// At steep pitch the projected boom is short. Separate anchor/look
+					// translation lag could cross that ray while sprinting and flip yaw.
+					const skyTranslation = Math.min(
+						1,
+						Math.max(
+							0,
+							-getThirdPersonMouseLookPitchDegrees(
+								threeCameraConfig.pitchDegrees,
+								thirdPersonRuntimeLookRef.current,
+							) / 45,
+						),
+					);
+					cameraRig = {
+						lookAt: {
+							x:
+								focus.lookAt.x +
+								(focus.position.x - focus.lookAt.x) * skyTranslation +
+								nextCameraTarget.lookAt.x -
+								cameraAnchor.x,
+							y: focus.lookAt.y,
+							z:
+								focus.lookAt.z +
+								(focus.position.z - focus.lookAt.z) * skyTranslation +
+								nextCameraTarget.lookAt.z -
+								cameraAnchor.z,
+						},
+						position: {
+							x:
+								focus.position.x + nextCameraTarget.position.x - cameraAnchor.x,
+							y:
+								focus.position.y + nextCameraTarget.position.y - cameraAnchor.y,
+							z:
+								focus.position.z + nextCameraTarget.position.z - cameraAnchor.z,
+						},
+					};
+					// The bounded sky-look setback (and existing bow offset) must not
+					// move the obstruction ray's origin through a nearby wall.
+					const pivotFraction =
+						Math.hypot(
+							cameraRig.lookAt.x - focus.lookAt.x,
+							cameraRig.lookAt.z - focus.lookAt.z,
+						) < 1e-8
+							? 1
+							: getCameraClearFraction(
+									traversalWorld,
+									focus.lookAt,
+									cameraRig.lookAt,
+									cameraWorldOffset,
+								);
+					// Leave room for a nonzero view ray even when the translated
+					// target itself meets a wall. Exact contact collapses the boom.
+					const pivotClearance = pivotFraction < 1 ? pivotFraction * 0.9 : 1;
+					for (const axis of ["x", "z"] as const) {
+						const correction =
+							(cameraRig.lookAt[axis] - focus.lookAt[axis]) *
+							(1 - pivotClearance);
+						cameraRig.lookAt[axis] -= correction;
+						cameraRig.position[axis] -= correction;
+					}
+					cameraClearance = advanceCameraClearance(
+						cameraClearance,
+						getCameraClearFraction(
+							traversalWorld,
+							cameraRig.lookAt,
+							cameraRig.position,
+							cameraWorldOffset,
+						),
+						deltaMs,
+					);
+					cameraRig = applyCameraClearance(cameraRig, cameraClearance);
+				} else
+					cameraRig = advanceCameraFollowRig(
+						cameraRigRef.current ?? cameraRig,
+						nextCameraTarget,
+						getFrameLerpAlpha(deltaMs),
+					);
 				cameraRigRef.current = cameraRig;
 				applyCameraRig(cameraRig);
 			}
+			if (import.meta.env.DEV)
+				host.dataset.cameraFeel = JSON.stringify({
+					mode: cameraModeRef.current,
+					yaw: getThirdPersonYawDegrees(
+						cameraFacingRef.current ?? session.playerFacing,
+						threeCameraConfig,
+						thirdPersonRuntimeLookRef.current,
+					),
+					pitch: getThirdPersonMouseLookPitchDegrees(
+						threeCameraConfig.pitchDegrees,
+						thirdPersonRuntimeLookRef.current,
+					),
+					playerYaw: playerMesh.rotation.y,
+					facing: session.playerFacing,
+					desiredFacing: playerVisual.facing,
+					clearance: cameraClearance,
+					target: nextCameraTarget,
+					actual: visibleCameraRigRef.current,
+				});
 			diagnostics.recordCameraUpdate(performance.now() - cameraUpdateStartedAt);
+			// Actual visible centre ray, including camera obstruction and orbit damping.
+			const visibleRig = visibleCameraRigRef.current;
+			if (visibleRig)
+				bowAimRef.current = {
+					origin: {
+						x: visibleRig.position.x - cameraWorldOffset.x,
+						y: visibleRig.position.y,
+						z: visibleRig.position.z - cameraWorldOffset.z,
+					},
+					direction: {
+						x: visibleRig.lookAt.x - visibleRig.position.x,
+						y: visibleRig.lookAt.y - visibleRig.position.y,
+						z: visibleRig.lookAt.z - visibleRig.position.z,
+					},
+				};
 			if (
 				waterSurfaceMeshCount > 0 ||
 				coastlinePresentation.meshes.length > 0
@@ -2137,6 +3356,19 @@ export function ThreeRuntimePanel({
 			}
 			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
+			for (const label of openedLabels) {
+				if (
+					!session.openedObjectIds.has(label.id) &&
+					!(label.flag && session.runtimeState.flags[label.flag])
+				) {
+					label.element.hidden = true;
+					continue;
+				}
+				const point = label.position.clone().project(camera);
+				label.element.style.left = `${((point.x + 1) * host.clientWidth) / 2}px`;
+				label.element.style.top = `${((1 - point.y) * host.clientHeight) / 2}px`;
+				label.element.hidden = point.z > 1 || point.z < -1;
+			}
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
 			diagnostics.recordRendererInfo(renderer.info);
 			animationFrame = window.requestAnimationFrame(render);
@@ -2152,11 +3384,38 @@ export function ThreeRuntimePanel({
 		render();
 
 		return () => {
+			if (physicalInteractionRef.current === presentPhysicalInteraction)
+				physicalInteractionRef.current = null;
+			weaponAttachment.dispose();
+			for (const prop of propAnimations.values()) prop.controller.dispose();
 			diagnostics.recordRafLoopCancel(rebuildReason);
+			for (const label of openedLabels) label.element.remove();
 			diagnostics.recordSceneCleanup();
+			if (removeNpcPresentationRef.current === finishNpcPresentation) {
+				removeNpcPresentationRef.current = null;
+			}
+			for (const npcId of dyingNpcs.keys()) removeNpcPresentation(npcId);
 			window.cancelAnimationFrame(animationFrame);
 			renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
-			renderer.domElement.removeEventListener("pointermove", handlePointerMove);
+			arrowPresentation?.dispose();
+			bowAimRef.current = null;
+			cancelRuntimeBowDraw(session);
+			session.projectiles = undefined;
+			window.removeEventListener("pointermove", handlePointerMove);
+			inputDisposed = true;
+			if (requestMouseLookRef.current === requestMouseLook)
+				requestMouseLookRef.current = null;
+			resumeInventoryMouseLookRef.current = false;
+			setMouseLookActive(false);
+			if (pointerLockCanvasRef.current === renderer.domElement)
+				pointerLockCanvasRef.current = null;
+			document.removeEventListener("mousemove", handleMouseMove);
+			document.removeEventListener(
+				"pointerlockchange",
+				handlePointerLockChange,
+			);
+			document.removeEventListener("pointerlockerror", handlePointerLockError);
+			window.removeEventListener("blur", handleFocusLoss);
 			renderer.domElement.removeEventListener("pointerup", handlePointerUp);
 			renderer.domElement.removeEventListener("wheel", handleWheel);
 			characterAnimationControllers.forEach((controller) => {
@@ -2170,10 +3429,14 @@ export function ThreeRuntimePanel({
 			}
 			renderer.dispose();
 			atmosphere.dispose();
+			groundPresentation.dispose();
+			for (const result of [...markerRenderResults, playerRenderResult])
+				result.disposePresentation?.();
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),
 			};
+			disposePlaceholderObject(collisionDebug, disposeTracker);
 			renderObjects.forEach((entry) => {
 				if (entry.disposeResources) {
 					disposePlaceholderObject(entry.object, disposeTracker);
@@ -2202,16 +3465,68 @@ export function ThreeRuntimePanel({
 					reimport it through Asset Creator. Saved assignments are preserved.
 				</p>
 			)}
+			{session &&
+				getEquippedWeapon(session)?.id === "bow" &&
+				!gameplayBlocked(session) &&
+				cameraMode === "follow" && (
+					<div
+						className="runtime-bow-reticle"
+						role="img"
+						aria-label="Bow aim reticle"
+					>
+						<progress
+							ref={bowChargeRef}
+							className="runtime-bow-charge"
+							aria-label="Bow draw charge"
+							max={1}
+							defaultValue={0}
+							hidden
+						/>
+					</div>
+				)}
 			<div className="three-runtime-host" ref={hostRef}>
 				{mountError ? (
 					<div className="three-runtime-error">{mountError}</div>
 				) : null}
 			</div>
+			<InventoryNotifications items={project.items} notices={notices} />
+			{isInventoryOpen && (
+				<InventoryPanel
+					items={project.items}
+					inventory={inventory}
+					equippedWeaponId={session?.equippedWeaponId}
+					onEquipWeapon={(itemId) => {
+						const current = getSession();
+						if (current && equipRuntimeWeapon(current, itemId))
+							setHudVersion((v) => v + 1);
+						else
+							showItemFeedback(
+								"Land and finish the current action before equipping.",
+							);
+					}}
+					onClose={toggleInventory}
+				/>
+			)}
+			{primaryPrompt &&
+				!isInventoryOpen &&
+				!dialogueNode &&
+				!pendingCutscene && (
+					<div className="runtime-interaction-prompt" role="status">
+						{primaryPrompt}
+					</div>
+				)}
 			<ThreePerformanceOverlay
 				diagnostics={diagnostics}
 				title="3D Runtime Perf"
 			/>
-			<div className="three-runtime-hud">
+			<div
+				className="three-runtime-hud"
+				data-traversal-target={
+					session?.traversal
+						? JSON.stringify(session.traversal.position)
+						: undefined
+				}
+			>
 				<strong>3D Runtime Experimental</strong>
 				<span>{area?.name ?? "No area"}</span>
 				<span>
@@ -2222,8 +3537,25 @@ export function ThreeRuntimePanel({
 					Health {session?.runtimePlayerHealth ?? 0}/
 					{session?.playerCombat.maxHealth ?? 0}
 				</span>
+				{session?.recentEnemy && (
+					<span>
+						{session.recentEnemy.name} {session.recentEnemy.health}/
+						{session.recentEnemy.maxHealth}
+					</span>
+				)}
 				<span>Gold: {goldCount}</span>
 				<span>{status}</span>
+				<button
+					type="button"
+					onClick={toggleInventory}
+					disabled={
+						!!session &&
+						!isInventoryOpen &&
+						isRuntimeGameplayBlocked(session, gameplayBlocked(session))
+					}
+				>
+					Inventory <kbd>I</kbd>
+				</button>
 				<div className="three-runtime-camera-controls">
 					<span>
 						Camera
@@ -2266,7 +3598,25 @@ export function ThreeRuntimePanel({
 						</button>
 					) : null}
 				</div>
-				<small>WASD/arrows move. E interacts. Space attacks.</small>
+				<small>
+					WASD/arrows move. Shift sprints. Space jumps. F attacks; hold and
+					release F for Bow. E interacts.
+				</small>
+				{session?.traversal && (
+					<details>
+						<summary>Traversal debug</summary>
+						<label>
+							<input
+								type="checkbox"
+								defaultChecked={showCollisionRef.current}
+								onChange={(event) => {
+									showCollisionRef.current = event.target.checked;
+								}}
+							/>{" "}
+							Show collision
+						</label>
+					</details>
+				)}
 				{cameraMode === "inspect" ? (
 					<small>
 						Inspect: Alt-drag orbits. Alt-Shift-drag pans. Wheel zooms.
@@ -2288,16 +3638,11 @@ export function ThreeRuntimePanel({
 					))}
 				</div>
 			) : null}
-			{quests.length > 0 ? (
-				<div className="three-runtime-quests">
-					<strong>Quests</strong>
-					{quests.slice(0, 3).map((quest) => (
-						<span key={quest.id}>
-							{quest.name}: {quest.status}
-						</span>
-					))}
-				</div>
-			) : null}
+			<QuestObjectiveTracker
+				project={project}
+				quests={quests}
+				className="three-runtime-quests"
+			/>
 			{activeShop ? (
 				<div className="three-runtime-shop">
 					<div>
@@ -2376,8 +3721,12 @@ export function ThreeRuntimePanel({
 					) : (
 						<button type="button" onClick={() => advanceConversation()}>
 							{dialogueNode.type === "text" && dialogueNode.nextNodeId
-								? "Next"
-								: "End conversation"}
+								? session.inlineDialogue?.id === session.dialogue.dialogueId
+									? "Continue"
+									: "Next"
+								: session.inlineDialogue?.id === session.dialogue.dialogueId
+									? "Close"
+									: "End conversation"}
 						</button>
 					)}
 				</div>

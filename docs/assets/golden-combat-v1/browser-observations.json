@@ -1,0 +1,527 @@
+{
+	"before": {
+		"asset": {
+			"activeImportedAssetInstances": 3,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 3,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 3,
+					"activeMixers": 3,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 0,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-combat-actions-v1",
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 30
+			},
+			"activeCloneInstances": 3,
+			"cacheHitCount": 3,
+			"cloneCount": 6,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 3,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 3,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 4
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 28.2,
+			"averageFrameIntervalMs": 28.2,
+			"frameCount": 95,
+			"fps": 50.7,
+			"lastFrameMs": 8.6,
+			"lastFrameIntervalMs": 8.6,
+			"lastRenderMs": 4.9,
+			"worstFrameMs": 767.7,
+			"worstFrameIntervalMs": 767.7
+		},
+		"hitches": {
+			"lastDurationMs": 54.6,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 0,
+			"over100MsCount": 13,
+			"over500MsCount": 5,
+			"over50MsCount": 17,
+			"recent": [
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 56.5,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 125.4,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 141.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 218.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 109,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 70.5,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 68.2,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 54.6,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.2,
+				"count": 95,
+				"lastMs": 0.3,
+				"worstMs": 4
+			},
+			"cameraUpdate": {
+				"averageMs": 0.1,
+				"count": 95,
+				"lastMs": 0.1,
+				"worstMs": 0.7
+			},
+			"frameCallback": {
+				"averageMs": 23.1,
+				"count": 95,
+				"lastMs": 5.7,
+				"worstMs": 873.5
+			},
+			"render": {
+				"averageMs": 22.5,
+				"count": 95,
+				"lastMs": 4.9,
+				"worstMs": 870.8
+			},
+			"runtimeTick": {
+				"averageMs": 0.1,
+				"count": 27,
+				"lastMs": 0,
+				"worstMs": 1.6
+			},
+			"visualUpdate": {
+				"averageMs": 0.5,
+				"count": 95,
+				"lastMs": 0.6,
+				"worstMs": 4.3
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 95,
+				"lastMs": 0,
+				"worstMs": 0.1
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"scene build: initial runtime build",
+			"raf start: initial runtime build",
+			"raf cancel: initial runtime build",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build"
+		],
+		"renderer": {
+			"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1100,
+			"height": 629,
+			"pixelRatio": 1,
+			"drawCalls": 86,
+			"geometries": 66,
+			"lines": 0,
+			"points": 0,
+			"programs": 15,
+			"textures": 40,
+			"triangles": 162958
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"reactCommitCount": 3,
+			"averageTickMs": 0.1,
+			"lastTickMs": 0,
+			"tickCount": 27,
+			"worstTickMs": 1.6
+		},
+		"scene": {
+			"areaId": "parity_courtyard",
+			"areaName": "Golden Combat Courtyard",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 7,
+			"lastBuildMs": 425.8,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Golden Combat Animation V1",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 2688
+		},
+		"terrain": {
+			"coastlineEdgeCount": 36,
+			"lastDurationMs": 366.1,
+			"meshCount": 74,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 120,
+			"triangleCount": 384,
+			"vertexCount": 467,
+			"waterMeshCount": 1
+		}
+	},
+	"after": {
+		"asset": {
+			"activeImportedAssetInstances": 2,
+			"activeImportedAssetIds": [
+				"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+			],
+			"character": {
+				"activeAssetIds": [
+					"character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+				],
+				"activeCloneInstances": 2,
+				"assetMetrics": [
+					{
+						"boneCount": 65,
+						"definitionId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+						"materialCount": 10,
+						"materialTypes": [
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial",
+							"MeshStandardMaterial"
+						],
+						"skinnedMeshCount": 10,
+						"textureCount": 6,
+						"triangleCount": 53796,
+						"vertexCount": 32463
+					}
+				],
+				"animationClips": [],
+				"animation": {
+					"activeLoopingActions": 2,
+					"activeMixers": 2,
+					"incompatibleClipCount": 0,
+					"loadingSourceCount": 0,
+					"missingClipCount": 0,
+					"oneShotActionsTriggered": 3,
+					"playerState": "idle",
+					"sourceAssetIds": [
+						"golden-combat-actions-v1",
+						"golden-reference-quaternius-idle-baked-v1",
+						"golden-reference-quaternius-walk-baked-v1"
+					]
+				},
+				"cloneTypes": ["skeleton-utils"],
+				"skinnedMeshCount": 20
+			},
+			"activeCloneInstances": 2,
+			"cacheHitCount": 3,
+			"cloneCount": 6,
+			"errorFallbackCount": 0,
+			"fallbackPlaceholderCount": 0,
+			"hasStuckLoadingAssets": false,
+			"lastMessage": "clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"loadingFallbackCount": 0,
+			"loadFailureCount": 0,
+			"loadStartedCount": 3,
+			"loadSuccessCount": 0,
+			"missingFallbackCount": 0,
+			"statusCounts": {
+				"error": 0,
+				"loaded": 2,
+				"loading": 0,
+				"missing": 0,
+				"not_requested": 4
+			},
+			"stuckLoadingCount": 0
+		},
+		"frame": {
+			"averageFrameMs": 10.6,
+			"averageFrameIntervalMs": 10.6,
+			"frameCount": 733,
+			"fps": 140.8,
+			"lastFrameMs": 4.2,
+			"lastFrameIntervalMs": 4.2,
+			"lastRenderMs": 6.2,
+			"worstFrameMs": 767.7,
+			"worstFrameIntervalMs": 767.7
+		},
+		"hitches": {
+			"lastDurationMs": 83.2,
+			"lastPhase": "raf_interval",
+			"over1000MsCount": 0,
+			"over100MsCount": 13,
+			"over500MsCount": 5,
+			"over50MsCount": 18,
+			"recent": [
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 125.4,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 141.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 218.9,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 109,
+					"phase": "raf_interval",
+					"thresholdMs": 100
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 70.5,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 68.2,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 54.6,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				},
+				{
+					"detail": "requestAnimationFrame interval",
+					"durationMs": 83.2,
+					"phase": "raf_interval",
+					"thresholdMs": 50
+				}
+			]
+		},
+		"label": "ThreeRuntimePanel",
+		"phases": {
+			"animationUpdate": {
+				"averageMs": 0.3,
+				"count": 733,
+				"lastMs": 0.2,
+				"worstMs": 4
+			},
+			"cameraUpdate": {
+				"averageMs": 0.1,
+				"count": 733,
+				"lastMs": 0,
+				"worstMs": 0.7
+			},
+			"frameCallback": {
+				"averageMs": 7,
+				"count": 733,
+				"lastMs": 6.6,
+				"worstMs": 873.5
+			},
+			"render": {
+				"averageMs": 6.4,
+				"count": 733,
+				"lastMs": 6.2,
+				"worstMs": 870.8
+			},
+			"runtimeTick": {
+				"averageMs": 0.1,
+				"count": 128,
+				"lastMs": 0.1,
+				"worstMs": 1.6
+			},
+			"visualUpdate": {
+				"averageMs": 0.5,
+				"count": 733,
+				"lastMs": 0.4,
+				"worstMs": 4.3
+			},
+			"waterUpdate": {
+				"averageMs": 0,
+				"count": 733,
+				"lastMs": 0,
+				"worstMs": 0.2
+			}
+		},
+		"pointer": {
+			"lastPickMs": 0,
+			"pickCount": 0,
+			"pointerMoveCount": 0,
+			"pointerMovesPerSecond": 0
+		},
+		"recentEvents": [
+			"scene build: initial runtime build",
+			"raf start: initial runtime build",
+			"raf cancel: initial runtime build",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"clone: character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"scene build: initial runtime build",
+			"raf start: initial runtime build"
+		],
+		"renderer": {
+			"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1100,
+			"height": 629,
+			"pixelRatio": 1,
+			"drawCalls": 98,
+			"geometries": 88,
+			"lines": 0,
+			"points": 0,
+			"programs": 15,
+			"textures": 30,
+			"triangles": 109206
+		},
+		"raf": {
+			"activeLoopCount": 1,
+			"lastCancelReason": "initial runtime build",
+			"lastStartReason": "initial runtime build",
+			"loopCancelCount": 1,
+			"loopRestartCount": 1,
+			"loopStartCount": 2
+		},
+		"runtime": {
+			"reactCommitCount": 12,
+			"averageTickMs": 0.1,
+			"lastTickMs": 0.1,
+			"tickCount": 128,
+			"worstTickMs": 1.6
+		},
+		"scene": {
+			"areaId": "parity_courtyard",
+			"areaName": "Golden Combat Courtyard",
+			"buildCount": 2,
+			"cleanupCount": 1,
+			"entityCount": 6,
+			"lastBuildMs": 425.8,
+			"lastRebuildReason": "initial runtime build",
+			"projectName": "Golden Combat Animation V1",
+			"reasonCounts": {
+				"initial runtime build": 2
+			},
+			"timeSinceLastRebuildMs": 7784.7
+		},
+		"terrain": {
+			"coastlineEdgeCount": 36,
+			"lastDurationMs": 366.1,
+			"meshCount": 74,
+			"mode": "smooth",
+			"rebuildCount": 2,
+			"tileCount": 120,
+			"triangleCount": 384,
+			"vertexCount": 467,
+			"waterMeshCount": 1
+		}
+	},
+	"observation": {
+		"player": ["idle", "attack", "walk", "hit"],
+		"npc": {
+			"idle_guide": ["idle"],
+			"sparring_guard": ["idle", "walk", "attack", "hit"]
+		},
+		"dying": ["sparring_guard"],
+		"frames": 625
+	},
+	"savedDuringDeath": true,
+	"errors": []
+}

@@ -175,6 +175,55 @@ export function facingToYawRadians(facing: VisualGridPosition): number {
 	return Math.atan2(-facing.x, -facing.y);
 }
 
+/** Shortest-arc presentation turn. Gameplay facing/collision stays authoritative. */
+export function advancePlayerYaw(
+	current: number,
+	target: number,
+	deltaMs: number,
+	options: {
+		sprinting?: boolean;
+		airborne?: boolean;
+		attacking?: boolean;
+	} = {},
+): number {
+	const difference = Math.atan2(
+		Math.sin(target - current),
+		Math.cos(target - current),
+	);
+	const response = options.attacking
+		? 30
+		: options.airborne
+			? 12
+			: options.sprinting
+				? 24
+				: 18;
+	return current + difference * getFrameLerpAlpha(deltaMs, response);
+}
+
+/** Smooth translation independently of orbit: mouse yaw is never damped twice. */
+export function advanceThirdPersonFocus(
+	current: CameraFollowRig | null,
+	anchor: VisualWorldPosition,
+	lookAt: VisualWorldPosition,
+	deltaMs: number,
+	followResponse: number,
+	lookResponse: number,
+): CameraFollowRig {
+	if (!current) return { position: { ...anchor }, lookAt: { ...lookAt } };
+	return {
+		position: lerpWorldPosition(
+			current.position,
+			anchor,
+			getFrameLerpAlpha(deltaMs, followResponse * 1.6),
+		),
+		lookAt: lerpWorldPosition(
+			current.lookAt,
+			lookAt,
+			getFrameLerpAlpha(deltaMs, lookResponse * 2),
+		),
+	};
+}
+
 export function getCameraFollowTarget(
 	playerPosition: VisualWorldPosition,
 	options: CameraFollowOptions = {},

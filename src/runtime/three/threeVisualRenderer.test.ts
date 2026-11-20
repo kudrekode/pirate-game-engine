@@ -10,7 +10,10 @@ import {
 	setThreeVisualAssetLoaderFactoryForTests,
 } from "./threeVisualAssetLoader";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
-import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
+import {
+	createThreeVisualMarkerGroup,
+	updateThreeVisualMarkerTransform,
+} from "./threeVisualRenderer";
 
 const assetDefinition: ThreeVisualAssetDefinition = {
 	category: "character",
@@ -55,6 +58,31 @@ async function flushAssetPromises(): Promise<void> {
 }
 
 describe("Three visual marker renderer", () => {
+	it("composes per-instance presentation transforms without altering shared visual defaults", () => {
+		const marker = makeMarker({
+			transform: {
+				position: { x: 0.25, y: 2, z: -0.5 },
+				rotation: { x: 15, y: 45, z: 30 },
+				scale: { x: 2, y: 1.5, z: 0.75 },
+			},
+		});
+		const result = createThreeVisualMarkerGroup(marker);
+		expect(result.group.position.toArray()).toEqual([1.25, 2.625, 1.5]);
+		expect(result.group.rotation.x).toBeCloseTo(Math.PI / 12);
+		expect(result.group.rotation.y).toBeCloseTo(Math.PI / 4);
+		expect(result.group.rotation.z).toBeCloseTo(Math.PI / 6);
+		expect(result.group.scale.toArray()).toEqual([2, 1.5, 0.75]);
+		expect(marker.visual?.scale).toBe(1);
+		const mesh = result.group.children[0];
+		updateThreeVisualMarkerTransform(result.group, marker);
+		expect(result.group.position.toArray()).toEqual([1.25, 2.625, 1.5]);
+		expect(result.group.scale.toArray()).toEqual([2, 1.5, 0.75]);
+		updateThreeVisualMarkerTransform(result.group, makeMarker({ threeX: 5 }));
+		expect(result.group.position.toArray()).toEqual([5, 0.625, 2]);
+		expect(result.group.rotation.toArray()).toEqual([0, 0, 0, "XYZ"]);
+		expect(result.group.scale.toArray()).toEqual([1, 1, 1]);
+		expect(result.group.children[0]).toBe(mesh);
+	});
 	beforeEach(() => {
 		clearThreeVisualAssetCacheForTests();
 	});

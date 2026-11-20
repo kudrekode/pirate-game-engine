@@ -1,0 +1,10 @@
+{
+	"queries": 2000,
+	"buildMs": 2.6781000000000006,
+	"solids": 27,
+	"surfaces": 6,
+	"medianMs": 0.010000000000005116,
+	"p95Ms": 0.028999999999996362,
+	"maxMs": 0.4825000000000017,
+	"maxCandidatesAtSamplePoints": 4
+}

@@ -1,0 +1,17 @@
+{
+	"errors": [],
+	"authoredObjectCount": 30,
+	"chestPosition": {
+		"x": 5.8,
+		"z": 6.8
+	},
+	"signRead": true,
+	"inputPaused": true,
+	"chestRewardOnce": true,
+	"dialogueCompleted": true,
+	"triggerOnce": true,
+	"keyDoorTransition": true,
+	"interiorWallBlocked": true,
+	"exactProjectEquality": true,
+	"reloadRewardReset": true
+}

@@ -14,7 +14,12 @@
 - Player and NPC visual positions interpolate between authoritative grid positions.
 - Runtime camera modes include follow and inspect; project camera config supports fixed-isometric and third-person follow.
 - Third-person mode supports mouse-look state, recentering, and camera-relative WASD input.
-- Movement remains discrete/cardinal/grid-based even in third-person camera mode.
+- Legacy areas retain discrete/cardinal/grid movement. Areas containing profiled
+  world-kit assets use the shared traversal layer for continuous horizontal
+  position, transformed obstacle collision, terrain/floor grounding and water
+  rejection. Rounded cells still own gameplay triggers. See
+  [the traversal result](../TRAVERSAL_COLLISION_PASS_RESULT.md) for acceptance and
+  the unchanged harbour's obstructed shack doorway.
 - Runtime UI uses React overlays for status, flow log, health, inventory, quests, shops, cutscenes, authored dialogue nodes/choices, game over, and end game. Dialogue transitions and node effects use the existing shared dialogue engine.
 - Three performance diagnostics track RAF interval, frame callback cost, render cost, visual update, camera update, runtime tick, terrain rebuilds, water/coast updates, asset status, hitches, scene rebuilds, renderer counts, and RAF loop lifecycle.
 

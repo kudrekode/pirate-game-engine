@@ -18,17 +18,38 @@ export type RuntimeQuestState = {
 	enteredAreaIds: Set<string>;
 	rewardedQuestIds: Set<string>;
 	completedObjectiveIds: Set<string>;
+	facts: Set<string>;
+	completedActionIds: Set<string>;
+	syncing?: boolean;
 };
+
+export type QuestFactType =
+	| "interaction_completed"
+	| "container_opened"
+	| "enter_event"
+	| "door_used";
+
+export function recordQuestFact(
+	state: RuntimeQuestState,
+	type: QuestFactType,
+	areaId: string,
+	targetId: string,
+): void {
+	state.facts.add(JSON.stringify([type, areaId, targetId]));
+}
 
 export type QuestView = {
 	id: string;
 	name: string;
 	description?: string;
 	status: QuestStatus;
+	completionMessage?: string;
+	completedThisSession?: boolean;
 	objectives: {
 		id: string;
 		description: string;
 		complete: boolean;
+		state?: "inactive" | "active" | "complete";
 	}[];
 };
 
@@ -85,6 +106,8 @@ export function createRuntimeQuestState(quests: Quest[]): RuntimeQuestState {
 		enteredAreaIds: new Set<string>(),
 		rewardedQuestIds: new Set<string>(),
 		completedObjectiveIds: new Set<string>(),
+		facts: new Set<string>(),
+		completedActionIds: new Set<string>(),
 	};
 }
 
@@ -99,7 +122,13 @@ export function evaluateObjectiveCondition(
 	condition: ObjectiveCondition,
 	runtimeState: RuntimeGameState,
 	enteredAreaIds: Set<string>,
+	facts: Set<string> = new Set(),
 ): boolean {
+	if ("targetId" in condition) {
+		return facts.has(
+			JSON.stringify([condition.type, condition.areaId, condition.targetId]),
+		);
+	}
 	if (condition.type === "flag") {
 		return (runtimeState.flags[condition.flag] ?? false) === condition.value;
 	}
@@ -126,12 +155,22 @@ export function getObjectiveEvaluationDiagnostic(
 	condition: ObjectiveCondition,
 	runtimeState: RuntimeGameState,
 	enteredAreaIds: Set<string>,
+	facts: Set<string> = new Set(),
 ): ObjectiveEvaluationDiagnostic {
 	const passed = evaluateObjectiveCondition(
 		condition,
 		runtimeState,
 		enteredAreaIds,
+		facts,
 	);
+	if ("targetId" in condition) {
+		return {
+			conditionType: condition.type,
+			expected: `${condition.type}: ${condition.targetId}`,
+			actual: String(passed),
+			passed,
+		};
+	}
 	if (condition.type === "flag") {
 		const actual =
 			condition.flag in runtimeState.flags
@@ -189,6 +228,7 @@ export function getQuestSyncDiagnosticMessages(
 				objective.condition,
 				runtimeState,
 				state.enteredAreaIds,
+				state.facts,
 			);
 			return `Quest check: ${quest.name} / ${objective.description} [${diagnostic.conditionType}] expected ${diagnostic.expected}, actual ${diagnostic.actual}, passed ${diagnostic.passed}.`;
 		}),
@@ -217,11 +257,13 @@ export function evaluateObjective(
 	objective: Objective,
 	runtimeState: RuntimeGameState,
 	enteredAreaIds: Set<string>,
+	facts?: Set<string>,
 ): boolean {
 	return evaluateObjectiveCondition(
 		objective.condition,
 		runtimeState,
 		enteredAreaIds,
+		facts,
 	);
 }
 
@@ -242,6 +284,7 @@ export function grantQuestReward(
 	reward: QuestReward,
 	runtimeState: RuntimeGameState,
 	itemDefinitions: ItemDefinition[],
+	onOverflow?: (message: string) => void,
 ): void {
 	if (reward.type === "item") {
 		giveItem(
@@ -249,6 +292,7 @@ export function grantQuestReward(
 			itemDefinitions,
 			reward.itemId,
 			reward.quantity,
+			onOverflow,
 		);
 		return;
 	}
@@ -268,6 +312,7 @@ export function completeQuest(
 	questId: string,
 	runtimeState: RuntimeGameState,
 	itemDefinitions: ItemDefinition[],
+	onOverflow?: (message: string) => void,
 ): boolean {
 	const quest = state.quests.find((candidate) => candidate.id === questId);
 	if (!quest) {
@@ -284,7 +329,7 @@ export function completeQuest(
 	}
 
 	quest.rewards?.forEach((reward) => {
-		grantQuestReward(reward, runtimeState, itemDefinitions);
+		grantQuestReward(reward, runtimeState, itemDefinitions, onOverflow);
 	});
 	state.rewardedQuestIds.add(quest.id);
 	return true;
@@ -295,7 +340,11 @@ export function activateQuest(
 	questId: string,
 ): boolean {
 	const quest = state.quests.find((candidate) => candidate.id === questId);
-	if (!quest || quest.status === "active") {
+	if (
+		!quest ||
+		quest.status === "active" ||
+		(quest.objectiveMode === "sequence" && quest.status !== "inactive")
+	) {
 		return false;
 	}
 
@@ -317,6 +366,7 @@ export function updateQuestProgress(
 	state: RuntimeQuestState,
 	runtimeState: RuntimeGameState,
 	itemDefinitions: ItemDefinition[],
+	onOverflow?: (message: string) => void,
 ): boolean {
 	let changed = false;
 	let completedInPass = true;
@@ -325,19 +375,29 @@ export function updateQuestProgress(
 		completedInPass = false;
 		state.quests.forEach((quest) => {
 			if (quest.status === "active") {
-				quest.objectives.forEach((objective) => {
+				for (const objective of quest.objectives) {
 					if (
-						!state.completedObjectiveIds.has(
+						state.completedObjectiveIds.has(
 							objectiveKey(quest.id, objective.id),
-						) &&
-						evaluateObjective(objective, runtimeState, state.enteredAreaIds)
+						)
+					)
+						continue;
+					if (
+						evaluateObjective(
+							objective,
+							runtimeState,
+							state.enteredAreaIds,
+							state.facts,
+						)
 					) {
 						state.completedObjectiveIds.add(
 							objectiveKey(quest.id, objective.id),
 						);
 						changed = true;
+					} else if (quest.objectiveMode === "sequence") {
+						break;
 					}
-				});
+				}
 			}
 
 			if (
@@ -346,7 +406,13 @@ export function updateQuestProgress(
 				quest.objectives.every((objective) =>
 					state.completedObjectiveIds.has(objectiveKey(quest.id, objective.id)),
 				) &&
-				completeQuest(state, quest.id, runtimeState, itemDefinitions)
+				completeQuest(
+					state,
+					quest.id,
+					runtimeState,
+					itemDefinitions,
+					onOverflow,
+				)
 			) {
 				changed = true;
 				completedInPass = true;
@@ -366,12 +432,29 @@ export function getQuestViews(
 		name: quest.name,
 		description: quest.description,
 		status: quest.status,
-		objectives: quest.objectives.map((objective) => ({
+		completionMessage: quest.completionMessage,
+		completedThisSession: state.rewardedQuestIds.has(quest.id),
+		objectives: quest.objectives.map((objective, index) => ({
 			id: objective.id,
 			description: objective.description,
 			complete: state.completedObjectiveIds.has(
 				objectiveKey(quest.id, objective.id),
 			),
+			state: state.completedObjectiveIds.has(
+				objectiveKey(quest.id, objective.id),
+			)
+				? "complete"
+				: quest.status === "active" &&
+						(quest.objectiveMode !== "sequence" ||
+							quest.objectives
+								.slice(0, index)
+								.every((previous) =>
+									state.completedObjectiveIds.has(
+										objectiveKey(quest.id, previous.id),
+									),
+								))
+					? "active"
+					: "inactive",
 		})),
 	}));
 }

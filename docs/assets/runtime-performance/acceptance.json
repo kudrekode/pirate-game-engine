@@ -1,0 +1,31 @@
+{
+	"actors": {
+		"npc_instance_108eda9c": {
+			"positions": ["7,6"],
+			"states": ["idle"]
+		},
+		"harbour_patrol_0": {
+			"positions": ["1,9", "1,10", "1,8"],
+			"states": ["idle", "walk"]
+		},
+		"harbour_patrol_1": {
+			"positions": ["3,9", "3,10", "3,8"],
+			"states": ["idle", "walk"]
+		},
+		"harbour_patrol_2": {
+			"positions": ["5,9", "5,10", "5,8"],
+			"states": ["idle", "walk"]
+		},
+		"harbour_patrol_3": {
+			"positions": ["8,10", "8,9"],
+			"states": ["idle", "walk"]
+		},
+		"harbour_patrol_4": {
+			"positions": ["13,9", "13,10", "13,8"],
+			"states": ["idle", "walk"]
+		}
+	},
+	"errors": [],
+	"projectUnchanged": true,
+	"editorCanvasPreserved": true
+}

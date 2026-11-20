@@ -1,0 +1,34 @@
+{
+	"version": "golden-combat-v2",
+	"rigProfile": "golden-humanoid-v0",
+	"blender": "5.2.0 LTS",
+	"clips": {
+		"Attack": {
+			"name": "GoldenCombat_Attack_V1",
+			"duration": 0.6
+		},
+		"Hit": {
+			"name": "GoldenCombat_Hit_V1",
+			"duration": 0.45
+		},
+		"Death": {
+			"name": "GoldenCombat_Death_V1",
+			"duration": 1.65
+		}
+	},
+	"packaging": "one mesh-free armature and three named clips",
+	"bytes": 119816,
+	"sha256": "d59b65fe4f5616eff34753e6173c14d184438f367aae969191fe27a6f4d212e2",
+	"binaryDeterministic": true,
+	"sourceHashes": {
+		"tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/animations/golden-combat-v2/actions.blend": "17850eb5df8e171d8d0fbecf9c40198a22f1f8b8e4a30294f8e495dcfa95baec",
+		"tools/blender-character/animations/golden-combat-v2/author.py": "6efbaac0a490a901e73d8085d1413c1f4c9b8c7dc567402d3830ba3d2ca40be3",
+		"tools/blender-character/animations/golden-combat-v2/export.py": "959a88508a971380d21d9625318b1dd64e654f2a5657157d9a92a42a01b93dd6",
+		"public/assets/derived/authored-humans/everyday-v1/mannequin.glb": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb": "00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c"
+	},
+	"rootPolicy": "No root tracks; no translation in Attack/Hit; vertical-only pelvis in Death",
+	"provenance": "tools/blender-character/animations/golden-combat-v2/README.md"
+}

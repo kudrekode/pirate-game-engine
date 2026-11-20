@@ -5,10 +5,6 @@ import test from "node:test";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import {
-	validateAnimation,
-	validateFaceOrientation,
-} from "./procedural-mannequin-roundtrip.mjs";
-import {
 	buildProceduralMannequinScriptArguments,
 	PROCEDURAL_MANNEQUIN_PATHS,
 	parseCliArguments,
@@ -24,6 +20,10 @@ import {
 	PROCEDURAL_MANNEQUIN_RECIPE_VERSION,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
+import {
+	validateAnimation,
+	validateFaceOrientation,
+} from "./procedural-mannequin-roundtrip.mjs";
 import { proceduralMannequinTopologyMatrixCases } from "./procedural-mannequin-topology-matrix.mjs";
 
 const RECIPE_PATH = PROCEDURAL_MANNEQUIN_PATHS.defaultRecipe;

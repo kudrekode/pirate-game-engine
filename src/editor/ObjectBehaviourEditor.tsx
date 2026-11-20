@@ -48,7 +48,7 @@ export function ObjectBehaviourEditor({
 	project,
 }: ObjectBehaviourEditorProps) {
 	return (
-		<div className="form-stack">
+		<div className="form-stack" data-story-field="behaviour">
 			<label>
 				Behaviour
 				<select
@@ -97,6 +97,8 @@ export function ObjectBehaviourEditor({
 					{behaviour.contents.map((content, index) => (
 						<div
 							className="quest-reward-row"
+							data-story-field={`contents:${index}`}
+							// biome-ignore lint/suspicious/noArrayIndexKey: legacy reward entries allow duplicate items and have no ids; these fields are fully controlled.
 							key={`${content.itemId}_${index}`}
 						>
 							<select

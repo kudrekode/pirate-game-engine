@@ -13,6 +13,10 @@ import type {
 } from "../types/game";
 import { resolveNPCInstance } from "./npcResolver";
 import type { RuntimeGameState } from "./ruleEngine";
+import {
+	isInteractionSegmentBlocked,
+	type RuntimeTraversal,
+} from "./traversal";
 
 export type RuntimePosition = { x: number; y: number };
 
@@ -89,6 +93,9 @@ export type InteractionDiscoveryContext = {
 	collectedPickupIds?: Set<string>;
 	defeatedNpcIds?: Set<string>;
 	range?: number;
+	playerFacing?: RuntimePosition;
+	traversal?: RuntimeTraversal;
+	firedInteractionIds?: Set<string>;
 };
 
 export function canTouchActivate(interaction: Interaction): boolean {
@@ -261,7 +268,8 @@ function withInteractionKind<T extends { interaction?: Interaction }>(
 export function findNearestInteractableTarget(
 	context: InteractionDiscoveryContext,
 ): InteractableTarget | null {
-	const range = context.range ?? 1;
+	// Legacy grid projects keep their one-cell reach. Profiled worlds use metres.
+	const range = context.traversal ? Infinity : (context.range ?? 1);
 	const candidates: InteractableTarget[] = [];
 
 	context.area.eventBlocks.forEach((eventBlock) => {
@@ -331,7 +339,10 @@ export function findNearestInteractableTarget(
 			targetId: object.id,
 		});
 		const behaviour = resolveObjectBehaviour(context.project, object);
-		const hasBehaviour = behaviour.type !== "none";
+		const hasBehaviour =
+			behaviour.type !== "none" &&
+			(interaction?.type !== "object_behaviour" ||
+				canInteractActivate(interaction));
 		if (
 			(!interaction || !canInteractActivate(interaction)) &&
 			!targetHasRule &&
@@ -438,13 +449,94 @@ export function findNearestInteractableTarget(
 	});
 
 	return (
-		candidates.sort((a, b) => {
-			if (a.distance !== b.distance) {
-				return a.distance - b.distance;
-			}
+		candidates
+			.filter((target) => {
+				const interaction =
+					"interaction" in target ? target.interaction : undefined;
+				if (
+					interaction?.once &&
+					context.firedInteractionIds?.has(`${context.area.id}:${target.id}`)
+				)
+					return false;
+				if (!context.traversal) return true;
+				const entity =
+					target.type === "object"
+						? target.object
+						: target.type === "npc"
+							? target.npc
+							: target.type === "pickup"
+								? target.pickup
+								: target.type === "structure"
+									? target.structure
+									: target.eventBlock;
+				const point = {
+					x: target.x + (entity.transform?.position.x ?? 0),
+					y: target.y + (entity.transform?.position.z ?? 0),
+				};
+				const dx = point.x - context.playerPosition.x,
+					dy = point.y - context.playerPosition.y;
+				target.distance = Math.hypot(dx, dy);
+				if (target.distance > (context.range ?? 1.75)) return false;
+				if (
+					context.playerFacing &&
+					target.distance > 0.4 &&
+					(dx * context.playerFacing.x + dy * context.playerFacing.y) /
+						target.distance <
+						-0.1
+				)
+					return false;
+				if (
+					isInteractionSegmentBlocked(
+						context.traversal.world,
+						context.traversal.position,
+						point,
+						target.id,
+					)
+				)
+					return false;
+				// Cell blockers without a world profile still occlude the short segment.
+				for (let t = 0.15; t < 0.95; t += 0.15) {
+					const x = Math.round(context.playerPosition.x + dx * t),
+						y = Math.round(context.playerPosition.y + dy * t);
+					if (
+						context.area.structures.some(
+							(s) =>
+								s.id !== target.id &&
+								s.blocksMovement &&
+								x >= s.x &&
+								x < s.x + s.widthTiles &&
+								y >= s.y &&
+								y < s.y + s.heightTiles,
+						)
+					)
+						return false;
+					if (
+						context.area.objects.some(
+							(o) =>
+								o.id !== target.id &&
+								!context.traversal?.world.profiledObjects.has(o.id) &&
+								(o.blocksMovement ??
+									findObjectDefinition(context.project, o)?.blocksMovement) &&
+								x >= o.x &&
+								x < o.x + (o.widthTiles ?? 1) &&
+								y >= o.y &&
+								y < o.y + (o.heightTiles ?? 1),
+						)
+					)
+						return false;
+				}
+				return true;
+			})
+			.sort((a, b) => {
+				if (a.distance !== b.distance) {
+					return a.distance - b.distance;
+				}
 
-			return a.type === "eventBlock" ? -1 : 1;
-		})[0] ?? null
+				return (
+					Number(b.type === "eventBlock") - Number(a.type === "eventBlock") ||
+					a.id.localeCompare(b.id)
+				);
+			})[0] ?? null
 	);
 }
 
@@ -497,7 +589,10 @@ export function findTouchInteractableTarget(
 			})
 		: false;
 	const objectBehaviourCanTouch =
-		objectBehaviour.type !== "none" && objectBehaviour.type !== "vehicle";
+		objectBehaviour.type !== "none" &&
+		objectBehaviour.type !== "vehicle" &&
+		(objectInteraction?.type !== "object_behaviour" ||
+			canTouchActivate(objectInteraction));
 	if (
 		object &&
 		((objectInteraction && canTouchActivate(objectInteraction)) ||

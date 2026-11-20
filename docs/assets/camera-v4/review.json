@@ -1,0 +1,528 @@
+{
+	"date": "2026-10-21",
+	"browser": "Chrome",
+	"cases": 3,
+	"observations": [
+		{
+			"name": "flat-sky",
+			"camera": {
+				"mode": "follow",
+				"yaw": -180,
+				"pitch": -81.99999425886705,
+				"playerYaw": 0,
+				"facing": {
+					"x": 0,
+					"y": 1
+				},
+				"desiredFacing": {
+					"x": 0,
+					"y": 1
+				},
+				"clearance": 1,
+				"target": {
+					"lookAt": {
+						"x": -10.5,
+						"y": 1.925,
+						"z": -2.6043629389040324
+					},
+					"position": {
+						"x": -10.5,
+						"y": 1.2445074458950387,
+						"z": -2.7
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": -10.5,
+						"y": 1.925,
+						"z": -2.6043629389040324
+					},
+					"position": {
+						"x": -10.5,
+						"y": 1.2445074458950387,
+						"z": -2.7
+					}
+				}
+			},
+			"player": {
+				"x": 3,
+				"y": 8,
+				"height": 1,
+				"motion": {
+					"phase": "grounded",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0,
+					"sprinting": false,
+					"speed": 0
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 8
+				}
+			}
+		},
+		{
+			"name": "flat-sky-again",
+			"camera": {
+				"mode": "follow",
+				"yaw": -180,
+				"pitch": -81.99999237578456,
+				"playerYaw": 0,
+				"facing": {
+					"x": 0,
+					"y": 1
+				},
+				"desiredFacing": {
+					"x": 0,
+					"y": 1
+				},
+				"clearance": 1,
+				"target": {
+					"lookAt": {
+						"x": -10.5,
+						"y": 1.925,
+						"z": -2.6043629161030166
+					},
+					"position": {
+						"x": -10.5,
+						"y": 1.2445074459362688,
+						"z": -2.7
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": -10.5,
+						"y": 1.925,
+						"z": -2.6043629161030166
+					},
+					"position": {
+						"x": -10.5,
+						"y": 1.2445074459362688,
+						"z": -2.7
+					}
+				}
+			},
+			"player": {
+				"x": 3,
+				"y": 8,
+				"height": 1,
+				"motion": {
+					"phase": "grounded",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0,
+					"sprinting": false,
+					"speed": 0
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 8
+				}
+			}
+		},
+		{
+			"name": "moving-start",
+			"camera": {
+				"mode": "follow",
+				"yaw": -180,
+				"pitch": -81.99999159005142,
+				"playerYaw": 0,
+				"facing": {
+					"x": 0,
+					"y": 1
+				},
+				"desiredFacing": {
+					"x": 0,
+					"y": 1
+				},
+				"clearance": 1,
+				"target": {
+					"lookAt": {
+						"x": -10.5,
+						"y": 1.925,
+						"z": -2.604362906589087
+					},
+					"position": {
+						"x": -10.5,
+						"y": 1.2445074459534724,
+						"z": -2.7
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": -10.5,
+						"y": 1.925,
+						"z": -2.604362906589087
+					},
+					"position": {
+						"x": -10.5,
+						"y": 1.2445074459534724,
+						"z": -2.7
+					}
+				}
+			},
+			"player": {
+				"x": 3,
+				"y": 8,
+				"height": 1,
+				"motion": {
+					"phase": "grounded",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0,
+					"sprinting": false,
+					"speed": 0
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": false,
+				"grid": {
+					"x": 3,
+					"y": 8
+				}
+			}
+		},
+		{
+			"name": "stairs-sky",
+			"camera": {
+				"mode": "follow",
+				"yaw": -0.04000000000010573,
+				"pitch": -81.99999999999997,
+				"playerYaw": 3.1408945218889928,
+				"facing": {
+					"x": 0,
+					"y": -1
+				},
+				"desiredFacing": {
+					"x": 0.0006981316440927452,
+					"y": -0.9999997563060742
+				},
+				"clearance": 0.9999999387142993,
+				"target": {
+					"lookAt": {
+						"x": -5.4999331706501,
+						"y": 2.465,
+						"z": 4.204363031769182
+					},
+					"position": {
+						"x": -5.4999999378602675,
+						"y": 1.7845074457693373,
+						"z": 4.300000000043367
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": -5.499933172178128,
+						"y": 2.464999999931575,
+						"z": 4.204365220509865
+					},
+					"position": {
+						"x": -5.499999939384204,
+						"y": 1.7845074813661772,
+						"z": 4.300002182922872
+					}
+				}
+			},
+			"player": {
+				"x": 8.001535951756729,
+				"y": 10.600000536170004,
+				"height": 1.54,
+				"motion": {
+					"phase": "grounded",
+					"height": 1.54,
+					"verticalVelocity": 0,
+					"elapsed": 0.22080000001192107,
+					"sprinting": false,
+					"speed": 3.3333333333333335
+				},
+				"supportHeight": 1.54,
+				"rootY": 1.54,
+				"moving": false,
+				"grid": {
+					"x": 8,
+					"y": 11
+				}
+			}
+		},
+		{
+			"name": "wall-sky",
+			"camera": {
+				"mode": "follow",
+				"yaw": 89.94000000000005,
+				"pitch": -81.9999944146129,
+				"playerYaw": 3.1415926535897922,
+				"facing": {
+					"x": 0,
+					"y": -1
+				},
+				"desiredFacing": {
+					"x": 0,
+					"y": -1
+				},
+				"clearance": 0.979782470001792,
+				"target": {
+					"lookAt": {
+						"x": 2.205897738700575,
+						"y": 1.925,
+						"z": -0.4977957805143333
+					},
+					"position": {
+						"x": 2.3015347454718373,
+						"y": 1.244507445891629,
+						"z": -0.4976956296384295
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": 1.1014035951756709,
+						"y": 1.925,
+						"z": -0.49895240449953576
+					},
+					"position": {
+						"x": 1.1951070578935963,
+						"y": 1.2582653245178723,
+						"z": -0.49885427842696983
+					}
+				}
+			},
+			"player": {
+				"x": 13.60153595175671,
+				"y": 8.000000536170013,
+				"height": 1,
+				"motion": {
+					"phase": "grounded",
+					"height": 1,
+					"verticalVelocity": 0,
+					"elapsed": 0.22080000001192107,
+					"sprinting": false,
+					"speed": 3.3333333333333335
+				},
+				"supportHeight": 1,
+				"rootY": 1,
+				"moving": false,
+				"grid": {
+					"x": 14,
+					"y": 8
+				}
+			}
+		},
+		{
+			"name": "slope-sky",
+			"camera": {
+				"mode": "follow",
+				"yaw": -90.01999999999971,
+				"pitch": -81.99998881254544,
+				"playerYaw": 4.712388980384688,
+				"facing": {
+					"x": -1,
+					"y": 0
+				},
+				"desiredFacing": {
+					"x": -1,
+					"y": 0
+				},
+				"clearance": 1,
+				"target": {
+					"lookAt": {
+						"x": -14.202826792996241,
+						"y": 1.8846297402202568,
+						"z": -0.5007340250308554
+					},
+					"position": {
+						"x": -14.298463914211613,
+						"y": 1.204137186234542,
+						"z": -0.5007674086852575
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": -14.202826792996241,
+						"y": 1.8846297402202568,
+						"z": -0.5007340250308554
+					},
+					"position": {
+						"x": -14.298463914211613,
+						"y": 1.2041371862345422,
+						"z": -0.5007674086852574
+					}
+				}
+			},
+			"player": {
+				"x": 1.4015359517567239,
+				"y": 8.000000536170013,
+				"height": 0.9596297402202567,
+				"motion": {
+					"phase": "grounded",
+					"height": 0.9596297402202567,
+					"verticalVelocity": 0,
+					"elapsed": 0.22080000001192107,
+					"sprinting": false,
+					"speed": 3.333333333333333
+				},
+				"supportHeight": 0.9596297402202567,
+				"rootY": 0.9596297402202567,
+				"moving": false,
+				"grid": {
+					"x": 1,
+					"y": 8
+				}
+			}
+		},
+		{
+			"name": "platform-sky",
+			"camera": {
+				"mode": "follow",
+				"yaw": -90.01999999999971,
+				"pitch": -81.99999999999997,
+				"playerYaw": 1.570796326794833,
+				"facing": {
+					"x": 1,
+					"y": 0
+				},
+				"desiredFacing": {
+					"x": 1,
+					"y": 0
+				},
+				"clearance": 1,
+				"target": {
+					"lookAt": {
+						"x": -3.80282692845782,
+						"y": 2.5749999999999997,
+						"z": 3.4992659749218453
+					},
+					"position": {
+						"x": -3.898463914211621,
+						"y": 1.8945074457693376,
+						"z": 3.4992325913147284
+					}
+				},
+				"actual": {
+					"lookAt": {
+						"x": -3.8028269284578204,
+						"y": 2.5749999999999997,
+						"z": 3.4992659749218458
+					},
+					"position": {
+						"x": -3.8984639142116215,
+						"y": 1.8945074457693374,
+						"z": 3.499232591314728
+					}
+				}
+			},
+			"player": {
+				"x": 11.801535951756716,
+				"y": 12.000000536169999,
+				"height": 1.65,
+				"motion": {
+					"phase": "grounded",
+					"height": 1.65,
+					"verticalVelocity": 0,
+					"elapsed": 0.2210000000000001,
+					"sprinting": false,
+					"speed": 3.3333333333333335
+				},
+				"supportHeight": 1.65,
+				"rootY": 1.65,
+				"moving": false,
+				"grid": {
+					"x": 12,
+					"y": 12
+				}
+			}
+		}
+	],
+	"lifecycle": {
+		"before": {
+			"scene": {
+				"areaId": "parity_courtyard",
+				"areaName": "Movement Course",
+				"buildCount": 2,
+				"cleanupCount": 1,
+				"entityCount": 10,
+				"lastBuildMs": 451.4,
+				"lastRebuildReason": "initial runtime build",
+				"projectName": "Movement V2 Demo",
+				"reasonCounts": {
+					"initial runtime build": 2
+				},
+				"timeSinceLastRebuildMs": 937.2
+			},
+			"raf": {
+				"activeLoopCount": 1,
+				"lastCancelReason": "initial runtime build",
+				"lastStartReason": "initial runtime build",
+				"loopCancelCount": 1,
+				"loopRestartCount": 1,
+				"loopStartCount": 2
+			},
+			"cloneCount": 20
+		},
+		"after": {
+			"scene": {
+				"areaId": "parity_courtyard",
+				"areaName": "Movement Course",
+				"buildCount": 2,
+				"cleanupCount": 1,
+				"entityCount": 10,
+				"lastBuildMs": 451.4,
+				"lastRebuildReason": "initial runtime build",
+				"projectName": "Movement V2 Demo",
+				"reasonCounts": {
+					"initial runtime build": 2
+				},
+				"timeSinceLastRebuildMs": 57545.3
+			},
+			"raf": {
+				"activeLoopCount": 1,
+				"lastCancelReason": "initial runtime build",
+				"lastStartReason": "initial runtime build",
+				"loopCancelCount": 1,
+				"loopRestartCount": 1,
+				"loopStartCount": 2
+			},
+			"cloneCount": 20
+		}
+	},
+	"bow": {
+		"camera": {
+			"lookAt": {
+				"x": -18.423669830846904,
+				"y": 2.6249999328995406,
+				"z": -1.5587653200533846
+			},
+			"position": {
+				"x": -18.37543770528154,
+				"y": 1.2761608685559827,
+				"z": -1.7420937167599542
+			}
+		},
+		"arrow": {
+			"id": 1,
+			"position": {
+				"x": 4.806890346013596,
+				"y": 5.879545494238137,
+				"z": 13.057461639794834
+			},
+			"direction": {
+				"x": -0.03208935312835986,
+				"y": 0.9967866622121033,
+				"z": 0.07339361996698049
+			}
+		},
+		"errors": []
+	},
+	"errors": [],
+	"cameraUpdate": {
+		"averageMs": 0.1,
+		"count": 13380,
+		"lastMs": 0.2,
+		"worstMs": 1.4
+	}
+}

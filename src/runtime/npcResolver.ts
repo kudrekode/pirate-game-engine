@@ -91,7 +91,7 @@ export function resolveNPCInstance(
 		threeVisual: instance.threeVisual
 			? { ...definition?.threeVisual, ...instance.threeVisual }
 			: definition?.threeVisual,
-		name: definition?.name ?? "NPC",
+		name: instance.nameOverride || definition?.name || "NPC",
 		attributes,
 		movementMode: movement.movementMode,
 		movementSpeed: Math.max(

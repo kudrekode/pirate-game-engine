@@ -1,0 +1,27 @@
+{
+	"version": "golden-bow-v1",
+	"rigProfile": "golden-humanoid-v0",
+	"blender": "5.2.0 LTS",
+	"clips": {
+		"Attack": {
+			"name": "GoldenBow_Fire_V1",
+			"duration": 0.9
+		}
+	},
+	"packaging": "one mesh-free armature and one bow attack",
+	"bytes": 78784,
+	"sha256": "b0b018dd1a756aab985282599a83c6df796e8e978762d1cc846630b8b68eb4e4",
+	"binaryDeterministic": true,
+	"sourceHashes": {
+		"tools/blender-character/experimental/authored-human-canonical-v1/candidate.blend": "7773ca3ee38eeb5ff168783d8753b7adb49c79499f273b050cd105f75763a63d",
+		"tools/blender-character/animations/golden-bow-v1/actions.blend": "3a5eed3871bad79bcdbce1211817762583edcb293107b88da8e122f41f2c60f1",
+		"tools/blender-character/animations/golden-bow-v1/author.py": "60ee68bc81c39cccf8f402ffc24ad267122320dedeeea155c6065e3c9efd6d31",
+		"tools/blender-character/animations/golden-movement-v1/author.py": "24d76c799463efcb467b52cbc38a7bf48baef976ec940f232aa849e2a7f3b0a6",
+		"tools/blender-character/animations/golden-bow-v1/export.py": "61583cda5245a359a54636f505c149eb9adfbc48ba7abdb94eeb0e2d0b5f17a4",
+		"public/assets/derived/authored-humans/everyday-v1/mannequin.glb": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/idle.glb": "6379780d1d03f21c686a9c3416f461fbf075be67dfed2f59702b3a694b83c3af",
+		"public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb": "00daa1044400d4f38a5d80ccb804bad3fe498d8cf5dd3ef73360bd5985ca6d7c"
+	},
+	"rootPolicy": "No root tracks; vertical-only pelvis, gameplay owns movement",
+	"provenance": "tools/blender-character/animations/golden-bow-v1/README.md"
+}

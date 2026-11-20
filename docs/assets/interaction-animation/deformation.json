@@ -1,0 +1,86 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-interaction-v1/actions.glb",
+	"sha256": "b5258c36bf76c7f3a1a541864f51b921ebefeba49ce9591d65b1b7c94556cd5c",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "test-results/first-outfit/compiled/athletic/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenInteraction_Interact_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 53,
+					"horizontalRange": [4.4418964086295057e-17, 4.310447901390013e-9],
+					"minimumY": 0.009953606846668277,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenInteraction_Pickup_V1",
+					"duration": 0.800000011920929,
+					"tracks": 53,
+					"horizontalRange": [4.886089292779154e-16, 4.361831343335787e-8],
+					"minimumY": 0.009823241273525926,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			],
+			"sha256": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/broad/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenInteraction_Interact_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 53,
+					"horizontalRange": [4.4418964086295057e-17, 4.310447901390013e-9],
+					"minimumY": 0.009953606846668277,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenInteraction_Pickup_V1",
+					"duration": 0.800000011920929,
+					"tracks": 53,
+					"horizontalRange": [4.886089292779154e-16, 4.361831343335787e-8],
+					"minimumY": 0.009823241273525926,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			],
+			"sha256": "e8c6d9ce95f398f54e3949b857d741d95f003c74a439ff5d7231fc87f09a06c1"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/fuller/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenInteraction_Interact_V1",
+					"duration": 0.6000000238418579,
+					"tracks": 53,
+					"horizontalRange": [4.4418964086295057e-17, 4.310447901390013e-9],
+					"minimumY": 0.009953606846668277,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				},
+				{
+					"name": "GoldenInteraction_Pickup_V1",
+					"duration": 0.800000011920929,
+					"tracks": 53,
+					"horizontalRange": [4.886089292779154e-16, 4.361831343335787e-8],
+					"minimumY": 0.009823241273525926,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			],
+			"sha256": "904e67d3a66e5d006c6c3dc6d510a7414d7b48bf5ffbf93bcaab944af6d518a9"
+		}
+	]
+}

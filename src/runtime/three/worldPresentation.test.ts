@@ -106,7 +106,12 @@ describe("Three world presentation helpers", () => {
 			ATMOSPHERE_PRESETS["golden-hour"].lighting.ambientIntensity,
 		);
 		expect(atmosphere.lights.sun.castShadow).toBe(true);
-		expect(atmosphere.lights.sun.shadow.radius).toBe(2);
+		expect(atmosphere.lights.sun.shadow.radius).toBe(2.5);
+		expect(atmosphere.sky.material.depthTest).toBe(false);
+		expect(atmosphere.sky.material.fragmentShader).toContain(
+			"colorspace_fragment",
+		);
+		expect(atmosphere.sky.material.vertexShader).toContain("clip.xyww");
 		expect(renderer.outputColorSpace).toBe(THREE.SRGBColorSpace);
 		expect(renderer.toneMapping).toBe(THREE.ACESFilmicToneMapping);
 		expect(renderer.toneMappingExposure).toBe(

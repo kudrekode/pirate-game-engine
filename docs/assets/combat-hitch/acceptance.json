@@ -1,0 +1,18 @@
+{
+	"parity-observations.json": {
+		"errors": [],
+		"projectUnchanged": true,
+		"dialoguePaused": true,
+		"contactDamage": true,
+		"defeatContinued": true
+	},
+	"save-observations.json": {
+		"errors": [],
+		"projectUnchanged": true,
+		"keyRetained": true,
+		"chestEmpty": true,
+		"oneTimeTriggerNotReplayed": true,
+		"completionRetained": true
+	},
+	"browser": "Headed installed Chrome; two existing @runtime-parity-save cases; 2 passed (2.4m)"
+}

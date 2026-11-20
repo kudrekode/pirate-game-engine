@@ -525,3 +525,30 @@ describe("three performance diagnostics", () => {
 		}
 	});
 });
+
+it("reports context and commits without resetting scene lifetime counters", () => {
+	const diagnostics = createThreePerformanceDiagnostics();
+	try {
+		diagnostics.setRenderContext({
+			backend: "hardware test",
+			width: 1440,
+			height: 830,
+			pixelRatio: 1,
+		});
+		diagnostics.recordReactCommit();
+		diagnostics.recordSceneBuild("startup", 1);
+		expect(diagnostics.getSnapshot().renderer).toMatchObject({
+			backend: "hardware test",
+			width: 1440,
+			height: 830,
+			pixelRatio: 1,
+		});
+		expect(diagnostics.getSnapshot().runtime.reactCommitCount).toBe(1);
+		diagnostics.resetSampleWindow();
+		expect(diagnostics.getSnapshot().runtime.reactCommitCount).toBe(0);
+		expect(diagnostics.getSnapshot().scene.buildCount).toBe(1);
+		expect(diagnostics.getSnapshot().renderer.backend).toBe("hardware test");
+	} finally {
+		diagnostics.dispose();
+	}
+});

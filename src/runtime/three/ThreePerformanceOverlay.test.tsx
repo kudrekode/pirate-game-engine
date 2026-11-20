@@ -6,6 +6,7 @@ import { createThreePerformanceDiagnostics } from "./threePerformanceDiagnostics
 describe("ThreePerformanceOverlay", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
+		vi.unstubAllEnvs();
 	});
 
 	it("stays collapsed until toggled and copies a snapshot on demand", async () => {
@@ -67,4 +68,22 @@ describe("ThreePerformanceOverlay", () => {
 			diagnostics.dispose();
 		}
 	});
+});
+
+it("does not mount or poll developer diagnostics in production", () => {
+	vi.stubEnv("DEV", false);
+	const interval = vi.spyOn(window, "setInterval");
+	const diagnostics = createThreePerformanceDiagnostics();
+	try {
+		const { container, unmount } = render(
+			<ThreePerformanceOverlay diagnostics={diagnostics} title="Perf" />,
+		);
+		expect(container).toBeEmptyDOMElement();
+		expect(interval).not.toHaveBeenCalled();
+		unmount();
+	} finally {
+		diagnostics.dispose();
+		vi.unstubAllEnvs();
+		vi.restoreAllMocks();
+	}
 });

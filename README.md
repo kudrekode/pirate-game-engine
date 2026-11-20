@@ -47,6 +47,14 @@ This is an active work-in-progress and a portfolio project, not a production-rea
 
 ## Saving and recovery
 
+The Map Asset Browser includes the 23-piece **Tidewatch Harbour** world kit.
+Browse Props, Buildings or Nature, search by name/tag, then drag into the 3D
+viewport. New kit assets use metres and place at scale 1. See the
+[kit result and scale guide](WORLD_ASSET_LIBRARY_PASS_RESULT.md) for the asset
+list, provenance and the explicit-import demonstration project. Existing projects
+and starter defaults are unchanged. Raised docks/steps are visual pieces and do
+not add height-aware movement.
+
 The browser keeps one manual save and one autosave draft. If both are valid and
 different, startup asks which to open; neither copy is written while this choice
 is pending or merely because a copy was loaded. A valid save is used when the
@@ -74,7 +82,7 @@ The Map Workspace has shared 2D and 3D view modes. Both views edit the same `Gam
 
 The Three.js 3D view in the Map Workspace is an editor view. It renders the active area's terrain tiles, per-tile height/elevation, and simple placeholders for objects, structures, NPCs, pickups, vehicles, and optionally event blocks. It can select, move, and place existing editor entities and sculpt terrain height.
 
-The Phaser runtime remains the default and reference 2D playable runtime. Pressing Play defaults to Phaser, with a `Play 3D Experimental` option available for the Three.js runtime adapter.
+The Phaser runtime remains the reference 2D playable runtime. Play starts in the current Map view: 2D uses Phaser and 3D uses the experimental Three.js adapter. Returning with `Back to Edit` preserves the workspace camera, selection and undo history.
 
 Both runtime adapters use shared runtime helpers and `RuntimeSession` state for gameplay semantics. Movement, interaction discovery, rules, quests, inventory, shops, object behaviours, NPC ticks, combat, and progression should stay in shared runtime code rather than being reimplemented inside Phaser or Three.js render adapters.
 

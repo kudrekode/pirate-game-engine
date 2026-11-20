@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { compileProceduralMannequin } from "./procedural-mannequin-compiler.mjs";
+
 const cases = {
 	athletic: {},
 	fuller: { mass: 1, broadFrame: 0.15 },

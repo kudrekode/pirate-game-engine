@@ -10,7 +10,14 @@ export type ThreeVisualAssetCategory =
 export type ThreeCharacterAnimationState =
 	| "idle"
 	| "walk"
+	| "run"
+	| "jump"
+	| "fall"
+	| "land"
+	| "interact"
+	| "pickup"
 	| "attack"
+	| "hit"
 	| "defeated";
 export type ThreeCharacterAnimationMapping = {
 	assetId?: string;
@@ -23,7 +30,13 @@ export type ThreeVisualAssetDefinition = {
 	url: string;
 	resourceUrlAliases?: Record<string, string>;
 	category?: ThreeVisualAssetCategory;
+	/** Library presentation only; does not change gameplay or saved projects. */
+	browserCategory?: "Characters" | "Props" | "Nature" | "Buildings";
+	thumbnailUrl?: string;
+	hiddenFromBrowser?: boolean;
 	animationOnly?: boolean;
+	/** Narrow semantic prop playback; clip names belong to the asset, not projects. */
+	propAnimations?: { open: string };
 	animations?: Partial<
 		Record<ThreeCharacterAnimationState, ThreeCharacterAnimationMapping>
 	>;
@@ -36,9 +49,95 @@ export type ThreeVisualAssetDefinition = {
 	tags?: string[];
 };
 
+/** Immutable, mesh-free Golden-native action library; shared by compatible identities. */
+export const GOLDEN_COMBAT_V1_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	id: "golden-combat-actions-v1",
+	kind: "glb",
+	name: "Golden Combat V1",
+	tags: ["animation", "golden-skeleton", "combat"],
+	url: "/assets/derived/humanoid-animations/golden-combat-v1/actions.glb",
+};
+/** Polished motions; V1 remains registered for existing explicit references. */
+export const GOLDEN_COMBAT_V2_ASSET: ThreeVisualAssetDefinition = {
+	...GOLDEN_COMBAT_V1_ASSET,
+	id: "golden-combat-actions-v2",
+	name: "Golden Combat V2 (polished)",
+	url: "/assets/derived/humanoid-animations/golden-combat-v2/actions.glb",
+};
+/** Cadence-safe final polish; recovered before the existing 500 ms restart. */
+export const GOLDEN_COMBAT_V3_ASSET: ThreeVisualAssetDefinition = {
+	...GOLDEN_COMBAT_V2_ASSET,
+	id: "golden-combat-actions-v3",
+	name: "Golden Combat V3 (polished)",
+	url: "/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
+};
+export const GOLDEN_MOVEMENT_V1_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	kind: "glb",
+	id: "golden-movement-actions-v1",
+	name: "Golden Movement V1",
+	tags: ["animation", "golden-skeleton", "locomotion"],
+	url: "/assets/derived/humanoid-animations/golden-movement-v1/actions.glb",
+};
+export const GOLDEN_INTERACTION_V1_ASSET: ThreeVisualAssetDefinition = {
+	animationOnly: true,
+	category: "character",
+	kind: "glb",
+	id: "golden-interaction-actions-v1",
+	name: "Golden Interaction V1",
+	tags: ["animation", "golden-skeleton", "interaction"],
+	url: "/assets/derived/humanoid-animations/golden-interaction-v1/actions.glb",
+};
+const GOLDEN_INTERACTION_MAPPINGS = {
+	interact: {
+		assetId: GOLDEN_INTERACTION_V1_ASSET.id,
+		clipName: "GoldenInteraction_Interact_V1",
+	},
+	pickup: {
+		assetId: GOLDEN_INTERACTION_V1_ASSET.id,
+		clipName: "GoldenInteraction_Pickup_V1",
+	},
+};
+const GOLDEN_MOVEMENT_MAPPINGS = {
+	run: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Run_V1",
+	},
+	jump: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Jump_V1",
+	},
+	fall: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Fall_V1",
+	},
+	land: {
+		assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+		clipName: "GoldenMovement_Land_V1",
+	},
+};
+
+const GOLDEN_COMBAT_MAPPINGS = {
+	attack: {
+		assetId: GOLDEN_COMBAT_V3_ASSET.id,
+		clipName: "GoldenCombat_Attack_V1",
+	},
+	hit: { assetId: GOLDEN_COMBAT_V3_ASSET.id, clipName: "GoldenCombat_Hit_V1" },
+	defeated: {
+		assetId: GOLDEN_COMBAT_V3_ASSET.id,
+		clipName: "GoldenCombat_Death_V1",
+	},
+};
+
 /** Externally-authored development fixture, never a CharacterRecipeV1 artifact. */
 export const GOLDEN_REFERENCE_HUMANOID_ASSET: ThreeVisualAssetDefinition = {
 	animations: {
+		...GOLDEN_COMBAT_MAPPINGS,
+		...GOLDEN_MOVEMENT_MAPPINGS,
+		...GOLDEN_INTERACTION_MAPPINGS,
 		idle: {
 			assetId: "golden-reference-quaternius-idle-baked-v1",
 			clipName: "GoldenReference_Idle",
@@ -91,6 +190,9 @@ export const GOLDEN_REFERENCE_WALK_BAKED_ASSET: ThreeVisualAssetDefinition = {
 /** Blender-compiled engineering geometry using the Golden compatibility rig. */
 export const PROCEDURAL_MANNEQUIN_V0_ASSET: ThreeVisualAssetDefinition = {
 	animations: {
+		...GOLDEN_COMBAT_MAPPINGS,
+		...GOLDEN_MOVEMENT_MAPPINGS,
+		...GOLDEN_INTERACTION_MAPPINGS,
 		idle: {
 			assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
 			clipName: "GoldenReference_Idle",

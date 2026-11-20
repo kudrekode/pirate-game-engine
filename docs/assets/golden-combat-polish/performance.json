@@ -1,0 +1,985 @@
+{
+	"date": "2026-10-19",
+	"backend": {
+		"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+		"width": 1440,
+		"height": 830,
+		"dpr": 1.0000000298023224
+	},
+	"profiler": false,
+	"repetitions": 3,
+	"case": "unchanged Runtime Parity Demo, six authored characters",
+	"rawPath": "test-results/combat-hitch/after-golden-combat-polish-final.json",
+	"excludedCapture": {
+		"path": "test-results/combat-hitch/after-golden-combat-polish.json",
+		"reason": "First timing window overlapped evidence GIF encoding; excluded from timing conclusions. Lifecycle assertions passed."
+	},
+	"projectUnchanged": true,
+	"errors": [],
+	"sourceHashes": {
+		"public/assets/derived/humanoid-animations/golden-combat-v3/actions.glb": "25a4d4475bffe7be4fb71000134bcca6a4b03f8242d3e2f77248542ea8e5b6b2",
+		"src/runtime/three/threeCharacterAnimation.ts": "275b8f9e699504cf3deb93ede06f49337b2e6c8a61a1fd87aa79b950eb26326b",
+		"src/runtime/three/ThreeRuntimePanel.tsx": "5933866635c5cae2530129ed983288c250dc92e138f63eb1365c9741e04bd239",
+		"docs/assets/runtime-parity/runtime-parity-demo.project.json": "f4d255994675f3e8f8ec8722a9e9f1b7e027139f39b3a4ca2bdba3c5d8657c5f"
+	},
+	"summary": {
+		"acceptedMiss": {
+			"count": 3,
+			"inputOrTickToNextRafMs": {
+				"min": 3.4,
+				"max": 5.4
+			},
+			"containingFrameMs": {
+				"min": 7.6,
+				"max": 15
+			},
+			"firstRuntimeRenderCompleteMs": {
+				"min": 7.1,
+				"max": 10.9
+			}
+		},
+		"incomingContact": {
+			"count": 9,
+			"inputOrTickToNextRafMs": {
+				"min": 0.4,
+				"max": 3.4
+			},
+			"containingFrameMs": {
+				"min": 6,
+				"max": 7.8
+			},
+			"firstRuntimeRenderCompleteMs": {
+				"min": 3.4,
+				"max": 8.3
+			}
+		},
+		"nonlethalHit": {
+			"count": 3,
+			"inputOrTickToNextRafMs": {
+				"min": 2.7,
+				"max": 4.2
+			},
+			"containingFrameMs": {
+				"min": 7.9,
+				"max": 9.1
+			},
+			"firstRuntimeRenderCompleteMs": {
+				"min": 6.6,
+				"max": 7.6
+			}
+		},
+		"cooldownRejected": {
+			"count": 3,
+			"inputOrTickToNextRafMs": {
+				"min": 2,
+				"max": 4.1
+			},
+			"containingFrameMs": {
+				"min": 6.8,
+				"max": 8.4
+			},
+			"firstRuntimeRenderCompleteMs": {
+				"min": 6.6,
+				"max": 7.3
+			}
+		},
+		"lethalHit": {
+			"count": 3,
+			"inputOrTickToNextRafMs": {
+				"min": 2.7,
+				"max": 2.8
+			},
+			"containingFrameMs": {
+				"min": 7.1,
+				"max": 8.6
+			},
+			"firstRuntimeRenderCompleteMs": {
+				"min": 6.3,
+				"max": 6.5
+			}
+		}
+	},
+	"events": [
+		{
+			"run": 0,
+			"window": "miss",
+			"kind": "acceptedMiss",
+			"origin": "handleKeyDown",
+			"inputOrTickToNextRafMs": 3.4,
+			"containingFrameMs": 7.6,
+			"firstRuntimeRenderCompleteMs": 7.1
+		},
+		{
+			"run": 0,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 99,
+			"inputOrTickToNextRafMs": 3.1,
+			"containingFrameMs": 7.2,
+			"firstRuntimeRenderCompleteMs": 6.9
+		},
+		{
+			"run": 0,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 98,
+			"inputOrTickToNextRafMs": 1.9,
+			"containingFrameMs": 7.5,
+			"firstRuntimeRenderCompleteMs": 4.5
+		},
+		{
+			"run": 0,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 97,
+			"inputOrTickToNextRafMs": 2.9,
+			"containingFrameMs": 7.1,
+			"firstRuntimeRenderCompleteMs": 6.9
+		},
+		{
+			"run": 0,
+			"window": "nonlethal",
+			"kind": "nonlethalHit",
+			"origin": "handleKeyDown",
+			"damage": 25,
+			"health": 25,
+			"inputOrTickToNextRafMs": 2.7,
+			"containingFrameMs": 9.1,
+			"firstRuntimeRenderCompleteMs": 6.6
+		},
+		{
+			"run": 0,
+			"window": "nonlethal",
+			"kind": "cooldownRejected",
+			"origin": "handleKeyDown",
+			"inputOrTickToNextRafMs": 2,
+			"containingFrameMs": 6.8,
+			"firstRuntimeRenderCompleteMs": 7.2
+		},
+		{
+			"run": 0,
+			"window": "lethal",
+			"kind": "lethalHit",
+			"origin": "handleKeyDown",
+			"damage": 25,
+			"health": 0,
+			"inputOrTickToNextRafMs": 2.7,
+			"containingFrameMs": 8.6,
+			"firstRuntimeRenderCompleteMs": 6.3
+		},
+		{
+			"run": 1,
+			"window": "miss",
+			"kind": "acceptedMiss",
+			"origin": "handleKeyDown",
+			"inputOrTickToNextRafMs": 5.4,
+			"containingFrameMs": 15,
+			"firstRuntimeRenderCompleteMs": 10.9
+		},
+		{
+			"run": 1,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 99,
+			"inputOrTickToNextRafMs": 2.4,
+			"containingFrameMs": 6,
+			"firstRuntimeRenderCompleteMs": 5.6
+		},
+		{
+			"run": 1,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 98,
+			"inputOrTickToNextRafMs": 2.1,
+			"containingFrameMs": 7.7,
+			"firstRuntimeRenderCompleteMs": 5.4
+		},
+		{
+			"run": 1,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 97,
+			"inputOrTickToNextRafMs": 0.4,
+			"containingFrameMs": 6.3,
+			"firstRuntimeRenderCompleteMs": 3.4
+		},
+		{
+			"run": 1,
+			"window": "nonlethal",
+			"kind": "nonlethalHit",
+			"origin": "handleKeyDown",
+			"damage": 25,
+			"health": 25,
+			"inputOrTickToNextRafMs": 2.9,
+			"containingFrameMs": 7.9,
+			"firstRuntimeRenderCompleteMs": 7
+		},
+		{
+			"run": 1,
+			"window": "nonlethal",
+			"kind": "cooldownRejected",
+			"origin": "handleKeyDown",
+			"inputOrTickToNextRafMs": 2.3,
+			"containingFrameMs": 7.6,
+			"firstRuntimeRenderCompleteMs": 6.6
+		},
+		{
+			"run": 1,
+			"window": "lethal",
+			"kind": "lethalHit",
+			"origin": "handleKeyDown",
+			"damage": 25,
+			"health": 0,
+			"inputOrTickToNextRafMs": 2.8,
+			"containingFrameMs": 7.1,
+			"firstRuntimeRenderCompleteMs": 6.4
+		},
+		{
+			"run": 2,
+			"window": "miss",
+			"kind": "acceptedMiss",
+			"origin": "handleKeyDown",
+			"inputOrTickToNextRafMs": 3.9,
+			"containingFrameMs": 9.8,
+			"firstRuntimeRenderCompleteMs": 7.5
+		},
+		{
+			"run": 2,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 99,
+			"inputOrTickToNextRafMs": 1,
+			"containingFrameMs": 7.8,
+			"firstRuntimeRenderCompleteMs": 3.9
+		},
+		{
+			"run": 2,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 98,
+			"inputOrTickToNextRafMs": 2.9,
+			"containingFrameMs": 6.1,
+			"firstRuntimeRenderCompleteMs": 6.3
+		},
+		{
+			"run": 2,
+			"window": "contact",
+			"kind": "incomingContact",
+			"origin": "tickRuntimeNpcs",
+			"damage": 1,
+			"health": 97,
+			"inputOrTickToNextRafMs": 3.4,
+			"containingFrameMs": 7.7,
+			"firstRuntimeRenderCompleteMs": 8.3
+		},
+		{
+			"run": 2,
+			"window": "nonlethal",
+			"kind": "nonlethalHit",
+			"origin": "handleKeyDown",
+			"damage": 25,
+			"health": 25,
+			"inputOrTickToNextRafMs": 4.2,
+			"containingFrameMs": 8.3,
+			"firstRuntimeRenderCompleteMs": 7.6
+		},
+		{
+			"run": 2,
+			"window": "nonlethal",
+			"kind": "cooldownRejected",
+			"origin": "handleKeyDown",
+			"inputOrTickToNextRafMs": 4.1,
+			"containingFrameMs": 8.4,
+			"firstRuntimeRenderCompleteMs": 7.3
+		},
+		{
+			"run": 2,
+			"window": "lethal",
+			"kind": "lethalHit",
+			"origin": "handleKeyDown",
+			"damage": 25,
+			"health": 0,
+			"inputOrTickToNextRafMs": 2.7,
+			"containingFrameMs": 8.1,
+			"firstRuntimeRenderCompleteMs": 6.5
+		}
+	],
+	"windows": [
+		{
+			"run": 0,
+			"window": "miss",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 16.8
+		},
+		{
+			"run": 0,
+			"window": "contact",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 14.8
+		},
+		{
+			"run": 0,
+			"window": "nonlethal",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 17.6
+		},
+		{
+			"run": 0,
+			"window": "lethal",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 5,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 1,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": false,
+						"present": false
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 9.6
+		},
+		{
+			"run": 1,
+			"window": "miss",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 15
+		},
+		{
+			"run": 1,
+			"window": "contact",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 12.9
+		},
+		{
+			"run": 1,
+			"window": "nonlethal",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 15
+		},
+		{
+			"run": 1,
+			"window": "lethal",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 5,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 1,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": false,
+						"present": false
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 12.4
+		},
+		{
+			"run": 2,
+			"window": "miss",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 15.3
+		},
+		{
+			"run": 2,
+			"window": "contact",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 14.3
+		},
+		{
+			"run": 2,
+			"window": "nonlethal",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 6,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 0,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 16.3
+		},
+		{
+			"run": 2,
+			"window": "lethal",
+			"builds": 0,
+			"cleanups": 0,
+			"clones": 0,
+			"loads": 0,
+			"activeMixersBefore": 6,
+			"activeMixersAfter": 5,
+			"counts": {
+				"createThreeCharacterAnimationController": 0,
+				"controllerDispose": 1,
+				"requestThreeVisualAssetAnimationClip": 0,
+				"prepareThreeCharacterAnimationClip": 0,
+				"createTraversalWorld": 0,
+				"createThreeVisualMarkerGroup": 0
+			},
+			"identities": {
+				"scene": true,
+				"renderer": true,
+				"controllers": [
+					{
+						"id": "idle_guide",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_west",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "wander_east",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "sparring_guard",
+						"same": false,
+						"present": false
+					},
+					{
+						"id": "patrol_lookout",
+						"same": true,
+						"present": true
+					},
+					{
+						"id": "runtime_player",
+						"same": true,
+						"present": true
+					}
+				]
+			},
+			"maximumFrameIntervalMs": 9
+		}
+	]
+}

@@ -45,7 +45,31 @@ export type MapPaletteSelection =
 	| { type: "eventBlock" }
 	| { type: "structure"; structureId: string };
 
+export type EditorSource = {
+	section:
+		| "map"
+		| "dialogues"
+		| "quests"
+		| "items"
+		| "game-state"
+		| "progression"
+		| "cutscenes"
+		| "shops"
+		| "story";
+	id: string;
+	areaId?: string;
+	nodeId?: string;
+	field?: string;
+	entityKey?: string;
+};
+
 type ProjectStore = {
+	storyFocusKey: string;
+	setStoryFocusKey: (key: string) => void;
+	requestedEditorSource: EditorSource | null;
+	openEditorSource: (source: EditorSource | null) => void;
+	requestedDialogueId: string | null;
+	openDialogueEditor: (id: string | null) => void;
 	projectContextId: string;
 	project: GameProject;
 	editorSelection: EditorSelection;
@@ -446,18 +470,27 @@ function clearDialogueReferences(project: GameProject, dialogueId: string) {
 				? { ...structure, interaction: undefined }
 				: structure,
 		),
-		objects: area.objects.map((object) =>
-			object.interaction?.type === "start_dialogue" &&
-			object.interaction.dialogueId === dialogueId
-				? { ...object, interaction: undefined }
-				: object,
-		),
-		npcs: area.npcs.map((npc) =>
-			npc.interaction?.type === "start_dialogue" &&
-			npc.interaction.dialogueId === dialogueId
-				? { ...npc, interaction: undefined, interactionOverride: undefined }
-				: npc,
-		),
+		objects: area.objects.map((object) => ({
+			...object,
+			interaction:
+				object.interaction?.type === "start_dialogue" &&
+				object.interaction.dialogueId === dialogueId
+					? undefined
+					: object.interaction,
+		})),
+		npcs: area.npcs.map((npc) => ({
+			...npc,
+			interaction:
+				npc.interaction?.type === "start_dialogue" &&
+				npc.interaction.dialogueId === dialogueId
+					? undefined
+					: npc.interaction,
+			interactionOverride:
+				npc.interactionOverride?.type === "start_dialogue" &&
+				npc.interactionOverride.dialogueId === dialogueId
+					? undefined
+					: npc.interactionOverride,
+		})),
 	}));
 
 	project.npcs = project.npcs.map((npc) =>
@@ -539,6 +572,13 @@ function areaSelection(project: GameProject): EditorSelection {
 const initialProject = migrateProject(defaultProject);
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
+	storyFocusKey: "",
+	setStoryFocusKey: (key) => set({ storyFocusKey: key }),
+	requestedEditorSource: null,
+	openEditorSource: (source) =>
+		set({ requestedEditorSource: source ? { ...source } : null }),
+	requestedDialogueId: null,
+	openDialogueEditor: (id) => set({ requestedDialogueId: id }),
 	projectContextId: makeId("project-context"),
 	project: initialProject,
 	editorSelection: areaSelection(initialProject),
@@ -571,7 +611,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
 	setEditorSelection: (selection) => set({ editorSelection: selection }),
 	setMapPaletteSelection: (selection) =>
-		set({ mapPaletteSelection: selection }),
+		set((state) =>
+			JSON.stringify(state.mapPaletteSelection) === JSON.stringify(selection)
+				? state
+				: { mapPaletteSelection: selection },
+		),
 
 	saveToLocalStorage: () => {
 		localStorage.setItem(

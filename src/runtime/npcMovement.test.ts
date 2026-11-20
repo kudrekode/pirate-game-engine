@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { GameArea, NPCInstance } from "../types/game";
 import {
-	generateWanderDestination,
 	applyEnemyContactDamage,
-	isNpcTileWalkable,
+	generateWanderDestination,
 	isEnemyTouchingPlayer,
+	isNpcTileWalkable,
 	updateEnemyNPC,
 	updatePatrolNPC,
 	updateStationaryNPC,

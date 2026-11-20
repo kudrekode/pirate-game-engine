@@ -7,6 +7,7 @@ import type {
 	ProgressionAction,
 } from "../types/game";
 import { backgroundPresets, portraitPresets } from "./presets";
+import { validateDialogue } from "./validateDialogue";
 
 export type ValidationIssue = {
 	id: string;
@@ -149,6 +150,34 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 	) {
 		if (!interaction) {
 			return;
+		}
+		if (
+			interaction.type === "start_dialogue" &&
+			!project.dialogues.some(
+				(dialogue) => dialogue.id === interaction.dialogueId,
+			)
+		) {
+			addIssue(
+				`${entityType}:${entityId}:${path}.dialogueId`,
+				`${entityType} "${entityId}" references missing dialogue "${interaction.dialogueId || "(unset)"}".`,
+				`${path}.dialogueId`,
+				entityType,
+				entityId,
+				"error",
+			);
+		}
+		interaction.completionActions?.forEach((action, index) => {
+			checkAction(action, `${path}.completionActions.${index}`, entityId);
+		});
+		if (interaction.type === "collect_item") {
+			checkReference(
+				context.itemIds,
+				interaction.itemId,
+				"item",
+				`${path}.itemId`,
+				entityType,
+				entityId,
+			);
 		}
 		if (interaction.type === "play_cutscene") {
 			checkReference(
@@ -475,6 +504,37 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 		quest.objectives.forEach((objective, objectiveIndex) => {
 			const condition = objective.condition;
 			const path = `quests.${questIndex}.objectives.${objectiveIndex}.condition`;
+			if ("targetId" in condition) {
+				const area = project.areas.find(
+					(entry) => entry.id === condition.areaId,
+				);
+				const targets =
+					condition.type === "enter_event"
+						? area?.eventBlocks
+						: condition.type === "interaction_completed"
+							? [...(area?.npcs ?? []), ...(area?.objects ?? [])]
+							: area?.objects.filter(
+									(object) =>
+										(
+											object.behaviourOverride ??
+											project.objects.find(
+												(definition) =>
+													definition.id === object.objectDefinitionId,
+											)?.defaultBehaviour
+										)?.type ===
+										(condition.type === "container_opened"
+											? "container"
+											: "door"),
+								);
+				if (!targets?.some((target) => target.id === condition.targetId))
+					addIssue(
+						path,
+						`Quest "${quest.name}" has a missing or incompatible objective target.`,
+						path,
+						"Quest",
+						quest.id,
+					);
+			}
 			if (condition.type === "has_item") {
 				checkReference(
 					context.itemIds,
@@ -706,5 +766,19 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 		);
 	}
 
+	const dialogueIds = new Set<string>();
+	project.dialogues.forEach((dialogue, index) => {
+		if (!dialogue.id || dialogueIds.has(dialogue.id))
+			addIssue(
+				`dialogues.${index}.id`,
+				`Duplicate or empty dialogue ID "${dialogue.id}".`,
+				`dialogues.${index}.id`,
+				"Dialogue",
+				dialogue.id,
+				"error",
+			);
+		dialogueIds.add(dialogue.id);
+		issues.push(...validateDialogue(project, dialogue));
+	});
 	return issues;
 }

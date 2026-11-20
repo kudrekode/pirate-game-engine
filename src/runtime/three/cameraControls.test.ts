@@ -14,10 +14,12 @@ import {
 	panOrbitCamera,
 	resetOrbitCameraState,
 	resolveCameraRelativeGridDirection,
+	resolveRuntimeCameraMovement,
 	rotateOrbitCamera,
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
 } from "./cameraControls";
+import { getFrameLerpAlpha } from "./visualSmoothing";
 
 const dimensions = { height: 12, width: 16 };
 
@@ -215,12 +217,24 @@ describe("Three orbit camera helpers", () => {
 		);
 
 		expect(look.targetYawOffsetDegrees).toBeCloseTo(25);
-		expect(look.targetPitchOffsetDegrees).toBeCloseTo(10);
+		expect(look.targetPitchOffsetDegrees).toBeCloseTo(-10);
 		expect(getThirdPersonMouseLookYawOffsetDegrees(look)).toBe(0);
 		expect(getThirdPersonMouseLookPitchDegrees(20, look)).toBe(20);
 	});
 
 	it("clamps third-person mouse look pitch targets safely", () => {
+		expect(
+			getThirdPersonMouseLookPitchDegrees(
+				89,
+				createThirdPersonMouseLookState(),
+			),
+		).toBe(65);
+		expect(
+			getThirdPersonMouseLookPitchDegrees(
+				-89,
+				createThirdPersonMouseLookState(),
+			),
+		).toBe(-82);
 		const high = updateThirdPersonMouseLookTarget(
 			createThirdPersonMouseLookState(),
 			0,
@@ -234,8 +248,111 @@ describe("Three orbit camera helpers", () => {
 			18,
 		);
 
-		expect(high.targetPitchOffsetDegrees).toBe(57);
-		expect(low.targetPitchOffsetDegrees).toBe(-28);
+		expect(high.targetPitchOffsetDegrees).toBe(-100);
+		expect(low.targetPitchOffsetDegrees).toBe(47);
+	});
+
+	it("looks 82 degrees into the sky outside the body and above foot height at any elevation", () => {
+		for (const foot of [0, 1, 1.65, 12]) {
+			for (let yaw = -1080; yaw <= 1080; yaw += 15) {
+				const rig = getThirdPersonCameraRig(
+					{ x: 4, y: foot + 0.625, z: 8 },
+					{
+						distance: 6,
+						height: 1.5,
+						lookAtHeight: 0.3,
+						pitchDegrees: -82,
+						yawDegrees: yaw,
+					},
+				);
+				const horizontal = Math.hypot(
+					rig.position.x - rig.lookAt.x,
+					rig.position.z - rig.lookAt.z,
+				);
+				expect(
+					(Math.atan2(rig.lookAt.y - rig.position.y, horizontal) * 180) /
+						Math.PI,
+				).toBeCloseTo(82);
+				expect(rig.position.y).toBeCloseTo(foot + 0.24);
+				expect(Math.hypot(rig.position.x - 4, rig.position.z - 8)).toBeCloseTo(
+					2.2,
+				);
+				const forward = resolveRuntimeCameraMovement(
+					{ x: 0, y: -1 },
+					rig,
+					"follow",
+					true,
+					true,
+				);
+				expect(forward.x).toBeCloseTo(-Math.sin((yaw * Math.PI) / 180));
+				expect(forward.y).toBeCloseTo(-Math.cos((yaw * Math.PI) / 180));
+			}
+		}
+	});
+
+	it("contracts and restores continuously with no vertical wrap or accumulating clamp debt", () => {
+		const options = {
+			distance: 6,
+			height: 1.5,
+			lookAtHeight: 0.3,
+			yawDegrees: 0,
+		};
+		let previous = getThirdPersonCameraRig(
+			{ x: 0, y: 0.625, z: 0 },
+			{ ...options, pitchDegrees: 18 },
+		);
+		for (let pitch = 17.9; pitch >= -82; pitch -= 0.1) {
+			const rig = getThirdPersonCameraRig(
+				{ x: 0, y: 0.625, z: 0 },
+				{ ...options, pitchDegrees: pitch },
+			);
+			expect(rig.position.y).toBeGreaterThanOrEqual(0.24 - 1e-9);
+			expect(
+				Math.hypot(
+					rig.position.y - previous.position.y,
+					rig.position.z - previous.position.z,
+				),
+			).toBeLessThan(0.035);
+			previous = rig;
+		}
+		let look = updateThirdPersonMouseLookTarget(
+			createThirdPersonMouseLookState(),
+			0,
+			-1e6,
+			18,
+		);
+		expect(look.targetPitchOffsetDegrees + 18).toBe(-82);
+		look = updateThirdPersonMouseLookTarget(look, 0, 10, 18);
+		expect(look.targetPitchOffsetDegrees + 18).toBeCloseTo(-80.2);
+	});
+
+	it("recovers the boom and target with identical 30/60/120 Hz response", () => {
+		const results = [30, 60, 120].map((fps) => {
+			let look = createThirdPersonMouseLookState({
+				currentPitchOffsetDegrees: -100,
+				targetPitchOffsetDegrees: 0,
+			});
+			for (let i = 0; i < fps / 2; i++)
+				look = advanceThirdPersonMouseLook(
+					look,
+					getFrameLerpAlpha(1000 / fps, 30),
+				);
+			return getThirdPersonCameraRig(
+				{ x: 0, y: 0.625, z: 0 },
+				{
+					distance: 6,
+					height: 1.5,
+					lookAtHeight: 0.3,
+					yawDegrees: 0,
+					pitchDegrees: getThirdPersonMouseLookPitchDegrees(18, look),
+				},
+			);
+		});
+		for (const rig of results) {
+			expect(rig.position.y).toBeCloseTo(results[0].position.y, 10);
+			expect(rig.position.z).toBeCloseTo(Math.cos((18 * Math.PI) / 180) * 6, 4);
+			expect(rig.lookAt).toEqual({ x: 0, y: 0.925, z: 0 });
+		}
 	});
 
 	it("smoothly advances third-person mouse look toward target offsets", () => {
@@ -250,6 +367,52 @@ describe("Three orbit camera helpers", () => {
 		expect(halfway.currentYawOffsetDegrees).toBe(45);
 		expect(complete.currentPitchOffsetDegrees).toBe(20);
 		expect(complete.currentYawOffsetDegrees).toBe(90);
+	});
+
+	it("retains continuous camera-relative directions for profiled traversal", () => {
+		const direction = resolveCameraRelativeGridDirection(
+			{ x: 0, y: -1 },
+			45,
+			true,
+		);
+		expect(direction.x).toBeCloseTo(-Math.SQRT1_2);
+		expect(direction.y).toBeCloseTo(-Math.SQRT1_2);
+		expect(Math.hypot(direction.x, direction.y)).toBeCloseTo(1);
+	});
+
+	it("projects the visible camera onto the ground for forward, strafe and normalized diagonals", () => {
+		for (const height of [-2, 1, 40]) {
+			const rig = {
+				lookAt: { x: 2, y: 1, z: 3 },
+				position: { x: 8, y: height, z: 3 },
+			};
+			const move = (x: number, y: number) =>
+				resolveRuntimeCameraMovement({ x, y }, rig, "follow", true, true);
+			expect(move(0, -1).x).toBeCloseTo(-1);
+			expect(move(0, -1).y).toBeCloseTo(0);
+			expect(move(1, 0).y).toBeCloseTo(-1);
+			expect(move(-1, 0).y).toBeCloseTo(1);
+			expect(Math.hypot(...Object.values(move(1, -1)))).toBeCloseTo(1);
+			expect(move(0, 0)).toEqual({ x: 0, y: 0 });
+			expect(
+				resolveRuntimeCameraMovement(
+					{ x: 0, y: -1 },
+					rig,
+					"inspect",
+					true,
+					true,
+				),
+			).toEqual({ x: 0, y: -1 });
+			expect(
+				resolveRuntimeCameraMovement(
+					{ x: 0, y: -1 },
+					rig,
+					"follow",
+					false,
+					true,
+				),
+			).toEqual({ x: 0, y: -1 });
+		}
 	});
 
 	it("clamps arbitrary camera states safely", () => {

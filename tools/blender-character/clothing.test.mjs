@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { validateClothingSources } from "./clothing-contract.mjs";
 import {
 	createRecipeForProportions,
 	validateCreatorCompileRequest,
 } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
+import { validateClothingSources } from "./clothing-contract.mjs";
 import {
 	hashProceduralMannequinRecipe,
 	validateProceduralMannequinRecipe,
 } from "./procedural-mannequin-contract.mjs";
+
 const recipe = JSON.parse(
 	await readFile(
 		"tools/blender-character/recipes/authored-human-everyday-v1.recipe.json",

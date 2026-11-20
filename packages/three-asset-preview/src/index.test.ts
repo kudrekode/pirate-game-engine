@@ -5,6 +5,10 @@ import {
 	clearThreeVisualAssetCacheForTests,
 	cloneThreeVisualAssetRoot,
 	disposeThreeVisualAssetCacheEntry,
+	GOLDEN_COMBAT_V1_ASSET,
+	GOLDEN_COMBAT_V2_ASSET,
+	GOLDEN_COMBAT_V3_ASSET,
+	GOLDEN_MOVEMENT_V1_ASSET,
 	GOLDEN_REFERENCE_HUMANOID_ASSET,
 	GOLDEN_REFERENCE_IDLE_BAKED_ASSET,
 	GOLDEN_REFERENCE_WALK_BAKED_ASSET,
@@ -80,6 +84,43 @@ describe("shared Three asset preview", () => {
 
 	test("defines explicit offline-baked animation sources", () => {
 		expect(GOLDEN_REFERENCE_HUMANOID_ASSET.animations).toEqual({
+			interact: {
+				assetId: "golden-interaction-actions-v1",
+				clipName: "GoldenInteraction_Interact_V1",
+			},
+			pickup: {
+				assetId: "golden-interaction-actions-v1",
+				clipName: "GoldenInteraction_Pickup_V1",
+			},
+			run: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Run_V1",
+			},
+			jump: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Jump_V1",
+			},
+			fall: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Fall_V1",
+			},
+			land: {
+				assetId: "golden-movement-actions-v1",
+				clipName: "GoldenMovement_Land_V1",
+			},
+
+			attack: {
+				assetId: GOLDEN_COMBAT_V3_ASSET.id,
+				clipName: "GoldenCombat_Attack_V1",
+			},
+			hit: {
+				assetId: GOLDEN_COMBAT_V3_ASSET.id,
+				clipName: "GoldenCombat_Hit_V1",
+			},
+			defeated: {
+				assetId: GOLDEN_COMBAT_V3_ASSET.id,
+				clipName: "GoldenCombat_Death_V1",
+			},
 			idle: {
 				assetId: GOLDEN_REFERENCE_IDLE_BAKED_ASSET.id,
 				clipName: "GoldenReference_Idle",
@@ -88,6 +129,22 @@ describe("shared Three asset preview", () => {
 				assetId: GOLDEN_REFERENCE_WALK_BAKED_ASSET.id,
 				clipName: "GoldenReference_Walk_InPlace",
 			},
+		});
+		expect(GOLDEN_COMBAT_V1_ASSET).toMatchObject({
+			id: "golden-combat-actions-v1",
+			animationOnly: true,
+			kind: "glb",
+			url: "/assets/derived/humanoid-animations/golden-combat-v1/actions.glb",
+		});
+		expect(GOLDEN_COMBAT_V2_ASSET).toMatchObject({
+			animationOnly: true,
+			id: "golden-combat-actions-v2",
+			url: "/assets/derived/humanoid-animations/golden-combat-v2/actions.glb",
+		});
+		expect(GOLDEN_COMBAT_V3_ASSET).toMatchObject({
+			animationOnly: true,
+			id: "golden-combat-actions-v3",
+			url: "/assets/derived/humanoid-animations/golden-combat-v3/actions.glb",
 		});
 		expect(GOLDEN_REFERENCE_IDLE_BAKED_ASSET).toMatchObject({
 			animationOnly: true,
@@ -218,4 +275,27 @@ describe("shared Three asset preview", () => {
 			clearThreeVisualAssetCacheForTests();
 		}
 	});
+});
+
+test("maps all Golden identities to the separate mesh-free movement library", () => {
+	expect(GOLDEN_MOVEMENT_V1_ASSET).toMatchObject({
+		id: "golden-movement-actions-v1",
+		animationOnly: true,
+		url: "/assets/derived/humanoid-animations/golden-movement-v1/actions.glb",
+	});
+	for (const asset of [
+		GOLDEN_REFERENCE_HUMANOID_ASSET,
+		PROCEDURAL_MANNEQUIN_V0_ASSET,
+		PROCEDURAL_MANNEQUIN_HAIR_V0_ASSET,
+	])
+		for (const [state, name] of [
+			["run", "Run"],
+			["jump", "Jump"],
+			["fall", "Fall"],
+			["land", "Land"],
+		] as const)
+			expect(asset.animations?.[state]).toEqual({
+				assetId: GOLDEN_MOVEMENT_V1_ASSET.id,
+				clipName: `GoldenMovement_${name}_V1`,
+			});
 });

@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
 import { Readable } from "node:stream";
+import test from "node:test";
 import {
 	compileCreatorMannequin,
-	createRecipeForProportions,
 	createProceduralMannequinCompileMiddleware,
+	createRecipeForProportions,
 	validateCreatorCompileRequest,
 } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
 import { hashProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";

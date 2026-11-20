@@ -1,0 +1,56 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-sword-v1/actions.glb",
+	"sha256": "bcea515ab14a22a26439e87dc594c57930c25db4e698a8080fb54c42ee0852d4",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "test-results/first-outfit/compiled/athletic/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenSword_Attack_V1",
+					"duration": 0.75,
+					"tracks": 53,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009916233294978637,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			],
+			"sha256": "3a19855a3e2ca3b6bfeccf1471c896a7445abf8841ac432478422c6c3b74ed69"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/broad/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenSword_Attack_V1",
+					"duration": 0.75,
+					"tracks": 53,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009916233294978637,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			],
+			"sha256": "e8c6d9ce95f398f54e3949b857d741d95f003c74a439ff5d7231fc87f09a06c1"
+		},
+		{
+			"targetPath": "test-results/first-outfit/compiled/fuller/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenSword_Attack_V1",
+					"duration": 0.75,
+					"tracks": 53,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009916233294978637,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			],
+			"sha256": "904e67d3a66e5d006c6c3dc6d510a7414d7b48bf5ffbf93bcaab944af6d518a9"
+		}
+	]
+}

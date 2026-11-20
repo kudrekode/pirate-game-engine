@@ -580,6 +580,7 @@ describe("editor smoke tests", () => {
 
 	it("renders Logic Builder", () => {
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
 		expect(screen.getAllByDisplayValue("Opening / Tutorial")).toHaveLength(2);
@@ -600,6 +601,7 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(screen.getByText("Unknown flag: flag_1")).toBeInTheDocument();
 		fireEvent.click(getButtonByText("Create flag"));
@@ -624,6 +626,7 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(screen.getByText("No shop selected")).toBeInTheDocument();
 		expect(
@@ -633,6 +636,7 @@ describe("editor smoke tests", () => {
 
 	it("sets a rule to run once and shows it in the summary", () => {
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		fireEvent.change(screen.getByLabelText("Run"), {
 			target: { value: "once" },
@@ -656,6 +660,7 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(
 			screen.getByText("This may give items every time the player interacts."),
@@ -684,6 +689,38 @@ describe("editor smoke tests", () => {
 		expect(
 			screen.getByText(/Currency items are physical inventory items/),
 		).toBeInTheDocument();
+	});
+	it("authors one stable sword item from the existing Items Editor without duplicating it", () => {
+		render(<ItemsEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Add Sword" }));
+		fireEvent.click(screen.getByRole("button", { name: "Add Sword" }));
+		const items = useProjectStore
+			.getState()
+			.project.items.filter((item) => item.id === "sword");
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			name: "Sword",
+			category: "weapon",
+			weapon: "sword",
+			stackable: false,
+		});
+		expect(screen.getByText(/Sword: 35 damage/)).toBeInTheDocument();
+	});
+	it("authors one stable Bow for ordinary pickup placement without duplicating it", () => {
+		render(<ItemsEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Add Bow" }));
+		fireEvent.click(screen.getByRole("button", { name: "Add Bow" }));
+		const items = useProjectStore
+			.getState()
+			.project.items.filter((item) => item.id === "bow");
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			name: "Bow",
+			weapon: "bow",
+			category: "weapon",
+			stackable: false,
+		});
+		expect(screen.getByText(/Bow: 32 damage/)).toBeInTheDocument();
 	});
 
 	it("renders Dialogue Editor", () => {
@@ -762,12 +799,12 @@ describe("editor smoke tests", () => {
 
 		expect(
 			screen.getByText(
-				"Inactive quests do not progress until activated by a rule.",
+				"Not started. Select Start Quest on a map interaction, or use the existing Activate quest rule action.",
 			),
 		).toBeInTheDocument();
 	});
 
-	it("creates new quests active by default", () => {
+	it("creates sequential quests waiting for an explicit start", () => {
 		const project = cloneProject(defaultProject);
 		project.quests = [];
 		project.trackedQuestId = undefined;
@@ -776,9 +813,14 @@ describe("editor smoke tests", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Add quest" }));
 
-		expect(useProjectStore.getState().project.quests[0].status).toBe("active");
+		expect(useProjectStore.getState().project.quests[0].status).toBe(
+			"inactive",
+		);
+		expect(useProjectStore.getState().project.quests[0].objectiveMode).toBe(
+			"sequence",
+		);
 		expect(
-			screen.getByDisplayValue("Active - can progress during play"),
+			screen.getByDisplayValue("From an interaction or Start Quest action"),
 		).toBeInTheDocument();
 	});
 
@@ -805,6 +847,9 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 		render(<QuestsEditor />);
 
+		fireEvent.click(
+			screen.getByRole("button", { name: "Advanced completion fields" }),
+		);
 		expect(screen.getByText("No item selected")).toBeInTheDocument();
 		expect(
 			screen.getByText("Unknown item: (missing item)"),
@@ -818,6 +863,9 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 		render(<QuestsEditor />);
 
+		fireEvent.click(
+			screen.getByRole("button", { name: "Advanced completion fields" }),
+		);
 		expect(screen.getByText("No shop selected")).toBeInTheDocument();
 		expect(
 			screen.getByText("Unknown shop: (missing shop)"),

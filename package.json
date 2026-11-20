@@ -27,6 +27,7 @@
 		"test:blender-bake": "node --test tools/blender-character/*.test.mjs",
 		"test:procedural-mannequin": "node --test tools/blender-character/procedural-mannequin.test.mjs",
 		"bake:golden-animation": "node tools/blender-character/golden-animation-bake.mjs",
+		"bake:golden-combat": "node tools/blender-character/golden-combat-bake.mjs --revision v3",
 		"compile:procedural-mannequin": "node tools/blender-character/procedural-mannequin-compiler.mjs",
 		"validate:golden-animation-bakes": "node tools/blender-character/offline-bake-roundtrip.mjs",
 		"validate:procedural-mannequin": "node tools/blender-character/procedural-mannequin-compiler.mjs --validate-only",

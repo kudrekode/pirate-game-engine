@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { createRecipeForProportions } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
 import {
 	gameCharacterImportPlugin,
 	importFinalisedCharacter,
 } from "./game-character-import.mjs";
-import { createRecipeForProportions } from "../../apps/asset-studio/dev/procedural-mannequin-compile-api.mjs";
 import { hashProceduralMannequinRecipe } from "./procedural-mannequin-contract.mjs";
 
 async function fixture(t) {

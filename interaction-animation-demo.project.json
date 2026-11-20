@@ -1,0 +1,7954 @@
+{
+	"metadata": {
+		"name": "Interaction Animation Demo",
+		"version": "1.0.0"
+	},
+	"areas": [
+		{
+			"id": "parity_courtyard",
+			"name": "Interaction Courtyard",
+			"kind": "outdoor",
+			"width": 28,
+			"height": 18,
+			"tileSize": 32,
+			"terrainTiles": [
+				{
+					"x": 0,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 2,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 3,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 4,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 5,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 6,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 7,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 8,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 9,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 10,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 11,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 12,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 13,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 14,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 15,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 16,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 17,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 18,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 19,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 20,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 21,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 22,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 23,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 24,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 25,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 26,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 27,
+					"y": 0,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 1,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 1,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 1,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 2,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 2,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 2,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 3,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 3,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 3,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 4,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 4,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 4,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 5,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 5,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 5,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 6,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 6,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 6,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 7,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 7,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 7,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 8,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 8,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 8,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 9,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 9,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 9,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 10,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 10,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 10,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 11,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 11,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 11,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 12,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 12,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 12,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 13,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 13,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 13,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 14,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 14,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 14,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 15,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 15,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 15,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 16,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 2,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 3,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 4,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 5,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 6,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 7,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 8,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 9,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 10,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 11,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 12,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 13,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 14,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 15,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 16,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 17,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 18,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 19,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 20,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 21,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 22,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 23,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 24,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 25,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 26,
+					"y": 16,
+					"tileId": "sand"
+				},
+				{
+					"x": 27,
+					"y": 16,
+					"tileId": "water"
+				},
+				{
+					"x": 0,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 1,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 2,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 3,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 4,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 5,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 6,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 7,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 8,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 9,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 10,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 11,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 12,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 13,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 14,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 15,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 16,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 17,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 18,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 19,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 20,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 21,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 22,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 23,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 24,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 25,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 26,
+					"y": 17,
+					"tileId": "water"
+				},
+				{
+					"x": 27,
+					"y": 17,
+					"tileId": "water"
+				}
+			],
+			"overlayTiles": [],
+			"structures": [],
+			"objects": [
+				{
+					"id": "animated-chest",
+					"objectDefinitionId": "animated-chest",
+					"areaId": "parity_courtyard",
+					"x": 5,
+					"y": 8
+				},
+				{
+					"id": "static-chest",
+					"objectDefinitionId": "static-chest",
+					"areaId": "parity_courtyard",
+					"x": 8,
+					"y": 8
+				},
+				{
+					"id": "physical-pickup",
+					"objectDefinitionId": "physical-pickup",
+					"areaId": "parity_courtyard",
+					"x": 11,
+					"y": 8
+				},
+				{
+					"id": "sign",
+					"objectDefinitionId": "sign",
+					"areaId": "parity_courtyard",
+					"x": 14,
+					"y": 8
+				}
+			],
+			"pickups": [],
+			"npcs": [
+				{
+					"id": "keeper",
+					"nameOverride": "Harbour Keeper",
+					"npcDefinitionId": "npc-character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+					"areaId": "parity_courtyard",
+					"x": 17,
+					"y": 8,
+					"facing": "left",
+					"blocksMovement": true,
+					"movementOverride": {
+						"movementMode": "stationary",
+						"movementSpeed": 1
+					},
+					"attributesOverride": {
+						"maxHealth": 100,
+						"health": 100,
+						"faction": "harbour",
+						"alignment": "friendly",
+						"canInteract": true,
+						"movementSpeed": 1
+					},
+					"enemyBehaviourOverride": {
+						"enabled": false,
+						"detectionRadiusTiles": 2,
+						"chaseRadiusTiles": 3,
+						"returnToOrigin": true,
+						"contactDamage": 1
+					},
+					"interaction": {
+						"type": "show_message",
+						"activationMode": "on_interact",
+						"prompt": "Talk",
+						"speaker": "Harbour Keeper",
+						"lines": [
+							"That chest contains the Harbour Key. Keep it for the shack."
+						]
+					}
+				}
+			],
+			"eventBlocks": [
+				{
+					"id": "entry",
+					"name": "Interaction start",
+					"x": 3,
+					"y": 8,
+					"tag": "movement-start",
+					"kind": "spawn"
+				}
+			]
+		}
+	],
+	"characterAssets": [
+		{
+			"id": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"name": "New Character",
+			"kind": "character",
+			"state": "finalised",
+			"geometryFamily": "authored-human",
+			"glbUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.glb",
+			"artifactHash": "a801c1d810412c9d0cea7ac71bef370da02cc40514befe4a4c54778ed1c69237",
+			"recipeHash": "89240819f9873f28202dc441eabbd34cfba5e732bafcff240cbcc6b1edb4cb92",
+			"manifestUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/manifest.json",
+			"recipeUrl": "/assets/project-characters/character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19/character.recipe.json",
+			"rigProfile": "golden-humanoid-v0",
+			"animationSet": "golden-idle-walk-v1"
+		}
+	],
+	"activeAreaId": "parity_courtyard",
+	"camera": {
+		"viewportWidthTiles": 10,
+		"viewportHeightTiles": 8,
+		"followPlayer": true,
+		"followSmoothing": 0.12,
+		"deadzoneWidthTiles": 2,
+		"deadzoneHeightTiles": 2,
+		"three": {
+			"style": "thirdPerson",
+			"distance": 6,
+			"height": 1.5,
+			"pitchDegrees": 18,
+			"yawOffsetDegrees": 0,
+			"lookAtHeight": 0.3,
+			"followSmoothing": 9,
+			"lookSmoothing": 9,
+			"allowRuntimeOrbit": true
+		}
+	},
+	"tileStyles": {
+		"grass": {
+			"color": "#6fc56f",
+			"label": "Grass"
+		},
+		"dirt": {
+			"color": "#b8814a",
+			"label": "Dirt"
+		},
+		"sand": {
+			"color": "#d9c27f",
+			"label": "Sand"
+		},
+		"water": {
+			"color": "#4f9fca",
+			"label": "Water"
+		},
+		"stone": {
+			"color": "#8f969f",
+			"label": "Stone"
+		},
+		"wooden_floor": {
+			"color": "#a46a3f",
+			"label": "Wood Floor"
+		},
+		"stone_floor": {
+			"color": "#8d9299",
+			"label": "Stone Floor"
+		},
+		"carpet": {
+			"color": "#b84a62",
+			"label": "Carpet"
+		},
+		"indoor_wall": {
+			"color": "#7b5b45",
+			"label": "Indoor Wall"
+		},
+		"cave_floor": {
+			"color": "#686f78",
+			"label": "Cave Floor"
+		},
+		"cave_wall": {
+			"color": "#3f4650",
+			"label": "Cave Wall"
+		},
+		"ship_deck": {
+			"color": "#9a6637",
+			"label": "Ship Deck"
+		},
+		"rock": {
+			"color": "#8f969f",
+			"label": "Rock"
+		},
+		"tree": {
+			"color": "#2f8c57",
+			"label": "Tree"
+		}
+	},
+	"pixelAssets": {
+		"grass": {
+			"id": "grass",
+			"name": "Grass",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f"
+				],
+				[
+					"#7fd57f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f"
+				],
+				[
+					"#7fd57f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f"
+				],
+				[
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#7fd57f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#6fc56f",
+					"#5fb55f",
+					"#6fc56f",
+					"#6fc56f"
+				]
+			]
+		},
+		"dirt": {
+			"id": "dirt",
+			"name": "Dirt",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a"
+				],
+				[
+					"#c8915a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a"
+				],
+				[
+					"#c8915a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a"
+				],
+				[
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#c8915a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#b8814a",
+					"#a8713a",
+					"#b8814a",
+					"#b8814a"
+				]
+			]
+		},
+		"sand": {
+			"id": "sand",
+			"name": "Sand",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f"
+				],
+				[
+					"#e9d28f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f"
+				],
+				[
+					"#e9d28f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f"
+				],
+				[
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#e9d28f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#d9c27f",
+					"#c9b26f",
+					"#d9c27f",
+					"#d9c27f"
+				]
+			]
+		},
+		"water": {
+			"id": "water",
+			"name": "Water",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda"
+				],
+				[
+					"#5fafda",
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca"
+				],
+				[
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#5fafda",
+					"#6bbbe6",
+					"#6bbbe6"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca"
+				],
+				[
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#5fafda",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6",
+					"#6bbbe6",
+					"#4f9fca",
+					"#6bbbe6"
+				],
+				[
+					"#5fafda",
+					"#4f9fca",
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca"
+				],
+				[
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#5fafda",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#4f9fca",
+					"#3f8fba",
+					"#4f9fca",
+					"#4f9fca"
+				]
+			]
+		},
+		"stone": {
+			"id": "stone",
+			"name": "Stone",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#7f868f",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#7f868f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#7f868f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#798089",
+					"#7f868f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#7f868f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#7f868f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#7f868f",
+					"#9fa6af",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#7f868f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#7f868f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#7f868f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#9fa6af",
+					"#798089"
+				],
+				[
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#9fa6af",
+					"#8f969f",
+					"#8f969f",
+					"#8f969f",
+					"#798089",
+					"#8f969f",
+					"#8f969f",
+					"#7f868f",
+					"#8f969f",
+					"#798089"
+				]
+			]
+		},
+		"wooden_floor": {
+			"id": "wooden_floor",
+			"name": "Wood Floor",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#945a2f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#945a2f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#945a2f",
+					"#b47a4f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#b47a4f",
+					"#a46a3f",
+					"#945a2f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#945a2f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f"
+				],
+				[
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#945a2f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#945a2f"
+				],
+				[
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227"
+				],
+				[
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f"
+				],
+				[
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f"
+				],
+				[
+					"#b47a4f",
+					"#a46a3f",
+					"#945a2f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f",
+					"#a46a3f",
+					"#a46a3f",
+					"#b47a4f",
+					"#a46a3f"
+				],
+				[
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#b47a4f",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227",
+					"#8c5227"
+				]
+			]
+		},
+		"stone_floor": {
+			"id": "stone_floor",
+			"name": "Stone Floor",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#7d8289",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#7d8289",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#7d8289",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#777c83",
+					"#7d8289",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#7d8289",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#7d8289",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#7d8289",
+					"#9da2a9",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#7d8289",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#7d8289",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#7d8289",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#9da2a9",
+					"#777c83"
+				],
+				[
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#9da2a9",
+					"#8d9299",
+					"#8d9299",
+					"#8d9299",
+					"#777c83",
+					"#8d9299",
+					"#8d9299",
+					"#7d8289",
+					"#8d9299",
+					"#777c83"
+				]
+			]
+		},
+		"carpet": {
+			"id": "carpet",
+			"name": "Carpet",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#a83a52",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#c85a72",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#a83a52",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#a83a52",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#a83a52",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#c85a72",
+					"#d2647c",
+					"#b84a62",
+					"#a83a52",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#a83a52",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72"
+				],
+				[
+					"#c85a72",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#c85a72",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#a83a52",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#a83a52",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#c85a72",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#a83a52"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#a83a52",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#c85a72",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#b84a62",
+					"#d2647c",
+					"#b84a62",
+					"#c85a72"
+				],
+				[
+					"#c85a72",
+					"#b84a62",
+					"#a83a52",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62"
+				],
+				[
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#c85a72",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#b84a62",
+					"#a83a52",
+					"#b84a62",
+					"#b84a62"
+				]
+			]
+		},
+		"indoor_wall": {
+			"id": "indoor_wall",
+			"name": "Indoor Wall",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#6b4b35",
+					"#8d6d57",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#6b4b35",
+					"#7b5b45",
+					"#8b6b55",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#8d6d57",
+					"#7b5b45",
+					"#6b4b35",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d"
+				],
+				[
+					"#8d6d57",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#8b6b55",
+					"#6b4b35",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55"
+				],
+				[
+					"#8d6d57",
+					"#6b4b35",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#6b4b35",
+					"#8b6b55",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#6b4b35",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45",
+					"#6b4b35",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#7b5b45",
+					"#8b6b55"
+				],
+				[
+					"#8d6d57",
+					"#7b5b45",
+					"#6b4b35",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#8b6b55",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#7b5b45",
+					"#8d6d57",
+					"#7b5b45",
+					"#8b6b55",
+					"#7b5b45"
+				],
+				[
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#63432d",
+					"#8d6d57",
+					"#63432d",
+					"#63432d",
+					"#63432d"
+				]
+			]
+		},
+		"cave_floor": {
+			"id": "cave_floor",
+			"name": "Cave Floor",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#585f68",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#585f68",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#585f68",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#525962",
+					"#585f68",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#585f68",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#585f68",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#585f68",
+					"#787f88",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#585f68",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#585f68",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#585f68",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#787f88",
+					"#525962"
+				],
+				[
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#787f88",
+					"#686f78",
+					"#686f78",
+					"#686f78",
+					"#525962",
+					"#686f78",
+					"#686f78",
+					"#585f68",
+					"#686f78",
+					"#525962"
+				]
+			]
+		},
+		"cave_wall": {
+			"id": "cave_wall",
+			"name": "Cave Wall",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#2f3640",
+					"#515862",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#2f3640",
+					"#3f4650",
+					"#4f5660",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#515862",
+					"#3f4650",
+					"#2f3640",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38"
+				],
+				[
+					"#515862",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#4f5660",
+					"#2f3640",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660"
+				],
+				[
+					"#515862",
+					"#2f3640",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#2f3640",
+					"#4f5660",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#2f3640",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650",
+					"#2f3640",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#3f4650",
+					"#4f5660"
+				],
+				[
+					"#515862",
+					"#3f4650",
+					"#2f3640",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#4f5660",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#3f4650",
+					"#515862",
+					"#3f4650",
+					"#4f5660",
+					"#3f4650"
+				],
+				[
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#272e38",
+					"#515862",
+					"#272e38",
+					"#272e38",
+					"#272e38"
+				]
+			]
+		},
+		"ship_deck": {
+			"id": "ship_deck",
+			"name": "Ship Deck",
+			"kind": "terrain",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"#8a5627",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#8a5627",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#8a5627",
+					"#aa7647",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#aa7647",
+					"#9a6637",
+					"#8a5627",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#8a5627",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647"
+				],
+				[
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#8a5627",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#8a5627"
+				],
+				[
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647"
+				],
+				[
+					"#aa7647",
+					"#9a6637",
+					"#8a5627",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#aa7647",
+					"#9a6637"
+				],
+				[
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#aa7647",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f",
+					"#824e1f"
+				]
+			]
+		},
+		"dirt_path": {
+			"id": "dirt_path",
+			"name": "Dirt Path",
+			"kind": "overlay",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#9b6538",
+					"#ad774a",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9b6538",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#854f22",
+					"#9b6538",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				]
+			]
+		},
+		"hay_path": {
+			"id": "hay_path",
+			"name": "Hay Path",
+			"kind": "overlay",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#d6b85c",
+					"#e8ca6e",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#d6b85c",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#c0a246",
+					"#d6b85c",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				]
+			]
+		},
+		"stone_road": {
+			"id": "stone_road",
+			"name": "Stone Road",
+			"kind": "overlay",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#8a8f96",
+					"#9ca1a8",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"#8a8f96",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#747980",
+					"#8a8f96",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				]
+			]
+		},
+		"wooden_planks": {
+			"id": "wooden_planks",
+			"name": "Wooden Planks",
+			"kind": "overlay",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#9a6637",
+					"#845021",
+					"#9a6637",
+					"#9a6637"
+				],
+				[
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021",
+					"#845021"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				]
+			]
+		},
+		"shadow": {
+			"id": "shadow",
+			"name": "Shadow",
+			"kind": "overlay",
+			"width": 16,
+			"height": 16,
+			"pixels": [
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent"
+				],
+				[
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent"
+				],
+				[
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"transparent"
+				],
+				[
+					"transparent",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent"
+				],
+				[
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"rgba(0,0,0,0.32)",
+					"transparent",
+					"transparent"
+				]
+			]
+		}
+	},
+	"player": {
+		"name": "Harbour Scout",
+		"mapAvatarId": "scout",
+		"cutscenePortraitId": "portrait_scout",
+		"threeVisual": {
+			"mode": "asset",
+			"assetId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+		},
+		"speed": 4,
+		"health": 100,
+		"combat": {
+			"maxHealth": 100,
+			"health": 100,
+			"attackDamage": 25,
+			"attackRangeTiles": 1,
+			"attackCooldownMs": 500
+		},
+		"canWalkOn": [
+			"grass",
+			"dirt",
+			"wooden_floor",
+			"stone_floor",
+			"carpet",
+			"cave_floor",
+			"ship_deck",
+			"sand"
+		]
+	},
+	"cutscenes": [],
+	"dialogues": [],
+	"progression": [
+		{
+			"id": "spawn",
+			"action": {
+				"type": "spawn_player",
+				"areaId": "parity_courtyard",
+				"eventBlockId": "entry"
+			}
+		}
+	],
+	"gameState": {
+		"flags": {},
+		"variables": {},
+		"inventory": {}
+	},
+	"items": [
+		{
+			"id": "harbour_key",
+			"name": "Harbour Key",
+			"description": "A key from the animated chest.",
+			"category": "key",
+			"iconId": "key",
+			"stackable": false,
+			"maxStack": 1
+		},
+		{
+			"id": "rope",
+			"name": "Rope",
+			"category": "misc",
+			"stackable": true,
+			"maxStack": 99
+		},
+		{
+			"id": "gold_coin",
+			"name": "Gold Coin",
+			"category": "currency",
+			"stackable": true,
+			"maxStack": 999
+		}
+	],
+	"shops": [],
+	"quests": [],
+	"npcs": [
+		{
+			"id": "npc-character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19",
+			"name": "New Character",
+			"mapAvatarId": "scout",
+			"defaultMovement": {
+				"movementMode": "stationary",
+				"movementSpeed": 1
+			},
+			"threeVisual": {
+				"mode": "asset",
+				"assetId": "character-6c63a38a4e7048c3f37eff4c2c6a4594f6267b5b523ed7ee6a23e87bdbe72e19"
+			}
+		}
+	],
+	"objects": [
+		{
+			"id": "animated-chest",
+			"name": "Animated Chest",
+			"category": "prop",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": false,
+			"threeVisual": {
+				"mode": "asset",
+				"assetId": "world-animated-chest",
+				"scale": 0.55
+			},
+			"defaultBehaviour": {
+				"type": "container",
+				"once": true,
+				"contents": [
+					{
+						"itemId": "harbour_key",
+						"quantity": 1
+					}
+				]
+			},
+			"defaultInteraction": {
+				"type": "object_behaviour",
+				"activationMode": "on_interact",
+				"prompt": "Open chest"
+			}
+		},
+		{
+			"id": "static-chest",
+			"name": "Static Chest",
+			"category": "prop",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": false,
+			"threeVisual": {
+				"mode": "asset",
+				"assetId": "world-chest",
+				"scale": 1
+			},
+			"defaultBehaviour": {
+				"type": "container",
+				"once": true,
+				"contents": [
+					{
+						"itemId": "gold_coin",
+						"quantity": 2
+					}
+				]
+			},
+			"defaultInteraction": {
+				"type": "object_behaviour",
+				"activationMode": "on_interact",
+				"prompt": "Open static chest"
+			}
+		},
+		{
+			"id": "physical-pickup",
+			"name": "Rope Bundle",
+			"category": "prop",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": false,
+			"threeVisual": {
+				"mode": "asset",
+				"assetId": "world-crate",
+				"scale": 0.3
+			},
+			"defaultInteraction": {
+				"type": "collect_item",
+				"activationMode": "on_interact",
+				"prompt": "Pick up rope",
+				"itemId": "rope",
+				"quantity": 1
+			}
+		},
+		{
+			"id": "sign",
+			"name": "Harbour Sign",
+			"category": "prop",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": false,
+			"threeVisual": {
+				"mode": "asset",
+				"assetId": "world-sign",
+				"scale": 1
+			},
+			"defaultInteraction": {
+				"type": "show_message",
+				"activationMode": "on_interact",
+				"prompt": "Examine sign",
+				"lines": [
+					"Reach opens containers. Bend collects physical pickups. Signs and conversations stay visual-neutral."
+				]
+			}
+		}
+	],
+	"ruleGroups": [],
+	"rules": []
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ItemDefinition } from "../types/game";
-import { createRuntimeState } from "./ruleEngine";
 import { runObjectBehaviour } from "./objectBehaviour";
+import { createRuntimeState } from "./ruleEngine";
 
 const items: ItemDefinition[] = [
 	{
@@ -28,6 +28,34 @@ function makeContext() {
 }
 
 describe("object behaviours", () => {
+	it("rejects a whole overflowing container without consuming its once-only state", () => {
+		const context = makeContext();
+		context.state.inventory.items.gold_coin = 998;
+		const behaviour = {
+			type: "container" as const,
+			once: true,
+			openedFlag: "chest_opened",
+			contents: [
+				{ itemId: "tavern_key", quantity: 1 },
+				{ itemId: "gold_coin", quantity: 2 },
+			],
+		};
+		expect(runObjectBehaviour(behaviour, context)).toMatchObject({
+			opened: false,
+			message: expect.stringContaining("Stack limit: 999"),
+		});
+		expect(context.state.inventory.items).toEqual({ gold_coin: 998 });
+		expect(context.openedObjectIds.size).toBe(0);
+		expect(context.state.flags.chest_opened).toBe(false);
+		context.state.inventory.items.gold_coin = 997;
+		expect(runObjectBehaviour(behaviour, context)).toMatchObject({
+			opened: true,
+		});
+		expect(context.state.inventory.items).toEqual({
+			gold_coin: 999,
+			tavern_key: 1,
+		});
+	});
 	it("gives container contents once", () => {
 		const context = makeContext();
 		const behaviour = {
@@ -67,6 +95,7 @@ describe("object behaviours", () => {
 			type: "door",
 			allowed: false,
 			lockedCutsceneId: "locked",
+			message: "Door is locked. Requires Tavern Key.",
 		});
 	});
 
@@ -89,7 +118,9 @@ describe("object behaviours", () => {
 			allowed: true,
 			targetAreaId: "tavern",
 			targetEventBlockId: "entry",
+			message: "Door opened. Tavern Key retained.",
 		});
+		expect(context.state.inventory.items.tavern_key).toBe(1);
 	});
 
 	it("returns sign text", () => {

@@ -15,6 +15,7 @@ import {
 import { validateProject } from "./data/validateProject";
 import { AssetCreatorLauncher } from "./editor/AssetCreatorLauncher";
 import { type EditorSectionId, editorSections } from "./editor/sections";
+import { MapEditor } from "./editor/sections/MapEditor";
 import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import {
@@ -87,9 +88,48 @@ export default function App() {
 	const [isInitialPresetChoice, setIsInitialPresetChoice] = useState(false);
 	const [activeSectionId, setActiveSectionId] =
 		useState<EditorSectionId>("map");
+	const requestedDialogueId = useProjectStore(
+		(state) => state.requestedDialogueId,
+	);
+	useEffect(() => {
+		if (requestedDialogueId) setActiveSectionId("dialogues");
+	}, [requestedDialogueId]);
 	const [runtimeProject, setRuntimeProject] = useState<GameProject | null>(
 		null,
 	);
+	const [editorView, setEditorView] = useState<"2d" | "3d">("2d");
+	const requestedEditorSource = useProjectStore(
+		(state) => state.requestedEditorSource,
+	);
+	useEffect(() => {
+		if (!requestedEditorSource) return;
+		const source = requestedEditorSource;
+		// The owning Map remains the only renderer and selection owner.
+		if (source.section === "map" && source.areaId) {
+			const store = useProjectStore.getState();
+			if (store.project.activeAreaId !== source.areaId)
+				store.setActiveArea(source.areaId);
+			const area = store.project.areas.find((a) => a.id === source.areaId);
+			const type = area?.npcs.some((n) => n.id === source.id)
+				? "npc"
+				: area?.objects.some((o) => o.id === source.id)
+					? "object"
+					: area?.eventBlocks.some((e) => e.id === source.id)
+						? "eventBlock"
+						: area?.pickups.some((p) => p.id === source.id)
+							? "pickup"
+							: area?.structures.some((s) => s.id === source.id)
+								? "structure"
+								: undefined;
+			store.setEditorSelection(
+				type
+					? { type, id: source.id, areaId: source.areaId }
+					: { type: "area", areaId: source.areaId },
+			);
+			setEditorView("2d");
+		}
+		setActiveSectionId(source.section as EditorSectionId);
+	}, [requestedEditorSource]);
 	const [statusMessage, setStatusMessage] = useState(
 		"Unsaved changes stay in this browser tab.",
 	);
@@ -389,13 +429,14 @@ export default function App() {
 						<span>Project</span>
 						<input
 							className="project-name-input"
+							disabled={Boolean(runtimeProject)}
 							onChange={(event) => updateMetadata({ name: event.target.value })}
 							value={project.metadata.name}
 						/>
 					</label>
 				</div>
 
-				<div className="status-line">
+				<div className="status-line" role="status" title={statusMessage}>
 					<span
 						className={`save-state ${hasUnsavedChanges ? "unsaved" : "saved"}`}
 					>
@@ -409,7 +450,7 @@ export default function App() {
 					) : null}
 				</div>
 
-				<div className="top-actions">
+				<fieldset className="top-actions" disabled={Boolean(runtimeProject)}>
 					<div className="validation-control">
 						<button
 							aria-controls="validation-panel"
@@ -481,9 +522,9 @@ export default function App() {
 					</button>
 					<AssetCreatorLauncher
 						onImported={() => {
-							setActiveSectionId("character");
+							setActiveSectionId("map");
 							setStatusMessage(
-								"Character added. Set it as the player or add it to the NPC palette in Character.",
+								"Character added to the Asset Browser. Drag it into your scene.",
 							);
 						}}
 					/>
@@ -520,40 +561,46 @@ export default function App() {
 						ref={importInputRef}
 						type="file"
 					/>
-				</div>
+				</fieldset>
 			</header>
 
-			{runtimeProject ? (
+			{runtimeProject && (
 				<RuntimePanel
+					initialMode={editorView}
 					project={runtimeProject}
 					onClose={() => setRuntimeProject(null)}
 				/>
-			) : (
-				<>
-					<main className="editor-shell" ref={editorShellRef}>
-						{activeSectionId === "three-d-preview" ? (
-							<ThreeDPreview
-								onOpenInMapEditor={() => setActiveSectionId("map")}
-							/>
-						) : (
-							<ActiveSectionComponent />
-						)}
-					</main>
-					<nav className="bottom-tabs" aria-label="Editor sections">
-						{editorSections.map((section) => (
-							<button
-								className={activeSectionId === section.id ? "active" : ""}
-								key={section.id}
-								onClick={() => handleSectionChange(section.id)}
-								title={section.description}
-								type="button"
-							>
-								{section.label}
-							</button>
-						))}
-					</nav>
-				</>
 			)}
+			<main
+				className="editor-shell"
+				ref={editorShellRef}
+				hidden={Boolean(runtimeProject)}
+			>
+				{activeSectionId === "three-d-preview" ? (
+					<ThreeDPreview onOpenInMapEditor={() => setActiveSectionId("map")} />
+				) : activeSectionId === "map" ? (
+					<MapEditor onViewChange={setEditorView} />
+				) : (
+					<ActiveSectionComponent />
+				)}
+			</main>
+			<nav
+				className="bottom-tabs"
+				aria-label="Editor sections"
+				hidden={Boolean(runtimeProject)}
+			>
+				{editorSections.map((section) => (
+					<button
+						className={activeSectionId === section.id ? "active" : ""}
+						key={section.id}
+						onClick={() => handleSectionChange(section.id)}
+						title={section.description}
+						type="button"
+					>
+						{section.label}
+					</button>
+				))}
+			</nav>
 			{isPresetChooserOpen ? (
 				<div className="preset-chooser-backdrop">
 					<section

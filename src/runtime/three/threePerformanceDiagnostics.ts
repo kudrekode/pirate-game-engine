@@ -73,6 +73,13 @@ export type ThreePerformancePhaseStats = {
 	worstMs: number;
 };
 
+export type ThreePerformanceRenderContext = {
+	backend: string;
+	width: number;
+	height: number;
+	pixelRatio: number;
+};
+
 export type ThreePerformanceSnapshot = {
 	asset: {
 		activeImportedAssetInstances: number;
@@ -161,7 +168,7 @@ export type ThreePerformanceSnapshot = {
 		pointerMovesPerSecond: number;
 	};
 	recentEvents: string[];
-	renderer: {
+	renderer: ThreePerformanceRenderContext & {
 		drawCalls: number;
 		geometries: number;
 		lines: number;
@@ -179,6 +186,7 @@ export type ThreePerformanceSnapshot = {
 		loopStartCount: number;
 	};
 	runtime: {
+		reactCommitCount: number;
 		averageTickMs: number;
 		lastTickMs: number;
 		tickCount: number;
@@ -231,6 +239,8 @@ export type ThreePerformanceDiagnostics = {
 	recordRafLoopCancel: (reason: string) => void;
 	recordRafLoopStart: (reason: string) => void;
 	recordRuntimeTick: (durationMs: number) => void;
+	recordReactCommit: () => void;
+	setRenderContext: (context: ThreePerformanceRenderContext) => void;
 	recordSceneBuild: (reason: string, durationMs: number) => void;
 	recordSceneCleanup: () => void;
 	recordTerrainRebuild: (details: {
@@ -457,6 +467,13 @@ export function createThreePerformanceDiagnostics(
 ): ThreePerformanceDiagnostics {
 	const label = options.label ?? "Three";
 	const now = options.now ?? getDefaultNow;
+	let reactCommitCount = 0;
+	let renderContext: ThreePerformanceRenderContext = {
+		backend: "unavailable",
+		width: 0,
+		height: 0,
+		pixelRatio: 1,
+	};
 	let frameCount = 0;
 	let frameMsTotal = 0;
 	let fps = 0;
@@ -559,6 +576,7 @@ export function createThreePerformanceDiagnostics(
 	};
 
 	const resetSampleWindow = () => {
+		reactCommitCount = 0;
 		frameCount = 0;
 		frameMsTotal = 0;
 		fps = 0;
@@ -737,6 +755,7 @@ export function createThreePerformanceDiagnostics(
 				},
 				recentEvents,
 				renderer: {
+					...renderContext,
 					drawCalls,
 					geometries,
 					lines,
@@ -754,6 +773,7 @@ export function createThreePerformanceDiagnostics(
 					loopStartCount: rafLoopStartCount,
 				},
 				runtime: {
+					reactCommitCount,
 					averageTickMs: getPhaseStatsSnapshot(runtimeTickStats).averageMs,
 					lastTickMs: roundMetric(lastTickMs),
 					tickCount,
@@ -793,6 +813,12 @@ export function createThreePerformanceDiagnostics(
 				message: `status ${assetStatus}`,
 				status: "fallback",
 			});
+		},
+		recordReactCommit: () => {
+			reactCommitCount += 1;
+		},
+		setRenderContext: (context) => {
+			renderContext = { ...context };
 		},
 		recordAssetClone: (definitionId?: string) => {
 			cloneCount += 1;
@@ -1069,6 +1095,8 @@ export function formatThreePerformanceSnapshot(
 		`scene identity: project "${snapshot.scene.projectName ?? "unknown"}", area "${snapshot.scene.areaName ?? "unknown"}" (${snapshot.scene.areaId ?? "unknown"})`,
 		`frames: ${snapshot.frame.frameCount}, fps: ${snapshot.frame.fps}, avg raf interval ms: ${snapshot.frame.averageFrameIntervalMs}, worst interval ms: ${snapshot.frame.worstFrameIntervalMs}, render ms: ${snapshot.frame.lastRenderMs}`,
 		`hitches: >50ms ${snapshot.hitches.over50MsCount}, >100ms ${snapshot.hitches.over100MsCount}, >500ms ${snapshot.hitches.over500MsCount}, >1000ms ${snapshot.hitches.over1000MsCount}, last ${snapshot.hitches.lastDurationMs}ms (${snapshot.hitches.lastPhase})`,
+		`render target: ${snapshot.renderer.width}x${snapshot.renderer.height}, DPR ${snapshot.renderer.pixelRatio}, ${snapshot.renderer.backend}`,
+		`React commits in sample: ${snapshot.runtime.reactCommitCount}`,
 		`renderer: calls ${snapshot.renderer.drawCalls}, triangles ${snapshot.renderer.triangles}, points ${snapshot.renderer.points}, lines ${snapshot.renderer.lines}, geometries ${snapshot.renderer.geometries}, textures ${snapshot.renderer.textures}, programs ${snapshot.renderer.programs}`,
 		`scene: builds ${snapshot.scene.buildCount}, cleanups ${snapshot.scene.cleanupCount}, entities ${snapshot.scene.entityCount}, last reason "${snapshot.scene.lastRebuildReason}", last build ms ${snapshot.scene.lastBuildMs}, since rebuild ms ${snapshot.scene.timeSinceLastRebuildMs}`,
 		reasonCounts ? `scene reasons: ${reasonCounts}` : "",

@@ -14,6 +14,7 @@ Adapters are not separate engines. They translate input, rendering, camera, anim
 - Object/NPC/item/shop/quest/rule/cutscene/dialogue definitions.
 - Player defaults, camera defaults, and game-state defaults.
 - 3D visual config such as placeholder type, registry asset id, scale, height offset, and rotation offset.
+- Optional instance `transform` values add XYZ offsets, degree rotations and scale multipliers to the resolved visual defaults. Map editing keeps integer `x`/`y` anchors and fractional X/Z residuals. World-kit traversal profiles use these same transforms in 3D Play; unprofiled content retains legacy cell collision. Missing transforms retain identity behavior.
 
 `GameProject` must not store live runtime state or live renderer objects. GLTF/GLB assets are referenced by id and loaded by presentation helpers at render time.
 
@@ -65,7 +66,7 @@ Play mode starts from a cloned project snapshot and creates a `RuntimeSession` i
 
 `RuntimeSession` owns runtime copies of:
 
-- Current area id, player grid position, and facing.
+- Current area id, player grid position, and facing; optional continuous traversal position, foot height and accepted sweep samples.
 - Flags, variables, inventory quantities, NPC attributes, quest state, shop stock, player health, and combat state.
 - Progression/waiting-trigger state, entered areas, collected pickups, opened objects, defeated NPC ids, vehicle state, NPC movement timing, and enemy contact timing.
 
@@ -78,11 +79,14 @@ Shared helpers are renderer-independent and own gameplay semantics:
 - `runtimeSession`: create and hold play-session state.
 - `interactionDiscovery`: nearest/touch interactables, priority, and eligibility.
 - `playerMovementTransaction`: grid movement, facing, movement duration, touch targets, and trigger targets.
+- `traversal`: renderer-independent transformed boxes, walkable planes, spatial candidate buckets, terrain height and swept collision. `data/worldAssetTraversal.ts` provides source-controlled normalized asset profiles, also exposed by the visual registry. No GLB parsing, raycasting, editor state or renderer imports enter gameplay.
 - `runtimeRuleActionDispatcher`: renderer-neutral rule effects and presentation requests.
 - `runtimeProgression`: start progression, cutscene progression, trigger waits, area entry, and area transitions.
 - `runtimeObjectInteractions`: object behaviours, pickups, shops, and vehicle transactions.
 - `runtimeNpcTick`: NPC movement, hostile chase, and contact damage.
 - `runtimeCombat`: player attacks, NPC damage, defeat state, combat flags, and defeat trigger requests.
+- `weaponRuntime`: one inventory-owned active weapon (Sword or Bow), shared equip gates and effective attack parameters.
+- `projectileRuntime`: transient Bow draw/charge, release-based cooldown, explicit 33 ms release, velocity/gravity flight, camera-ray aim correction, swept world/NPC collision and shared combat impacts. Session saves exclude draw, arrows and pending releases. Three supplies the release-time camera ray and a bone socket; Phaser supplies facing and a simple world origin. Both call the shared helpers in their existing loop.
 
 Shared gameplay helpers must not depend on Phaser, Three.js, React, WebGL, DOM state, or editor store state.
 
@@ -126,13 +130,64 @@ These systems are visual/editor presentation and must not be mistaken for gamepl
 
 - Imported GLTF/GLB assets, cached source scenes, and cloned active instances.
 - 3D placeholder meshes and authored visual transform defaults.
-- Terrain height/elevation, smooth terrain mesh generation, water surface material animation, and coastline strips.
+- Smooth terrain mesh generation, water surface material animation, and coastline strips. Shared traversal deliberately reads terrain elevation and water identity in profiled areas.
 - Camera follow/inspect/third-person state and mouse-look state.
 - Performance diagnostics overlays and Playwright perf snapshots.
 
-Runtime movement remains discrete/grid-based. Terrain height and water/coast visuals do not change collision or movement until shared movement helpers explicitly add height-aware or water-depth rules.
+Phaser and unprofiled legacy areas retain grid movement. Three Play enables shared
+traversal when placed assets have world-kit profiles. Walkable terrain uses the
+rendered triangle heights (or blocky heights); water/void has no walking floor.
+Asset surfaces can support walking over water. Steps up/down are limited to
+0.4 m, with no falling, jumping or swimming. Ordinary props use boxes; stairs use
+a ramp through tread centres; the shack uses walls with a doorway gap. Full XYZ
+rotation, visual scale/offsets and per-axis instance scale are applied before
+indexing. Cached descriptors are rebuilt with the existing scene lifetime.
+
+`attemptPlayerMove` sweeps short segments, commits a continuous position and
+rounded gameplay cell, retains cardinal gameplay facing for combat/vehicle exits,
+and emits touch/trigger targets only upon entering a new cell. Its accepted path
+drives both player grounding and camera follow; animation
+continues to depend on horizontal movement. Spawn/teleport resets traversal.
+The Three adapter owns held-key input and debug rendering, not collision decisions.
+NPCs retain their separate existing grid movement helper. Three samples the
+rendered terrain triangle at their interpolated X/Z coordinates for smooth grounding;
+this does not add NPC traversal over profiled docks or stairs.
 
 ## Event Flow
+
+### Map-authored interactions
+
+The contextual Map Inspector writes the existing `Interaction`, `ObjectBehaviour`
+and item contracts. Additive `show_message` interactions hold ordered lines and an
+optional speaker; `interactionMessages` translates those into temporary nodes for
+the existing dialogue engine. `object_behaviour` supplies explicit activation and
+prompt controls for containers and doors. `collect_item` routes a placed prop
+through the existing pickup transaction, removes only the session clone, and
+removes its cached traversal descriptors locally. Legacy direct interactions remain available.
+
+Three physical interaction feedback consumes successful `containerOpened` and
+`pickupCollected` events. The existing character controller plays grounded
+Interact/Pickup below combat priority; presentation faces the target while gameplay
+movement remains authoritative. Collection removes only the local marker, and
+`TraversalWorld.removeObject` preserves the world, terrain sampler and surviving
+collision buckets. Inventory grants alone do not imply a physical animation.
+Registry `propAnimations.open` enables a per-instance closed/opened mixer, clamps
+its one-shot and reconstructs the final pose from opened IDs/flags on Continue.
+Mixer state, clip time and presentation facing never enter project/save data.
+
+Profiled Three areas target within 1.75 metres using continuous position, instance
+offsets, facing, stable distance/ID ordering and existing solid-box occlusion.
+Legacy grid areas retain their one-cell reach. The prompt and execution use the
+same shared discovery helper. E/Enter interact; inline text advances with E/Enter
+or the Continue/Close control, and Escape closes it. Session dialogue blocks player
+input and NPC ticks. No gamepad abstraction exists in this input path.
+
+Opened objects, collected pickups and once-only message trigger IDs belong to the
+session. Project saves contain authored configuration only. New Game resets progress;
+Continue restores a separate versioned game save (see Save games below). Event trigger helpers remain
+visible in Edit and hidden in Play; trigger entry retains the existing cell-based
+movement transaction. The static chest uses an Opened badge in Three and a faded
+marker in Phaser, without changing its mesh or collider.
 
 Typical runtime flow:
 
@@ -145,6 +200,34 @@ Typical runtime flow:
 7. Runtime state changes trigger adapter presentation updates or scene rebuilds.
 
 Presentation requests such as cutscenes, dialogue, shops, teleports, game over, and end game should stay renderer-neutral until the adapter displays them.
+
+### Directed quest authoring
+
+The existing `Quest` / `Objective` schema and `questEngine` own progression.
+New quests explicitly opt into `objectiveMode: "sequence"` and start inactive;
+missing mode retains legacy independent objectives. An author can explicitly
+start at Play start, use the existing `activate_quest` rule action, or select
+Start Quest on a message/dialogue or flag interaction in the Map Inspector.
+Interaction `completionActions` run through the existing action dispatcher when
+the conversation closes or the flag interaction succeeds.
+
+Item/flag conditions read current session state when a step activates. Scoped
+session facts remember completed conversations/messages, opened containers,
+entered event cells/arrival points and successfully used doors. Facts are bounded
+sets of targets, not a chronological event log. `questInteractions` observes
+accepted movement and conversation completion; object transactions and shared
+transitions record their own successful facts. Locked/invalid doors do not count.
+Only active steps advance; pre-satisfied steps settle in the same deterministic
+pass. Legacy rewards and completion actions run once through the shared rule
+context, with a re-entry guard for state changes caused by rewards. No quest
+evaluation runs from a presentation frame loop.
+
+Both adapters consume `QuestView` and the shared `QuestPresentation` HUD, showing
+the quest title and current step. Snapshot changes feed the existing non-blocking
+notification queue. Authored quest data survives project Save/Load; progress,
+facts and reward guards belong to the isolated Play session. New Game resets them;
+Save Game / Continue persists them separately from authored defaults. No expanded
+journal is introduced.
 
 ## Testing Guidance
 
@@ -189,8 +272,10 @@ a dialogue, a cutscene, or game over/end. It also holds those inputs during a
 movement interval; attack eligibility additionally uses the existing combat
 cooldown. NPC simulation pauses for the modal/startup/end states, but not for a
 normal player movement interval. Modal buttons can still advance/close the modal.
-Inputs are not buffered by the Three handler; held/repeated input only moves when
-an eligible event arrives. Phaser polls held directions on its update clock.
+Legacy Three input uses key events. Profiled-area Three input samples held keys
+every 16 ms through the same eligibility/deadline check and 0.2 m transactions;
+key release and window blur clear held input. Phaser polls held directions on its
+update clock. No traversal geometry or runtime position is saved into a project.
 
 ## Dialogue contract (Phase 2)
 
@@ -208,3 +293,81 @@ adapters. Completing a conversation clears its session state and restores input,
 subject to any remaining modal, deadline or end state. Phaser retains its canvas
 panel and portrait presets; Three uses a React text/choice overlay. Portrait and
 layout parity are presentation work, outside this correctness pass.
+
+## Save games
+
+### One equipped sword
+
+Items may optionally reference the bounded `sword` behaviour in `data/sword.ts`.
+`weaponRuntime` validates inventory ownership and the one session-owned
+`equippedWeaponId` (an item ID). The existing combat transaction resolves effective
+damage/range/cooldown and emits the accepted attack's variant; unarmed defaults,
+targeting, immediate damage and defeat/quest semantics stay authoritative.
+Inventory detail supplies Equip/Unequip in both adapters. Equip never resets an
+accepted attack's cooldown or changes the authored player combat defaults.
+
+Three prepares the optional Golden sword clip once in the existing controller and
+uses the same Attack semantic/priority. `threeWeaponAttachment` resolves the actual
+instance `hand_r`, uses the registry/marker factory with the authored grip origin,
+and parents one cached sword instance to the bone. The source's right-finger grip
+is applied after the existing mixer. Equip/unequip only attaches/detaches that
+instance. Interact/Pickup hide it temporarily; locomotion, Hit and Death retain it.
+There is no blade collider, second mixer, RAF, traversal rebuild or character load.
+
+Version-1 saves optionally include `player.equippedWeaponId`, validated against
+an owned sword item. Absent fields restore unarmed for older saves. Continue loads
+the attachment from semantic state without replaying Pickup/Equip. No renderer
+objects, bone references, grip pose or animation clocks are persisted. See
+`MELEE_WEAPON_V1_RESULT.md` for the bounded acceptance and art review.
+
+`gameSave.ts` stores semantic session progress in version 1 plain JSON. Both
+adapters restore a fresh cloned session and rebuild visuals without rerunning
+startup/entry actions. Flags, variables, inventory, NPC attributes/defeats,
+collected/opened/once-trigger IDs, quest facts/status/objective and reward guards,
+shop stock, vehicle/object positions, progression waits and player location/health
+are durable. Wander positions, cooldowns, UI, animations and renderer objects reset.
+Optional traversal coordinates retain precise Three position; Phaser uses the
+shared rounded grid cell. Shared area transitions invalidate stale traversal.
+
+One browser-local slot per authored content fingerprint uses a separate
+`adventure-builder-game-save-v1:` localStorage key. Canonical FNV-1a 128 identity
+excludes the active editor-area selection, so unchanged imports/reloads match.
+Authored content changes create a different revision/slot; version 1 does not
+migrate progress across edits. The fingerprint is not an authentication scheme.
+Validation rejects corrupt, unsupported, mismatched or invalid-reference payloads.
+There are no new authored schema fields or renderer-specific save formats.
+
+Play offers Continue/New Game when a slot exists. New Game and Restart retain
+old saves until explicit replacement. Manual save is refused during modal/startup/
+end states and asynchronous cutscene action sequences. Inventory/quest displays
+initialize silently on Continue. See [the result report](../RUNTIME_PARITY_SAVE_GAME_RESULT.md)
+and its two opt-in real-input browser checks for current evidence and limits.
+
+## Movement V2
+
+`playerLocomotion.ts` owns renderer-neutral sprint intent, airborne feet, vertical
+velocity, gravity and landing on `RuntimeTraversal.motion` inside the isolated
+session. `traversal.position` and its accepted path retain the supporting floor;
+`motion.height` is the actual airborne foot height. Three advances the shared
+vertical helper in its existing RAF, then presents that physical height. No authored
+schema or saved-game version changes are needed.
+
+Three defaults are WASD/arrows move, Shift sprint (1.65x), Space jump and F attack;
+E/Enter still interact. Phaser retains Space attack and grid walking. Legacy Three
+areas without profiled traversal retain grid walking until sprint/jump first opts
+into the cached continuous traversal world. NPCs retain their existing grid AI.
+
+Horizontal sweeps remain in 4 cm increments. An airborne sample must have valid
+support beneath it, respect existing step-down limits and retain conservative
+solid-prop blockers. Explicit low floors can be reached when the feet clear them;
+objects without walkable surfaces cannot become platforms. Vertical body checks
+reuse the same solids/floor buckets. No unsupported water/void crossing is added.
+Ordinary touch/use interactions and attacks require grounded state. Landing checks
+ordinary touch/quest/waiting-trigger entry again, without a new interaction engine.
+
+Manual save rejects airborne state; a grounded save retains only the existing
+supporting coordinates. Sprint keys, velocity, aerial/landing phase and animation
+state reset on Continue. No renderer objects are serialized. Golden movement clips
+are external cached data; each character retains its own mixer/actions. Priority is
+Defeated > Hit > Attack > Jump/Fall/Land > Run > Walk > Idle. Missing Run uses Walk;
+missing aerial clips use Idle and missing Land returns to available locomotion.

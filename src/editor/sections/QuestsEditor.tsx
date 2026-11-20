@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	GameAction,
@@ -9,6 +9,18 @@ import type {
 	QuestReward,
 	VariableComparisonOperator,
 } from "../../types/game";
+import { DialogueEntityPicker } from "./DialogueEntityControls";
+import {
+	createDialogueEntity,
+	type DialogueEntityRef,
+	dialogueEntities,
+	entityKey,
+} from "./dialogueEntities";
+import { useEditorSource } from "./editorSource";
+import { QuestSequence } from "./QuestSequence";
+import { questStartSources } from "./questSequenceModel";
+import { StoryActionStack } from "./StoryActionStack";
+import { useMapEditHistory } from "./useMapEditHistory";
 
 const comparisonOperators: VariableComparisonOperator[] = [
 	"==",
@@ -49,8 +61,24 @@ export function QuestsEditor() {
 	const [selectedQuestId, setSelectedQuestId] = useState(
 		project.quests[0]?.id ?? "",
 	);
+	useEditorSource("quests", (source) => {
+		setSelectedQuestId(source.id);
+		if (source.entityKey)
+			setSelectedEntity(
+				dialogueEntities(useProjectStore.getState().project).find(
+					(e) => entityKey(e.ref) === source.entityKey,
+				)?.ref,
+			);
+	});
 	const selectedQuest = project.quests.find(
 		(quest) => quest.id === selectedQuestId,
+	);
+	const [selectedEntity, setSelectedEntity] = useState<DialogueEntityRef>();
+	const [advancedEffects, setAdvancedEffects] = useState(false);
+	const history = useMapEditHistory(project.activeAreaId, true);
+	const startSources = useMemo(
+		() => (selectedQuest ? questStartSources(project, selectedQuest.id) : []),
+		[project, selectedQuest],
 	);
 	const flagNames = Object.keys(project.gameState.flags);
 	const variableNames = Object.keys(project.gameState.variables);
@@ -79,7 +107,8 @@ export function QuestsEditor() {
 			draft.quests.push({
 				id,
 				name: `Quest ${draft.quests.length + 1}`,
-				status: "active",
+				status: "inactive",
+				objectiveMode: "sequence",
 				objectives: [],
 				completionActions: [],
 				rewards: [],
@@ -93,13 +122,32 @@ export function QuestsEditor() {
 			return;
 		}
 
-		const isReferenced = project.rules.some((rule) =>
-			[...rule.actions, ...(rule.elseActions ?? [])].some((action) =>
-				actionReferencesQuest(action, selectedQuest.id),
-			),
-		);
+		const interactions = [
+			...project.npcs.map((npc) => npc.defaultInteraction),
+			...project.objects.map((object) => object.defaultInteraction),
+			...project.areas.flatMap((area) => [
+				...area.npcs.flatMap((npc) => [
+					npc.interactionOverride,
+					npc.interaction,
+				]),
+				...area.objects.map((object) => object.interaction),
+				...area.eventBlocks.map((event) => event.interaction),
+				...area.structures.map((structure) => structure.interaction),
+			]),
+		];
+		const isReferenced =
+			interactions.some((interaction) =>
+				interaction?.completionActions?.some((action) =>
+					actionReferencesQuest(action, selectedQuest.id),
+				),
+			) ||
+			project.rules.some((rule) =>
+				[...rule.actions, ...(rule.elseActions ?? [])].some((action) =>
+					actionReferencesQuest(action, selectedQuest.id),
+				),
+			);
 		const confirmation = isReferenced
-			? `Delete quest "${selectedQuest.name}"? Rules referencing it will remain and appear as validation warnings.`
+			? `Delete quest "${selectedQuest.name}"? Actions referencing it will remain and appear as validation warnings.`
 			: `Delete quest "${selectedQuest.name}"?`;
 		if (!window.confirm(confirmation)) {
 			return;
@@ -116,6 +164,15 @@ export function QuestsEditor() {
 	}
 
 	function makeCondition(type: ObjectiveCondition["type"]): ObjectiveCondition {
+		if (
+			type === "interaction_completed" ||
+			type === "container_opened" ||
+			type === "enter_event" ||
+			type === "door_used"
+		) {
+			const target = objectiveTargets(type)[0];
+			return { type, areaId: target?.areaId ?? "", targetId: target?.id ?? "" };
+		}
 		if (type === "flag") {
 			return { type, flag: flagNames[0] ?? "flag_1", value: true };
 		}
@@ -148,7 +205,7 @@ export function QuestsEditor() {
 				{
 					id: makeId("objective"),
 					description: "New objective",
-					condition: makeCondition("flag"),
+					condition: makeCondition("interaction_completed"),
 				},
 			],
 		});
@@ -166,15 +223,42 @@ export function QuestsEditor() {
 		});
 	}
 
-	function deleteObjective(id: string) {
-		if (!selectedQuest) {
-			return;
-		}
-
-		updateQuest({
-			objectives: selectedQuest.objectives.filter(
-				(objective) => objective.id !== id,
-			),
+	function objectiveTargets(type: ObjectiveCondition["type"]) {
+		return project.areas.flatMap((area) => {
+			if (type === "enter_event")
+				return area.eventBlocks.map((event) => ({
+					id: event.id,
+					areaId: area.id,
+					name: `${area.name} / ${event.name}`,
+				}));
+			if (type === "interaction_completed")
+				return [
+					...area.npcs.map((npc) => ({
+						id: npc.id,
+						areaId: area.id,
+						name: `${area.name} / ${npc.nameOverride ?? project.npcs.find((definition) => definition.id === npc.npcDefinitionId)?.name ?? "NPC"}`,
+					})),
+					...area.objects.map((object) => ({
+						id: object.id,
+						areaId: area.id,
+						name: `${area.name} / ${object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object"}`,
+					})),
+				];
+			return area.objects
+				.filter(
+					(object) =>
+						(
+							object.behaviourOverride ??
+							project.objects.find(
+								(definition) => definition.id === object.objectDefinitionId,
+							)?.defaultBehaviour
+						)?.type === (type === "container_opened" ? "container" : "door"),
+				)
+				.map((object) => ({
+					id: object.id,
+					areaId: area.id,
+					name: `${area.name} / ${object.nameOverride ?? project.objects.find((definition) => definition.id === object.objectDefinitionId)?.name ?? "Object"}`,
+				}));
 		});
 	}
 
@@ -511,6 +595,15 @@ export function QuestsEditor() {
 
 	function getObjectiveReferenceWarning(condition: ObjectiveCondition) {
 		if (
+			"targetId" in condition &&
+			!objectiveTargets(condition.type).some(
+				(target) =>
+					target.id === condition.targetId &&
+					target.areaId === condition.areaId,
+			)
+		)
+			return "Choose an existing gameplay target. The previous target is missing or no longer supports this condition.";
+		if (
 			condition.type === "flag" &&
 			!(condition.flag in project.gameState.flags)
 		) {
@@ -554,11 +647,48 @@ export function QuestsEditor() {
 						}
 						value={condition.type}
 					>
-						<option value="flag">Flag is</option>
-						<option value="has_item">Player has item</option>
+						<option value="interaction_completed">
+							Talk to NPC / Examine object
+						</option>
+						<option value="has_item">Obtain Item</option>
+						<option value="container_opened">Open Container</option>
+						<option value="enter_event">Enter Area / Arrival point</option>
+						<option value="door_used">Use Door</option>
+						<option value="flag">Set Flag</option>
 						<option value="variable_compare">Variable comparison</option>
 						<option value="enter_area">Player enters area</option>
 					</select>
+					{"targetId" in condition && (
+						<select
+							aria-label="Objective target"
+							value={JSON.stringify([condition.areaId, condition.targetId])}
+							onChange={(event) => {
+								const [areaId, targetId] = JSON.parse(event.target.value) as [
+									string,
+									string,
+								];
+								updateObjective(objective.id, {
+									condition: { ...condition, areaId, targetId },
+								});
+							}}
+						>
+							{warning && (
+								<option
+									value={JSON.stringify([condition.areaId, condition.targetId])}
+								>
+									Choose a target (missing)
+								</option>
+							)}
+							{objectiveTargets(condition.type).map((target) => (
+								<option
+									key={JSON.stringify([target.areaId, target.id])}
+									value={JSON.stringify([target.areaId, target.id])}
+								>
+									{target.name}
+								</option>
+							))}
+						</select>
+					)}
 					{condition.type === "flag" ? (
 						<>
 							<select
@@ -598,6 +728,7 @@ export function QuestsEditor() {
 					{condition.type === "has_item" ? (
 						<>
 							<select
+								aria-label="Objective item"
 								onChange={(event) =>
 									updateObjective(objective.id, {
 										condition: { ...condition, itemId: event.target.value },
@@ -610,17 +741,21 @@ export function QuestsEditor() {
 								) : null}
 								{project.items.map((item) => (
 									<option key={item.id} value={item.id}>
-										{item.name} ({item.id})
+										{item.name}
 									</option>
 								))}
 							</select>
 							<input
+								aria-label="Objective quantity"
 								min={1}
 								onChange={(event) =>
 									updateObjective(objective.id, {
 										condition: {
 											...condition,
-											quantity: Math.max(1, Number(event.target.value)),
+											quantity: Math.max(
+												1,
+												Math.floor(Number(event.target.value) || 1),
+											),
 										},
 									})
 								}
@@ -821,61 +956,104 @@ export function QuestsEditor() {
 	}
 
 	return (
-		<section className="editor-panel quests-editor">
-			<aside className="tool-panel">
-				<div className="panel-title">Quests</div>
-				<p className="helper-text">
-					Active quests can progress during play. Tracked quests are shown on
-					the HUD. Completed quests move to the completed section.
-				</p>
-				<button
-					className="primary-button full-width"
-					onClick={addQuest}
-					type="button"
-				>
-					Add quest
-				</button>
-				<div className="list-stack quest-list">
-					{project.quests.map((quest) => (
+		<section
+			className="editor-panel quests-editor"
+			onFocusCapture={(e) => {
+				if (
+					e.target instanceof HTMLInputElement ||
+					e.target instanceof HTMLTextAreaElement
+				)
+					history.beginMapEdit();
+			}}
+			onBlurCapture={() => history.endMapEdit()}
+		>
+			{
+				<aside className="tool-panel">
+					<div className="panel-title">Quests</div>
+					<div className="dialogue-toolbar">
 						<button
-							className={`list-item ${quest.id === selectedQuestId ? "selected" : ""}`}
-							key={quest.id}
-							onClick={() => setSelectedQuestId(quest.id)}
 							type="button"
+							disabled={!history.canUndo}
+							onClick={history.undoMapEdit}
 						>
-							<span>
-								<strong>{quest.name}</strong>
-								<small>{quest.status}</small>
-							</span>
+							Undo
 						</button>
-					))}
-					{project.quests.length === 0 ? (
-						<p className="empty-state compact">No quests defined.</p>
-					) : null}
-				</div>
-				<label>
-					Tracked Quest HUD
-					<select
-						onChange={(event) =>
-							updateProject((draft) => {
-								draft.trackedQuestId = event.target.value || undefined;
-							})
-						}
-						value={project.trackedQuestId ?? ""}
+						<button
+							type="button"
+							disabled={!history.canRedo}
+							onClick={history.redoMapEdit}
+						>
+							Redo
+						</button>
+					</div>
+					<p className="helper-text">
+						Active quests can progress during play. Tracked quests are shown on
+						the HUD. Completed quests move to the completed section.
+					</p>
+					<button
+						className="primary-button full-width"
+						onClick={addQuest}
+						type="button"
 					>
-						<option value="">None</option>
+						Add quest
+					</button>
+					<div className="list-stack quest-list">
 						{project.quests.map((quest) => (
-							<option key={quest.id} value={quest.id}>
-								{quest.name}
-							</option>
+							<button
+								className={`list-item ${quest.id === selectedQuestId ? "selected" : ""}`}
+								key={quest.id}
+								onClick={() => setSelectedQuestId(quest.id)}
+								type="button"
+							>
+								<span>
+									<strong>{quest.name}</strong>
+									<small>{quest.status}</small>
+								</span>
+							</button>
 						))}
-					</select>
-				</label>
-				<p className="helper-text">
-					Choose which active quest appears during play. With none selected, the
-					first active quest appears automatically.
-				</p>
-			</aside>
+						{project.quests.length === 0 ? (
+							<p className="empty-state compact">No quests defined.</p>
+						) : null}
+					</div>
+					<label>
+						Tracked Quest HUD
+						<select
+							onChange={(event) =>
+								updateProject((draft) => {
+									draft.trackedQuestId = event.target.value || undefined;
+								})
+							}
+							value={project.trackedQuestId ?? ""}
+						>
+							<option value="">None</option>
+							{project.quests.map((quest) => (
+								<option key={quest.id} value={quest.id}>
+									{quest.name}
+								</option>
+							))}
+						</select>
+					</label>
+					<p className="helper-text">
+						Choose which active quest appears during play. With none selected,
+						the first active quest appears automatically.
+					</p>
+					<div className="panel-title secondary">Entity palette</div>
+					<DialogueEntityPicker
+						project={project}
+						selected={selectedEntity}
+						scope="story"
+						slot="objective"
+						onSelect={setSelectedEntity}
+						onCreate={(entity) => {
+							let ref: DialogueEntityRef | undefined;
+							updateProject((draft) => {
+								ref = createDialogueEntity(draft, entity);
+							});
+							setSelectedEntity(ref);
+						}}
+					/>
+				</aside>
+			}
 
 			<div className="content-panel quest-editor">
 				{selectedQuest ? (
@@ -892,7 +1070,7 @@ export function QuestsEditor() {
 								/>
 							</label>
 							<label>
-								Default status
+								Quest start
 								<select
 									onChange={(event) =>
 										updateQuest({
@@ -901,22 +1079,50 @@ export function QuestsEditor() {
 									}
 									value={selectedQuest.status}
 								>
-									<option value="active">
-										Active - can progress during play
-									</option>
+									<option value="active">At Play start (explicit)</option>
 									<option value="inactive">
-										Inactive - waits for a rule to activate it
+										From an interaction or Start Quest action
 									</option>
-									<option value="completed">
-										Completed - completed at play start
-									</option>
-									<option value="failed">Failed - failed at play start</option>
+									{selectedQuest.status === "completed" && (
+										<option value="completed">
+											Completed - completed at play start
+										</option>
+									)}
+									{selectedQuest.status === "failed" && (
+										<option value="failed">
+											Failed - failed at play start
+										</option>
+									)}
 								</select>
 							</label>
 						</div>
+						<section aria-label="Quest start sources">
+							<strong>
+								Starts:{" "}
+								{selectedQuest.status === "active"
+									? "At Play"
+									: selectedQuest.status === "inactive"
+										? "From interaction / action"
+										: `Initially ${selectedQuest.status}`}
+							</strong>
+							{startSources.map((entry, index) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: Sources may repeat and have no persistent ID.
+								<div key={index}>
+									<button
+										type="button"
+										onClick={() =>
+											useProjectStore.getState().openEditorSource(entry.source)
+										}
+									>
+										{entry.label}
+									</button>
+								</div>
+							))}
+						</section>
 						{selectedQuest.status === "inactive" ? (
 							<div className="validation-message">
-								Inactive quests do not progress until activated by a rule.
+								Not started. Select Start Quest on a map interaction, or use the
+								existing Activate quest rule action.
 							</div>
 						) : null}
 						<label>
@@ -929,33 +1135,44 @@ export function QuestsEditor() {
 								value={selectedQuest.description ?? ""}
 							/>
 						</label>
-						<section className="quest-section">
+						<section className="quest-section" data-story-field="objectives">
 							<div className="quest-section-heading">
 								<strong>Objectives</strong>
 								<button onClick={addObjective} type="button">
 									Add objective
 								</button>
 							</div>
-							{selectedQuest.objectives.map((objective) => (
-								<div className="quest-objective" key={objective.id}>
-									<input
-										onChange={(event) =>
-											updateObjective(objective.id, {
-												description: event.target.value,
-											})
-										}
-										value={objective.description}
-									/>
-									{renderCondition(objective)}
-									<button
-										className="danger-button compact"
-										onClick={() => deleteObjective(objective.id)}
-										type="button"
-									>
-										Delete objective
-									</button>
-								</div>
-							))}
+							<label>
+								Objective order
+								<select
+									value={selectedQuest.objectiveMode ?? "legacy"}
+									onChange={(event) =>
+										updateQuest({
+											objectiveMode:
+												event.target.value === "sequence"
+													? "sequence"
+													: undefined,
+										})
+									}
+								>
+									<option value="sequence">In order, one step at a time</option>
+									<option value="legacy">
+										Any order — all required (legacy)
+									</option>
+								</select>
+							</label>
+							<p className="helper-text">
+								Authoring is saved with the project. Progress belongs to the
+								current Play session.
+							</p>
+							<QuestSequence
+								key={selectedQuest.id}
+								project={project}
+								quest={selectedQuest}
+								selected={selectedEntity}
+								advancedFields={renderCondition}
+								update={updateQuest}
+							/>
 							{selectedQuest.objectives.length === 0 ? (
 								<p className="empty-state compact">No objectives yet.</p>
 							) : null}
@@ -963,12 +1180,61 @@ export function QuestsEditor() {
 						<section className="quest-section">
 							<div className="quest-section-heading">
 								<strong>Rewards / Completion Actions</strong>
-								<button onClick={addCompletionAction} type="button">
+								<button
+									onClick={() => {
+										setAdvancedEffects(true);
+										addCompletionAction();
+									}}
+									type="button"
+								>
 									Add action
 								</button>
 							</div>
-							{(selectedQuest.completionActions ?? []).map(
-								renderCompletionAction,
+							<label>
+								Quest completion message
+								<textarea
+									value={selectedQuest.completionMessage ?? ""}
+									onChange={(event) =>
+										updateQuest({ completionMessage: event.target.value })
+									}
+								/>
+							</label>
+							<button
+								type="button"
+								aria-pressed={advancedEffects}
+								onClick={() => setAdvancedEffects(!advancedEffects)}
+							>
+								{advancedEffects
+									? "Show effect chips"
+									: "Advanced completion fields"}
+							</button>
+							{advancedEffects ? (
+								(selectedQuest.completionActions ?? []).map(
+									renderCompletionAction,
+								)
+							) : (
+								<StoryActionStack
+									key={selectedQuest.id}
+									project={project}
+									actions={selectedQuest.completionActions ?? []}
+									selected={selectedEntity}
+									label="Completion"
+									ownerKey={`quest:${selectedQuest.id}:actions`}
+									ownerExists={(p) =>
+										p.quests.some((q) => q.id === selectedQuest.id)
+									}
+									readActions={(p) =>
+										p.quests.find((q) => q.id === selectedQuest.id)
+											?.completionActions ?? []
+									}
+									writeActions={(actions, draft) => {
+										if (draft)
+											draft.quests.find(
+												(q) => q.id === selectedQuest.id,
+											)!.completionActions = actions;
+										else updateQuest({ completionActions: actions });
+									}}
+								/>
 							)}
 							{(selectedQuest.completionActions ?? []).length === 0 ? (
 								<p className="empty-state compact">

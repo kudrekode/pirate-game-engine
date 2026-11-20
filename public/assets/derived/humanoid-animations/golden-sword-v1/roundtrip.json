@@ -1,0 +1,23 @@
+{
+	"rigProfile": "golden-humanoid-v0",
+	"artifactPath": "public/assets/derived/humanoid-animations/golden-sword-v1/actions.glb",
+	"sha256": "bcea515ab14a22a26439e87dc594c57930c25db4e698a8080fb54c42ee0852d4",
+	"meshCount": 0,
+	"targets": [
+		{
+			"targetPath": "public/assets/derived/authored-humans/everyday-v1/mannequin.glb",
+			"clips": [
+				{
+					"name": "GoldenSword_Attack_V1",
+					"duration": 0.75,
+					"tracks": 53,
+					"horizontalRange": [0, 0],
+					"minimumY": 0.009916233294978637,
+					"finalMinimumY": 0.009965684056300425,
+					"independentClones": true,
+					"restRestored": true
+				}
+			]
+		}
+	]
+}

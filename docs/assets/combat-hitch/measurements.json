@@ -1,0 +1,6199 @@
+{
+	"method": "Headed Chrome hardware ANGLE/D3D11; real keyboard inputs; independent continuous RAF observer; browser-only AST probes; no CPU profiler. Values in ms; nested durations overlap. Before/after five repetitions; separate detailed before-stages run. Nonlethal windows include a separately recorded cooldown attempt.",
+	"sha256": {
+		"docs\\assets\\runtime-parity\\runtime-parity-demo.project.json": "f4d255994675f3e8f8ec8722a9e9f1b7e027139f39b3a4ca2bdba3c5d8657c5f",
+		"test-results\\combat-hitch\\ThreeRuntimePanel.before.tsx": "f17c638af7f6898c1f2e2b65dfaad3d71fc4c81910bd615c298feefc87a345cb",
+		"src\\runtime\\three\\ThreeRuntimePanel.tsx": "2170d4b650c2d690a7195c9b906453acee4d99a4e9a843668f6999735f052e28"
+	},
+	"stageTuple": ["count", "totalMs", "maxMs"],
+	"before": {
+		"backend": {
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1440,
+			"height": 830,
+			"dpr": 1.0000000298023224
+		},
+		"projectUnchanged": true,
+		"errors": [],
+		"instrumented": [
+			"App",
+			"MapEditor",
+			"handleKeyDown",
+			"ThreeDPreview",
+			"RuntimePanel",
+			"findAttackTarget",
+			"damageNpc",
+			"damagePlayer",
+			"questProgressMessages",
+			"QuestObjectiveTracker",
+			"ThreeRuntimePanel",
+			"forceRender",
+			"handleNpcEvent",
+			"handleCombatEvent",
+			"refresh",
+			"sceneEffect",
+			"runtimeRAF",
+			"sceneCleanup",
+			"InventoryNotifications",
+			"dispose",
+			"ThreePerformanceOverlay",
+			"DevelopmentPerformanceOverlay",
+			"createThreeVisualMarkerGroup",
+			"areaEntitiesToMarkers",
+			"updateQuestProgress",
+			"getQuestViews",
+			"syncQuestProgress",
+			"defeatRuntimeNpc",
+			"defeatFlagMutation",
+			"updateRecentEnemy",
+			"attemptRuntimeCombatAttack",
+			"applyEnemyContact",
+			"playerHealthMutation",
+			"gameOverCheck",
+			"tickRuntimeNpcs",
+			"createTraversalWorld",
+			"prepareThreeCharacterAnimationClip",
+			"createThreeCharacterAnimationController",
+			"applySemanticState",
+			"triggerAttack",
+			"isEnemyTouchingPlayer"
+		],
+		"windows": [
+			{
+				"run": 1,
+				"kind": "miss",
+				"frames": {
+					"count": 53,
+					"min": 5.6,
+					"median": 10.6,
+					"p95": 26.5,
+					"p99": 41.6,
+					"max": 41.6
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"frames": {
+					"count": 445,
+					"min": 4.9,
+					"median": 8.5,
+					"p95": 18.8,
+					"p99": 32.9,
+					"max": 50.7
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 85,
+					"min": 4.9,
+					"median": 8.2,
+					"p95": 12.1,
+					"p99": 17.6,
+					"max": 17.6
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "lethal",
+				"frames": {
+					"count": 83,
+					"min": 3.6,
+					"median": 6.7,
+					"p95": 15,
+					"p99": 661.9,
+					"max": 661.9
+				},
+				"rebuilds": 1,
+				"clones": 5,
+				"controllerCreations": 5,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": false,
+					"renderer": false,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": false,
+							"present": true
+						}
+					]
+				},
+				"longTasks": [
+					{
+						"start": 18818,
+						"duration": 654
+					}
+				]
+			},
+			{
+				"run": 2,
+				"kind": "miss",
+				"frames": {
+					"count": 60,
+					"min": 6.1,
+					"median": 11.7,
+					"p95": 15,
+					"p99": 22.5,
+					"max": 22.5
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"frames": {
+					"count": 337,
+					"min": 5.2,
+					"median": 12.7,
+					"p95": 19,
+					"p99": 27.3,
+					"max": 30.1
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 57,
+					"min": 5.6,
+					"median": 12.4,
+					"p95": 19.4,
+					"p99": 26.9,
+					"max": 26.9
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "lethal",
+				"frames": {
+					"count": 44,
+					"min": 7,
+					"median": 12.4,
+					"p95": 36.3,
+					"p99": 1304.4,
+					"max": 1304.4
+				},
+				"rebuilds": 1,
+				"clones": 5,
+				"controllerCreations": 5,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": false,
+					"renderer": false,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": false,
+							"present": true
+						}
+					]
+				},
+				"longTasks": [
+					{
+						"start": 26771.5,
+						"duration": 1276
+					}
+				]
+			},
+			{
+				"run": 3,
+				"kind": "miss",
+				"frames": {
+					"count": 64,
+					"min": 8.1,
+					"median": 10.35,
+					"p95": 12.3,
+					"p99": 24.5,
+					"max": 24.5
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"frames": {
+					"count": 354,
+					"min": 6,
+					"median": 12.5,
+					"p95": 16.6,
+					"p99": 24.3,
+					"max": 31.2
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 63,
+					"min": 6.4,
+					"median": 12,
+					"p95": 14.6,
+					"p99": 24.5,
+					"max": 24.5
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "lethal",
+				"frames": {
+					"count": 53,
+					"min": 5.5,
+					"median": 12.5,
+					"p95": 43,
+					"p99": 1425.3,
+					"max": 1425.3
+				},
+				"rebuilds": 1,
+				"clones": 5,
+				"controllerCreations": 5,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": false,
+					"renderer": false,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": false,
+							"present": true
+						}
+					]
+				},
+				"longTasks": [
+					{
+						"start": 26991.5,
+						"duration": 1412
+					}
+				]
+			},
+			{
+				"run": 4,
+				"kind": "miss",
+				"frames": {
+					"count": 49,
+					"min": 5,
+					"median": 13.8,
+					"p95": 24.9,
+					"p99": 29.9,
+					"max": 29.9
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"frames": {
+					"count": 407,
+					"min": 5,
+					"median": 11,
+					"p95": 15.9,
+					"p99": 17,
+					"max": 33.6
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 58,
+					"min": 7.1,
+					"median": 11.9,
+					"p95": 16.9,
+					"p99": 27.2,
+					"max": 27.2
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "lethal",
+				"frames": {
+					"count": 71,
+					"min": 5.3,
+					"median": 9,
+					"p95": 17.6,
+					"p99": 1031.8,
+					"max": 1031.8
+				},
+				"rebuilds": 1,
+				"clones": 5,
+				"controllerCreations": 5,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": false,
+					"renderer": false,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": false,
+							"present": true
+						}
+					]
+				},
+				"longTasks": [
+					{
+						"start": 23579.70000001788,
+						"duration": 1021
+					}
+				]
+			},
+			{
+				"run": 5,
+				"kind": "miss",
+				"frames": {
+					"count": 68,
+					"min": 5.1,
+					"median": 9.05,
+					"p95": 14.3,
+					"p99": 18.7,
+					"max": 18.7
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"frames": {
+					"count": 520,
+					"min": 4.5,
+					"median": 8.3,
+					"p95": 12.5,
+					"p99": 15,
+					"max": 21.2
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 93,
+					"min": 4.6,
+					"median": 7.5,
+					"p95": 9.2,
+					"p99": 14.7,
+					"max": 14.7
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": null,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "lethal",
+				"frames": {
+					"count": 99,
+					"min": 2.5,
+					"median": 7.1,
+					"p95": 11.8,
+					"p99": 434.8,
+					"max": 434.8
+				},
+				"rebuilds": 1,
+				"clones": 5,
+				"controllerCreations": 5,
+				"controllerDisposals": null,
+				"commits": 2,
+				"identities": {
+					"scene": false,
+					"renderer": false,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": false,
+							"present": true
+						}
+					]
+				},
+				"longTasks": [
+					{
+						"start": 16409.09999999404,
+						"duration": 430
+					}
+				]
+			}
+		],
+		"summary": {
+			"missed": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 3.0,
+					"median": 3.9,
+					"p95": 7.6,
+					"p99": 7.6,
+					"max": 7.6
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 7.7,
+					"median": 14.4,
+					"p95": 18.4,
+					"p99": 18.4,
+					"max": 18.4
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 6.2,
+					"median": 12.1,
+					"p95": 14.5,
+					"p99": 14.5,
+					"max": 14.5
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 0.4,
+					"median": 0.5,
+					"p95": 0.8,
+					"p99": 0.8,
+					"max": 0.8
+				}
+			},
+			"nonlethal": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 2.2,
+					"median": 4.5,
+					"p95": 6.3,
+					"p99": 6.3,
+					"max": 6.3
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 7.7,
+					"median": 12.1,
+					"p95": 16,
+					"p99": 16,
+					"max": 16
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 6.7,
+					"median": 10.4,
+					"p95": 14.2,
+					"p99": 14.2,
+					"max": 14.2
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 0.6,
+					"median": 1.1,
+					"p95": 1.3,
+					"p99": 1.3,
+					"max": 1.3
+				}
+			},
+			"contact": {
+				"eventToNextRafMs": {
+					"count": 15,
+					"min": 1.0,
+					"median": 3.8,
+					"p95": 27.0,
+					"p99": 27.0,
+					"max": 27.0
+				},
+				"containingFrameGapMs": {
+					"count": 15,
+					"min": 7.8,
+					"median": 12.6,
+					"p95": 42.6,
+					"p99": 42.6,
+					"max": 42.6
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 15,
+					"min": 4.6,
+					"median": 11.3,
+					"p95": 33.0,
+					"p99": 33.0,
+					"max": 33.0
+				},
+				"transactionMs": {
+					"count": 15,
+					"min": 0.2,
+					"median": 0.5,
+					"p95": 2.7,
+					"p99": 2.7,
+					"max": 2.7
+				}
+			},
+			"lethal": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 430.7,
+					"median": 1024.4,
+					"p95": 1414.5,
+					"p99": 1414.5,
+					"max": 1414.5
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 434.8,
+					"median": 1031.8,
+					"p95": 1425.3,
+					"p99": 1425.3,
+					"max": 1425.3
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 430.1,
+					"median": 1021.5,
+					"p95": 1411.4,
+					"p99": 1411.4,
+					"max": 1411.4
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 0.8,
+					"median": 1.3,
+					"p95": 1.9,
+					"p99": 1.9,
+					"max": 1.9
+				}
+			},
+			"cooldown": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 1.6,
+					"median": 2.9,
+					"p95": 9.4,
+					"p99": 9.4,
+					"max": 9.4
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 7.9,
+					"median": 11.9,
+					"p95": 15.2,
+					"p99": 15.2,
+					"max": 15.2
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 5.6,
+					"median": 10.2,
+					"p95": 16.2,
+					"p99": 16.2,
+					"max": 16.2
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 0.1,
+					"median": 0.2,
+					"p95": 0.3,
+					"p99": 0.3,
+					"max": 0.3
+				}
+			}
+		},
+		"events": [
+			{
+				"run": 1,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 10707.6,
+				"eventEmissionMs": 10708.5,
+				"health": null,
+				"transactionMs": 0.5,
+				"eventToNextRafMs": 7.6,
+				"containingFrameGapMs": 13.7,
+				"eventToNextRuntimeFrameEndMs": 10.0,
+				"nextRuntimeFrameCpuMs": 2.4,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 0.5, 0.5],
+					"handleKeyDown": [1, 0.9, 0.9],
+					"ThreeRuntimePanel": [4, 0.9, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"handleNpcEvent:npcFacingChanged": [2, 0, 0],
+					"handleNpcEvent:npcMoved": [3, 0, 0],
+					"tickRuntimeNpcs": [2, 0.5, 0.5]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 13155.8,
+				"eventEmissionMs": 13156.3,
+				"health": 99,
+				"transactionMs": 0.8,
+				"eventToNextRafMs": 27.0,
+				"containingFrameGapMs": 42.6,
+				"eventToNextRuntimeFrameEndMs": 33.0,
+				"nextRuntimeFrameCpuMs": 6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0.1, 0.1],
+					"applyEnemyContact": [1, 0.4, 0.4],
+					"tickRuntimeNpcs": [2, 0.8, 0.8],
+					"ThreeRuntimePanel": [4, 0.6, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0.1, 0.1]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 15053.9,
+				"eventEmissionMs": 15054.1,
+				"health": 98,
+				"transactionMs": 2.7,
+				"eventToNextRafMs": 4.6,
+				"containingFrameGapMs": 11.7,
+				"eventToNextRuntimeFrameEndMs": 9.0,
+				"nextRuntimeFrameCpuMs": 4.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 2.4, 2.4],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 2.6, 2.6],
+					"tickRuntimeNpcs": [2, 2.7, 2.7],
+					"ThreeRuntimePanel": [4, 0.6, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 16946.9,
+				"eventEmissionMs": 16947.1,
+				"health": 97,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 2.6,
+				"containingFrameGapMs": 9.5,
+				"eventToNextRuntimeFrameEndMs": 6.2,
+				"nextRuntimeFrameCpuMs": 3.6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0.1, 0.1],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0, 0],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.1, 0.1],
+					"tickRuntimeNpcs": [1, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 0.5, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 17777,
+				"eventEmissionMs": 17777.8,
+				"health": 25,
+				"transactionMs": 1.1,
+				"eventToNextRafMs": 3,
+				"containingFrameGapMs": 12.1,
+				"eventToNextRuntimeFrameEndMs": 10,
+				"nextRuntimeFrameCpuMs": 6.9,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0.1, 0.1],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.2, 0.2],
+					"handleCombatEvent:status": [1, 0, 0],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.1, 1.1],
+					"handleKeyDown": [2, 1.2, 1.1],
+					"ThreeRuntimePanel": [2, 0.5, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 17797.7,
+				"eventEmissionMs": 17797.7,
+				"health": null,
+				"transactionMs": 0.1,
+				"eventToNextRafMs": 9.4,
+				"containingFrameGapMs": 15.2,
+				"eventToNextRuntimeFrameEndMs": 16.2,
+				"nextRuntimeFrameCpuMs": 6.8,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 0.1, 0.1],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.1, 0.1],
+					"ThreeRuntimePanel": [4, 0.7, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"handleNpcEvent:npcMoved": [3, 0, 0],
+					"handleNpcEvent:npcFacingChanged": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0.2, 0.2]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 18818.4,
+				"eventEmissionMs": 18818.8,
+				"health": 0,
+				"transactionMs": 1.3,
+				"eventToNextRafMs": 655.2,
+				"containingFrameGapMs": 661.9,
+				"eventToNextRuntimeFrameEndMs": 654.3,
+				"nextRuntimeFrameCpuMs": 447.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 1.4, 1.4],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0, 0],
+					"defeatFlagMutation": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"forceRender": [1, 0.1, 0.1],
+					"handleCombatEvent:npcRemoved": [1, 0.1, 0.1],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0, 0],
+					"syncQuestProgress": [1, 0, 0],
+					"defeatRuntimeNpc": [1, 0.5, 0.5],
+					"handleCombatEvent:stateChanged": [1, 0.1, 0.1],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.3, 1.3],
+					"ThreeRuntimePanel": [2, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"dispose": [7, 1.5, 0.8],
+					"sceneCleanup": [1, 3.6, 3.6],
+					"createTraversalWorld": [1, 0.3, 0.3],
+					"sceneEffect": [1, 647.8, 647.8]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 19223.9,
+				"eventEmissionMs": 19225,
+				"health": null,
+				"transactionMs": 0.8,
+				"eventToNextRafMs": 5.7,
+				"containingFrameGapMs": 18.4,
+				"eventToNextRuntimeFrameEndMs": 14.1,
+				"nextRuntimeFrameCpuMs": 8.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.8, 0.8],
+					"handleKeyDown": [1, 1.3, 1.3],
+					"ThreeRuntimePanel": [4, 1.9, 0.6],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.5, 0.4],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 21335.1,
+				"eventEmissionMs": 21335.7,
+				"health": 99,
+				"transactionMs": 0.9,
+				"eventToNextRafMs": 3.1,
+				"containingFrameGapMs": 13.6,
+				"eventToNextRuntimeFrameEndMs": 13.4,
+				"nextRuntimeFrameCpuMs": 10.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.4, 0.4],
+					"tickRuntimeNpcs": [2, 1.0, 0.9],
+					"ThreeRuntimePanel": [4, 0.7, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 23250.2,
+				"eventEmissionMs": 23250.3,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 3.9,
+				"containingFrameGapMs": 14.8,
+				"eventToNextRuntimeFrameEndMs": 12.5,
+				"nextRuntimeFrameCpuMs": 8.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [3, 0.4, 0.3],
+					"ThreeRuntimePanel": [4, 1.0, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 25142.1,
+				"eventEmissionMs": 25142.4,
+				"health": 97,
+				"transactionMs": 0.5,
+				"eventToNextRafMs": 3.8,
+				"containingFrameGapMs": 14.3,
+				"eventToNextRuntimeFrameEndMs": 12.0,
+				"nextRuntimeFrameCpuMs": 8.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [1, 0.5, 0.5],
+					"ThreeRuntimePanel": [4, 1.0, 0.5],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 25865,
+				"eventEmissionMs": 25865.7,
+				"health": 25,
+				"transactionMs": 1.2,
+				"eventToNextRafMs": 4.5,
+				"containingFrameGapMs": 13.4,
+				"eventToNextRuntimeFrameEndMs": 10.6,
+				"nextRuntimeFrameCpuMs": 6,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 1.2, 1.2],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.2, 0.2],
+					"handleCombatEvent:npcDamaged": [1, 0.3, 0.3],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"handleCombatEvent:stateChanged": [1, 0.1, 0.1],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.2, 1.2],
+					"ThreeRuntimePanel": [2, 0.6, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0.1, 0.1]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 25889.1,
+				"eventEmissionMs": 25889.3,
+				"health": null,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 3.8,
+				"containingFrameGapMs": 12.3,
+				"eventToNextRuntimeFrameEndMs": 12.1,
+				"nextRuntimeFrameCpuMs": 8.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 0.4, 0.4],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"attemptRuntimeCombatAttack": [1, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 1.1, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0, 0],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [3, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 26772.3,
+				"eventEmissionMs": 26772.6,
+				"health": 0,
+				"transactionMs": 1.9,
+				"eventToNextRafMs": 1277.1,
+				"containingFrameGapMs": 1304.4,
+				"eventToNextRuntimeFrameEndMs": 1276.1,
+				"nextRuntimeFrameCpuMs": 875.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 2, 2],
+					"triggerAttack": [1, 0.1, 0.1],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.4, 0.4],
+					"defeatFlagMutation": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDefeated": [1, 0.1, 0.1],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"forceRender": [1, 0, 0],
+					"handleCombatEvent:npcRemoved": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0, 0],
+					"syncQuestProgress": [1, 0.1, 0.1],
+					"defeatRuntimeNpc": [1, 0.9, 0.9],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.9, 1.9],
+					"ThreeRuntimePanel": [2, 0.4, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"dispose": [7, 2.3, 1.2],
+					"sceneCleanup": [1, 5.9, 5.9],
+					"createTraversalWorld": [1, 0.4, 0.4],
+					"sceneEffect": [1, 1265.1, 1265.1]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 19033.5,
+				"eventEmissionMs": 19034.4,
+				"health": null,
+				"transactionMs": 0.7,
+				"eventToNextRafMs": 3.9,
+				"containingFrameGapMs": 14.4,
+				"eventToNextRuntimeFrameEndMs": 12.1,
+				"nextRuntimeFrameCpuMs": 8.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0.1, 0.1],
+					"handleCombatEvent:attackStarted": [1, 0.2, 0.2],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"attemptRuntimeCombatAttack": [1, 0.7, 0.7],
+					"handleKeyDown": [1, 1.1, 1.1],
+					"ThreeRuntimePanel": [4, 1.5, 0.6],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 21397.3,
+				"eventEmissionMs": 21397.9,
+				"health": 99,
+				"transactionMs": 1,
+				"eventToNextRafMs": 1.2,
+				"containingFrameGapMs": 12.3,
+				"eventToNextRuntimeFrameEndMs": 7.6,
+				"nextRuntimeFrameCpuMs": 6.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0.1, 0.1],
+					"handleNpcEvent:stateChanged": [1, 0.1, 0.1],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.6, 0.6],
+					"tickRuntimeNpcs": [3, 1, 1],
+					"ThreeRuntimePanel": [4, 0.7, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 23301.4,
+				"eventEmissionMs": 23301.6,
+				"health": 98,
+				"transactionMs": 0.4,
+				"eventToNextRafMs": 4.3,
+				"containingFrameGapMs": 12.4,
+				"eventToNextRuntimeFrameEndMs": 11.3,
+				"nextRuntimeFrameCpuMs": 7,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0.1, 0.1],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [3, 0.6, 0.4],
+					"ThreeRuntimePanel": [4, 1.0, 0.5],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 25194.7,
+				"eventEmissionMs": 25195,
+				"health": 97,
+				"transactionMs": 0.5,
+				"eventToNextRafMs": 4.5,
+				"containingFrameGapMs": 13.7,
+				"eventToNextRuntimeFrameEndMs": 12.2,
+				"nextRuntimeFrameCpuMs": 7.6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcFacingChanged": [2, 0, 0],
+					"handleNpcEvent:npcMoved": [2, 0, 0],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [1, 0.5, 0.5],
+					"ThreeRuntimePanel": [4, 0.9, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 26034.2,
+				"eventEmissionMs": 26034.9,
+				"health": 25,
+				"transactionMs": 1.3,
+				"eventToNextRafMs": 5.2,
+				"containingFrameGapMs": 16,
+				"eventToNextRuntimeFrameEndMs": 14.2,
+				"nextRuntimeFrameCpuMs": 8.9,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 1.3, 1.3],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.3, 0.3],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"handleCombatEvent:stateChanged": [1, 0.1, 0.1],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.3, 1.3],
+					"ThreeRuntimePanel": [2, 0.6, 0.5],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 26061.9,
+				"eventEmissionMs": 26062,
+				"health": null,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 2.9,
+				"containingFrameGapMs": 11.9,
+				"eventToNextRuntimeFrameEndMs": 10.0,
+				"nextRuntimeFrameCpuMs": 7.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.9, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0.1, 0.1],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"applyEnemyContact": [1, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 26992.2,
+				"eventEmissionMs": 26992.6,
+				"health": 0,
+				"transactionMs": 1.6,
+				"eventToNextRafMs": 1414.5,
+				"containingFrameGapMs": 1425.3,
+				"eventToNextRuntimeFrameEndMs": 1411.4,
+				"nextRuntimeFrameCpuMs": 948,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 1.8, 1.8],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.2, 0.2],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"forceRender": [1, 0.1, 0.1],
+					"handleCombatEvent:npcRemoved": [1, 0.1, 0.1],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0, 0],
+					"syncQuestProgress": [1, 0.1, 0.1],
+					"defeatRuntimeNpc": [1, 0.8, 0.8],
+					"handleCombatEvent:stateChanged": [1, 0.1, 0.1],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.6, 1.6],
+					"ThreeRuntimePanel": [2, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"dispose": [7, 3.2, 1.5],
+					"sceneCleanup": [1, 6.9, 6.9],
+					"createTraversalWorld": [1, 0.4, 0.4],
+					"sceneEffect": [1, 1400.5, 1400.5]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 15846.9,
+				"eventEmissionMs": 15847.6,
+				"health": null,
+				"transactionMs": 0.4,
+				"eventToNextRafMs": 3.9,
+				"containingFrameGapMs": 15.9,
+				"eventToNextRuntimeFrameEndMs": 14.5,
+				"nextRuntimeFrameCpuMs": 10.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.4, 0.4],
+					"handleKeyDown": [1, 0.8, 0.8],
+					"ThreeRuntimePanel": [4, 2.3, 0.8],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.3],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0.1, 0.1]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 18156.1,
+				"eventEmissionMs": 18157.4,
+				"health": 99,
+				"transactionMs": 1.6,
+				"eventToNextRafMs": 4.8,
+				"containingFrameGapMs": 14.5,
+				"eventToNextRuntimeFrameEndMs": 12.1,
+				"nextRuntimeFrameCpuMs": 7.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0.1, 0.1],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0.1, 0.1],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.6, 0.6],
+					"tickRuntimeNpcs": [2, 1.6, 1.6],
+					"ThreeRuntimePanel": [4, 0.8, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 20055.4,
+				"eventEmissionMs": 20055.5,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 3.5,
+				"containingFrameGapMs": 10.2,
+				"eventToNextRuntimeFrameEndMs": 10.2,
+				"nextRuntimeFrameCpuMs": 6.6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [2, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 0.7, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.4, 0.3],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 21966.4,
+				"eventEmissionMs": 21966.5,
+				"health": 97,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 3.0,
+				"containingFrameGapMs": 7.8,
+				"eventToNextRuntimeFrameEndMs": 10.1,
+				"nextRuntimeFrameCpuMs": 6.9,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.1, 0.1],
+					"tickRuntimeNpcs": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.4, 0.1],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 22630.5,
+				"eventEmissionMs": 22630.8,
+				"health": 25,
+				"transactionMs": 0.6,
+				"eventToNextRafMs": 2.2,
+				"containingFrameGapMs": 7.7,
+				"eventToNextRuntimeFrameEndMs": 6.7,
+				"nextRuntimeFrameCpuMs": 4.4,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [5, 0.7, 0.6],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.3, 0.3],
+					"handleCombatEvent:status": [1, 0, 0],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 0.6, 0.6],
+					"ThreeRuntimePanel": [2, 0.3, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 22648.9,
+				"eventEmissionMs": 22649,
+				"health": null,
+				"transactionMs": 0.1,
+				"eventToNextRafMs": 1.6,
+				"containingFrameGapMs": 9.7,
+				"eventToNextRuntimeFrameEndMs": 10.2,
+				"nextRuntimeFrameCpuMs": 8.6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 0.1, 0.1],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 0.1, 0.1],
+					"ThreeRuntimePanel": [4, 0.9, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0.1, 0.1]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 23579.8,
+				"eventEmissionMs": 23580.2,
+				"health": 0,
+				"transactionMs": 1,
+				"eventToNextRafMs": 1024.4,
+				"containingFrameGapMs": 1031.8,
+				"eventToNextRuntimeFrameEndMs": 1021.5,
+				"nextRuntimeFrameCpuMs": 703.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 1, 1],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0, 0],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"forceRender": [1, 0, 0],
+					"handleCombatEvent:npcRemoved": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0.1, 0.1],
+					"syncQuestProgress": [1, 0.1, 0.1],
+					"defeatRuntimeNpc": [1, 0.4, 0.4],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1, 1],
+					"ThreeRuntimePanel": [2, 0.4, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"dispose": [7, 2.9, 1.4],
+					"sceneCleanup": [1, 5.8, 5.8],
+					"createTraversalWorld": [1, 0.1, 0.1],
+					"sceneEffect": [1, 1013, 1013]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 9211.5,
+				"eventEmissionMs": 9212.2,
+				"health": null,
+				"transactionMs": 0.5,
+				"eventToNextRafMs": 3.0,
+				"containingFrameGapMs": 7.7,
+				"eventToNextRuntimeFrameEndMs": 6.2,
+				"nextRuntimeFrameCpuMs": 3.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.5, 0.5],
+					"handleKeyDown": [1, 0.8, 0.8],
+					"ThreeRuntimePanel": [4, 1.0, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 10964.8,
+				"eventEmissionMs": 10965.5,
+				"health": 99,
+				"transactionMs": 1,
+				"eventToNextRafMs": 1.0,
+				"containingFrameGapMs": 8.9,
+				"eventToNextRuntimeFrameEndMs": 4.6,
+				"nextRuntimeFrameCpuMs": 3.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcMoved": [2, 0.1, 0.1],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0.1, 0.1],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.4, 0.4],
+					"handleNpcEvent:npcFacingChanged": [1, 0, 0],
+					"tickRuntimeNpcs": [2, 1, 1],
+					"ThreeRuntimePanel": [4, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 12859.5,
+				"eventEmissionMs": 12859.7,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 2.9,
+				"containingFrameGapMs": 12.6,
+				"eventToNextRuntimeFrameEndMs": 7.8,
+				"nextRuntimeFrameCpuMs": 4.8,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [2, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 0.7, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 14754.6,
+				"eventEmissionMs": 14754.7,
+				"health": 97,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 9.1,
+				"containingFrameGapMs": 13.9,
+				"eventToNextRuntimeFrameEndMs": 16.8,
+				"nextRuntimeFrameCpuMs": 7.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0.1, 0.1],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0.1, 0.1],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [1, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 0.6, 0.2],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 15476.4,
+				"eventEmissionMs": 15477,
+				"health": 25,
+				"transactionMs": 1,
+				"eventToNextRafMs": 6.3,
+				"containingFrameGapMs": 11.3,
+				"eventToNextRuntimeFrameEndMs": 10.4,
+				"nextRuntimeFrameCpuMs": 4,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [5, 1.2, 1.2],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.2, 0.2],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.2, 0.2],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1, 1],
+					"ThreeRuntimePanel": [2, 0.3, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 15488.5,
+				"eventEmissionMs": 15488.5,
+				"health": null,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 2.1,
+				"containingFrameGapMs": 7.9,
+				"eventToNextRuntimeFrameEndMs": 5.6,
+				"nextRuntimeFrameCpuMs": 3.4,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.5, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 16409.3,
+				"eventEmissionMs": 16409.5,
+				"health": 0,
+				"transactionMs": 0.8,
+				"eventToNextRafMs": 430.7,
+				"containingFrameGapMs": 434.8,
+				"eventToNextRuntimeFrameEndMs": 430.1,
+				"nextRuntimeFrameCpuMs": 263.6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 0.8, 0.8],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.1, 0.1],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0.1, 0.1],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"forceRender": [1, 0, 0],
+					"handleCombatEvent:npcRemoved": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0, 0],
+					"syncQuestProgress": [1, 0, 0],
+					"defeatRuntimeNpc": [1, 0.2, 0.2],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 0.8, 0.8],
+					"ThreeRuntimePanel": [2, 0.1, 0.1],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"dispose": [7, 1.2, 0.6],
+					"sceneCleanup": [1, 3.8, 3.8],
+					"createTraversalWorld": [1, 0.1, 0.1],
+					"sceneEffect": [1, 424.1, 424.1]
+				}
+			}
+		]
+	},
+	"beforeDetailed": {
+		"backend": {
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1440,
+			"height": 830,
+			"dpr": 1.0000000298023224
+		},
+		"projectUnchanged": true,
+		"errors": [],
+		"instrumented": [
+			"App",
+			"MapEditor",
+			"handleKeyDown",
+			"RuntimePanel",
+			"ThreeDPreview",
+			"rendererCreate",
+			"renderSubmission",
+			"findAttackTarget",
+			"damageNpc",
+			"damagePlayer",
+			"questProgressMessages",
+			"QuestObjectiveTracker",
+			"ThreeRuntimePanel",
+			"forceRender",
+			"handleNpcEvent",
+			"handleCombatEvent",
+			"refresh",
+			"sceneEffect",
+			"runtimeRAF",
+			"sceneCleanup",
+			"InventoryNotifications",
+			"dispose",
+			"ThreePerformanceOverlay",
+			"DevelopmentPerformanceOverlay",
+			"createThreeVisualMarkerGroup",
+			"areaEntitiesToMarkers",
+			"updateQuestProgress",
+			"getQuestViews",
+			"syncQuestProgress",
+			"defeatRuntimeNpc",
+			"defeatFlagMutation",
+			"updateRecentEnemy",
+			"attemptRuntimeCombatAttack",
+			"applyEnemyContact",
+			"playerHealthMutation",
+			"gameOverCheck",
+			"tickRuntimeNpcs",
+			"createTraversalWorld",
+			"prepareThreeCharacterAnimationClip",
+			"createThreeCharacterAnimationController",
+			"applySemanticState",
+			"animationClipRequest",
+			"controllerDispose",
+			"triggerAttack",
+			"isEnemyTouchingPlayer"
+		],
+		"windows": [
+			{
+				"run": 1,
+				"kind": "miss",
+				"frames": {
+					"count": 64,
+					"min": 4.3,
+					"median": 8.9,
+					"p95": 20.4,
+					"p99": 27.3,
+					"max": 27.3
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"frames": {
+					"count": 411,
+					"min": 3.8,
+					"median": 8.5,
+					"p95": 23.9,
+					"p99": 31.5,
+					"max": 37.3
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 63,
+					"min": 4.8,
+					"median": 10.2,
+					"p95": 19.9,
+					"p99": 27.5,
+					"max": 27.5
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "lethal",
+				"frames": {
+					"count": 43,
+					"min": 4.8,
+					"median": 14.8,
+					"p95": 33.3,
+					"p99": 604.5,
+					"max": 604.5
+				},
+				"rebuilds": 1,
+				"clones": 5,
+				"controllerCreations": 5,
+				"controllerDisposals": 6,
+				"commits": 2,
+				"identities": {
+					"scene": false,
+					"renderer": false,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": false,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": false,
+							"present": true
+						}
+					]
+				},
+				"longTasks": [
+					{
+						"start": 18956.29999998212,
+						"duration": 591
+					}
+				]
+			}
+		],
+		"summary": {
+			"missed": {
+				"eventToNextRafMs": {
+					"count": 1,
+					"min": 2.9,
+					"median": 2.9,
+					"p95": 2.9,
+					"p99": 2.9,
+					"max": 2.9
+				},
+				"containingFrameGapMs": {
+					"count": 1,
+					"min": 7.8,
+					"median": 7.8,
+					"p95": 7.8,
+					"p99": 7.8,
+					"max": 7.8
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 1,
+					"min": 6.1,
+					"median": 6.1,
+					"p95": 6.1,
+					"p99": 6.1,
+					"max": 6.1
+				},
+				"transactionMs": {
+					"count": 1,
+					"min": 0.5,
+					"median": 0.5,
+					"p95": 0.5,
+					"p99": 0.5,
+					"max": 0.5
+				}
+			},
+			"nonlethal": {
+				"eventToNextRafMs": {
+					"count": 1,
+					"min": 4.2,
+					"median": 4.2,
+					"p95": 4.2,
+					"p99": 4.2,
+					"max": 4.2
+				},
+				"containingFrameGapMs": {
+					"count": 1,
+					"min": 27.4,
+					"median": 27.4,
+					"p95": 27.4,
+					"p99": 27.4,
+					"max": 27.4
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 1,
+					"min": 9.8,
+					"median": 9.8,
+					"p95": 9.8,
+					"p99": 9.8,
+					"max": 9.8
+				},
+				"transactionMs": {
+					"count": 1,
+					"min": 1,
+					"median": 1,
+					"p95": 1,
+					"p99": 1,
+					"max": 1
+				}
+			},
+			"contact": {
+				"eventToNextRafMs": {
+					"count": 3,
+					"min": 1.1,
+					"median": 4.9,
+					"p95": 6.5,
+					"p99": 6.5,
+					"max": 6.5
+				},
+				"containingFrameGapMs": {
+					"count": 3,
+					"min": 7,
+					"median": 13.2,
+					"p95": 14.8,
+					"p99": 14.8,
+					"max": 14.8
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 3,
+					"min": 5.7,
+					"median": 8.0,
+					"p95": 10.6,
+					"p99": 10.6,
+					"max": 10.6
+				},
+				"transactionMs": {
+					"count": 3,
+					"min": 0.2,
+					"median": 0.3,
+					"p95": 1,
+					"p99": 1,
+					"max": 1
+				}
+			},
+			"lethal": {
+				"eventToNextRafMs": {
+					"count": 1,
+					"min": 592.6,
+					"median": 592.6,
+					"p95": 592.6,
+					"p99": 592.6,
+					"max": 592.6
+				},
+				"containingFrameGapMs": {
+					"count": 1,
+					"min": 604.5,
+					"median": 604.5,
+					"p95": 604.5,
+					"p99": 604.5,
+					"max": 604.5
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 1,
+					"min": 591.0,
+					"median": 591.0,
+					"p95": 591.0,
+					"p99": 591.0,
+					"max": 591.0
+				},
+				"transactionMs": {
+					"count": 1,
+					"min": 1.5,
+					"median": 1.5,
+					"p95": 1.5,
+					"p99": 1.5,
+					"max": 1.5
+				}
+			},
+			"cooldown": {
+				"eventToNextRafMs": {
+					"count": 1,
+					"min": 13.9,
+					"median": 13.9,
+					"p95": 13.9,
+					"p99": 13.9,
+					"max": 13.9
+				},
+				"containingFrameGapMs": {
+					"count": 1,
+					"min": 21.2,
+					"median": 21.2,
+					"p95": 21.2,
+					"p99": 21.2,
+					"max": 21.2
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 1,
+					"min": 21.6,
+					"median": 21.6,
+					"p95": 21.6,
+					"p99": 21.6,
+					"max": 21.6
+				},
+				"transactionMs": {
+					"count": 1,
+					"min": 0.1,
+					"median": 0.1,
+					"p95": 0.1,
+					"p99": 0.1,
+					"max": 0.1
+				}
+			}
+		},
+		"events": [
+			{
+				"run": 1,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 10929.2,
+				"eventEmissionMs": 10930.1,
+				"health": null,
+				"transactionMs": 0.5,
+				"eventToNextRafMs": 2.9,
+				"containingFrameGapMs": 7.8,
+				"eventToNextRuntimeFrameEndMs": 6.1,
+				"nextRuntimeFrameCpuMs": 3.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.5, 0.5],
+					"handleKeyDown": [1, 1, 1],
+					"ThreeRuntimePanel": [4, 1.2, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [3, 0.6, 0.5],
+					"handleNpcEvent:npcFacingChanged": [2, 0, 0],
+					"handleNpcEvent:npcMoved": [3, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 13379.4,
+				"eventEmissionMs": 13380.1,
+				"health": 99,
+				"transactionMs": 1,
+				"eventToNextRafMs": 1.1,
+				"containingFrameGapMs": 7,
+				"eventToNextRuntimeFrameEndMs": 5.7,
+				"nextRuntimeFrameCpuMs": 4.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0.1, 0.1],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.5, 0.5],
+					"tickRuntimeNpcs": [2, 1, 1],
+					"ThreeRuntimePanel": [4, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 15276.1,
+				"eventEmissionMs": 15276.2,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 6.5,
+				"containingFrameGapMs": 14.8,
+				"eventToNextRuntimeFrameEndMs": 10.6,
+				"nextRuntimeFrameCpuMs": 4,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0.1, 0.1],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [3, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 0.5, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 17182.5,
+				"eventEmissionMs": 17182.6,
+				"health": 97,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 4.9,
+				"containingFrameGapMs": 13.2,
+				"eventToNextRuntimeFrameEndMs": 8.0,
+				"nextRuntimeFrameCpuMs": 3.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0.1, 0.1],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.1, 0.1],
+					"tickRuntimeNpcs": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 18065.8,
+				"eventEmissionMs": 18066.4,
+				"health": 25,
+				"transactionMs": 1,
+				"eventToNextRafMs": 4.2,
+				"containingFrameGapMs": 27.4,
+				"eventToNextRuntimeFrameEndMs": 9.8,
+				"nextRuntimeFrameCpuMs": 5.5,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 1, 1],
+					"triggerAttack": [1, 0.1, 0.1],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.2, 0.2],
+					"handleCombatEvent:npcDamaged": [1, 0.3, 0.3],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1, 1],
+					"ThreeRuntimePanel": [2, 0.4, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 18086.9,
+				"eventEmissionMs": 18086.9,
+				"health": null,
+				"transactionMs": 0.1,
+				"eventToNextRafMs": 13.9,
+				"containingFrameGapMs": 21.2,
+				"eventToNextRuntimeFrameEndMs": 21.6,
+				"nextRuntimeFrameCpuMs": 7.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 0.1, 0.1],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 0.1, 0.1],
+					"ThreeRuntimePanel": [4, 0.7, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"applyEnemyContact": [1, 0, 0],
+					"tickRuntimeNpcs": [3, 0.3, 0.1]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 18956.9,
+				"eventEmissionMs": 18957.2,
+				"health": 0,
+				"transactionMs": 1.5,
+				"eventToNextRafMs": 592.6,
+				"containingFrameGapMs": 604.5,
+				"eventToNextRuntimeFrameEndMs": 591.0,
+				"nextRuntimeFrameCpuMs": 334.7,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 1.6, 1.6],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.1, 0.1],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0.1, 0.1],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"forceRender": [1, 0.2, 0.2],
+					"handleCombatEvent:npcRemoved": [1, 0.2, 0.2],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0, 0],
+					"syncQuestProgress": [1, 0, 0],
+					"defeatRuntimeNpc": [1, 0.8, 0.8],
+					"handleCombatEvent:stateChanged": [1, 0.1, 0.1],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.5, 1.5],
+					"ThreeRuntimePanel": [2, 0.4, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"controllerDispose": [6, 1.8, 1.1],
+					"dispose": [1, 0.1, 0.1],
+					"sceneCleanup": [1, 4.7, 4.7],
+					"createTraversalWorld": [1, 0.3, 0.3],
+					"sceneEffect": [1, 582.4, 582.4]
+				}
+			}
+		]
+	},
+	"after": {
+		"backend": {
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"width": 1440,
+			"height": 830,
+			"dpr": 1.0000000298023224
+		},
+		"projectUnchanged": true,
+		"errors": [],
+		"instrumented": [
+			"App",
+			"MapEditor",
+			"handleKeyDown",
+			"ThreeDPreview",
+			"rendererCreate",
+			"renderSubmission",
+			"RuntimePanel",
+			"findAttackTarget",
+			"damageNpc",
+			"damagePlayer",
+			"questProgressMessages",
+			"QuestObjectiveTracker",
+			"ThreeRuntimePanel",
+			"forceRender",
+			"handleNpcEvent",
+			"handleCombatEvent",
+			"refresh",
+			"sceneEffect",
+			"removeNpcPresentation",
+			"runtimeRAF",
+			"sceneCleanup",
+			"InventoryNotifications",
+			"dispose",
+			"ThreePerformanceOverlay",
+			"DevelopmentPerformanceOverlay",
+			"createThreeVisualMarkerGroup",
+			"areaEntitiesToMarkers",
+			"updateQuestProgress",
+			"getQuestViews",
+			"syncQuestProgress",
+			"defeatRuntimeNpc",
+			"defeatFlagMutation",
+			"updateRecentEnemy",
+			"attemptRuntimeCombatAttack",
+			"applyEnemyContact",
+			"playerHealthMutation",
+			"gameOverCheck",
+			"tickRuntimeNpcs",
+			"createTraversalWorld",
+			"prepareThreeCharacterAnimationClip",
+			"createThreeCharacterAnimationController",
+			"applySemanticState",
+			"animationClipRequest",
+			"controllerDispose",
+			"triggerAttack",
+			"isEnemyTouchingPlayer"
+		],
+		"windows": [
+			{
+				"run": 1,
+				"kind": "miss",
+				"frames": {
+					"count": 72,
+					"min": 4,
+					"median": 9.0,
+					"p95": 14.9,
+					"p99": 32.7,
+					"max": 32.7
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"frames": {
+					"count": 401,
+					"min": 5,
+					"median": 9.1,
+					"p95": 20.1,
+					"p99": 26.5,
+					"max": 41.3
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 53,
+					"min": 5.4,
+					"median": 12.3,
+					"p95": 28.1,
+					"p99": 32.9,
+					"max": 32.9
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 1,
+				"kind": "lethal",
+				"frames": {
+					"count": 77,
+					"min": 5.2,
+					"median": 8.3,
+					"p95": 12.7,
+					"p99": 16.8,
+					"max": 16.8
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 1,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "miss",
+				"frames": {
+					"count": 57,
+					"min": 8.8,
+					"median": 12.3,
+					"p95": 14.4,
+					"p99": 27,
+					"max": 27
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"frames": {
+					"count": 399,
+					"min": 7.5,
+					"median": 11.4,
+					"p95": 13.4,
+					"p99": 16,
+					"max": 28.2
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 65,
+					"min": 8.3,
+					"median": 10.8,
+					"p95": 13.3,
+					"p99": 27,
+					"max": 27
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 2,
+				"kind": "lethal",
+				"frames": {
+					"count": 70,
+					"min": 7.5,
+					"median": 9.55,
+					"p95": 12.5,
+					"p99": 13.1,
+					"max": 13.1
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 1,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "miss",
+				"frames": {
+					"count": 48,
+					"min": 6.9,
+					"median": 13.35,
+					"p95": 25.3,
+					"p99": 30,
+					"max": 30
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"frames": {
+					"count": 394,
+					"min": 7.1,
+					"median": 11.6,
+					"p95": 14.9,
+					"p99": 16.5,
+					"max": 29.3
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 56,
+					"min": 8.6,
+					"median": 12.65,
+					"p95": 17.2,
+					"p99": 28.9,
+					"max": 28.9
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 3,
+				"kind": "lethal",
+				"frames": {
+					"count": 62,
+					"min": 7.8,
+					"median": 11.05,
+					"p95": 15.2,
+					"p99": 17.4,
+					"max": 17.4
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 1,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "miss",
+				"frames": {
+					"count": 57,
+					"min": 8.6,
+					"median": 12.1,
+					"p95": 15.5,
+					"p99": 36.9,
+					"max": 36.9
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"frames": {
+					"count": 384,
+					"min": 6.3,
+					"median": 12.0,
+					"p95": 15.1,
+					"p99": 18.1,
+					"max": 29.2
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 60,
+					"min": 8.3,
+					"median": 12.2,
+					"p95": 15.4,
+					"p99": 26.6,
+					"max": 26.6
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 4,
+				"kind": "lethal",
+				"frames": {
+					"count": 59,
+					"min": 8.8,
+					"median": 11.9,
+					"p95": 15.1,
+					"p99": 17.6,
+					"max": 17.6
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 1,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "miss",
+				"frames": {
+					"count": 63,
+					"min": 5.2,
+					"median": 10.3,
+					"p95": 16.1,
+					"p99": 24.5,
+					"max": 24.5
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"frames": {
+					"count": 382,
+					"min": 5.9,
+					"median": 11.7,
+					"p95": 16.5,
+					"p99": 18,
+					"max": 26.2
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 6,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "nonlethal",
+				"frames": {
+					"count": 61,
+					"min": 7.3,
+					"median": 11.2,
+					"p95": 16.5,
+					"p99": 27.3,
+					"max": 27.3
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 0,
+				"commits": 3,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			},
+			{
+				"run": 5,
+				"kind": "lethal",
+				"frames": {
+					"count": 61,
+					"min": 6.1,
+					"median": 11.4,
+					"p95": 15.2,
+					"p99": 19.4,
+					"max": 19.4
+				},
+				"rebuilds": 0,
+				"clones": 0,
+				"controllerCreations": 0,
+				"controllerDisposals": 1,
+				"commits": 2,
+				"identities": {
+					"scene": true,
+					"renderer": true,
+					"controllers": [
+						{
+							"id": "idle_guide",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_west",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "wander_east",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "sparring_guard",
+							"same": false,
+							"present": false
+						},
+						{
+							"id": "patrol_lookout",
+							"same": true,
+							"present": true
+						},
+						{
+							"id": "runtime_player",
+							"same": true,
+							"present": true
+						}
+					]
+				},
+				"longTasks": []
+			}
+		],
+		"summary": {
+			"missed": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 3.4,
+					"median": 5.4,
+					"p95": 9.0,
+					"p99": 9.0,
+					"max": 9.0
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 10.2,
+					"median": 16.1,
+					"p95": 20.5,
+					"p99": 20.5,
+					"max": 20.5
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 7.4,
+					"median": 11.9,
+					"p95": 17.4,
+					"p99": 17.4,
+					"max": 17.4
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 0.7,
+					"median": 0.9,
+					"p95": 1.4,
+					"p99": 1.4,
+					"max": 1.4
+				}
+			},
+			"nonlethal": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 4.5,
+					"median": 5.6,
+					"p95": 8.0,
+					"p99": 8.0,
+					"max": 8.0
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 12.4,
+					"median": 15.4,
+					"p95": 16.5,
+					"p99": 16.5,
+					"max": 16.5
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 12.1,
+					"median": 14.0,
+					"p95": 18.4,
+					"p99": 18.4,
+					"max": 18.4
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 1,
+					"median": 1.1,
+					"p95": 1.7,
+					"p99": 1.7,
+					"max": 1.7
+				}
+			},
+			"contact": {
+				"eventToNextRafMs": {
+					"count": 15,
+					"min": 0.5,
+					"median": 4.1,
+					"p95": 10.2,
+					"p99": 10.2,
+					"max": 10.2
+				},
+				"containingFrameGapMs": {
+					"count": 15,
+					"min": 7.9,
+					"median": 12.1,
+					"p95": 16.4,
+					"p99": 16.4,
+					"max": 16.4
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 15,
+					"min": 8.0,
+					"median": 10.5,
+					"p95": 13.7,
+					"p99": 13.7,
+					"max": 13.7
+				},
+				"transactionMs": {
+					"count": 15,
+					"min": 0.2,
+					"median": 0.4,
+					"p95": 1.4,
+					"p99": 1.4,
+					"max": 1.4
+				}
+			},
+			"lethal": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 5.3,
+					"median": 6.6,
+					"p95": 7.8,
+					"p99": 7.8,
+					"max": 7.8
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 12.7,
+					"median": 13.8,
+					"p95": 17.6,
+					"p99": 17.6,
+					"max": 17.6
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 11.7,
+					"median": 13.4,
+					"p95": 16.9,
+					"p99": 16.9,
+					"max": 16.9
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 3.2,
+					"median": 3.8,
+					"p95": 4.7,
+					"p99": 4.7,
+					"max": 4.7
+				}
+			},
+			"cooldown": {
+				"eventToNextRafMs": {
+					"count": 5,
+					"min": 2.4,
+					"median": 4.5,
+					"p95": 5.5,
+					"p99": 5.5,
+					"max": 5.5
+				},
+				"containingFrameGapMs": {
+					"count": 5,
+					"min": 8.7,
+					"median": 11.8,
+					"p95": 17.2,
+					"p99": 17.2,
+					"max": 17.2
+				},
+				"eventToNextRuntimeFrameEndMs": {
+					"count": 5,
+					"min": 8.6,
+					"median": 12.0,
+					"p95": 14.2,
+					"p99": 14.2,
+					"max": 14.2
+				},
+				"transactionMs": {
+					"count": 5,
+					"min": 0.1,
+					"median": 0.2,
+					"p95": 0.4,
+					"p99": 0.4,
+					"max": 0.4
+				}
+			}
+		},
+		"events": [
+			{
+				"run": 1,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 11475,
+				"eventEmissionMs": 11476,
+				"health": null,
+				"transactionMs": 0.7,
+				"eventToNextRafMs": 3.4,
+				"containingFrameGapMs": 10.2,
+				"eventToNextRuntimeFrameEndMs": 7.4,
+				"nextRuntimeFrameCpuMs": 3.9,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.7, 0.7],
+					"handleKeyDown": [1, 1.1, 1.1],
+					"ThreeRuntimePanel": [4, 2.2, 0.9],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"handleNpcEvent:npcFacingChanged": [2, 0, 0],
+					"handleNpcEvent:npcMoved": [3, 0, 0],
+					"tickRuntimeNpcs": [2, 0.5, 0.5]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 13887.7,
+				"eventEmissionMs": 13888.2,
+				"health": 99,
+				"transactionMs": 0.7,
+				"eventToNextRafMs": 2.7,
+				"containingFrameGapMs": 7.9,
+				"eventToNextRuntimeFrameEndMs": 8.0,
+				"nextRuntimeFrameCpuMs": 5.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0, 0],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0.1, 0.1],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [3, 0.8, 0.7],
+					"ThreeRuntimePanel": [4, 0.5, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 15793.9,
+				"eventEmissionMs": 15794.1,
+				"health": 98,
+				"transactionMs": 0.5,
+				"eventToNextRafMs": 0.9,
+				"containingFrameGapMs": 10.9,
+				"eventToNextRuntimeFrameEndMs": 8.3,
+				"nextRuntimeFrameCpuMs": 7.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.4, 0.4],
+					"tickRuntimeNpcs": [3, 0.6, 0.5],
+					"ThreeRuntimePanel": [4, 0.5, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 17680.3,
+				"eventEmissionMs": 17680.5,
+				"health": 97,
+				"transactionMs": 0.4,
+				"eventToNextRafMs": 10.2,
+				"containingFrameGapMs": 15,
+				"eventToNextRuntimeFrameEndMs": 13.7,
+				"nextRuntimeFrameCpuMs": 3.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [1, 0.4, 0.4],
+					"ThreeRuntimePanel": [4, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 18630.6,
+				"eventEmissionMs": 18631.2,
+				"health": 25,
+				"transactionMs": 1,
+				"eventToNextRafMs": 5.6,
+				"containingFrameGapMs": 12.4,
+				"eventToNextRuntimeFrameEndMs": 12.4,
+				"nextRuntimeFrameCpuMs": 6.7,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.2, 0.2],
+					"handleCombatEvent:npcDamaged": [1, 0.3, 0.3],
+					"handleCombatEvent:status": [1, 0, 0],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1, 1],
+					"handleKeyDown": [1, 1, 1],
+					"ThreeRuntimePanel": [2, 0.3, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 18651.5,
+				"eventEmissionMs": 18651.6,
+				"health": null,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 5.5,
+				"containingFrameGapMs": 8.7,
+				"eventToNextRuntimeFrameEndMs": 8.6,
+				"nextRuntimeFrameCpuMs": 3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.5, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0, 0],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"applyEnemyContact": [1, 0, 0],
+					"tickRuntimeNpcs": [3, 0.2, 0.1]
+				}
+			},
+			{
+				"run": 1,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 19527.6,
+				"eventEmissionMs": 19528.1,
+				"health": 0,
+				"transactionMs": 3.8,
+				"eventToNextRafMs": 6.4,
+				"containingFrameGapMs": 12.7,
+				"eventToNextRuntimeFrameEndMs": 11.7,
+				"nextRuntimeFrameCpuMs": 5.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 4, 4],
+					"triggerAttack": [1, 0.1, 0.1],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.1, 0.1],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0.1, 0.1],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"controllerDispose": [1, 1.1, 1.1],
+					"removeNpcPresentation": [1, 2, 2],
+					"handleCombatEvent:npcRemoved": [1, 2.4, 2.4],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0, 0],
+					"syncQuestProgress": [1, 0.1, 0.1],
+					"defeatRuntimeNpc": [1, 2.9, 2.9],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 3.8, 3.8],
+					"ThreeRuntimePanel": [4, 0.8, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 17425.7,
+				"eventEmissionMs": 17426.9,
+				"health": null,
+				"transactionMs": 0.8,
+				"eventToNextRafMs": 4.7,
+				"containingFrameGapMs": 15.7,
+				"eventToNextRuntimeFrameEndMs": 11.9,
+				"nextRuntimeFrameCpuMs": 7.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0.1, 0.1],
+					"handleCombatEvent:status": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 0.8, 0.8],
+					"handleKeyDown": [1, 1.3, 1.3],
+					"ThreeRuntimePanel": [4, 1.5, 0.5],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 19536.4,
+				"eventEmissionMs": 19537.2,
+				"health": 99,
+				"transactionMs": 1,
+				"eventToNextRafMs": 3.4,
+				"containingFrameGapMs": 11.5,
+				"eventToNextRuntimeFrameEndMs": 10.3,
+				"nextRuntimeFrameCpuMs": 6.7,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcFacingChanged": [1, 0, 0],
+					"handleNpcEvent:npcMoved": [1, 0, 0],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [2, 1.1, 1],
+					"ThreeRuntimePanel": [4, 0.6, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 21443.9,
+				"eventEmissionMs": 21444,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 0.5,
+				"containingFrameGapMs": 12.7,
+				"eventToNextRuntimeFrameEndMs": 8.2,
+				"nextRuntimeFrameCpuMs": 7.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [3, 0.4, 0.3],
+					"ThreeRuntimePanel": [4, 0.8, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 23346.2,
+				"eventEmissionMs": 23346.4,
+				"health": 97,
+				"transactionMs": 0.4,
+				"eventToNextRafMs": 4.1,
+				"containingFrameGapMs": 10.8,
+				"eventToNextRuntimeFrameEndMs": 10.0,
+				"nextRuntimeFrameCpuMs": 5.8,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0.1, 0.1],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0.1, 0.1],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.3, 0.3],
+					"tickRuntimeNpcs": [1, 0.4, 0.4],
+					"ThreeRuntimePanel": [4, 0.9, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 23877.2,
+				"eventEmissionMs": 23878,
+				"health": 25,
+				"transactionMs": 1.1,
+				"eventToNextRafMs": 4.6,
+				"containingFrameGapMs": 13.3,
+				"eventToNextRuntimeFrameEndMs": 12.1,
+				"nextRuntimeFrameCpuMs": 7.4,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [6, 1.3, 1.2],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0.1, 0.1],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.4, 0.4],
+					"handleCombatEvent:status": [1, 0, 0],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.1, 1.1],
+					"ThreeRuntimePanel": [2, 0.7, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 23901.9,
+				"eventEmissionMs": 23902,
+				"health": null,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 2.4,
+				"containingFrameGapMs": 10.9,
+				"eventToNextRuntimeFrameEndMs": 9.7,
+				"nextRuntimeFrameCpuMs": 7.2,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.8, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 2,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 24720.3,
+				"eventEmissionMs": 24720.5,
+				"health": 0,
+				"transactionMs": 3.2,
+				"eventToNextRafMs": 5.3,
+				"containingFrameGapMs": 13.1,
+				"eventToNextRuntimeFrameEndMs": 13.4,
+				"nextRuntimeFrameCpuMs": 8.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 3.2, 3.2],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.1, 0.1],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"controllerDispose": [1, 0.9, 0.9],
+					"removeNpcPresentation": [1, 1.8, 1.8],
+					"handleCombatEvent:npcRemoved": [1, 2, 2],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0.1, 0.1],
+					"syncQuestProgress": [1, 0.1, 0.1],
+					"defeatRuntimeNpc": [1, 2.6, 2.6],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 3.2, 3.2],
+					"ThreeRuntimePanel": [4, 0.6, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 15878.7,
+				"eventEmissionMs": 15880,
+				"health": null,
+				"transactionMs": 0.9,
+				"eventToNextRafMs": 5.7,
+				"containingFrameGapMs": 18.6,
+				"eventToNextRuntimeFrameEndMs": 13.9,
+				"nextRuntimeFrameCpuMs": 8.1,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.2, 0.2],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.9, 0.9],
+					"handleKeyDown": [1, 1.4, 1.4],
+					"ThreeRuntimePanel": [4, 2.3, 0.8],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0.1, 0.1],
+					"tickRuntimeNpcs": [2, 0.4, 0.3]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 18097.5,
+				"eventEmissionMs": 18098.2,
+				"health": 99,
+				"transactionMs": 1.1,
+				"eventToNextRafMs": 4.5,
+				"containingFrameGapMs": 12.5,
+				"eventToNextRuntimeFrameEndMs": 11.6,
+				"nextRuntimeFrameCpuMs": 7,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0.1, 0.1],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.5, 0.5],
+					"tickRuntimeNpcs": [3, 1.2, 1.1],
+					"ThreeRuntimePanel": [4, 0.6, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 20007.1,
+				"eventEmissionMs": 20007.3,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 3.7,
+				"containingFrameGapMs": 16.4,
+				"eventToNextRuntimeFrameEndMs": 10.2,
+				"nextRuntimeFrameCpuMs": 6.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0, 0],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0.1, 0.1],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.1, 0.1],
+					"tickRuntimeNpcs": [3, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 0.7, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 21900.9,
+				"eventEmissionMs": 21901,
+				"health": 97,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 5.1,
+				"containingFrameGapMs": 12.5,
+				"eventToNextRuntimeFrameEndMs": 10.7,
+				"nextRuntimeFrameCpuMs": 5.5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [1, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 1.0, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 22706.3,
+				"eventEmissionMs": 22707.4,
+				"health": 25,
+				"transactionMs": 1.7,
+				"eventToNextRafMs": 8.0,
+				"containingFrameGapMs": 16.5,
+				"eventToNextRuntimeFrameEndMs": 18.4,
+				"nextRuntimeFrameCpuMs": 10.4,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 1.8, 1.7],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0.2, 0.2],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.4, 0.4],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.7, 1.7],
+					"ThreeRuntimePanel": [2, 0.8, 0.6],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.4, 0.3],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 22741.6,
+				"eventEmissionMs": 22741.7,
+				"health": null,
+				"transactionMs": 0.4,
+				"eventToNextRafMs": 4.5,
+				"containingFrameGapMs": 17.2,
+				"eventToNextRuntimeFrameEndMs": 12.0,
+				"nextRuntimeFrameCpuMs": 7.4,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 0.4, 0.4],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"attemptRuntimeCombatAttack": [1, 0.4, 0.4],
+					"ThreeRuntimePanel": [4, 1.3, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 3,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 23637.3,
+				"eventEmissionMs": 23637.6,
+				"health": 0,
+				"transactionMs": 4.7,
+				"eventToNextRafMs": 7.7,
+				"containingFrameGapMs": 17.4,
+				"eventToNextRuntimeFrameEndMs": 13.4,
+				"nextRuntimeFrameCpuMs": 5.6,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 4.7, 4.7],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0.1, 0.1],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.1, 0.1],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"controllerDispose": [1, 2, 2],
+					"removeNpcPresentation": [1, 3.1, 3.1],
+					"handleCombatEvent:npcRemoved": [1, 3.3, 3.3],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0.1, 0.1],
+					"handleCombatEvent:questsChanged": [1, 0.2, 0.2],
+					"syncQuestProgress": [1, 0.2, 0.2],
+					"defeatRuntimeNpc": [1, 4, 4],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 4.7, 4.7],
+					"ThreeRuntimePanel": [4, 1.0, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.4, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 17484.3,
+				"eventEmissionMs": 17486.3,
+				"health": null,
+				"transactionMs": 1.4,
+				"eventToNextRafMs": 9.0,
+				"containingFrameGapMs": 20.5,
+				"eventToNextRuntimeFrameEndMs": 17.4,
+				"nextRuntimeFrameCpuMs": 8.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.3, 0.3],
+					"attemptRuntimeCombatAttack": [1, 1.4, 1.4],
+					"handleKeyDown": [1, 2.3, 2.3],
+					"ThreeRuntimePanel": [4, 2.5, 0.8],
+					"InventoryNotifications": [2, 0.2, 0.1],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 2.1, 2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [3, 0.1, 0.1]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 19635.7,
+				"eventEmissionMs": 19636.4,
+				"health": 99,
+				"transactionMs": 0.9,
+				"eventToNextRafMs": 4.2,
+				"containingFrameGapMs": 13.1,
+				"eventToNextRuntimeFrameEndMs": 13.2,
+				"nextRuntimeFrameCpuMs": 8.9,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0.1, 0.1],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.4, 0.4],
+					"tickRuntimeNpcs": [2, 0.9, 0.9],
+					"ThreeRuntimePanel": [4, 0.8, 0.3],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0.1, 0.1]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 21534.1,
+				"eventEmissionMs": 21534.3,
+				"health": 98,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 3.8,
+				"containingFrameGapMs": 11.2,
+				"eventToNextRuntimeFrameEndMs": 12.4,
+				"nextRuntimeFrameCpuMs": 8.4,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0.1, 0.1],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0, 0],
+					"gameOverCheck": [1, 0.1, 0.1],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [2, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 1.1, 0.4],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 23426.7,
+				"eventEmissionMs": 23426.8,
+				"health": 97,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 4.5,
+				"containingFrameGapMs": 11.6,
+				"eventToNextRuntimeFrameEndMs": 10.9,
+				"nextRuntimeFrameCpuMs": 6.4,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.2, 0.2],
+					"tickRuntimeNpcs": [1, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 1.3, 0.5],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 24331.8,
+				"eventEmissionMs": 24332.6,
+				"health": 25,
+				"transactionMs": 1.5,
+				"eventToNextRafMs": 6.1,
+				"containingFrameGapMs": 15.4,
+				"eventToNextRuntimeFrameEndMs": 16.8,
+				"nextRuntimeFrameCpuMs": 10.6,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 1.5, 1.5],
+					"triggerAttack": [1, 0.1, 0.1],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.4, 0.4],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.5, 1.5],
+					"ThreeRuntimePanel": [2, 0.7, 0.5],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 24363.5,
+				"eventEmissionMs": 24363.7,
+				"health": null,
+				"transactionMs": 0.3,
+				"eventToNextRafMs": 3.6,
+				"containingFrameGapMs": 14,
+				"eventToNextRuntimeFrameEndMs": 12.3,
+				"nextRuntimeFrameCpuMs": 8.7,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [4, 0.4, 0.4],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"attemptRuntimeCombatAttack": [1, 0.3, 0.3],
+					"ThreeRuntimePanel": [4, 1.1, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"handleNpcEvent:npcMoved": [2, 0, 0],
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"applyEnemyContact": [1, 0, 0],
+					"handleNpcEvent:npcFacingChanged": [1, 0, 0],
+					"tickRuntimeNpcs": [2, 0.5, 0.5]
+				}
+			},
+			{
+				"run": 4,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 25352.8,
+				"eventEmissionMs": 25353.1,
+				"health": 0,
+				"transactionMs": 3.4,
+				"eventToNextRafMs": 6.6,
+				"containingFrameGapMs": 17.6,
+				"eventToNextRuntimeFrameEndMs": 13.7,
+				"nextRuntimeFrameCpuMs": 7,
+				"reactCommits": 3,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 3.6, 3.6],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.1, 0.1],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"controllerDispose": [1, 0.8, 0.8],
+					"removeNpcPresentation": [1, 1.7, 1.7],
+					"handleCombatEvent:npcRemoved": [1, 2, 2],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0.1, 0.1],
+					"syncQuestProgress": [1, 0.2, 0.2],
+					"defeatRuntimeNpc": [1, 2.8, 2.8],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 3.4, 3.4],
+					"ThreeRuntimePanel": [6, 1.7, 0.7],
+					"InventoryNotifications": [4, 0.2, 0.1],
+					"ThreePerformanceOverlay": [4, 0, 0],
+					"DevelopmentPerformanceOverlay": [4, 0.3, 0.2],
+					"QuestObjectiveTracker": [4, 0, 0],
+					"tickRuntimeNpcs": [2, 0.2, 0.2],
+					"handleNpcEvent:npcFacingChanged": [1, 0, 0],
+					"handleNpcEvent:npcMoved": [1, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "missed",
+				"origin": "Space key handler",
+				"startMs": 13676.9,
+				"eventEmissionMs": 13678.4,
+				"health": null,
+				"transactionMs": 0.9,
+				"eventToNextRafMs": 5.4,
+				"containingFrameGapMs": 16.1,
+				"eventToNextRuntimeFrameEndMs": 11.8,
+				"nextRuntimeFrameCpuMs": 6.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0, 0],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.2, 0.2],
+					"attemptRuntimeCombatAttack": [1, 0.9, 0.9],
+					"handleKeyDown": [1, 1.7, 1.7],
+					"ThreeRuntimePanel": [4, 1.6, 0.5],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.2, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0.8, 0.8],
+					"handleNpcEvent:npcMoved": [3, 0.1, 0.1],
+					"handleNpcEvent:npcFacingChanged": [1, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 16138.9,
+				"eventEmissionMs": 16139.9,
+				"health": 99,
+				"transactionMs": 1.4,
+				"eventToNextRafMs": 4.6,
+				"containingFrameGapMs": 14.1,
+				"eventToNextRuntimeFrameEndMs": 9.7,
+				"nextRuntimeFrameCpuMs": 5,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.2, 0.2],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0.1, 0.1],
+					"applyEnemyContact": [1, 0.8, 0.8],
+					"tickRuntimeNpcs": [2, 1.4, 1.4],
+					"ThreeRuntimePanel": [4, 0.9, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 18037.4,
+				"eventEmissionMs": 18037.5,
+				"health": 98,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 3.1,
+				"containingFrameGapMs": 12.1,
+				"eventToNextRuntimeFrameEndMs": 10.5,
+				"nextRuntimeFrameCpuMs": 7.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0.1, 0.1],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.1, 0.1],
+					"tickRuntimeNpcs": [2, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.4, 0.2],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "contact",
+				"origin": "tickRuntimeNpcs",
+				"startMs": 19929.5,
+				"eventEmissionMs": 19929.6,
+				"health": 97,
+				"transactionMs": 0.2,
+				"eventToNextRafMs": 4.1,
+				"containingFrameGapMs": 10.5,
+				"eventToNextRuntimeFrameEndMs": 12.9,
+				"nextRuntimeFrameCpuMs": 8.7,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleNpcEvent:npcBlocked": [1, 0, 0],
+					"handleNpcEvent:enemyTouchedPlayer": [1, 0, 0],
+					"damagePlayer": [1, 0, 0],
+					"playerHealthMutation": [1, 0, 0],
+					"handleNpcEvent:playerDamaged": [1, 0, 0],
+					"handleNpcEvent:status": [1, 0, 0],
+					"gameOverCheck": [1, 0, 0],
+					"handleNpcEvent:stateChanged": [1, 0, 0],
+					"handleNpcEvent:combatChanged": [1, 0, 0],
+					"applyEnemyContact": [1, 0.1, 0.1],
+					"tickRuntimeNpcs": [1, 0.2, 0.2],
+					"ThreeRuntimePanel": [4, 0.4, 0.1],
+					"InventoryNotifications": [2, 0, 0],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "nonlethal",
+				"origin": "Space key handler",
+				"startMs": 20918.8,
+				"eventEmissionMs": 20919.5,
+				"health": 25,
+				"transactionMs": 1.1,
+				"eventToNextRafMs": 4.5,
+				"containingFrameGapMs": 16,
+				"eventToNextRuntimeFrameEndMs": 14.0,
+				"nextRuntimeFrameCpuMs": 9.5,
+				"reactCommits": 1,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0.1, 0.1],
+					"findAttackTarget": [1, 0.1, 0.1],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0.1, 0.1],
+					"handleCombatEvent:npcDamaged": [1, 0.2, 0.2],
+					"handleCombatEvent:status": [1, 0, 0],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 1.1, 1.1],
+					"handleKeyDown": [2, 1.1, 1.1],
+					"ThreeRuntimePanel": [2, 0.6, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0.3, 0.2],
+					"QuestObjectiveTracker": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "cooldown",
+				"origin": "Space key handler",
+				"startMs": 20941.4,
+				"eventEmissionMs": 20941.5,
+				"health": null,
+				"transactionMs": 0.1,
+				"eventToNextRafMs": 4.9,
+				"containingFrameGapMs": 11.8,
+				"eventToNextRuntimeFrameEndMs": 14.2,
+				"nextRuntimeFrameCpuMs": 9.3,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [3, 0.2, 0.2],
+					"handleCombatEvent:attackBlocked": [1, 0, 0],
+					"handleCombatEvent:status": [1, 0.1, 0.1],
+					"attemptRuntimeCombatAttack": [1, 0.1, 0.1],
+					"ThreeRuntimePanel": [4, 0.5, 0.3],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0, 0],
+					"DevelopmentPerformanceOverlay": [2, 0, 0],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [2, 0, 0]
+				}
+			},
+			{
+				"run": 5,
+				"kind": "lethal",
+				"origin": "Space key handler",
+				"startMs": 21937,
+				"eventEmissionMs": 21937.2,
+				"health": 0,
+				"transactionMs": 4.5,
+				"eventToNextRafMs": 7.8,
+				"containingFrameGapMs": 13.8,
+				"eventToNextRuntimeFrameEndMs": 16.9,
+				"nextRuntimeFrameCpuMs": 9,
+				"reactCommits": 2,
+				"components": [
+					"DevelopmentPerformanceOverlay",
+					"InventoryNotifications",
+					"QuestObjectiveTracker",
+					"ThreePerformanceOverlay",
+					"ThreeRuntimePanel"
+				],
+				"stages": {
+					"handleKeyDown": [2, 4.5, 4.5],
+					"triggerAttack": [1, 0, 0],
+					"handleCombatEvent:attackStarted": [1, 0, 0],
+					"findAttackTarget": [1, 0, 0],
+					"damageNpc": [1, 0, 0],
+					"updateRecentEnemy": [1, 0, 0],
+					"handleCombatEvent:npcDamaged": [1, 0.2, 0.2],
+					"defeatFlagMutation": [1, 0, 0],
+					"handleCombatEvent:npcDefeated": [1, 0, 0],
+					"handleCombatEvent:flagChanged": [1, 0, 0],
+					"controllerDispose": [1, 1.3, 1.3],
+					"removeNpcPresentation": [1, 2.6, 2.6],
+					"handleCombatEvent:npcRemoved": [1, 3.1, 3.1],
+					"handleCombatEvent:status": [1, 0, 0],
+					"updateQuestProgress": [1, 0, 0],
+					"getQuestViews": [1, 0, 0],
+					"questProgressMessages": [1, 0, 0],
+					"handleCombatEvent:questsChanged": [1, 0.1, 0.1],
+					"syncQuestProgress": [1, 0.1, 0.1],
+					"defeatRuntimeNpc": [1, 3.8, 3.8],
+					"handleCombatEvent:stateChanged": [1, 0, 0],
+					"handleCombatEvent:combatChanged": [1, 0, 0],
+					"attemptRuntimeCombatAttack": [1, 4.5, 4.5],
+					"ThreeRuntimePanel": [4, 1.2, 0.4],
+					"InventoryNotifications": [2, 0.1, 0.1],
+					"ThreePerformanceOverlay": [2, 0.1, 0.1],
+					"DevelopmentPerformanceOverlay": [2, 0.1, 0.1],
+					"QuestObjectiveTracker": [2, 0, 0],
+					"tickRuntimeNpcs": [3, 0, 0]
+				}
+			}
+		]
+	}
+}
