@@ -88,10 +88,48 @@ export default function App() {
 	const [isInitialPresetChoice, setIsInitialPresetChoice] = useState(false);
 	const [activeSectionId, setActiveSectionId] =
 		useState<EditorSectionId>("map");
+	const requestedDialogueId = useProjectStore(
+		(state) => state.requestedDialogueId,
+	);
+	useEffect(() => {
+		if (requestedDialogueId) setActiveSectionId("dialogues");
+	}, [requestedDialogueId]);
 	const [runtimeProject, setRuntimeProject] = useState<GameProject | null>(
 		null,
 	);
 	const [editorView, setEditorView] = useState<"2d" | "3d">("2d");
+	const requestedEditorSource = useProjectStore(
+		(state) => state.requestedEditorSource,
+	);
+	useEffect(() => {
+		if (!requestedEditorSource) return;
+		const source = requestedEditorSource;
+		// The owning Map remains the only renderer and selection owner.
+		if (source.section === "map" && source.areaId) {
+			const store = useProjectStore.getState();
+			if (store.project.activeAreaId !== source.areaId)
+				store.setActiveArea(source.areaId);
+			const area = store.project.areas.find((a) => a.id === source.areaId);
+			const type = area?.npcs.some((n) => n.id === source.id)
+				? "npc"
+				: area?.objects.some((o) => o.id === source.id)
+					? "object"
+					: area?.eventBlocks.some((e) => e.id === source.id)
+						? "eventBlock"
+						: area?.pickups.some((p) => p.id === source.id)
+							? "pickup"
+							: area?.structures.some((s) => s.id === source.id)
+								? "structure"
+								: undefined;
+			store.setEditorSelection(
+				type
+					? { type, id: source.id, areaId: source.areaId }
+					: { type: "area", areaId: source.areaId },
+			);
+			setEditorView("2d");
+		}
+		setActiveSectionId(source.section as EditorSectionId);
+	}, [requestedEditorSource]);
 	const [statusMessage, setStatusMessage] = useState(
 		"Unsaved changes stay in this browser tab.",
 	);

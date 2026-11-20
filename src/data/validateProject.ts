@@ -7,6 +7,7 @@ import type {
 	ProgressionAction,
 } from "../types/game";
 import { backgroundPresets, portraitPresets } from "./presets";
+import { validateDialogue } from "./validateDialogue";
 
 export type ValidationIssue = {
 	id: string;
@@ -149,6 +150,21 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 	) {
 		if (!interaction) {
 			return;
+		}
+		if (
+			interaction.type === "start_dialogue" &&
+			!project.dialogues.some(
+				(dialogue) => dialogue.id === interaction.dialogueId,
+			)
+		) {
+			addIssue(
+				`${entityType}:${entityId}:${path}.dialogueId`,
+				`${entityType} "${entityId}" references missing dialogue "${interaction.dialogueId || "(unset)"}".`,
+				`${path}.dialogueId`,
+				entityType,
+				entityId,
+				"error",
+			);
 		}
 		interaction.completionActions?.forEach((action, index) => {
 			checkAction(action, `${path}.completionActions.${index}`, entityId);
@@ -750,5 +766,19 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 		);
 	}
 
+	const dialogueIds = new Set<string>();
+	project.dialogues.forEach((dialogue, index) => {
+		if (!dialogue.id || dialogueIds.has(dialogue.id))
+			addIssue(
+				`dialogues.${index}.id`,
+				`Duplicate or empty dialogue ID "${dialogue.id}".`,
+				`dialogues.${index}.id`,
+				"Dialogue",
+				dialogue.id,
+				"error",
+			);
+		dialogueIds.add(dialogue.id);
+		issues.push(...validateDialogue(project, dialogue));
+	});
 	return issues;
 }

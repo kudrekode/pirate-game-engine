@@ -486,6 +486,8 @@ export type DialogueDefinition = {
 	name: string;
 	startNodeId: string;
 	nodes: DialogueNode[];
+	/** Authoring-only coordinates. Never read by dialogue gameplay. */
+	editorLayout?: { nodes: Record<string, { x: number; y: number }> };
 };
 
 export type DialogueNode =

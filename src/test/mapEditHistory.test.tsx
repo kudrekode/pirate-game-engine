@@ -11,6 +11,31 @@ beforeEach(() =>
 	useProjectStore.getState().setProject(createProjectFromPreset("blank")),
 );
 
+it("does not record reference navigation to another area as an authoring edit", async () => {
+	const initial = useProjectStore.getState().project;
+	useProjectStore.getState().updateProject((p) => {
+		p.areas.push({ ...structuredClone(p.areas[0]), id: "story_other_area" });
+	});
+	const { result } = renderHook(() =>
+		useMapEditHistory(initial.activeAreaId, true),
+	);
+	await act(async () => {
+		useProjectStore.getState().setActiveArea("story_other_area");
+	});
+	expect(result.current.canUndo).toBe(false);
+	await act(async () => {
+		useProjectStore.getState().updateMetadata({ name: "Story edit" });
+	});
+	expect(result.current.canUndo).toBe(true);
+	act(() => result.current.undoMapEdit());
+	expect(useProjectStore.getState().project.activeAreaId).toBe(
+		"story_other_area",
+	);
+	expect(useProjectStore.getState().project.metadata.name).toBe(
+		initial.metadata.name,
+	);
+});
+
 it("restores isolated snapshots and selection, preserves redo on no-op and clears it on a new edit", () => {
 	const areaId = useProjectStore.getState().project.activeAreaId;
 	const { result } = renderHook(() => useMapEditHistory(areaId));

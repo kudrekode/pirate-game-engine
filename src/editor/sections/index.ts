@@ -11,9 +11,11 @@ import { ObjectsEditor } from "./ObjectsEditor";
 import { ProgressionEditor } from "./ProgressionEditor";
 import { QuestsEditor } from "./QuestsEditor";
 import { ShopsEditor } from "./ShopsEditor";
+import { StoryWorkspace } from "./StoryWorkspace";
 import { ThreeDPreview } from "./ThreeDPreview";
 
 export type EditorSectionId =
+	| "story"
 	| "map"
 	| "character"
 	| "camera"
@@ -41,6 +43,13 @@ export const editorSections: EditorSectionConfig[] = [
 		label: "Map",
 		description: "Paint areas, place objects, and edit map entities.",
 		component: MapEditor,
+	},
+	{
+		id: "story",
+		label: "Story",
+		description:
+			"Understand story relationships and open their owning editors.",
+		component: StoryWorkspace,
 	},
 	{
 		id: "character",

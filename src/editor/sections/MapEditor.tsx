@@ -318,6 +318,7 @@ export function MapEditor({
 	const [positionSnap, setPositionSnap] = useState(1);
 	const [rotationSnap, setRotationSnap] = useState(15);
 	const [focusRequest, setFocusRequest] = useState(0);
+	const sourceRequest = useProjectStore((state) => state.requestedEditorSource);
 	const [addAssetRequest, setAddAssetRequest] = useState<{
 		asset: SceneAsset;
 		serial: number;
@@ -329,6 +330,12 @@ export function MapEditor({
 	const [mapView, setMapView] = useState<MapWorkspaceView>(() =>
 		localStorage.getItem("map-workspace-view-v1") === "3d" ? "3d" : "2d",
 	);
+	useEffect(() => {
+		if (sourceRequest?.section === "map") {
+			setActiveTool("select");
+			setFocusRequest((n) => n + 1);
+		}
+	}, [sourceRequest]);
 	useEffect(() => {
 		onViewChange?.(mapView);
 		try {
@@ -347,6 +354,35 @@ export function MapEditor({
 				)
 				?.scrollIntoView?.({ block: "center", inline: "center" });
 	}, [focusRequest, mapView, project, selection]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Selection changes must refocus the requested map field.
+	useEffect(() => {
+		if (sourceRequest?.section !== "map") return;
+		const timer = window.setTimeout(() => {
+			const gameplay =
+				document.querySelector<HTMLDetailsElement>(".scene-gameplay");
+			if (!gameplay) return;
+			gameplay.open = true;
+			const field = sourceRequest.field?.startsWith("completionActions:")
+				? "interaction"
+				: sourceRequest.field;
+			const target =
+				Array.from(
+					gameplay.querySelectorAll<HTMLElement>("[data-story-field]"),
+				).find((e) => e.dataset.storyField === field) ?? gameplay;
+			let parent: HTMLElement | null = target;
+			while (parent) {
+				if (parent instanceof HTMLDetailsElement) parent.open = true;
+				parent = parent.parentElement;
+			}
+			target?.scrollIntoView?.({ block: "nearest" });
+			if (target) {
+				target.tabIndex = -1;
+				target.focus({ preventScroll: true });
+				target.dataset.sourceFocus = "true";
+			}
+		}, 0);
+		return () => window.clearTimeout(timer);
+	}, [sourceRequest, selection]);
 	const [paintTarget, setPaintTarget] = useState<PaintTarget>(
 		incomingNpcId ? "npc" : "terrain",
 	);
@@ -3109,7 +3145,10 @@ export function MapEditor({
 				</fieldset>
 				<div className="scene-inspector-scroll">
 					<SceneTransformInspector project={project} selection={selection} />
-					<details className="scene-gameplay" open={mapView === "2d"}>
+					<details
+						className="scene-gameplay"
+						open={mapView === "2d" || sourceRequest?.section === "map"}
+					>
 						<summary>Properties & gameplay</summary>
 						<MapInspector
 							project={project}

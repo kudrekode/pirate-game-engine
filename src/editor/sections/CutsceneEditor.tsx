@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { backgroundPresets, portraitPresets } from "../../data/presets";
 import { useProjectStore } from "../../store/useProjectStore";
+import { useEditorSource } from "./editorSource";
 
 export function CutsceneEditor() {
 	const cutscenes = useProjectStore((state) => state.project.cutscenes);
@@ -11,6 +12,7 @@ export function CutsceneEditor() {
 	const [selectedCutsceneId, setSelectedCutsceneId] = useState(
 		cutscenes[0]?.id ?? "",
 	);
+	useEditorSource("cutscenes", (source) => setSelectedCutsceneId(source.id));
 
 	const selectedCutscene = useMemo(
 		() => cutscenes.find((cutscene) => cutscene.id === selectedCutsceneId),

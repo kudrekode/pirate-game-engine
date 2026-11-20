@@ -65,6 +65,17 @@ export function useMapEditHistory(activeAreaId: string, observeEdits = false) {
 		if (!observeEdits) return;
 		const unsubscribe = useProjectStore.subscribe((state, previous) => {
 			if (restoringRef.current || state.project === previous.project) return;
+			// Switching the existing Map to a referenced area is navigation.
+			if (
+				state.project.areas === previous.project.areas &&
+				Object.keys(state.project).every(
+					(key) =>
+						key === "activeAreaId" ||
+						state.project[key as keyof GameProject] ===
+							previous.project[key as keyof GameProject],
+				)
+			)
+				return;
 			if (state.projectContextId !== previous.projectContextId) {
 				historyRef.current = { undo: [], redo: [] };
 				pendingRef.current = null;
