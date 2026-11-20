@@ -44,4 +44,4 @@ existing dressed artifacts and captures six phases plus timed 30 Hz samples from
 four cameras. `chest` reviews the real Kenney `open` clip, not a fabricated lid.
 
 The final assessment and limits are in
-[`INTERACTION_ANIMATION_PROPS_V1_RESULT.md`](../../../../INTERACTION_ANIMATION_PROPS_V1_RESULT.md).
+[`docs/reports/INTERACTION_ANIMATION_PROPS_V1_RESULT.md`](../../../../docs/reports/INTERACTION_ANIMATION_PROPS_V1_RESULT.md).

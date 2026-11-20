@@ -1,7 +1,7 @@
 # Authored Human V4 — local skin-weight repair
 
 **Rejected experimental revision. Do not promote this source into the creator.**
-See [the result](../../../../AUTHORED_HUMAN_V4_SKINNING_RESULT.md).
+See [the result](../../../../docs/reports/AUTHORED_HUMAN_V4_SKINNING_RESULT.md).
 
 The preserved V2 candidate is also the exact V3 body/weight baseline. V4 changes
 only the body weights near both elbows and knees. The tank is hidden in every

@@ -2,7 +2,7 @@
 
 **Accepted experimental creator foundation, with minor remaining art work.**
 The optional tank is unfinished and excluded from all product compiles.
-See [the integration result](../../../../CANONICAL_AUTHORED_HUMAN_INTEGRATION_RESULT.md).
+See [the integration result](../../../../docs/reports/CANONICAL_AUTHORED_HUMAN_INTEGRATION_RESULT.md).
 
 `candidate.blend` is the editable source: Basis plus six identity keys, all at
 zero; original UVs/triangles; Golden's unchanged 65-joint rig. The body receives

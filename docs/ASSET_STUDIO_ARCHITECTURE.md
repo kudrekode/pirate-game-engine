@@ -11,10 +11,10 @@ results into immutable `public/assets/project-characters/<content-id>/` folders.
 existing `threeVisual.assetId` contract, Golden clips and shared loader/clone path.
 The Character tab offers Set as Player Character and Add to NPC palette.
 Changed output imports as a separate asset. Keep the asset folders with exported
-project JSON. See [the game integration result](../AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
+project JSON. See [the game integration result](reports/AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
 
 **New-character default: Canonical Authored Human v1 (experimental).** See the
-[integration result](../CANONICAL_AUTHORED_HUMAN_INTEGRATION_RESULT.md) and
+[integration result](reports/CANONICAL_AUTHORED_HUMAN_INTEGRATION_RESULT.md) and
 [source package](../tools/blender-character/experimental/authored-human-canonical-v1/README.md).
 `CharacterRecipeV1.geometry` selects the family/revision/rig and six identity
 values; missing geometry keeps legacy semantics. The UI offers height, three
@@ -23,7 +23,7 @@ The creator has Character / Body / Face / Hair / Clothing / Appearance categorie
 curated body presets and five face presets with actual compiled thumbnails.
 Presets live in `packages/character-contract/src/authoredHumanPresets.ts`; recipes
 persist only resolved numeric values, with no schema change. See the
-[product pass result](../CHARACTER_CREATOR_PRODUCT_PASS_RESULT.md) for accepted
+[product pass result](reports/CHARACTER_CREATOR_PRODUCT_PASS_RESULT.md) for accepted
 ranges, visual evidence, browser flow and limitations. The viewport has Full Body /
 Upper Body / Face / Three-quarter / Back cameras; category framing respects manual
 camera choices and retains them across compilation. Dirty state covers the default
@@ -39,7 +39,7 @@ licence/provenance and compatibility. `authored_human_clothing.py` appends the
 saved garment source, applies independent targets, rebinds Golden skinning and
 removes garment-specific body faces. No garment generation occurs during compile.
 See [the source package](../tools/blender-character/clothing/everyday-v1/README.md)
-and [first outfit result](../CHARACTER_CREATOR_FIRST_OUTFIT_RESULT.md).
+and [first outfit result](reports/CHARACTER_CREATOR_FIRST_OUTFIT_RESULT.md).
 The old tank and eye-colour editing remain excluded.
 
 The existing compiler dispatches authored geometry to `generate_authored_human.py`
@@ -77,7 +77,7 @@ for current creator work; older milestone documents are historical evidence.
   change. The current registry has six choices including Long/Buns; `--library` covers 36 body/style artifacts (72 Blender passes). Use `--style` and `--case` for relevant subsets and `--list` before building.
 - Human Foundation replaces the coarse body volumes with anatomical lofts;
   see [body generation](#human-foundation-body-generation) and the
-  [acceptance report](../ASSET_CREATOR_HUMAN_FOUNDATION_RESULT.md).
+  [acceptance report](reports/ASSET_CREATOR_HUMAN_FOUNDATION_RESULT.md).
   Shirt Slot V1 remains deferred.
 - Generated fixtures live in
   `public/assets/derived/procedural-humanoids/{mannequin-v0,mannequin-hair-v0}/`.
@@ -119,7 +119,7 @@ local output folders; Save Recipe JSON preserves the editable CharacterRecipe.
 Recent results remain in-session only. No character library or game assignment
 is created. Failures retain the working preview and expose logs plus the captured
 recipe in expandable technical details. Timing evidence and current acceptance
-are in [the workflow report](../ASSET_CREATOR_WORKFLOW_RESULT.md).
+are in [the workflow report](reports/ASSET_CREATOR_WORKFLOW_RESULT.md).
 
 For iteration, run the affected creator/contract Vitest file or Node compiler
 test first. `npm run check:asset-studio` is a focused contract/Studio gate;

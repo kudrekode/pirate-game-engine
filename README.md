@@ -4,6 +4,8 @@ Adventure Game Builder is a browser-based editor and playable runtime for small 
 
 This is an active work-in-progress and a portfolio project, not a production-ready game engine. The editor-to-runtime loop, authored character pipeline, map tools, rule systems, and core adventure mechanics are implemented; polish, broader 3D parity, and export packaging are still in progress.
 
+See the [documentation index](docs/README.md) for development guides, audits, decisions and milestone reports.
+
 ## At a glance
 
 | 2D map workspace | Experimental 3D workspace |
@@ -50,7 +52,7 @@ This is an active work-in-progress and a portfolio project, not a production-rea
 The Map Asset Browser includes the 23-piece **Tidewatch Harbour** world kit.
 Browse Props, Buildings or Nature, search by name/tag, then drag into the 3D
 viewport. New kit assets use metres and place at scale 1. See the
-[kit result and scale guide](WORLD_ASSET_LIBRARY_PASS_RESULT.md) for the asset
+[kit result and scale guide](docs/reports/WORLD_ASSET_LIBRARY_PASS_RESULT.md) for the asset
 list, provenance and the explicit-import demonstration project. Existing projects
 and starter defaults are unchanged. Raised docks/steps are visual pieces and do
 not add height-aware movement.
@@ -164,14 +166,14 @@ Start the separate Asset Studio app:
 The main editor's **Asset Creator** button links to this app and reports whether it
 is reachable. Studio uses port **5174**; set `VITE_ASSET_STUDIO_URL` in the root
 `.env.local` and restart the editor for a different address. See the
-[Human Foundation report](ASSET_CREATOR_HUMAN_FOUNDATION_RESULT.md) for the improved
+[Human Foundation report](docs/reports/ASSET_CREATOR_HUMAN_FOUNDATION_RESULT.md) for the improved
 base mesh, proportions and acceptance evidence.
 
 Studio has a persistent **Back to Game Engine** link; use `VITE_GAME_ENGINE_URL`
 in Studio's `.env.local` to override the launching editor's address. **Generate
 Preview** runs one Blender build for iteration. **Finalise Character** retains
 the two-build assurance and offers GLB/manifest/recipe downloads. See the
-[workflow report](ASSET_CREATOR_WORKFLOW_RESULT.md) for anatomy validation,
+[workflow report](docs/reports/ASSET_CREATOR_WORKFLOW_RESULT.md) for anatomy validation,
 timings and acceptance evidence.
 
 ```bash

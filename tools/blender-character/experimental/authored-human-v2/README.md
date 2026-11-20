@@ -1,7 +1,7 @@
 # Authored human V2 — experimental source package
 
 **PARTIAL; visual acceptance failed. Do not register this family or use it as a
-finalised creator artifact.** See [the result](../../../../AUTHORED_HUMAN_PROTOTYPE_V2_RESULT.md).
+finalised creator artifact.** See [the result](../../../../docs/reports/AUTHORED_HUMAN_PROTOTYPE_V2_RESULT.md).
 
 - `canonical-neutral.blend`: packed, unchanged Quaternius body, eyes, brows,
   source materials/UVs/weights and Golden rig. The two invalid vendor normal-map

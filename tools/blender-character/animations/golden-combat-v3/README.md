@@ -70,5 +70,5 @@ updates the skinned skeleton before each sampled render. It loads the actual GLB
 no rig or playback implementation is substituted in the game. Body selectors
 reuse existing dressed artifacts and fail if those artifacts are missing.
 
-See `GOLDEN_COMBAT_ANIMATION_POLISH_RESULT.md` for the visual review, comparisons,
+See `docs/reports/GOLDEN_COMBAT_ANIMATION_POLISH_RESULT.md` for the visual review, comparisons,
 actual gameplay evidence and limitations. Numerical validation is not visual approval.

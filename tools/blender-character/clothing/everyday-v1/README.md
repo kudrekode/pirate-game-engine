@@ -57,4 +57,4 @@ and one round trip. Source checks and renders are opt-in; cheap clothing contrac
 API, provenance and installed-fixture round trips are included in existing CI.
 
 The complete product acceptance is recorded in
-[the first outfit result](../../../../CHARACTER_CREATOR_FIRST_OUTFIT_RESULT.md).
+[the first outfit result](../../../../docs/reports/CHARACTER_CREATOR_FIRST_OUTFIT_RESULT.md).

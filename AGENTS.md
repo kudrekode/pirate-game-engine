@@ -26,6 +26,8 @@ Keep diffs focused; architecture redesign and unrelated cleanup require an expli
   tests for logic changes. Do not introduce broad snapshots, coverage thresholds,
   new browser suites or heavy matrices without a changed acceptance criterion.
 
+Documentation index: [docs/README.md](docs/README.md). Audits and reports are dated records; current guides and source take precedence.
+
 ## Find the relevant code
 
 | Task | Start here |

@@ -367,7 +367,7 @@ observed states and RAF evidence (presentation/sampling). A successful move with
 no rendered walk must be investigated in adapter correctness, not repeatedly rerun
 or accepted as normal noise. Performance sampling now runs independently and
 reports the primary failure without cascading missing-snapshot assertions.
-See [Phase 1 results](../VALIDATION_OPTIMISATION_RESULT.md) for this checkout's run.
+See [Phase 1 results](reports/VALIDATION_OPTIMISATION_RESULT.md) for this checkout's run.
 
 Current assets can log missing `Textures/colormap.png`; screenshots can produce
 WebGL ReadPixels warnings. Record relevant warnings separately from test failures.
@@ -396,7 +396,7 @@ contains no gameplay state injection and the diagnostics expose no mutation API.
 
 ## Targeted runtime performance investigation
 
-The [current performance result](../THREE_RUNTIME_PERFORMANCE_RESULT.md) separates
+The [current performance result](reports/THREE_RUNTIME_PERFORMANCE_RESULT.md) separates
 hardware frame pacing, CPU phases and asynchronous GPU timing. Run
 `node tools/profile-three-runtime.mjs --list` before selecting exact headed cases;
 `node tools/profile-three-runtime.mjs local-check parity-contact,harbour-patrol`
@@ -412,7 +412,7 @@ keep fresh evidence separate from the historical parity artifacts.
 
 ## Combat-event frame gaps
 
-The combat-only investigation is documented in [COMBAT_HITCH_RESULT.md](../COMBAT_HITCH_RESULT.md).
+The combat-only investigation is documented in [COMBAT_HITCH_RESULT.md](reports/COMBAT_HITCH_RESULT.md).
 After starting root Vite, inspect `node tools/profile-combat-hitch.mjs --list`,
 then use `node tools/profile-combat-hitch.mjs after-local-check 5` for the unchanged
 Runtime Parity Demo. Miss, contact, nonlethal and lethal events are recorded
@@ -444,5 +444,5 @@ The animation review selects only four new motions and existing dressed bodies:
 `node tools/blender-character/review-golden-movement.mjs --list`, then
 `--body athletic`, `--body broad` or `--body fuller`. Root Vite must be running.
 No historical matrix or character regeneration is selected. Timed renders and body
-sheets are linked in `MOVEMENT_V2_RESULT.md`; numeric exports alone do not grant
+sheets are linked in `docs/reports/MOVEMENT_V2_RESULT.md`; numeric exports alone do not grant
 visual acceptance. Lifecycle counters cover movement before the deliberate reload.

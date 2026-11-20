@@ -56,4 +56,4 @@ Select `athletic`, `broad`, `fuller` or `canonical` explicitly. It plays real-ti
 motion and captures dense samples and six phases from gameplay scale, side,
 front-quarter and rear-quarter views. It updates skinned skeletons for every sample.
 No mutation hooks are added to the game. Review evidence and limitations are in
-[`MOVEMENT_V2_RESULT.md`](../../../../MOVEMENT_V2_RESULT.md).
+[`docs/reports/MOVEMENT_V2_RESULT.md`](../../../../docs/reports/MOVEMENT_V2_RESULT.md).

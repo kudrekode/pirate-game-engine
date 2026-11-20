@@ -1,7 +1,7 @@
 # Authored Human V3 — isolated deformation diagnosis
 
 **FAIL: body-deformation stop condition. No corrected garment is supplied.**
-See [the complete result](../../../../AUTHORED_HUMAN_V3_DEFORMATION_RESULT.md).
+See [the complete result](../../../../docs/reports/AUTHORED_HUMAN_V3_DEFORMATION_RESULT.md).
 The V2 package is the preserved art source; V3 adds diagnostic code and evidence.
 It does not duplicate or modify the `.blend` sources or register a creator family.
 

@@ -113,7 +113,7 @@ Visual findings should not be treated as runtime parity failures unless they cha
 
 ## Phase 2 evidence boundary
 
-See [the correctness report](../PHASE_2_CORRECTNESS_RESULT.md) for regression
+See [the correctness report](reports/PHASE_2_CORRECTNESS_RESULT.md) for regression
 scenarios and results. These tests establish the listed contracts, not exhaustive
 parity for every combination of legacy interactions and progression. Phaser polls
 held directions; Three consumes keyboard events. Both enforce the same earliest

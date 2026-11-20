@@ -1,7 +1,7 @@
 # Authored Human V5 — elbow art-directed skinning gate
 
 **Rejected experiment. Visual FAIL; do not promote this source into the creator.**
-See [the result](../../../../AUTHORED_HUMAN_V5_ELBOW_RESULT.md).
+See [the result](../../../../docs/reports/AUTHORED_HUMAN_V5_ELBOW_RESULT.md).
 
 This begins from the unchanged V3 body, stored as V2 `candidate.blend`.
 Only 118 vertices per elbow change, using the existing upperarm/lowerarm pair.

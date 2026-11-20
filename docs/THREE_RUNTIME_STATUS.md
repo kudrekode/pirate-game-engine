@@ -18,7 +18,7 @@
   world-kit assets use the shared traversal layer for continuous horizontal
   position, transformed obstacle collision, terrain/floor grounding and water
   rejection. Rounded cells still own gameplay triggers. See
-  [the traversal result](../TRAVERSAL_COLLISION_PASS_RESULT.md) for acceptance and
+  [the traversal result](reports/TRAVERSAL_COLLISION_PASS_RESULT.md) for acceptance and
   the unchanged harbour's obstructed shack doorway.
 - Runtime UI uses React overlays for status, flow log, health, inventory, quests, shops, cutscenes, authored dialogue nodes/choices, game over, and end game. Dialogue transitions and node effects use the existing shared dialogue engine.
 - Three performance diagnostics track RAF interval, frame callback cost, render cost, visual update, camera update, runtime tick, terrain rebuilds, water/coast updates, asset status, hitches, scene rebuilds, renderer counts, and RAF loop lifecycle.
@@ -29,7 +29,7 @@
   same marker renderer, GLTF cache, skeleton-safe clones and Golden idle/walk
   controller as built-ins. Player assignments and NPC instance transforms survive
   project save/reload. Missing assets retain references and show an explicit error
-  marker/message. See [integration evidence](../AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
+  marker/message. See [integration evidence](reports/AUTHORED_CHARACTER_GAME_INTEGRATION_RESULT.md).
 
 - Placeholder meshes cover terrain, structures, objects, NPCs, pickups, vehicles, event blocks, and the player.
 - Object and NPC definitions can author 3D visual settings through `threeVisual`.
@@ -111,4 +111,4 @@ Visual differences, imported asset styling, water/coast presentation, and camera
 Phase 2 established shared movement deadlines and modal/startup/end input blocking,
 including attack cooldown and NPC pause coverage. See the contracts in
 [RUNTIME_ARCHITECTURE.md](RUNTIME_ARCHITECTURE.md) and the bounded validation evidence
-in [PHASE_2_CORRECTNESS_RESULT.md](../PHASE_2_CORRECTNESS_RESULT.md).
+in [PHASE_2_CORRECTNESS_RESULT.md](reports/PHASE_2_CORRECTNESS_RESULT.md).

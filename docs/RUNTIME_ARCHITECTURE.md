@@ -318,7 +318,7 @@ Version-1 saves optionally include `player.equippedWeaponId`, validated against
 an owned sword item. Absent fields restore unarmed for older saves. Continue loads
 the attachment from semantic state without replaying Pickup/Equip. No renderer
 objects, bone references, grip pose or animation clocks are persisted. See
-`MELEE_WEAPON_V1_RESULT.md` for the bounded acceptance and art review.
+`docs/reports/MELEE_WEAPON_V1_RESULT.md` for the bounded acceptance and art review.
 
 `gameSave.ts` stores semantic session progress in version 1 plain JSON. Both
 adapters restore a fresh cloned session and rebuild visuals without rerunning
@@ -340,7 +340,7 @@ There are no new authored schema fields or renderer-specific save formats.
 Play offers Continue/New Game when a slot exists. New Game and Restart retain
 old saves until explicit replacement. Manual save is refused during modal/startup/
 end states and asynchronous cutscene action sequences. Inventory/quest displays
-initialize silently on Continue. See [the result report](../RUNTIME_PARITY_SAVE_GAME_RESULT.md)
+initialize silently on Continue. See [the result report](reports/RUNTIME_PARITY_SAVE_GAME_RESULT.md)
 and its two opt-in real-input browser checks for current evidence and limits.
 
 ## Movement V2
