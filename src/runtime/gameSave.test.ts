@@ -248,6 +248,55 @@ describe("renderer-neutral game saves", () => {
 		).toThrow(/different project/);
 	});
 
+	it("keeps playable identity when rule folders are collapsed or reorganized", () => {
+		const project = cloneProject(defaultProject);
+		const save = createGameSave(project, createRuntimeSession(project));
+		const edited = cloneProject(project);
+		edited.ruleGroups[0].collapsed = !edited.ruleGroups[0].collapsed;
+		expect(gameSaveProjectId(edited)).toBe(save.projectId);
+		edited.ruleGroups[0].name = "Renamed folder";
+		edited.ruleGroups[0].description = "Editor notes";
+		edited.rules[0].groupId = edited.ruleGroups[1].id;
+		expect(gameSaveProjectId(edited)).toBe(save.projectId);
+		expect(parseGameSave(JSON.stringify(save), edited)).toEqual(save);
+		edited.rules[0].enabled = !edited.rules[0].enabled;
+		expect(() => parseGameSave(JSON.stringify(save), edited)).toThrow(
+			/different project/,
+		);
+	});
+
+	it("recovers an existing save under its old folder-sensitive key", () => {
+		const project = cloneProject(defaultProject);
+		const save = createGameSave(project, createRuntimeSession(project));
+		// Fingerprint of this fixture before rule organization was excluded.
+		const legacyId = "c2e128a792c1db7a43679e94961576f8";
+		const legacyKey = GAME_SAVE_PREFIX + legacyId;
+		const legacyRaw = JSON.stringify({ ...save, projectId: legacyId });
+		const slots = new Map([[legacyKey, legacyRaw]]);
+		const storage = {
+			getItem: (key: string) => slots.get(key) ?? null,
+			setItem: (key: string, value: string) => {
+				slots.set(key, value);
+			},
+		};
+		expect(
+			loadGameSave(project, {
+				...storage,
+				setItem: () => {
+					throw new Error("Quota exceeded");
+				},
+			}),
+		).toEqual(save);
+		expect(slots.size).toBe(1);
+		expect(loadGameSave(project, storage)).toEqual(save);
+		expect(slots.get(legacyKey)).toBe(legacyRaw);
+		expect(slots.has(GAME_SAVE_PREFIX + save.projectId)).toBe(true);
+		project.ruleGroups[0].collapsed = !project.ruleGroups[0].collapsed;
+		expect(loadGameSave(project, storage)).toEqual(save);
+		project.rules[0].enabled = !project.rules[0].enabled;
+		expect(loadGameSave(project, storage)).toBeNull();
+	});
+
 	it.each<{ name: string; path: string[]; value: unknown }>([
 		{ name: "version", path: ["version"], value: 999 },
 		{ name: "missing state", path: ["state"], value: undefined },

@@ -1606,13 +1606,15 @@ it.each([
 	expect(runtimeSpies.tickRuntimeNpcs).toHaveBeenCalledTimes(1);
 });
 
-it("offers Continue or New Game, preserves the slot until explicit replacement, and restores silently", () => {
+it("offers Continue after rule folder edits, preserves the slot until explicit replacement, and restores silently", () => {
 	const project = makeProject();
 	const s = createRuntimeSession(project);
 	s.playerPosition = { x: 1, y: 2 };
 	s.runtimeState.variables.progress = 42;
 	const saved = createGameSave(project, s);
 	storeGameSave(project, saved, localStorage);
+	project.ruleGroups[0].collapsed = !project.ruleGroups[0].collapsed;
+	project.ruleGroups[0].name = "Renamed folder";
 	const before = JSON.stringify(project);
 	const first = render(
 		<RuntimePanel project={project} onClose={vi.fn()} initialMode="3d" />,

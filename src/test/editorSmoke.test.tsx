@@ -94,6 +94,42 @@ describe("editor smoke tests", () => {
 		).toHaveTextContent('missing item "missing_item"');
 	}, 15000);
 
+	it.each([
+		[{ cutscenes: [null] }, "cutscenes.0"],
+		[
+			{ rules: [{ trigger: { type: "on_future_event" } }] },
+			"rules.0.trigger.type",
+		],
+		[{ futureRules: [] }, "futureRules"],
+	])("keeps the open project when imported JSON is rejected (%j)", async (patch, path) => {
+		const { container } = render(<App />);
+		const name = await screen.findByDisplayValue("Demo Adventure");
+		fireEvent.change(name, { target: { value: "Open unsaved project" } });
+		const before = useProjectStore.getState().project;
+		const input = container.querySelector<HTMLInputElement>(
+			'input[type="file"][hidden]',
+		)!;
+		fireEvent.change(input, {
+			target: {
+				files: [
+					{
+						name: "invalid.json",
+						text: async () => JSON.stringify({ ...defaultProject, ...patch }),
+					},
+				],
+			},
+		});
+
+		expect(
+			await screen.findByText(`Import failed: ${path}`, { exact: false }),
+		).toBeInTheDocument();
+		expect(useProjectStore.getState().project).toBe(before);
+		expect(
+			screen.getByDisplayValue("Open unsaved project"),
+		).toBeInTheDocument();
+		expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+	});
+
 	it("saves with Ctrl+S", async () => {
 		localStorage.removeItem(STORAGE_KEY);
 		render(<App />);

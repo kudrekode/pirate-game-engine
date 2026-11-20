@@ -67,8 +67,10 @@ Raw historical saves, including the old single-map format, still pass through
 migration. These records have no reliable timestamp or project identity, so the
 app never guesses which different copy is newer. Choosing the saved copy leaves
 the other draft available until the next edit autosaves; manual Save replaces the
-manual slot. A recovered draft remains unsaved until Save succeeds. Export/import
-JSON is unchanged. This remains a single save/draft pair, not a project library.
+manual slot. A recovered draft remains unsaved until Save succeeds. JSON import
+checks the file before opening it, with field paths in the status bar for malformed
+or unsupported data. Supported legacy formats still pass through migration.
+Project storage uses a single save/draft pair.
 
 Storage failures appear in the status bar; a failed autosave does not display a
 success time, and a failed manual save does not mark changes saved. Export a copy

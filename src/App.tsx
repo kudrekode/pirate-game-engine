@@ -6,7 +6,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { migrateProject } from "./data/migrateProject";
+import { importProjectJson, readProjectJson } from "./data/projectImport";
 import {
 	createProjectFromPreset,
 	type ProjectPresetId,
@@ -47,12 +47,7 @@ function downloadJson(project: GameProject) {
 function readRecoveryProject(raw: string | null): GameProject | null {
 	if (!raw) return null;
 	try {
-		const value: unknown = JSON.parse(raw);
-		if (!value || typeof value !== "object" || Array.isArray(value))
-			return null;
-		// Read both current areas and the historical single-map shape.
-		if (!("areas" in value) && !("map" in value)) return null;
-		return migrateProject(value);
+		return readProjectJson(raw);
 	} catch {
 		return null;
 	}
@@ -361,8 +356,7 @@ export default function App() {
 		file
 			.text()
 			.then((raw) => {
-				const importedProject = JSON.parse(raw) as GameProject;
-				setProject(importedProject);
+				setProject(importProjectJson(raw));
 				savedProjectSnapshotRef.current = JSON.stringify(
 					useProjectStore.getState().project,
 				);
@@ -371,7 +365,7 @@ export default function App() {
 			})
 			.catch((error) => {
 				setStatusMessage(
-					error instanceof Error ? error.message : "Could not import project.",
+					`Import failed: ${error instanceof Error ? error.message : "Could not read the project file."}`,
 				);
 			})
 			.finally(() => {

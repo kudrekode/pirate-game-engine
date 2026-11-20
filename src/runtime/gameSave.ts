@@ -17,9 +17,13 @@ export const GAME_SAVE_PREFIX = "adventure-builder-game-save-v1:";
 export const MAX_GAME_SAVE_CHARS = 1_000_000;
 
 // An exact authored-revision identity avoids assigning a new ID every time an old
-// JSON project is imported. Active editor area is a selection, not game identity.
+// JSON project is imported. Exclude editor selection, layout and rule organization.
 // FNV-1a 128 is an identity checksum, not a security/authentication mechanism.
 export function gameSaveProjectId(project: GameProject): string {
+	return projectFingerprint(project, false);
+}
+
+function projectFingerprint(project: GameProject, legacy: boolean): string {
 	const canonical = (value: unknown): string => {
 		if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
 		if (value && typeof value === "object")
@@ -30,13 +34,18 @@ export function gameSaveProjectId(project: GameProject): string {
 				.join(",")}}`;
 		return JSON.stringify(value);
 	};
-	const { activeAreaId: _selection, ...authored } = project;
-	// Layout edits are not a new playable revision; legacy projects hash identically.
+	const { activeAreaId: _selection, ruleGroups, ...authored } = project;
 	authored.dialogues = authored.dialogues.map(
 		({ editorLayout: _layout, ...dialogue }) => dialogue,
 	);
+	if (!legacy)
+		authored.rules = authored.rules.map(
+			({ groupId: _folder, ...rule }) => rule,
+		);
+	// An empty folder list already had this fingerprint in older releases.
+	const revision = { ...authored, ruleGroups: legacy ? ruleGroups : [] };
 	let hash = 0x6c62272e07bb014262b821756295c58dn;
-	for (const byte of new TextEncoder().encode(canonical(authored))) {
+	for (const byte of new TextEncoder().encode(canonical(revision))) {
 		hash = BigInt.asUintN(
 			128,
 			(hash ^ BigInt(byte)) * 0x1000000000000000000013bn,
@@ -313,9 +322,11 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 	if (!saveShape(value))
 		throw new Error("Save game has an unsupported version or invalid format.");
 	const save = value as GameSave;
+	const projectId = gameSaveProjectId(project);
 	if (
-		save.projectId !== gameSaveProjectId(project) ||
-		save.projectVersion !== project.metadata.version
+		save.projectVersion !== project.metadata.version ||
+		(save.projectId !== projectId &&
+			save.projectId !== projectFingerprint(project, true))
 	)
 		throw new Error(
 			"Save game belongs to a different project or authored revision.",
@@ -495,7 +506,7 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 				].some((e) => e.id === targetId),
 		);
 	}
-	return save;
+	return { ...save, projectId };
 }
 
 export function restoreGameSave(
@@ -572,15 +583,30 @@ export function loadGameSave(
 	project: GameProject,
 	storage: GameSaveStorage,
 ): GameSave | null {
-	const raw = storage.getItem(GAME_SAVE_PREFIX + gameSaveProjectId(project));
-	return raw === null ? null : parseGameSave(raw, project);
+	const key = GAME_SAVE_PREFIX + gameSaveProjectId(project);
+	const raw = storage.getItem(key);
+	if (raw !== null) return parseGameSave(raw, project);
+	const legacyKey = GAME_SAVE_PREFIX + projectFingerprint(project, true);
+	if (legacyKey === key) return null;
+	const legacyRaw = storage.getItem(legacyKey);
+	if (legacyRaw === null) return null;
+	const save = parseGameSave(legacyRaw, project);
+	try {
+		if (storage.getItem(key) === null)
+			storage.setItem(key, JSON.stringify(save));
+	} catch {
+		// A full or read-only store can still continue from the original slot.
+	}
+	return save;
 }
 export function storeGameSave(
 	project: GameProject,
 	save: GameSave,
 	storage: GameSaveStorage,
 ): void {
-	const raw = JSON.stringify(save);
-	parseGameSave(raw, project);
-	storage.setItem(GAME_SAVE_PREFIX + gameSaveProjectId(project), raw);
+	const validated = parseGameSave(JSON.stringify(save), project);
+	storage.setItem(
+		GAME_SAVE_PREFIX + validated.projectId,
+		JSON.stringify(validated),
+	);
 }

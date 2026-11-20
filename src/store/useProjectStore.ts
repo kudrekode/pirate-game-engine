@@ -7,6 +7,7 @@ import { defaultProject } from "../data/defaultProject";
 import { createDefaultPixelAssets } from "../data/mapVisuals";
 import { cloneProject, migrateProject } from "../data/migrateProject";
 import { backgroundPresets, portraitPresets } from "../data/presets";
+import { readProjectJson } from "../data/projectImport";
 import { adjustTerrainHeight, setTerrainHeight } from "../data/terrainHeight";
 import { resolveNPCInstance } from "../runtime/npcResolver";
 import type {
@@ -630,7 +631,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 			return false;
 		}
 
-		const project = migrateProject(JSON.parse(raw));
+		const project = readProjectJson(raw);
 		set({
 			editorSelection: areaSelection(project),
 			project,

@@ -331,9 +331,13 @@ shared rounded grid cell. Shared area transitions invalidate stale traversal.
 
 One browser-local slot per authored content fingerprint uses a separate
 `adventure-builder-game-save-v1:` localStorage key. Canonical FNV-1a 128 identity
-excludes the active editor-area selection, so unchanged imports/reloads match.
-Authored content changes create a different revision/slot; version 1 does not
-migrate progress across edits. The fingerprint is not an authentication scheme.
+ignores the active editor area, dialogue graph layout, rule folders and rule-to-folder
+assignments. Other authored edits still create a separate revision and slot.
+Continue can recover a version-1 save whose older fingerprint matches the project
+with its original rule folders and assignments. On successful recovery, it copies
+the validated save to the current key when storage allows. Older saves retain their
+original key, so a project whose folder data already changed may need its original
+folder data for the first recovery.
 Validation rejects corrupt, unsupported, mismatched or invalid-reference payloads.
 There are no new authored schema fields or renderer-specific save formats.
 

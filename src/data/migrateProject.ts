@@ -1821,10 +1821,12 @@ function readStateValue(
 		: fallback;
 }
 
-function migrateRuleTrigger(value: unknown): RuleTrigger {
+function migrateRuleTrigger(value: unknown, path: string): RuleTrigger {
 	if (!isRecord(value)) {
-		return { type: "on_game_start" };
+		throw new Error(`${path}: Expected a rule trigger object.`);
 	}
+
+	if (value.type === "on_game_start") return { type: "on_game_start" };
 
 	if (value.type === "on_interact" || value.type === "on_touch") {
 		return { type: value.type, targetId: readString(value.targetId, "") };
@@ -1841,7 +1843,9 @@ function migrateRuleTrigger(value: unknown): RuleTrigger {
 		};
 	}
 
-	return { type: "on_game_start" };
+	throw new Error(
+		`${path}.type: Unsupported rule trigger ${JSON.stringify(value.type) ?? "(missing)"}.`,
+	);
 }
 
 function migrateSingleCondition(
@@ -2085,7 +2089,7 @@ function migrateRules(value: unknown): GameRule[] {
 				enabled: readBoolean(rule.enabled, true),
 				...(rule.runPolicy === "once" ? { runPolicy: "once" as const } : {}),
 				...(groupId ? { groupId } : {}),
-				trigger: migrateRuleTrigger(rule.trigger),
+				trigger: migrateRuleTrigger(rule.trigger, `rules.${index}.trigger`),
 				...(conditionTree ? { conditionTree } : {}),
 				actions: migrateActions(rule.actions),
 				elseActions: migrateActions(rule.elseActions),
@@ -2115,6 +2119,24 @@ function migrateRuleGroups(value: unknown): RuleGroup[] {
 				...(parentGroupId ? { parentGroupId } : {}),
 			},
 		];
+	});
+}
+
+function migrateCutscenes(value: unknown): Cutscene[] {
+	if (value === undefined) return cloneProject(defaultProject).cutscenes;
+	if (!Array.isArray(value)) throw new Error("cutscenes: Expected an array.");
+	return value.map((cutscene: unknown, index) => {
+		const path = `cutscenes.${index}`;
+		if (!isRecord(cutscene)) throw new Error(`${path}: Expected an object.`);
+		for (const field of ["id", "name", "backgroundImageId", "text"]) {
+			if (typeof cutscene[field] !== "string")
+				throw new Error(`${path}.${field}: Expected a string.`);
+		}
+		for (const field of ["portraitImageId", "speakerName"]) {
+			if (cutscene[field] !== undefined && typeof cutscene[field] !== "string")
+				throw new Error(`${path}.${field}: Expected a string.`);
+		}
+		return cutscene as Cutscene;
 	});
 }
 
@@ -2149,9 +2171,7 @@ export function migrateProject(value: unknown): GameProject {
 		tileStyles: migrateTileStyles(source.tileStyles),
 		pixelAssets: migratePixelAssets(source.pixelAssets),
 		player: migratePlayer(source.player),
-		cutscenes: Array.isArray(source.cutscenes)
-			? (source.cutscenes as Cutscene[])
-			: cloneProject(defaultProject).cutscenes,
+		cutscenes: migrateCutscenes(source.cutscenes),
 		dialogues: migrateDialogues(source.dialogues),
 		progression: migrateProgression(source.progression, activeAreaId),
 		gameState: migrateGameState(source.gameState),
