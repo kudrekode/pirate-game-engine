@@ -26,6 +26,52 @@ function createRenderedCharacter(): THREE.Group {
 	return root;
 }
 
+it("plays the seated pose through riding, then resumes the on-foot gait", async () => {
+	const clips = ["Walk", "Ride"].map(createRootMotionClip);
+	const asset: ThreeVisualAssetDefinition = {
+		id: "rider",
+		name: "Rider",
+		kind: "glb",
+		url: "/rider.glb",
+		animations: { walk: { clipName: "Walk" }, ride: { clipName: "Ride" } },
+	};
+	const restore = setThreeVisualAssetRegistryForTests([asset]);
+	const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync: async () => ({
+			scene: createRenderedCharacter(),
+			animations: clips,
+		}),
+	}));
+	const rider = createThreeCharacterAnimationController({
+		asset,
+		root: createRenderedCharacter(),
+	});
+	try {
+		await flushAssetPromises();
+		rider.sync({
+			defeated: false,
+			moving: true,
+			sprinting: true,
+			seated: true,
+		});
+		rider.update(0.2);
+		expect(rider.getStats()).toMatchObject({
+			semanticState: "ride",
+			activeClip: "Ride",
+			activeLoopingActions: 1,
+		});
+		rider.sync({ defeated: false, moving: true });
+		expect(rider.getStats()).toMatchObject({
+			semanticState: "walk",
+			activeClip: "Walk",
+		});
+	} finally {
+		rider.dispose();
+		restoreLoader();
+		restore();
+	}
+});
+
 it("prepares a sword variant once, keeps Attack priority and independent controllers, then restores unarmed/locomotion", async () => {
 	const clips = ["Idle", "Fist", "Sword", "Hit", "Bow"].map(
 		createRootMotionClip,

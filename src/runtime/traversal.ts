@@ -14,7 +14,7 @@ import type {
 	MapEntityTransform,
 	ThreeVisualConfig,
 } from "../types/game";
-import { resolveMovementAt } from "./movement";
+import { type MovementResolveOptions, resolveMovementAt } from "./movement";
 
 // Below knee height for the 1.82 m authored human. Also admits the harbour's
 // 36 cm transition where the stair landing meets the sloping shoreline.
@@ -22,6 +22,8 @@ export const MAX_STEP_HEIGHT = 0.4;
 export const MAX_STEP_DOWN = 0.4;
 export const PLAYER_HALF_WIDTH = 0.18;
 export const PLAYER_BODY_HEIGHT = 1.75;
+// Seated riders and small craft need more clearance than an on-foot character.
+const VEHICLE_HALF_WIDTH = 0.42;
 const EPS = 0.001;
 type Vec = [number, number, number];
 export type TraversalPosition = { x: number; y: number; height: number };
@@ -222,17 +224,15 @@ export function floorHeightAt(
 export function intersectsTraversalSolid(
 	solid: TraversalSolid,
 	position: TraversalPosition,
+	halfWidth = PLAYER_HALF_WIDTH,
+	bodyHeight = PLAYER_BODY_HEIGHT,
 ): boolean {
 	const center: Vec = [
 		position.x,
-		position.height + PLAYER_BODY_HEIGHT / 2 + EPS,
+		position.height + bodyHeight / 2 + EPS,
 		position.y,
 	];
-	const half: Vec = [
-		PLAYER_HALF_WIDTH,
-		PLAYER_BODY_HEIGHT / 2 - EPS,
-		PLAYER_HALF_WIDTH,
-	];
+	const half: Vec = [halfWidth, bodyHeight / 2 - EPS, halfWidth];
 	const delta = sub(center, solid.center);
 	// Separating-axis test for the upright player box against a transformed box.
 	for (const axis of [
@@ -328,19 +328,19 @@ export function createTraversalWorld(
 	const add = (candidate: Candidate, points: Vec[]) => {
 		const minX = Math.max(
 			-1,
-			Math.floor(Math.min(...points.map((p) => p[0])) - PLAYER_HALF_WIDTH),
+			Math.floor(Math.min(...points.map((p) => p[0])) - VEHICLE_HALF_WIDTH),
 		);
 		const maxX = Math.min(
 			area.width,
-			Math.floor(Math.max(...points.map((p) => p[0])) + PLAYER_HALF_WIDTH),
+			Math.floor(Math.max(...points.map((p) => p[0])) + VEHICLE_HALF_WIDTH),
 		);
 		const minZ = Math.max(
 			-1,
-			Math.floor(Math.min(...points.map((p) => p[2])) - PLAYER_HALF_WIDTH),
+			Math.floor(Math.min(...points.map((p) => p[2])) - VEHICLE_HALF_WIDTH),
 		);
 		const maxZ = Math.min(
 			area.height,
-			Math.floor(Math.max(...points.map((p) => p[2])) + PLAYER_HALF_WIDTH),
+			Math.floor(Math.max(...points.map((p) => p[2])) + VEHICLE_HALF_WIDTH),
 		);
 		for (let x = minX; x <= maxX; x++)
 			for (let z = minZ; z <= maxZ; z++) {
@@ -402,6 +402,7 @@ export function resolveTraversalFloor(
 	point: { x: number; y: number },
 	previousHeight: number,
 	maxRise = MAX_STEP_HEIGHT,
+	activeVehicle?: MovementResolveOptions["activeVehicle"],
 ) {
 	const x = Math.round(point.x),
 		y = Math.round(point.y);
@@ -409,7 +410,17 @@ export function resolveTraversalFloor(
 	const candidates: { height: number; surface?: string }[] = [];
 	const terrainMove = resolveMovementAt(area, x, y, project.player, {
 		ignoredObjectIds: world.profiledObjects,
+		activeVehicle,
 	});
+	// A vessel follows the waterline or its authored navigable overlay. Decks
+	// are barriers while sailing and become supporting floors on dismount.
+	if (activeVehicle?.vehicleType === "boat")
+		return terrainMove.canMove
+			? {
+					height: world.sampler.sampleSurfaceY(point, world.mode),
+					surface: undefined,
+				}
+			: undefined;
 	if (cell && !isTerrainWaterTileId(cell.tileId) && terrainMove.canMove)
 		candidates.push({ height: sampleTraversalTerrain(world, point) });
 	for (const candidate of world.candidates(point.x, point.y)) {
@@ -452,12 +463,14 @@ function checkPosition(
 	point: { x: number; y: number },
 	height: number,
 	airborneHeight?: number,
+	activeVehicle?: MovementResolveOptions["activeVehicle"],
 ): { position?: TraversalPosition; reason?: string } {
+	const halfWidth = activeVehicle ? VEHICLE_HALF_WIDTH : PLAYER_HALF_WIDTH;
 	if (
-		point.x < -0.5 + PLAYER_HALF_WIDTH ||
-		point.y < -0.5 + PLAYER_HALF_WIDTH ||
-		point.x > area.width - 0.5 - PLAYER_HALF_WIDTH ||
-		point.y > area.height - 0.5 - PLAYER_HALF_WIDTH
+		point.x < -0.5 + halfWidth ||
+		point.y < -0.5 + halfWidth ||
+		point.x > area.width - 0.5 - halfWidth ||
+		point.y > area.height - 0.5 - halfWidth
 	)
 		return { reason: "Out of bounds." };
 	const floor = resolveTraversalFloor(
@@ -469,6 +482,7 @@ function checkPosition(
 		airborneHeight === undefined
 			? MAX_STEP_HEIGHT
 			: Math.max(0, airborneHeight - height),
+		activeVehicle,
 	);
 	if (!floor)
 		return { reason: "No reachable floor (water, void or step too high)." };
@@ -480,20 +494,48 @@ function checkPosition(
 		{
 			ignoredObjectIds: world.profiledObjects,
 			walkableSurface: !!floor.surface,
+			activeVehicle,
 		},
 	);
 	if (!movement.canMove) return { reason: movement.reason };
 	const position = { ...point, height: floor.height };
 	for (const candidate of world.candidates(point.x, point.y)) {
-		if (candidate.solid && intersectsTraversalSolid(candidate.solid, position))
+		if (
+			candidate.solid &&
+			intersectsTraversalSolid(
+				candidate.solid,
+				position,
+				halfWidth,
+				activeVehicle?.vehicleType === "horse" ? 2.5 : PLAYER_BODY_HEIGHT,
+			)
+		)
 			return {
 				reason: `Blocked by ${world.labels.get(candidate.solid.id) ?? "solid object"}.`,
 			};
 		if (candidate.floor) {
 			const top = floorHeightAt(candidate.floor, point.x, point.y);
+			if (activeVehicle?.vehicleType === "boat") {
+				// A hull brushes a pier before its center reaches the deck.
+				for (const dx of [-halfWidth, halfWidth]) {
+					for (const dy of [-halfWidth, halfWidth]) {
+						const deck = floorHeightAt(
+							candidate.floor,
+							point.x + dx,
+							point.y + dy,
+						);
+						if (
+							deck !== undefined &&
+							deck >= position.height - EPS &&
+							deck < position.height + PLAYER_BODY_HEIGHT
+						)
+							return { reason: "Blocked by deck." };
+					}
+				}
+			}
 			if (
 				top !== undefined &&
-				top > floor.height + MAX_STEP_HEIGHT + EPS &&
+				(activeVehicle?.vehicleType === "boat" ||
+					top > floor.height + MAX_STEP_HEIGHT + EPS) &&
 				top < floor.height + PLAYER_BODY_HEIGHT
 			)
 				return { reason: "Raised floor blocks movement." };
@@ -534,6 +576,7 @@ export function sweepTraversal(
 	from: TraversalPosition,
 	delta: { x: number; y: number },
 	airborneHeight?: number,
+	activeVehicle?: MovementResolveOptions["activeVehicle"],
 ) {
 	const count = Math.max(1, Math.ceil(Math.hypot(delta.x, delta.y) / 0.04));
 	const path = [from];
@@ -546,6 +589,7 @@ export function sweepTraversal(
 			{ x: from.x + (delta.x * i) / count, y: from.y + (delta.y * i) / count },
 			path[path.length - 1].height,
 			airborneHeight,
+			activeVehicle,
 		);
 		if (!result.position) {
 			reason = result.reason;

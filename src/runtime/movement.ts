@@ -279,6 +279,8 @@ export function findDismountTile(
 	origin: { x: number; y: number },
 	facing: { x: number; y: number },
 	vehicle: VehicleMovementConfig,
+	canLand = (x: number, y: number) =>
+		canDismountAt(area, x, y, vehicle) && !isBlockedForDismount(area, x, y),
 ): DismountSearchResult {
 	const candidates = [
 		{ x: origin.x + facing.x, y: origin.y + facing.y },
@@ -296,11 +298,7 @@ export function findDismountTile(
 		}
 		seen.add(key);
 
-		if (!canDismountAt(area, candidate.x, candidate.y, vehicle)) {
-			continue;
-		}
-
-		if (!isBlockedForDismount(area, candidate.x, candidate.y)) {
+		if (canLand(candidate.x, candidate.y)) {
 			return { canDismount: true, x: candidate.x, y: candidate.y };
 		}
 	}

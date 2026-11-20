@@ -134,6 +134,8 @@ export function runObjectBehaviour(
 		message:
 			behaviour.vehicleType === "boat"
 				? "Boarded boat."
-				: "Vehicle behaviour configured but runtime boarding is not implemented yet.",
+				: behaviour.vehicleType === "horse"
+					? "Mounted horse."
+					: "Vehicle behaviour configured but runtime boarding is not implemented yet.",
 	};
 }

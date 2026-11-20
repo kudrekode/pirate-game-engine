@@ -1,0 +1,32 @@
+{
+	"asset": "mere-horse",
+	"source": "tools/hollow-kingdom/horse.py",
+	"forward": "+Z",
+	"metresPerUnit": 1,
+	"saddleBone": "Saddle",
+	"saddleHeightMetres": 1.52,
+	"riderOriginOffsetMetres": 0.66,
+	"riderClip": "Ride",
+	"mountedPelvisHeightMetres": 1.619,
+	"rigBones": 20,
+	"materials": 11,
+	"embeddedTextures": 2,
+	"roundTrip": "Blender 5.2.0 LTS",
+	"clips": {
+		"HorseIdle": {
+			"seconds": 2.4,
+			"fetlockTravelMetres": 0.0,
+			"saddleTravelMetres": 0.004
+		},
+		"HorseWalk": {
+			"seconds": 1.0,
+			"fetlockTravelMetres": 0.105,
+			"saddleTravelMetres": 0.027
+		},
+		"HorseCanter": {
+			"seconds": 0.6,
+			"fetlockTravelMetres": 0.192,
+			"saddleTravelMetres": 0.078
+		}
+	}
+}

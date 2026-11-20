@@ -1261,7 +1261,8 @@ export class AdventureScene extends Phaser.Scene {
 		if (event.type === "objectMoved") {
 			this.objectMarkers
 				.get(event.objectId)
-				?.setPosition(event.x * this.tileSize, event.y * this.tileSize);
+				?.setPosition(event.x * this.tileSize, event.y * this.tileSize)
+				.setVisible(true);
 			return;
 		}
 
@@ -2108,17 +2109,20 @@ export class AdventureScene extends Phaser.Scene {
 
 	private addVehicleVisual(behaviour: VehicleMovementConfig) {
 		this.vehicleVisual?.destroy();
-		if (!this.playerMarker || behaviour.vehicleType !== "boat") {
+		if (!this.playerMarker || behaviour.vehicleType === "cart") {
 			return;
 		}
 
+		const mountedId = this.playerVehicleState.vehicleObjectInstanceId;
+		if (mountedId) this.objectMarkers.get(mountedId)?.setVisible(false);
+		const horse = behaviour.vehicleType === "horse";
 		const hull = this.add
 			.ellipse(
 				0,
 				this.tileSize * 0.08,
 				this.tileSize * 0.86,
-				this.tileSize * 0.52,
-				0x075985,
+				this.tileSize * (horse ? 0.64 : 0.52),
+				horse ? 0x825b40 : 0x075985,
 				0.88,
 			)
 			.setStrokeStyle(2, 0xe0f2fe, 0.86);

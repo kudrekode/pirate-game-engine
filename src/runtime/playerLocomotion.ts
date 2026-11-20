@@ -28,7 +28,8 @@ export function setPlayerSprint(
 			held &&
 			!session.bowDraw &&
 			moving &&
-			!session.playerVehicleState.active &&
+			(!session.playerVehicleState.active ||
+				session.playerVehicleState.vehicleType === "horse") &&
 			session.runtimePlayerHealth > 0 &&
 			!isRuntimeGameplayBlocked(session, blocked);
 }

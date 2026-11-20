@@ -130,9 +130,11 @@ export function createGameSave(
 ): GameSave {
 	assertGameSaveSafe(session);
 	const q = session.runtimeQuestState;
-	const traversal = session.playerVehicleState.active
-		? undefined
-		: session.traversal;
+	const traversal =
+		session.traversal?.grid.x === session.playerPosition.x &&
+		session.traversal.grid.y === session.playerPosition.y
+			? session.traversal
+			: undefined;
 	const save: GameSave = {
 		version: 1,
 		projectId: gameSaveProjectId(project),

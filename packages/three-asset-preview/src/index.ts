@@ -11,6 +11,7 @@ export type ThreeCharacterAnimationState =
 	| "idle"
 	| "walk"
 	| "run"
+	| "ride"
 	| "jump"
 	| "fall"
 	| "land"

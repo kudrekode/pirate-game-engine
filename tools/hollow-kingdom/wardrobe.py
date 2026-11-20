@@ -29,8 +29,9 @@ def dress(name,hood):
         if image.size[0]>512:
             image.scale(512,512)
             image.pack()
-    coat=cloth("wool coat","indigo.jpg" if hood else "russet.jpg")
-    mantle=cloth("mantle","charcoal.jpg" if hood else "loden.jpg")
+    poacher = name == "poacher"
+    coat=cloth("wool coat","loden.jpg" if poacher else "indigo.jpg" if hood else "russet.jpg")
+    mantle=cloth("mantle","russet.jpg" if poacher else "charcoal.jpg" if hood else "loden.jpg")
     leather=cloth("oiled leather","oak.jpg")
     trousers=cloth("woven breeches","charcoal.jpg")
     kit.material("buckle",rgb=(.40,.23,.064))
@@ -78,6 +79,14 @@ def dress(name,hood):
     else:
         garment([(1.739,.111,.124,.022,"Head",.012),(1.78,.124,.14,.022,"Head",.023),
                  (1.845,.105,.116,.043,"Head",.02),(1.863,.012,.02,.088,"Head",0)],coat.name)
+    if poacher:
+        garment([(1.525,.116,.128,.017,"neck_01",.022),
+                 (1.618,.129,.144,.014,"Head",.017),
+                 (1.665,.122,.141,.014,"Head",.017)],trousers.name)
+        # Leather game bag and brass clasp on the belt.
+        kit.block(-.173,-.085,.986,.16,.112,.17,leather.name)
+        kit.block(-.173,-.147,1.005,.058,.015,.038,"buckle")
+        assignments.extend(["pelvis"]*(len(m.points)-len(assignments)))
     kit.block(0,-.147,1.035,.068,.021,.043,"buckle")
     assignments.extend(["spine_01"]*(len(m.points)-len(assignments)))
     outfit=m.finish("Tailored outerwear")
@@ -95,5 +104,7 @@ def dress(name,hood):
 
 
 if __name__=="__main__":
-    dress("wayfarer",True)
-    dress("ferryman",False)
+    selected = sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
+    for name in ("wayfarer","ferryman","poacher"):
+        if not selected or name in selected:
+            dress(name,name != "ferryman")

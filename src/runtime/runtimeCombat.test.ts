@@ -14,6 +14,7 @@ import {
 	createRuntimeSession,
 	type RuntimeSessionState,
 } from "./runtimeSession";
+import { createRuntimeTraversal, createTraversalWorld } from "./traversal";
 
 function makeArea(patch: Partial<GameArea> = {}): GameArea {
 	return {
@@ -97,6 +98,40 @@ function makeEvents() {
 }
 
 describe("runtime combat attack", () => {
+	it("lands a diagonal sword swing from fractional ground, respects facing and intervening solids", () => {
+		const session = makeSession(makeArea({ npcs: [makeNpc({ x: 2, y: 2 })] }));
+		const area = session.project.areas[0];
+		session.playerCombat.attackRangeTiles = 2;
+		const world = createTraversalWorld(session.project, area);
+		session.traversal = createRuntimeTraversal(world, area, session.project, {
+			x: 0.75,
+			y: 0.8,
+		});
+		const direction = { x: 1, y: 1 };
+		const { emit } = makeEvents();
+		expect(
+			attemptRuntimeCombatAttack(session, area, 1000, emit, { x: -1, y: 0 }),
+		).toBe(false);
+		world.solids.push({
+			id: "wall",
+			axes: [
+				[1, 0, 0],
+				[0, 1, 0],
+				[0, 0, 1],
+			],
+			center: [1.5, 1, 1.5],
+			half: [0.2, 1.5, 0.5],
+		});
+		expect(
+			attemptRuntimeCombatAttack(session, area, 1500, emit, direction),
+		).toBe(false);
+		world.solids.pop();
+		expect(
+			attemptRuntimeCombatAttack(session, area, 2000, emit, direction),
+		).toBe(true);
+		expect(session.runtimeState.npcs.bandit.health).toBe(75);
+	});
+
 	it("damages a hostile NPC in facing range", () => {
 		const session = makeSession(makeArea({ npcs: [makeNpc()] }));
 		const area = session.project.areas[0];

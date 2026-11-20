@@ -24,6 +24,7 @@ import {
 } from "../../data/worldAssetTraversal";
 export type ThreeVisualAssetDefinition = VisualAssetDefinition & {
 	traversal?: AssetTraversalProfile;
+	mountedSeat?: { height: number; node?: string };
 };
 
 import { characterAssetProblem } from "../../data/characterAssets";
@@ -36,6 +37,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		[
 			["wayfarer", "Cloaked Wayfarer"],
 			["ferryman", "Merewatch Ferryman"],
+			["poacher", "Ashwood Poacher"],
 		] as const
 	).map(
 		([key, name]): ThreeVisualAssetDefinition => ({
@@ -43,6 +45,12 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 			id: `mere-${key}`,
 			name,
 			url: `/assets/hollow-kingdom/${key}.glb`,
+			animations: {
+				...PROCEDURAL_MANNEQUIN_V0_ASSET.animations,
+				...(key === "wayfarer" && {
+					ride: { assetId: "mere-rider-actions", clipName: "Ride" },
+				}),
+			},
 			materialProfile: "preserve",
 			tags: ["hollow-kingdom", "golden-skeleton"],
 		}),
@@ -75,6 +83,48 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 			tags: ["hollow-kingdom", "merewatch"],
 		}),
 	),
+	{
+		id: "mere-skiff",
+		name: "Oswin's Lake Skiff",
+		kind: "glb",
+		url: "/assets/hollow-kingdom/skiff.glb",
+		category: "vehicle",
+		defaultScale: 1,
+		defaultHeightOffset: -0.19,
+		defaultRotationOffset: 180,
+		mountedSeat: { height: 0.49 },
+		castShadow: true,
+		receiveShadow: true,
+		tags: ["hollow-kingdom", "boat"],
+	},
+	{
+		id: "mere-horse",
+		name: "Bracken, Merewatch Mare",
+		kind: "glb",
+		url: "/assets/hollow-kingdom/horse.glb",
+		category: "vehicle",
+		defaultScale: 1,
+		defaultRotationOffset: 180,
+		mountedSeat: { height: 1.52, node: "Saddle" },
+		animations: {
+			idle: { clipName: "HorseIdle" },
+			walk: { clipName: "HorseWalk" },
+			run: { clipName: "HorseCanter" },
+		},
+		castShadow: true,
+		receiveShadow: true,
+		tags: ["hollow-kingdom", "horse"],
+	},
+	{
+		id: "mere-rider-actions",
+		name: "Merewatch Rider",
+		kind: "glb",
+		url: "/assets/hollow-kingdom/rider.glb",
+		category: "character",
+		animationOnly: true,
+		hiddenFromBrowser: true,
+		tags: ["animation", "golden-skeleton"],
+	},
 	{
 		id: "weapon-bow-v1",
 		name: "Bow",

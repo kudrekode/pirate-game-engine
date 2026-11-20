@@ -164,9 +164,9 @@
 				{ "x": 18, "y": 3, "tileId": "grass" },
 				{ "x": 19, "y": 3, "tileId": "grass" },
 				{ "x": 20, "y": 3, "tileId": "grass" },
-				{ "x": 21, "y": 3, "tileId": "grass" },
-				{ "x": 22, "y": 3, "tileId": "grass" },
-				{ "x": 23, "y": 3, "tileId": "grass" },
+				{ "x": 21, "y": 3, "tileId": "dirt" },
+				{ "x": 22, "y": 3, "tileId": "dirt" },
+				{ "x": 23, "y": 3, "tileId": "dirt" },
 				{ "x": 24, "y": 3, "tileId": "grass" },
 				{ "x": 25, "y": 3, "tileId": "grass" },
 				{ "x": 26, "y": 3, "tileId": "grass" },
@@ -208,9 +208,9 @@
 				{ "x": 18, "y": 4, "tileId": "grass" },
 				{ "x": 19, "y": 4, "tileId": "grass" },
 				{ "x": 20, "y": 4, "tileId": "grass" },
-				{ "x": 21, "y": 4, "tileId": "grass" },
-				{ "x": 22, "y": 4, "tileId": "grass" },
-				{ "x": 23, "y": 4, "tileId": "grass" },
+				{ "x": 21, "y": 4, "tileId": "dirt" },
+				{ "x": 22, "y": 4, "tileId": "dirt" },
+				{ "x": 23, "y": 4, "tileId": "dirt" },
 				{ "x": 24, "y": 4, "tileId": "grass" },
 				{ "x": 25, "y": 4, "tileId": "grass" },
 				{ "x": 26, "y": 4, "tileId": "grass" },
@@ -252,9 +252,9 @@
 				{ "x": 18, "y": 5, "tileId": "grass" },
 				{ "x": 19, "y": 5, "tileId": "grass" },
 				{ "x": 20, "y": 5, "tileId": "grass" },
-				{ "x": 21, "y": 5, "tileId": "grass" },
-				{ "x": 22, "y": 5, "tileId": "grass" },
-				{ "x": 23, "y": 5, "tileId": "grass" },
+				{ "x": 21, "y": 5, "tileId": "dirt" },
+				{ "x": 22, "y": 5, "tileId": "dirt" },
+				{ "x": 23, "y": 5, "tileId": "dirt" },
 				{ "x": 24, "y": 5, "tileId": "grass" },
 				{ "x": 25, "y": 5, "tileId": "grass" },
 				{ "x": 26, "y": 5, "tileId": "grass" },
@@ -296,9 +296,9 @@
 				{ "x": 18, "y": 6, "tileId": "grass" },
 				{ "x": 19, "y": 6, "tileId": "grass" },
 				{ "x": 20, "y": 6, "tileId": "grass" },
-				{ "x": 21, "y": 6, "tileId": "grass" },
-				{ "x": 22, "y": 6, "tileId": "grass" },
-				{ "x": 23, "y": 6, "tileId": "grass" },
+				{ "x": 21, "y": 6, "tileId": "dirt" },
+				{ "x": 22, "y": 6, "tileId": "dirt" },
+				{ "x": 23, "y": 6, "tileId": "dirt" },
 				{ "x": 24, "y": 6, "tileId": "grass" },
 				{ "x": 25, "y": 6, "tileId": "grass" },
 				{ "x": 26, "y": 6, "tileId": "grass" },
@@ -341,9 +341,9 @@
 				{ "x": 19, "y": 7, "tileId": "grass" },
 				{ "x": 20, "y": 7, "tileId": "grass" },
 				{ "x": 21, "y": 7, "tileId": "grass" },
-				{ "x": 22, "y": 7, "tileId": "grass" },
-				{ "x": 23, "y": 7, "tileId": "grass" },
-				{ "x": 24, "y": 7, "tileId": "grass" },
+				{ "x": 22, "y": 7, "tileId": "dirt" },
+				{ "x": 23, "y": 7, "tileId": "dirt" },
+				{ "x": 24, "y": 7, "tileId": "dirt" },
 				{ "x": 25, "y": 7, "tileId": "grass" },
 				{ "x": 26, "y": 7, "tileId": "grass" },
 				{ "x": 27, "y": 7, "tileId": "grass" },
@@ -385,9 +385,9 @@
 				{ "x": 19, "y": 8, "tileId": "water" },
 				{ "x": 20, "y": 8, "tileId": "water" },
 				{ "x": 21, "y": 8, "tileId": "grass" },
-				{ "x": 22, "y": 8, "tileId": "grass" },
-				{ "x": 23, "y": 8, "tileId": "grass" },
-				{ "x": 24, "y": 8, "tileId": "grass" },
+				{ "x": 22, "y": 8, "tileId": "dirt" },
+				{ "x": 23, "y": 8, "tileId": "dirt" },
+				{ "x": 24, "y": 8, "tileId": "dirt" },
 				{ "x": 25, "y": 8, "tileId": "grass" },
 				{ "x": 26, "y": 8, "tileId": "grass" },
 				{ "x": 27, "y": 8, "tileId": "grass" },
@@ -429,9 +429,9 @@
 				{ "x": 19, "y": 9, "tileId": "water" },
 				{ "x": 20, "y": 9, "tileId": "water" },
 				{ "x": 21, "y": 9, "tileId": "water" },
-				{ "x": 22, "y": 9, "tileId": "water" },
-				{ "x": 23, "y": 9, "tileId": "grass" },
-				{ "x": 24, "y": 9, "tileId": "grass" },
+				{ "x": 22, "y": 9, "tileId": "sand" },
+				{ "x": 23, "y": 9, "tileId": "sand" },
+				{ "x": 24, "y": 9, "tileId": "sand" },
 				{ "x": 25, "y": 9, "tileId": "grass" },
 				{ "x": 26, "y": 9, "tileId": "grass" },
 				{ "x": 27, "y": 9, "tileId": "grass" },
@@ -473,9 +473,9 @@
 				{ "x": 19, "y": 10, "tileId": "water" },
 				{ "x": 20, "y": 10, "tileId": "water" },
 				{ "x": 21, "y": 10, "tileId": "water" },
-				{ "x": 22, "y": 10, "tileId": "water" },
-				{ "x": 23, "y": 10, "tileId": "water" },
-				{ "x": 24, "y": 10, "tileId": "water" },
+				{ "x": 22, "y": 10, "tileId": "sand" },
+				{ "x": 23, "y": 10, "tileId": "sand" },
+				{ "x": 24, "y": 10, "tileId": "sand" },
 				{ "x": 25, "y": 10, "tileId": "water" },
 				{ "x": 26, "y": 10, "tileId": "water" },
 				{ "x": 27, "y": 10, "tileId": "water" },
@@ -2453,9 +2453,9 @@
 				{ "x": 19, "y": 55, "tileId": "dirt" },
 				{ "x": 20, "y": 55, "tileId": "dirt" },
 				{ "x": 21, "y": 55, "tileId": "dirt" },
-				{ "x": 22, "y": 55, "tileId": "grass" },
-				{ "x": 23, "y": 55, "tileId": "grass" },
-				{ "x": 24, "y": 55, "tileId": "grass" },
+				{ "x": 22, "y": 55, "tileId": "dirt" },
+				{ "x": 23, "y": 55, "tileId": "dirt" },
+				{ "x": 24, "y": 55, "tileId": "dirt" },
 				{ "x": 25, "y": 55, "tileId": "grass" },
 				{ "x": 26, "y": 55, "tileId": "grass" },
 				{ "x": 27, "y": 55, "tileId": "grass" },
@@ -2465,10 +2465,10 @@
 				{ "x": 31, "y": 55, "tileId": "grass" },
 				{ "x": 32, "y": 55, "tileId": "grass" },
 				{ "x": 33, "y": 55, "tileId": "grass" },
-				{ "x": 34, "y": 55, "tileId": "grass" },
-				{ "x": 35, "y": 55, "tileId": "grass" },
-				{ "x": 36, "y": 55, "tileId": "grass" },
-				{ "x": 37, "y": 55, "tileId": "grass" },
+				{ "x": 34, "y": 55, "tileId": "dirt" },
+				{ "x": 35, "y": 55, "tileId": "dirt" },
+				{ "x": 36, "y": 55, "tileId": "dirt" },
+				{ "x": 37, "y": 55, "tileId": "dirt" },
 				{ "x": 38, "y": 55, "tileId": "grass" },
 				{ "x": 39, "y": 55, "tileId": "grass" },
 				{ "x": 40, "y": 55, "tileId": "grass" },
@@ -2497,21 +2497,21 @@
 				{ "x": 19, "y": 56, "tileId": "dirt" },
 				{ "x": 20, "y": 56, "tileId": "dirt" },
 				{ "x": 21, "y": 56, "tileId": "dirt" },
-				{ "x": 22, "y": 56, "tileId": "grass" },
-				{ "x": 23, "y": 56, "tileId": "grass" },
-				{ "x": 24, "y": 56, "tileId": "grass" },
-				{ "x": 25, "y": 56, "tileId": "grass" },
-				{ "x": 26, "y": 56, "tileId": "grass" },
-				{ "x": 27, "y": 56, "tileId": "grass" },
-				{ "x": 28, "y": 56, "tileId": "grass" },
-				{ "x": 29, "y": 56, "tileId": "grass" },
-				{ "x": 30, "y": 56, "tileId": "grass" },
-				{ "x": 31, "y": 56, "tileId": "grass" },
-				{ "x": 32, "y": 56, "tileId": "grass" },
-				{ "x": 33, "y": 56, "tileId": "grass" },
-				{ "x": 34, "y": 56, "tileId": "grass" },
-				{ "x": 35, "y": 56, "tileId": "grass" },
-				{ "x": 36, "y": 56, "tileId": "grass" },
+				{ "x": 22, "y": 56, "tileId": "dirt" },
+				{ "x": 23, "y": 56, "tileId": "dirt" },
+				{ "x": 24, "y": 56, "tileId": "dirt" },
+				{ "x": 25, "y": 56, "tileId": "dirt" },
+				{ "x": 26, "y": 56, "tileId": "dirt" },
+				{ "x": 27, "y": 56, "tileId": "dirt" },
+				{ "x": 28, "y": 56, "tileId": "dirt" },
+				{ "x": 29, "y": 56, "tileId": "dirt" },
+				{ "x": 30, "y": 56, "tileId": "dirt" },
+				{ "x": 31, "y": 56, "tileId": "dirt" },
+				{ "x": 32, "y": 56, "tileId": "dirt" },
+				{ "x": 33, "y": 56, "tileId": "dirt" },
+				{ "x": 34, "y": 56, "tileId": "dirt" },
+				{ "x": 35, "y": 56, "tileId": "dirt" },
+				{ "x": 36, "y": 56, "tileId": "dirt" },
 				{ "x": 37, "y": 56, "tileId": "grass" },
 				{ "x": 38, "y": 56, "tileId": "grass" },
 				{ "x": 39, "y": 56, "tileId": "grass" },
@@ -2545,12 +2545,12 @@
 				{ "x": 23, "y": 57, "tileId": "grass" },
 				{ "x": 24, "y": 57, "tileId": "grass" },
 				{ "x": 25, "y": 57, "tileId": "grass" },
-				{ "x": 26, "y": 57, "tileId": "grass" },
-				{ "x": 27, "y": 57, "tileId": "grass" },
-				{ "x": 28, "y": 57, "tileId": "grass" },
-				{ "x": 29, "y": 57, "tileId": "grass" },
-				{ "x": 30, "y": 57, "tileId": "grass" },
-				{ "x": 31, "y": 57, "tileId": "grass" },
+				{ "x": 26, "y": 57, "tileId": "dirt" },
+				{ "x": 27, "y": 57, "tileId": "dirt" },
+				{ "x": 28, "y": 57, "tileId": "dirt" },
+				{ "x": 29, "y": 57, "tileId": "dirt" },
+				{ "x": 30, "y": 57, "tileId": "dirt" },
+				{ "x": 31, "y": 57, "tileId": "dirt" },
 				{ "x": 32, "y": 57, "tileId": "grass" },
 				{ "x": 33, "y": 57, "tileId": "grass" },
 				{ "x": 34, "y": 57, "tileId": "grass" },
@@ -2981,22 +2981,6 @@
 						},
 						"rotation": { "x": 0, "y": -13, "z": 0 },
 						"scale": { "x": 1.05, "y": 1.05, "z": 1.05 }
-					}
-				},
-				{
-					"id": "crag-17",
-					"objectDefinitionId": "mere-crag",
-					"areaId": "merewatch",
-					"x": 23,
-					"y": 7,
-					"transform": {
-						"position": {
-							"x": -0.3999999999999986,
-							"y": -0.44,
-							"z": -0.09999999999999964
-						},
-						"rotation": { "x": 0, "y": 39, "z": 0 },
-						"scale": { "x": 0.94, "y": 0.94, "z": 0.94 }
 					}
 				},
 				{
@@ -3544,26 +3528,6 @@
 							"x": 1.3719521185266785,
 							"y": 1.3719521185266785,
 							"z": 1.3719521185266785
-						}
-					}
-				},
-				{
-					"id": "spruce-47",
-					"objectDefinitionId": "mere-spruce",
-					"areaId": "merewatch",
-					"x": 22,
-					"y": 6,
-					"transform": {
-						"position": {
-							"x": -0.37999999999999545,
-							"y": 0,
-							"z": -0.11062325509265047
-						},
-						"rotation": { "x": 0, "y": 55.616272212937474, "z": 0 },
-						"scale": {
-							"x": 0.6171823509316892,
-							"y": 0.6171823509316892,
-							"z": 0.6171823509316892
 						}
 					}
 				},
@@ -4352,18 +4316,6 @@
 					}
 				},
 				{
-					"id": "verge-97",
-					"objectDefinitionId": "mere-verge",
-					"areaId": "merewatch",
-					"x": 22,
-					"y": 7,
-					"transform": {
-						"position": { "x": 0.3999999999999986, "y": 0, "z": 0 },
-						"rotation": { "x": 0, "y": 69.26325126551092, "z": 0 },
-						"scale": { "x": 1.8, "y": 1.8, "z": 1.8 }
-					}
-				},
-				{
 					"id": "verge-98",
 					"objectDefinitionId": "mere-verge",
 					"areaId": "merewatch",
@@ -4836,26 +4788,6 @@
 					}
 				},
 				{
-					"id": "crag-123",
-					"objectDefinitionId": "mere-crag",
-					"areaId": "merewatch",
-					"x": 22,
-					"y": 9,
-					"transform": {
-						"position": {
-							"x": -0.28424662915058363,
-							"y": -0.42,
-							"z": -0.16999999999999993
-						},
-						"rotation": { "x": 0, "y": -11.30746914446354, "z": 0 },
-						"scale": {
-							"x": 0.6438544511049986,
-							"y": 0.6438544511049986,
-							"z": 0.6438544511049986
-						}
-					}
-				},
-				{
 					"id": "crag-124",
 					"objectDefinitionId": "mere-crag",
 					"areaId": "merewatch",
@@ -4974,6 +4906,136 @@
 							"z": 0.8472681684046984
 						}
 					}
+				},
+				{
+					"id": "camp-lamp",
+					"objectDefinitionId": "mere-lantern",
+					"areaId": "merewatch",
+					"x": 38,
+					"y": 55
+				},
+				{
+					"id": "cutters-coffer",
+					"objectDefinitionId": "poacher-coffer",
+					"areaId": "merewatch",
+					"x": 37,
+					"y": 56
+				},
+				{
+					"id": "oswins-ferry",
+					"objectDefinitionId": "oswins-skiff",
+					"areaId": "merewatch",
+					"x": 25,
+					"y": 30,
+					"transform": {
+						"position": { "x": 0, "y": 0, "z": 0 },
+						"rotation": { "x": 0, "y": 0, "z": 0 },
+						"scale": { "x": 1, "y": 1, "z": 1 }
+					}
+				},
+				{
+					"id": "keepers-jetty",
+					"objectDefinitionId": "mere-dock",
+					"areaId": "merewatch",
+					"x": 23,
+					"y": 12,
+					"transform": {
+						"position": { "x": 0.4499999999999993, "y": 0, "z": 0 },
+						"rotation": { "x": 0, "y": 0, "z": 0 },
+						"scale": { "x": 1, "y": 1, "z": 1 }
+					}
+				},
+				{
+					"id": "keepers-landing-lamp",
+					"objectDefinitionId": "mere-lantern",
+					"areaId": "merewatch",
+					"x": 22,
+					"y": 9,
+					"transform": {
+						"position": { "x": 0.3500000000000014, "y": 0, "z": 0 },
+						"rotation": { "x": 0, "y": 35, "z": 0 },
+						"scale": { "x": 0.83, "y": 0.83, "z": 0.83 }
+					}
+				},
+				{
+					"id": "keepers-salt-cask",
+					"objectDefinitionId": "mere-barrel",
+					"areaId": "merewatch",
+					"x": 21,
+					"y": 8,
+					"transform": {
+						"position": { "x": 0, "y": 0, "z": 0 },
+						"rotation": { "x": 0, "y": -19, "z": 0 },
+						"scale": { "x": 0.81, "y": 0.81, "z": 0.81 }
+					}
+				},
+				{
+					"id": "keepers-cask",
+					"objectDefinitionId": "mere-barrel",
+					"areaId": "merewatch",
+					"x": 20,
+					"y": 8,
+					"transform": {
+						"position": {
+							"x": 0.33999999999999986,
+							"y": 0,
+							"z": -0.3799999999999999
+						},
+						"rotation": { "x": 0, "y": 23, "z": 0 },
+						"scale": { "x": 0.66, "y": 0.66, "z": 0.66 }
+					}
+				},
+				{
+					"id": "keepers-heath",
+					"objectDefinitionId": "mere-verge",
+					"areaId": "merewatch",
+					"x": 20,
+					"y": 7,
+					"transform": {
+						"position": {
+							"x": 0.1999999999999993,
+							"y": 0,
+							"z": -0.40000000000000036
+						},
+						"rotation": { "x": 0, "y": -27, "z": 0 },
+						"scale": { "x": 0.86, "y": 0.86, "z": 0.86 }
+					}
+				},
+				{
+					"id": "dispatch-lamp",
+					"objectDefinitionId": "mere-lantern",
+					"areaId": "merewatch",
+					"x": 21,
+					"y": 4,
+					"transform": {
+						"position": {
+							"x": 0.3999999999999986,
+							"y": 0,
+							"z": -0.2999999999999998
+						},
+						"rotation": { "x": 0, "y": 19, "z": 0 },
+						"scale": { "x": 0.8, "y": 0.8, "z": 0.8 }
+					}
+				},
+				{
+					"id": "tower-dispatch-box",
+					"objectDefinitionId": "keepers-dispatch",
+					"areaId": "merewatch",
+					"x": 23,
+					"y": 4,
+					"transform": {
+						"position": { "x": 0, "y": 0, "z": 0 },
+						"rotation": { "x": 0, "y": 12, "z": 0 },
+						"scale": { "x": 1, "y": 1, "z": 1 }
+					}
+				},
+				{
+					"id": "bracken",
+					"objectDefinitionId": "mere-mare",
+					"areaId": "merewatch",
+					"blocksMovement": true,
+					"x": 27,
+					"y": 49
 				}
 			],
 			"pickups": [],
@@ -4993,6 +5055,42 @@
 						"faction": "Merewatch",
 						"alignment": "friendly",
 						"canInteract": true,
+						"movementSpeed": 1
+					}
+				},
+				{
+					"id": "pine-lookout",
+					"npcDefinitionId": "pine-lookout",
+					"areaId": "merewatch",
+					"x": 32,
+					"y": 56,
+					"facing": "left",
+					"blocksMovement": true,
+					"movementMode": "stationary",
+					"attributes": {
+						"maxHealth": 48,
+						"health": 48,
+						"alignment": "hostile",
+						"faction": "Pine poachers",
+						"canInteract": false,
+						"movementSpeed": 1.35
+					}
+				},
+				{
+					"id": "ash-coat",
+					"npcDefinitionId": "ash-coat",
+					"areaId": "merewatch",
+					"x": 36,
+					"y": 55,
+					"facing": "left",
+					"blocksMovement": true,
+					"movementMode": "stationary",
+					"attributes": {
+						"maxHealth": 78,
+						"health": 78,
+						"alignment": "hostile",
+						"faction": "Pine poachers",
+						"canInteract": false,
 						"movementSpeed": 1
 					}
 				}
@@ -10105,7 +10203,7 @@
 		"combat": {
 			"maxHealth": 100,
 			"health": 100,
-			"attackDamage": 25,
+			"attackDamage": 9,
 			"attackRangeTiles": 1,
 			"attackCooldownMs": 500
 		},
@@ -10210,6 +10308,84 @@
 			"heightTiles": 1,
 			"blocksMovement": false,
 			"threeVisual": { "mode": "asset", "assetId": "mere-verge" }
+		},
+		{
+			"id": "poacher-coffer",
+			"name": "Poachers' Coffer",
+			"category": "container",
+			"blocksMovement": true,
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"threeVisual": { "mode": "asset", "assetId": "world-chest" },
+			"defaultInteraction": {
+				"type": "start_dialogue",
+				"activationMode": "on_interact",
+				"dialogueId": "search-coffer",
+				"prompt": "Search the poachers' coffer"
+			}
+		},
+		{
+			"id": "oswins-skiff",
+			"name": "Oswin’s lake skiff",
+			"category": "vehicle",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": false,
+			"threeVisual": { "mode": "asset", "assetId": "mere-skiff" },
+			"defaultInteraction": {
+				"type": "object_behaviour",
+				"activationMode": "on_interact",
+				"prompt": "Board Oswin’s skiff"
+			},
+			"defaultBehaviour": {
+				"type": "vehicle",
+				"vehicleType": "boat",
+				"movementMode": "sail",
+				"allowedTerrainIds": ["water"],
+				"dismountAllowedTerrainIds": ["grass", "dirt", "sand"],
+				"speedMultiplier": 1.32
+			}
+		},
+		{
+			"id": "keepers-dispatch",
+			"name": "Keeper’s dispatch box",
+			"category": "container",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": true,
+			"threeVisual": {
+				"mode": "asset",
+				"assetId": "world-chest",
+				"scale": 1.35
+			},
+			"defaultInteraction": {
+				"type": "start_dialogue",
+				"activationMode": "on_interact",
+				"dialogueId": "keepers-dispatch",
+				"prompt": "Examine the dispatch box"
+			}
+		},
+		{
+			"id": "mere-mare",
+			"name": "Bracken, Oswin's mare",
+			"category": "vehicle",
+			"widthTiles": 1,
+			"heightTiles": 1,
+			"blocksMovement": true,
+			"threeVisual": { "mode": "asset", "assetId": "mere-horse" },
+			"defaultInteraction": {
+				"type": "object_behaviour",
+				"activationMode": "on_interact",
+				"prompt": "Mount Bracken"
+			},
+			"defaultBehaviour": {
+				"type": "vehicle",
+				"vehicleType": "horse",
+				"movementMode": "ride",
+				"allowedTerrainIds": ["grass", "dirt"],
+				"dismountAllowedTerrainIds": ["grass", "dirt"],
+				"speedMultiplier": 1.6
+			}
 		}
 	],
 	"npcs": [
@@ -10228,22 +10404,490 @@
 			"defaultMovement": { "movementMode": "stationary", "movementSpeed": 1 },
 			"threeVisual": { "mode": "asset", "assetId": "mere-ferryman" },
 			"defaultInteraction": {
-				"type": "show_message",
+				"type": "start_dialogue",
 				"activationMode": "on_interact",
-				"speaker": "Oswin",
-				"prompt": "Speak to Oswin",
-				"lines": [
-					"See the light across the mere? My daughter keeps the watch now.",
-					"I leave this lamp burning till she shutters hers."
-				]
+				"dialogueId": "oswins-watch",
+				"prompt": "Speak to Oswin"
 			}
+		},
+		{
+			"id": "pine-lookout",
+			"name": "Pine Lookout",
+			"mapAvatarId": "ranger",
+			"defaultAttributes": {
+				"maxHealth": 48,
+				"health": 48,
+				"alignment": "hostile",
+				"faction": "Pine poachers",
+				"canInteract": false,
+				"movementSpeed": 1.35
+			},
+			"defaultMovement": {
+				"movementMode": "stationary",
+				"movementSpeed": 1.35
+			},
+			"defaultEnemyBehaviour": {
+				"enabled": true,
+				"detectionRadiusTiles": 5,
+				"chaseRadiusTiles": 8,
+				"returnToOrigin": true,
+				"contactDamage": 5
+			},
+			"threeVisual": { "mode": "asset", "assetId": "mere-poacher" }
+		},
+		{
+			"id": "ash-coat",
+			"name": "Ash Coat",
+			"mapAvatarId": "ranger",
+			"defaultAttributes": {
+				"maxHealth": 78,
+				"health": 78,
+				"alignment": "hostile",
+				"faction": "Pine poachers",
+				"canInteract": false,
+				"movementSpeed": 1
+			},
+			"defaultMovement": { "movementMode": "stationary", "movementSpeed": 1 },
+			"defaultEnemyBehaviour": {
+				"enabled": true,
+				"detectionRadiusTiles": 3,
+				"chaseRadiusTiles": 6,
+				"returnToOrigin": true,
+				"contactDamage": 8
+			},
+			"threeVisual": { "mode": "asset", "assetId": "mere-poacher" }
 		}
 	],
-	"items": [],
+	"items": [
+		{
+			"id": "watch-sword",
+			"name": "Ferryman's Hanger",
+			"category": "weapon",
+			"weapon": "sword",
+			"stackable": false,
+			"description": "A short blade with a worn leather grip. Oswin used to cut fouled ferry ropes with it."
+		},
+		{
+			"id": "beacon-key",
+			"name": "Beacon Key",
+			"category": "key",
+			"stackable": false,
+			"iconId": "key",
+			"description": "Salt has turned the bronze green. A little beacon is stamped on the bow."
+		},
+		{
+			"id": "watch-letter",
+			"name": "Watchkeeper's Letter",
+			"category": "quest",
+			"stackable": false,
+			"description": "For my father, at the winding well. The wax carries the watchtower seal."
+		},
+		{
+			"id": "ferry-penny",
+			"name": "Ferry Penny",
+			"category": "currency",
+			"stackable": true,
+			"maxStack": 99,
+			"description": "The old Merewatch fare. A lantern on one face, an oar on the other."
+		}
+	],
 	"shops": [],
-	"quests": [],
+	"quests": [
+		{
+			"id": "last-watch",
+			"name": "The Last Watch",
+			"status": "inactive",
+			"objectiveMode": "sequence",
+			"description": "Oswin's daughter keeps the beacon. Her signal is overdue.",
+			"objectives": [
+				{
+					"id": "blade",
+					"description": "Take Oswin's hanger. Equip it in Inventory (I).",
+					"condition": {
+						"type": "has_item",
+						"itemId": "watch-sword",
+						"quantity": 1
+					}
+				},
+				{
+					"id": "pine-lookout",
+					"description": "Defeat Pine Lookout at the lamplit camp east of the cottage lane.",
+					"condition": {
+						"type": "flag",
+						"flag": "npc_defeated_pine-lookout",
+						"value": true
+					}
+				},
+				{
+					"id": "ash-coat",
+					"description": "Defeat Ash Coat at the lamplit camp east of the cottage lane.",
+					"condition": {
+						"type": "flag",
+						"flag": "npc_defeated_ash-coat",
+						"value": true
+					}
+				},
+				{
+					"id": "coffer",
+					"description": "Search the poachers' coffer for the Beacon Key.",
+					"condition": {
+						"type": "has_item",
+						"itemId": "beacon-key",
+						"quantity": 1
+					}
+				},
+				{
+					"id": "crossing",
+					"description": "Sail from the village dock and find the letter by the watchtower.",
+					"condition": {
+						"type": "has_item",
+						"itemId": "watch-letter",
+						"quantity": 1
+					}
+				},
+				{
+					"id": "return",
+					"description": "Return to Oswin at the well and hand him the letter.",
+					"condition": {
+						"type": "flag",
+						"flag": "oswin-read-letter",
+						"value": true
+					}
+				}
+			],
+			"completionActions": [
+				{ "type": "give_item", "itemId": "ferry-penny", "quantity": 12 }
+			],
+			"completionMessage": "The Last Watch complete. Oswin pays you twelve ferry pennies."
+		}
+	],
 	"cutscenes": [],
-	"dialogues": [],
+	"dialogues": [
+		{
+			"id": "oswins-watch",
+			"name": "Oswin's watch",
+			"startNodeId": "well",
+			"nodes": [
+				{
+					"id": "well",
+					"type": "choice",
+					"speaker": "Oswin",
+					"text": "See the light across the mere? My daughter keeps the watch now. I leave this lamp burning till she shutters hers.",
+					"choices": [
+						{
+							"id": "offer",
+							"targetNodeId": "offer",
+							"text": "She hasn't shuttered it tonight?",
+							"conditions": [
+								{
+									"type": "quest_status",
+									"questId": "last-watch",
+									"status": "inactive"
+								}
+							]
+						},
+						{
+							"id": "camp",
+							"targetNodeId": "camp",
+							"text": "Where did they take the key?",
+							"conditions": [
+								{
+									"type": "quest_status",
+									"questId": "last-watch",
+									"status": "active"
+								},
+								{
+									"type": "not_has_item",
+									"itemId": "beacon-key",
+									"quantity": 1
+								},
+								{
+									"type": "not_has_item",
+									"itemId": "watch-letter",
+									"quantity": 1
+								}
+							]
+						},
+						{
+							"id": "cross",
+							"targetNodeId": "cross",
+							"text": "I have the key. Where do I land?",
+							"conditions": [
+								{
+									"type": "quest_status",
+									"questId": "last-watch",
+									"status": "active"
+								},
+								{ "type": "has_item", "itemId": "beacon-key", "quantity": 1 },
+								{
+									"type": "not_has_item",
+									"itemId": "watch-letter",
+									"quantity": 1
+								}
+							]
+						},
+						{
+							"id": "deliver",
+							"targetNodeId": "deliver",
+							"text": "She left this for you.",
+							"conditions": [
+								{
+									"type": "quest_status",
+									"questId": "last-watch",
+									"status": "active"
+								},
+								{ "type": "has_item", "itemId": "watch-letter", "quantity": 1 }
+							]
+						},
+						{
+							"id": "after",
+							"targetNodeId": "after",
+							"text": "Any word from the tower?",
+							"conditions": [
+								{
+									"type": "quest_status",
+									"questId": "last-watch",
+									"status": "completed"
+								}
+							]
+						},
+						{
+							"id": "farewell",
+							"targetNodeId": "farewell",
+							"text": "Leave him by the well.",
+							"conditions": []
+						}
+					]
+				},
+				{
+					"id": "offer",
+					"type": "choice",
+					"speaker": "Oswin",
+					"text": "Three nights burning. She leaves word at the tower, but two poachers took my beacon key. I can lend you my boat if you'll go.",
+					"choices": [
+						{
+							"id": "accept",
+							"targetNodeId": "accept",
+							"text": "Lend me a blade. I'll bring back word.",
+							"conditions": []
+						},
+						{
+							"id": "farewell",
+							"targetNodeId": "farewell",
+							"text": "Another time.",
+							"conditions": []
+						}
+					]
+				},
+				{
+					"id": "accept",
+					"type": "end",
+					"speaker": "Oswin",
+					"text": "Take my hanger. Open Inventory (I) and equip it. Turn back down the cottage lane and take the dirt track east to their lamp. Face them and press F to strike.",
+					"actions": [
+						{ "type": "activate_quest", "questId": "last-watch" },
+						{ "type": "give_item", "itemId": "watch-sword", "quantity": 1 }
+					]
+				},
+				{
+					"id": "camp",
+					"type": "end",
+					"speaker": "Oswin",
+					"text": "Their coffer is under a lamp in the southeast pines. Take the dirt fork at the cottage end of the lane. My mare grazes east of the well if you'd sooner ride.",
+					"actions": []
+				},
+				{
+					"id": "cross",
+					"type": "end",
+					"speaker": "Oswin",
+					"text": "My boat's at the end of our dock. Make for the lantern on the jetty left of the tower. Mara keeps the dispatch box uphill, at the foot of the beacon.",
+					"actions": []
+				},
+				{
+					"id": "deliver",
+					"type": "end",
+					"speaker": "Oswin",
+					"text": "‘Keep your lamp in the window.’ Oh, Mara. As if I'd ever let it go out. Keep the hanger, friend, and take these twelve pennies for the crossing.",
+					"actions": [
+						{ "type": "set_flag", "flag": "oswin-read-letter", "value": true },
+						{ "type": "remove_item", "itemId": "watch-letter", "quantity": 1 }
+					]
+				},
+				{
+					"id": "after",
+					"type": "end",
+					"speaker": "Oswin",
+					"text": "I've read it so many times the crease is wearing through. Still a good bright light up there.",
+					"actions": []
+				},
+				{
+					"id": "farewell",
+					"type": "end",
+					"speaker": "Oswin",
+					"text": "Mind your footing after dark.",
+					"actions": []
+				}
+			]
+		},
+		{
+			"id": "search-coffer",
+			"name": "The poachers' coffer",
+			"startNodeId": "coffer",
+			"nodes": [
+				{
+					"id": "coffer",
+					"type": "choice",
+					"text": "A heavy oak coffer sits in the lamplight. You need both poachers out of the way to search it.",
+					"choices": [
+						{
+							"id": "loot",
+							"targetNodeId": "loot",
+							"text": "Lift the lid and take the key.",
+							"conditions": [
+								{
+									"type": "flag_is",
+									"flag": "npc_defeated_pine-lookout",
+									"value": true
+								},
+								{
+									"type": "flag_is",
+									"flag": "npc_defeated_ash-coat",
+									"value": true
+								},
+								{
+									"type": "flag_is",
+									"flag": "poachers-coffer-emptied",
+									"value": false
+								}
+							]
+						},
+						{
+							"id": "empty",
+							"targetNodeId": "empty",
+							"text": "Check the empty coffer.",
+							"conditions": [
+								{
+									"type": "flag_is",
+									"flag": "poachers-coffer-emptied",
+									"value": true
+								}
+							]
+						},
+						{
+							"id": "leave",
+							"targetNodeId": "leave",
+							"text": "Step away.",
+							"conditions": []
+						}
+					]
+				},
+				{
+					"id": "loot",
+					"type": "end",
+					"speaker": "Poachers' Coffer",
+					"text": "A bronze key and three ferry pennies lie under the loose cloth. Time to take Oswin's boat across the mere.",
+					"actions": [
+						{ "type": "give_item", "itemId": "beacon-key", "quantity": 1 },
+						{ "type": "give_item", "itemId": "ferry-penny", "quantity": 3 },
+						{
+							"type": "set_flag",
+							"flag": "poachers-coffer-emptied",
+							"value": true
+						}
+					]
+				},
+				{
+					"id": "empty",
+					"type": "end",
+					"speaker": "Poachers' Coffer",
+					"text": "Only the loose cloth remains.",
+					"actions": []
+				},
+				{
+					"id": "leave",
+					"type": "end",
+					"speaker": "Poachers' Coffer",
+					"text": "You leave the coffer where it lies.",
+					"actions": []
+				}
+			]
+		},
+		{
+			"id": "keepers-dispatch",
+			"name": "The keeper’s dispatch box",
+			"startNodeId": "seal",
+			"nodes": [
+				{
+					"id": "seal",
+					"type": "choice",
+					"speaker": "Keeper’s dispatch box",
+					"text": "A little iron lock holds the lid against the wind. Someone has cut a lamp into the wood.",
+					"choices": [
+						{
+							"id": "open",
+							"text": "Turn the beacon key.",
+							"targetNodeId": "letter",
+							"conditions": [
+								{ "type": "has_item", "itemId": "beacon-key" },
+								{
+									"type": "flag_is",
+									"flag": "dispatch-collected",
+									"value": false
+								}
+							]
+						},
+						{
+							"id": "rattle",
+							"text": "Try the lock.",
+							"targetNodeId": "locked",
+							"conditions": [
+								{ "type": "not_has_item", "itemId": "beacon-key" },
+								{
+									"type": "flag_is",
+									"flag": "dispatch-collected",
+									"value": false
+								}
+							]
+						},
+						{
+							"id": "search",
+							"text": "Look inside.",
+							"targetNodeId": "empty",
+							"conditions": [
+								{
+									"type": "flag_is",
+									"flag": "dispatch-collected",
+									"value": true
+								}
+							]
+						},
+						{ "id": "leave", "text": "Leave the box.", "targetNodeId": "leave" }
+					]
+				},
+				{
+					"id": "letter",
+					"type": "end",
+					"speaker": "Mara’s letter",
+					"text": "Father — three horns in the dark, but no boats. I’ve barred the stair and lit the second wick. Keep your lamp in the window. — M.",
+					"actions": [
+						{ "type": "give_item", "itemId": "watch-letter", "quantity": 1 },
+						{ "type": "set_flag", "flag": "dispatch-collected", "value": true }
+					]
+				},
+				{
+					"id": "locked",
+					"type": "end",
+					"text": "It holds fast. You need the beacon key."
+				},
+				{
+					"id": "empty",
+					"type": "end",
+					"text": "Only grit and a broken stick of red sealing wax remain."
+				},
+				{ "id": "leave", "type": "end" }
+			]
+		}
+	],
 	"progression": [
 		{
 			"id": "arrive",
@@ -10256,5 +10900,6 @@
 	],
 	"gameState": { "flags": {}, "variables": {}, "inventory": {} },
 	"rules": [],
-	"ruleGroups": []
+	"ruleGroups": [],
+	"trackedQuestId": "last-watch"
 }

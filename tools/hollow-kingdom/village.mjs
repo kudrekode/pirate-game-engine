@@ -1,6 +1,9 @@
 // Rebuild the ordinary importable project. Positions and profiles use metres.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { authorEncounter } from "./encounter.mjs";
+import { authorLake } from "./lake.mjs";
+
 const root = new URL("../../", import.meta.url);
 const template = JSON.parse(
 	readFileSync(new URL("movement-v2-demo.project.json", root)),
@@ -281,6 +284,38 @@ area.npcs.push({
 	blocksMovement: true,
 	movementMode: "stationary",
 	attributes,
+});
+authorEncounter(project);
+authorLake(project);
+project.objects.push({
+	id: "mere-mare",
+	name: "Bracken, Oswin's mare",
+	category: "vehicle",
+	widthTiles: 1,
+	heightTiles: 1,
+	blocksMovement: true,
+	threeVisual: { mode: "asset", assetId: "mere-horse" },
+	defaultInteraction: {
+		type: "object_behaviour",
+		activationMode: "on_interact",
+		prompt: "Mount Bracken",
+	},
+	defaultBehaviour: {
+		type: "vehicle",
+		vehicleType: "horse",
+		movementMode: "ride",
+		allowedTerrainIds: ["grass", "dirt"],
+		dismountAllowedTerrainIds: ["grass", "dirt"],
+		speedMultiplier: 1.6,
+	},
+});
+area.objects.push({
+	id: "bracken",
+	objectDefinitionId: "mere-mare",
+	areaId: area.id,
+	blocksMovement: true,
+	x: 27,
+	y: 49,
 });
 writeFileSync(
 	fileURLToPath(new URL("hollow-kingdom.project.json", root)),

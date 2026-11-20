@@ -4,7 +4,13 @@ import harbour from "../../docs/assets/world-kit/tidewatch-harbour.project.json"
 import { migrateProject } from "../data/migrateProject";
 import { createProjectFromPreset } from "../data/projectPresets";
 import type { GameProject, MapEntityTransform } from "../types/game";
+import { createGameSave, restoreGameSave } from "./gameSave";
+import { setPlayerSprint, tryPlayerJump } from "./playerLocomotion";
 import { attemptPlayerMove } from "./playerMovementTransaction";
+import {
+	dismountRuntimeVehicle,
+	runRuntimeObjectBehaviour,
+} from "./runtimeObjectInteractions";
 import { createRuntimeSession } from "./runtimeSession";
 import {
 	createRuntimeTraversal,
@@ -459,4 +465,116 @@ it("bridges a held input poll gap without keeping stopped or blocked locomotion 
 	expect(isTraversalMoving(state, 1040)).toBe(false);
 	expect(isTraversalMoving(state, 1040, true)).toBe(true);
 	expect(isTraversalMoving(state, 1065, true)).toBe(false);
+});
+
+describe("vehicles in a profiled area", () => {
+	function mountFixture(type: "boat" | "horse") {
+		const { project, area } = fixture();
+		const boat = type === "boat";
+		if (boat) {
+			for (const tile of area.terrainTiles) tile.tileId = "water";
+			place(project, "mere-dock", 5, 7);
+		} else {
+			place(project, "world-crate", 7, 4);
+			for (const tile of area.terrainTiles) {
+				if (tile.x >= 9) tile.tileId = "water";
+			}
+		}
+		project.objects.push({
+			id: "mount",
+			name: type,
+			category: "vehicle",
+			widthTiles: 1,
+			heightTiles: 1,
+			blocksMovement: true,
+			defaultBehaviour: {
+				type: "vehicle",
+				vehicleType: type,
+				movementMode: boat ? "sail" : "ride",
+				allowedTerrainIds: [boat ? "water" : "sand"],
+				dismountAllowedTerrainIds: ["sand"],
+				speedMultiplier: 1.5,
+			},
+		});
+		const object = {
+			areaId: area.id,
+			id: "mount-1",
+			objectDefinitionId: "mount",
+			x: 7,
+			y: 7,
+			blocksMovement: true,
+		};
+		area.objects.push(object);
+		const session = createRuntimeSession(project);
+		const runtimeArea = session.project.areas[0];
+		session.playerPosition = { x: 6, y: 7 };
+		session.traversal = createRuntimeTraversal(
+			createTraversalWorld(session.project, runtimeArea),
+			runtimeArea,
+			session.project,
+			session.playerPosition,
+		);
+		runRuntimeObjectBehaviour(
+			session,
+			runtimeArea.objects.find((entry) => entry.id === "mount-1")!,
+			() => {},
+		);
+		return { session, project, object };
+	}
+	it("boards at the hull, stops at a dock, saves afloat and disembarks onto the deck over water", () => {
+		const { session, project, object } = mountFixture("boat");
+		expect(session.playerPosition).toEqual({ x: 7, y: 7 });
+		expect(session.traversal!.position.height).toBeCloseTo(0.18);
+		setPlayerSprint(session, true, true);
+		expect(session.traversal!.motion.sprinting).toBe(false);
+		const outward = attemptPlayerMove(session, { x: 1, y: 0 }, 0, 2.25);
+		expect(outward.type).toBe("moved");
+		expect(dismountRuntimeVehicle(session, () => {})).toBe(false);
+		const saved = createGameSave(project, session);
+		const restored = restoreGameSave(project, saved);
+		expect(restored.traversal!.position.x).toBeCloseTo(9.25);
+		expect(restored.playerVehicleState.vehicleType).toBe("boat");
+		expect(
+			restored.project.areas[0].objects.find((entry) => entry.id === "mount-1")!
+				.x,
+		).toBe(9);
+		expect(object.x).toBe(7);
+		attemptPlayerMove(restored, { x: -1, y: 0 }, 1000, 2.25);
+		restored.playerFacing = { x: -1, y: 0 };
+		expect(dismountRuntimeVehicle(restored, () => {})).toBe(true);
+		expect(restored.traversal!.position).toMatchObject({ x: 6, y: 7 });
+		expect(restored.traversal!.position.height).toBeCloseTo(1.01);
+		const boat = restored.project.areas[0].objects.find(
+			(entry) => entry.id === "mount-1",
+		)!;
+		runRuntimeObjectBehaviour(restored, boat, () => {});
+		attemptPlayerMove(restored, { x: -1, y: 0 }, 3000, 2);
+		expect(restored.traversal!.lastReason).toMatch(/deck/i);
+		expect(restored.traversal!.position.x).toBeGreaterThan(6.4);
+	});
+	it("accelerates on horseback, sweeps solids and water, and parks the horse for reboarding", () => {
+		const { session } = mountFixture("horse");
+		expect(session.currentMovementMode).toBe("ride");
+		expect(tryPlayerJump(session, 0)).toBe(false);
+		const walk = attemptPlayerMove(session, { x: 0, y: -1 }, 0, 0.4);
+		setPlayerSprint(session, true, true);
+		const canter = attemptPlayerMove(session, { x: 0, y: -1 }, 500, 0.4);
+		if (walk.type !== "moved" || canter.type !== "moved")
+			throw new Error("Horse failed to move");
+		expect(canter.moveDurationMs).toBeLessThan(walk.moveDurationMs);
+		attemptPlayerMove(session, { x: 0, y: -1 }, 1000, 5);
+		expect(session.traversal!.lastReason).toContain("world-crate");
+		attemptPlayerMove(session, { x: 1, y: 0 }, 2000, 4);
+		expect(session.traversal!.position.x).toBeLessThan(8.5);
+		const parkedAt = { ...session.playerPosition };
+		expect(dismountRuntimeVehicle(session, () => {})).toBe(true);
+		expect(session.currentMovementMode).toBe("walk");
+		expect(session.traversal!.motion.sprinting).toBe(false);
+		const horse = session.project.areas[0].objects.find(
+			(entry) => entry.id === "mount-1",
+		)!;
+		expect(horse).toMatchObject(parkedAt);
+		runRuntimeObjectBehaviour(session, horse, () => {});
+		expect(session.playerPosition).toEqual(parkedAt);
+	});
 });

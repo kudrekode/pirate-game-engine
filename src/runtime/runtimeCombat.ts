@@ -15,6 +15,10 @@ import {
 } from "./questEngine";
 import { isRuntimeGameplayBlocked } from "./runtimeInput";
 import type { RuntimeSessionState } from "./runtimeSession";
+import {
+	isInteractionSegmentBlocked,
+	type RuntimeTraversal,
+} from "./traversal";
 import { getEquippedWeapon, getRuntimeAttackStats } from "./weaponRuntime";
 
 export type RuntimeCombatEvent =
@@ -154,25 +158,75 @@ export function beginRuntimeCombatAttack(
 	return true;
 }
 
+/** Use the same heading as the swing in continuously traversed areas. */
+function findTraversalMeleeTarget(
+	session: RuntimeSessionState,
+	area: GameArea,
+	traversal: RuntimeTraversal,
+	facing: { x: number; y: number },
+	reach: number,
+): NPCInstance | undefined {
+	const origin = traversal.position;
+	const headingLength = Math.hypot(facing.x, facing.y);
+	if (!headingLength) return undefined;
+	let nearest: NPCInstance | undefined;
+	let closestDistance = Infinity;
+	for (const npc of area.npcs) {
+		if (
+			!isNpcAttackable(
+				npc,
+				session.runtimeState.npcs[npc.id],
+				session.defeatedNpcIds,
+			)
+		)
+			continue;
+		const dx = npc.x - origin.x;
+		const dy = npc.y - origin.y;
+		const distance = Math.hypot(dx, dy);
+		if (distance > reach || distance >= closestDistance) continue;
+		// Half of a 100-degree swing on either side of the character's heading.
+		if (
+			dx * facing.x + dy * facing.y <
+			distance * headingLength * Math.cos((50 * Math.PI) / 180)
+		)
+			continue;
+		if (isInteractionSegmentBlocked(traversal.world, origin, npc, npc.id))
+			continue;
+		nearest = npc;
+		closestDistance = distance;
+	}
+	return nearest;
+}
+
 export function attemptRuntimeCombatAttack(
 	session: RuntimeSessionState,
 	area: GameArea,
 	time: number,
 	emit: RuntimeCombatEventEmitter,
+	facing = session.playerFacing,
 ): boolean {
 	// Bow acceptance requires an explicit aim ray and the shared projectile loop.
 	if (getEquippedWeapon(session)?.id === "bow") return false;
 	if (!beginRuntimeCombatAttack(session, time, emit)) return false;
 	const attack = getRuntimeAttackStats(session);
 
-	const target = findAttackTarget(
-		area.npcs,
-		session.runtimeState.npcs,
-		session.defeatedNpcIds,
-		session.playerPosition,
-		session.playerFacing,
-		attack.attackRangeTiles,
-	);
+	const target =
+		session.traversal && !session.playerVehicleState.active
+			? findTraversalMeleeTarget(
+					session,
+					area,
+					session.traversal,
+					facing,
+					attack.attackRangeTiles,
+				)
+			: findAttackTarget(
+					area.npcs,
+					session.runtimeState.npcs,
+					session.defeatedNpcIds,
+					session.playerPosition,
+					session.playerFacing,
+					attack.attackRangeTiles,
+				);
 
 	if (!target) {
 		emit({ type: "attackBlocked", reason: "missed" });

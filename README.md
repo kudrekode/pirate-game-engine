@@ -6,7 +6,7 @@ This is an active work-in-progress and a portfolio project, not a production-rea
 
 See the [documentation index](docs/README.md) for development guides, audits, decisions and milestone reports.
 
-To play **The Hollow Kingdom**, import [the Merewatch village project](hollow-kingdom.project.json), select **3D View**, and press **Play**. The [village kit guide](tools/hollow-kingdom/README.md) includes the Blender rebuild commands.
+To play **The Hollow Kingdom**, import [the Merewatch village project](hollow-kingdom.project.json), select **3D View**, and press **Play**. Speak to Oswin at the well to begin **The Last Watch**. His mare, the poachers' camp and the watchtower ferry are all in the same area. The [Merewatch guide](tools/hollow-kingdom/README.md) has the controls and Blender rebuild commands.
 
 ## At a glance
 

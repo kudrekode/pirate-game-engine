@@ -966,7 +966,7 @@ describe("ThreeRuntimePanel", () => {
 		);
 	});
 
-	it("does not rebuild the Three scene for non-visual object state changes", async () => {
+	it("shows the authored currency when a container pays out without rebuilding the scene", async () => {
 		const project = makeProject({
 			areas: [
 				makeArea({
@@ -978,9 +978,9 @@ describe("ThreeRuntimePanel", () => {
 			items: [
 				{
 					category: "currency",
-					id: "gold_coin",
+					id: "ferry-penny",
 					maxStack: 999,
-					name: "Gold Coin",
+					name: "Ferry Penny",
 					stackable: true,
 				},
 			],
@@ -989,7 +989,7 @@ describe("ThreeRuntimePanel", () => {
 					blocksMovement: true,
 					category: "container",
 					defaultBehaviour: {
-						contents: [{ itemId: "gold_coin", quantity: 1 }],
+						contents: [{ itemId: "ferry-penny", quantity: 1 }],
 						once: true,
 						type: "container",
 					},
@@ -1015,6 +1015,7 @@ describe("ThreeRuntimePanel", () => {
 		await waitFor(() => {
 			expect(runtimeSpies.runRuntimeObjectBehaviour).toHaveBeenCalledTimes(1);
 		});
+		expect(screen.getByText("Ferry Penny: 1")).toBeInTheDocument();
 		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(
 			rendererCountAfterStartup,
 		);

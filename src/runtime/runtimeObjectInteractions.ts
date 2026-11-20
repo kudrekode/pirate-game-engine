@@ -9,7 +9,12 @@ import {
 	resolveObjectBehaviour,
 } from "./interactionDiscovery";
 import { collectPickup, inventoryRewardIssue } from "./inventory";
-import { findDismountTile, type VehicleMovementConfig } from "./movement";
+import {
+	canDismountAt,
+	findDismountTile,
+	resolveMovementAt,
+	type VehicleMovementConfig,
+} from "./movement";
 import { runObjectBehaviour } from "./objectBehaviour";
 import { getQuestViews, type QuestView, recordQuestFact } from "./questEngine";
 import {
@@ -18,7 +23,18 @@ import {
 } from "./runtimeRuleActionDispatcher";
 import type { RuntimeSessionState } from "./runtimeSession";
 import { buyShopEntry } from "./shopRuntime";
-import { createBoardedVehicleState } from "./vehicleRuntime";
+import {
+	createRuntimeTraversal,
+	isInteractionSegmentBlocked,
+	isTraversalBodyBlocked,
+	resolveTraversalFloor,
+} from "./traversal";
+import {
+	createBoardedVehicleState,
+	getRuntimeActiveVehicleBehaviour,
+} from "./vehicleRuntime";
+
+export { getRuntimeActiveVehicleBehaviour } from "./vehicleRuntime";
 
 export type RuntimeObjectInteractionEvent =
 	| { type: "questAction"; event: RuntimeRuleEvent }
@@ -399,17 +415,32 @@ export function boardRuntimeVehicle(
 	message: string,
 	emit: RuntimeObjectInteractionEventEmitter,
 ): boolean {
-	if (behaviour.vehicleType !== "boat") {
+	if (behaviour.vehicleType === "cart") {
 		emit({ type: "status", message });
 		return true;
 	}
 
 	session.playerVehicleState = createBoardedVehicleState(object.id, behaviour);
 	session.currentMovementMode = behaviour.movementMode;
+	// Legacy grid boats embark from the player's tile. A 3D mount begins at
+	// the model's actual anchor, so the first input never has to cross a dock.
+	if (session.traversal || behaviour.vehicleType === "horse") {
+		session.playerPosition = { x: object.x, y: object.y };
+		if (session.traversal) {
+			const area = findCurrentArea(session)!;
+			session.traversal = createRuntimeTraversal(
+				session.traversal.world,
+				area,
+				session.project,
+				session.playerPosition,
+			);
+		}
+		emit({ type: "playerMoved", ...session.playerPosition });
+	}
 	emit({ type: "vehicleBoarded", behaviour });
 	emit({ type: "movementModeChanged", mode: behaviour.movementMode });
 	emitStateChanged(emit);
-	emit({ type: "status", message: "Boarded boat." });
+	emit({ type: "status", message });
 	return true;
 }
 
@@ -433,27 +464,6 @@ export function leaveRuntimeVehicle(
 	return true;
 }
 
-export function getRuntimeActiveVehicleBehaviour(
-	session: RuntimeSessionState,
-	area: GameArea,
-): VehicleMovementConfig | undefined {
-	if (
-		!session.playerVehicleState.active ||
-		!session.playerVehicleState.vehicleObjectInstanceId
-	) {
-		return undefined;
-	}
-
-	const object = area.objects.find(
-		(candidate) =>
-			candidate.id === session.playerVehicleState.vehicleObjectInstanceId,
-	);
-	const behaviour = object
-		? resolveObjectBehaviour(session.project, object)
-		: undefined;
-	return behaviour?.type === "vehicle" ? behaviour : undefined;
-}
-
 export function dismountRuntimeVehicle(
 	session: RuntimeSessionState,
 	emit: RuntimeObjectInteractionEventEmitter,
@@ -471,20 +481,61 @@ export function dismountRuntimeVehicle(
 		return false;
 	}
 
-	const waterTile = { ...session.playerPosition };
+	const parkedAt = { ...session.playerPosition };
+	const traversal = session.traversal;
+	let landingHeight: number | undefined;
+	const canLand = traversal
+		? (x: number, y: number) => {
+				const point = { x, y };
+				// The rider can step up from a gunwale to a dock, never up a cliff.
+				const floor = resolveTraversalFloor(
+					traversal.world,
+					area,
+					session.project,
+					point,
+					traversal.position.height,
+					1.1,
+				);
+				if (!floor || (!floor.surface && !canDismountAt(area, x, y, behaviour)))
+					return false;
+				if (
+					!resolveMovementAt(area, x, y, session.project.player, {
+						ignoredObjectIds: traversal.world.profiledObjects,
+						walkableSurface: !!floor.surface,
+					}).canMove
+				)
+					return false;
+				if (
+					isTraversalBodyBlocked(traversal.world, {
+						...point,
+						height: floor.height,
+					}) ||
+					isInteractionSegmentBlocked(
+						traversal.world,
+						traversal.position,
+						point,
+						vehicleObject.id,
+					)
+				)
+					return false;
+				landingHeight = floor.height;
+				return true;
+			}
+		: undefined;
 	const target = findDismountTile(
 		area,
 		session.playerPosition,
 		session.playerFacing,
 		behaviour,
+		canLand,
 	);
 	if (!target.canDismount) {
 		emit({ type: "status", message: target.reason });
 		return false;
 	}
 
-	vehicleObject.x = waterTile.x;
-	vehicleObject.y = waterTile.y;
+	vehicleObject.x = parkedAt.x;
+	vehicleObject.y = parkedAt.y;
 	emit({
 		type: "objectMoved",
 		objectId: vehicleObject.id,
@@ -493,6 +544,14 @@ export function dismountRuntimeVehicle(
 	});
 
 	session.playerPosition = { x: target.x, y: target.y };
+	if (traversal && landingHeight !== undefined)
+		session.traversal = createRuntimeTraversal(
+			traversal.world,
+			area,
+			session.project,
+			session.playerPosition,
+			{ ...session.playerPosition, height: landingHeight },
+		);
 	emit({ type: "playerMoved", x: target.x, y: target.y });
 	leaveRuntimeVehicle(session, true, emit);
 	return true;

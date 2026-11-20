@@ -97,6 +97,7 @@ import {
 	attemptRuntimeCombatAttack,
 	type RuntimeCombatEvent,
 } from "../runtimeCombat";
+import { getCurrencyHudEntries } from "../runtimeHud";
 import {
 	canAcceptRuntimeInput,
 	isRuntimeGameplayBlocked,
@@ -200,6 +201,7 @@ import {
 	resolveCharacterHand,
 } from "./threeWeaponAttachment";
 import { createTraversalDebugGroup } from "./traversalDebug";
+import { createVehicleSeat } from "./vehiclePresentation";
 import {
 	advanceCameraFollowRig,
 	advancePlayerYaw,
@@ -842,7 +844,7 @@ export function ThreeRuntimePanel({
 				),
 			cameraModeRef.current,
 			true,
-			Boolean(session.traversal && !session.playerVehicleState.active),
+			Boolean(session.traversal),
 		);
 	}
 
@@ -941,7 +943,7 @@ export function ThreeRuntimePanel({
 				session.traversal?.position ?? session.playerPosition,
 			)
 		) {
-			resetPlayerVisual(session);
+			resetPlayerVisual(session, { preserveTraversal: true });
 		}
 	}
 
@@ -1248,8 +1250,8 @@ export function ThreeRuntimePanel({
 			event.type === "vehicleDismounted" ||
 			event.type === "playerMoved"
 		) {
-			resetPlayerVisual(session, { resetCamera: true });
-			forceRender("player movement");
+			resetPlayerVisual(session, { preserveTraversal: true });
+			setHudVersion((version) => version + 1);
 			return;
 		}
 		if (event.type === "movementModeChanged") {
@@ -1263,7 +1265,9 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "objectMoved") {
-			forceRender("object interaction changed");
+			// The scene updates the active vehicle and its parking position in RAF.
+			if (event.objectId !== session.playerVehicleState.vehicleObjectInstanceId)
+				forceRender("object interaction changed");
 		}
 	}
 
@@ -1348,7 +1352,8 @@ export function ThreeRuntimePanel({
 							y: bowAimRef.current.direction.z,
 						}
 					: {
-							...(getSession()?.playerFacing ?? { x: 0, y: 1 }),
+							...(playerVisualRef.current?.facing ??
+								getSession()?.playerFacing ?? { x: 0, y: 1 }),
 						};
 			characterAnimationControllersRef.current
 				.get("runtime_player")
@@ -1609,15 +1614,13 @@ export function ThreeRuntimePanel({
 		const moveStartMs = getContinuousPlayerMoveStartMs(
 			now,
 			session.nextMoveAt,
-			continuingHeld &&
-				!!session.traversal &&
-				!session.playerVehicleState.active,
+			continuingHeld && !!session.traversal,
 		);
 		const move = attemptPlayerMove(
 			session,
 			direction,
 			moveStartMs,
-			session.traversal && !session.playerVehicleState.active ? 0.2 : 1,
+			session.traversal ? 0.2 : 1,
 		);
 		if (move.type === "blocked") {
 			playerVisualRef.current = playerVisualRef.current
@@ -1846,11 +1849,7 @@ export function ThreeRuntimePanel({
 
 			const session = getSession();
 			const direction = keyToDirection(event);
-			if (
-				session?.traversal &&
-				!session.playerVehicleState.active &&
-				direction
-			) {
+			if (session?.traversal && direction) {
 				if (isRuntimeGameplayBlocked(session, gameplayBlocked(session))) return;
 				event.preventDefault();
 				if (event.repeat) return;
@@ -1902,6 +1901,7 @@ export function ThreeRuntimePanel({
 							area,
 							performance.now(),
 							handleCombatEvent,
+							playerVisualRef.current?.facing,
 						);
 				}
 				return;
@@ -1958,12 +1958,7 @@ export function ThreeRuntimePanel({
 		};
 		const interval = window.setInterval(() => {
 			const current = getSession();
-			if (
-				!current?.traversal ||
-				current.playerVehicleState.active ||
-				!heldMovementKeys.current.size
-			)
-				return;
+			if (!current?.traversal || !heldMovementKeys.current.size) return;
 			const direction = [...heldMovementKeys.current.values()].reduce(
 				(sum, d) => ({ x: sum.x + d.x, y: sum.y + d.y }),
 				{ x: 0, y: 0 },
@@ -2332,7 +2327,8 @@ export function ThreeRuntimePanel({
 			if (
 				!usedAsset ||
 				visual?.mode !== "asset" ||
-				visual.asset.category !== "character"
+				(visual.asset.category !== "character" &&
+					!(visual.asset.category === "vehicle" && visual.asset.animations))
 			) {
 				return;
 			}
@@ -2390,6 +2386,15 @@ export function ThreeRuntimePanel({
 			}
 		>();
 		const markerGroups = new Map<string, THREE.Group>();
+		const vehicles = new Map<
+			string,
+			{
+				group: THREE.Group;
+				visual?: ResolvedThreeVisual;
+				mountRider?: ReturnType<typeof createVehicleSeat>;
+				parkedObject: GameArea["objects"][number];
+			}
+		>();
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
@@ -2398,12 +2403,27 @@ export function ThreeRuntimePanel({
 			const { group } = renderResult;
 			markerGroups.set(marker.id, group);
 			const object =
-				marker.kind === "object"
+				marker.kind === "object" || marker.kind === "vehicle"
 					? area.objects.find((o) => o.id === marker.id)
 					: undefined;
 			const behaviour = object
 				? resolveObjectBehaviour(session.project, object)
 				: undefined;
+			if (object && behaviour?.type === "vehicle") {
+				const seat = marker.visual?.asset?.mountedSeat;
+				vehicles.set(marker.id, {
+					group,
+					visual: marker.visual,
+					parkedObject: object,
+					mountRider: seat && createVehicleSeat(group, seat),
+				});
+				addCharacterAnimationController(
+					marker.id,
+					group,
+					marker.visual,
+					renderResult.usedAsset,
+				);
+			}
 			if (behaviour?.type === "container") {
 				if (renderResult.usedAsset && marker.visual?.asset?.propAnimations) {
 					propAnimations.set(marker.id, {
@@ -2489,6 +2509,10 @@ export function ThreeRuntimePanel({
 			},
 		);
 		const playerMesh = playerRenderResult.group;
+		const riderHips =
+			playerMesh.getObjectByName("pelvis") ??
+			playerMesh.getObjectByName("Hips");
+		let lastRiddenId: string | undefined;
 		const weaponAttachment = createThreeWeaponAttachment(
 			playerMesh,
 			diagnostics,
@@ -2932,9 +2956,7 @@ export function ThreeRuntimePanel({
 					session.playerFacing,
 				);
 			const playerVisualGridPosition = getVisualGridPosition(playerVisual, now);
-			const traversal = !session.playerVehicleState.active
-				? session.traversal
-				: undefined;
+			const traversal = session.traversal;
 			const playerMoving =
 				!playerVisualGridPosition.done ||
 				!!(
@@ -2960,6 +2982,54 @@ export function ThreeRuntimePanel({
 					: undefined;
 			const playerVisualPosition =
 				grounded ?? playerVisualGridPosition.position;
+			const riddenId = session.playerVehicleState.active
+				? session.playerVehicleState.vehicleObjectInstanceId
+				: undefined;
+			const mount = riddenId ? vehicles.get(riddenId) : undefined;
+			if (lastRiddenId && riddenId !== lastRiddenId) {
+				const parked = vehicles.get(lastRiddenId);
+				if (parked) {
+					setObjectBasePosition(
+						parked.group,
+						area,
+						parked.parkedObject,
+						terrainRenderMode,
+						parked.visual,
+						undefined,
+						traversalWorld.sampler,
+					);
+					characterAnimationControllers.get(lastRiddenId)?.sync({
+						defeated: false,
+						moving: false,
+					});
+				}
+			}
+			lastRiddenId = riddenId;
+			if (mount && riddenId) {
+				setObjectBasePosition(
+					mount.group,
+					area,
+					playerVisualPosition,
+					terrainRenderMode,
+					mount.visual,
+					grounded?.height,
+					traversalWorld.sampler,
+				);
+				mount.group.rotation.y = advancePlayerYaw(
+					mount.group.rotation.y,
+					resolveThreeCharacterFacingYaw(playerVisual.facing, mount.visual),
+					deltaMs,
+					{},
+				);
+				if (session.playerVehicleState.vehicleType === "boat") {
+					mount.group.position.y += 0.022 * Math.sin(now * 0.0025);
+				}
+				characterAnimationControllers.get(riddenId)?.sync({
+					defeated: false,
+					moving: playerMoving,
+					sprinting: traversal?.motion.sprinting,
+				});
+			}
 			setObjectBasePosition(
 				playerMesh,
 				area,
@@ -3071,7 +3141,8 @@ export function ThreeRuntimePanel({
 			// A sword in the reaching hand intersects containers. Hide only this cosmetic action.
 			weaponAttachment.sync(
 				getEquippedWeapon(session),
-				playerAnimation?.semanticState === "interact" ||
+				!!mount ||
+					playerAnimation?.semanticState === "interact" ||
 					playerAnimation?.semanticState === "pickup",
 			);
 			if (import.meta.env.DEV)
@@ -3087,7 +3158,8 @@ export function ThreeRuntimePanel({
 				});
 			characterAnimationControllers.get("runtime_player")?.sync({
 				defeated: playerDefeatedRef.current || session.runtimePlayerHealth <= 0,
-				moving: playerMoving,
+				moving: !mount && playerMoving,
+				seated: !!mount?.mountRider,
 				sprinting: traversal?.motion.sprinting,
 				airborne: isPlayerAirborne(session),
 				movementPhase: traversal?.motion.phase,
@@ -3102,6 +3174,26 @@ export function ThreeRuntimePanel({
 					return;
 				controller.update(deltaMs / 1000);
 			});
+			if (mount?.mountRider) {
+				mount.mountRider(playerMesh, riderHips);
+			} else if (mount) {
+				playerMesh.position.y = mount.group.position.y + 0.35;
+			}
+			if (import.meta.env.DEV) {
+				if (mount && riddenId) {
+					host.dataset.vehicle = JSON.stringify({
+						id: riddenId,
+						position: mount.group.position.toArray(),
+						yaw: mount.group.rotation.y,
+						riderPosition: playerMesh.position.toArray(),
+						riderClip: characterAnimationControllers
+							.get("runtime_player")
+							?.getStats().activeClip,
+						gaitClip: characterAnimationControllers.get(riddenId)?.getStats()
+							.activeClip,
+					});
+				} else delete host.dataset.vehicle;
+			}
 			weaponAttachment.updateGrip();
 			if (gameOverRef.current) session.projectiles = undefined;
 			if (session.projectiles) {
@@ -3206,20 +3298,31 @@ export function ThreeRuntimePanel({
 					terrainRenderMode,
 					traversalWorld.sampler,
 				),
-				...(grounded ? { y: grounded.height + 0.625 } : {}),
+				...(mount
+					? { y: playerMesh.position.y + 0.625 }
+					: grounded
+						? { y: grounded.height + 0.625 }
+						: {}),
 			};
 			const bowFraming =
+				!mount &&
 				getEquippedWeapon(session)?.id === "bow" &&
 				threeCameraConfig.style === "thirdPerson";
 			const nextCameraTarget = getFollowCameraTarget(
 				cameraAnchor,
 				cameraFacingRef.current ?? session.playerFacing,
-				bowFraming
+				mount?.mountRider
 					? {
 							...threeCameraConfig,
-							lookAtHeight: Math.max(1, threeCameraConfig.lookAtHeight),
+							distance: threeCameraConfig.distance + 1.4,
+							lookAtHeight: threeCameraConfig.lookAtHeight - 0.35,
 						}
-					: threeCameraConfig,
+					: bowFraming
+						? {
+								...threeCameraConfig,
+								lookAtHeight: Math.max(1, threeCameraConfig.lookAtHeight),
+							}
+						: threeCameraConfig,
 				thirdPersonRuntimeLookRef.current,
 			);
 			if (bowFraming) {
@@ -3469,7 +3572,7 @@ export function ThreeRuntimePanel({
 
 	const session = getSession();
 	const area = session ? getArea(session) : undefined;
-	const goldCount = inventory.gold_coin ?? 0;
+	const currencyEntries = getCurrencyHudEntries(project, inventory);
 	const activeShop =
 		session?.activeShopId && session
 			? session.project.shops.find((shop) => shop.id === session.activeShopId)
@@ -3485,6 +3588,7 @@ export function ThreeRuntimePanel({
 				</p>
 			)}
 			{session &&
+				!session.playerVehicleState.active &&
 				getEquippedWeapon(session)?.id === "bow" &&
 				!gameplayBlocked(session) &&
 				cameraMode === "follow" && (
@@ -3562,7 +3666,11 @@ export function ThreeRuntimePanel({
 						{session.recentEnemy.maxHealth}
 					</span>
 				)}
-				<span>Gold: {goldCount}</span>
+				{currencyEntries.map((entry) => (
+					<span key={entry.id}>
+						{entry.name}: {entry.quantity}
+					</span>
+				))}
 				<span>{status}</span>
 				<button
 					type="button"
@@ -3618,8 +3726,11 @@ export function ThreeRuntimePanel({
 					) : null}
 				</div>
 				<small>
-					WASD/arrows move. Shift sprints. Space jumps. F attacks; hold and
-					release F for Bow. E interacts.
+					{session?.playerVehicleState.active
+						? session.playerVehicleState.vehicleType === "horse"
+							? "WASD/arrows ride. Hold Shift to canter. E dismounts."
+							: "WASD/arrows steer. Press E beside a shore or dock to disembark."
+						: "WASD/arrows move. Shift sprints. Space jumps. F attacks; hold and release F for Bow. E interacts."}
 				</small>
 				{session?.traversal && (
 					<details>

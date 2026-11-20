@@ -1,0 +1,11 @@
+{
+	"assetId": "mere-skiff",
+	"source": "tools/hollow-kingdom/skiff.py",
+	"forward": "+Z",
+	"waterlineMetres": 0.19,
+	"seatHeightMetres": 0.49,
+	"lights": ["Skiff storm lantern"],
+	"blender": "5.2.0 LTS",
+	"materials": ["hemp", "hewn oak", "iron", "lamplight"],
+	"dimensionsBlenderXYZ": [1.372, 3.206, 0.98]
+}

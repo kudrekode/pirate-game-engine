@@ -2,10 +2,9 @@ import type { GameArea, MovementMode } from "../types/game";
 import {
 	findTouchInteractableTarget,
 	type InteractableTarget,
-	resolveObjectBehaviour,
 	type TouchInteractableTarget,
 } from "./interactionDiscovery";
-import { resolveMovementAt, type VehicleMovementConfig } from "./movement";
+import { resolveMovementAt } from "./movement";
 import {
 	AIR_CONTROL_MULTIPLIER,
 	isPlayerAirborne,
@@ -17,6 +16,8 @@ import type {
 	RuntimeSessionState,
 } from "./runtimeSession";
 import { createRuntimeTraversal, sweepTraversal } from "./traversal";
+
+import { getRuntimeActiveVehicleBehaviour } from "./vehicleRuntime";
 
 export type PlayerMoveBlockedResult = {
 	type: "blocked";
@@ -73,29 +74,6 @@ function getCurrentArea(session: RuntimeSessionState): GameArea {
 	return area;
 }
 
-function getActiveVehicleBehaviour(
-	session: RuntimeSessionState,
-	area: GameArea,
-): VehicleMovementConfig | undefined {
-	if (
-		!session.playerVehicleState.active ||
-		!session.playerVehicleState.vehicleObjectInstanceId
-	) {
-		return undefined;
-	}
-
-	const vehicleObject = area.objects.find(
-		(candidate) =>
-			candidate.id === session.playerVehicleState.vehicleObjectInstanceId,
-	);
-	if (!vehicleObject) {
-		return undefined;
-	}
-
-	const behaviour = resolveObjectBehaviour(session.project, vehicleObject);
-	return behaviour.type === "vehicle" ? behaviour : undefined;
-}
-
 export function findPlayerWaitingTriggerTargets(
 	session: RuntimeSessionState,
 	area: GameArea,
@@ -144,9 +122,7 @@ export function attemptPlayerMove(
 	distance = 1,
 ): PlayerMoveResult {
 	const area = getCurrentArea(session);
-	let traversal = session.playerVehicleState.active
-		? undefined
-		: session.traversal;
+	let traversal = session.traversal;
 	if (traversal?.world.areaId !== area.id) traversal = undefined;
 	if (
 		traversal &&
@@ -199,7 +175,7 @@ export function attemptPlayerMove(
 		};
 	}
 
-	const activeVehicle = getActiveVehicleBehaviour(session, area);
+	const activeVehicle = getRuntimeActiveVehicleBehaviour(session, area);
 	const swept = traversal
 		? sweepTraversal(
 				traversal.world,
@@ -208,6 +184,7 @@ export function attemptPlayerMove(
 				traversal.position,
 				{ x: to.x - from.x, y: to.y - from.y },
 				isPlayerAirborne(session) ? traversal.motion.height : undefined,
+				activeVehicle,
 			)
 		: undefined;
 	if (swept) to = { x: swept.position.x, y: swept.position.y };
@@ -220,18 +197,12 @@ export function attemptPlayerMove(
 					Math.round(to.x),
 					Math.round(to.y),
 					session.project.player,
-					{ ignoredObjectIds: traversal?.world.profiledObjects },
+					{ ignoredObjectIds: traversal?.world.profiledObjects, activeVehicle },
 				).speedMultiplier,
 				movementMode: session.currentMovementMode,
 			}
 		: resolveMovementAt(area, to.x, to.y, session.project.player, {
-				activeVehicle: activeVehicle
-					? {
-							...activeVehicle,
-							vehicleObjectInstanceId:
-								session.playerVehicleState.vehicleObjectInstanceId,
-						}
-					: undefined,
+				activeVehicle,
 			});
 	if (!movement.canMove) {
 		if (traversal) traversal.lastReason = movement.reason;
@@ -259,6 +230,12 @@ export function attemptPlayerMove(
 	const enteredCell =
 		grid.x !== session.playerPosition.x || grid.y !== session.playerPosition.y;
 	session.playerPosition = grid;
+	if (enteredCell && activeVehicle) {
+		const object = area.objects.find(
+			(entry) => entry.id === activeVehicle.vehicleObjectInstanceId,
+		);
+		if (object) Object.assign(object, grid);
+	}
 	if (traversal && swept) {
 		traversal.position = swept.position;
 		traversal.path = swept.path;

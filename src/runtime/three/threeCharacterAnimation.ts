@@ -13,6 +13,7 @@ export type CharacterAnimationContext = {
 	defeated: boolean;
 	moving: boolean;
 	sprinting?: boolean;
+	seated?: boolean;
 	airborne?: boolean;
 	movementPhase?: "grounded" | "jump" | "fall" | "land";
 	movementSpeed?: number;
@@ -142,6 +143,7 @@ export function resolveCharacterAnimationState(
 	if (context.defeated) {
 		return "defeated";
 	}
+	if (context.seated) return "ride";
 	if (context.hitRequested) {
 		return "hit";
 	}
@@ -228,17 +230,19 @@ export function createThreeCharacterAnimationController({
 		forceRestart = false,
 	) => {
 		const fallback =
-			nextState === "run"
-				? "walk"
-				: nextState === "jump" || nextState === "fall"
-					? "idle"
-					: nextState === "land"
-						? currentContext.moving
-							? currentContext.sprinting && actions.has("run")
-								? "run"
-								: "walk"
-							: "idle"
-						: undefined;
+			nextState === "ride"
+				? "idle"
+				: nextState === "run"
+					? "walk"
+					: nextState === "jump" || nextState === "fall"
+						? "idle"
+						: nextState === "land"
+							? currentContext.moving
+								? currentContext.sprinting && actions.has("run")
+									? "run"
+									: "walk"
+								: "idle"
+							: undefined;
 		const nextAction =
 			(nextState === "attack" && attackVariant
 				? actions.get(attackVariant)
@@ -337,6 +341,7 @@ export function createThreeCharacterAnimationController({
 			"idle",
 			"walk",
 			"run",
+			"ride",
 			"jump",
 			"fall",
 			"land",
@@ -436,6 +441,7 @@ export function createThreeCharacterAnimationController({
 		getStats: () => ({
 			activeLoopingActions:
 				(semanticState === "idle" ||
+					semanticState === "ride" ||
 					semanticState === "walk" ||
 					semanticState === "run" ||
 					semanticState === "fall") &&
@@ -463,6 +469,10 @@ export function createThreeCharacterAnimationController({
 		sync: (context) => {
 			if (disposed) return;
 			currentContext = context;
+			if (context.seated) {
+				oneShotState = undefined;
+				bowDrawCharge = undefined;
+			}
 			if (
 				context.airborne &&
 				(oneShotState === "interact" || oneShotState === "pickup")
