@@ -6,6 +6,7 @@ import type {
 	GameProject,
 	SingleCondition,
 } from "../../types/game";
+import { useEditorSource } from "./editorSource";
 
 type VariableType = "number" | "string";
 
@@ -131,6 +132,7 @@ function removeVariableReferences(project: GameProject, variable: string) {
 }
 
 export function GameStateEditor() {
+	useEditorSource("game-state", () => {});
 	const project = useProjectStore((state) => state.project);
 	const updateProject = useProjectStore((state) => state.updateProject);
 	const [newFlagName, setNewFlagName] = useState("");
@@ -198,7 +200,11 @@ export function GameStateEditor() {
 					<div className="panel-title secondary">Flags</div>
 					<div className="state-list">
 						{Object.entries(project.gameState.flags).map(([name, value]) => (
-							<div className="state-row" key={name}>
+							<div
+								className="state-row"
+								key={name}
+								data-story-field={`state:${name}`}
+							>
 								<code>{name}</code>
 								<label className="checkbox-row">
 									<input
@@ -237,7 +243,11 @@ export function GameStateEditor() {
 					<div className="state-list">
 						{Object.entries(project.gameState.variables).map(
 							([name, value]) => (
-								<div className="state-row variable" key={name}>
+								<div
+									className="state-row variable"
+									key={name}
+									data-story-field={`state:${name}`}
+								>
 									<code>{name}</code>
 									<select
 										aria-label={`${name} type`}

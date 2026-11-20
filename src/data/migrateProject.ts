@@ -1743,12 +1743,35 @@ function migrateDialogues(value: unknown): DialogueDefinition[] {
 
 		const nodes = migrateDialogueNodes(dialogue.nodes);
 		const fallbackStartNodeId = nodes[0]?.id ?? "";
+		const layout =
+			isRecord(dialogue.editorLayout) && isRecord(dialogue.editorLayout.nodes)
+				? Object.fromEntries(
+						Object.entries(dialogue.editorLayout.nodes)
+							.filter(
+								([id, point]) =>
+									nodes.some((node) => node.id === id) &&
+									isRecord(point) &&
+									typeof point.x === "number" &&
+									Number.isFinite(point.x) &&
+									typeof point.y === "number" &&
+									Number.isFinite(point.y),
+							)
+							.map(([id, point]) => [
+								id,
+								{
+									x: (point as { x: number }).x,
+									y: (point as { y: number }).y,
+								},
+							]),
+					)
+				: undefined;
 		return [
 			{
 				id: readString(dialogue.id, `dialogue_${index + 1}`),
 				name: readString(dialogue.name, `Dialogue ${index + 1}`),
 				startNodeId: readString(dialogue.startNodeId, fallbackStartNodeId),
 				nodes,
+				...(layout ? { editorLayout: { nodes: layout } } : {}),
 			},
 		];
 	});

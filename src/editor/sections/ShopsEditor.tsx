@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useProjectStore } from "../../store/useProjectStore";
 import type { GameAction, ShopDefinition } from "../../types/game";
+import { useEditorSource } from "./editorSource";
 
 function makeId(prefix: string): string {
 	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -31,6 +32,7 @@ export function ShopsEditor() {
 	const [selectedShopId, setSelectedShopId] = useState(
 		project.shops[0]?.id ?? "",
 	);
+	useEditorSource("shops", (source) => setSelectedShopId(source.id));
 	const [message, setMessage] = useState("");
 	const selectedShop = project.shops.find((shop) => shop.id === selectedShopId);
 	const currencyItems = [
@@ -230,8 +232,12 @@ export function ShopsEditor() {
 
 						<div className="panel-title secondary">Entries</div>
 						<div className="list-stack">
-							{selectedShop.entries.map((entry) => (
-								<div className="logic-row" key={entry.id}>
+							{selectedShop.entries.map((entry, index) => (
+								<div
+									className="logic-row"
+									key={entry.id}
+									data-story-field={`entry:${index}`}
+								>
 									<select
 										onChange={(event) =>
 											updateEntry(entry.id, { itemId: event.target.value })

@@ -25,6 +25,37 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+Dialogue Entity Wiring V1 has one opt-in case in the existing dialogue suite:
+`node node_modules/@playwright/test/cli.js test e2e/dialogue-graph.spec.ts --grep @dialogue-entities`.
+Inspect `--list` first. It uses native palette dragging onto a response, Undo/Redo,
+inline quest creation with a node-entry effect, exact navigation to Quest Sequence,
+keyboard entity selection, placed-character assignment, export/import, and Three
+Play/Save/Continue. It checks that the new quest and item effects persist while
+editor defaults stay unchanged. No compiler or Blender runs. Its screenshot and
+exported project are written to the selected Playwright output directory.
+
+The same suite contains the next three opt-in authoring cases. Select
+`--grep @quest-sequence` for native Talk / Have / Use Door authoring and the
+No → Save/Continue → later Yes route; `--grep @logic-blocks` for nested groups,
+THEN/ELSE and once-state persistence; `--grep @story-workspace` for references,
+exact owning-field navigation, contextual response creation, inline story state,
+export/import and a complete Yes route with Save/Continue. The Story case also
+checks focused navigation after adding 600 entities. Inspect `--list` before
+running. No compiler or Blender runs. Evidence is under
+`docs/assets/story-workspace-v1/`; import `story-workspace-v1-demo.project.json`
+to explore the completed ordinary project.
+
+Dialogue Graph V1 has three opt-in cases in the existing root browser harness:
+`node node_modules/@playwright/test/cli.js test e2e/dialogue-graph.spec.ts --grep @dialogue-graph`.
+Inspect `--list` first. `--grep '@dialogue-graph$'` selects only the full authoring,
+Save/export/reload, NPC assignment and Three Play/Save/Continue route. The separate
+`@dialogue-graph-scale` case imports and edits 30 branching/looping nodes;
+`@dialogue-graph-phaser` verifies actual Phaser choice input and saved effects.
+No Blender or character compilation runs. Screenshots and exported project data
+are captured under the selected Playwright output directory. Reviewed evidence
+is under `docs/assets/dialogue-graph-v1/`; the normal demo is
+`dialogue-graph-v1-demo.project.json`. Run separately from CI.
+
 The charged archery acceptance route is one opt-in case in the existing ranged suite:
 `node node_modules/@playwright/test/cli.js test e2e/ranged-combat-v1.spec.ts --grep @archery-v2`.
 Inspect `--list` first. It imports `archery-v2-demo.project.json`, uses real

@@ -398,7 +398,7 @@ export function MapInspector({
 			Boolean(interaction) && interaction?.activationMode !== "disabled";
 
 		return (
-			<div className="interaction-editor">
+			<div className="interaction-editor" data-story-field="interaction">
 				<EntityInteractionEditor
 					key={targetId}
 					project={project}
@@ -609,25 +609,42 @@ export function MapInspector({
 					) : null}
 
 					{interaction?.type === "start_dialogue" ? (
-						<label>
-							Dialogue
-							<select
-								onChange={(event) =>
-									updateSelectedInteraction({
-										...interaction,
-										dialogueId: event.target.value,
-									})
+						<div>
+							<label>
+								Dialogue
+								<select
+									onChange={(event) =>
+										updateSelectedInteraction({
+											...interaction,
+											dialogueId: event.target.value,
+										})
+									}
+									value={interaction.dialogueId ?? ""}
+								>
+									<option value="">Select dialogue</option>
+									{project.dialogues.map((dialogue) => (
+										<option key={dialogue.id} value={dialogue.id}>
+											{dialogue.name}
+										</option>
+									))}
+								</select>
+							</label>
+							<button
+								type="button"
+								disabled={
+									!project.dialogues.some(
+										(d) => d.id === interaction.dialogueId,
+									)
 								}
-								value={interaction.dialogueId ?? ""}
+								onClick={() =>
+									useProjectStore
+										.getState()
+										.openDialogueEditor(interaction.dialogueId ?? "")
+								}
 							>
-								<option value="">Select dialogue</option>
-								{project.dialogues.map((dialogue) => (
-									<option key={dialogue.id} value={dialogue.id}>
-										{dialogue.name}
-									</option>
-								))}
-							</select>
-						</label>
+								Open dialogue
+							</button>
+						</div>
 					) : null}
 
 					{interaction?.type === "open_shop" ? (

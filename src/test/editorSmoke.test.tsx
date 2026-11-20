@@ -580,6 +580,7 @@ describe("editor smoke tests", () => {
 
 	it("renders Logic Builder", () => {
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
 		expect(screen.getAllByDisplayValue("Opening / Tutorial")).toHaveLength(2);
@@ -600,6 +601,7 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(screen.getByText("Unknown flag: flag_1")).toBeInTheDocument();
 		fireEvent.click(getButtonByText("Create flag"));
@@ -624,6 +626,7 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(screen.getByText("No shop selected")).toBeInTheDocument();
 		expect(
@@ -633,6 +636,7 @@ describe("editor smoke tests", () => {
 
 	it("sets a rule to run once and shows it in the summary", () => {
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		fireEvent.change(screen.getByLabelText("Run"), {
 			target: { value: "once" },
@@ -656,6 +660,7 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 
 		render(<ProgressionEditor />);
+		fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
 
 		expect(
 			screen.getByText("This may give items every time the player interacts."),
@@ -842,6 +847,9 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 		render(<QuestsEditor />);
 
+		fireEvent.click(
+			screen.getByRole("button", { name: "Advanced completion fields" }),
+		);
 		expect(screen.getByText("No item selected")).toBeInTheDocument();
 		expect(
 			screen.getByText("Unknown item: (missing item)"),
@@ -855,6 +863,9 @@ describe("editor smoke tests", () => {
 		useProjectStore.getState().setProject(project);
 		render(<QuestsEditor />);
 
+		fireEvent.click(
+			screen.getByRole("button", { name: "Advanced completion fields" }),
+		);
 		expect(screen.getByText("No shop selected")).toBeInTheDocument();
 		expect(
 			screen.getByText("Unknown shop: (missing shop)"),

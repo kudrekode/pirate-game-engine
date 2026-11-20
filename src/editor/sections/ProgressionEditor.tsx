@@ -18,6 +18,16 @@ import type {
 	VariableComparisonOperator,
 } from "../../types/game";
 
+import { DialogueEntityPicker } from "./DialogueEntityControls";
+import {
+	createDialogueEntity,
+	type DialogueEntityRef,
+} from "./dialogueEntities";
+import { useEditorSource } from "./editorSource";
+import { LogicBlocks } from "./LogicBlocks";
+import { LogicRecipes } from "./LogicRecipes";
+import { useMapEditHistory } from "./useMapEditHistory";
+
 const triggerTypes: { label: string; value: RuleTrigger["type"] }[] = [
 	{ label: "Game starts", value: "on_game_start" },
 	{ label: "Player interacts with", value: "on_interact" },
@@ -273,6 +283,10 @@ export function ProgressionEditor() {
 	const [selectedRuleId, setSelectedRuleId] = useState(
 		project.rules[0]?.id ?? "",
 	);
+	useEditorSource("progression", (source) => setSelectedRuleId(source.id));
+	const [view, setView] = useState<"blocks" | "advanced">("blocks");
+	const [selectedEntity, setSelectedEntity] = useState<DialogueEntityRef>();
+	const history = useMapEditHistory(project.activeAreaId, true);
 	const [newFolderName, setNewFolderName] = useState("");
 	const [folderError, setFolderError] = useState("");
 
@@ -1551,7 +1565,17 @@ export function ProgressionEditor() {
 	}
 
 	return (
-		<section className="editor-panel progression-editor">
+		<section
+			className="editor-panel progression-editor"
+			onFocusCapture={(e) => {
+				if (
+					e.target instanceof HTMLInputElement ||
+					e.target instanceof HTMLTextAreaElement
+				)
+					history.beginMapEdit();
+			}}
+			onBlurCapture={() => history.endMapEdit()}
+		>
 			<datalist id="rule-flag-names">
 				{flagNames.map((flag) => (
 					<option key={flag} value={flag} />
@@ -1564,6 +1588,22 @@ export function ProgressionEditor() {
 			</datalist>
 			<aside className="tool-panel logic-rule-list">
 				<div className="panel-title">Rules</div>
+				<div className="dialogue-toolbar">
+					<button
+						type="button"
+						disabled={!history.canUndo}
+						onClick={history.undoMapEdit}
+					>
+						Undo
+					</button>
+					<button
+						type="button"
+						disabled={!history.canRedo}
+						onClick={history.redoMapEdit}
+					>
+						Redo
+					</button>
+				</div>
 				<p className="helper-text">
 					WHEN / IF / THEN rules. Folders only organise the editor.
 				</p>
@@ -1603,6 +1643,25 @@ export function ProgressionEditor() {
 						) : null}
 					</div>
 				</section>
+				<LogicRecipes
+					project={project}
+					selected={selectedEntity}
+					onCreated={setSelectedRuleId}
+				/>
+				<div className="panel-title secondary">Entity palette</div>
+				<DialogueEntityPicker
+					project={project}
+					selected={selectedEntity}
+					scope="story"
+					onSelect={setSelectedEntity}
+					onCreate={(entity) => {
+						let ref: DialogueEntityRef | undefined;
+						updateProject((draft) => {
+							ref = createDialogueEntity(draft, entity);
+						});
+						setSelectedEntity(ref);
+					}}
+				/>
 			</aside>
 
 			<div className="content-panel logic-editor">
@@ -1656,6 +1715,7 @@ export function ProgressionEditor() {
 							<label>
 								Run
 								<select
+									aria-label="Run"
 									onChange={(event) =>
 										updateRule({
 											...selectedRule,
@@ -1682,51 +1742,86 @@ export function ProgressionEditor() {
 								This may give items every time the player interacts.
 							</div>
 						) : null}
-						<section className="rule-summary">
-							{ruleSummary(selectedRule, labels).map((line) => (
-								<div key={`${selectedRule.id}_${line}`}>{line}</div>
-							))}
-						</section>
-						<section className="logic-block">
-							{renderTrigger(selectedRule)}
-						</section>
-						<section className="logic-block">
-							<div className="logic-block-heading">IF</div>
-							{selectedRule.conditionTree ? (
-								renderConditionExpression(
-									selectedRule,
-									selectedRule.conditionTree,
-								)
-							) : (
-								<div className="logic-helper">
-									Always run. Add a condition when this rule should be
-									selective.
-								</div>
-							)}
-							{selectedRule.conditionTree?.type !== "group" ? (
-								<button
-									onClick={() =>
-										addRootCondition(selectedRule, makeCondition("flag_is"))
-									}
-									type="button"
-								>
-									Add condition
-								</button>
-							) : null}
-							{selectedRule.conditionTree ? (
-								<button
-									className="danger-button"
-									onClick={() =>
-										updateRule({ ...selectedRule, conditionTree: undefined })
-									}
-									type="button"
-								>
-									Clear conditions
-								</button>
-							) : null}
-						</section>
-						{renderActions(selectedRule, "actions", "THEN")}
-						{renderActions(selectedRule, "elseActions", "ELSE")}
+						<div className="dialogue-toolbar">
+							<button
+								type="button"
+								aria-pressed={view === "blocks"}
+								onClick={() => setView("blocks")}
+							>
+								Blocks
+							</button>
+							<button
+								type="button"
+								aria-pressed={view === "advanced"}
+								onClick={() => setView("advanced")}
+							>
+								Advanced
+							</button>
+						</div>
+						{view === "blocks" ? (
+							<LogicBlocks
+								key={selectedRule.id}
+								project={project}
+								rule={selectedRule}
+								selected={selectedEntity}
+								update={updateRule}
+								advancedTrigger={renderTrigger(selectedRule)}
+								advancedCondition={(condition) =>
+									renderCondition(selectedRule, condition, 0)
+								}
+							/>
+						) : (
+							<>
+								<section className="rule-summary">
+									{ruleSummary(selectedRule, labels).map((line) => (
+										<div key={`${selectedRule.id}_${line}`}>{line}</div>
+									))}
+								</section>
+								<section className="logic-block">
+									{renderTrigger(selectedRule)}
+								</section>
+								<section className="logic-block">
+									<div className="logic-block-heading">IF</div>
+									{selectedRule.conditionTree ? (
+										renderConditionExpression(
+											selectedRule,
+											selectedRule.conditionTree,
+										)
+									) : (
+										<div className="logic-helper">
+											Always run. Add a condition when this rule should be
+											selective.
+										</div>
+									)}
+									{selectedRule.conditionTree?.type !== "group" ? (
+										<button
+											onClick={() =>
+												addRootCondition(selectedRule, makeCondition("flag_is"))
+											}
+											type="button"
+										>
+											Add condition
+										</button>
+									) : null}
+									{selectedRule.conditionTree ? (
+										<button
+											className="danger-button"
+											onClick={() =>
+												updateRule({
+													...selectedRule,
+													conditionTree: undefined,
+												})
+											}
+											type="button"
+										>
+											Clear conditions
+										</button>
+									) : null}
+								</section>
+								{renderActions(selectedRule, "actions", "THEN")}
+								{renderActions(selectedRule, "elseActions", "ELSE")}
+							</>
+						)}
 						<div className="inline-actions">
 							<button onClick={() => duplicateRule(selectedRule)} type="button">
 								Duplicate rule

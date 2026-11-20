@@ -12,6 +12,7 @@ import type {
 	GameAction,
 	ItemDefinition,
 } from "../../types/game";
+import { useEditorSource } from "./editorSource";
 
 const categories: ItemDefinition["category"][] = [
 	"key",
@@ -62,6 +63,7 @@ export function ItemsEditor() {
 	const [selectedItemId, setSelectedItemId] = useState(
 		project.items[0]?.id ?? "",
 	);
+	useEditorSource("items", (source) => setSelectedItemId(source.id));
 	const [message, setMessage] = useState("");
 	const selectedItem = project.items.find((item) => item.id === selectedItemId);
 

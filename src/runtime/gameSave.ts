@@ -31,6 +31,10 @@ export function gameSaveProjectId(project: GameProject): string {
 		return JSON.stringify(value);
 	};
 	const { activeAreaId: _selection, ...authored } = project;
+	// Layout edits are not a new playable revision; legacy projects hash identically.
+	authored.dialogues = authored.dialogues.map(
+		({ editorLayout: _layout, ...dialogue }) => dialogue,
+	);
 	let hash = 0x6c62272e07bb014262b821756295c58dn;
 	for (const byte of new TextEncoder().encode(canonical(authored))) {
 		hash = BigInt.asUintN(
