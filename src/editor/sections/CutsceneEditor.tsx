@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { backgroundPresets, portraitPresets } from "../../data/presets";
 import { useProjectStore } from "../../store/useProjectStore";
+import { CinematicTimelineEditor } from "./CinematicTimelineEditor";
 import { useEditorSource } from "./editorSource";
 
 export function CutsceneEditor() {
-	const cutscenes = useProjectStore((state) => state.project.cutscenes);
+	const project = useProjectStore((state) => state.project);
+	const { cutscenes } = project;
 	const addCutscene = useProjectStore((state) => state.addCutscene);
 	const updateCutscene = useProjectStore((state) => state.updateCutscene);
 	const deleteCutscene = useProjectStore((state) => state.deleteCutscene);
@@ -69,7 +71,7 @@ export function CutsceneEditor() {
 
 			<div className="content-panel">
 				{selectedCutscene ? (
-					<div className="cutscene-edit-layout">
+					<div className="cutscene-authoring">
 						<div className="form-stack">
 							<label>
 								Name
@@ -82,100 +84,117 @@ export function CutsceneEditor() {
 									value={selectedCutscene.name}
 								/>
 							</label>
-							<label>
-								Background image
-								<select
-									onChange={(event) =>
-										updateCutscene(selectedCutscene.id, {
-											backgroundImageId: event.target.value,
-										})
-									}
-									value={selectedCutscene.backgroundImageId}
-								>
-									{backgroundPresets.map((background) => (
-										<option key={background.id} value={background.id}>
-											{background.label}
-										</option>
-									))}
-								</select>
-							</label>
-							<label>
-								Portrait image
-								<select
-									onChange={(event) =>
-										updateCutscene(selectedCutscene.id, {
-											portraitImageId: event.target.value || undefined,
-										})
-									}
-									value={selectedCutscene.portraitImageId ?? ""}
-								>
-									<option value="">None</option>
-									{portraitPresets.map((portrait) => (
-										<option key={portrait.id} value={portrait.id}>
-											{portrait.label}
-										</option>
-									))}
-								</select>
-							</label>
-							<label>
-								Speaker name
-								<input
-									onChange={(event) =>
-										updateCutscene(selectedCutscene.id, {
-											speakerName: event.target.value,
-										})
-									}
-									value={selectedCutscene.speakerName ?? ""}
-								/>
-							</label>
-							<label>
-								Text
-								<textarea
-									onChange={(event) =>
-										updateCutscene(selectedCutscene.id, {
-											text: event.target.value,
-										})
-									}
-									rows={7}
-									value={selectedCutscene.text}
-								/>
-							</label>
-							<button
-								className="danger-button"
-								onClick={handleDeleteCutscene}
-								type="button"
-							>
-								Delete cutscene
-							</button>
 						</div>
+						<CinematicTimelineEditor
+							key={selectedCutscene.id}
+							project={project}
+							cutscene={selectedCutscene}
+							onChange={(cinematic) =>
+								updateCutscene(selectedCutscene.id, { cinematic })
+							}
+						/>
+						<details open={!selectedCutscene.cinematic}>
+							<summary>Static cutscene presentation</summary>
+							<div className="cutscene-edit-layout">
+								<div className="form-stack">
+									<label>
+										Background image
+										<select
+											onChange={(event) =>
+												updateCutscene(selectedCutscene.id, {
+													backgroundImageId: event.target.value,
+												})
+											}
+											value={selectedCutscene.backgroundImageId}
+										>
+											{backgroundPresets.map((background) => (
+												<option key={background.id} value={background.id}>
+													{background.label}
+												</option>
+											))}
+										</select>
+									</label>
+									<label>
+										Portrait image
+										<select
+											onChange={(event) =>
+												updateCutscene(selectedCutscene.id, {
+													portraitImageId: event.target.value || undefined,
+												})
+											}
+											value={selectedCutscene.portraitImageId ?? ""}
+										>
+											<option value="">None</option>
+											{portraitPresets.map((portrait) => (
+												<option key={portrait.id} value={portrait.id}>
+													{portrait.label}
+												</option>
+											))}
+										</select>
+									</label>
+									<label>
+										Speaker name
+										<input
+											onChange={(event) =>
+												updateCutscene(selectedCutscene.id, {
+													speakerName: event.target.value,
+												})
+											}
+											value={selectedCutscene.speakerName ?? ""}
+										/>
+									</label>
+									<label>
+										Text
+										<textarea
+											onChange={(event) =>
+												updateCutscene(selectedCutscene.id, {
+													text: event.target.value,
+												})
+											}
+											rows={7}
+											value={selectedCutscene.text}
+										/>
+									</label>
+								</div>
 
-						<div className="cutscene-preview">
-							<div
-								className="preview-background"
-								style={{
-									background: backgroundPresets.find(
-										(background) =>
-											background.id === selectedCutscene.backgroundImageId,
-									)?.color,
-								}}
-							>
-								{selectedCutscene.portraitImageId ? (
-									<span
-										className="preview-portrait"
+								<div className="cutscene-preview">
+									<div
+										className="preview-background"
 										style={{
-											background: portraitPresets.find(
-												(portrait) =>
-													portrait.id === selectedCutscene.portraitImageId,
+											background: backgroundPresets.find(
+												(background) =>
+													background.id === selectedCutscene.backgroundImageId,
 											)?.color,
 										}}
-									/>
-								) : null}
-								<div className="preview-dialogue">
-									<strong>{selectedCutscene.speakerName || "Narrator"}</strong>
-									<span>{selectedCutscene.text}</span>
+									>
+										{selectedCutscene.portraitImageId ? (
+											<span
+												className="preview-portrait"
+												style={{
+													background: portraitPresets.find(
+														(portrait) =>
+															portrait.id === selectedCutscene.portraitImageId,
+													)?.color,
+												}}
+											/>
+										) : null}
+										<div className="preview-dialogue">
+											<strong>
+												{selectedCutscene.speakerName || "Narrator"}
+											</strong>
+											<span>{selectedCutscene.text}</span>
+										</div>
+									</div>
 								</div>
 							</div>
-						</div>
+						</details>
+						<button
+							className="danger-button"
+							onClick={handleDeleteCutscene}
+							type="button"
+						>
+							Delete cutscene
+						</button>
 					</div>
 				) : (
 					<p className="empty-state">Add a cutscene to edit it.</p>

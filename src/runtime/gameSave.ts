@@ -16,6 +16,11 @@ import { getEquippedWeapon } from "./weaponRuntime";
 export const GAME_SAVE_PREFIX = "adventure-builder-game-save-v1:";
 export const MAX_GAME_SAVE_CHARS = 1_000_000;
 
+const MEREWATCH_CINEMATIC_REVISIONS = new Set([
+	"b322be3eaf2b95c65df6339b98c5173e",
+	"fc96310b3d257a05d7d1d3a9287fc864",
+]);
+
 // An exact authored-revision identity avoids assigning a new ID every time an old
 // JSON project is imported. Exclude editor selection, layout and rule organization.
 // FNV-1a 128 is an identity checksum, not a security/authentication mechanism.
@@ -24,7 +29,7 @@ export function gameSaveProjectId(project: GameProject): string {
 	// The bundled Merewatch cinematic changed the authored revision while
 	// keeping every persisted quest, object, inventory and area reference valid.
 	// Share the original slot only for these exact published revisions.
-	return fingerprint === "b322be3eaf2b95c65df6339b98c5173e"
+	return MEREWATCH_CINEMATIC_REVISIONS.has(fingerprint)
 		? "66e4b756e72938db833b640eacc1aa73"
 		: fingerprint;
 }

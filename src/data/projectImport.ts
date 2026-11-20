@@ -108,6 +108,34 @@ const cinematicCamera = fields({
 	nested: { position: cinematicPoint, lookAt: cinematicPoint },
 	required: ["position", "lookAt"],
 });
+const cinematicCue: Check = (value, path) => {
+	const type = object(value, path).type;
+	const timing = "startMs durationMs";
+	const required = ["type", "startMs", "durationMs"];
+	switch (type) {
+		case "subtitle":
+			return fields({
+				strings: "type speaker text",
+				numbers: timing,
+				required: [...required, "text"],
+			})(value, path);
+		case "actor":
+			return fields({
+				strings: "type actorId animation",
+				numbers: timing,
+				nested: { face: fields({ numbers: "x z", required: ["x", "z"] }) },
+				required: [...required, "actorId"],
+			})(value, path);
+		case "audio":
+			return fields({
+				strings: "type url",
+				numbers: `${timing} offsetMs volume`,
+				required: [...required, "url"],
+			})(value, path);
+		default:
+			throw new Error(`${path}.type: Expected subtitle, actor or audio.`);
+	}
+};
 const transform = fields({
 	nested: { position: point, rotation: point, scale: point },
 });
@@ -338,6 +366,7 @@ const projectFields: Record<keyof GameProject | "map", Check> = {
 				cinematic: fields({
 					strings: "areaId",
 					nested: {
+						cues: list(cinematicCue),
 						shots: list(
 							fields({
 								numbers: "durationMs",

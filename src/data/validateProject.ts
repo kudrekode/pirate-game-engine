@@ -745,6 +745,26 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 			"Cutscene",
 			cutscene.id,
 		);
+		const area = project.areas.find(
+			(entry) => entry.id === cutscene.cinematic?.areaId,
+		);
+		if (area) {
+			const actorIds = new Set([
+				"runtime_player",
+				...area.npcs.map((npc) => npc.id),
+			]);
+			cutscene.cinematic?.cues?.forEach((cue, cueIndex) => {
+				if (cue.type === "actor")
+					checkReference(
+						actorIds,
+						cue.actorId,
+						"actor in the cinematic area",
+						`cutscenes.${index}.cinematic.cues.${cueIndex}.actorId`,
+						"Cutscene",
+						cutscene.id,
+					);
+			});
+		}
 		checkReference(
 			backgroundIds,
 			cutscene.backgroundImageId,

@@ -10572,18 +10572,29 @@
 				"areaId": "merewatch",
 				"shots": [
 					{
-						"durationMs": 2800,
+						"durationMs": 2400,
 						"from": {
 							"position": { "x": 21.2, "y": 3.5, "z": 46.1 },
 							"lookAt": { "x": 23.1, "y": 2.35, "z": 42 }
 						},
 						"to": {
-							"position": { "x": 24.2, "y": 3.65, "z": 45.5 },
+							"position": { "x": 22, "y": 3.4, "z": 45.2 },
 							"lookAt": { "x": 23.1, "y": 2.35, "z": 42 }
 						}
 					},
 					{
-						"durationMs": 3700,
+						"durationMs": 3400,
+						"from": {
+							"position": { "x": 21.65, "y": 2.65, "z": 43.5 },
+							"lookAt": { "x": 23.04, "y": 2.48, "z": 42 }
+						},
+						"to": {
+							"position": { "x": 21.85, "y": 2.63, "z": 43.3 },
+							"lookAt": { "x": 23.03, "y": 2.51, "z": 42 }
+						}
+					},
+					{
+						"durationMs": 3200,
 						"from": {
 							"position": { "x": 25.5, "y": 5.2, "z": 38 },
 							"lookAt": { "x": 26, "y": 5.2, "z": 4 }
@@ -10592,6 +10603,45 @@
 							"position": { "x": 24, "y": 6, "z": 34.9 },
 							"lookAt": { "x": 26, "y": 6.7, "z": 4 }
 						}
+					}
+				],
+				"cues": [
+					{
+						"type": "subtitle",
+						"startMs": 250,
+						"durationMs": 2000,
+						"speaker": "Wayfarer",
+						"text": "How will I find her?"
+					},
+					{
+						"type": "subtitle",
+						"startMs": 2480,
+						"durationMs": 3050,
+						"speaker": "Oswin",
+						"text": "Look for the light across the mere. Mara tends it."
+					},
+					{
+						"type": "actor",
+						"startMs": 2400,
+						"durationMs": 1700,
+						"actorId": "oswin-at-the-well",
+						"animation": "interact",
+						"face": { "x": 21.65, "z": 43.5 }
+					},
+					{
+						"type": "actor",
+						"startMs": 4100,
+						"durationMs": 1700,
+						"actorId": "oswin-at-the-well",
+						"animation": "idle",
+						"face": { "x": 21.65, "z": 43.5 }
+					},
+					{
+						"type": "subtitle",
+						"startMs": 5880,
+						"durationMs": 3000,
+						"speaker": "Oswin",
+						"text": "Follow the jetty lantern. She leaves word at the foot of the tower."
 					}
 				]
 			}

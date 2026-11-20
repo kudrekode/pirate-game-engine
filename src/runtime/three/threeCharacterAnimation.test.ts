@@ -72,6 +72,68 @@ it("plays the seated pose through riding, then resumes the on-foot gait", async 
 	}
 });
 
+it("holds a cinematic one-shot, restarts a new cue, and restores the current gameplay pose", async () => {
+	const asset: ThreeVisualAssetDefinition = {
+		id: "cinematic-actor",
+		name: "Actor",
+		kind: "glb",
+		url: "/actor.glb",
+		animations: {
+			idle: { clipName: "Idle" },
+			walk: { clipName: "Walk" },
+			interact: { clipName: "Gesture" },
+			defeated: { clipName: "Defeated" },
+		},
+	};
+	const restoreRegistry = setThreeVisualAssetRegistryForTests([asset]);
+	const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+		loadAsync: async () => ({
+			scene: createRenderedCharacter(),
+			animations: ["Idle", "Walk", "Gesture", "Defeated"].map(
+				createRootMotionClip,
+			),
+		}),
+	}));
+	const controller = createThreeCharacterAnimationController({
+		asset,
+		root: createRenderedCharacter(),
+	});
+	try {
+		await flushAssetPromises();
+		controller.setCinematicAnimation?.("interact", 0);
+		controller.update(0.3);
+		controller.sync({ defeated: false, moving: true });
+		controller.setCinematicAnimation?.("interact", 0);
+		controller.update(0.3);
+		expect(controller.getStats().clipTime).toBeCloseTo(0.6);
+		controller.update(1);
+		expect(controller.getStats()).toMatchObject({
+			semanticState: "interact",
+			activeClip: "Gesture",
+			clipTime: 1,
+			oneShotActionsTriggered: 0,
+		});
+		controller.setCinematicAnimation?.("interact", 1);
+		expect(controller.getStats().clipTime).toBe(0);
+		controller.setCinematicAnimation?.(undefined);
+		expect(controller.getStats()).toMatchObject({
+			semanticState: "walk",
+			activeClip: "Walk",
+		});
+
+		controller.setCinematicAnimation?.("pickup", 2);
+		expect(controller.getStats().activeClip).toBe("Walk");
+		controller.setCinematicAnimation?.("interact", 3);
+		controller.sync({ defeated: true, moving: false });
+		controller.update(1);
+		expect(controller.getDefeatPlayback()?.finished).toBe(true);
+	} finally {
+		controller.dispose();
+		restoreLoader();
+		restoreRegistry();
+	}
+});
+
 it("prepares a sword variant once, keeps Attack priority and independent controllers, then restores unarmed/locomotion", async () => {
 	const clips = ["Idle", "Fist", "Sword", "Hit", "Bow"].map(
 		createRootMotionClip,

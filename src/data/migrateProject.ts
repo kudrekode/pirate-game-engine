@@ -1,3 +1,4 @@
+import { isCinematicAudioUrl } from "../runtime/cinematicTimeline";
 import type {
 	AreaLink,
 	CameraConfig,
@@ -50,7 +51,10 @@ import type {
 	TileStyleConfig,
 	VariableComparisonOperator,
 } from "../types/game";
-import { THREE_PLACEHOLDER_VISUAL_TYPES } from "../types/game";
+import {
+	CINEMATIC_ACTOR_ANIMATIONS,
+	THREE_PLACEHOLDER_VISUAL_TYPES,
+} from "../types/game";
 import { migrateCharacterAssets } from "./characterAssets";
 import { defaultProject } from "./defaultProject";
 import { migrateMapEntityTransform } from "./mapEntityTransform";
@@ -2186,6 +2190,81 @@ function validateCinematic(value: unknown, path: string): void {
 		};
 		validateCamera(shot.from, `${shotPath}.from`);
 		if (shot.to !== undefined) validateCamera(shot.to, `${shotPath}.to`);
+	}
+	if (value.cues === undefined) return;
+	if (!Array.isArray(value.cues))
+		throw new Error(`${path}.cues: Expected an array.`);
+	for (const [index, cue] of value.cues.entries()) {
+		const cuePath = `${path}.cues.${index}`;
+		if (!isRecord(cue)) throw new Error(`${cuePath}: Expected a cue.`);
+		if (
+			typeof cue.startMs !== "number" ||
+			!Number.isFinite(cue.startMs) ||
+			cue.startMs < 0
+		)
+			throw new Error(`${cuePath}.startMs: Expected a nonnegative start time.`);
+		if (
+			typeof cue.durationMs !== "number" ||
+			cue.durationMs <= 0 ||
+			!Number.isFinite(cue.startMs + cue.durationMs)
+		)
+			throw new Error(`${cuePath}.durationMs: Expected a positive duration.`);
+		validateCinematicCue(cue, cuePath);
+	}
+}
+
+function validateCinematicCue(
+	cue: Record<string, unknown>,
+	path: string,
+): void {
+	switch (cue.type) {
+		case "subtitle":
+			if (typeof cue.text !== "string" || !cue.text.trim())
+				throw new Error(`${path}.text: Expected subtitle text.`);
+			if (cue.speaker !== undefined && typeof cue.speaker !== "string")
+				throw new Error(`${path}.speaker: Expected a speaker name.`);
+			return;
+		case "actor":
+			if (typeof cue.actorId !== "string" || !cue.actorId.trim())
+				throw new Error(`${path}.actorId: Expected an actor ID.`);
+			if (
+				cue.animation !== undefined &&
+				!CINEMATIC_ACTOR_ANIMATIONS.some((value) => value === cue.animation)
+			)
+				throw new Error(`${path}.animation: Unsupported animation.`);
+			if (
+				cue.face !== undefined &&
+				(!isRecord(cue.face) ||
+					!Number.isFinite(cue.face.x) ||
+					!Number.isFinite(cue.face.z))
+			)
+				throw new Error(`${path}.face: Expected finite x and z coordinates.`);
+			if (cue.animation === undefined && cue.face === undefined)
+				throw new Error(`${path}: Choose an animation or a point to face.`);
+			return;
+		case "audio":
+			if (typeof cue.url !== "string" || !isCinematicAudioUrl(cue.url))
+				throw new Error(
+					`${path}.url: Expected a root-relative path or HTTPS URL.`,
+				);
+			if (
+				cue.volume !== undefined &&
+				(typeof cue.volume !== "number" ||
+					!Number.isFinite(cue.volume) ||
+					cue.volume < 0 ||
+					cue.volume > 1)
+			)
+				throw new Error(`${path}.volume: Expected a value from 0 to 1.`);
+			if (
+				cue.offsetMs !== undefined &&
+				(typeof cue.offsetMs !== "number" ||
+					!Number.isFinite(cue.offsetMs) ||
+					cue.offsetMs < 0)
+			)
+				throw new Error(`${path}.offsetMs: Expected a nonnegative offset.`);
+			return;
+		default:
+			throw new Error(`${path}.type: Expected subtitle, actor or audio.`);
 	}
 }
 

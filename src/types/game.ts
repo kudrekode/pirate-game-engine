@@ -479,6 +479,50 @@ export type CinematicCamera = {
 	lookAt: { x: number; y: number; z: number };
 };
 
+export const CINEMATIC_ACTOR_ANIMATIONS = [
+	"idle",
+	"walk",
+	"run",
+	"interact",
+	"pickup",
+	"attack",
+] as const;
+export type CinematicActorAnimation =
+	(typeof CINEMATIC_ACTOR_ANIMATIONS)[number];
+
+type CinematicCueTime = {
+	/** Milliseconds relative to the start of the first shot. */
+	startMs: number;
+	durationMs: number;
+};
+
+export type CinematicSubtitleCue = CinematicCueTime & {
+	type: "subtitle";
+	speaker?: string;
+	text: string;
+};
+
+export type CinematicActorCue = CinematicCueTime & {
+	type: "actor";
+	/** An NPC placement in this area, or runtime_player. */
+	actorId: string;
+	animation?: CinematicActorAnimation;
+	/** Map grid point to face for this cue. */
+	face?: { x: number; z: number };
+};
+
+export type CinematicAudioCue = CinematicCueTime & {
+	type: "audio";
+	url: string;
+	volume?: number;
+	offsetMs?: number;
+};
+
+export type CinematicCue =
+	| CinematicSubtitleCue
+	| CinematicActorCue
+	| CinematicAudioCue;
+
 export type CinematicSequence = {
 	areaId: string;
 	shots: {
@@ -486,6 +530,7 @@ export type CinematicSequence = {
 		from: CinematicCamera;
 		to?: CinematicCamera;
 	}[];
+	cues?: CinematicCue[];
 };
 
 export type Cutscene = {

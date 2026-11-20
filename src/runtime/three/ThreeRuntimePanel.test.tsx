@@ -1543,6 +1543,109 @@ it.each([
 });
 
 it.each([
+	"quest completion",
+	"event interaction",
+])("plays a timed cinematic from %s and resumes the shared action flow", (trigger) => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	const project = makeProject();
+	const playCutscene = { type: "play_cutscene", cutsceneId: "vision" } as const;
+	project.cutscenes = [
+		{
+			id: "vision",
+			name: "Vision",
+			text: "Fallback",
+			backgroundImageId: "",
+			cinematic: {
+				areaId: project.areas[0].id,
+				shots: [
+					{
+						durationMs: 100,
+						from: {
+							position: { x: 1, y: 3, z: 2 },
+							lookAt: { x: 1, y: 2, z: 0 },
+						},
+					},
+				],
+				cues: [
+					{
+						type: "subtitle",
+						startMs: 100,
+						durationMs: 300,
+						speaker: "Keeper",
+						text: "Timed line",
+					},
+				],
+			},
+		},
+	];
+	project.rules = [
+		{
+			id: "after",
+			name: "After",
+			enabled: true,
+			runPolicy: "always",
+			trigger: { type: "on_cutscene_end", cutsceneId: "vision" },
+			actions: [{ type: "change_variable", variable: "played", amount: 1 }],
+		},
+	];
+	if (trigger === "quest completion") {
+		project.gameState.flags.ready = true;
+		project.quests = [
+			{
+				id: "watch",
+				name: "Watch",
+				status: "active",
+				objectiveMode: "sequence",
+				objectives: [
+					{
+						id: "ready",
+						description: "Prepare",
+						condition: { type: "flag", flag: "ready", value: true },
+					},
+				],
+				completionActions: [
+					playCutscene,
+					{ type: "set_flag", flag: "rewarded", value: true },
+				],
+			},
+		];
+	} else {
+		project.areas[0].eventBlocks.push({
+			id: "vision-trigger",
+			name: "Trigger",
+			x: 0,
+			y: 0,
+			tag: "",
+			kind: "trigger",
+			interaction: { ...playCutscene, activationMode: "on_interact" },
+		});
+	}
+	render(<ThreeRuntimePanel project={project} onRestart={vi.fn()} />);
+	if (trigger === "event interaction") fireEvent.keyDown(window, { key: "e" });
+	const session = latestSession();
+	expect(screen.getByRole("dialog", { name: "Vision" })).toBeInTheDocument();
+	expect(screen.queryByText("Fallback")).not.toBeInTheDocument();
+	act(() => runLatestAnimationFrame());
+	now += 800;
+	act(() => runLatestAnimationFrame());
+	expect(screen.getByText(/^Keeper/)).toBeInTheDocument();
+	expect(screen.getByText(/Timed line/)).toBeInTheDocument();
+	expect(session.runtimeState.flags.rewarded).toBeUndefined();
+	fireEvent.keyDown(window, { key: "Escape" });
+	now += 800;
+	act(() => runLatestAnimationFrame());
+	expect(
+		screen.queryByRole("dialog", { name: "Vision" }),
+	).not.toBeInTheDocument();
+	expect(session.runtimeState.variables.played).toBe(1);
+	if (trigger === "quest completion")
+		expect(session.runtimeState.flags.rewarded).toBe(true);
+	fireEvent.keyDown(window, { key: "ArrowRight" });
+	expect(session.playerPosition).toEqual({ x: 1, y: 0 });
+});
+
+it.each([
 	"missing-start",
 	"missing-next",
 	"no-choices",

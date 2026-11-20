@@ -1,7 +1,91 @@
 import { describe, expect, it } from "vitest";
 import { migrateProject } from "./migrateProject";
+import { importProjectJson } from "./projectImport";
 
 describe("migrateProject", () => {
+	it("round-trips all cinematic cue kinds and rejects invalid authored timing and media", () => {
+		const project = migrateProject({});
+		const shot = {
+			durationMs: 1200,
+			from: {
+				position: { x: 2, y: 4, z: 18 },
+				lookAt: { x: 2, y: 3, z: 6 },
+			},
+		};
+		project.cutscenes = [
+			{
+				id: "intro",
+				name: "Intro",
+				text: "Static fallback",
+				backgroundImageId: "",
+				cinematic: {
+					areaId: project.areas[0].id,
+					shots: [shot],
+					cues: [
+						{
+							type: "subtitle",
+							startMs: 10,
+							durationMs: 1000,
+							speaker: "Keeper",
+							text: "Hello.",
+						},
+						{
+							type: "actor",
+							startMs: 10,
+							durationMs: 1000,
+							actorId: "runtime_player",
+							animation: "interact",
+							face: { x: 2, z: 5 },
+						},
+						{
+							type: "audio",
+							startMs: 30,
+							durationMs: 1000,
+							url: "/voice.ogg",
+							volume: 0.75,
+							offsetMs: 40,
+						},
+					],
+				},
+			},
+		];
+		expect(importProjectJson(JSON.stringify(project)).cutscenes).toEqual(
+			project.cutscenes,
+		);
+		const cinematic = project.cutscenes[0].cinematic;
+		const invalid = (cue: unknown) =>
+			importProjectJson(
+				JSON.stringify({
+					...project,
+					cutscenes: [
+						{
+							...project.cutscenes[0],
+							cinematic: { ...cinematic, cues: [cue] },
+						},
+					],
+				}),
+			);
+		expect(() =>
+			invalid({ type: "subtitle", text: "x", durationMs: 150, startMs: -5 }),
+		).toThrow(/cues.0.startMs/);
+		expect(() =>
+			invalid({
+				type: "actor",
+				actorId: "runtime_player",
+				durationMs: 150,
+				startMs: 0,
+			}),
+		).toThrow(/animation or a point/);
+		expect(() =>
+			invalid({
+				type: "audio",
+				url: "//example.com/a",
+				durationMs: 150,
+				startMs: 0,
+			}),
+		).toThrow(/cues.0.url/);
+	});
+
 	it("keeps legacy cutscenes and round-trips a timed camera sequence", () => {
 		const legacy = {
 			id: "intro",

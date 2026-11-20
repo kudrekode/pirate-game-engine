@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { BOW } from "../../data/bow";
+import type { CinematicActorAnimation } from "../../types/game";
 import { requestThreeVisualAssetAnimationClip } from "./threeVisualAssetLoader";
 import {
 	getThreeVisualAssetDefinition,
@@ -42,6 +43,10 @@ export type ThreeCharacterAnimationController = {
 	/** Available only after a loaded, finite death action has started. */
 	getDefeatPlayback: () => { duration: number; finished: boolean } | undefined;
 	refresh: () => void;
+	setCinematicAnimation?: (
+		animation: CinematicActorAnimation | undefined,
+		cueKey?: number,
+	) => void;
 	sync: (context: CharacterAnimationContext) => void;
 	syncBowDraw: (charge: number | undefined) => void;
 	triggerAttack: (variant?: "sword" | "bow") => void;
@@ -212,6 +217,9 @@ export function createThreeCharacterAnimationController({
 	let disposed = false;
 	let attackVariant: "sword" | "bow" | undefined;
 	let bowDrawCharge: number | undefined;
+	let cinematicAnimation: CinematicActorAnimation | undefined;
+	let cinematicCueKey: number | undefined;
+	let playingCinematicAnimation = false;
 
 	const reportIssueOnce = (key: string, type: "missing" | "incompatible") => {
 		if (reportedIssueKeys.has(key)) {
@@ -228,6 +236,7 @@ export function createThreeCharacterAnimationController({
 	const applySemanticState = (
 		nextState: CharacterAnimationSemanticState,
 		forceRestart = false,
+		cinematic = false,
 	) => {
 		const fallback =
 			nextState === "ride"
@@ -244,7 +253,7 @@ export function createThreeCharacterAnimationController({
 								: "idle"
 							: undefined;
 		const nextAction =
-			(nextState === "attack" && attackVariant
+			(!cinematic && nextState === "attack" && attackVariant
 				? actions.get(attackVariant)
 				: undefined) ??
 			actions.get(nextState) ??
@@ -254,6 +263,7 @@ export function createThreeCharacterAnimationController({
 				? asset.gaitSpeeds?.[nextState]
 				: undefined;
 		const rate =
+			!cinematic &&
 			(nextState === "walk" || nextState === "run") &&
 			currentContext.movementSpeed
 				? Math.max(
@@ -302,23 +312,35 @@ export function createThreeCharacterAnimationController({
 		activeAction = nextAction;
 	};
 
-	const syncResolvedState = () => {
+	const syncResolvedState = (restartCinematic = false) => {
+		const cueAnimation =
+			cinematicAnimation &&
+			!currentContext.defeated &&
+			(actions.has(cinematicAnimation) ||
+				(cinematicAnimation === "run" && actions.has("walk")))
+				? cinematicAnimation
+				: undefined;
+		const modeChanged = Boolean(cueAnimation) !== playingCinematicAnimation;
+		playingCinematicAnimation = Boolean(cueAnimation);
 		applySemanticState(
-			resolveCharacterAnimationState({
-				...currentContext,
-				attackRequested:
-					oneShotState === "attack" || bowDrawCharge !== undefined,
-				hitRequested: oneShotState === "hit",
-				interactionRequested:
-					oneShotState === "interact" || oneShotState === "pickup"
-						? oneShotState
-						: undefined,
-			}),
+			cueAnimation ??
+				resolveCharacterAnimationState({
+					...currentContext,
+					attackRequested:
+						oneShotState === "attack" || bowDrawCharge !== undefined,
+					hitRequested: oneShotState === "hit",
+					interactionRequested:
+						oneShotState === "interact" || oneShotState === "pickup"
+							? oneShotState
+							: undefined,
+				}),
+			modeChanged || (playingCinematicAnimation && restartCinematic),
+			playingCinematicAnimation,
 		);
 	};
 
 	const handleFinished = (event: { action?: THREE.AnimationAction }) => {
-		if (event.action !== activeAction) {
+		if (event.action !== activeAction || playingCinematicAnimation) {
 			return;
 		}
 		if (semanticState === "defeated") {
@@ -460,8 +482,9 @@ export function createThreeCharacterAnimationController({
 			sourceAssetIds: Array.from(sourceAssetIds).sort(),
 			activeClip: activeAction?.getClip().name,
 			clipTime: activeAction?.time,
-			bowPhase:
-				bowDrawCharge !== undefined
+			bowPhase: playingCinematicAnimation
+				? undefined
+				: bowDrawCharge !== undefined
 					? bowDrawCharge >= 1
 						? "hold"
 						: "draw"
@@ -470,6 +493,16 @@ export function createThreeCharacterAnimationController({
 						: undefined,
 		}),
 		refresh,
+		setCinematicAnimation: (animation, cueKey) => {
+			if (
+				disposed ||
+				(cinematicAnimation === animation && cinematicCueKey === cueKey)
+			)
+				return;
+			cinematicAnimation = animation;
+			cinematicCueKey = cueKey;
+			syncResolvedState(true);
+		},
 		sync: (context) => {
 			if (disposed) return;
 			currentContext = context;
@@ -492,6 +525,7 @@ export function createThreeCharacterAnimationController({
 		syncBowDraw: (charge) => {
 			if (disposed) return;
 			if (
+				playingCinematicAnimation ||
 				currentContext.defeated ||
 				currentContext.airborne ||
 				oneShotState === "hit" ||
@@ -521,6 +555,7 @@ export function createThreeCharacterAnimationController({
 			// A missing/unloaded attack has no mixer finished event. Keep locomotion
 			// alive and let the combat HUD present the hit/miss instead of latching.
 			if (
+				playingCinematicAnimation ||
 				currentContext.defeated ||
 				currentContext.airborne ||
 				oneShotState === "hit" ||
@@ -542,7 +577,13 @@ export function createThreeCharacterAnimationController({
 				activeAction.time = BOW.drawPoseSeconds;
 		},
 		triggerHit: () => {
-			if (currentContext.defeated || disposed || !actions.has("hit")) return;
+			if (
+				playingCinematicAnimation ||
+				currentContext.defeated ||
+				disposed ||
+				!actions.has("hit")
+			)
+				return;
 			bowDrawCharge = undefined;
 			oneShotState = "hit";
 			oneShotActionsTriggered += 1;
@@ -551,6 +592,7 @@ export function createThreeCharacterAnimationController({
 		triggerInteraction: (state) => {
 			if (
 				disposed ||
+				playingCinematicAnimation ||
 				currentContext.defeated ||
 				currentContext.airborne ||
 				oneShotState ||
