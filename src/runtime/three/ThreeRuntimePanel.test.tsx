@@ -852,7 +852,7 @@ describe("ThreeRuntimePanel", () => {
 		);
 		const canvas = screen.getByLabelText("Three runtime viewport");
 		fireEvent.pointerDown(canvas, { button: 0, clientX: 0, clientY: 120 });
-		relativeMouseMove(document, 90 / 0.22);
+		relativeMouseMove(document, -90 / 0.22);
 		now += 1000;
 		runLatestAnimationFrame();
 		fireEvent.keyDown(window, { key: "w" });
@@ -1473,10 +1473,35 @@ describe("Three correctness boundaries", () => {
 	});
 });
 
-it("runs dialogue node cutscenes and cutscene-end rules before resuming the node", () => {
+it.each([
+	"legacy",
+	"skip",
+	"complete",
+])("resumes dialogue and cutscene-end rules after %s playback", (mode) => {
+	let now = 1000;
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const project = dialogueProject();
 	project.cutscenes = [
-		{ id: "effect", name: "Effect", text: "A vision", backgroundImageId: "" },
+		{
+			id: "effect",
+			name: "Effect",
+			text: "A vision",
+			backgroundImageId: "",
+			...(mode !== "legacy" && {
+				cinematic: {
+					areaId: project.areas[0].id,
+					shots: [
+						{
+							durationMs: 100,
+							from: {
+								position: { x: 1, y: 3, z: 2 },
+								lookAt: { x: 1, y: 2, z: 0 },
+							},
+						},
+					],
+				},
+			}),
+		},
 	];
 	project.dialogues[0].nodes[0].actions = [
 		{ type: "play_cutscene", cutsceneId: "effect" },
@@ -1498,8 +1523,19 @@ it("runs dialogue node cutscenes and cutscene-end rules before resuming the node
 	expect(screen.queryByText("Welcome traveller")).not.toBeInTheDocument();
 	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(latestSession().nextAttackAt).toBe(0);
-	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	if (mode === "legacy") {
+		fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	} else {
+		expect(
+			screen.getByRole("button", { name: "Skip cinematic" }),
+		).toBeInTheDocument();
+		act(() => runLatestAnimationFrame());
+		if (mode === "skip") fireEvent.keyDown(window, { key: "Escape" });
+		now += 800;
+		act(() => runLatestAnimationFrame());
+	}
 	expect(screen.getByText("Welcome traveller")).toBeInTheDocument();
+	expect(screen.queryByText("A vision")).not.toBeInTheDocument();
 	expect(latestSession().runtimeState.flags).toMatchObject({
 		vision_ended: true,
 		after_vision: true,
@@ -1743,7 +1779,7 @@ it.each([
 	// Locked relative motion has no HUD hit testing or screen position.
 	relativeMouseMove(
 		document,
-		90 / 0.22,
+		-90 / 0.22,
 		(pitch - p.camera.three.pitchDegrees) / 0.18,
 	);
 	for (let i = 0; i < 4; i++) {
@@ -2631,7 +2667,7 @@ it("requires actual lock success, ignores unlocked motion and safely handles den
 			now += 1000;
 			act(() => runLatestAnimationFrame());
 		}
-		expect(readCameraFeel().yaw - initial).toBeCloseTo(sign * 1080, 2);
+		expect(readCameraFeel().yaw - initial).toBeCloseTo(-sign * 1080, 2);
 		expect(readCameraFeel().pitch).toBeCloseTo(sign === 1 ? 65 : -82);
 	}
 	act(() => exitLock()); // browser-driven loss, rather than runtime Escape

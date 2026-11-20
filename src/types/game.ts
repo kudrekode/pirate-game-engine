@@ -473,6 +473,21 @@ export type PlayerCombatStats = {
 	attackCooldownMs: number;
 };
 
+/** Map grid x/z, with y measured in metres above the scene's zero plane. */
+export type CinematicCamera = {
+	position: { x: number; y: number; z: number };
+	lookAt: { x: number; y: number; z: number };
+};
+
+export type CinematicSequence = {
+	areaId: string;
+	shots: {
+		durationMs: number;
+		from: CinematicCamera;
+		to?: CinematicCamera;
+	}[];
+};
+
 export type Cutscene = {
 	id: string;
 	name: string;
@@ -480,6 +495,7 @@ export type Cutscene = {
 	portraitImageId?: string;
 	speakerName?: string;
 	text: string;
+	cinematic?: CinematicSequence;
 };
 
 export type DialogueDefinition = {

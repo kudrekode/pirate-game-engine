@@ -103,6 +103,11 @@ function tagged(check: Check, types: string): Check {
 }
 
 const point = fields({ numbers: "x y z" });
+const cinematicPoint = fields({ numbers: "x y z", required: ["x", "y", "z"] });
+const cinematicCamera = fields({
+	nested: { position: cinematicPoint, lookAt: cinematicPoint },
+	required: ["position", "lookAt"],
+});
 const transform = fields({
 	nested: { position: point, rotation: point, scale: point },
 });
@@ -329,6 +334,21 @@ const projectFields: Record<keyof GameProject | "map", Check> = {
 	cutscenes: list(
 		fields({
 			strings: "id name backgroundImageId portraitImageId speakerName text",
+			nested: {
+				cinematic: fields({
+					strings: "areaId",
+					nested: {
+						shots: list(
+							fields({
+								numbers: "durationMs",
+								nested: { from: cinematicCamera, to: cinematicCamera },
+								required: ["durationMs", "from"],
+							}),
+						),
+					},
+					required: ["areaId", "shots"],
+				}),
+			},
 		}),
 	),
 	dialogues: list(

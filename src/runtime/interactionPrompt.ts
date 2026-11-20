@@ -12,8 +12,8 @@ export function interactionPrompt(
 		target.type === "pickup"
 			? `Pick up ${target.label}`
 			: target.type === "npc"
-				? "Talk"
-				: "Interact";
+				? `Talk to ${target.label}`
+				: `Interact with ${target.label}`;
 	let requirementHint = "";
 	if (target.type === "object") {
 		const behaviour = resolveObjectBehaviour(session.project, target.object);
@@ -34,10 +34,11 @@ export function interactionPrompt(
 					session.runtimeState.flags[behaviour.openedFlag]
 				);
 			if (opened && behaviour.once) return "E — Empty chest";
-			label = "Open chest";
-		} else if (behaviour.type === "door") label = "Enter";
-		else if (behaviour.type === "sign") label = "Read";
-		else if (behaviour.type === "vehicle") label = "Board";
+			label = `Open ${target.label}`;
+		} else if (behaviour.type === "door") label = `Enter ${target.label}`;
+		else if (behaviour.type === "sign") label = `Read ${target.label}`;
+		else if (behaviour.type === "vehicle")
+			label = `${behaviour.vehicleType === "horse" ? "Mount" : "Board"} ${target.label}`;
 	}
 	if ("interaction" in target && target.interaction) {
 		if (target.interaction.type === "collect_item")
@@ -46,8 +47,8 @@ export function interactionPrompt(
 			target.interaction.prompt ||
 			(target.interaction.type === "show_message"
 				? target.type === "npc"
-					? "Talk"
-					: "Examine"
+					? label
+					: `Examine ${target.label}`
 				: label);
 	}
 	// Old authored prompts already included the key hint.

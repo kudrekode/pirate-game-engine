@@ -738,6 +738,14 @@ export function validateProject(project: GameProject): ValidationIssue[] {
 	const portraitIds = new Set(portraitPresets.map((asset) => asset.id));
 	project.cutscenes.forEach((cutscene, index) => {
 		checkReference(
+			context.areaIds,
+			cutscene.cinematic?.areaId,
+			"area",
+			`cutscenes.${index}.cinematic.areaId`,
+			"Cutscene",
+			cutscene.id,
+		);
+		checkReference(
 			backgroundIds,
 			cutscene.backgroundImageId,
 			"background asset",

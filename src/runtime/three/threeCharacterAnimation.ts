@@ -249,15 +249,19 @@ export function createThreeCharacterAnimationController({
 				: undefined) ??
 			actions.get(nextState) ??
 			(fallback ? actions.get(fallback) : undefined);
+		const gaitSpeed =
+			nextState === "walk" || nextState === "run"
+				? asset.gaitSpeeds?.[nextState]
+				: undefined;
 		const rate =
 			(nextState === "walk" || nextState === "run") &&
 			currentContext.movementSpeed
 				? Math.max(
 						0.8,
 						Math.min(
-							1.2,
+							gaitSpeed ? 1.6 : 1.2,
 							currentContext.movementSpeed /
-								(nextState === "run" ? 7.64 : 4.63),
+								(gaitSpeed ?? (nextState === "run" ? 7.64 : 4.63)),
 						),
 					)
 				: 1;

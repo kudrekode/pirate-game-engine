@@ -464,24 +464,18 @@ export function leaveRuntimeVehicle(
 	return true;
 }
 
-export function dismountRuntimeVehicle(
+export function getRuntimeVehicleDismountTarget(
 	session: RuntimeSessionState,
-	emit: RuntimeObjectInteractionEventEmitter,
-	area: GameArea = findCurrentArea(session) ?? session.project.areas[0],
-): boolean {
+	area: GameArea,
+) {
 	const behaviour = getRuntimeActiveVehicleBehaviour(session, area);
 	const vehicleObjectId = session.playerVehicleState.vehicleObjectInstanceId;
 	const vehicleObject = vehicleObjectId
 		? area.objects.find((candidate) => candidate.id === vehicleObjectId)
 		: undefined;
 
-	if (!behaviour || !vehicleObject) {
-		leaveRuntimeVehicle(session, false, emit);
-		emit({ type: "status", message: "Vehicle missing." });
-		return false;
-	}
+	if (!behaviour || !vehicleObject) return undefined;
 
-	const parkedAt = { ...session.playerPosition };
 	const traversal = session.traversal;
 	let landingHeight: number | undefined;
 	const canLand = traversal
@@ -529,13 +523,28 @@ export function dismountRuntimeVehicle(
 		behaviour,
 		canLand,
 	);
+	return { target, vehicleObject, landingHeight };
+}
+
+export function dismountRuntimeVehicle(
+	session: RuntimeSessionState,
+	emit: RuntimeObjectInteractionEventEmitter,
+	area: GameArea = findCurrentArea(session) ?? session.project.areas[0],
+): boolean {
+	const landing = getRuntimeVehicleDismountTarget(session, area);
+	if (!landing) {
+		leaveRuntimeVehicle(session, false, emit);
+		emit({ type: "status", message: "Vehicle missing." });
+		return false;
+	}
+	const { target, vehicleObject, landingHeight } = landing;
 	if (!target.canDismount) {
 		emit({ type: "status", message: target.reason });
 		return false;
 	}
 
-	vehicleObject.x = parkedAt.x;
-	vehicleObject.y = parkedAt.y;
+	vehicleObject.x = session.playerPosition.x;
+	vehicleObject.y = session.playerPosition.y;
 	emit({
 		type: "objectMoved",
 		objectId: vehicleObject.id,
@@ -544,6 +553,7 @@ export function dismountRuntimeVehicle(
 	});
 
 	session.playerPosition = { x: target.x, y: target.y };
+	const traversal = session.traversal;
 	if (traversal && landingHeight !== undefined)
 		session.traversal = createRuntimeTraversal(
 			traversal.world,

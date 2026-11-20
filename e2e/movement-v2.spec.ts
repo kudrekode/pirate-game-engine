@@ -56,7 +56,7 @@ test("sky-look, recovery, elevated supports and tight walls @camera-v4-orbit", a
 	const look = async (pitch: number, steps = 30, yaw?: number) => {
 		const before = await camera();
 		my += (pitch - before.pitch) / 0.18;
-		if (yaw !== undefined) mx += (yaw - before.yaw) / 0.22;
+		if (yaw !== undefined) mx -= (yaw - before.yaw) / 0.22;
 		await page.mouse.move(mx, my, { steps });
 		await page.waitForTimeout(450);
 		expect((await camera()).pitch).toBeCloseTo(pitch, 0);
@@ -811,7 +811,7 @@ test("pointer lock sky-look rotations and UI lifecycle @pointer-lock @camera-v4-
 			await page.mouse.move(mouseX, mouseY);
 		}
 		await page.waitForTimeout(500);
-		expect(sign * ((await camera()).yaw - before)).toBeGreaterThan(1080);
+		expect(-sign * ((await camera()).yaw - before)).toBeGreaterThan(1080);
 	}
 	for (const key of ["w", "s", "a", "d", "w+d", "Shift+w"]) {
 		const keys = key.split("+");

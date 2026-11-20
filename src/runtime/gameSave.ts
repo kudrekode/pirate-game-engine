@@ -20,7 +20,13 @@ export const MAX_GAME_SAVE_CHARS = 1_000_000;
 // JSON project is imported. Exclude editor selection, layout and rule organization.
 // FNV-1a 128 is an identity checksum, not a security/authentication mechanism.
 export function gameSaveProjectId(project: GameProject): string {
-	return projectFingerprint(project, false);
+	const fingerprint = projectFingerprint(project, false);
+	// The bundled Merewatch cinematic changed the authored revision while
+	// keeping every persisted quest, object, inventory and area reference valid.
+	// Share the original slot only for these exact published revisions.
+	return fingerprint === "b322be3eaf2b95c65df6339b98c5173e"
+		? "66e4b756e72938db833b640eacc1aa73"
+		: fingerprint;
 }
 
 function projectFingerprint(project: GameProject, legacy: boolean): string {

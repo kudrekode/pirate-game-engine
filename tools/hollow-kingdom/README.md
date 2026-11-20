@@ -5,11 +5,16 @@ Import [hollow-kingdom.project.json](../../hollow-kingdom.project.json) into the
 | Action | Control |
 | --- | --- |
 | Move | WASD or arrow keys |
+| Look | Click the 3D viewport, then move the mouse. Esc releases it. Sensitivity and inversion are under **Mouse settings**. |
 | Talk, search a box, mount, board or dismount | E near the target |
 | Equip the Ferryman's Hanger | I, then Equip |
 | Strike | Face a poacher and press F |
 | Canter | Hold Shift while riding |
 | Resume | Use Save Game during Play, then choose Continue the next time you play this project |
+
+Accept Oswin's offer to play **The Light Across the Mere**. It pans past Oswin and the well, then cuts to Mara's beacon. Use **Skip cinematic** or Esc to go straight to the end of the conversation. Both paths start **The Last Watch** and grant Oswin's hanger.
+
+The cutscene uses the optional `cinematic` field on a standard cutscene. Author it in the project JSON with an `areaId` and a list of shots. Each shot has a `durationMs`, a `from` camera pose, and an optional `to` pose. Poses specify `position` and `lookAt` using map grid coordinates for x and z and world height in metres for y. Dialogue actions, rules, interactions and progression can request the same cutscene. In 2D it uses the existing static cutscene presentation.
 
 The dirt track branches east from the cottage end of the lane. The poachers keep their coffer under a lamp. Bracken grazes east of the well and can carry you part of the way to camp. Once you have the beacon key, return to the original dock. Board Oswin's skiff along its right edge and sail to the lamplit jetty opposite. Step ashore, follow the keeper's path to the dispatch box and bring the letter back to Oswin.
 

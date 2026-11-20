@@ -109,6 +109,7 @@ import {
 	collectRuntimeObjectPickup,
 	collectRuntimePickup,
 	dismountRuntimeVehicle,
+	getRuntimeVehicleDismountTarget,
 	openRuntimeShop,
 	type RuntimeObjectInteractionEvent,
 	runRuntimeObjectBehaviour,
@@ -156,6 +157,7 @@ import {
 	panOrbitCamera,
 	resolveRuntimeCameraMovement,
 	rotateOrbitCamera,
+	type ThirdPersonMouseLookOptions,
 	type ThirdPersonMouseLookState,
 	updateThirdPersonMouseLookTarget,
 	zoomOrbitCamera,
@@ -165,6 +167,7 @@ import {
 	applyCameraClearance,
 	getCameraClearFraction,
 } from "./cameraObstruction";
+import { cinematicBlend, sampleCinematicCamera } from "./cinematicCamera";
 import {
 	createGroundPresentation,
 	createWorldEdgePresentation,
@@ -195,13 +198,14 @@ import {
 	type ResolvedThreeVisual,
 	resolveThreeCharacterFacingYaw,
 	resolveThreeCharacterVisual,
+	threeVisualRotationOffsetToRadians,
 } from "./threeVisuals";
 import {
 	createThreeWeaponAttachment,
 	resolveCharacterHand,
 } from "./threeWeaponAttachment";
 import { createTraversalDebugGroup } from "./traversalDebug";
-import { createVehicleSeat } from "./vehiclePresentation";
+import { createVehicleSeat, seatRiderHeading } from "./vehiclePresentation";
 import {
 	advanceCameraFollowRig,
 	advancePlayerYaw,
@@ -240,6 +244,46 @@ type PendingCutscene = {
 	continueLabel: string;
 	onContinue: () => void;
 };
+
+const MOUSE_LOOK_STORAGE_KEY = "adventure-builder-mouse-look";
+type MouseLookPreferences = Required<
+	Pick<ThirdPersonMouseLookOptions, "sensitivity" | "invertX" | "invertY">
+>;
+
+function readMouseLookOptions(): MouseLookPreferences {
+	try {
+		const saved = JSON.parse(
+			localStorage.getItem(MOUSE_LOOK_STORAGE_KEY) ?? "null",
+		);
+		if (saved)
+			return {
+				sensitivity:
+					typeof saved.sensitivity === "number" &&
+					Number.isFinite(saved.sensitivity)
+						? Math.min(2.5, Math.max(0.25, saved.sensitivity))
+						: 1,
+				invertX: saved.invertX === true,
+				invertY: saved.invertY === true,
+			};
+	} catch {
+		// Invalid or unavailable storage uses the default settings.
+	}
+	return { sensitivity: 1, invertX: false, invertY: false };
+}
+
+function findInteractionTarget(session: RuntimeSessionState, area: GameArea) {
+	return findNearestInteractableTarget({
+		area,
+		collectedPickupIds: session.collectedPickupIds,
+		defeatedNpcIds: session.defeatedNpcIds,
+		firedInteractionIds: session.firedInteractionIds,
+		playerPosition: session.traversal?.position ?? session.playerPosition,
+		playerFacing: session.playerFacing,
+		project: session.project,
+		runtimeState: session.runtimeState,
+		traversal: session.traversal,
+	});
+}
 type ThreeRuntimeBuildInputs = {
 	areaId: string;
 	renderVersion: number;
@@ -560,6 +604,9 @@ export function ThreeRuntimePanel({
 		createThirdPersonMouseLookState(),
 	);
 	const mouseLookActiveRef = useRef(false);
+	const [mouseLookOptions, setMouseLookOptions] =
+		useState(readMouseLookOptions);
+	const mouseLookOptionsRef = useRef(mouseLookOptions);
 	const pointerLockRequestedRef = useRef(false);
 	const requestMouseLookRef = useRef<(() => void) | null>(null);
 	const resumeInventoryMouseLookRef = useRef(false);
@@ -598,9 +645,29 @@ export function ThreeRuntimePanel({
 	const [dialogueNode, setDialogueNode] = useState<DialogueNode | null>(null);
 	const [primaryPrompt, setPrimaryPrompt] = useState("");
 
+	function updateMouseLookOptions(options: Partial<MouseLookPreferences>) {
+		const next = { ...mouseLookOptionsRef.current, ...options };
+		mouseLookOptionsRef.current = next;
+		setMouseLookOptions(next);
+		try {
+			localStorage.setItem(MOUSE_LOOK_STORAGE_KEY, JSON.stringify(next));
+		} catch {
+			// Settings still work for the current session when storage is unavailable.
+		}
+	}
+
 	function setPendingCutscene(value: PendingCutscene | null) {
+		if (value) {
+			heldMovementKeys.current.clear();
+			heldSprintKeys.current.clear();
+			setMouseLookActive(false);
+		}
 		pendingCutsceneRef.current = value;
 		setPendingCutsceneState(value);
+	}
+
+	function finishCutscene(request: PendingCutscene) {
+		if (pendingCutsceneRef.current === request) request.onContinue();
 	}
 
 	function gameplayBlocked(session: RuntimeSessionState): boolean {
@@ -1044,7 +1111,6 @@ export function ThreeRuntimePanel({
 				completeRuntimeProgressionCutscene(session, handleProgressionEvent);
 				return;
 			}
-			setMouseLookActive(false);
 			setPendingCutscene({
 				continueLabel: "Continue",
 				cutscene,
@@ -1131,7 +1197,6 @@ export function ThreeRuntimePanel({
 				event.onDone();
 				return;
 			}
-			setMouseLookActive(false);
 			setPendingCutscene({
 				continueLabel: "Continue",
 				cutscene,
@@ -1225,7 +1290,6 @@ export function ThreeRuntimePanel({
 					)
 				: event.cutscene;
 			if (cutscene) {
-				setMouseLookActive(false);
 				setPendingCutscene({
 					continueLabel: "Close",
 					cutscene,
@@ -1683,17 +1747,7 @@ export function ThreeRuntimePanel({
 			return;
 		}
 
-		const target = findNearestInteractableTarget({
-			area,
-			collectedPickupIds: session.collectedPickupIds,
-			defeatedNpcIds: session.defeatedNpcIds,
-			playerPosition: session.traversal?.position ?? session.playerPosition,
-			playerFacing: session.playerFacing,
-			traversal: session.traversal,
-			firedInteractionIds: session.firedInteractionIds,
-			project: session.project,
-			runtimeState: session.runtimeState,
-		});
+		const target = findInteractionTarget(session, area);
 		if (!target) {
 			setStatus("Nothing to interact with.");
 			return;
@@ -1724,13 +1778,6 @@ export function ThreeRuntimePanel({
 			},
 		);
 	}
-
-	useEffect(() => {
-		pendingCutsceneRef.current = pendingCutscene;
-		if (pendingCutscene) {
-			setMouseLookActive(false);
-		}
-	}, [pendingCutscene, setMouseLookActive]);
 
 	useEffect(() => {
 		gameOverRef.current = gameOver;
@@ -1822,6 +1869,18 @@ export function ThreeRuntimePanel({
 				return;
 			}
 			if (inventoryOpenRef.current) return;
+			const cutscene = pendingCutsceneRef.current;
+			if (cutscene) {
+				if (
+					event.key === "Escape" ||
+					event.key.toLowerCase() === "e" ||
+					event.key === "Enter"
+				) {
+					event.preventDefault();
+					finishCutscene(cutscene);
+				}
+				return;
+			}
 			if (
 				getSession()?.dialogue &&
 				["e", "E", "Enter", "Escape"].includes(event.key)
@@ -1831,14 +1890,6 @@ export function ThreeRuntimePanel({
 				heldSprintKeys.current.clear();
 				if (event.key === "Escape") closeDialogue();
 				else if (dialogueNode?.type !== "choice") advanceConversation();
-				return;
-			}
-			if (
-				pendingCutsceneRef.current &&
-				["e", "E", "Enter", "Escape"].includes(event.key)
-			) {
-				event.preventDefault();
-				pendingCutsceneRef.current.onContinue();
 				return;
 			}
 			if (event.key === "Escape" && mouseLookActiveRef.current) {
@@ -1984,35 +2035,43 @@ export function ThreeRuntimePanel({
 		};
 	});
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: The prompt reads the current session and overlay refs.
 	useEffect(() => {
 		const refresh = () => {
 			const current = getSession();
 			const currentArea = current ? getArea(current) : undefined;
-			if (!current || !currentArea || gameplayBlocked(current)) {
+			if (
+				!current ||
+				!currentArea ||
+				isPlayerAirborne(current) ||
+				isRuntimeGameplayBlocked(current, gameplayBlocked(current))
+			) {
 				setPrimaryPrompt("");
 				return;
 			}
-			const target = findNearestInteractableTarget({
-				area: currentArea,
-				project: current.project,
-				playerPosition: current.traversal?.position ?? current.playerPosition,
-				playerFacing: current.playerFacing,
-				traversal: current.traversal,
-				runtimeState: current.runtimeState,
-				collectedPickupIds: current.collectedPickupIds,
-				defeatedNpcIds: current.defeatedNpcIds,
-				firedInteractionIds: current.firedInteractionIds,
-			});
+			const vehicle = current.playerVehicleState;
+			if (vehicle.active) {
+				const canLeave = getRuntimeVehicleDismountTarget(current, currentArea)
+					?.target.canDismount;
+				setPrimaryPrompt(
+					vehicle.vehicleType === "boat"
+						? canLeave
+							? "E — Disembark"
+							: "Steer to a dock or shore to disembark"
+						: canLeave
+							? "E — Dismount"
+							: "Move to clear ground to dismount",
+				);
+				return;
+			}
 			setPrimaryPrompt(
-				current.playerVehicleState.active
-					? "E — Dismount"
-					: interactionPrompt(current, target),
+				interactionPrompt(current, findInteractionTarget(current, currentArea)),
 			);
 		};
 		refresh();
 		const timer = window.setInterval(refresh, 100);
 		return () => window.clearInterval(timer);
-	});
+	}, []);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: NPC ticking reads current sessionRef state.
 	useEffect(() => {
@@ -2136,7 +2195,7 @@ export function ThreeRuntimePanel({
 				position: { ...rig.position },
 			};
 		};
-		const applyInspectCamera = () => {
+		const getInspectCameraRig = () => {
 			const cameraBounds = getOrbitCameraBounds(
 				getRuntimeCameraDimensions(area),
 			);
@@ -2151,10 +2210,10 @@ export function ThreeRuntimePanel({
 				inspectCamera,
 				cameraBounds,
 			);
-			applyCameraRig({
+			return {
 				lookAt: getOrbitCameraLookTarget(inspectCameraRef.current),
 				position: getOrbitCameraPosition(inspectCameraRef.current),
-			});
+			};
 		};
 		applyCameraRig(cameraRig);
 		const renderObjects: Array<{
@@ -2513,6 +2572,8 @@ export function ThreeRuntimePanel({
 			playerMesh.getObjectByName("pelvis") ??
 			playerMesh.getObjectByName("Hips");
 		let lastRiddenId: string | undefined;
+		let riderLean = 0;
+		let riderPitch = 0;
 		const weaponAttachment = createThreeWeaponAttachment(
 			playerMesh,
 			diagnostics,
@@ -2690,6 +2751,14 @@ export function ThreeRuntimePanel({
 			preset: area.theme?.atmosphere,
 			enableShadows: true,
 		});
+		// The moonlit scene has dense foliage in the shadow pass. Keep the
+		// previous map between updates while the main view renders each frame.
+		const moonShadow =
+			area.theme?.atmosphere === "moonlit"
+				? atmosphere.lights.sun.shadow
+				: undefined;
+		if (moonShadow) moonShadow.autoUpdate = false;
+		let lastMoonShadowMs = -Infinity;
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
 		const viewportObserver =
@@ -2742,7 +2811,10 @@ export function ThreeRuntimePanel({
 		const updateInspectCamera = (
 			updater: (state: OrbitCameraState) => OrbitCameraState,
 		) => {
-			if (cameraModeRef.current !== "inspect") {
+			if (
+				cameraModeRef.current !== "inspect" ||
+				pendingCutsceneRef.current?.cutscene.cinematic
+			) {
 				return;
 			}
 			const cameraBounds = getOrbitCameraBounds(
@@ -2761,6 +2833,7 @@ export function ThreeRuntimePanel({
 			);
 		};
 		const handlePointerDown = (event: PointerEvent) => {
+			if (pendingCutsceneRef.current?.cutscene.cinematic) return;
 			if (cameraModeRef.current === "inspect") {
 				if (!event.altKey || (event.button !== 0 && event.button !== 1)) {
 					return;
@@ -2857,6 +2930,7 @@ export function ThreeRuntimePanel({
 					deltaX,
 					deltaY,
 					threeCameraConfig.pitchDegrees,
+					mouseLookOptionsRef.current,
 				);
 			}
 		};
@@ -2897,6 +2971,11 @@ export function ThreeRuntimePanel({
 			x: 0,
 			y: 0,
 		});
+		const cinematicPointToWorld = (point: THREE.Vector3Like) => ({
+			x: point.x + cameraWorldOffset.x,
+			y: point.y,
+			z: point.z + cameraWorldOffset.z,
+		});
 		const arrowPresentation = session.project.items.some(
 			(item) => item.weapon === "bow",
 		)
@@ -2904,6 +2983,15 @@ export function ThreeRuntimePanel({
 			: undefined;
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
+		let cinematicPlayback:
+			| {
+					request: PendingCutscene;
+					startMs: number;
+					entry: CameraFollowRig;
+					last: CameraFollowRig;
+					returnMs?: number;
+			  }
+			| undefined;
 		const render = () => {
 			const frameCallbackStartedAt = performance.now();
 			const now = performance.now();
@@ -2986,6 +3074,10 @@ export function ThreeRuntimePanel({
 				? session.playerVehicleState.vehicleObjectInstanceId
 				: undefined;
 			const mount = riddenId ? vehicles.get(riddenId) : undefined;
+			const ridingHorse =
+				session.playerVehicleState.vehicleType === "horse" &&
+				!!mount?.mountRider;
+			let horseTurn = 0;
 			if (lastRiddenId && riddenId !== lastRiddenId) {
 				const parked = vehicles.get(lastRiddenId);
 				if (parked) {
@@ -3015,12 +3107,17 @@ export function ThreeRuntimePanel({
 					grounded?.height,
 					traversalWorld.sampler,
 				);
+				const previousYaw = mount.group.rotation.y;
 				mount.group.rotation.y = advancePlayerYaw(
 					mount.group.rotation.y,
 					resolveThreeCharacterFacingYaw(playerVisual.facing, mount.visual),
 					deltaMs,
 					{},
 				);
+				horseTurn =
+					deltaMs > 0
+						? (mount.group.rotation.y - previousYaw) / (deltaMs / 1000)
+						: 0;
 				if (session.playerVehicleState.vehicleType === "boat") {
 					mount.group.position.y += 0.022 * Math.sin(now * 0.0025);
 				}
@@ -3028,6 +3125,7 @@ export function ThreeRuntimePanel({
 					defeated: false,
 					moving: playerMoving,
 					sprinting: traversal?.motion.sprinting,
+					movementSpeed: traversal?.motion.speed,
 				});
 			}
 			setObjectBasePosition(
@@ -3175,9 +3273,38 @@ export function ThreeRuntimePanel({
 				controller.update(deltaMs / 1000);
 			});
 			if (mount?.mountRider) {
+				playerMesh.rotation.y = seatRiderHeading(
+					mount.group.rotation.y,
+					threeVisualRotationOffsetToRadians(mount.visual),
+					threeVisualRotationOffsetToRadians(playerRenderVisual),
+				);
+				const leanAlpha = getFrameLerpAlpha(deltaMs, 12);
+				const turnLean =
+					ridingHorse && playerMoving
+						? THREE.MathUtils.clamp(-horseTurn * 0.015, -0.14, 0.14)
+						: 0;
+				const forwardLean =
+					ridingHorse && playerMoving
+						? traversal?.motion.sprinting
+							? 0.12
+							: 0.05
+						: 0;
+				riderLean += (turnLean - riderLean) * leanAlpha;
+				riderPitch += (forwardLean - riderPitch) * leanAlpha;
+				playerMesh.rotation.set(
+					riderPitch,
+					playerMesh.rotation.y,
+					riderLean,
+					"YXZ",
+				);
 				mount.mountRider(playerMesh, riderHips);
 			} else if (mount) {
 				playerMesh.position.y = mount.group.position.y + 0.35;
+			} else if (riderPitch || riderLean) {
+				riderPitch = 0;
+				riderLean = 0;
+				playerMesh.rotation.x = 0;
+				playerMesh.rotation.z = 0;
 			}
 			if (import.meta.env.DEV) {
 				if (mount && riddenId) {
@@ -3186,6 +3313,8 @@ export function ThreeRuntimePanel({
 						position: mount.group.position.toArray(),
 						yaw: mount.group.rotation.y,
 						riderPosition: playerMesh.position.toArray(),
+						riderYaw: playerMesh.rotation.y,
+						riderLean,
 						riderClip: characterAnimationControllers
 							.get("runtime_player")
 							?.getStats().activeClip,
@@ -3339,8 +3468,10 @@ export function ThreeRuntimePanel({
 					point.z += (dx / length) * 0.45;
 				}
 			}
+			const previousView = visibleCameraRigRef.current ?? cameraRig;
+			let view: CameraFollowRig;
 			if (cameraModeRef.current === "inspect") {
-				applyInspectCamera();
+				view = getInspectCameraRig();
 			} else {
 				if (threeCameraConfig.style === "thirdPerson") {
 					if (!cameraFocusRef.current) cameraClearance = 1;
@@ -3430,8 +3561,44 @@ export function ThreeRuntimePanel({
 						getFrameLerpAlpha(deltaMs),
 					);
 				cameraRigRef.current = cameraRig;
-				applyCameraRig(cameraRig);
+				view = cameraRig;
 			}
+			const request = pendingCutsceneRef.current;
+			const sequence = request?.cutscene.cinematic;
+			if (request && sequence?.areaId === area.id) {
+				if (cinematicPlayback?.request !== request)
+					cinematicPlayback = {
+						request,
+						startMs: now,
+						entry: previousView,
+						last: previousView,
+					};
+				const entryMs = 650;
+				const elapsed = now - cinematicPlayback.startMs;
+				const shot = sampleCinematicCamera(sequence, elapsed - entryMs);
+				if (shot) {
+					cinematicPlayback.last = cinematicBlend(
+						cinematicPlayback.entry,
+						{
+							position: cinematicPointToWorld(shot.position),
+							lookAt: cinematicPointToWorld(shot.lookAt),
+						},
+						elapsed / entryMs,
+					);
+					view = cinematicPlayback.last;
+				} else finishCutscene(request);
+			}
+			if (
+				cinematicPlayback &&
+				cinematicPlayback.request !== pendingCutsceneRef.current
+			) {
+				cinematicPlayback.returnMs ??= now;
+				const progress = (now - cinematicPlayback.returnMs) / 650;
+				if (progress < 1)
+					view = cinematicBlend(cinematicPlayback.last, view, progress);
+				else cinematicPlayback = undefined;
+			}
+			applyCameraRig(view);
 			if (import.meta.env.DEV)
 				host.dataset.cameraFeel = JSON.stringify({
 					mode: cameraModeRef.current,
@@ -3476,6 +3643,10 @@ export function ThreeRuntimePanel({
 				diagnostics.recordWaterUpdate(performance.now() - waterUpdateStartedAt);
 			}
 			const renderStartedAt = performance.now();
+			if (moonShadow && now - lastMoonShadowMs >= 32) {
+				moonShadow.needsUpdate = true;
+				lastMoonShadowMs = now;
+			}
 			renderer.render(scene, camera);
 			for (const label of openedLabels) {
 				if (
@@ -3578,9 +3749,18 @@ export function ThreeRuntimePanel({
 			? session.project.shops.find((shop) => shop.id === session.activeShopId)
 			: undefined;
 	const runtimeThreeCamera = session?.project.camera.three;
+	const isCinematic =
+		!!pendingCutscene?.cutscene.cinematic &&
+		pendingCutscene.cutscene.cinematic.areaId === area?.id;
 
 	return (
-		<div className="three-runtime-panel">
+		<div
+			className={
+				isCinematic
+					? "three-runtime-panel playing-cinematic"
+					: "three-runtime-panel"
+			}
+		>
 			{missingAssets && (
 				<p role="alert">
 					A visual asset is unavailable. Restore its project asset files or
@@ -3753,10 +3933,51 @@ export function ThreeRuntimePanel({
 					</small>
 				) : runtimeThreeCamera?.style === "thirdPerson" &&
 					runtimeThreeCamera.allowRuntimeOrbit ? (
-					<small>
-						Third-person: click the viewport to look. Move mouse to rotate. Esc
-						releases. {mouseLookActive ? "Mouse look active." : ""}
-					</small>
+					<>
+						<small>
+							Click the viewport to look. Esc releases the mouse.
+							{mouseLookActive ? " Mouse look active." : ""}
+						</small>
+						<details className="three-runtime-mouse-settings">
+							<summary>Mouse settings</summary>
+							<label>
+								Sensitivity
+								<input
+									type="range"
+									min={0.25}
+									max={2.5}
+									step={0.05}
+									value={mouseLookOptions.sensitivity}
+									onChange={(e) =>
+										updateMouseLookOptions({
+											sensitivity: e.currentTarget.valueAsNumber,
+										})
+									}
+								/>
+								<output>{mouseLookOptions.sensitivity}×</output>
+							</label>
+							<label>
+								<input
+									type="checkbox"
+									checked={mouseLookOptions.invertX}
+									onChange={(e) =>
+										updateMouseLookOptions({ invertX: e.currentTarget.checked })
+									}
+								/>
+								Invert horizontal look
+							</label>
+							<label>
+								<input
+									type="checkbox"
+									checked={mouseLookOptions.invertY}
+									onChange={(e) =>
+										updateMouseLookOptions({ invertY: e.currentTarget.checked })
+									}
+								/>
+								Invert vertical look
+							</label>
+						</details>
+					</>
 				) : null}
 			</div>
 			{flowLog.length > 0 ? (
@@ -3862,11 +4083,25 @@ export function ThreeRuntimePanel({
 				</div>
 			) : null}
 			{pendingCutscene ? (
-				<div className="three-runtime-modal">
+				<div
+					className={
+						isCinematic ? "three-runtime-cinematic" : "three-runtime-modal"
+					}
+					role="dialog"
+					aria-label={pendingCutscene.cutscene.name}
+				>
 					<strong>{pendingCutscene.cutscene.name}</strong>
-					<p>{pendingCutscene.cutscene.text}</p>
-					<button onClick={pendingCutscene.onContinue} type="button">
-						{pendingCutscene.continueLabel}
+					<p>
+						{isCinematic && pendingCutscene.cutscene.speakerName && (
+							<span>
+								{pendingCutscene.cutscene.speakerName}
+								{" · "}
+							</span>
+						)}
+						{pendingCutscene.cutscene.text}
+					</p>
+					<button onClick={() => finishCutscene(pendingCutscene)} type="button">
+						{isCinematic ? "Skip cinematic" : pendingCutscene.continueLabel}
 					</button>
 				</div>
 			) : null}

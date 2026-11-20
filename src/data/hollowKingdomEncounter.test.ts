@@ -7,12 +7,55 @@ import {
 	getAvailableDialogueChoices,
 	getDialogueNode,
 } from "../runtime/dialogueEngine";
-import { createGameSave, restoreGameSave } from "../runtime/gameSave";
+import {
+	createGameSave,
+	gameSaveProjectId,
+	loadGameSave,
+	restoreGameSave,
+	storeGameSave,
+} from "../runtime/gameSave";
+import { activateQuest } from "../runtime/questEngine";
 import { attemptRuntimeCombatAttack } from "../runtime/runtimeCombat";
 import { createRuntimeRuleContext } from "../runtime/runtimeRuleActionDispatcher";
 import { createRuntimeSession } from "../runtime/runtimeSession";
 import { equipRuntimeWeapon } from "../runtime/weaponRuntime";
 import { importProjectJson } from "./projectImport";
+
+it("continues the original Merewatch save slot with the cinematic project", () => {
+	const updated = importProjectJson(JSON.stringify(demo));
+	const original = structuredClone(updated);
+	original.cutscenes = [];
+	const acceptance = original.dialogues
+		.find((dialogue) => dialogue.id === "oswins-watch")
+		?.nodes.find((node) => node.id === "accept");
+	if (!acceptance?.actions)
+		throw new Error("Merewatch acceptance node missing");
+	acceptance.actions = acceptance.actions.filter(
+		(action) => action.type !== "play_cutscene",
+	);
+
+	const previous = createRuntimeSession(original);
+	previous.runtimeState.inventory.items["watch-sword"] = 1;
+	activateQuest(previous.runtimeQuestState, "last-watch");
+	const entries = new Map<string, string>();
+	const storage = {
+		getItem: (key: string) => entries.get(key) ?? null,
+		setItem: (key: string, value: string) => {
+			entries.set(key, value);
+		},
+	};
+	storeGameSave(original, createGameSave(original, previous), storage);
+	const save = loadGameSave(updated, storage);
+	if (!save) throw new Error("Original Merewatch save missing");
+	const resumed = restoreGameSave(updated, save);
+	expect(resumed.runtimeState.inventory.items["watch-sword"]).toBe(1);
+	expect(
+		resumed.runtimeQuestState.quests.find((quest) => quest.id === "last-watch")
+			?.status,
+	).toBe("active");
+	updated.metadata.name += " custom";
+	expect(gameSaveProjectId(updated)).not.toBe(save.projectId);
+});
 
 it("keeps Oswin's offer, both defeats and the coffer reward consistent across Continue", () => {
 	const project = importProjectJson(JSON.stringify(demo));
@@ -35,7 +78,9 @@ it("keeps Oswin's offer, both defeats and the coffer reward consistent across Co
 			enterDialogueNode(
 				state,
 				node,
-				createRuntimeRuleContext(session, () => {}),
+				createRuntimeRuleContext(session, (event) => {
+					if (event.type === "cutsceneRequested") event.onDone();
+				}),
 				() => {},
 			);
 		}

@@ -39,6 +39,33 @@ export function authorEncounter(project) {
 	const coin = "ferry-penny";
 	const lootFlag = "poachers-coffer-emptied";
 	const deliveryFlag = "oswin-read-letter";
+	const cinematicId = "the-light-across-the-mere";
+	const camera = (x, y, z, targetX, targetY, targetZ) => ({
+		position: { x, y, z },
+		lookAt: { x: targetX, y: targetY, z: targetZ },
+	});
+	project.cutscenes.push({
+		id: cinematicId,
+		name: "The Light Across the Mere",
+		backgroundImageId: "river_crossing",
+		speakerName: "Oswin",
+		text: "That's her light, up there. Three nights now and she hasn't shuttered it.",
+		cinematic: {
+			areaId: area.id,
+			shots: [
+				{
+					durationMs: 2800,
+					from: camera(21.2, 3.5, 46.1, 23.1, 2.35, 42),
+					to: camera(24.2, 3.65, 45.5, 23.1, 2.35, 42),
+				},
+				{
+					durationMs: 3700,
+					from: camera(25.5, 5.2, 38, 26, 5.2, 4),
+					to: camera(24, 6, 34.9, 26, 6.7, 4),
+				},
+			],
+		},
+	});
 	const poachers = [
 		{
 			id: "pine-lookout",
@@ -191,7 +218,11 @@ export function authorEncounter(project) {
 				"accept",
 				"Oswin",
 				"Take my hanger. Open Inventory (I) and equip it. Turn back down the cottage lane and take the dirt track east to their lamp. Face them and press F to strike.",
-				[{ type: "activate_quest", questId }, give(sword)],
+				[
+					{ type: "play_cutscene", cutsceneId: cinematicId },
+					{ type: "activate_quest", questId },
+					give(sword),
+				],
 			),
 			ended(
 				"camp",

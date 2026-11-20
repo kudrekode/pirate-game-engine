@@ -1,6 +1,13 @@
 import { Bone, Group, Vector3 } from "three";
 import { expect, it } from "vitest";
-import { createVehicleSeat } from "./vehiclePresentation";
+import { createVehicleSeat, seatRiderHeading } from "./vehiclePresentation";
+
+it("carries the mount's turn into rider yaw with both model offsets", () => {
+	expect(seatRiderHeading(Math.PI * 1.5, Math.PI, 0)).toBeCloseTo(Math.PI / 2);
+	expect(seatRiderHeading(Math.PI * 1.5, Math.PI, Math.PI)).toBeCloseTo(
+		Math.PI * 1.5,
+	);
+});
 
 it("keeps a rider's pelvis on the moving saddle through a turn and follows its gait", () => {
 	const horse = new Group();

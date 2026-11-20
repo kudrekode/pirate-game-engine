@@ -51,9 +51,12 @@ export type ThirdPersonMouseLookState = {
 };
 
 export type ThirdPersonMouseLookOptions = {
+	invertX?: boolean;
+	invertY?: boolean;
 	maxPitchDegrees?: number;
 	minPitchDegrees?: number;
 	pitchSensitivityDegrees?: number;
+	sensitivity?: number;
 	yawSensitivityDegrees?: number;
 };
 
@@ -342,10 +345,11 @@ export function updateThirdPersonMouseLookTarget(
 		options.minPitchDegrees ?? DEFAULT_THIRD_PERSON_MIN_PITCH_DEGREES;
 	const maxPitch =
 		options.maxPitchDegrees ?? DEFAULT_THIRD_PERSON_MAX_PITCH_DEGREES;
+	const sensitivity = options.sensitivity ?? 1;
 	const targetPitch = clamp(
 		basePitchDegrees +
 			state.targetPitchOffsetDegrees +
-			deltaY * pitchSensitivity,
+			deltaY * pitchSensitivity * sensitivity * (options.invertY ? -1 : 1),
 		minPitch,
 		maxPitch,
 	);
@@ -353,7 +357,9 @@ export function updateThirdPersonMouseLookTarget(
 		...state,
 		targetPitchOffsetDegrees: targetPitch - basePitchDegrees,
 		targetYawOffsetDegrees:
-			state.targetYawOffsetDegrees + deltaX * yawSensitivity,
+			// Yaw is the boom angle. The view turns right as the boom swings left.
+			state.targetYawOffsetDegrees +
+			deltaX * yawSensitivity * sensitivity * (options.invertX ? 1 : -1),
 	};
 }
 

@@ -1,6 +1,15 @@
 import { type Object3D, Vector3 } from "three";
 import type { ThreeVisualAssetDefinition } from "./threeVisualAssetRegistry";
 
+/** Both wrappers use their own model-forward offset around the same heading. */
+export function seatRiderHeading(
+	vehicleYaw: number,
+	vehicleOffset: number,
+	riderOffset: number,
+): number {
+	return vehicleYaw - vehicleOffset + riderOffset;
+}
+
 /** The registry seat is measured from the asset's grounded origin. A saddle
  * bone also follows the animated back of the horse through each stride. */
 export function createVehicleSeat(

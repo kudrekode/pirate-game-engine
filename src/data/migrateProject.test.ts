@@ -2,6 +2,47 @@ import { describe, expect, it } from "vitest";
 import { migrateProject } from "./migrateProject";
 
 describe("migrateProject", () => {
+	it("keeps legacy cutscenes and round-trips a timed camera sequence", () => {
+		const legacy = {
+			id: "intro",
+			name: "Intro",
+			text: "The watch begins.",
+			backgroundImageId: "river_crossing",
+		};
+		const cinematic = {
+			areaId: "merewatch",
+			shots: [
+				{
+					durationMs: 800,
+					from: {
+						position: { x: 2, y: 4, z: 18 },
+						lookAt: { x: 2, y: 3, z: 6 },
+					},
+				},
+			],
+		};
+		const authored = { ...legacy, cinematic };
+		expect(migrateProject({ cutscenes: [legacy] }).cutscenes).toEqual([legacy]);
+		expect(migrateProject({ cutscenes: [] }).cutscenes).toEqual([]);
+		expect(
+			migrateProject(JSON.parse(JSON.stringify({ cutscenes: [authored] })))
+				.cutscenes,
+		).toEqual([authored]);
+		expect(() =>
+			migrateProject({
+				cutscenes: [
+					{
+						...authored,
+						cinematic: {
+							...cinematic,
+							shots: [{ ...cinematic.shots[0], durationMs: 0 }],
+						},
+					},
+				],
+			}),
+		).toThrow(/cinematic.shots.0.durationMs/);
+	});
+
 	it("preserves player-facing item fields and legacy icons/categories without restoring deleted items", () => {
 		const project = migrateProject({
 			items: [

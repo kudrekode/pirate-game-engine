@@ -12,6 +12,7 @@ import {
 	buyRuntimeShopEntry,
 	collectRuntimePickup,
 	dismountRuntimeVehicle,
+	getRuntimeVehicleDismountTarget,
 	openRuntimeShop,
 	type RuntimeObjectInteractionEvent,
 	runRuntimeObjectBehaviour,
@@ -411,6 +412,13 @@ describe("runtime object interactions", () => {
 		session.playerPosition = { x: 1, y: 0 };
 		session.playerFacing = { x: 0, y: 1 };
 
+		expect(getRuntimeVehicleDismountTarget(session, area)?.target).toEqual({
+			canDismount: true,
+			x: 1,
+			y: 1,
+		});
+		expect(session.playerVehicleState.active).toBe(true);
+		expect(session.playerPosition).toEqual({ x: 1, y: 0 });
 		expect(dismountRuntimeVehicle(session, emit, area)).toBe(true);
 
 		expect(session.playerVehicleState.active).toBe(false);
@@ -442,6 +450,9 @@ describe("runtime object interactions", () => {
 		session.playerPosition = { x: 1, y: 0 };
 		session.playerFacing = { x: 0, y: 1 };
 
+		expect(
+			getRuntimeVehicleDismountTarget(session, area)?.target.canDismount,
+		).toBe(false);
 		expect(dismountRuntimeVehicle(session, emit, area)).toBe(false);
 
 		expect(session.playerVehicleState.active).toBe(true);

@@ -25,6 +25,7 @@ import {
 export type ThreeVisualAssetDefinition = VisualAssetDefinition & {
 	traversal?: AssetTraversalProfile;
 	mountedSeat?: { height: number; node?: string };
+	gaitSpeeds?: { walk: number; run: number };
 };
 
 import { characterAssetProblem } from "../../data/characterAssets";
@@ -106,6 +107,7 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		defaultScale: 1,
 		defaultRotationOffset: 180,
 		mountedSeat: { height: 1.52, node: "Saddle" },
+		gaitSpeeds: { walk: 3.8, run: 6.6 },
 		animations: {
 			idle: { clipName: "HorseIdle" },
 			walk: { clipName: "HorseWalk" },

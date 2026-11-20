@@ -267,7 +267,7 @@ test("charged Bow, ballistic drop, cancellation, world impacts, switching and Co
 					180) /
 				Math.PI;
 			if (Math.abs(yaw) < 0.12 && Math.abs(pitch) < 0.12) break;
-			mouseX += yaw / 0.22;
+			mouseX -= yaw / 0.22;
 			mouseY += pitch / 0.18;
 			await page.mouse.move(mouseX, mouseY);
 			await page.waitForTimeout(180);

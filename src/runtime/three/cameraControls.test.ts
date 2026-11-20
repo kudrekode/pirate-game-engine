@@ -216,10 +216,44 @@ describe("Three orbit camera helpers", () => {
 			},
 		);
 
-		expect(look.targetYawOffsetDegrees).toBeCloseTo(25);
+		expect(look.targetYawOffsetDegrees).toBeCloseTo(-25);
 		expect(look.targetPitchOffsetDegrees).toBeCloseTo(-10);
 		expect(getThirdPersonMouseLookYawOffsetDegrees(look)).toBe(0);
 		expect(getThirdPersonMouseLookPitchDegrees(20, look)).toBe(20);
+	});
+
+	it("turns the visible ray right and up, with independent inversion and sensitivity", () => {
+		const view = (options = {}) => {
+			const look = advanceThirdPersonMouseLook(
+				updateThirdPersonMouseLookTarget(
+					createThirdPersonMouseLookState(),
+					100,
+					-50,
+					0,
+					options,
+				),
+				1,
+			);
+			return getThirdPersonCameraRig(
+				{ x: 0, y: 0, z: 0 },
+				{
+					distance: 4,
+					height: 1,
+					lookAtHeight: 1,
+					yawDegrees: look.currentYawOffsetDegrees,
+					pitchDegrees: look.currentPitchOffsetDegrees,
+				},
+			);
+		};
+		const normal = view();
+		expect(normal.lookAt.x - normal.position.x).toBeGreaterThan(0);
+		expect(normal.lookAt.y - normal.position.y).toBeGreaterThan(0);
+		const inverted = view({ invertX: true, invertY: true, sensitivity: 2 });
+		expect(inverted.lookAt.x - inverted.position.x).toBeLessThan(0);
+		expect(inverted.lookAt.y - inverted.position.y).toBeLessThan(0);
+		expect(view({ sensitivity: 0.5 }).position.x).toBeGreaterThan(
+			normal.position.x,
+		);
 	});
 
 	it("clamps third-person mouse look pitch targets safely", () => {

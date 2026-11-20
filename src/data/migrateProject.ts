@@ -2146,8 +2146,47 @@ function migrateCutscenes(value: unknown): Cutscene[] {
 			if (cutscene[field] !== undefined && typeof cutscene[field] !== "string")
 				throw new Error(`${path}.${field}: Expected a string.`);
 		}
+		if (cutscene.cinematic !== undefined)
+			validateCinematic(cutscene.cinematic, `${path}.cinematic`);
 		return cutscene as Cutscene;
 	});
+}
+
+function validateCinematic(value: unknown, path: string): void {
+	if (
+		!isRecord(value) ||
+		typeof value.areaId !== "string" ||
+		!value.areaId.trim()
+	)
+		throw new Error(`${path}.areaId: Expected an area ID.`);
+	if (!Array.isArray(value.shots) || !value.shots.length)
+		throw new Error(`${path}.shots: Expected at least one camera shot.`);
+	for (const [index, shot] of value.shots.entries()) {
+		const shotPath = `${path}.shots.${index}`;
+		if (
+			!isRecord(shot) ||
+			typeof shot.durationMs !== "number" ||
+			!Number.isFinite(shot.durationMs) ||
+			shot.durationMs <= 0
+		)
+			throw new Error(`${shotPath}.durationMs: Expected a positive duration.`);
+		const validateCamera = (camera: unknown, cameraPath: string) => {
+			if (!isRecord(camera))
+				throw new Error(`${cameraPath}: Expected a camera pose.`);
+			for (const point of ["position", "lookAt"]) {
+				const vector = camera[point];
+				if (
+					!isRecord(vector) ||
+					!["x", "y", "z"].every((axis) => Number.isFinite(vector[axis]))
+				)
+					throw new Error(
+						`${cameraPath}.${point}: Expected finite x, y and z coordinates.`,
+					);
+			}
+		};
+		validateCamera(shot.from, `${shotPath}.from`);
+		if (shot.to !== undefined) validateCamera(shot.to, `${shotPath}.to`);
+	}
 }
 
 export function migrateProject(value: unknown): GameProject {
