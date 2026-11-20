@@ -67,6 +67,7 @@ describe("Three world presentation helpers", () => {
 			"clear-day",
 			"golden-hour",
 			"overcast",
+			"moonlit",
 		]);
 		expect(resolveAtmospherePreset("golden-hour").label).toBe("Golden Hour");
 		expect(resolveAtmospherePreset("unknown")).toBe(

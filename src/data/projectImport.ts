@@ -266,7 +266,9 @@ const area = fields({
 				nested: { transform, link: target, interaction },
 			}),
 		),
-		theme: fields({ strings: "primaryTerrainId accentTerrainId overlayId" }),
+		theme: fields({
+			strings: "primaryTerrainId accentTerrainId overlayId atmosphere",
+		}),
 	},
 });
 const progressionAction = tagged(

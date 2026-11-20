@@ -42,6 +42,7 @@ export function createGroundPresentation(
 	);
 	const pixels = new Uint8Array(size * size * 4);
 	const palette = new Map<string, number[]>();
+	const moonlit = area.theme?.atmosphere === "moonlit";
 	const colour = (x: number, y: number) => {
 		const tile = sampler.getTile(
 			Math.max(0, Math.min(area.width - 1, x)),
@@ -51,7 +52,12 @@ export function createGroundPresentation(
 		let result = palette.get(key);
 		if (!result) {
 			// Damp sand under the water-facing end of the existing sloping bank.
-			const hex = key === "water" ? 0x8b9d8b : getWorldMaterialColor(key);
+			const hex =
+				key === "water"
+					? 0x8b9d8b
+					: moonlit && key === "dirt"
+						? 0x716353
+						: getWorldMaterialColor(key);
 			result = [hex >> 16, (hex >> 8) & 255, hex & 255];
 			palette.set(key, result);
 		}
@@ -83,7 +89,12 @@ export function createGroundPresentation(
 				1 +
 				mottling * 0.05 +
 				Math.sin(x * 0.65 + y * 0.8) * 0.025 +
-				(grain - Math.floor(grain) - 0.5) * 0.035;
+				(grain - Math.floor(grain) - 0.5) * 0.035 +
+				(moonlit
+					? mottling * 0.18 +
+						noise(x * 6.1, y * 6.1) * 0.12 +
+						(grain - Math.floor(grain) - 0.5) * 0.22
+					: 0);
 			const offset = (py * size + px) * 4;
 			for (let channel = 0; channel < 3; channel++) {
 				const top = colours[0][channel] * (1 - u) + colours[1][channel] * u;
@@ -132,7 +143,7 @@ export function createGroundPresentation(
 
 // Continue only complete, flat outdoor borders into the haze. This is a visual
 // apron, excluded from the editor's terrain/entity pick lists and runtime state.
-// Sparse maps, interiors and authored elevations retain their original edges.
+// Sparse maps, interiors and elevated borders retain their original edges.
 export function createWorldEdgePresentation(
 	area: GameArea | undefined,
 	waterMaterial: THREE.MeshStandardMaterial,
@@ -140,7 +151,14 @@ export function createWorldEdgePresentation(
 ): THREE.Mesh[] {
 	if (
 		area?.kind !== "outdoor" ||
-		area.terrainHeights?.some((tile) => tile.height !== 0)
+		area.terrainHeights?.some(
+			(tile) =>
+				tile.height !== 0 &&
+				(tile.x === 0 ||
+					tile.y === 0 ||
+					tile.x === area.width - 1 ||
+					tile.y === area.height - 1),
+		)
 	)
 		return [];
 	const sampler = createTerrainSurfaceSampler(area);

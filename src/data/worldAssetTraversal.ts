@@ -24,6 +24,30 @@ const solid = (x: number, y: number, z: number): AssetTraversalProfile => ({
 });
 
 export const WORLD_ASSET_TRAVERSAL: Record<string, AssetTraversalProfile> = {
+	"mere-cottage": {
+		solids: [
+			box(4.78, 4.6, 4.55),
+			{ min: [2.32, 0, -0.54], max: [2.9, 4.55, 1.36] },
+		],
+	},
+	"mere-well": solid(1.58, 1, 1.58),
+	"mere-lantern": solid(0.41, 2.85, 0.41),
+	"mere-barrel": solid(0.74, 0.93, 0.74),
+	"mere-crag": solid(3.8, 1.6, 2.1),
+	"mere-spruce": solid(0.38, 6, 0.38),
+	"mere-watchtower": solid(3.62, 8, 3.62),
+	"mere-dock": {
+		surfaces: [{ x: [-1, 1], z: [-2, 2], y: [0.83, 0.83] }],
+		solids: [-0.87, 0.87].flatMap((x) =>
+			[-1.56, 1.56].map(
+				(z) =>
+					({
+						min: [x - 0.12, 0, z - 0.12],
+						max: [x + 0.12, 1.44, z + 0.12],
+					}) as TraversalBox,
+			),
+		),
+	},
 	"world-barrel": solid(1.087, 1, 1.087),
 	"world-crate": solid(0.98, 0.7, 1.19),
 	"world-chest": solid(0.5334, 0.5638, 0.5496),

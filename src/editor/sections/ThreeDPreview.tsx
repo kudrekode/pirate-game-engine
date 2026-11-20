@@ -833,7 +833,9 @@ export function ThreeDPreview({
 		scene.add(grid);
 		grid.visible = isTerrainEditing;
 
-		const waterPresentation = createWaterPresentationState();
+		const waterPresentation = createWaterPresentationState(
+			activeArea?.theme?.atmosphere,
+		);
 		const groundPresentation = createGroundPresentation(activeArea);
 		let waterSurfaceMeshCount = 0;
 		const terrainRebuildStartedAt = performance.now();
@@ -1045,6 +1047,7 @@ export function ThreeDPreview({
 		}
 
 		const atmosphere = applyAtmosphere(scene, renderer, {
+			preset: activeArea?.theme?.atmosphere,
 			enableShadows: true,
 		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));

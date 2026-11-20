@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { AreaThemeConfig } from "../../types/game";
 
 export type WorldMaterialKey =
 	| "default"
@@ -62,7 +63,7 @@ export type WorldMaterialOptions = {
 	selected?: boolean;
 };
 
-export type AtmospherePresetId = "clear-day" | "golden-hour" | "overcast";
+export type AtmospherePresetId = NonNullable<AreaThemeConfig["atmosphere"]>;
 
 export type AtmospherePreset = {
 	id: AtmospherePresetId;
@@ -169,6 +170,22 @@ export const ATMOSPHERE_PRESETS: Record<AtmospherePresetId, AtmospherePreset> =
 				sky: 0x8294a7,
 			},
 			renderer: { toneMappingExposure: 0.96 },
+		},
+		moonlit: {
+			id: "moonlit",
+			label: "Moonlit Mere",
+			fog: { near: 15, far: 77 },
+			palette: { sky: 0x18182e, horizon: 0x48415e, fog: 0x48415e },
+			lighting: {
+				ambientGroundColor: 0x626076,
+				ambientSkyColor: 0xa9b1dd,
+				ambientIntensity: 0.86,
+				sunColor: 0xb0b9ff,
+				sunIntensity: 1.45,
+				sunAzimuthDegrees: -39,
+				sunElevationDegrees: 32,
+			},
+			renderer: { toneMappingExposure: 1 },
 		},
 	};
 
@@ -284,6 +301,28 @@ function createAtmosphereSky(
 		`,
 	});
 	const sky = new THREE.Mesh(geometry, material);
+	if (preset.id === "moonlit") {
+		const panorama = new THREE.TextureLoader().load(
+			"/assets/hollow-kingdom/mere-sky.jpg",
+		);
+		panorama.colorSpace = THREE.SRGBColorSpace;
+		panorama.wrapS = THREE.RepeatWrapping;
+		material.uniforms.panorama = { value: panorama };
+		material.fragmentShader = `
+			uniform sampler2D panorama;
+			varying vec3 vDirection;
+			void main() {
+				vec3 dir = normalize(vDirection);
+				vec2 uv = vec2(atan(dir.z, dir.x) / 6.283185 + 0.5, clamp(dir.y * 1.45 + 0.025, 0.0, 1.0));
+				vec3 sky = texture2D(panorama, uv).rgb;
+				float r = distance(dir, normalize(vec3(.28, .23, -1.0)));
+				sky += vec3(.85,.81,.70) * (1.0 - smoothstep(.015, .016, r));
+				sky += vec3(.11,.10,.17) * exp(-r * 28.0);
+				gl_FragColor = vec4(sky, 1.0);
+				#include <colorspace_fragment>
+			}`;
+		material.addEventListener("dispose", () => panorama.dispose());
+	}
 	sky.frustumCulled = false;
 	sky.renderOrder = -1;
 	sky.userData.atmosphereSky = true;
@@ -383,6 +422,8 @@ export function applyShadowRole(
 	options: { cast?: boolean; receive?: boolean },
 ): void {
 	object.traverse((child) => {
+		// Imported punctual lights illuminate the kit; only geometry casts its silhouette.
+		if ("isLight" in child && child.isLight) return;
 		child.castShadow = options.cast ?? child.castShadow;
 		child.receiveShadow = options.receive ?? child.receiveShadow;
 	});

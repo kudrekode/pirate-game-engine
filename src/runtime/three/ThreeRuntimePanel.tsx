@@ -2096,7 +2096,12 @@ export function ThreeRuntimePanel({
 		const scene = new THREE.Scene();
 		const collisionDebug = createTraversalDebugGroup(traversalWorld, area);
 		scene.add(collisionDebug);
-		const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 1000);
+		const camera = new THREE.PerspectiveCamera(
+			55,
+			(host.clientWidth || 640) / (host.clientHeight || 480),
+			0.1,
+			1000,
+		);
 		const initialPlayerVisual =
 			playerVisualRef.current ??
 			resetVisualEntityState(
@@ -2173,7 +2178,9 @@ export function ThreeRuntimePanel({
 		};
 
 		const terrainRebuildStartedAt = performance.now();
-		const waterPresentation = createWaterPresentationState();
+		const waterPresentation = createWaterPresentationState(
+			area.theme?.atmosphere,
+		);
 		const groundPresentation = createGroundPresentation(area);
 		let terrainMeshCount = 0;
 		let terrainTriangleCount = 0;
@@ -2656,10 +2663,21 @@ export function ThreeRuntimePanel({
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
 		renderer.domElement.tabIndex = 0;
 		const atmosphere = applyAtmosphere(scene, renderer, {
+			preset: area.theme?.atmosphere,
 			enableShadows: true,
 		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 		renderer.setSize(host.clientWidth || 640, host.clientHeight || 480, false);
+		const viewportObserver =
+			typeof ResizeObserver === "undefined"
+				? undefined
+				: new ResizeObserver(() => {
+						if (!host.clientWidth || !host.clientHeight) return;
+						camera.aspect = host.clientWidth / host.clientHeight;
+						camera.updateProjectionMatrix();
+						renderer.setSize(host.clientWidth, host.clientHeight, false);
+					});
+		viewportObserver?.observe(host);
 		host.appendChild(renderer.domElement);
 		physicalInteractionRef.current = presentPhysicalInteraction;
 		removeNpcPresentationRef.current = finishNpcPresentation;
@@ -3429,6 +3447,7 @@ export function ThreeRuntimePanel({
 			}
 			renderer.dispose();
 			atmosphere.dispose();
+			viewportObserver?.disconnect();
 			groundPresentation.dispose();
 			for (const result of [...markerRenderResults, playerRenderResult])
 				result.disposePresentation?.();

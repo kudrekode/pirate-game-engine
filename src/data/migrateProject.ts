@@ -821,6 +821,16 @@ function migrateArea(
 		fallback.terrainTiles,
 	);
 	const terrainHeights = migrateTerrainHeights(source.terrainHeights);
+	const inputTheme = isRecord(source.theme) ? source.theme : fallback.theme;
+	const theme = inputTheme ? { ...inputTheme } : undefined;
+	if (
+		theme?.atmosphere !== undefined &&
+		!["clear-day", "golden-hour", "overcast", "moonlit"].includes(
+			String(theme.atmosphere),
+		)
+	) {
+		delete theme.atmosphere;
+	}
 
 	return {
 		id,
@@ -842,7 +852,7 @@ function migrateArea(
 		pickups: migratePickups(source.pickups, id),
 		npcs: migrateNpcInstances(source.npcs, id, definitionsById),
 		eventBlocks: migrateEventBlocks(source.eventBlocks, fallback.eventBlocks),
-		theme: isRecord(source.theme) ? { ...source.theme } : fallback.theme,
+		theme,
 	};
 }
 

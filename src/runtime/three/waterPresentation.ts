@@ -4,7 +4,7 @@ import {
 	isTerrainWaterTileId,
 } from "../../data/terrainHeight";
 import { createTerrainSurfaceSampler } from "../../data/terrainSurface";
-import type { GameArea } from "../../types/game";
+import type { AreaThemeConfig, GameArea } from "../../types/game";
 import { createWorldMaterial } from "./worldPresentation";
 
 export type CoastlineDirection = "east" | "north" | "south" | "west";
@@ -62,13 +62,20 @@ export function isWaterTerrainId(tileId: string | undefined): boolean {
 	return isTerrainWaterTileId(tileId);
 }
 
-export function createWaterPresentationState(): WaterPresentationState {
+export function createWaterPresentationState(
+	atmosphere?: AreaThemeConfig["atmosphere"],
+): WaterPresentationState {
 	const time = { value: 0 };
 	const waterMaterial = createWorldMaterial("water", {
 		opacity: WATER_BASE_OPACITY,
 	});
 	waterMaterial.depthWrite = false;
 	waterMaterial.transparent = true;
+	const moonlit = atmosphere === "moonlit";
+	if (moonlit) {
+		waterMaterial.color.setHex(0x283755);
+		waterMaterial.roughness = 0.27;
+	}
 	// Small world-space ripples in the existing Standard material: lighting,
 	// shadows, fog and colour management remain Three's normal rendering path.
 	waterMaterial.onBeforeCompile = (shader) => {
@@ -87,6 +94,21 @@ export function createWaterPresentationState(): WaterPresentationState {
 				float swell = sin(vCoastalPosition.x * 1.7 + vCoastalPosition.z * 2.3 + coastalTime * 0.65);
 				float ripple = sin(vCoastalPosition.x * 5.1 - vCoastalPosition.z * 3.8 + coastalTime * 0.9);
 				diffuseColor.rgb *= 1.0 + swell * 0.16 + ripple * 0.045;
+				${
+					moonlit
+						? `
+				vec3 viewRay = normalize(vCoastalPosition - cameraPosition);
+				float angle = viewRay.x - 0.28 * -viewRay.z;
+				float path = exp(-angle * angle * 31.0) * max(0.0, -viewRay.z);
+				vec2 p = vCoastalPosition.xz;
+				float gust = sin(p.x * 3.3 + p.y * .7 + coastalTime * .3) * cos(p.x * 1.9 - p.y * 1.2);
+				float crest = sin(p.y * 21.0 + 3.2 * swell + 2.3 * ripple + gust + coastalTime);
+				float glint = smoothstep(.66, 1.0, crest) * smoothstep(-.25, .79, gust);
+				diffuseColor.rgb += vec3(.16, .12, .21) * path * glint;
+				diffuseColor.rgb += vec3(.023,.016,.035) * pow(1.0 - abs(viewRay.y), 4.0);
+				`
+						: ""
+				}
 			`,
 				)
 				.replace(
@@ -101,10 +123,11 @@ export function createWaterPresentationState(): WaterPresentationState {
 			`,
 				);
 	};
-	waterMaterial.customProgramCacheKey = () => "coastal-water-v1";
+	waterMaterial.customProgramCacheKey = () =>
+		moonlit ? "moonlit-water-v1" : "coastal-water-v1";
 
 	const coastlineMaterial = new THREE.MeshStandardMaterial({
-		color: 0xffffff,
+		color: moonlit ? 0x626173 : 0xffffff,
 		depthWrite: true,
 		metalness: 0,
 		opacity: COASTLINE_BASE_OPACITY,
@@ -117,6 +140,7 @@ export function createWaterPresentationState(): WaterPresentationState {
 		opacity: SHALLOW_WATER_BASE_OPACITY,
 	});
 	shallowWaterMaterial.depthWrite = false;
+	if (moonlit) shallowWaterMaterial.color.setHex(0x444264);
 	shallowWaterMaterial.transparent = true;
 	shallowWaterMaterial.vertexColors = true;
 
@@ -270,8 +294,8 @@ function gridToWorld(area: WaterPresentationArea, x: number, y: number) {
 function getCoastlineGeometry(
 	area: WaterPresentationArea,
 	edge: CoastlineEdge,
+	sampler: ReturnType<typeof createTerrainSurfaceSampler>,
 ): THREE.BufferGeometry {
-	const sampler = createTerrainSurfaceSampler(area);
 	const landInset = 0.01;
 	const waterInset = COASTLINE_STRIP_WIDTH;
 	const x0 = edge.gridX - 0.5;
@@ -314,12 +338,20 @@ function getCoastlineGeometry(
 		[
 			{
 				x: landStartWorld.x,
-				y: sampler.sampleSmoothSurfaceY(landStart) + COASTLINE_Y_OFFSET,
+				y:
+					sampler.getCornerSurfaceY(
+						Math.round(landStart.x + 0.5),
+						Math.round(landStart.y + 0.5),
+					) + COASTLINE_Y_OFFSET,
 				z: landStartWorld.z,
 			},
 			{
 				x: landEndWorld.x,
-				y: sampler.sampleSmoothSurfaceY(landEnd) + COASTLINE_Y_OFFSET,
+				y:
+					sampler.getCornerSurfaceY(
+						Math.round(landEnd.x + 0.5),
+						Math.round(landEnd.y + 0.5),
+					) + COASTLINE_Y_OFFSET,
 				z: landEndWorld.z,
 			},
 			{
@@ -409,9 +441,10 @@ export function createCoastlinePresentation(
 	if (!area) {
 		return { edges, meshes: [] };
 	}
+	const sampler = createTerrainSurfaceSampler(area);
 	const meshes = edges.flatMap((edge) => {
 		const coastlineMesh = new THREE.Mesh(
-			getCoastlineGeometry(area, edge),
+			getCoastlineGeometry(area, edge, sampler),
 			state.coastlineMaterial,
 		);
 		applyPresentationMetadata(coastlineMesh, "coastline");

@@ -73,6 +73,11 @@ describe("coastal ground presentation", () => {
 
 	it("extends only complete flat outdoor borders, never playable terrain or picking", () => {
 		const input = area();
+		input.height = 3;
+		input.terrainTiles.push(
+			...input.terrainTiles.slice(-3).map((tile) => ({ ...tile, y: 2 })),
+		);
+		input.terrainHeights = [{ x: 1, y: 1, height: 2 }];
 		const before = JSON.stringify(input);
 		const ground = createGroundPresentation(input);
 		const water = new THREE.MeshStandardMaterial({ transparent: true });

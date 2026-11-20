@@ -88,6 +88,7 @@ export type GameAreaKind =
 	| "custom";
 
 export type AreaThemeConfig = {
+	atmosphere?: "clear-day" | "golden-hour" | "overcast" | "moonlit";
 	primaryTerrainId?: string;
 	accentTerrainId?: string;
 	overlayId?: string;

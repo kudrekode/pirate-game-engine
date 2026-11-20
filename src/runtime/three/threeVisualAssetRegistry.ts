@@ -32,6 +32,49 @@ import type { CharacterGameAsset } from "../../types/game";
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
 export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
+	...(
+		[
+			["wayfarer", "Cloaked Wayfarer"],
+			["ferryman", "Merewatch Ferryman"],
+		] as const
+	).map(
+		([key, name]): ThreeVisualAssetDefinition => ({
+			...PROCEDURAL_MANNEQUIN_V0_ASSET,
+			id: `mere-${key}`,
+			name,
+			url: `/assets/hollow-kingdom/${key}.glb`,
+			materialProfile: "preserve",
+			tags: ["hollow-kingdom", "golden-skeleton"],
+		}),
+	),
+	...(
+		[
+			["cottage", "Crooked Cottage", "Buildings"],
+			["cobbles", "Merewatch Cobbles", "Buildings"],
+			["well", "Winding Well", "Props"],
+			["lantern", "Horn Lantern", "Props"],
+			["dock", "Mooring Deck", "Buildings"],
+			["watchtower", "Beacon Tower", "Buildings"],
+			["spruce", "Merewatch Spruce", "Nature"],
+			["verge", "Heath and Loose Stone", "Nature"],
+			["crag", "Schist Outcrop", "Nature"],
+			["barrel", "Coopered Cask", "Props"],
+		] as const
+	).map(
+		([key, name, browserCategory]): ThreeVisualAssetDefinition => ({
+			id: `mere-${key}`,
+			name,
+			kind: "glb",
+			category: "environment",
+			browserCategory,
+			url: `/assets/hollow-kingdom/${key}.glb`,
+			defaultScale: 1,
+			castShadow: true,
+			receiveShadow: true,
+			traversal: WORLD_ASSET_TRAVERSAL[`mere-${key}`],
+			tags: ["hollow-kingdom", "merewatch"],
+		}),
+	),
 	{
 		id: "weapon-bow-v1",
 		name: "Bow",

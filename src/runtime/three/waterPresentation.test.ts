@@ -142,6 +142,8 @@ describe("water presentation helpers", () => {
 		);
 
 		expect(coastY.length).toBe(4);
+		expect(coastY[0]).toBeCloseTo((5 - 0.82) / 2 + 0.025);
+		expect(coastY[1]).toBeCloseTo(coastY[0]);
 		expect(Math.max(...coastY)).toBeGreaterThan(Math.min(...coastY));
 		expect(Math.min(...coastY)).toBeCloseTo(-0.795);
 		expect(new Set(shallowY.map((value) => value.toFixed(3))).size).toBe(1);

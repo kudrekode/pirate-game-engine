@@ -6,6 +6,8 @@ This is an active work-in-progress and a portfolio project, not a production-rea
 
 See the [documentation index](docs/README.md) for development guides, audits, decisions and milestone reports.
 
+To play **The Hollow Kingdom**, import [the Merewatch village project](hollow-kingdom.project.json), select **3D View**, and press **Play**. The [village kit guide](tools/hollow-kingdom/README.md) includes the Blender rebuild commands.
+
 ## At a glance
 
 | 2D map workspace | Experimental 3D workspace |
