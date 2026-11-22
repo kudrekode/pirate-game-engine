@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { isCinematicAudioUrl } from "../../runtime/cinematicTimeline";
 import type {
 	CinematicActorAnimation,
@@ -141,12 +142,17 @@ export function CueFields({
 	actors,
 	target,
 	onChange,
+	linkSubtitleSpeaker = false,
+	audioSourceFields,
 }: {
 	cue: CinematicCue;
 	actors: { id: string; name: string }[];
-	target: CinematicCamera["lookAt"];
+	target?: CinematicCamera["lookAt"];
 	onChange: (cue: CinematicCue) => void;
+	linkSubtitleSpeaker?: boolean;
+	audioSourceFields?: ReactNode;
 }) {
+	const face = cue.type === "actor" ? cue.face : undefined;
 	return (
 		<>
 			<div className="cinematic-timing-fields">
@@ -167,10 +173,42 @@ export function CueFields({
 			</div>
 			{cue.type === "subtitle" && (
 				<>
+					{linkSubtitleSpeaker && (
+						<label>
+							Speaker actor
+							<select
+								value={cue.speakerId ?? ""}
+								onChange={(event) => {
+									const speaker = actors.find(
+										({ id }) => id === event.target.value,
+									);
+									onChange({
+										...cue,
+										speakerId: speaker?.id,
+										speaker: speaker?.name ?? cue.speaker,
+									});
+								}}
+							>
+								<option value="">Use speaker name</option>
+								{cue.speakerId &&
+									!actors.some(({ id }) => id === cue.speakerId) && (
+										<option value={cue.speakerId}>
+											Missing actor ({cue.speakerId})
+										</option>
+									)}
+								{actors.map(({ id, name }) => (
+									<option key={id} value={id}>
+										{name}
+									</option>
+								))}
+							</select>
+						</label>
+					)}
 					<label>
 						Subtitle speaker
 						<input
 							value={cue.speaker ?? ""}
+							disabled={linkSubtitleSpeaker && !!cue.speakerId}
 							onChange={(event) =>
 								onChange({ ...cue, speaker: event.target.value || undefined })
 							}
@@ -239,9 +277,10 @@ export function CueFields({
 						<input
 							type="checkbox"
 							checked={!!cue.face}
+							disabled={!cue.face && !target}
 							onChange={(event) =>
 								onChange(
-									event.target.checked
+									event.target.checked && target
 										? { ...cue, face: { x: target.x, z: target.z } }
 										: {
 												...cue,
@@ -253,21 +292,17 @@ export function CueFields({
 						/>
 						Face a map point
 					</label>
-					{cue.face && (
+					{face && (
 						<div className="cinematic-timing-fields">
 							<NumberField
 								label="Face X"
-								value={cue.face.x}
-								onChange={(x) =>
-									onChange({ ...cue, face: { x, z: cue.face?.z ?? target.z } })
-								}
+								value={face.x}
+								onChange={(x) => onChange({ ...cue, face: { ...face, x } })}
 							/>
 							<NumberField
 								label="Face Z"
-								value={cue.face.z}
-								onChange={(z) =>
-									onChange({ ...cue, face: { x: cue.face?.x ?? target.x, z } })
-								}
+								value={face.z}
+								onChange={(z) => onChange({ ...cue, face: { ...face, z } })}
 							/>
 						</div>
 					)}
@@ -275,19 +310,21 @@ export function CueFields({
 			)}
 			{cue.type === "audio" && (
 				<>
-					<label>
-						Audio file URL
-						<input
-							key={cue.url}
-							defaultValue={cue.url}
-							required
-							onBlur={(event) => {
-								const url = event.currentTarget.value.trim();
-								if (isCinematicAudioUrl(url)) onChange({ ...cue, url });
-								else event.currentTarget.value = cue.url;
-							}}
-						/>
-					</label>
+					{audioSourceFields ?? (
+						<label>
+							Audio file URL
+							<input
+								key={cue.url}
+								defaultValue={cue.url}
+								required
+								onBlur={(event) => {
+									const url = event.currentTarget.value.trim();
+									if (isCinematicAudioUrl(url)) onChange({ ...cue, url });
+									else event.currentTarget.value = cue.url;
+								}}
+							/>
+						</label>
+					)}
 					<div className="cinematic-timing-fields">
 						<NumberField
 							label="Volume"
@@ -304,54 +341,26 @@ export function CueFields({
 							onChange={(offsetMs) => onChange({ ...cue, offsetMs })}
 						/>
 					</div>
+					{audioSourceFields && (
+						<div className="cinematic-timing-fields">
+							<NumberField
+								label="Fade in (ms)"
+								value={cue.fadeInMs ?? 0}
+								min={0}
+								step={1}
+								onChange={(fadeInMs) => onChange({ ...cue, fadeInMs })}
+							/>
+							<NumberField
+								label="Fade out (ms)"
+								value={cue.fadeOutMs ?? 0}
+								min={0}
+								step={1}
+								onChange={(fadeOutMs) => onChange({ ...cue, fadeOutMs })}
+							/>
+						</div>
+					)}
 				</>
 			)}
 		</>
-	);
-}
-
-export function AudioCueCreator({
-	onAdd,
-	onCancel,
-}: {
-	onAdd: (url: string) => void;
-	onCancel: () => void;
-}) {
-	return (
-		<form
-			className="form-stack"
-			onSubmit={(event) => {
-				event.preventDefault();
-				const url = String(
-					new FormData(event.currentTarget).get("url") ?? "",
-				).trim();
-				if (isCinematicAudioUrl(url)) onAdd(url);
-			}}
-		>
-			<label>
-				Audio file URL
-				<input
-					name="url"
-					required
-					placeholder="/audio/voice.ogg or https://…"
-					onChange={(event) => {
-						const input = event.currentTarget;
-						input.setCustomValidity(
-							isCinematicAudioUrl(input.value.trim())
-								? ""
-								: "Enter a root-relative path or an HTTPS audio URL.",
-						);
-					}}
-				/>
-			</label>
-			<div className="cinematic-editor-actions">
-				<button type="submit" className="primary-button">
-					Add audio cue
-				</button>
-				<button type="button" onClick={onCancel}>
-					Cancel
-				</button>
-			</div>
-		</form>
 	);
 }

@@ -549,6 +549,9 @@ export type CinematicActorAnimation =
 	(typeof CINEMATIC_ACTOR_ANIMATIONS)[number];
 
 type CinematicCueTime = {
+	id?: string;
+	/** Storyboard cues follow this shot when its position or duration changes. */
+	shotId?: string;
 	/** Milliseconds relative to the start of the first shot. */
 	startMs: number;
 	durationMs: number;
@@ -556,6 +559,7 @@ type CinematicCueTime = {
 
 export type CinematicSubtitleCue = CinematicCueTime & {
 	type: "subtitle";
+	speakerId?: string;
 	speaker?: string;
 	text: string;
 };
@@ -572,8 +576,11 @@ export type CinematicActorCue = CinematicCueTime & {
 export type CinematicAudioCue = CinematicCueTime & {
 	type: "audio";
 	url: string;
+	sourceName?: string;
 	volume?: number;
 	offsetMs?: number;
+	fadeInMs?: number;
+	fadeOutMs?: number;
 };
 
 export type CinematicCue =
@@ -581,14 +588,53 @@ export type CinematicCue =
 	| CinematicActorCue
 	| CinematicAudioCue;
 
+export const CINEMATIC_SHOT_PRESETS = [
+	"establishing",
+	"close-up",
+	"over-shoulder",
+	"two-shot",
+	"detail",
+	"reveal",
+	"current-view",
+] as const;
+
+export type CinematicShotPreset = (typeof CINEMATIC_SHOT_PRESETS)[number];
+
+export type CinematicShot = {
+	id?: string;
+	preset?: CinematicShotPreset;
+	targetId?: string;
+	secondaryTargetId?: string;
+	durationMode?: "auto" | "manual";
+	durationMs: number;
+	from: CinematicCamera;
+	to?: CinematicCamera;
+	fov?: number;
+	ease?: "smooth" | "linear";
+	positionOffset?: CinematicCamera["position"];
+	lookAtOffset?: CinematicCamera["lookAt"];
+	trackingOrigin?: CinematicCamera["lookAt"];
+	clearance?: boolean;
+};
+
+/** Reserved authored performance data for rigs with a facial profile. */
+export type CinematicFaceTrack = {
+	actorId: string;
+	frames: {
+		timeMs: number;
+		viseme?: string;
+		morphs?: Record<string, number>;
+	}[];
+};
+
 export type CinematicSequence = {
 	areaId: string;
-	shots: {
-		durationMs: number;
-		from: CinematicCamera;
-		to?: CinematicCamera;
-	}[];
+	shots: CinematicShot[];
 	cues?: CinematicCue[];
+	castIds?: string[];
+	/** Visual-only mark for the player during shots. Uses map coordinates. */
+	playerMark?: { x: number; y: number };
+	faceTracks?: CinematicFaceTrack[];
 };
 
 export type Cutscene = {

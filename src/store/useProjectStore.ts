@@ -123,7 +123,7 @@ type ProjectStore = {
 	updateEventBlock: (id: string, patch: Partial<EventBlock>) => void;
 	deleteEventBlock: (id: string) => void;
 	updatePlayer: (patch: Partial<PlayerConfig>) => void;
-	addCutscene: () => string;
+	addCutscene: (initial?: Partial<Omit<Cutscene, "id">>) => string;
 	updateCutscene: (id: string, patch: Partial<Cutscene>) => void;
 	deleteCutscene: (id: string) => void;
 	addDialogue: () => string;
@@ -1366,7 +1366,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 			},
 		})),
 
-	addCutscene: () => {
+	addCutscene: (initial) => {
 		const index = get().project.cutscenes.length + 1;
 		const id = makeId("cutscene");
 
@@ -1383,6 +1383,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 							state.project.player.cutscenePortraitId ?? portraitPresets[0]?.id,
 						speakerName: state.project.player.name,
 						text: "New dialogue text.",
+						...initial,
 					},
 				],
 			},

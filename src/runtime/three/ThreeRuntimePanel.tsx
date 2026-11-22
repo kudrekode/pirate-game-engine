@@ -6,6 +6,7 @@ import {
 	useState,
 } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BOW } from "../../data/bow";
 import { SWORD } from "../../data/sword";
 import {
@@ -26,6 +27,7 @@ import {
 } from "../../editor/sections/terrainBlocks";
 import type {
 	CinematicActorCue,
+	CinematicCamera,
 	CinematicSequence,
 	CinematicSubtitleCue,
 	Cutscene,
@@ -175,7 +177,11 @@ import {
 	getCameraClearFraction,
 } from "./cameraObstruction";
 import { createCinematicAudioController } from "./cinematicAudio";
-import { cinematicBlend, sampleCinematicCamera } from "./cinematicCamera";
+import {
+	cinematicBlend,
+	DEFAULT_CINEMATIC_FOV,
+	sampleCinematicShot,
+} from "./cinematicCamera";
 import {
 	createGroundPresentation,
 	createWorldEdgePresentation,
@@ -350,8 +356,23 @@ type ThreeRuntimePanelProps = {
 	project: GameProject;
 	onRestart: () => void;
 	initialSave?: GameSave;
-	previewCutsceneId?: string;
+	cinematicPreview?: MutableRefObject<CinematicPreviewTransport>;
 	saveSessionRef?: MutableRefObject<(() => RuntimeSessionState) | null>;
+};
+
+export type CinematicPreviewTransport = {
+	sequence: CinematicSequence;
+	timeMs: number;
+	playing: boolean;
+	orbit: boolean;
+	seekRevision: number;
+	currentView?: CinematicCamera;
+	currentFov?: number;
+	getSubjectGeometry?: (
+		id: string,
+	) => { head?: CinematicCamera["lookAt"]; height?: number } | undefined;
+	onReady: () => void;
+	onAudioIssue: (issue: string | undefined) => void;
 };
 
 type RuntimeCameraMode = "follow" | "inspect";
@@ -579,7 +600,7 @@ export function ThreeRuntimePanel({
 	project,
 	onRestart,
 	initialSave,
-	previewCutsceneId,
+	cinematicPreview,
 	saveSessionRef,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
@@ -636,6 +657,7 @@ export function ThreeRuntimePanel({
 	const pointerLockCanvasRef = useRef<HTMLCanvasElement | null>(null);
 	const pendingCutsceneRef = useRef<PendingCutscene | null>(null);
 	const cinematicPlaybackRef = useRef<CinematicPlayback | undefined>(undefined);
+	const cinematicPreviewStartedAt = useRef(0);
 	const stopCinematicMediaRef = useRef<(() => void) | null>(null);
 	const cinematicSubtitleRef = useRef<CinematicSubtitleCue | undefined>(
 		undefined,
@@ -705,7 +727,7 @@ export function ThreeRuntimePanel({
 
 	function gameplayBlocked(session: RuntimeSessionState): boolean {
 		return Boolean(
-			previewCutsceneId ||
+			cinematicPreview ||
 				inventoryOpenRef.current ||
 				pendingCutsceneRef.current ||
 				session.dialogue ||
@@ -957,7 +979,7 @@ export function ThreeRuntimePanel({
 	function hasPointerBlockingOverlay(): boolean {
 		const session = getSession();
 		return Boolean(
-			previewCutsceneId ||
+			cinematicPreview ||
 				inventoryOpenRef.current ||
 				pendingCutsceneRef.current ||
 				sessionRef.current?.dialogue ||
@@ -1833,38 +1855,21 @@ export function ThreeRuntimePanel({
 			const session = initialSave
 				? restoreGameSave(project, initialSave)
 				: createRuntimeSession(project);
-			const preview = previewCutsceneId
-				? session.project.cutscenes.find(
-						(entry) => entry.id === previewCutsceneId,
-					)
-				: undefined;
-			if (previewCutsceneId) {
-				const sequence = preview?.cinematic;
+			if (cinematicPreview) {
+				cinematicPreviewStartedAt.current = performance.now();
+				const sequence = cinematicPreview.current.sequence;
 				const previewArea = session.project.areas.find(
-					(entry) => entry.id === sequence?.areaId,
+					(entry) => entry.id === sequence.areaId,
 				);
-				if (!sequence || !previewArea)
+				if (!previewArea)
 					throw new Error("Choose an existing area for this 3D sequence.");
 				session.currentAreaId = previewArea.id;
-				const focus = sequence.shots[0].from.lookAt;
 				const spawn = previewArea.eventBlocks.find(
 					(entry) => entry.kind === "spawn",
 				);
 				session.playerPosition = {
-					x:
-						spawn?.x ??
-						THREE.MathUtils.clamp(
-							Math.round(focus.x),
-							0,
-							previewArea.width - 1,
-						),
-					y:
-						spawn?.y ??
-						THREE.MathUtils.clamp(
-							Math.round(focus.z),
-							0,
-							previewArea.height - 1,
-						),
+					x: spawn?.x ?? Math.floor((previewArea.width - 1) / 2),
+					y: spawn?.y ?? Math.floor((previewArea.height - 1) / 2),
 				};
 			}
 			sessionRef.current = session;
@@ -1889,13 +1894,7 @@ export function ThreeRuntimePanel({
 			setStatus(initialSave ? "Saved game continued." : "3D runtime started.");
 
 			setDialogueNode(null);
-			if (preview) {
-				setPendingCutscene({
-					cutscene: preview,
-					continueLabel: "End preview",
-					onContinue: () => setPendingCutscene(null),
-				});
-			} else if (!initialSave)
+			if (!cinematicPreview && !initialSave)
 				startRuntimeSession(
 					session,
 					(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
@@ -1916,7 +1915,7 @@ export function ThreeRuntimePanel({
 			sessionRef.current = null;
 			resetPresentationVisuals(null);
 		};
-	}, [project, initialSave, previewCutsceneId]);
+	}, [project, initialSave, cinematicPreview]);
 
 	useEffect(() => {
 		if (!saveSessionRef) return;
@@ -1933,7 +1932,7 @@ export function ThreeRuntimePanel({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.defaultPrevented) return;
+			if (cinematicPreview || event.defaultPrevented) return;
 			if (
 				event.target instanceof HTMLElement &&
 				/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)
@@ -2857,6 +2856,14 @@ export function ThreeRuntimePanel({
 					});
 		viewportObserver?.observe(host);
 		host.appendChild(renderer.domElement);
+		const previewOrbit = cinematicPreview
+			? new OrbitControls(camera, renderer.domElement)
+			: undefined;
+		if (previewOrbit) {
+			previewOrbit.enabled = false;
+			previewOrbit.minDistance = 0.3;
+			previewOrbit.maxDistance = 140;
+		}
 		physicalInteractionRef.current = presentPhysicalInteraction;
 		removeNpcPresentationRef.current = finishNpcPresentation;
 		if (import.meta.env.DEV) {
@@ -2918,7 +2925,8 @@ export function ThreeRuntimePanel({
 			);
 		};
 		const handlePointerDown = (event: PointerEvent) => {
-			if (pendingCutsceneRef.current?.cutscene.cinematic) return;
+			if (cinematicPreview || pendingCutsceneRef.current?.cutscene.cinematic)
+				return;
 			if (cameraModeRef.current === "inspect") {
 				if (!event.altKey || (event.button !== 0 && event.button !== 1)) {
 					return;
@@ -3061,6 +3069,33 @@ export function ThreeRuntimePanel({
 			y: point.y,
 			z: point.z + cameraWorldOffset.z,
 		});
+		const cinematicPointToGrid = (point: THREE.Vector3Like) => ({
+			x: point.x - cameraWorldOffset.x,
+			y: point.y,
+			z: point.z - cameraWorldOffset.z,
+		});
+		const measureSubject: CinematicPreviewTransport["getSubjectGeometry"] = (
+			id,
+		) => {
+			const group =
+				id === "runtime_player" ? playerMesh : npcRenderGroups.get(id);
+			if (!group || !characterAnimationControllers.has(id)) return;
+			group.updateWorldMatrix(true, true);
+			let head: THREE.Bone | undefined;
+			group.traverse((node) => {
+				if (node instanceof THREE.Bone && /(^|[:_])head$/i.test(node.name))
+					head = node;
+			});
+			const bounds = new THREE.Box3().setFromObject(group);
+			return {
+				height: bounds.isEmpty() ? undefined : bounds.max.y - bounds.min.y,
+				head: head
+					? cinematicPointToGrid(head.getWorldPosition(new THREE.Vector3()))
+					: undefined,
+			};
+		};
+		if (cinematicPreview)
+			cinematicPreview.current.getSubjectGeometry = measureSubject;
 		const cinematicActorFacing = new Map<string, number>();
 		const applyCinematicFacing = (
 			id: string,
@@ -3098,7 +3133,9 @@ export function ThreeRuntimePanel({
 			cinematicActorFacing.set(id, yaw);
 			group.rotation.y = yaw;
 		};
-		const audio = createCinematicAudioController();
+		const audio = createCinematicAudioController((issue) =>
+			cinematicPreview?.current.onAudioIssue(issue),
+		);
 		const animatedActors = new Set<string>();
 		const stopCinematicMedia = () => {
 			audio.sync(undefined, 0);
@@ -3119,6 +3156,47 @@ export function ThreeRuntimePanel({
 			: undefined;
 		let animationFrame = 0;
 		let lastFrameMs = performance.now();
+		let previewReady = false;
+		let previewSeekRevision = -1;
+		let clearanceTargetId: string | undefined;
+		let cinematicSolids = traversalWorld.solids;
+		const cinematicCameraView = (
+			sample: NonNullable<ReturnType<typeof sampleCinematicShot>>,
+		): CameraFollowRig => {
+			const rig = {
+				position: cinematicPointToWorld(sample.camera.position),
+				lookAt: cinematicPointToWorld(sample.camera.lookAt),
+			};
+			const { targetId, trackingOrigin } = sample.shot;
+			if (trackingOrigin && targetId) {
+				const target =
+					targetId === "runtime_player"
+						? playerMesh
+						: npcRenderGroups.get(targetId);
+				if (target) {
+					const origin = cinematicPointToWorld(trackingOrigin);
+					rig.lookAt.x += target.position.x - origin.x;
+					rig.lookAt.y += target.position.y - origin.y;
+					rig.lookAt.z += target.position.z - origin.z;
+				}
+			}
+			if (!sample.shot.clearance) return rig;
+			if (sample.shot.targetId !== clearanceTargetId) {
+				clearanceTargetId = sample.shot.targetId;
+				cinematicSolids = traversalWorld.solids.filter(
+					(solid) => solid.id !== clearanceTargetId,
+				);
+			}
+			const fraction = getCameraClearFraction(
+				{ ...traversalWorld, solids: cinematicSolids },
+				rig.lookAt,
+				rig.position,
+				cameraWorldOffset,
+			);
+			return fraction > 0.05 && fraction < 1
+				? applyCameraClearance(rig, fraction * 0.92)
+				: rig;
+		};
 		const render = () => {
 			const frameCallbackStartedAt = performance.now();
 			const now = performance.now();
@@ -3147,8 +3225,7 @@ export function ThreeRuntimePanel({
 				}
 				if (
 					cinematic.startMs === undefined &&
-					((!previewCutsceneId &&
-						!sequence.cues?.some((cue) => cue.type === "actor")) ||
+					(!sequence.cues?.some((cue) => cue.type === "actor") ||
 						now - cinematic.requestedAt >= CINEMATIC_ASSET_WAIT_MS ||
 						(!assetsLoading &&
 							![...characterAnimationControllers.values()].some(
@@ -3159,19 +3236,28 @@ export function ThreeRuntimePanel({
 			}
 			const activeCinematic =
 				request && cinematic?.request === request ? cinematic : undefined;
-			const elapsedMs =
-				activeCinematic?.startMs === undefined
+			const preview = cinematicPreview?.current;
+			if (
+				preview &&
+				!previewReady &&
+				(now - cinematicPreviewStartedAt.current >= CINEMATIC_ASSET_WAIT_MS ||
+					(!assetsLoading &&
+						![...characterAnimationControllers.values()].some(
+							(controller) => controller.getStats().loadingSourceCount > 0,
+						)))
+			) {
+				previewReady = true;
+				preview.onReady();
+			}
+			const elapsedMs = preview
+				? preview.timeMs
+				: activeCinematic?.startMs === undefined
 					? undefined
-					: now -
-						activeCinematic.startMs -
-						(previewCutsceneId ? 0 : CINEMATIC_BLEND_MS);
+					: now - activeCinematic.startMs - CINEMATIC_BLEND_MS;
+			const cueSequence = preview?.sequence ?? activeCinematic?.sequence;
 			const cues =
-				activeCinematic &&
-				elapsedMs !== undefined &&
-				elapsedMs >= 0 &&
-				elapsedMs < activeCinematic.durationMs &&
-				activeCinematic.sequence.cues?.length
-					? sampleCinematicCues(activeCinematic.sequence, elapsedMs)
+				cueSequence?.cues?.length && elapsedMs !== undefined && elapsedMs >= 0
+					? sampleCinematicCues(cueSequence, elapsedMs)
 					: undefined;
 			if (activeCinematic) {
 				if (cinematicSubtitleRef.current !== cues?.subtitle) {
@@ -3179,6 +3265,13 @@ export function ThreeRuntimePanel({
 					setCinematicSubtitle(cues?.subtitle);
 				}
 				audio.sync(cues?.audio, elapsedMs ?? 0);
+			} else if (preview) {
+				audio.sync(
+					previewReady && preview.playing ? cues?.audio : undefined,
+					preview.timeMs,
+					previewSeekRevision !== preview.seekRevision,
+				);
+				previewSeekRevision = preview.seekRevision;
 			}
 
 			// The scene owns a terrain lookup already. Reuse it for every actor
@@ -3310,13 +3403,14 @@ export function ThreeRuntimePanel({
 					movementSpeed: traversal?.motion.speed,
 				});
 			}
+			const playerMark = !mount ? cueSequence?.playerMark : undefined;
 			setObjectBasePosition(
 				playerMesh,
 				area,
-				playerVisualPosition,
+				playerMark ?? playerVisualPosition,
 				terrainRenderMode,
 				playerRenderVisual,
-				grounded?.height,
+				playerMark ? undefined : grounded?.height,
 				traversalWorld.sampler,
 			);
 			collisionDebug.visible = showCollisionRef.current;
@@ -3449,10 +3543,18 @@ export function ThreeRuntimePanel({
 			characterAnimationControllers.forEach((controller, id) => {
 				const actor = cues?.actors.get(id);
 				if (actor?.cue.animation) {
-					controller.setCinematicAnimation?.(actor.cue.animation, actor.index);
+					controller.setCinematicAnimation?.(
+						actor.cue.animation,
+						actor.index,
+						preview ? (preview.timeMs - actor.cue.startMs) / 1000 : undefined,
+					);
 					animatedActors.add(id);
 				} else if (animatedActors.delete(id)) {
-					controller.setCinematicAnimation?.(undefined);
+					controller.setCinematicAnimation?.(
+						undefined,
+						undefined,
+						preview ? 0 : undefined,
+					);
 				}
 				if (
 					id === "runtime_player" &&
@@ -3461,7 +3563,8 @@ export function ThreeRuntimePanel({
 					isRuntimeGameplayBlocked(session, gameplayBlocked(session))
 				)
 					return;
-				controller.update(deltaMs / 1000);
+				if (!preview || !actor?.cue.animation)
+					controller.update(deltaMs / 1000);
 			});
 			if (import.meta.env.DEV)
 				host.dataset.npcs = JSON.stringify(
@@ -3774,34 +3877,64 @@ export function ThreeRuntimePanel({
 				cameraRigRef.current = cameraRig;
 				view = cameraRig;
 			}
+			let fov = DEFAULT_CINEMATIC_FOV;
 			if (activeCinematic && elapsedMs !== undefined) {
 				if (elapsedMs < activeCinematic.durationMs) {
 					const { sequence } = activeCinematic;
-					const lastShot = sequence.shots[sequence.shots.length - 1];
-					const shot =
-						sampleCinematicCamera(sequence, elapsedMs) ??
-						lastShot.to ??
-						lastShot.from;
-					activeCinematic.last = cinematicBlend(
-						activeCinematic.entry,
-						{
-							position: cinematicPointToWorld(shot.position),
-							lookAt: cinematicPointToWorld(shot.lookAt),
-						},
-						previewCutsceneId
-							? 1
-							: (elapsedMs + CINEMATIC_BLEND_MS) / CINEMATIC_BLEND_MS,
-					);
-					view = activeCinematic.last;
+					const sample = sampleCinematicShot(sequence, elapsedMs, true);
+					if (sample) {
+						activeCinematic.last = cinematicBlend(
+							activeCinematic.entry,
+							cinematicCameraView(sample),
+							(elapsedMs + CINEMATIC_BLEND_MS) / CINEMATIC_BLEND_MS,
+						);
+						view = activeCinematic.last;
+						fov = sample.shot.fov ?? DEFAULT_CINEMATIC_FOV;
+					}
 				} else finishCutscene(activeCinematic.request);
 			}
 			if (cinematic && cinematic.request !== pendingCutsceneRef.current) {
 				cinematic.returnMs ??= now;
 				const progress = (now - cinematic.returnMs) / CINEMATIC_BLEND_MS;
-				if (previewCutsceneId) view = cinematic.last;
-				else if (progress < 1)
-					view = cinematicBlend(cinematic.last, view, progress);
+				if (progress < 1) view = cinematicBlend(cinematic.last, view, progress);
 				else cinematicPlaybackRef.current = undefined;
+			}
+			if (preview && previewOrbit) {
+				const sample = sampleCinematicShot(
+					preview.sequence,
+					preview.timeMs,
+					true,
+				);
+				if (sample) {
+					view = cinematicCameraView(sample);
+					fov = sample.shot.fov ?? DEFAULT_CINEMATIC_FOV;
+				}
+				if (preview.orbit) {
+					if (!previewOrbit.enabled) {
+						if (preview.currentView) {
+							view = {
+								position: cinematicPointToWorld(preview.currentView.position),
+								lookAt: cinematicPointToWorld(preview.currentView.lookAt),
+							};
+						}
+						applyCameraRig(view);
+						previewOrbit.target.copy(view.lookAt);
+						previewOrbit.enabled = true;
+					}
+					previewOrbit.update();
+					view = { position: camera.position, lookAt: previewOrbit.target };
+				} else previewOrbit.enabled = false;
+				preview.currentView = {
+					position: cinematicPointToGrid(view.position),
+					lookAt: cinematicPointToGrid(view.lookAt),
+				};
+				preview.currentFov = fov;
+				if (import.meta.env.DEV)
+					host.dataset.cinematicView = JSON.stringify(preview.currentView);
+			}
+			if (camera.fov !== fov) {
+				camera.fov = fov;
+				camera.updateProjectionMatrix();
 			}
 			applyCameraRig(view);
 			if (import.meta.env.DEV)
@@ -3882,6 +4015,12 @@ export function ThreeRuntimePanel({
 
 		return () => {
 			audio.dispose();
+			previewOrbit?.dispose();
+			if (
+				cinematicPreview?.current.getSubjectGeometry === measureSubject &&
+				cinematicPreview
+			)
+				cinematicPreview.current.getSubjectGeometry = undefined;
 			if (stopCinematicMediaRef.current === stopCinematicMedia)
 				stopCinematicMediaRef.current = null;
 			if (physicalInteractionRef.current === presentPhysicalInteraction)
@@ -3947,7 +4086,7 @@ export function ThreeRuntimePanel({
 				host.removeChild(renderer.domElement);
 			}
 		};
-	}, [renderVersion, terrainRenderMode]);
+	}, [renderVersion, terrainRenderMode, cinematicPreview]);
 
 	const session = getSession();
 	const area = session ? getArea(session) : undefined;
@@ -3973,7 +4112,7 @@ export function ThreeRuntimePanel({
 
 	return (
 		<div
-			className={`three-runtime-panel${isCinematic || previewCutsceneId ? " playing-cinematic" : ""}`}
+			className={`three-runtime-panel${isCinematic || cinematicPreview ? " playing-cinematic" : ""}`}
 		>
 			{missingAssets && (
 				<p role="alert">

@@ -53,6 +53,7 @@ import type {
 } from "../types/game";
 import {
 	CINEMATIC_ACTOR_ANIMATIONS,
+	CINEMATIC_SHOT_PRESETS,
 	THREE_PLACEHOLDER_VISUAL_TYPES,
 } from "../types/game";
 import { migrateAssetCreator } from "./assetCreator";
@@ -2166,6 +2167,21 @@ function validateCinematic(value: unknown, path: string): void {
 		throw new Error(`${path}.areaId: Expected an area ID.`);
 	if (!Array.isArray(value.shots) || !value.shots.length)
 		throw new Error(`${path}.shots: Expected at least one camera shot.`);
+	if (
+		value.castIds !== undefined &&
+		(!Array.isArray(value.castIds) ||
+			value.castIds.some((id) => typeof id !== "string" || !id.trim()))
+	)
+		throw new Error(`${path}.castIds: Expected a list of actor IDs.`);
+	if (
+		value.playerMark !== undefined &&
+		(!isRecord(value.playerMark) ||
+			!Number.isFinite(value.playerMark.x) ||
+			!Number.isFinite(value.playerMark.y))
+	)
+		throw new Error(`${path}.playerMark: Expected finite map coordinates.`);
+	validateCinematicFaceTracks(value.faceTracks, `${path}.faceTracks`);
+	const shotIds = new Set<string>();
 	for (const [index, shot] of value.shots.entries()) {
 		const shotPath = `${path}.shots.${index}`;
 		if (
@@ -2175,22 +2191,66 @@ function validateCinematic(value: unknown, path: string): void {
 			shot.durationMs <= 0
 		)
 			throw new Error(`${shotPath}.durationMs: Expected a positive duration.`);
+		validateCinematicIds(
+			shot,
+			["id", "targetId", "secondaryTargetId"],
+			shotPath,
+		);
+		if (typeof shot.id === "string") {
+			if (shotIds.has(shot.id))
+				throw new Error(`${shotPath}.id: Duplicate shot ID.`);
+			shotIds.add(shot.id);
+		}
+		if (
+			shot.preset !== undefined &&
+			!CINEMATIC_SHOT_PRESETS.some((preset) => preset === shot.preset)
+		)
+			throw new Error(`${shotPath}.preset: Unsupported camera preset.`);
+		if (
+			shot.durationMode !== undefined &&
+			shot.durationMode !== "auto" &&
+			shot.durationMode !== "manual"
+		)
+			throw new Error(`${shotPath}.durationMode: Expected auto or manual.`);
+		if (
+			shot.ease !== undefined &&
+			shot.ease !== "smooth" &&
+			shot.ease !== "linear"
+		)
+			throw new Error(`${shotPath}.ease: Expected smooth or linear.`);
+		if (shot.clearance !== undefined && typeof shot.clearance !== "boolean")
+			throw new Error(`${shotPath}.clearance: Expected a boolean.`);
+		if (
+			shot.fov !== undefined &&
+			(typeof shot.fov !== "number" ||
+				!Number.isFinite(shot.fov) ||
+				shot.fov < 15 ||
+				shot.fov > 110)
+		)
+			throw new Error(`${shotPath}.fov: Expected 15–110 degrees.`);
+		const validateVector = (vector: unknown, vectorPath: string) => {
+			if (
+				!isRecord(vector) ||
+				!["x", "y", "z"].every((axis) => Number.isFinite(vector[axis]))
+			)
+				throw new Error(
+					`${vectorPath}: Expected finite x, y and z coordinates.`,
+				);
+		};
 		const validateCamera = (camera: unknown, cameraPath: string) => {
 			if (!isRecord(camera))
 				throw new Error(`${cameraPath}: Expected a camera pose.`);
-			for (const point of ["position", "lookAt"]) {
-				const vector = camera[point];
-				if (
-					!isRecord(vector) ||
-					!["x", "y", "z"].every((axis) => Number.isFinite(vector[axis]))
-				)
-					throw new Error(
-						`${cameraPath}.${point}: Expected finite x, y and z coordinates.`,
-					);
-			}
+			for (const point of ["position", "lookAt"])
+				validateVector(camera[point], `${cameraPath}.${point}`);
 		};
 		validateCamera(shot.from, `${shotPath}.from`);
 		if (shot.to !== undefined) validateCamera(shot.to, `${shotPath}.to`);
+		if (shot.positionOffset !== undefined)
+			validateVector(shot.positionOffset, `${shotPath}.positionOffset`);
+		if (shot.lookAtOffset !== undefined)
+			validateVector(shot.lookAtOffset, `${shotPath}.lookAtOffset`);
+		if (shot.trackingOrigin !== undefined)
+			validateVector(shot.trackingOrigin, `${shotPath}.trackingOrigin`);
 	}
 	if (value.cues === undefined) return;
 	if (!Array.isArray(value.cues))
@@ -2198,6 +2258,7 @@ function validateCinematic(value: unknown, path: string): void {
 	for (const [index, cue] of value.cues.entries()) {
 		const cuePath = `${path}.cues.${index}`;
 		if (!isRecord(cue)) throw new Error(`${cuePath}: Expected a cue.`);
+		validateCinematicIds(cue, ["id", "shotId"], cuePath);
 		if (
 			typeof cue.startMs !== "number" ||
 			!Number.isFinite(cue.startMs) ||
@@ -2214,12 +2275,55 @@ function validateCinematic(value: unknown, path: string): void {
 	}
 }
 
+function validateCinematicIds(
+	record: Record<string, unknown>,
+	fields: string[],
+	path: string,
+) {
+	for (const field of fields) {
+		const id = record[field];
+		if (id !== undefined && (typeof id !== "string" || !id.trim()))
+			throw new Error(`${path}.${field}: Expected an ID.`);
+	}
+}
+
+function validateCinematicFaceTracks(value: unknown, path: string) {
+	if (value === undefined) return;
+	if (!Array.isArray(value)) throw new Error(`${path}: Expected an array.`);
+	for (const track of value) {
+		if (
+			!isRecord(track) ||
+			typeof track.actorId !== "string" ||
+			!track.actorId.trim() ||
+			!Array.isArray(track.frames)
+		)
+			throw new Error(`${path}: Expected an actor ID and facial frames.`);
+		for (const frame of track.frames) {
+			if (
+				!isRecord(frame) ||
+				typeof frame.timeMs !== "number" ||
+				!Number.isFinite(frame.timeMs) ||
+				frame.timeMs < 0 ||
+				(frame.viseme !== undefined && typeof frame.viseme !== "string") ||
+				(frame.morphs !== undefined &&
+					(!isRecord(frame.morphs) ||
+						Object.values(frame.morphs).some(
+							(weight) =>
+								typeof weight !== "number" || !Number.isFinite(weight),
+						)))
+			)
+				throw new Error(`${path}: Expected a valid timed facial frame.`);
+		}
+	}
+}
+
 function validateCinematicCue(
 	cue: Record<string, unknown>,
 	path: string,
 ): void {
 	switch (cue.type) {
 		case "subtitle":
+			validateCinematicIds(cue, ["speakerId"], path);
 			if (typeof cue.text !== "string" || !cue.text.trim())
 				throw new Error(`${path}.text: Expected subtitle text.`);
 			if (cue.speaker !== undefined && typeof cue.speaker !== "string")
@@ -2246,8 +2350,10 @@ function validateCinematicCue(
 		case "audio":
 			if (typeof cue.url !== "string" || !isCinematicAudioUrl(cue.url))
 				throw new Error(
-					`${path}.url: Expected a root-relative path or HTTPS URL.`,
+					`${path}.url: Expected an audio file, root-relative path or HTTPS URL.`,
 				);
+			if (cue.sourceName !== undefined && typeof cue.sourceName !== "string")
+				throw new Error(`${path}.sourceName: Expected a filename.`);
 			if (
 				cue.volume !== undefined &&
 				(typeof cue.volume !== "number" ||
@@ -2256,13 +2362,16 @@ function validateCinematicCue(
 					cue.volume > 1)
 			)
 				throw new Error(`${path}.volume: Expected a value from 0 to 1.`);
-			if (
-				cue.offsetMs !== undefined &&
-				(typeof cue.offsetMs !== "number" ||
-					!Number.isFinite(cue.offsetMs) ||
-					cue.offsetMs < 0)
-			)
-				throw new Error(`${path}.offsetMs: Expected a nonnegative offset.`);
+			for (const field of ["offsetMs", "fadeInMs", "fadeOutMs"]) {
+				const duration = cue[field];
+				if (
+					duration !== undefined &&
+					(typeof duration !== "number" ||
+						!Number.isFinite(duration) ||
+						duration < 0)
+				)
+					throw new Error(`${path}.${field}: Expected a nonnegative duration.`);
+			}
 			return;
 		default:
 			throw new Error(`${path}.type: Expected subtitle, actor or audio.`);

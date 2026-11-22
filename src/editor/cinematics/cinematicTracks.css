@@ -1,0 +1,222 @@
+.cinematic-tracks {
+	display: grid;
+	gap: 10px;
+	min-width: 0;
+	color: var(--cinematic-text, #e3ede2);
+}
+
+.cinematic-tracks-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.cinematic-tracks-heading h3,
+.cinematic-track-inspector h4,
+.cinematic-track-inspector p {
+	margin: 0;
+}
+
+.cinematic-tracks-heading h3,
+.cinematic-track-inspector h4 {
+	font-size: 13px;
+}
+
+.cinematic-track-time,
+.cinematic-track-label,
+.cinematic-track-ruler,
+.cinematic-track-unavailable,
+.cinematic-track-inspector p {
+	color: var(--cinematic-muted, #aec2b2);
+	font-size: 11px;
+}
+
+.cinematic-track-time,
+.cinematic-track-ruler {
+	font-variant-numeric: tabular-nums;
+}
+
+.cinematic-tracks-scroll {
+	overflow-x: auto;
+	padding: 3px 5px 3px 0;
+}
+
+.cinematic-tracks-grid {
+	display: grid;
+	gap: 4px;
+	min-width: 360px;
+}
+
+.cinematic-tracks-row {
+	display: grid;
+	grid-template-columns: 72px minmax(0, 1fr);
+	align-items: start;
+	gap: 8px;
+}
+
+.cinematic-track-label {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px;
+	min-height: 23px;
+}
+
+.cinematic-track-label button {
+	display: grid;
+	place-items: center;
+	flex: 0 0 20px;
+	min-height: 20px;
+	padding: 0;
+	font-size: 14px;
+}
+
+.cinematic-track-ruler,
+.cinematic-track-lanes {
+	position: relative;
+	min-height: 23px;
+}
+
+.cinematic-track-ruler::after,
+.cinematic-track-lanes::after {
+	position: absolute;
+	z-index: 2;
+	inset-block: 0;
+	inset-inline-start: var(--cinematic-playhead);
+	width: 1px;
+	background: #f5d397;
+	pointer-events: none;
+	content: "";
+}
+
+.cinematic-track-ruler span {
+	position: absolute;
+	inset-block-start: 3px;
+	transform: translateX(-50%);
+	white-space: nowrap;
+}
+
+.cinematic-track-ruler span:first-child {
+	transform: none;
+}
+
+.cinematic-track-ruler span[data-edge="end"] {
+	transform: translateX(-100%);
+}
+
+.cinematic-track-ruler input {
+	position: absolute;
+	z-index: 3;
+	inset: 0;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	cursor: ew-resize;
+}
+
+.cinematic-track-ruler:focus-within {
+	outline: 2px solid #f5d397;
+	outline-offset: 2px;
+}
+
+.cinematic-track-lanes {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.cinematic-track-lane {
+	position: relative;
+	height: 23px;
+	background-color: #16231d;
+	background-image: linear-gradient(to right, #53685a 1px, transparent 1px);
+	border-radius: 3px;
+}
+
+.cinematic-tracks-row[data-track="camera"] {
+	--cinematic-clip: #375d64;
+}
+
+.cinematic-tracks-row[data-track="actor"] {
+	--cinematic-clip: #5a4c70;
+}
+
+.cinematic-tracks-row[data-track="subtitle"] {
+	--cinematic-clip: #645239;
+}
+
+.cinematic-tracks-row[data-track="audio"] {
+	--cinematic-clip: #3a6348;
+}
+
+.cinematic-track-lane button.cinematic-track-clip {
+	position: absolute;
+	inset-block: 1px;
+	min-height: 0;
+	min-width: 8px;
+	overflow: hidden;
+	padding: 0 3px;
+	border: 1px solid #ffffff30;
+	border-radius: 3px;
+	background: var(--cinematic-clip);
+	color: #fff;
+	font-size: 11px;
+	line-height: 1;
+	text-align: start;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.cinematic-track-lane button.cinematic-track-clip:hover,
+.cinematic-track-lane button.cinematic-track-clip:focus-visible,
+.cinematic-track-lane button.cinematic-track-clip[aria-pressed="true"],
+.cinematic-track-lane button.cinematic-track-clip[data-dropping="true"] {
+	z-index: 1;
+	border-color: #f5d397;
+}
+
+.cinematic-track-lane button.cinematic-track-clip:focus-visible {
+	outline: 2px solid #f5d397;
+}
+
+.cinematic-track-lane button.cinematic-track-clip[data-draggable="true"] {
+	touch-action: none;
+	cursor: grab;
+}
+
+.cinematic-track-lane
+	button.cinematic-track-clip[data-draggable="true"]:active {
+	cursor: grabbing;
+}
+
+.cinematic-track-unavailable {
+	display: flex;
+	align-items: center;
+	padding: 3px 5px;
+	border: 1px dashed #506457;
+	border-radius: 3px;
+}
+
+.cinematic-track-inspector {
+	min-width: 0;
+	padding: 9px;
+	border: 1px solid #475b4f;
+	border-radius: 6px;
+}
+
+.cinematic-track-inspector fieldset {
+	min-width: 0;
+	margin: 0;
+	padding: 8px;
+	border: 1px solid #475b4f;
+	border-radius: 6px;
+}
+
+.cinematic-track-inspector .danger-button {
+	justify-self: start;
+}

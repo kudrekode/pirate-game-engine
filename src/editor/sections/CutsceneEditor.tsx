@@ -1,205 +1,321 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { backgroundPresets, portraitPresets } from "../../data/presets";
 import { useProjectStore } from "../../store/useProjectStore";
-import { CinematicTimelineEditor } from "./CinematicTimelineEditor";
+import type { Cutscene, GameProject } from "../../types/game";
+import { CinematicSequenceEditor } from "../cinematics/CinematicSequenceEditor";
+import { cinematicId } from "../cinematics/cinematicEditing";
+import { createCinematicPresetShot } from "../cinematics/cinematicFraming";
 import { useEditorSource } from "./editorSource";
+import "../cinematics/cinematics.css";
+
+function establish(project: GameProject) {
+	const area =
+		project.areas.find(({ id }) => id === project.activeAreaId) ??
+		project.areas[0];
+	if (!area) return;
+	const { shot } = createCinematicPresetShot(project, area, {
+		preset: "establishing",
+	});
+	if (!shot) return;
+	return { areaId: area.id, shots: [{ ...shot, id: cinematicId("shot") }] };
+}
+
+function StaticFields({
+	cutscene,
+	onChange,
+}: {
+	cutscene: Cutscene;
+	onChange: (patch: Partial<Cutscene>) => void;
+}) {
+	return (
+		<>
+			<label>
+				Background image
+				<select
+					value={cutscene.backgroundImageId}
+					onChange={(event) =>
+						onChange({ backgroundImageId: event.target.value })
+					}
+				>
+					{backgroundPresets.map(({ id, label }) => (
+						<option key={id} value={id}>
+							{label}
+						</option>
+					))}
+				</select>
+			</label>
+			<label>
+				Portrait image
+				<select
+					value={cutscene.portraitImageId ?? ""}
+					onChange={(event) =>
+						onChange({ portraitImageId: event.target.value || undefined })
+					}
+				>
+					<option value="">None</option>
+					{portraitPresets.map(({ id, label }) => (
+						<option key={id} value={id}>
+							{label}
+						</option>
+					))}
+				</select>
+			</label>
+			<label>
+				Speaker name
+				<input
+					value={cutscene.speakerName ?? ""}
+					onChange={(event) => onChange({ speakerName: event.target.value })}
+				/>
+			</label>
+			<label>
+				Text
+				<textarea
+					value={cutscene.text}
+					rows={4}
+					onChange={(event) => onChange({ text: event.target.value })}
+				/>
+			</label>
+		</>
+	);
+}
 
 export function CutsceneEditor() {
 	const project = useProjectStore((state) => state.project);
-	const { cutscenes } = project;
 	const addCutscene = useProjectStore((state) => state.addCutscene);
 	const updateCutscene = useProjectStore((state) => state.updateCutscene);
 	const deleteCutscene = useProjectStore((state) => state.deleteCutscene);
+	const [selectedId, setSelectedId] = useState("");
+	const [advanced, setAdvanced] = useState(false);
+	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [confirmStatic, setConfirmStatic] = useState(false);
+	useEditorSource("cutscenes", (source) => setSelectedId(source.id));
+	const cutscene =
+		project.cutscenes.find(({ id }) => id === selectedId) ??
+		project.cutscenes[0];
+	const sequence = cutscene?.cinematic;
 
-	const [selectedCutsceneId, setSelectedCutsceneId] = useState(
-		cutscenes[0]?.id ?? "",
-	);
-	useEditorSource("cutscenes", (source) => setSelectedCutsceneId(source.id));
-
-	const selectedCutscene = useMemo(
-		() => cutscenes.find((cutscene) => cutscene.id === selectedCutsceneId),
-		[cutscenes, selectedCutsceneId],
-	);
-
-	useEffect(() => {
-		if (!selectedCutscene && cutscenes.length > 0) {
-			setSelectedCutsceneId(cutscenes[0].id);
-		}
-	}, [cutscenes, selectedCutscene]);
-
-	function handleAddCutscene() {
-		const id = addCutscene();
-		setSelectedCutsceneId(id);
+	function select(id: string) {
+		setSelectedId(id);
+		setConfirmDelete(false);
+		setConfirmStatic(false);
 	}
 
-	function handleDeleteCutscene() {
-		if (!selectedCutscene) {
-			return;
-		}
-
-		deleteCutscene(selectedCutscene.id);
-		setSelectedCutsceneId(
-			cutscenes.find((cutscene) => cutscene.id !== selectedCutscene.id)?.id ??
-				"",
-		);
-	}
-
-	return (
-		<section className="editor-panel cutscene-editor">
-			<aside className="tool-panel">
-				<div className="panel-title">Cutscenes</div>
-				<div className="list-stack">
-					{cutscenes.map((cutscene) => (
-						<button
-							className={`list-item ${selectedCutsceneId === cutscene.id ? "selected" : ""}`}
-							key={cutscene.id}
-							onClick={() => setSelectedCutsceneId(cutscene.id)}
-							type="button"
-						>
-							{cutscene.name}
-						</button>
-					))}
-				</div>
+	const library = (
+		<section className="cinema-side-block">
+			<p className="cinema-eyebrow">Cinematic library</p>
+			<h3>Sequences</h3>
+			{project.cutscenes.map((entry) => (
 				<button
-					className="primary-button full-width"
-					onClick={handleAddCutscene}
+					className="cinema-sequence"
 					type="button"
+					key={entry.id}
+					aria-label={entry.name}
+					aria-pressed={entry.id === cutscene?.id}
+					onClick={() => select(entry.id)}
 				>
+					<strong>{entry.name}</strong>
+					<small>
+						{entry.cinematic
+							? `${entry.cinematic.shots.length} ${entry.cinematic.shots.length === 1 ? "shot" : "shots"}`
+							: "Static cutscene"}
+					</small>
+				</button>
+			))}
+			<button
+				className="cinema-dashed"
+				type="button"
+				onClick={() => {
+					const cinematic = establish(project);
+					select(
+						addCutscene({
+							name: `Sequence ${project.cutscenes.length + 1}`,
+							...(cinematic
+								? { cinematic, text: "", speakerName: undefined }
+								: {}),
+						}),
+					);
+				}}
+			>
+				+ New sequence
+			</button>
+			<details>
+				<summary>Legacy cutscenes</summary>
+				<button type="button" onClick={() => select(addCutscene())}>
 					Add cutscene
 				</button>
-			</aside>
+			</details>
+		</section>
+	);
 
-			<div className="content-panel">
-				{selectedCutscene ? (
-					<div className="cutscene-authoring">
-						<div className="form-stack">
-							<label>
-								Name
-								<input
-									onChange={(event) =>
-										updateCutscene(selectedCutscene.id, {
-											name: event.target.value,
-										})
-									}
-									value={selectedCutscene.name}
-								/>
-							</label>
-						</div>
-						<CinematicTimelineEditor
-							key={selectedCutscene.id}
-							project={project}
-							cutscene={selectedCutscene}
-							onChange={(cinematic) =>
-								updateCutscene(selectedCutscene.id, { cinematic })
+	const change = (patch: Partial<Cutscene>) => {
+		if (cutscene) updateCutscene(cutscene.id, patch);
+	};
+	const settings = cutscene && (
+		<>
+			<label>
+				Sequence name
+				<input
+					value={cutscene.name}
+					onChange={(event) => change({ name: event.target.value })}
+				/>
+			</label>
+			{sequence && (
+				<>
+					<label>
+						Sequence area
+						<select
+							value={sequence.areaId}
+							onChange={(event) =>
+								change({
+									cinematic: {
+										...sequence,
+										areaId: event.target.value,
+										playerMark: undefined,
+									},
+								})
 							}
-						/>
-						<details open={!selectedCutscene.cinematic}>
-							<summary>Static cutscene presentation</summary>
-							<div className="cutscene-edit-layout">
-								<div className="form-stack">
-									<label>
-										Background image
-										<select
-											onChange={(event) =>
-												updateCutscene(selectedCutscene.id, {
-													backgroundImageId: event.target.value,
-												})
-											}
-											value={selectedCutscene.backgroundImageId}
-										>
-											{backgroundPresets.map((background) => (
-												<option key={background.id} value={background.id}>
-													{background.label}
-												</option>
-											))}
-										</select>
-									</label>
-									<label>
-										Portrait image
-										<select
-											onChange={(event) =>
-												updateCutscene(selectedCutscene.id, {
-													portraitImageId: event.target.value || undefined,
-												})
-											}
-											value={selectedCutscene.portraitImageId ?? ""}
-										>
-											<option value="">None</option>
-											{portraitPresets.map((portrait) => (
-												<option key={portrait.id} value={portrait.id}>
-													{portrait.label}
-												</option>
-											))}
-										</select>
-									</label>
-									<label>
-										Speaker name
-										<input
-											onChange={(event) =>
-												updateCutscene(selectedCutscene.id, {
-													speakerName: event.target.value,
-												})
-											}
-											value={selectedCutscene.speakerName ?? ""}
-										/>
-									</label>
-									<label>
-										Text
-										<textarea
-											onChange={(event) =>
-												updateCutscene(selectedCutscene.id, {
-													text: event.target.value,
-												})
-											}
-											rows={7}
-											value={selectedCutscene.text}
-										/>
-									</label>
-								</div>
-
-								<div className="cutscene-preview">
-									<div
-										className="preview-background"
-										style={{
-											background: backgroundPresets.find(
-												(background) =>
-													background.id === selectedCutscene.backgroundImageId,
-											)?.color,
-										}}
-									>
-										{selectedCutscene.portraitImageId ? (
-											<span
-												className="preview-portrait"
-												style={{
-													background: portraitPresets.find(
-														(portrait) =>
-															portrait.id === selectedCutscene.portraitImageId,
-													)?.color,
-												}}
-											/>
-										) : null}
-										<div className="preview-dialogue">
-											<strong>
-												{selectedCutscene.speakerName || "Narrator"}
-											</strong>
-											<span>{selectedCutscene.text}</span>
-										</div>
-									</div>
-								</div>
-							</div>
-						</details>
-						<button
-							className="danger-button"
-							onClick={handleDeleteCutscene}
-							type="button"
 						>
-							Delete cutscene
-						</button>
+							{!project.areas.some(({ id }) => id === sequence.areaId) && (
+								<option value={sequence.areaId}>
+									Missing area ({sequence.areaId})
+								</option>
+							)}
+							{project.areas.map(({ id, name }) => (
+								<option key={id} value={id}>
+									{name}
+								</option>
+							))}
+						</select>
+					</label>
+					<details>
+						<summary>Static cutscene presentation</summary>
+						<StaticFields cutscene={cutscene} onChange={change} />
+						{confirmStatic ? (
+							<div className="cinema-confirm">
+								<p role="status">
+									This will remove the 3D shots and cues from this sequence.
+								</p>
+								<button type="button" onClick={() => setConfirmStatic(false)}>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={() => {
+										setConfirmStatic(false);
+										change({ cinematic: undefined });
+									}}
+								>
+									Remove 3D sequence
+								</button>
+							</div>
+						) : (
+							<button type="button" onClick={() => setConfirmStatic(true)}>
+								Convert to static cutscene
+							</button>
+						)}
+					</details>
+				</>
+			)}
+			{confirmDelete ? (
+				<div className="cinema-confirm">
+					<p role="status">
+						Delete this sequence and remove its trigger references?
+					</p>
+					<button type="button" onClick={() => setConfirmDelete(false)}>
+						Cancel
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							deleteCutscene(cutscene.id);
+							select("");
+						}}
+					>
+						Confirm delete
+					</button>
+				</div>
+			) : (
+				<button type="button" onClick={() => setConfirmDelete(true)}>
+					Delete sequence
+				</button>
+			)}
+		</>
+	);
+
+	return (
+		<section className="cinema-shell" aria-label="Cinematics workspace">
+			<header className="cinema-toolbar">
+				<h2>Cinematics</h2>
+				<fieldset className="cinema-modes" aria-label="Editing mode">
+					<button
+						type="button"
+						aria-pressed={!advanced}
+						onClick={() => setAdvanced(false)}
+					>
+						Simple
+					</button>
+					<button
+						type="button"
+						aria-pressed={advanced}
+						onClick={() => setAdvanced(true)}
+					>
+						Advanced
+					</button>
+				</fieldset>
+			</header>
+			{cutscene && sequence ? (
+				<CinematicSequenceEditor
+					key={`${cutscene.id}-${sequence.areaId}`}
+					project={project}
+					cutscene={cutscene}
+					sequence={sequence}
+					advanced={advanced}
+					library={library}
+					settings={settings}
+					onChange={(cinematic) => change({ cinematic })}
+				/>
+			) : (
+				<div className="cinema-workspace">
+					<aside className="cinema-library" aria-label="Cinematic library">
+						{library}
+					</aside>
+					<div className="cinema-center cinema-empty">
+						{cutscene ? (
+							<div
+								className="cinema-static-preview"
+								style={{
+									background: backgroundPresets.find(
+										({ id }) => id === cutscene.backgroundImageId,
+									)?.color,
+								}}
+							>
+								{cutscene.speakerName && (
+									<strong>{cutscene.speakerName}</strong>
+								)}
+								<p>{cutscene.text}</p>
+								<button
+									type="button"
+									onClick={() => {
+										const cinematic = establish(project);
+										if (cinematic) change({ cinematic });
+									}}
+								>
+									Create 3D sequence
+								</button>
+							</div>
+						) : (
+							<p>Create a sequence to start filming.</p>
+						)}
 					</div>
-				) : (
-					<p className="empty-state">Add a cutscene to edit it.</p>
-				)}
-			</div>
+					<aside
+						className="cinema-inspector cinema-side-block"
+						aria-label="Cinematic inspector"
+					>
+						{settings}
+						{cutscene && <StaticFields cutscene={cutscene} onChange={change} />}
+					</aside>
+				</div>
+			)}
 		</section>
 	);
 }

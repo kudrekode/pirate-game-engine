@@ -594,7 +594,7 @@ export default function App() {
 						onDraftChange={onAssetDraftChange}
 					/>
 				)}
-				{ActiveSection && active && (
+				{ActiveSection && active && (route !== "cutscenes" || !runtime) && (
 					<main
 						className="editor-shell project-workspace-main"
 						ref={editorShell}

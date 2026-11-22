@@ -34,78 +34,120 @@ function editOnBlur(field: HTMLElement, value: string) {
 	fireEvent.blur(field);
 }
 
-it("creates and edits a sequence with shots, subtitles, actors and audio, then mounts a preview of the authored project", async () => {
+it("writes one sequence from both modes and keeps the preview scene isolated from edits", {
+	timeout: 15_000,
+}, () => {
 	render(<CutsceneEditor />);
-	click("Add cutscene");
-	click("Create 3D sequence");
-	const firstProject = useProjectStore.getState().project;
-	expect(screen.getByLabelText("Sequence area")).toHaveValue(
-		firstProject.activeAreaId,
+	expect(screen.getByRole("button", { name: "Simple" })).toHaveAttribute(
+		"aria-pressed",
+		"true",
 	);
-
-	click("Add shot");
-	editOnBlur(screen.getByLabelText("Shot duration (ms)"), "1200");
-	fireEvent.click(screen.getByLabelText("Move camera during shot"));
-	const endPose = screen.getByRole("group", { name: "End pose" });
-	editOnBlur(within(endPose).getByLabelText("Position X"), "-3.25");
-	click("Move shot earlier");
-	expect(
-		useProjectStore.getState().project.cutscenes[0].cinematic?.shots,
-	).toMatchObject([
-		{ durationMs: 1200, to: { position: { x: -3.25 } } },
-		{ durationMs: 2500 },
-	]);
-
-	click("Add subtitle");
-	editOnBlur(screen.getByLabelText("Start (ms)"), "400");
-	fireEvent.change(screen.getByLabelText("Subtitle speaker"), {
-		target: { value: "Narrator" },
+	click("+ New sequence");
+	const firstProject = useProjectStore.getState().project;
+	expect(screen.getByText("Preview mounted")).toBeInTheDocument();
+	expect(renderPreview).toHaveBeenCalledWith(
+		expect.objectContaining({
+			project: firstProject,
+			cinematicPreview: expect.objectContaining({
+				current: expect.objectContaining({ playing: false }),
+			}),
+		}),
+	);
+	click("Detail");
+	fireEvent.change(screen.getByLabelText("Speaker", { exact: true }), {
+		target: { value: "runtime_player" },
 	});
-	editOnBlur(screen.getByLabelText("Subtitle text"), "The watch begins.");
-	click("Add actor action");
-	fireEvent.change(screen.getByLabelText("Animation"), {
+	editOnBlur(
+		screen.getByLabelText("Dialogue / Subtitle"),
+		"We should leave the harbour before dawn.",
+	);
+	fireEvent.change(screen.getByLabelText("Actor action"), {
 		target: { value: "interact" },
 	});
-	fireEvent.click(screen.getByLabelText("Face a map point"));
-	editOnBlur(screen.getByLabelText("Face X"), "2.5");
-	click("Add audio");
-	fireEvent.change(screen.getByLabelText("Audio file URL"), {
-		target: { value: "/audio/watch.ogg" },
-	});
-	click("Add audio cue");
-	editOnBlur(screen.getByLabelText("Volume"), "0.5");
-
+	click("← Earlier");
+	click("Duplicate");
+	click("Delete shot");
+	click("Undo");
+	click("Redo");
+	fireEvent.click(
+		within(screen.getByRole("region", { name: "Storyboard" })).getByRole(
+			"button",
+			{ name: /^1\. Detail/ },
+		),
+	);
+	click("Advanced");
+	const advanced = screen.getByRole("region", { name: "Advanced inspector" });
+	editOnBlur(within(advanced).getByLabelText("Field of view"), "48");
+	editOnBlur(
+		within(
+			within(advanced).getByRole("group", { name: "Camera offset" }),
+		).getByLabelText("X"),
+		"1.5",
+	);
+	click("Simple");
+	click("Advanced");
+	expect(
+		within(
+			screen.getByRole("region", { name: "Advanced inspector" }),
+		).getByLabelText("Field of view"),
+	).toHaveValue(48);
 	const project = useProjectStore.getState().project;
 	const [cutscene] = project.cutscenes;
+	expect(cutscene.cinematic?.shots).toMatchObject([
+		{ preset: "detail", fov: 48, positionOffset: { x: 1.5 } },
+		{ preset: "establishing" },
+	]);
 	expect(cutscene.cinematic?.cues).toMatchObject([
 		{
 			type: "subtitle",
-			startMs: 400,
-			speaker: "Narrator",
-			text: "The watch begins.",
+			startMs: 0,
+			speakerId: "runtime_player",
+			text: "We should leave the harbour before dawn.",
 		},
 		{
 			type: "actor",
+			startMs: 0,
 			actorId: "runtime_player",
 			animation: "interact",
-			face: { x: 2.5 },
 		},
-		{ type: "audio", url: "/audio/watch.ogg", volume: 0.5 },
 	]);
 	expect(
 		importProjectJson(JSON.stringify(project)).cutscenes[0].cinematic,
-	).toEqual(cutscene.cinematic);
+	).toEqual(JSON.parse(JSON.stringify(cutscene.cinematic)));
+	expect(renderPreview.mock.lastCall?.[0].project).toBe(firstProject);
+	expect(firstProject.cutscenes[0].cinematic?.shots).toHaveLength(1);
+});
 
-	click("Preview 3D sequence");
-	expect(await screen.findByText("Preview mounted")).toBeInTheDocument();
-	expect(renderPreview).toHaveBeenCalledWith(
-		expect.objectContaining({ project, previewCutsceneId: cutscene.id }),
-	);
-	click("Replay");
-	expect(renderPreview).toHaveBeenCalledTimes(2);
-	click("Close preview");
-	expect(
-		screen.queryByRole("dialog", { name: "3D sequence preview" }),
-	).not.toBeInTheDocument();
-	expect(useProjectStore.getState().project).toBe(project);
+it("reports missing placements and targets while retaining the saved camera", () => {
+	const project = cloneProject(defaultProject);
+	project.cutscenes = [
+		{
+			id: "missing",
+			name: "Missing references",
+			text: "",
+			backgroundImageId: "",
+			cinematic: {
+				areaId: project.activeAreaId,
+				castIds: ["actor-removed"],
+				shots: [
+					{
+						durationMs: 2000,
+						preset: "close-up",
+						targetId: "target-removed",
+						from: {
+							position: { x: 3, y: 4, z: 2 },
+							lookAt: { x: 1, y: 1, z: 5 },
+						},
+					},
+				],
+			},
+		},
+	];
+	useProjectStore.getState().setProject(project);
+	const installed = useProjectStore.getState().project;
+	render(<CutsceneEditor />);
+	const report = screen.getByRole("list", { name: "Sequence diagnostics" });
+	expect(report).toHaveTextContent("Missing actor (actor-removed).");
+	expect(report).toHaveTextContent("Missing camera target (target-removed).");
+	expect(useProjectStore.getState().project).toBe(installed);
 });

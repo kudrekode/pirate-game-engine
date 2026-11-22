@@ -46,6 +46,7 @@ export type ThreeCharacterAnimationController = {
 	setCinematicAnimation?: (
 		animation: CinematicActorAnimation | undefined,
 		cueKey?: number,
+		previewSeconds?: number,
 	) => void;
 	sync: (context: CharacterAnimationContext) => void;
 	syncBowDraw: (charge: number | undefined) => void;
@@ -237,6 +238,7 @@ export function createThreeCharacterAnimationController({
 		nextState: CharacterAnimationSemanticState,
 		forceRestart = false,
 		cinematic = false,
+		cut = false,
 	) => {
 		const fallback =
 			nextState === "ride"
@@ -286,7 +288,8 @@ export function createThreeCharacterAnimationController({
 		semanticState = nextState;
 		if (!nextAction) {
 			// Assets without an authored idle mapping keep their bind/rest pose.
-			activeAction?.fadeOut(TRANSITION_SECONDS);
+			if (cut) activeAction?.stop();
+			else activeAction?.fadeOut(TRANSITION_SECONDS);
 			activeAction = undefined;
 			return;
 		}
@@ -307,12 +310,13 @@ export function createThreeCharacterAnimationController({
 		nextAction.clampWhenFinished = isOneShot;
 		nextAction.reset().play();
 		if (activeAction && activeAction !== nextAction) {
-			nextAction.crossFadeFrom(activeAction, TRANSITION_SECONDS, false);
+			if (cut) activeAction.stop();
+			else nextAction.crossFadeFrom(activeAction, TRANSITION_SECONDS, false);
 		}
 		activeAction = nextAction;
 	};
 
-	const syncResolvedState = (restartCinematic = false) => {
+	const syncResolvedState = (restartCinematic = false, cut = false) => {
 		const cueAnimation =
 			cinematicAnimation &&
 			!currentContext.defeated &&
@@ -336,6 +340,7 @@ export function createThreeCharacterAnimationController({
 				}),
 			modeChanged || (playingCinematicAnimation && restartCinematic),
 			playingCinematicAnimation,
+			cut,
 		);
 	};
 
@@ -493,15 +498,21 @@ export function createThreeCharacterAnimationController({
 						: undefined,
 		}),
 		refresh,
-		setCinematicAnimation: (animation, cueKey) => {
-			if (
-				disposed ||
-				(cinematicAnimation === animation && cinematicCueKey === cueKey)
-			)
-				return;
-			cinematicAnimation = animation;
-			cinematicCueKey = cueKey;
-			syncResolvedState(true);
+		setCinematicAnimation: (animation, cueKey, previewSeconds) => {
+			if (disposed) return;
+			if (cinematicAnimation !== animation || cinematicCueKey !== cueKey) {
+				cinematicAnimation = animation;
+				cinematicCueKey = cueKey;
+				syncResolvedState(true, previewSeconds !== undefined);
+			}
+			if (previewSeconds !== undefined && activeAction) {
+				const duration = activeAction.getClip().duration;
+				activeAction.time =
+					activeAction.loop === THREE.LoopOnce
+						? Math.min(duration, previewSeconds)
+						: previewSeconds % (duration || 1);
+				mixer.update(0);
+			}
 		},
 		sync: (context) => {
 			if (disposed) return;

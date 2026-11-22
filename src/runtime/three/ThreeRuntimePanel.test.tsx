@@ -298,8 +298,10 @@ vi.mock("three", () => {
 		PCFShadowMap: "PCFShadowMap",
 		PCFSoftShadowMap: "PCFSoftShadowMap",
 		PerspectiveCamera: class {
+			fov = 55;
 			lookAt = vi.fn();
 			position = { set: vi.fn() };
+			updateProjectionMatrix = vi.fn();
 		},
 		SphereGeometry: Disposable,
 		Scene: class {

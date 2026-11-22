@@ -1,3 +1,4 @@
+import { isEmbeddedCinematicAudio } from "../data/cinematicAudioImport";
 import type {
 	CinematicActorCue,
 	CinematicAudioCue,
@@ -6,6 +7,7 @@ import type {
 } from "../types/game";
 
 export function isCinematicAudioUrl(value: string): boolean {
+	if (value.startsWith("data:")) return isEmbeddedCinematicAudio(value);
 	if (/[\\\s]/.test(value)) return false;
 	if (value.startsWith("/")) return value.length > 1 && !value.startsWith("//");
 	try {

@@ -115,21 +115,21 @@ const cinematicCue: Check = (value, path) => {
 	switch (type) {
 		case "subtitle":
 			return fields({
-				strings: "type speaker text",
+				strings: "type id shotId speakerId speaker text",
 				numbers: timing,
 				required: [...required, "text"],
 			})(value, path);
 		case "actor":
 			return fields({
-				strings: "type actorId animation",
+				strings: "type id shotId actorId animation",
 				numbers: timing,
 				nested: { face: fields({ numbers: "x z", required: ["x", "z"] }) },
 				required: [...required, "actorId"],
 			})(value, path);
 		case "audio":
 			return fields({
-				strings: "type url",
-				numbers: `${timing} offsetMs volume`,
+				strings: "type id shotId url sourceName",
+				numbers: `${timing} offsetMs volume fadeInMs fadeOutMs`,
 				required: [...required, "url"],
 			})(value, path);
 		default:
@@ -414,11 +414,38 @@ const projectFields: Record<keyof GameProject | "map", Check> = {
 				cinematic: fields({
 					strings: "areaId",
 					nested: {
+						castIds: list(string),
+						playerMark: fields({ numbers: "x y", required: ["x", "y"] }),
+						faceTracks: list(
+							fields({
+								strings: "actorId",
+								nested: {
+									frames: list(
+										fields({
+											strings: "viseme",
+											numbers: "timeMs",
+											nested: { morphs: dictionary(number) },
+											required: ["timeMs"],
+										}),
+									),
+								},
+								required: ["actorId", "frames"],
+							}),
+						),
 						cues: list(cinematicCue),
 						shots: list(
 							fields({
-								numbers: "durationMs",
-								nested: { from: cinematicCamera, to: cinematicCamera },
+								strings:
+									"id preset targetId secondaryTargetId durationMode ease",
+								numbers: "durationMs fov",
+								booleans: "clearance",
+								nested: {
+									from: cinematicCamera,
+									to: cinematicCamera,
+									positionOffset: cinematicPoint,
+									lookAtOffset: cinematicPoint,
+									trackingOrigin: cinematicPoint,
+								},
 								required: ["durationMs", "from"],
 							}),
 						),

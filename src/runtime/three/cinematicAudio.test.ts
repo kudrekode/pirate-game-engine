@@ -7,10 +7,24 @@ function mockAudio(playback = () => Promise.resolve()) {
 		url: string;
 		volume = 1;
 		currentTime = 0;
-		play = vi.fn(playback);
-		pause = vi.fn();
+		paused = true;
+		play = vi.fn(() => {
+			this.paused = false;
+			return playback();
+		});
+		pause = vi.fn(() => {
+			this.paused = true;
+		});
 		removeAttribute = vi.fn();
 		load = vi.fn();
+		addEventListener =
+			vi.fn<
+				(
+					type: string,
+					listener: (event: { currentTarget: AudioMock }) => void,
+				) => void
+			>();
+		removeEventListener = vi.fn();
 
 		constructor(url: string) {
 			this.url = url;
@@ -73,4 +87,54 @@ it("switches cues with the same source, handles denied playback and disposes saf
 	expect(players[1].pause).toHaveBeenCalledOnce();
 	expect(players[1].load).toHaveBeenCalledOnce();
 	expect(players).toHaveLength(2);
+});
+
+it("fades one active player with timeline time and only repositions on an explicit seek", () => {
+	const players = mockAudio();
+	const controller = createCinematicAudioController();
+	const fading = { ...voice, fadeInMs: 200, fadeOutMs: 400, volume: 0.8 };
+	controller.sync(fading, 1000);
+	const [player] = players;
+	expect(player.volume).toBe(0);
+	controller.sync(fading, 1100);
+	expect(player.volume).toBe(0.4);
+	expect(player.currentTime).toBe(0.5);
+	controller.sync(fading, 1200, true);
+	expect(player.volume).toBe(0.8);
+	expect(player.currentTime).toBe(0.7);
+	expect(player.play).toHaveBeenCalledOnce();
+	controller.sync(fading, 1700);
+	expect(player.volume).toBe(0.4);
+	controller.sync(undefined, 0);
+	expect(player.pause).toHaveBeenCalledOnce();
+	controller.sync(fading, 1700);
+	expect(players[1]).toMatchObject({ currentTime: 1.2, volume: 0.4 });
+});
+
+it("releases the player on a media error and ignores autoplay rejection after a stop", async () => {
+	let rejectPlayback: (error: Error) => void = () => {};
+	const players = mockAudio(
+		() =>
+			new Promise<void>((_resolve, reject) => {
+				rejectPlayback = reject;
+			}),
+	);
+	const onIssue = vi.fn();
+	const controller = createCinematicAudioController(onIssue);
+	controller.sync(voice, 1300);
+	const [first] = players;
+	const onError = first.addEventListener.mock.calls[0][1];
+	onError({ currentTarget: first });
+	expect(first.removeEventListener).toHaveBeenCalledWith("error", onError);
+	expect(first.pause).toHaveBeenCalledOnce();
+	expect(onIssue).toHaveBeenLastCalledWith(
+		expect.stringContaining("could not play"),
+	);
+	controller.sync(voice, 1300, true);
+	controller.sync(undefined, 0);
+	onIssue.mockClear();
+	rejectPlayback(new Error("Playback aborted"));
+	await Promise.resolve();
+	expect(onIssue).not.toHaveBeenCalled();
+	expect(players[1].pause).toHaveBeenCalledOnce();
 });

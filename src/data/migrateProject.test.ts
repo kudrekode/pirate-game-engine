@@ -127,6 +127,75 @@ describe("migrateProject", () => {
 		).toThrow(/cinematic.shots.0.durationMs/);
 	});
 
+	it("keeps storyboard IDs, camera overrides, cast and facial extension data on import", () => {
+		const project = migrateProject({});
+		const cinematic = {
+			areaId: project.activeAreaId,
+			castIds: ["runtime_player"],
+			playerMark: { x: 3.5, y: 8 },
+			shots: [
+				{
+					id: "shot-one",
+					preset: "over-shoulder",
+					targetId: "oswin-at-the-well",
+					secondaryTargetId: "runtime_player",
+					durationMs: 2300,
+					durationMode: "manual",
+					from: {
+						position: { x: 3, y: 4, z: 2 },
+						lookAt: { x: 1, y: 1, z: 5 },
+					},
+					positionOffset: { x: 0, y: 0.25, z: 0 },
+					fov: 44,
+					ease: "linear",
+					clearance: true,
+				},
+			],
+			cues: [
+				{
+					id: "cue-one",
+					shotId: "shot-one",
+					type: "subtitle",
+					startMs: 40,
+					durationMs: 1200,
+					speakerId: "runtime_player",
+					text: "I saw it too.",
+				},
+			],
+			faceTracks: [
+				{
+					actorId: "runtime_player",
+					frames: [{ timeMs: 800, viseme: "aa", morphs: { jawOpen: 0.3 } }],
+				},
+			],
+		};
+		const cutscene = {
+			id: "intro",
+			name: "Intro",
+			text: "",
+			backgroundImageId: "",
+			cinematic,
+		};
+		expect(
+			importProjectJson(JSON.stringify({ ...project, cutscenes: [cutscene] }))
+				.cutscenes,
+		).toEqual([cutscene]);
+		expect(() =>
+			migrateProject({
+				...project,
+				cutscenes: [
+					{
+						...cutscene,
+						cinematic: {
+							...cinematic,
+							shots: [{ ...cinematic.shots[0], fov: 600 }],
+						},
+					},
+				],
+			}),
+		).toThrow(/cinematic.shots.0.fov/);
+	});
+
 	it("preserves player-facing item fields and legacy icons/categories without restoring deleted items", () => {
 		const project = migrateProject({
 			items: [
