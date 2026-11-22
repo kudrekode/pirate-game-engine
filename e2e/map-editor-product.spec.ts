@@ -3,6 +3,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { createProjectFromPreset } from "../src/data/projectPresets";
+import {
+	importProjectFile,
+	reloadProject,
+	savedProject,
+} from "./projectNavigation";
 
 test("builds a scene with handles, an authored character and a persistent Edit/Play loop @map-product", async ({
 	page,
@@ -30,8 +35,7 @@ test("builds a scene with handles, an authored character and a persistent Edit/P
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "harbour.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(project)),
@@ -202,11 +206,7 @@ test("builds a scene with handles, an authored character and a persistent Edit/P
 	await page.getByRole("button", { name: "Reset camera", exact: true }).click();
 	await page.getByRole("textbox", { name: "Search assets" }).fill("");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() => {
-		const project = localStorage.getItem("adventure-builder-project-v1");
-		if (!project) throw new Error("Expected saved project.");
-		return JSON.parse(project);
-	});
+	const saved = await savedProject(page);
 	await page.screenshot({ path: testInfo.outputPath("editor-workspace.png") });
 	const originalCanvas = await canvas.elementHandle();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
@@ -234,22 +234,8 @@ test("builds a scene with handles, an authored character and a persistent Edit/P
 	expect(await originalCanvas.evaluate((node) => node.isConnected)).toBe(true);
 	await expect(page.getByLabel("Scene name")).toHaveValue("Harbour supplies");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() => {
-			const project = localStorage.getItem("adventure-builder-project-v1");
-			if (!project) throw new Error("Expected saved project.");
-			return JSON.parse(project);
-		}),
-	).toEqual(saved);
-	await page.reload();
-	const recovery = page.getByRole("button", {
-		name: "Use saved project",
-		exact: true,
-	});
-	await expect(
-		recovery.or(page.getByRole("button", { name: "Play", exact: true })),
-	).toBeVisible();
-	if (await recovery.isVisible()) await recovery.click();
+	expect(await savedProject(page)).toEqual(saved);
+	await reloadProject(page);
 	await expect(canvas).toBeVisible();
 	await page
 		.getByRole("option", { name: "Harbour supplies object", exact: true })
@@ -262,13 +248,7 @@ test("builds a scene with handles, an authored character and a persistent Edit/P
 		.click();
 	await expect(page.getByLabel("Position X")).toHaveValue("12.25");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() => {
-			const project = localStorage.getItem("adventure-builder-project-v1");
-			if (!project) throw new Error("Expected saved project.");
-			return JSON.parse(project);
-		}),
-	).toEqual(saved);
+	expect(await savedProject(page)).toEqual(saved);
 	await page.screenshot({ path: testInfo.outputPath("reloaded-scene.png") });
 	await fs.writeFile(
 		testInfo.outputPath("persistence-evidence.json"),

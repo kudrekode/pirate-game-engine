@@ -1,5 +1,10 @@
 import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import {
+	importProjectFile,
+	reloadProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test.use({ trace: "off", viewport: { width: 1100, height: 800 } });
 
@@ -16,15 +21,13 @@ test("unchanged Tidewatch traversal and persistence @traversal", async ({
 		if (message.type() === "error") errors.push(message.text());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("docs/assets/world-kit/tidewatch-harbour.project.json");
+	await importProjectFile(
+		page,
+		"docs/assets/world-kit/tidewatch-harbour.project.json",
+	);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const saved = await savedProjectJson(page);
 	const snapshot = () =>
 		page.evaluate(() =>
 			window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeRuntimePanel"),
@@ -175,26 +178,10 @@ test("unchanged Tidewatch traversal and persistence @traversal", async ({
 	await checkpoint("returned to spawn");
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
-	await page.reload();
-	const recover = page.getByRole("button", {
-		name: "Use saved project",
-		exact: true,
-	});
-	await expect(
-		recover.or(page.getByRole("button", { name: "Play", exact: true })),
-	).toBeVisible();
-	if (await recover.isVisible()) await recover.click();
+	expect(await savedProjectJson(page)).toBe(saved);
+	await reloadProject(page);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
+	expect(await savedProjectJson(page)).toBe(saved);
 	await enterPlay();
 	await go(9, 9.4);
 	await go(8.8, 9.4);

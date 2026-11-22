@@ -6,6 +6,15 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { createProjectFromPreset } from "../src/data/projectPresets";
 import { defaultNPCAttributes } from "../src/runtime/npcResolver";
+import {
+	createStarterProject,
+	importProjectFile,
+	openAssetCreator,
+	openEditor,
+	projectTool,
+	reloadProject,
+	savedProject,
+} from "./projectNavigation";
 
 test("records finalised-character runtime cost, collision and camera compatibility @character-runtime-observation", async ({
 	page,
@@ -45,7 +54,6 @@ test("records finalised-character runtime cost, collision and camera compatibili
 			requests.push(request.url());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
 	const observations: Record<string, unknown> = { asset };
 	const output = testInfo.outputPath("runtime-observations.json");
 	await fs.mkdir(path.dirname(output), { recursive: true });
@@ -61,7 +69,7 @@ test("records finalised-character runtime cost, collision and camera compatibili
 			movementMode: "stationary" as const,
 			attributes: { ...defaultNPCAttributes },
 		}));
-		await page.locator('input[type="file"]').setInputFiles({
+		await importProjectFile(page, {
 			name: "characters.json",
 			mimeType: "application/json",
 			buffer: Buffer.from(JSON.stringify(project)),
@@ -148,10 +156,8 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	const observations: Record<string, unknown> = {};
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.getByRole("button", { name: "Asset Creator", exact: true })
-		.click();
+	await createStarterProject(page, "blank");
+	await openAssetCreator(page);
 	await expect(page.getByRole("dialog").getByRole("status")).toContainText(
 		"ready to open",
 	);
@@ -216,14 +222,14 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	const importResponse = await imported;
 	const importResult = await importResponse.json();
 	expect(importResponse.ok(), JSON.stringify(importResult)).toBe(true);
-	await page.getByRole("button", { name: "Character", exact: true }).click();
+	await openEditor(page, "character");
 	await expect(
 		page.getByRole("region", { name: "Project characters" }),
 	).toBeVisible();
 	const card = page.getByRole("article", { name: importResult.asset.name });
 	await card.getByRole("button", { name: "Set as Player Character" }).click();
 	await card.getByRole("button", { name: "Add to NPC palette" }).click();
-	await page.getByRole("button", { name: "Map", exact: true }).click();
+	await openEditor(page, "map");
 	await page.getByRole("button", { name: "Tile 12, 7", exact: true }).click();
 	const loads: string[] = [];
 	page.on("request", (request) => {
@@ -308,9 +314,7 @@ test("finalises a character into a persistent player and independent NPCs @game-
 	});
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() =>
-		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
-	);
+	const saved = await savedProject(page);
 	expect(saved.characterAssets[0].artifactHash).toBe(
 		finalised.manifest.outputHash,
 	);
@@ -321,24 +325,13 @@ test("finalises a character into a persistent player and independent NPCs @game-
 		rotationOffset: 25,
 	});
 	expect(loads).toHaveLength(1);
-	async function reloadSaved() {
-		await page.reload();
-		const savedChoice = page.getByRole("button", {
-			name: "Use saved project",
-			exact: true,
-		});
-		await expect(
-			savedChoice.or(page.getByRole("button", { name: "Play", exact: true })),
-		).toBeVisible();
-		if (await savedChoice.isVisible()) await savedChoice.click();
-	}
-	await reloadSaved();
+	await reloadProject(page);
 	observations.reloaded = await play(3);
 	await page.screenshot({ path: testInfo.outputPath("reloaded-runtime.png") });
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
-	await page.getByRole("button", { name: "Export JSON", exact: true }).click();
+	await projectTool(page, "Export JSON");
 	// The same saved project also works in a fresh browser page with no loader cache.
-	await page.getByRole("button", { name: "Map", exact: true }).click();
+	await openEditor(page, "map");
 	await page.keyboard.press("1");
 	await page.getByRole("button", { name: "Tile 12, 7", exact: true }).click();
 	for (const x of [14, 15]) {
@@ -350,24 +343,21 @@ test("finalises a character into a persistent player and independent NPCs @game-
 		path: testInfo.outputPath("five-characters-runtime.png"),
 	});
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
-	await page.getByRole("button", { name: "Load", exact: true }).click();
+	page.once("dialog", (dialog) => dialog.accept());
+	await projectTool(page, "Load");
 	await page.route(`**${importResult.asset.glbUrl}`, (route) =>
 		route.fulfill({ status: 404, body: "Missing character" }),
 	);
-	await reloadSaved();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await page.getByRole("button", { name: "Play 3D Experimental" }).click();
 	await expect(page.getByRole("alert")).toContainText(
 		"A visual asset is unavailable",
 		{ timeout: 30_000 },
 	);
-	expect(
-		await page.evaluate(
-			() =>
-				JSON.parse(localStorage.getItem("adventure-builder-project-v1")!).player
-					.threeVisual.assetId,
-		),
-	).toBe(importResult.asset.id);
+	expect((await savedProject(page)).player.threeVisual?.assetId).toBe(
+		importResult.asset.id,
+	);
 	observations.missingAssetPreserved = true;
 	observations.savedProject = saved;
 	observations.characterGetRequests = loads.length;
@@ -397,9 +387,10 @@ test("opens Asset Creator and explains an unavailable Studio @integration", asyn
 		else await route.abort();
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
+	await createStarterProject(page, "blank");
+	await openEditor(page, "assets");
 	const launcher = page.getByRole("button", {
-		name: "Asset Creator",
+		name: "Open Asset Creator",
 		exact: true,
 	});
 	await launcher.click();
@@ -433,10 +424,8 @@ test("edits and finalises the canonical human from Game Engine and returns @work
 	const timings: Record<string, number> = {};
 	const openedAt = Date.now();
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.getByRole("button", { name: "Asset Creator", exact: true })
-		.click();
+	await createStarterProject(page, "blank");
+	await openAssetCreator(page);
 	await expect(page.getByRole("dialog").getByRole("status")).toContainText(
 		"ready to open",
 	);
@@ -631,10 +620,8 @@ test("creates and reopens a dressed character @first-outfit", async ({
 }) => {
 	test.setTimeout(300_000);
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.getByRole("button", { name: "Asset Creator", exact: true })
-		.click();
+	await createStarterProject(page, "blank");
+	await openAssetCreator(page);
 	await expect(page.getByRole("dialog").getByRole("status")).toContainText(
 		"ready to open",
 	);

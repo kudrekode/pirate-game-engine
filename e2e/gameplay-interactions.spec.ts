@@ -1,5 +1,11 @@
 import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import {
+	importProjectFile,
+	openEditor,
+	reloadProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test("authors and plays Harbour Trouble through real controls @quest-objectives", async ({
 	page,
@@ -14,13 +20,11 @@ test("authors and plays Harbour Trouble through real controls @quest-objectives"
 		if (message.type() === "error") errors.push(message.text());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles(
-			"docs/assets/gameplay-interactions/tidewatch-harbour.project.json",
-		);
-	await page.getByRole("button", { name: "Quests", exact: true }).click();
+	await importProjectFile(
+		page,
+		"docs/assets/gameplay-interactions/tidewatch-harbour.project.json",
+	);
+	await openEditor(page, "quests");
 	await page.getByRole("button", { name: "Add quest", exact: true }).click();
 	await page.getByLabel("Name", { exact: true }).fill("Harbour Trouble");
 	await page
@@ -56,7 +60,7 @@ test("authors and plays Harbour Trouble through real controls @quest-objectives"
 	);
 	await addObjective(2, "Find the Harbour Key", "has_item", /^Harbour Key$/);
 	await addObjective(3, "Enter the shack", "enter_event", /Shack interior/);
-	await page.getByRole("button", { name: "Map", exact: true }).click();
+	await openEditor(page, "map");
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByLabel("Search scene").fill("Harbour Keeper");
 	await page.getByRole("option", { name: /Harbour Keeper/ }).click();
@@ -66,9 +70,7 @@ test("authors and plays Harbour Trouble through real controls @quest-objectives"
 		.getByLabel("Start Quest", { exact: true })
 		.selectOption({ label: "Harbour Trouble" });
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const saved = await savedProjectJson(page);
 	expect(saved).toBeTruthy();
 	await fs.writeFile(`${output}/tidewatch-harbour.project.json`, saved! + "\n");
 	await page.screenshot({ path: `${output}/authoring.png` });
@@ -173,20 +175,12 @@ test("authors and plays Harbour Trouble through real controls @quest-objectives"
 			.getByRole("button", { name: "Back to Edit", exact: true })
 			.click();
 		await page.getByRole("button", { name: "Save", exact: true }).click();
-		expect(
-			await page.evaluate(() =>
-				localStorage.getItem("adventure-builder-project-v1"),
-			),
-		).toBe(saved);
+		expect(await savedProjectJson(page)).toBe(saved);
 	}
 	await playRoute(false);
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
+	expect(await savedProjectJson(page)).toBe(saved);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await playRoute(true);
 	expect(errors).toEqual([]);
@@ -225,17 +219,13 @@ test("inspects and retains the Harbour Key with real player input @inventory-ite
 		if (message.type() === "error") errors.push(message.text());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles(
-			"docs/assets/gameplay-interactions/tidewatch-harbour.project.json",
-		);
+	await importProjectFile(
+		page,
+		"docs/assets/gameplay-interactions/tidewatch-harbour.project.json",
+	);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const saved = await savedProjectJson(page);
 	expect(saved).toBeTruthy();
 	const position = async (): Promise<{
 		x: number;
@@ -363,18 +353,10 @@ test("inspects and retains the Harbour Key with real player input @inventory-ite
 	await page.keyboard.press("Escape");
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
-	await page.reload();
+	expect(await savedProjectJson(page)).toBe(saved);
+	await reloadProject(page);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
+	expect(await savedProjectJson(page)).toBe(saved);
 	await play();
 	await page.keyboard.press("i");
 	await expect(inventory).toContainText("Your inventory is empty");
@@ -399,10 +381,10 @@ test("authors and plays Tidewatch interactions with real input @gameplay-interac
 		if (message.type() === "error") errors.push(message.text());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("docs/assets/world-kit/tidewatch-harbour.project.json");
+	await importProjectFile(
+		page,
+		"docs/assets/world-kit/tidewatch-harbour.project.json",
+	);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	async function select(name: string) {
 		console.log(`Authoring: ${name}`);
@@ -476,9 +458,7 @@ test("authors and plays Tidewatch interactions with real input @gameplay-interac
 		.getByLabel("Required item")
 		.selectOption({ label: "Harbour Key" });
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const saved = await savedProjectJson(page);
 	console.log("Authored and saved the interaction route");
 	expect(saved).toBeTruthy();
 	await fs.writeFile(
@@ -599,18 +579,10 @@ test("authors and plays Tidewatch interactions with real input @gameplay-interac
 	await page.keyboard.up("ArrowLeft");
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
-	await page.reload();
+	expect(await savedProjectJson(page)).toBe(saved);
+	await reloadProject(page);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
+	expect(await savedProjectJson(page)).toBe(saved);
 	await play();
 	await go(9, 9.4);
 	await go(5.8, 9.4);

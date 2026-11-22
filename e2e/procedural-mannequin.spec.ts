@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
+import { createStarterProject, openEditor } from "./projectNavigation";
 
 const ASSET_ID = "procedural-mannequin-quaternius-hair-v0";
 const fixtureManifest = JSON.parse(
@@ -90,18 +91,19 @@ test("loads the Quaternius-haired Procedural Mannequin for a player and NPC thro
 		window.sessionStorage.clear();
 	});
 	await page.goto("/", { waitUntil: "domcontentloaded" });
-	await page.getByRole("button", { name: /Demo Project/u }).click();
+	await createStarterProject(page, "demo");
+	await openEditor(page, "map");
 
-	await page.getByRole("button", { exact: true, name: "Character" }).click();
+	await openEditor(page, "character");
 	await mannequinAssetSelect(page).selectOption(ASSET_ID);
 	await expect(mannequinAssetSelect(page)).toHaveValue(ASSET_ID);
 
-	await page.getByRole("button", { exact: true, name: "NPCs" }).click();
+	await openEditor(page, "npcs");
 	await page.getByRole("button", { exact: true, name: "Captain Mira" }).click();
 	await mannequinAssetSelect(page).selectOption(ASSET_ID);
 	await expect(mannequinAssetSelect(page)).toHaveValue(ASSET_ID);
 
-	await page.getByRole("button", { exact: true, name: "Map" }).click();
+	await openEditor(page, "map");
 	const areaSelector = page.getByRole("combobox", { name: "Editing" });
 	await areaSelector.selectOption("area_main");
 	await page.getByRole("button", { exact: true, name: "3D View" }).click();

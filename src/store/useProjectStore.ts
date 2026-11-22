@@ -589,6 +589,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 		const migratedProject = migrateProject(project);
 		set({
 			editorSelection: areaSelection(migratedProject),
+			mapPaletteSelection: { type: "none" },
+			requestedEditorSource: null,
+			requestedDialogueId: null,
+			storyFocusKey: "",
 			project: migratedProject,
 			projectContextId: makeId("project-context"),
 		});

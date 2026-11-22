@@ -1,6 +1,12 @@
 import fs from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
+import {
+	importProjectFile,
+	reloadProject,
+	requireGameSave,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test.use({
 	channel: "chrome",
@@ -23,10 +29,7 @@ test("sky-look, recovery, elevated supports and tight walls @camera-v4-orbit", a
 	const errors: string[] = [];
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("movement-v2-demo.project.json");
+	await importProjectFile(page, "movement-v2-demo.project.json");
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
@@ -177,10 +180,7 @@ test.describe("third-person camera feel", () => {
 		const errors: string[] = [];
 		page.on("pageerror", (error) => errors.push(error.message));
 		await page.goto("/");
-		await page.getByRole("button", { name: /Blank Project/ }).click();
-		await page
-			.locator('input[type="file"]')
-			.setInputFiles("movement-v2-demo.project.json");
+		await importProjectFile(page, "movement-v2-demo.project.json");
 		await page.getByRole("button", { name: "3D View", exact: true }).click();
 		await page.getByRole("button", { name: "Play", exact: true }).click();
 		await expect
@@ -266,10 +266,7 @@ test.describe("third-person camera feel", () => {
 		const directory = `test-results/camera-v3/${label}`;
 		await fs.mkdir(directory, { recursive: true });
 		await page.goto("/");
-		await page.getByRole("button", { name: /Blank Project/ }).click();
-		await page
-			.locator('input[type="file"]')
-			.setInputFiles("movement-v2-demo.project.json");
+		await importProjectFile(page, "movement-v2-demo.project.json");
 		await page.getByRole("button", { name: "3D View", exact: true }).click();
 		await page.getByRole("button", { name: "Play", exact: true }).click();
 		const canvas = page.getByLabel("Three runtime viewport", { exact: true });
@@ -519,15 +516,9 @@ test("Walk Run Jump Fall Land collision combat and grounded Continue via real in
 		if (r.url().endsWith(".glb")) requests.push(r.url());
 	});
 	await page.goto("/");
-	if (await page.getByRole("button", { name: /Blank Project/ }).isVisible())
-		await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("movement-v2-demo.project.json");
+	await importProjectFile(page, "movement-v2-demo.project.json");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const authored = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const authored = await savedProjectJson(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
@@ -665,15 +656,10 @@ test("Walk Run Jump Fall Land collision combat and grounded Continue via real in
 	});
 	const observations = await page.evaluate(() => window.__movementV2);
 	await page.getByRole("button", { name: "Save Game", exact: true }).click();
-	const saved = await page.evaluate(() => {
-		const key = Object.keys(localStorage).find((k) =>
-			k.startsWith("adventure-builder-game-save-v1:"),
-		);
-		return key ? JSON.parse(localStorage.getItem(key)!) : null;
-	});
+	const saved = await requireGameSave(page);
 	expect(saved.player.traversal.height).toBeCloseTo(platform.supportHeight, 3);
 	expect(saved.player.traversal).not.toHaveProperty("motion");
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -718,11 +704,7 @@ test("Walk Run Jump Fall Land collision combat and grounded Continue via real in
 		.toBe(0);
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(authored);
+	expect(await savedProjectJson(page)).toBe(authored);
 	expect(errors).toEqual([]);
 	await fs.writeFile(
 		`${output}/acceptance.json`,
@@ -765,10 +747,7 @@ test("pointer lock sky-look rotations and UI lifecycle @pointer-lock @camera-v4-
 	const errors: string[] = [];
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("melee-weapon-v1-demo.project.json");
+	await importProjectFile(page, "melee-weapon-v1-demo.project.json");
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const canvas = page.getByLabel("Three runtime viewport", { exact: true });

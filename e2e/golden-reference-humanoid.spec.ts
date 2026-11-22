@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
+import { createStarterProject, openEditor } from "./projectNavigation";
 
 const ASSET_ID = "golden-reference-quaternius-superhero-male";
 const EDITOR_LABEL = "ThreeDPreview";
@@ -82,18 +83,19 @@ test("loads the Golden Reference Humanoid for a player and NPC through shared Th
 		window.sessionStorage.clear();
 	});
 	await page.goto("/", { waitUntil: "domcontentloaded" });
-	await page.getByRole("button", { name: /Demo Project/ }).click();
+	await createStarterProject(page, "demo");
+	await openEditor(page, "map");
 
-	await page.getByRole("button", { exact: true, name: "Character" }).click();
+	await openEditor(page, "character");
 	await goldenReferenceAssetSelect(page).selectOption(ASSET_ID);
 	await expect(goldenReferenceAssetSelect(page)).toHaveValue(ASSET_ID);
 
-	await page.getByRole("button", { exact: true, name: "NPCs" }).click();
+	await openEditor(page, "npcs");
 	await page.getByRole("button", { exact: true, name: "Captain Mira" }).click();
 	await goldenReferenceAssetSelect(page).selectOption(ASSET_ID);
 	await expect(goldenReferenceAssetSelect(page)).toHaveValue(ASSET_ID);
 
-	await page.getByRole("button", { exact: true, name: "Map" }).click();
+	await openEditor(page, "map");
 	const areaSelector = page.getByRole("combobox", { name: "Editing" });
 	await areaSelector.selectOption("area_main");
 	await expect(areaSelector).toHaveValue("area_main");

@@ -4,6 +4,15 @@ import {
 	createCompleteStoryDemo,
 	createStoryAuthoringDemo,
 } from "../src/test/storyAuthoringDemo";
+import {
+	importProjectFile,
+	openEditor,
+	projectTool,
+	reloadProject,
+	requireGameSave,
+	savedProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test("navigates a complete story and authors a conditional response from context @story-workspace", async ({
 	page,
@@ -13,15 +22,14 @@ test("navigates a complete story and authors a conditional response from context
 	const errors: string[] = [];
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "story.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(createCompleteStoryDemo())),
 	});
 	const click = (name: string) =>
 		page.getByRole("button", { name, exact: true }).click();
-	await click("Story");
+	await openEditor(page, "story");
 	await page.getByLabel("Search entities", { exact: true }).fill("Guard");
 	await click("Guard — Village (4, 5) · Characters");
 	await expect(page.getByLabel("Story inspector")).toContainText(
@@ -37,7 +45,7 @@ test("navigates a complete story and authors a conditional response from context
 	await expect(page.getByLabel("Name", { exact: true })).toHaveValue(
 		"Guard Conversation",
 	);
-	await click("Story");
+	await openEditor(page, "story");
 	const start = page
 		.locator(".story-relationship")
 		.filter({ hasText: "Start Village Passage" });
@@ -51,7 +59,7 @@ test("navigates a complete story and authors a conditional response from context
 		"data-source-focus",
 		"true",
 	);
-	await click("Story");
+	await openEditor(page, "story");
 	await page
 		.locator(".story-relationship")
 		.filter({ hasText: "Start Village Passage" })
@@ -65,7 +73,7 @@ test("navigates a complete story and authors a conditional response from context
 	).toContainText("Possible source of Harbour Key");
 	await click("Open Quest Sequence");
 	await expect(page.locator(".story-step")).toHaveCount(3);
-	await click("Story");
+	await openEditor(page, "story");
 	await page.getByLabel("Search entities", { exact: true }).fill("Harbour Key");
 	await click("Harbour Key · Items");
 	await expect(page.getByLabel("Used by")).toContainText("Container grants");
@@ -124,7 +132,7 @@ test("navigates a complete story and authors a conditional response from context
 		})
 		.click();
 	await click("Story state is Yes");
-	await click("Story");
+	await openEditor(page, "story");
 	await page
 		.getByLabel("Search entities", { exact: true })
 		.fill("Key remembered");
@@ -134,28 +142,18 @@ test("navigates a complete story and authors a conditional response from context
 	);
 	await page.screenshot({ path: testInfo.outputPath("story-state-uses.png") });
 	await click("Save");
-	const saved = await page.evaluate(() =>
-		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
-	);
+	const saved = await savedProject(page);
 	const download = page.waitForEvent("download");
-	await click("Export JSON");
+	await projectTool(page, "Export JSON");
 	const path = testInfo.outputPath("story-workspace.project.json");
 	await (await download).saveAs(path);
-	await page.locator('input[type="file"]').setInputFiles(path);
+	await importProjectFile(page, path);
 	await click("Save");
-	expect(
-		await page.evaluate(
-			() =>
-				JSON.parse(localStorage.getItem("adventure-builder-project-v1")!)
-					.dialogues,
-		),
-	).toEqual(saved.dialogues);
-	await click("Map");
+	expect((await savedProject(page)).dialogues).toEqual(saved.dialogues);
+	await openEditor(page, "map");
 	await click("3D View");
 	await click("Save");
-	const authored = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const authored = await savedProjectJson(page);
 	await click("Play");
 	const viewport = page.getByLabel("Three runtime viewport", { exact: true });
 	await expect(viewport).toBeVisible();
@@ -225,26 +223,14 @@ test("navigates a complete story and authors a conditional response from context
 	).toBeVisible();
 	await page.keyboard.press("Escape");
 	await click("Save Game");
-	const gameSave = await page.evaluate(() =>
-		JSON.parse(
-			localStorage.getItem(
-				Object.keys(localStorage).find((k) =>
-					k.startsWith("adventure-builder-game-save-v1:"),
-				)!,
-			)!,
-		),
-	);
+	const gameSave = await requireGameSave(page);
 	expect(gameSave.quests.statuses.keeper_job).toBe("completed");
 	expect(gameSave.state.flags.key_remembered).toBe(true);
 	await click("Back to Edit");
 	await click("Save");
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(authored);
+	expect(await savedProjectJson(page)).toBe(authored);
 	expect(errors).toEqual([]);
-	await click("Story");
+	await openEditor(page, "story");
 	const large = createCompleteStoryDemo();
 	for (let i = 0; i < 150; i++) {
 		large.areas[0].npcs.push({
@@ -268,13 +254,13 @@ test("navigates a complete story and authors a conditional response from context
 			name: `Story rule ${i}`,
 		});
 	}
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "story-scale.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(large)),
 	});
 	const focusStarted = Date.now();
-	await click("Story");
+	await openEditor(page, "story");
 	await page.getByLabel("Search entities", { exact: true }).fill("Guard 149");
 	await click("Guard 149 — Village (4, 5) · Characters");
 	await expect(page.getByLabel("Story inspector")).toContainText("Guard 149");
@@ -301,15 +287,14 @@ test("authors nested WHEN IF THEN ELSE blocks and plays both routes @logic-block
 		.find((n) => n.id === "accepted")!
 		.actions!.push({ type: "set_flag", flag: "guard_permission", value: true });
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "village.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(fixture)),
 	});
 	const click = (name: string) =>
 		page.getByRole("button", { name, exact: true }).click();
-	await click("Logic");
+	await openEditor(page, "progression");
 	await click("Add rule");
 	await page.getByLabel("Rule name", { exact: true }).fill("Gate permission");
 	for (const [name, slot, operation] of [
@@ -358,28 +343,20 @@ test("authors nested WHEN IF THEN ELSE blocks and plays both routes @logic-block
 	await click("Play story moment");
 	await page.getByLabel("Run", { exact: true }).selectOption("once");
 	await click("Save");
-	const before = await page.evaluate(() =>
-		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
-	);
+	const before = await savedProject(page);
 	await click("Advanced");
 	await click("Blocks");
 	await click("Save");
-	expect(
-		await page.evaluate(
-			() =>
-				JSON.parse(localStorage.getItem("adventure-builder-project-v1")!).rules,
-		),
-	).toEqual(before.rules);
+	expect((await savedProject(page)).rules).toEqual(before.rules);
 	await page.locator(".logic-editor").evaluate((el) => {
 		el.scrollTop = 0;
 	});
 	await page.screenshot({ path: testInfo.outputPath("logic-blocks.png") });
 	const download = page.waitForEvent("download");
-	await click("Export JSON");
+	await projectTool(page, "Export JSON");
 	const path = testInfo.outputPath("logic-blocks.project.json");
 	await (await download).saveAs(path);
-	await page.locator('input[type="file"]').setInputFiles(path);
-	await click("Map");
+	await importProjectFile(page, path);
 	await click("3D View");
 	await click("Play");
 	const viewport = page.getByLabel("Three runtime viewport", { exact: true });
@@ -407,16 +384,7 @@ test("authors nested WHEN IF THEN ELSE blocks and plays both routes @logic-block
 				if (step === 64) throw Error(`Blocked at ${JSON.stringify(pos)}`);
 			}
 	}
-	const readSave = () =>
-		page.evaluate(() =>
-			JSON.parse(
-				localStorage.getItem(
-					Object.keys(localStorage).find((k) =>
-						k.startsWith("adventure-builder-game-save-v1:"),
-					)!,
-				)!,
-			),
-		);
+	const readSave = () => requireGameSave(page);
 	await go(7, 3);
 	await go(7, 5);
 	await page.keyboard.press("e");
@@ -469,15 +437,14 @@ test("authors a native Talk Have Use quest and continues it @quest-sequence", as
 	const errors: string[] = [];
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "village.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(createStoryAuthoringDemo())),
 	});
 	const click = (name: string) =>
 		page.getByRole("button", { name, exact: true }).click();
-	await click("Quests");
+	await openEditor(page, "quests");
 	const slot = page.getByLabel("Add objective from entity", { exact: true });
 	for (const [name, operation] of [
 		["Guard — Village (4, 5) · Characters", "Finish talking"],
@@ -488,19 +455,13 @@ test("authors a native Talk Have Use quest and continues it @quest-sequence", as
 		await click(operation);
 	}
 	await click("Save");
-	const before = await page.evaluate(() =>
-		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
-	);
+	const before = await savedProject(page);
 	await click("Move objective 2 down");
 	await click("Undo");
 	await click("Save");
-	expect(
-		await page.evaluate(
-			() =>
-				JSON.parse(localStorage.getItem("adventure-builder-project-v1")!)
-					.quests[0].objectives,
-		),
-	).toEqual(before.quests[0].objectives);
+	expect((await savedProject(page)).quests[0].objectives).toEqual(
+		before.quests[0].objectives,
+	);
 	await page
 		.getByRole("button", {
 			name: "Guard permission · Story state",
@@ -515,21 +476,19 @@ test("authors a native Talk Have Use quest and continues it @quest-sequence", as
 		.getByRole("button", { name: "Show on map" })
 		.click();
 	await expect(page.getByLabel("Search scene")).toBeVisible();
-	await click("Quests");
+	await openEditor(page, "quests");
 	await click("Save");
 	const download = page.waitForEvent("download");
-	await click("Export JSON");
+	await projectTool(page, "Export JSON");
 	const path = testInfo.outputPath("village-sequence.project.json");
 	await (await download).saveAs(path);
-	await page.locator('input[type="file"]').setInputFiles(path);
-	await click("Quests");
+	await importProjectFile(page, path);
+	await openEditor(page, "quests");
 	await expect(page.locator(".story-step")).toHaveCount(3);
-	await click("Map");
+	await openEditor(page, "map");
 	await click("3D View");
 	await click("Save");
-	const authored = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const authored = await savedProjectJson(page);
 	await click("Play");
 	const viewport = page.getByLabel("Three runtime viewport", { exact: true });
 	await expect(viewport).toBeVisible();
@@ -546,16 +505,7 @@ test("authors a native Talk Have Use quest and continues it @quest-sequence", as
 		.getByRole("button", { name: "End conversation", exact: true })
 		.click();
 	await click("Save Game");
-	const readSave = () =>
-		page.evaluate(() =>
-			JSON.parse(
-				localStorage.getItem(
-					Object.keys(localStorage).find((k) =>
-						k.startsWith("adventure-builder-game-save-v1:"),
-					)!,
-				)!,
-			),
-		);
+	const readSave = () => requireGameSave(page);
 	expect((await readSave()).quests.statuses.keeper_job).toBe("inactive");
 	expect((await readSave()).state.flags.refused_keeper_job).toBe(true);
 	await click("Back to Edit");
@@ -627,11 +577,7 @@ test("authors a native Talk Have Use quest and continues it @quest-sequence", as
 	expect((await readSave()).quests).toEqual(complete.quests);
 	await click("Back to Edit");
 	await click("Save");
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(authored);
+	expect(await savedProjectJson(page)).toBe(authored);
 	expect(errors).toEqual([]);
 });
 
@@ -650,13 +596,10 @@ test("wires entities with native drag, inline creation, assignment and Continue 
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("dialogue-graph-v1-demo.project.json");
+	await importProjectFile(page, "dialogue-graph-v1-demo.project.json");
 	const click = (name: string) =>
 		page.getByRole("button", { name, exact: true }).click();
-	await click("Dialogues");
+	await openEditor(page, "dialogues");
 	await click("Fit graph");
 	await click("Select choice: What do you say?");
 	await click("Focus selected");
@@ -702,7 +645,7 @@ test("wires entities with native drag, inline creation, assignment and Continue 
 	await questEditor
 		.getByLabel("Objective flag ID")
 		.selectOption("keeper_job_done");
-	await click("Dialogues");
+	await openEditor(page, "dialogues");
 	await click("List");
 	await click("text: Thank you. Take the Harbour Key.");
 	await expect(page.getByLabel("Text", { exact: true })).toHaveValue(
@@ -728,9 +671,7 @@ test("wires entities with native drag, inline creation, assignment and Continue 
 	await click("Fit graph");
 	await page.screenshot({ path: testInfo.outputPath("entity-wiring.png") });
 	await click("Save");
-	const saved = await page.evaluate(() =>
-		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
-	);
+	const saved = await savedProject(page);
 	const quest = saved.quests.find(
 		(q: { name: string }) => q.name === "Village Passage",
 	);
@@ -743,26 +684,18 @@ test("wires entities with native drag, inline creation, assignment and Continue 
 		"keeper_dialogue",
 	);
 	const download = page.waitForEvent("download");
-	await click("Export JSON");
+	await projectTool(page, "Export JSON");
 	const exported = await download;
 	const exportPath = testInfo.outputPath("entity-wiring.project.json");
 	await exported.saveAs(exportPath);
-	await page.locator('input[type="file"]').setInputFiles(exportPath);
-	await click("Dialogues");
+	await importProjectFile(page, exportPath);
+	await openEditor(page, "dialogues");
 	await click("Save");
-	expect(
-		await page.evaluate(
-			() =>
-				JSON.parse(localStorage.getItem("adventure-builder-project-v1")!)
-					.dialogues,
-		),
-	).toEqual(saved.dialogues);
-	await click("Map");
+	expect((await savedProject(page)).dialogues).toEqual(saved.dialogues);
+	await openEditor(page, "map");
 	await click("3D View");
 	await click("Save");
-	const beforePlay = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const beforePlay = await savedProjectJson(page);
 	await click("Play");
 	const viewport = page.getByLabel("Three runtime viewport", { exact: true });
 	await expect(viewport).toBeVisible();
@@ -782,15 +715,7 @@ test("wires entities with native drag, inline creation, assignment and Continue 
 		.getByRole("button", { name: "End conversation", exact: true })
 		.click();
 	await click("Save Game");
-	const gameSave = await page.evaluate(() =>
-		JSON.parse(
-			localStorage.getItem(
-				Object.keys(localStorage).find((key) =>
-					key.startsWith("adventure-builder-game-save-v1:"),
-				)!,
-			)!,
-		),
-	);
+	const gameSave = await requireGameSave(page);
 	expect(gameSave.quests.statuses[quest.id]).toBe("active");
 	expect(gameSave.state.inventory.harbour_key).toBe(1);
 	await click("Back to Edit");
@@ -809,11 +734,7 @@ test("wires entities with native drag, inline creation, assignment and Continue 
 	await page.keyboard.press("Escape");
 	await click("Back to Edit");
 	await click("Save");
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(beforePlay);
+	expect(await savedProjectJson(page)).toBe(beforePlay);
 	expect(errors).toEqual([]);
 });
 
@@ -826,16 +747,13 @@ test("visually authors dialogue, assigns the Keeper and continues saved branches
 	page.on("pageerror", (error) => errors.push(error.message));
 	page.on("dialog", (dialog) => dialog.accept());
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("dialogue-graph-v1-demo.project.json");
+	await importProjectFile(page, "dialogue-graph-v1-demo.project.json");
 	const click = async (name: string) => {
 		await page.getByRole("button", { name, exact: true }).click();
 		if (name === "Add action")
 			await openAdvancedChip(page.locator(".dialogue-wiring-chip").last());
 	};
-	await click("Dialogues");
+	await openEditor(page, "dialogues");
 	await click("Add dialogue");
 	await page
 		.getByLabel("Name", { exact: true })
@@ -967,35 +885,27 @@ test("visually authors dialogue, assigns the Keeper and continues saved branches
 	await click("Fit graph");
 	await page.screenshot({ path: testInfo.outputPath("graph-authoring.png") });
 	await click("Save");
-	const saved = await page.evaluate(() =>
-		JSON.parse(localStorage.getItem("adventure-builder-project-v1")!),
-	);
+	const saved = await savedProject(page);
 	const authored = saved.dialogues.find(
 		(d: { name: string }) => d.name === "Browser authored Keeper",
 	);
 	expect(Object.keys(authored.editorLayout.nodes)).toHaveLength(6);
 	const download = page.waitForEvent("download");
-	await click("Export JSON");
+	await projectTool(page, "Export JSON");
 	const exported = await download;
 	const exportPath = testInfo.outputPath("authored.project.json");
 	await exported.saveAs(exportPath);
 	expect(JSON.parse(await fs.readFile(exportPath, "utf8")).dialogues).toEqual(
 		saved.dialogues,
 	);
-	await page.reload();
-	await click("Dialogues");
+	await reloadProject(page);
+	await openEditor(page, "dialogues");
 	await click("Browser authored Keeper");
 	await click("Fit graph");
 	await page.screenshot({ path: testInfo.outputPath("graph-reloaded.png") });
 	await click("Save");
-	expect(
-		await page.evaluate(
-			() =>
-				JSON.parse(localStorage.getItem("adventure-builder-project-v1")!)
-					.dialogues,
-		),
-	).toEqual(saved.dialogues);
-	await click("Map");
+	expect((await savedProject(page)).dialogues).toEqual(saved.dialogues);
+	await openEditor(page, "map");
 	await click("3D View");
 	await page.getByLabel("Search scene").fill("Keeper");
 	await page
@@ -1012,9 +922,7 @@ test("visually authors dialogue, assigns the Keeper and continues saved branches
 		"Browser authored Keeper",
 	);
 	await click("Save");
-	const beforePlay = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const beforePlay = await savedProjectJson(page);
 	await click("Play");
 	const viewport = page.getByLabel("Three runtime viewport", { exact: true });
 	await expect(viewport).toBeVisible();
@@ -1039,12 +947,7 @@ test("visually authors dialogue, assigns the Keeper and continues saved branches
 		.getByRole("button", { name: "End conversation", exact: true })
 		.click();
 	await click("Save Game");
-	const gameSave = await page.evaluate(() => {
-		const key = Object.keys(localStorage).find((key) =>
-			key.startsWith("adventure-builder-game-save-v1:"),
-		)!;
-		return JSON.parse(localStorage.getItem(key)!);
-	});
+	const gameSave = await requireGameSave(page);
 	expect(gameSave.state.flags.accepted_keeper_job).toBe(true);
 	expect(gameSave.state.inventory.harbour_key).toBe(1);
 	await click("Back to Edit");
@@ -1075,11 +978,7 @@ test("visually authors dialogue, assigns the Keeper and continues saved branches
 		.click();
 	await click("Back to Edit");
 	await click("Save");
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(beforePlay);
+	expect(await savedProjectJson(page)).toBe(beforePlay);
 	expect(errors).toEqual([]);
 });
 
@@ -1119,15 +1018,14 @@ test("navigates and drags a 30-node branching graph @dialogue-graph-scale", asyn
 	});
 	delete dialogue.editorLayout;
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "30-node-dialogue.project.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(project)),
 	});
 	const click = (name: string) =>
 		page.getByRole("button", { name, exact: true }).click();
-	await click("Dialogues");
+	await openEditor(page, "dialogues");
 	await click("Auto layout");
 	await expect(page.locator(".dialogue-card")).toHaveCount(30);
 	await expect(page.getByLabel("Dialogue diagnostics")).toContainText(
@@ -1151,11 +1049,7 @@ test("navigates and drags a 30-node branching graph @dialogue-graph-scale", asyn
 	await click("Fit graph");
 	await page.screenshot({ path: testInfo.outputPath("30-node-fit.png") });
 	await click("Save");
-	const saved = await page.evaluate(
-		() =>
-			JSON.parse(localStorage.getItem("adventure-builder-project-v1")!)
-				.dialogues[0],
-	);
+	const saved = (await savedProject(page)).dialogues[0];
 	expect(saved.nodes.map((node: { id: string }) => node.id)).toEqual(
 		dialogue.nodes.map((node: { id: string }) => node.id),
 	);
@@ -1179,10 +1073,7 @@ test("plays graph-authored dialogue through Phaser and saves its effects @dialog
 }, testInfo) => {
 	page.setDefaultTimeout(15_000);
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("dialogue-graph-v1-demo.project.json");
+	await importProjectFile(page, "dialogue-graph-v1-demo.project.json");
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const canvas = page.locator(".phaser-host canvas");
 	await expect(canvas).toBeVisible();
@@ -1203,12 +1094,7 @@ test("plays graph-authored dialogue through Phaser and saves its effects @dialog
 	await page.keyboard.press("e");
 	await page.getByRole("button", { name: "Save Game", exact: true }).click();
 	await expect(page.locator(".runtime-save-status")).toContainText("saved");
-	const save = await page.evaluate(() => {
-		const key = Object.keys(localStorage).find((key) =>
-			key.startsWith("adventure-builder-game-save-v1:"),
-		)!;
-		return JSON.parse(localStorage.getItem(key)!);
-	});
+	const save = await requireGameSave(page);
 	expect(save.state.flags.accepted_keeper_job).toBe(true);
 	expect(save.state.inventory.harbour_key).toBe(1);
 	expect(save.quests.statuses.keeper_job).toBe("active");

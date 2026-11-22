@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
+import { createStarterProject, openEditor } from "./projectNavigation";
 
 type ConsoleEntry = {
 	location: ReturnType<import("@playwright/test").ConsoleMessage["location"]>;
@@ -490,9 +491,11 @@ test("captures Three editor and runtime perf diagnostics @performance", async ({
 			);
 		}
 
-		await expect(page.getByLabel("Choose a starter project")).toBeVisible();
-		await page.getByRole("button", { name: /Demo Project/ }).click();
-		await expect(page.getByLabel("Project")).toHaveValue("Demo Adventure");
+		await createStarterProject(page, "demo");
+		await expect(
+			page.getByRole("heading", { name: "Demo Adventure", exact: true }),
+		).toBeVisible();
+		await openEditor(page, "map");
 		const areaSelector = page.getByRole("combobox", { name: "Editing" });
 		await areaSelector.selectOption(PIRATE_AREA_ID);
 		await expect(areaSelector).toHaveValue(PIRATE_AREA_ID);

@@ -2,6 +2,13 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { createProjectFromPreset } from "../src/data/projectPresets";
+import {
+	importProjectFile,
+	openEditor,
+	reloadProject,
+	savedProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 // Explicit screenshots and the saved-project checkpoint are sufficient evidence;
 // a frame-by-frame trace of this dressing workflow is hundreds of megabytes.
@@ -63,8 +70,7 @@ test("composes and persists a harbour using every kit asset through the Map Edit
 			failedAssets.push(url.pathname);
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles({
+	await importProjectFile(page, {
 		name: "tidewatch-ground.json",
 		mimeType: "application/json",
 		buffer: Buffer.from(JSON.stringify(project)),
@@ -210,22 +216,18 @@ test("composes and persists a harbour using every kit asset through the Map Edit
 		.click();
 	await page.getByLabel("Scene name").fill("Harbour Keeper");
 	await position(7.3, 6.1, 0);
-	await page.getByRole("button", { name: "Character", exact: true }).click();
+	await openEditor(page, "character");
 	await page
 		.getByRole("button", { name: "Set as Player Character", exact: true })
 		.click();
-	await page.getByRole("button", { name: "Map", exact: true }).click();
+	await openEditor(page, "map");
 	await search.fill("");
 	await page.getByRole("button", { name: "All", exact: true }).click();
 	await page.getByRole("button", { name: "Reset camera", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
 	await fs.writeFile(
 		testInfo.outputPath("composition-checkpoint.json"),
-		await page.evaluate(() => {
-			const project = localStorage.getItem("adventure-builder-project-v1");
-			if (!project) throw new Error("Expected saved project.");
-			return project;
-		}),
+		await savedProjectJson(page),
 	);
 	await expect
 		.poll(
@@ -235,11 +237,7 @@ test("composes and persists a harbour using every kit asset through the Map Edit
 		)
 		.toBe(placed + 2);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() => {
-		const project = localStorage.getItem("adventure-builder-project-v1");
-		if (!project) throw new Error("Expected saved project.");
-		return JSON.parse(project);
-	});
+	const saved = await savedProject(page);
 	expect(saved.areas[0].objects).toHaveLength(30);
 	await page.screenshot({ path: testInfo.outputPath("harbour-editor.png") });
 	const editor = await snapshot("ThreeDPreview");
@@ -275,22 +273,8 @@ test("composes and persists a harbour using every kit asset through the Map Edit
 	await page.screenshot({ path: testInfo.outputPath("harbour-play.png") });
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() => {
-			const project = localStorage.getItem("adventure-builder-project-v1");
-			if (!project) throw new Error("Expected saved project.");
-			return JSON.parse(project);
-		}),
-	).toEqual(saved);
-	await page.reload();
-	const recovery = page.getByRole("button", {
-		name: "Use saved project",
-		exact: true,
-	});
-	await expect(
-		recovery.or(page.getByRole("button", { name: "Play", exact: true })),
-	).toBeVisible();
-	if (await recovery.isVisible()) await recovery.click();
+	expect(await savedProject(page)).toEqual(saved);
+	await reloadProject(page);
 	await expect(canvas).toBeVisible();
 	await expect
 		.poll(
@@ -307,13 +291,7 @@ test("composes and persists a harbour using every kit asset through the Map Edit
 			.locator("img"),
 	).toBeVisible();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() => {
-			const project = localStorage.getItem("adventure-builder-project-v1");
-			if (!project) throw new Error("Expected saved project.");
-			return JSON.parse(project);
-		}),
-	).toEqual(saved);
+	expect(await savedProject(page)).toEqual(saved);
 	await page.screenshot({ path: testInfo.outputPath("harbour-reloaded.png") });
 	await fs.writeFile(
 		testInfo.outputPath("tidewatch-harbour.project.json"),

@@ -1,5 +1,10 @@
 import fs from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
+import {
+	importProjectFile,
+	reloadProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test.use({ channel: "chrome", viewport: { width: 1280, height: 900 } });
 const output = "docs/assets/interaction-animation";
@@ -60,14 +65,9 @@ test("physical interactions animate locally and Continue restores semantic poses
 		if (/\.glb(?:\?|$)/.test(r.url())) requests.push(r.url());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("interaction-animation-demo.project.json");
+	await importProjectFile(page, "interaction-animation-demo.project.json");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const authored = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const authored = await savedProjectJson(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await expect
@@ -156,7 +156,7 @@ test("physical interactions animate locally and Continue restores semantic poses
 	expect(after.asset.cloneCount).toBe(before.asset.cloneCount);
 	expect(interactionRequests).toEqual([]);
 	await page.getByRole("button", { name: "Save Game", exact: true }).click();
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -177,11 +177,7 @@ test("physical interactions animate locally and Continue restores semantic poses
 	).toBe(0);
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(authored);
+	expect(await savedProjectJson(page)).toBe(authored);
 	expect(errors).toEqual([]);
 	await fs.writeFile(
 		`${output}/acceptance.json`,

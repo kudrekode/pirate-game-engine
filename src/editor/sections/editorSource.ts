@@ -3,6 +3,7 @@ import {
 	type EditorSource,
 	useProjectStore,
 } from "../../store/useProjectStore";
+import { openEntity } from "../project/navigation";
 import type { DialogueEntityRef } from "./dialogueEntities";
 
 export function entitySource(ref: DialogueEntityRef): EditorSource {
@@ -29,7 +30,7 @@ export function entitySource(ref: DialogueEntityRef): EditorSource {
 }
 
 export function openEntitySource(ref: DialogueEntityRef) {
-	useProjectStore.getState().openEditorSource(entitySource(ref));
+	openEntity(entitySource(ref));
 }
 
 /** UI-only requests never create authored references or undo records. */

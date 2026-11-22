@@ -7,6 +7,11 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
+import {
+	LEGACY_PROJECT_ID,
+	PROJECT_RECORD_PREFIX,
+	type ProjectRecord,
+} from "../data/projectCatalog";
 import { createProjectFromPreset } from "../data/projectPresets";
 import {
 	AUTOSAVE_DRAFT_STORAGE_KEY as DRAFT,
@@ -18,9 +23,6 @@ vi.mock("../runtime/RuntimePanel", () => ({ RuntimePanel: () => null }));
 vi.mock("../editor/sections/ThreeDPreview", () => ({
 	ThreeDPreview: () => null,
 }));
-vi.mock("../editor/sections", () => ({
-	editorSections: [{ id: "map", label: "Map", component: () => null }],
-}));
 
 function project(name: string) {
 	const value = createProjectFromPreset("blank");
@@ -30,6 +32,25 @@ function project(name: string) {
 function store(key: string, name: string) {
 	localStorage.setItem(key, JSON.stringify(project(name)));
 }
+
+function openProject(name: string | RegExp) {
+	fireEvent.click(screen.getByRole("button", { name }));
+}
+
+function currentProject() {
+	return useProjectStore.getState().project;
+}
+
+function legacyRecord(): ProjectRecord {
+	return JSON.parse(
+		localStorage.getItem(PROJECT_RECORD_PREFIX + LEGACY_PROJECT_ID)!,
+	);
+}
+
+function renameProject(name: string) {
+	act(() => useProjectStore.getState().updateMetadata({ name }));
+}
+
 beforeEach(() => {
 	vi.useFakeTimers();
 	localStorage.clear();
@@ -47,13 +68,14 @@ describe("save and draft recovery", () => {
 		store(DRAFT, "Draft B");
 		const draft = localStorage.getItem(DRAFT);
 		render(<App />);
+		openProject(/Manual A|Draft B/);
 		expect(
 			screen.getByRole("dialog", { name: "Recover a project" }),
 		).toBeInTheDocument();
 		act(() => vi.advanceTimersByTime(6000));
 		expect(localStorage.getItem(DRAFT)).toBe(draft);
 		fireEvent.click(screen.getByRole("button", { name: "Recover draft" }));
-		expect(screen.getByLabelText("Project")).toHaveValue("Draft B");
+		expect(currentProject().metadata.name).toBe("Draft B");
 		expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
 		expect(JSON.parse(localStorage.getItem(SAVE)!)).toMatchObject({
 			metadata: { name: "Manual A" },
@@ -64,10 +86,13 @@ describe("save and draft recovery", () => {
 		store(DRAFT, "Unrelated Project");
 		const draft = localStorage.getItem(DRAFT);
 		render(<App />);
+		openProject(/Project One|Unrelated Project/);
+		const migratedDraft = legacyRecord().draft;
 		fireEvent.click(screen.getByRole("button", { name: "Use saved project" }));
-		expect(screen.getByLabelText("Project")).toHaveValue("Project One");
+		expect(currentProject().metadata.name).toBe("Project One");
 		act(() => vi.advanceTimersByTime(6000));
 		expect(localStorage.getItem(DRAFT)).toBe(draft);
+		expect(legacyRecord().draft).toBe(migratedDraft);
 	});
 	it.each([
 		[SAVE, DRAFT, "Loaded saved project."],
@@ -76,24 +101,27 @@ describe("save and draft recovery", () => {
 		store(valid, "Valid project");
 		localStorage.setItem(corrupt, "{broken");
 		render(<App />);
-		expect(screen.getByLabelText("Project")).toHaveValue("Valid project");
+		openProject("Valid project");
+		expect(currentProject().metadata.name).toBe("Valid project");
 		expect(screen.getByText(message)).toBeInTheDocument();
+		expect(localStorage.getItem(corrupt)).toBe("{broken");
 	});
 	it("loads legacy raw saves and identical save/draft pairs without a recovery prompt", () => {
 		store(SAVE, "Legacy");
 		localStorage.setItem(DRAFT, localStorage.getItem(SAVE)!);
 		render(<App />);
-		expect(screen.getByLabelText("Project")).toHaveValue("Legacy");
+		openProject("Legacy");
+		expect(currentProject().metadata.name).toBe("Legacy");
 		expect(
 			screen.queryByRole("dialog", { name: "Recover a project" }),
 		).not.toBeInTheDocument();
 	});
-	it("does not overwrite invalid recovery data while the initial chooser is open", () => {
+	it("does not overwrite invalid recovery data while Projects is open", () => {
 		localStorage.setItem(SAVE, "null");
 		localStorage.setItem(DRAFT, "{broken");
 		render(<App />);
 		expect(
-			screen.getByLabelText("Choose a starter project"),
+			screen.getByRole("heading", { name: "Your projects" }),
 		).toBeInTheDocument();
 		act(() => vi.advanceTimersByTime(6000));
 		expect(localStorage.getItem(DRAFT)).toBe("{broken");
@@ -101,39 +129,35 @@ describe("save and draft recovery", () => {
 	it("reports autosave failure without a success timestamp, then retries after another edit", () => {
 		store(SAVE, "Saved");
 		render(<App />);
+		openProject("Saved");
 		const write = vi
 			.spyOn(Storage.prototype, "setItem")
 			.mockImplementation(() => {
 				throw new Error("quota");
 			});
-		fireEvent.change(screen.getByLabelText("Project"), {
-			target: { value: "Edited" },
-		});
+		renameProject("Edited");
 		act(() => vi.advanceTimersByTime(3000));
 		expect(screen.getByText(/Could not autosave/)).toBeInTheDocument();
 		expect(screen.queryByText(/Draft autosaved/)).not.toBeInTheDocument();
 		write.mockRestore();
-		fireEvent.change(screen.getByLabelText("Project"), {
-			target: { value: "Retried" },
-		});
+		renameProject("Retried");
 		act(() => vi.advanceTimersByTime(3000));
-		expect(JSON.parse(localStorage.getItem(DRAFT)!)).toMatchObject({
+		expect(JSON.parse(legacyRecord().draft!)).toMatchObject({
 			metadata: { name: "Retried" },
 		});
 	});
 	it("reports manual save failure and keeps the project dirty", () => {
 		store(SAVE, "Saved");
 		render(<App />);
-		fireEvent.change(screen.getByLabelText("Project"), {
-			target: { value: "Edited" },
-		});
+		openProject("Saved");
+		renameProject("Edited");
 		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
 			throw new Error("quota");
 		});
 		fireEvent.keyDown(window, { ctrlKey: true, key: "s" });
 		expect(screen.getByText(/Could not save/)).toBeInTheDocument();
 		expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
-		expect(JSON.parse(localStorage.getItem(SAVE)!)).toMatchObject({
+		expect(JSON.parse(legacyRecord().saved!)).toMatchObject({
 			metadata: { name: "Saved" },
 		});
 	});
@@ -151,8 +175,9 @@ it("loads historical single-map browser saves without replacing the stored data"
 	});
 	localStorage.setItem(SAVE, legacy);
 	render(<App />);
-	expect(screen.getByLabelText("Project")).toHaveValue("Old map");
-	expect(useProjectStore.getState().project.areas[0].width).toBe(2);
+	openProject("Old map");
+	expect(currentProject().metadata.name).toBe("Old map");
+	expect(currentProject().areas[0].width).toBe(2);
 	act(() => vi.advanceTimersByTime(6000));
 	expect(localStorage.getItem(SAVE)).toBe(legacy);
 });

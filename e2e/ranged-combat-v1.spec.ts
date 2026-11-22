@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
 import { BOW } from "../src/data/bow";
+import {
+	importProjectFile,
+	reloadProject,
+	requireGameSave,
+} from "./projectNavigation";
 
 test.use({
 	channel: "chrome",
@@ -31,10 +36,7 @@ test("current Bow fires into the sky from the visible camera ray @camera-v4-bow"
 	const errors: string[] = [];
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("ranged-combat-v1-demo.project.json");
+	await importProjectFile(page, "ranged-combat-v1-demo.project.json");
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await expect
@@ -166,10 +168,7 @@ test("charged Bow, ballistic drop, cancellation, world impacts, switching and Co
 		if (r.url().endsWith(".glb")) requests.push(r.url());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("archery-v2-demo.project.json");
+	await importProjectFile(page, "archery-v2-demo.project.json");
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const canvas = page.getByLabel("Three runtime viewport", { exact: true });
@@ -454,12 +453,7 @@ test("charged Bow, ballistic drop, cancellation, world impacts, switching and Co
 	await shoot();
 	await page.keyboard.press("Escape");
 	await page.getByRole("button", { name: "Save Game", exact: true }).click();
-	const save = await page.evaluate(() => {
-		const key = Object.keys(localStorage).find((k) =>
-			k.startsWith("adventure-builder-game-save-v1:"),
-		);
-		return JSON.parse(localStorage.getItem(key!)!);
-	});
+	const save = await requireGameSave(page);
 	expect(save.player.equippedWeaponId).toBe("bow");
 	expect(save.state.inventory.bow).toBe(1);
 	expect(JSON.stringify(save)).not.toMatch(
@@ -522,7 +516,7 @@ test("charged Bow, ballistic drop, cancellation, world impacts, switching and Co
 	);
 	const peakArrows = Math.max(...samples.map((s) => s.arrows.active));
 	expect(peakArrows).toBeLessThanOrEqual(2);
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await page.getByRole("button", { name: "Continue", exact: true }).click();

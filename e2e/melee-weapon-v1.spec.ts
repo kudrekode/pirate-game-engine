@@ -1,5 +1,11 @@
 import fs from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
+import {
+	importProjectFile,
+	reloadProject,
+	requireGameSave,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test.use({
 	channel: "chrome",
@@ -78,14 +84,9 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 		if (/\.glb(?:\?|$)/.test(r.url())) requests.push(r.url());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("melee-weapon-v1-demo.project.json");
+	await importProjectFile(page, "melee-weapon-v1-demo.project.json");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const authored = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const authored = await savedProjectJson(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await expect
@@ -375,16 +376,10 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 	expect(requests.slice(requestCount)).toEqual([]);
 	const actionRequests = requests.slice(requestCount);
 	await page.getByRole("button", { name: "Save Game", exact: true }).click();
-	const save = await page.evaluate(() =>
-		JSON.parse(
-			Object.entries(localStorage).find(([k]) =>
-				k.startsWith("adventure-builder-game-save-v1:"),
-			)![1],
-		),
-	);
+	const save = await requireGameSave(page);
 	expect(save.player.equippedWeaponId).toBe("sword");
 	expect(save.state.inventory.sword).toBe(1);
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -410,7 +405,7 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 		.toBe("GoldenCombat_Attack_V1");
 	await expect.poll(() => state(page)).toBe("idle");
 	await page.getByRole("button", { name: "Save Game", exact: true }).click();
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -426,11 +421,7 @@ test("one sword pickup equip move attack defeat and semantic Continue via real c
 	await page.keyboard.press("Escape");
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(authored);
+	expect(await savedProjectJson(page)).toBe(authored);
 	expect(errors).toEqual([]);
 	await fs.writeFile(
 		`${output}/acceptance.json`,

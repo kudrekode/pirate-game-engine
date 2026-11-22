@@ -37,6 +37,40 @@ export type EditorSectionConfig = {
 	component: ComponentType;
 };
 
+export type WorkspaceId = EditorSectionId | "assets";
+
+export const primaryWorkspaces = [
+	{
+		id: "assets",
+		label: "Asset Creator",
+		description: "Create and preview humanoid assets in Asset Studio.",
+		icon: "◈",
+	},
+	{
+		id: "cutscenes",
+		label: "Cinematics",
+		description: "Camera shots, actors, dialogue and audio.",
+		icon: "▣",
+	},
+	{
+		id: "map",
+		label: "Map Editor",
+		description: "Terrain, object placement and world settings.",
+		icon: "▦",
+	},
+	{
+		id: "story",
+		label: "Story",
+		description: "Story relationships, branching quests and game state.",
+		icon: "◇",
+	},
+] as const satisfies readonly {
+	id: WorkspaceId;
+	label: string;
+	description: string;
+	icon: string;
+}[];
+
 export const editorSections: EditorSectionConfig[] = [
 	{
 		id: "map",
@@ -129,3 +163,8 @@ export const editorSections: EditorSectionConfig[] = [
 		component: ThreeDPreview,
 	},
 ];
+
+export const secondaryWorkspaces = editorSections.filter(
+	(section) =>
+		!primaryWorkspaces.some((workspace) => workspace.id === section.id),
+);

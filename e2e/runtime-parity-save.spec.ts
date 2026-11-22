@@ -1,5 +1,11 @@
 ﻿import fs from "node:fs/promises";
 import { expect as baseExpect, type Page, test } from "@playwright/test";
+import {
+	importProjectFile,
+	readGameSave,
+	reloadProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 const expect = baseExpect.configure({ timeout: 30_000 });
 // Match the established harbour acceptance viewport; this is not a performance benchmark.
@@ -11,7 +17,6 @@ test.use({
 });
 const output =
 	process.env.RUNTIME_PARITY_OUTPUT ?? "docs/assets/runtime-parity";
-const projectKey = "adventure-builder-project-v1";
 type Npc = {
 	id: string;
 	x: number;
@@ -39,13 +44,12 @@ async function npcs(page: Page): Promise<Npc[]> {
 	);
 }
 async function authored(page: Page) {
-	return page.evaluate((key) => localStorage.getItem(key), projectKey);
+	return savedProjectJson(page);
 }
 async function importProject(page: Page, file: string) {
 	await page.goto("/", { waitUntil: "domcontentloaded" });
-	if (await page.getByRole("button", { name: /Blank Project/ }).isVisible())
-		await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page.locator('input[type="file"]').setInputFiles(file);
+	await createStarterProject(page, "blank");
+	await importProjectFile(page, file);
 	await page.getByRole("button", { name: "Save", exact: true }).click();
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	return authored(page);
@@ -64,14 +68,7 @@ async function exitAndCheck(page: Page, original: string | null) {
 	await page.getByRole("button", { name: "Save", exact: true }).click();
 	expect(await authored(page)).toBe(original);
 }
-async function saveSlot(page: Page) {
-	return page.evaluate(() => {
-		const key = Object.keys(localStorage).find((key) =>
-			key.startsWith("adventure-builder-game-save-v1:"),
-		);
-		return key ? JSON.parse(localStorage.getItem(key)!) : null;
-	});
-}
+const saveSlot = readGameSave;
 
 test("NPC movement, dialogue, F combat and durable defeat through real controls @runtime-parity-save", async ({
 	page,
@@ -247,7 +244,7 @@ test("NPC movement, dialogue, F combat and durable defeat through real controls 
 	expect(saved.world.defeatedNpcIds).toContain("sparring_guard");
 	await page.screenshot({ path: `${output}/combat-complete.png` });
 	await exitAndCheck(page, original);
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await play(page, true);
 	await expect(page.locator(".three-runtime-hud")).toContainText("Pos: 4, 7");
@@ -365,7 +362,7 @@ test("Tidewatch Harbour Trouble Save / reload / Continue through real controls @
 	expect(firstSave.world.firedInteractionIds).toHaveLength(1);
 	expect(firstSave.player.traversal.x).toBeCloseTo(atSave!.x, 6);
 	await exitAndCheck(page, original);
-	await page.reload();
+	await reloadProject(page);
 	expect(await authored(page)).toBe(original);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await play(page, true);
@@ -407,7 +404,7 @@ test("Tidewatch Harbour Trouble Save / reload / Continue through real controls @
 	expect(Object.values(completedSave.quests.statuses)).toEqual(["completed"]);
 	expect(completedSave.state.inventory).toEqual(firstSave.state.inventory);
 	await exitAndCheck(page, original);
-	await page.reload();
+	await reloadProject(page);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	await play(page, true);
 	await expect.poll(position).toMatchObject({ x: 5, y: 4 });

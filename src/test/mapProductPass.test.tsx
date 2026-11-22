@@ -99,6 +99,8 @@ it("keeps the editor mounted and selected through isolated Play, blocks editor s
 		JSON.stringify(useProjectStore.getState().project),
 	);
 	render(<App />);
+	fireEvent.click(screen.getByRole("button", { name: "Blank Project" }));
+	fireEvent.click(screen.getByRole("button", { name: "Map Editor" }));
 	await act(async () =>
 		fireEvent.click(screen.getByLabelText("Add Supply Crate")),
 	);

@@ -1,5 +1,10 @@
 import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import {
+	importProjectFile,
+	reloadProject,
+	savedProjectJson,
+} from "./projectNavigation";
 
 test.use({ trace: "off", viewport: { width: 1600, height: 1000 } });
 
@@ -21,10 +26,10 @@ test("Tidewatch environment comparison and persistence @environment-visual", asy
 			failedAssets.push(response.url());
 	});
 	await page.goto("/");
-	await page.getByRole("button", { name: /Blank Project/ }).click();
-	await page
-		.locator('input[type="file"]')
-		.setInputFiles("docs/assets/world-kit/tidewatch-harbour.project.json");
+	await importProjectFile(
+		page,
+		"docs/assets/world-kit/tidewatch-harbour.project.json",
+	);
 	await page.getByRole("button", { name: "3D View", exact: true }).click();
 	const editorCanvas = page
 		.getByRole("img", { name: "3D preview viewport", exact: true })
@@ -63,9 +68,7 @@ test("Tidewatch environment comparison and persistence @environment-visual", asy
 			.click();
 	}
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	const saved = await page.evaluate(() =>
-		localStorage.getItem("adventure-builder-project-v1"),
-	);
+	const saved = await savedProjectJson(page);
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	const runtime = page.getByLabel("Three runtime viewport", { exact: true });
 	await expect(runtime).toBeVisible();
@@ -78,28 +81,12 @@ test("Tidewatch environment comparison and persistence @environment-visual", asy
 	await expect(page.getByText("Pos: 9, 9", { exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "Back to Edit", exact: true }).click();
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
-	await page.reload();
-	const recovery = page.getByRole("button", {
-		name: "Use saved project",
-		exact: true,
-	});
-	await expect(
-		recovery.or(page.getByRole("button", { name: "Play", exact: true })),
-	).toBeVisible();
-	if (await recovery.isVisible()) await recovery.click();
+	expect(await savedProjectJson(page)).toBe(saved);
+	await reloadProject(page);
 	await expect(editorCanvas).toBeVisible();
 	await settle("ThreeDPreview");
 	await page.getByRole("button", { name: "Save", exact: true }).click();
-	expect(
-		await page.evaluate(() =>
-			localStorage.getItem("adventure-builder-project-v1"),
-		),
-	).toBe(saved);
+	expect(await savedProjectJson(page)).toBe(saved);
 	await fs.writeFile(
 		`${output}/observations.json`,
 		JSON.stringify(

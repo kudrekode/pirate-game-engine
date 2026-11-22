@@ -7,6 +7,7 @@ import type { RuntimeDebugEvent } from "./debugLog";
 import {
 	createGameSave,
 	type GameSave,
+	type GameSaveStorage,
 	loadGameSave,
 	storeGameSave,
 } from "./gameSave";
@@ -29,6 +30,7 @@ const RUNTIME_SCREEN_WIDTH = 640;
 const RUNTIME_SCREEN_HEIGHT = 480;
 
 type RuntimePanelProps = {
+	saveStorage?: GameSaveStorage;
 	initialMode?: "2d" | "3d";
 	project: GameProject;
 	onClose: () => void;
@@ -37,7 +39,10 @@ type RuntimePanelProps = {
 export function RuntimePanel(props: RuntimePanelProps) {
 	const [entry, setEntry] = useState(() => {
 		try {
-			const save = loadGameSave(props.project, localStorage);
+			const save = loadGameSave(
+				props.project,
+				props.saveStorage ?? localStorage,
+			);
 			return { save, choosing: !!save, error: "" };
 		} catch (error) {
 			return {
@@ -100,6 +105,7 @@ export function RuntimePanel(props: RuntimePanelProps) {
 function RuntimePlayPanel({
 	project,
 	onClose,
+	saveStorage,
 	initialMode = "2d",
 	initialSave,
 	protectPreviousSave,
@@ -120,7 +126,11 @@ function RuntimePlayPanel({
 				setReplacePending(true);
 				return;
 			}
-			storeGameSave(project, createGameSave(project, session), localStorage);
+			storeGameSave(
+				project,
+				createGameSave(project, session),
+				saveStorage ?? localStorage,
+			);
 			setProtectSave(false);
 			setReplacePending(false);
 			setSaveMessage("Game saved.");

@@ -1,8 +1,19 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+	act,
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
+import {
+	LEGACY_PROJECT_ID,
+	type ProjectRecord,
+	readProjectCatalog,
+} from "../data/projectCatalog";
 import { DialogueEditor } from "../editor/sections/DialogueEditor";
 import { GameStateEditor } from "../editor/sections/GameStateEditor";
 import { ItemsEditor } from "../editor/sections/ItemsEditor";
@@ -50,32 +61,69 @@ function getButtonByText(text: string) {
 	return button;
 }
 
-function getPresetButton(name: string) {
-	return screen.getByRole("button", { name: new RegExp(name) });
+function clickButton(name: string) {
+	fireEvent.click(screen.getByRole("button", { name }));
+}
+
+function openDemo() {
+	clickButton("Demo Adventure");
+}
+
+function createProject(
+	preset: "Blank Project" | "Demo Project",
+	name?: string,
+) {
+	clickButton("New Project");
+	fireEvent.click(screen.getByRole("radio", { name: new RegExp(preset) }));
+	if (name) {
+		fireEvent.change(screen.getByLabelText("Project name"), {
+			target: { value: name },
+		});
+	}
+	clickButton("Create project");
+}
+
+function projectRecords() {
+	return readProjectCatalog(localStorage).records;
+}
+
+function openProjectRecord(record: ProjectRecord) {
+	const card = screen
+		.getAllByRole("button", { name: record.name })
+		.find((button) => button.dataset.projectId === record.id);
+	if (!card) throw new Error(`Project card not found for ${record.id}`);
+	fireEvent.click(card);
+}
+
+function renameProject(name: string) {
+	clickButton("Project tools");
+	fireEvent.change(screen.getByLabelText("Project", { exact: true }), {
+		target: { value: name },
+	});
+	clickButton("Close");
 }
 
 describe("editor smoke tests", () => {
-	it("renders App and switches to the Logic tab", async () => {
+	it("opens a project with four workspaces and reaches Logic from More editors", () => {
 		render(<App />);
-
 		expect(
-			await screen.findByDisplayValue("Demo Adventure"),
-		).toBeInTheDocument();
+			screen.getByRole("heading", { name: "Your projects" }),
+		).toBeVisible();
+		openDemo();
 		expect(screen.getByText("Saved")).toBeInTheDocument();
-		const logicTab = getButtonByText("Logic");
-		expect(logicTab).toHaveAttribute(
-			"title",
-			"Build plain-English rules using triggers, conditions, and actions.",
-		);
-		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
-			target: { value: "Edited Adventure" },
-		});
+		for (const name of ["Asset Creator", "Cinematics", "Map Editor", "Story"]) {
+			expect(screen.getByRole("button", { name })).toBeVisible();
+		}
+		renameProject("Edited Adventure");
 		expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
-		fireEvent.click(logicTab);
+		clickButton("Map Editor");
+		fireEvent.change(screen.getByLabelText("More editors"), {
+			target: { value: "progression" },
+		});
 		expect(screen.getByText("Friendly Logic Builder")).toBeInTheDocument();
 	}, 15000);
 
-	it("shows project validation issues from the top bar", async () => {
+	it("shows project validation issues from Project tools", () => {
 		const project = cloneProject(defaultProject);
 		project.rules[0].actions.push({
 			type: "give_item",
@@ -87,8 +135,10 @@ describe("editor smoke tests", () => {
 
 		render(<App />);
 
-		await screen.findByDisplayValue("Demo Adventure");
-		fireEvent.click(getButtonByText("1 warning"));
+		openDemo();
+		clickButton("Project tools");
+		fireEvent.click(screen.getByText(/Validation.*1 warning/));
+		expect(screen.getByLabelText("Project validation issues")).toBeVisible();
 		expect(
 			screen.getByLabelText("Project validation issues"),
 		).toHaveTextContent('missing item "missing_item"');
@@ -103,8 +153,8 @@ describe("editor smoke tests", () => {
 		[{ futureRules: [] }, "futureRules"],
 	])("keeps the open project when imported JSON is rejected (%j)", async (patch, path) => {
 		const { container } = render(<App />);
-		const name = await screen.findByDisplayValue("Demo Adventure");
-		fireEvent.change(name, { target: { value: "Open unsaved project" } });
+		openDemo();
+		renameProject("Open unsaved project");
 		const before = useProjectStore.getState().project;
 		const input = container.querySelector<HTMLInputElement>(
 			'input[type="file"][hidden]',
@@ -125,101 +175,100 @@ describe("editor smoke tests", () => {
 		).toBeInTheDocument();
 		expect(useProjectStore.getState().project).toBe(before);
 		expect(
-			screen.getByDisplayValue("Open unsaved project"),
+			screen.getByRole("heading", { name: "Open unsaved project" }),
 		).toBeInTheDocument();
 		expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
 	});
 
-	it("saves with Ctrl+S", async () => {
+	it("saves the active project with Ctrl+S", () => {
 		localStorage.removeItem(STORAGE_KEY);
 		render(<App />);
-		fireEvent.click(
-			await screen.findByRole("button", { name: /Demo Project/ }),
-		);
-
-		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
-			target: { value: "Shortcut Save" },
-		});
+		createProject("Demo Project");
+		renameProject("Shortcut Save");
 		fireEvent.keyDown(window, { ctrlKey: true, key: "s" });
 
-		expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}")).toMatchObject(
-			{
-				metadata: { name: "Shortcut Save" },
-			},
-		);
-		expect(screen.getByText("Saved to localStorage.")).toBeInTheDocument();
+		expect(JSON.parse(projectRecords()[0].saved!)).toMatchObject({
+			metadata: { name: "Shortcut Save" },
+		});
+		expect(screen.getByText("Project saved.")).toBeInTheDocument();
 	}, 15000);
 
-	it("replaces the current project from a preset after confirming unsaved changes", async () => {
-		const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+	it("cancels a dirty switch or keeps the draft while creating a separate project", () => {
 		render(<App />);
-
-		await screen.findByDisplayValue("Demo Adventure");
-		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
-			target: { value: "Unsaved Adventure" },
-		});
-		fireEvent.click(getButtonByText("New Project"));
-		fireEvent.click(getPresetButton("Blank Project"));
+		openDemo();
+		renameProject("Unsaved Adventure");
+		clickButton("Projects");
+		expect(
+			screen.getByRole("dialog", { name: "Unsaved changes" }),
+		).toBeVisible();
+		clickButton("Cancel");
 		expect(useProjectStore.getState().project.metadata.name).toBe(
 			"Unsaved Adventure",
 		);
 
-		confirm.mockReturnValue(true);
-		fireEvent.click(getPresetButton("Blank Project"));
-
+		clickButton("Projects");
+		clickButton("Keep draft and continue");
+		createProject("Blank Project");
 		const project = useProjectStore.getState().project;
-		expect(confirm).toHaveBeenCalledTimes(2);
 		expect(project.metadata.name).toBe("Blank Project");
 		expect(project.areas).toHaveLength(1);
 		expect(project.items).toEqual([]);
 		expect(project.npcs).toEqual([]);
-		expect(screen.getByText("Created Blank Project.")).toBeInTheDocument();
+		const legacy = projectRecords().find(({ id }) => id === LEGACY_PROJECT_ID);
+		expect(JSON.parse(legacy!.saved!).metadata.name).toBe("Demo Adventure");
+		expect(JSON.parse(legacy!.draft!).metadata.name).toBe("Unsaved Adventure");
 	}, 15000);
 
-	it("autosaves changes to a separate draft key", () => {
+	it("autosaves changes without replacing the explicit save in the project record", () => {
 		vi.useFakeTimers();
 		localStorage.removeItem(STORAGE_KEY);
 		localStorage.removeItem(AUTOSAVE_DRAFT_STORAGE_KEY);
-		render(<App />);
-		fireEvent.click(getPresetButton("Demo Project"));
+		try {
+			render(<App />);
+			createProject("Demo Project");
+			const original = projectRecords()[0];
+			renameProject("Autosaved Draft");
+			act(() => vi.advanceTimersByTime(3000));
 
-		fireEvent.change(screen.getByDisplayValue("Demo Adventure"), {
-			target: { value: "Autosaved Draft" },
-		});
-		act(() => vi.advanceTimersByTime(3000));
-
-		expect(
-			JSON.parse(localStorage.getItem(AUTOSAVE_DRAFT_STORAGE_KEY) ?? "{}"),
-		).toMatchObject({ metadata: { name: "Autosaved Draft" } });
-		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-		expect(screen.getByText(/Draft autosaved/)).toBeInTheDocument();
-		vi.useRealTimers();
+			const [record] = projectRecords();
+			expect(JSON.parse(record.draft!)).toMatchObject({
+				metadata: { name: "Autosaved Draft" },
+			});
+			expect(JSON.parse(record.saved!)).toMatchObject({
+				metadata: { name: "Demo Adventure" },
+			});
+			expect(Date.parse(record.modifiedAt!)).toBeGreaterThan(
+				Date.parse(original.modifiedAt!),
+			);
+			expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+			expect(screen.getByText(/Draft autosaved/)).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
 	}, 15000);
 
-	it("shows the preset chooser on first load and creates a blank project", () => {
+	it("starts at Projects and creates a named blank project", () => {
 		localStorage.clear();
 		render(<App />);
 
 		expect(
-			screen.getByLabelText("Choose a starter project"),
-		).toBeInTheDocument();
-		expect(
-			screen.queryByLabelText("Close preset chooser"),
-		).not.toBeInTheDocument();
-		fireEvent.click(getPresetButton("Blank Project"));
+			screen.getByRole("heading", { name: "Your projects" }),
+		).toBeVisible();
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		createProject("Blank Project", "New World");
 
 		const project = useProjectStore.getState().project;
-		expect(project.metadata.name).toBe("Blank Project");
+		expect(project.metadata.name).toBe("New World");
 		expect(project.areas).toHaveLength(1);
 		expect(project.areas[0].objects).toEqual([]);
 		expect(project.areas[0].npcs).toEqual([]);
 	}, 15000);
 
-	it("selects the feature demo with a clean active area on first load", () => {
+	it("creates the feature demo with a clean active area", () => {
 		localStorage.clear();
 		render(<App />);
 
-		fireEvent.click(getPresetButton("Demo Project"));
+		createProject("Demo Project");
 
 		const project = useProjectStore.getState().project;
 		expect(project.metadata.name).toBe("Demo Adventure");
@@ -228,7 +277,7 @@ describe("editor smoke tests", () => {
 		expect(project.items.length).toBeGreaterThan(0);
 	}, 15000);
 
-	it("loads an autosaved draft instead of showing the startup chooser", async () => {
+	it("lists and opens a legacy draft when there is no explicit save", () => {
 		localStorage.clear();
 		const draft = cloneProject(defaultProject);
 		draft.metadata.name = "Recovered Draft";
@@ -236,17 +285,60 @@ describe("editor smoke tests", () => {
 
 		render(<App />);
 
+		clickButton("Recovered Draft");
 		expect(
-			await screen.findByDisplayValue("Recovered Draft"),
-		).toBeInTheDocument();
+			screen.getByRole("heading", { name: "Recovered Draft" }),
+		).toBeVisible();
 		expect(
 			screen.queryByLabelText("Choose a starter project"),
 		).not.toBeInTheDocument();
 		expect(screen.getByText("Loaded autosaved draft.")).toBeInTheDocument();
 	});
 
-	it("restores editor panel scroll position when switching tabs", () => {
+	it("keeps duplicate names separate across switches and reload", () => {
+		localStorage.clear();
 		render(<App />);
+		createProject("Blank Project", "Same name");
+		const [blank] = projectRecords();
+		clickButton("Projects");
+		createProject("Demo Project", "Same name");
+		act(() => {
+			useProjectStore.getState().updateProject((project) => {
+				project.gameState.flags.projectB = true;
+			});
+		});
+		clickButton("Projects");
+		clickButton("Save and continue");
+
+		const records = projectRecords();
+		expect(records).toHaveLength(2);
+		const demo = records.find(({ id }) => id !== blank.id)!;
+		expect(JSON.parse(demo.saved!).gameState.flags).toHaveProperty(
+			"projectB",
+			true,
+		);
+		expect(records.find(({ id }) => id === blank.id)).toEqual(blank);
+		cleanup();
+		render(<App />);
+		expect(screen.getAllByRole("button", { name: "Same name" })).toHaveLength(
+			2,
+		);
+		openProjectRecord(blank);
+		expect(
+			useProjectStore.getState().project.gameState.flags.projectB,
+		).toBeUndefined();
+		clickButton("Projects");
+		openProjectRecord(demo);
+		expect(useProjectStore.getState().project.gameState.flags.projectB).toBe(
+			true,
+		);
+		expect(projectRecords()).toEqual(records);
+	}, 15000);
+
+	it("restores editor panel scroll position when switching workspaces", () => {
+		render(<App />);
+		openDemo();
+		clickButton("Map Editor");
 		const mapToolPanel = document.querySelector<HTMLElement>(
 			".map-tool-panel-content",
 		);
@@ -256,8 +348,10 @@ describe("editor smoke tests", () => {
 		}
 		mapToolPanel.scrollTop = 180;
 
-		fireEvent.click(getButtonByText("Logic"));
-		fireEvent.click(getButtonByText("Map"));
+		fireEvent.change(screen.getByLabelText("More editors"), {
+			target: { value: "progression" },
+		});
+		clickButton("Map Editor");
 
 		expect(
 			document.querySelector<HTMLElement>(".map-tool-panel-content")?.scrollTop,
@@ -277,6 +371,7 @@ describe("editor smoke tests", () => {
 
 	it("keeps Play mode on the Phaser runtime path", () => {
 		render(<App />);
+		openDemo();
 
 		fireEvent.click(screen.getByRole("button", { name: "Play" }));
 

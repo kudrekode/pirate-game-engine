@@ -3,8 +3,10 @@ import { registerCharacterAsset } from "../data/characterAssets";
 import { useProjectStore } from "../store/useProjectStore";
 
 export function AssetCreatorLauncher({
+	buttonLabel = "Asset Creator",
 	onImported,
 }: {
+	buttonLabel?: string;
 	onImported?: () => void;
 }) {
 	const dialog = useRef<HTMLDialogElement>(null);
@@ -121,7 +123,7 @@ export function AssetCreatorLauncher({
 					setChecking(true);
 				}}
 			>
-				Asset Creator
+				{buttonLabel}
 			</button>
 			<dialog
 				ref={dialog}

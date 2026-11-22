@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import type { ThreePerformanceSnapshot } from "../src/runtime/three/threePerformanceDiagnostics";
+import { createStarterProject, openEditor } from "./projectNavigation";
 
 type AnimationObservation = {
 	frames: number;
@@ -125,7 +126,8 @@ test("observes Three runtime movement and animation transitions @integration", a
 	const observations: Record<string, unknown> = {};
 	try {
 		await page.goto("/", { waitUntil: "domcontentloaded" });
-		await page.getByRole("button", { name: /Demo Project/ }).click();
+		await createStarterProject(page, "demo");
+		await openEditor(page, "map");
 		await page
 			.getByRole("combobox", { name: "Editing" })
 			.selectOption("area_main");
