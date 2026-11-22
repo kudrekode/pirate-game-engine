@@ -1,6 +1,7 @@
 import { BOW } from "../data/bow";
 import { getStructurePreset } from "../data/mapVisuals";
 import type { GameArea } from "../types/game";
+import { blocksMapEntity } from "./mapCollision";
 import { isPlayerAirborne } from "./playerLocomotion";
 import {
 	beginRuntimeCombatAttack,
@@ -190,7 +191,7 @@ export function traceProjectile(
 					structure.movementRule ??
 					getStructurePreset(structure.structureId).movementRule
 				).walkable === false);
-		if (!blocks) continue;
+		if (!blocksMapEntity(object, !!blocks)) continue;
 		const width = object.widthTiles ?? definition?.widthTiles ?? 1,
 			depth = object.heightTiles ?? definition?.heightTiles ?? 1;
 		const base = world.sampler.sampleSurfaceY(object, world.mode);

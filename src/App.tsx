@@ -39,12 +39,13 @@ import {
 	secondaryWorkspaces,
 	type WorkspaceId,
 } from "./editor/sections";
+import { entityKey } from "./editor/sections/dialogueEntities";
 import { MapEditor } from "./editor/sections/MapEditor";
 import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
 import type { GameSaveStorage } from "./runtime/gameSave";
 import { RuntimePanel } from "./runtime/RuntimePanel";
 import { useProjectStore } from "./store/useProjectStore";
-import type { GameProject } from "./types/game";
+import type { EditorSelection, GameProject } from "./types/game";
 
 type Route = "projects" | "home" | WorkspaceId;
 type Dialog =
@@ -55,7 +56,19 @@ type Dialog =
 
 const AUTOSAVE_DELAY_MS = 3000;
 const EDITOR_SCROLL_SELECTOR =
-	".map-tool-panel-content, .tool-panel:not(.map-tool-panel), .inspector-panel, .content-panel, .map-stage";
+	".map-tool-panel-content, .tool-panel:not(.map-tool-panel), .inspector-panel, .content-panel, .map-stage, .map-workspace-sidebar, .map-context-inspector";
+
+function openMapEntityInStory(selection: EditorSelection) {
+	if (!selection || !("id" in selection)) return;
+	openEntity({
+		section: "story",
+		id: entityKey({
+			kind: selection.type === "eventBlock" ? "event" : selection.type,
+			id: selection.id,
+			areaId: selection.areaId,
+		}),
+	});
+}
 
 function mapViewPreference() {
 	try {
@@ -302,7 +315,7 @@ export default function App() {
 			);
 			setEditorView("2d");
 		}
-		openWorkspace(source.section as EditorSectionId);
+		openWorkspace(source.section);
 	}, [requestedEditorSource, openWorkspace]);
 
 	const onAssetImported = useCallback(() => {
@@ -612,7 +625,13 @@ export default function App() {
 						{route === "three-d-preview" ? (
 							<ThreeDPreview onOpenInMapEditor={() => openWorkspace("map")} />
 						) : route === "map" ? (
-							<MapEditor onViewChange={setEditorView} />
+							<MapEditor
+								onViewChange={setEditorView}
+								onOpenAsset={(id) => openEntity({ section: "assets", id })}
+								onOpenStory={openMapEntityInStory}
+								onOpenPlayer={() => openWorkspace("character")}
+								onOpenHud={() => openWorkspace("quests")}
+							/>
 						) : (
 							<ActiveSection />
 						)}

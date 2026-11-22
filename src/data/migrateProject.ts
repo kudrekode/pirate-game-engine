@@ -59,7 +59,9 @@ import {
 import { migrateAssetCreator } from "./assetCreator";
 import { migrateCharacterAssets } from "./characterAssets";
 import { defaultProject } from "./defaultProject";
+import { migrateFoliageBrushSettings } from "./foliageBrushSettings";
 import { migrateMapEntityTransform } from "./mapEntityTransform";
+import { migrateMapSceneAppearance } from "./mapSceneAppearance";
 import { createDefaultPixelAssets } from "./mapVisuals";
 import { defaultTileStyles, tilePresets } from "./presets";
 import {
@@ -368,6 +370,7 @@ function migrateEventBlocks(
 		return [
 			{
 				id: readString(item.id, `event_${Date.now().toString(36)}`),
+				...(item.scene ? { scene: migrateMapSceneAppearance(item.scene) } : {}),
 				...(item.transform
 					? { transform: migrateMapEntityTransform(item.transform) }
 					: {}),
@@ -398,6 +401,7 @@ function migrateStructures(value: unknown): MapStructure[] {
 		return [
 			{
 				id: readString(item.id, `structure_${Date.now().toString(36)}`),
+				...(item.scene ? { scene: migrateMapSceneAppearance(item.scene) } : {}),
 				...(item.transform
 					? { transform: migrateMapEntityTransform(item.transform) }
 					: {}),
@@ -540,6 +544,7 @@ function migrateObjectInstances(
 		return [
 			{
 				id: readString(item.id, `object_${Date.now().toString(36)}`),
+				...(item.scene ? { scene: migrateMapSceneAppearance(item.scene) } : {}),
 				...(item.transform
 					? { transform: migrateMapEntityTransform(item.transform) }
 					: {}),
@@ -585,6 +590,7 @@ function migratePickups(value: unknown, areaId: string): PickupObject[] {
 		return [
 			{
 				id: readString(item.id, `pickup_${Date.now().toString(36)}`),
+				...(item.scene ? { scene: migrateMapSceneAppearance(item.scene) } : {}),
 				...(item.transform
 					? { transform: migrateMapEntityTransform(item.transform) }
 					: {}),
@@ -776,6 +782,7 @@ function migrateNpcInstances(
 		return [
 			{
 				id: readString(item.id, `npc_instance_${Date.now().toString(36)}`),
+				...(item.scene ? { scene: migrateMapSceneAppearance(item.scene) } : {}),
 				...(item.transform
 					? { transform: migrateMapEntityTransform(item.transform) }
 					: {}),
@@ -836,6 +843,29 @@ function migrateArea(
 		)
 	) {
 		delete theme.atmosphere;
+	}
+	if (theme) {
+		const fog = theme.fog;
+		delete theme.fog;
+		if (isRecord(fog)) {
+			const enabled =
+				typeof fog.enabled === "boolean" ? fog.enabled : undefined;
+			const near =
+				typeof fog.near === "number" && Number.isFinite(fog.near)
+					? readNumber(fog.near, 0, 0, 499)
+					: undefined;
+			const far =
+				typeof fog.far === "number" && Number.isFinite(fog.far)
+					? readNumber(fog.far, 1, (near ?? 0) + 1, 500)
+					: undefined;
+			if (enabled !== undefined || near !== undefined || far !== undefined) {
+				theme.fog = {
+					...(enabled !== undefined ? { enabled } : {}),
+					...(near !== undefined ? { near } : {}),
+					...(far !== undefined ? { far } : {}),
+				};
+			}
+		}
 	}
 
 	return {
@@ -2381,6 +2411,7 @@ function validateCinematicCue(
 export function migrateProject(value: unknown): GameProject {
 	const source = isRecord(value) ? value : {};
 	const metadataSource = isRecord(source.metadata) ? source.metadata : {};
+	const foliageBrush = migrateFoliageBrushSettings(source.foliageBrush);
 	const npcs = migrateNpcDefinitions(source.npcs);
 	const areas = migrateAreas(source, npcs);
 	const fallbackActiveAreaId = areas[0]?.id ?? "area_main";
@@ -2407,6 +2438,7 @@ export function migrateProject(value: unknown): GameProject {
 		...(source.assetCreator !== undefined
 			? { assetCreator: migrateAssetCreator(source.assetCreator) }
 			: {}),
+		...(foliageBrush ? { foliageBrush } : {}),
 		activeAreaId,
 		camera: migrateCamera(source.camera),
 		tileStyles: migrateTileStyles(source.tileStyles),

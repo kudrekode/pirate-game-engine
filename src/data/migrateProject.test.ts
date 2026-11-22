@@ -3,6 +3,32 @@ import { migrateProject } from "./migrateProject";
 import { importProjectJson } from "./projectImport";
 
 describe("migrateProject", () => {
+	it("round-trips area fog and keeps existing atmosphere preset defaults", () => {
+		const project = migrateProject({});
+		const [area] = project.areas;
+		area.theme = {
+			atmosphere: "moonlit",
+			fog: { enabled: false, near: 8, far: 35 },
+		};
+		const imported = importProjectJson(JSON.stringify(project));
+		expect(imported.areas[0].theme).toEqual(area.theme);
+
+		area.theme.fog = { near: 15, far: 5 };
+		expect(migrateProject(project).areas[0].theme?.fog).toEqual({
+			near: 15,
+			far: 16,
+		});
+		const malformed = JSON.stringify(project).replace(
+			'"near":15',
+			'"near":"15"',
+		);
+		expect(() => importProjectJson(malformed)).toThrow(/theme.fog.near/);
+		delete area.theme.fog;
+		expect(migrateProject(project).areas[0].theme).toEqual({
+			atmosphere: "moonlit",
+		});
+	});
+
 	it("round-trips all cinematic cue kinds and rejects invalid authored timing and media", () => {
 		const project = migrateProject({});
 		const shot = {

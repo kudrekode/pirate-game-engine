@@ -882,14 +882,15 @@ export class AdventureScene extends Phaser.Scene {
 		}
 
 		this.currentArea.structures.forEach((structure) => {
-			this.renderStructure(structure);
+			if (!structure.scene?.hidden) this.renderStructure(structure);
 		});
 		this.currentArea.objects.forEach((object) => {
-			this.renderObject(object);
+			if (!object.scene?.hidden) this.renderObject(object);
 		});
 		this.currentArea.pickups
 			.filter(
 				(pickup) =>
+					!pickup.scene?.hidden &&
 					!isPickupCollected(
 						pickup,
 						this.runtimeState,
@@ -900,7 +901,7 @@ export class AdventureScene extends Phaser.Scene {
 				this.renderPickup(pickup);
 			});
 		this.currentArea.npcs
-			.filter((npc) => !this.defeatedNpcIds.has(npc.id))
+			.filter((npc) => !npc.scene?.hidden && !this.defeatedNpcIds.has(npc.id))
 			.forEach((npc) => {
 				this.renderNpc(npc);
 			});
@@ -1401,8 +1402,10 @@ export class AdventureScene extends Phaser.Scene {
 
 	private handleRuntimeNpcTickEvent(event: RuntimeNpcTickEvent) {
 		if (event.type === "npcMoved") {
+			const marker = this.npcMarkers.get(event.npcId);
+			if (!marker) return;
 			this.tweens.add({
-				targets: this.npcMarkers.get(event.npcId),
+				targets: marker,
 				x: event.to.x * this.tileSize + this.tileSize / 2,
 				y: event.to.y * this.tileSize + this.tileSize / 2,
 				duration: event.durationMs,

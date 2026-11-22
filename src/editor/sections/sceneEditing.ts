@@ -6,6 +6,7 @@ import {
 	defaultMapEntityTransform,
 	migrateMapEntityTransform,
 } from "../../data/mapEntityTransform";
+import { migrateMapSceneAppearance } from "../../data/mapSceneAppearance";
 import { structurePresets } from "../../data/mapVisuals";
 import { listThreeVisualAssets } from "../../runtime/three/threeVisualAssetRegistry";
 import { useProjectStore } from "../../store/useProjectStore";
@@ -14,6 +15,7 @@ import type {
 	GameArea,
 	GameProject,
 	MapEntityTransform,
+	MapSceneAppearance,
 	ThreeVisualConfig,
 } from "../../types/game";
 import { isMovablePreviewSelection } from "./previewMove";
@@ -120,6 +122,26 @@ export function getSceneEntity(
 	return entities.find((entry) => entry.id === selection.id);
 }
 
+export function getSceneAppearance(
+	project: GameProject,
+	selection: EditorSelection,
+): MapSceneAppearance {
+	return getSceneEntity(project, selection)?.scene ?? {};
+}
+
+export function updateSceneAppearance(
+	selection: EditorSelection,
+	patch: Partial<MapSceneAppearance>,
+) {
+	useProjectStore.getState().updateProject((draft) => {
+		const entity = getSceneEntity(draft, selection);
+		if (!entity) return;
+		const appearance = migrateMapSceneAppearance({ ...entity.scene, ...patch });
+		if (appearance) entity.scene = appearance;
+		else delete entity.scene;
+	});
+}
+
 export function sceneEntries(project: GameProject, area: GameArea) {
 	return [
 		...area.objects.map((entry) => ({
@@ -175,7 +197,7 @@ export function writeSceneTransform(
 ) {
 	const entity = getSceneEntity(project, selection);
 	const area = project.areas.find((entry) => entry.id === selection?.areaId);
-	if (!entity || !area) return;
+	if (!entity || !area || entity.scene?.locked) return;
 	const transform =
 		migrateMapEntityTransform(value) ?? defaultMapEntityTransform();
 	const x = Math.min(
@@ -287,7 +309,8 @@ export function placeSceneAsset(
 export function deleteSceneSelection(selection: EditorSelection) {
 	if (!isMovablePreviewSelection(selection)) return;
 	const store = useProjectStore.getState();
-	if (!getSceneEntity(store.project, selection)) return;
+	const entity = getSceneEntity(store.project, selection);
+	if (!entity || entity.scene?.locked) return;
 	const remove = {
 		object: store.deleteObject,
 		npc: store.deleteNpc,
@@ -303,7 +326,7 @@ export function duplicateSceneSelection(selection: EditorSelection) {
 	if (!isMovablePreviewSelection(selection)) return;
 	const store = useProjectStore.getState();
 	const source = getSceneEntity(store.project, selection);
-	if (!source) return;
+	if (!source || source.scene?.locked) return;
 	const id = `${selection.type}_${crypto.randomUUID()}`;
 	store.updateProject((project) => {
 		const area = project.areas.find((entry) => entry.id === selection.areaId);

@@ -1084,18 +1084,20 @@ export function MapInspector({
 							/>
 						</label>
 					</div>
-					<label className="checkbox-row standalone">
-						<input
-							checked={selectedMapStructure.blocksMovement}
-							onChange={(event) =>
-								updateSelectedStructure({
-									blocksMovement: event.target.checked,
-								})
-							}
-							type="checkbox"
-						/>
-						Blocks movement
-					</label>
+					{!selectedMapStructure.scene?.collision && (
+						<label className="checkbox-row standalone">
+							<input
+								checked={selectedMapStructure.blocksMovement}
+								onChange={(event) =>
+									updateSelectedStructure({
+										blocksMovement: event.target.checked,
+									})
+								}
+								type="checkbox"
+							/>
+							Blocks movement
+						</label>
+					)}
 					<div className="coordinate-readout">
 						Preset movement:{" "}
 						{movementRuleSummary(
@@ -1289,16 +1291,18 @@ export function MapInspector({
 							/>
 						</label>
 					</div>
-					<label className="checkbox-row standalone">
-						<input
-							checked={blocksMovement}
-							onChange={(event) =>
-								updateSelectedObject({ blocksMovement: event.target.checked })
-							}
-							type="checkbox"
-						/>
-						Blocks movement
-					</label>
+					{!selectedObject.scene?.collision && (
+						<label className="checkbox-row standalone">
+							<input
+								checked={blocksMovement}
+								onChange={(event) =>
+									updateSelectedObject({ blocksMovement: event.target.checked })
+								}
+								type="checkbox"
+							/>
+							Blocks movement
+						</label>
+					)}
 					<div className="coordinate-readout">
 						Footprint:{" "}
 						{selectedObject.widthTiles ?? definition?.widthTiles ?? 1} x{" "}

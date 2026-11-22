@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { defaultMapEntityTransform } from "../../data/mapEntityTransform";
 import { cloneProject, migrateProject } from "../../data/migrateProject";
+import { importProjectJson } from "../../data/projectImport";
 import { createProjectFromPreset } from "../../data/projectPresets";
 import { createRuntimeSession } from "../../runtime/runtimeSession";
 import { useProjectStore } from "../../store/useProjectStore";
@@ -9,10 +10,12 @@ import { areaEntitiesToMarkers } from "./entityMarkers";
 import {
 	deleteSceneSelection,
 	duplicateSceneSelection,
+	getSceneAppearance,
 	getSceneEntity,
 	placeSceneAsset,
 	readSceneTransform,
 	sceneAssets,
+	updateSceneAppearance,
 	writeSceneTransform,
 } from "./sceneEditing";
 
@@ -21,6 +24,49 @@ beforeEach(() =>
 );
 
 describe("scene editing", () => {
+	it("round-trips instance appearance, respects locks and keeps base asset data separate", () => {
+		const store = useProjectStore.getState();
+		const asset = sceneAssets(store.project).find(
+			(item) => item.id === "world-crate",
+		)!;
+		const selection = placeSceneAsset(asset, { x: 7, y: 4 });
+		const base = structuredClone(useProjectStore.getState().project.objects);
+		updateSceneAppearance(selection, {
+			hidden: true,
+			locked: true,
+			group: " Village Props ",
+			collision: "none",
+		});
+		store.updateProject((draft) =>
+			writeSceneTransform(draft, selection, defaultMapEntityTransform()),
+		);
+		duplicateSceneSelection(selection);
+		deleteSceneSelection(selection);
+		const { project } = useProjectStore.getState();
+		expect(project.areas[0].objects).toHaveLength(1);
+		expect(getSceneEntity(project, selection)).toMatchObject({ x: 7, y: 4 });
+		expect(project.objects).toEqual(base);
+		const restored = importProjectJson(JSON.stringify(project));
+		expect(getSceneAppearance(restored, selection)).toEqual({
+			hidden: true,
+			locked: true,
+			group: "Village Props",
+			collision: "none",
+		});
+		expect(
+			areaEntitiesToMarkers(restored.areas[0], restored.objects, false),
+		).toEqual([]);
+		updateSceneAppearance(selection, {
+			hidden: false,
+			locked: false,
+			group: "",
+			collision: undefined,
+		});
+		expect(
+			getSceneAppearance(useProjectStore.getState().project, selection),
+		).toEqual({});
+	});
+
 	it("places a real registry prop in a blank project, selects it, preserves instance edits on duplication and deletes safely", () => {
 		const store = useProjectStore.getState();
 		const asset = sceneAssets(store.project).find(

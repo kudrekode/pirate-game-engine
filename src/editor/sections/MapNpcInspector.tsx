@@ -295,16 +295,18 @@ export function MapNpcInspector({
 						<option value="right">Right</option>
 					</select>
 				</label>
-				<label className="checkbox-row standalone">
-					<input
-						checked={selectedNpc.blocksMovement}
-						onChange={(event) =>
-							updateSelectedNpc({ blocksMovement: event.target.checked })
-						}
-						type="checkbox"
-					/>
-					Blocks movement
-				</label>
+				{!selectedNpc.scene?.collision && (
+					<label className="checkbox-row standalone">
+						<input
+							checked={selectedNpc.blocksMovement}
+							onChange={(event) =>
+								updateSelectedNpc({ blocksMovement: event.target.checked })
+							}
+							type="checkbox"
+						/>
+						Blocks movement
+					</label>
+				)}
 				<div className="panel-title secondary">Attributes</div>
 				<div className="coordinate-readout">
 					Source:{" "}

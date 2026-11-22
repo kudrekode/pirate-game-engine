@@ -12,6 +12,7 @@ import type {
 	ObjectInstance,
 	PlayerConfig,
 } from "../types/game";
+import { blocksMapEntity } from "./mapCollision";
 
 function coversTile(structure: MapStructure, x: number, y: number): boolean {
 	return (
@@ -152,7 +153,10 @@ export function resolveMovementAt(
 
 		const preset = getStructurePreset(structure.structureId);
 		const rule = structure.movementRule ?? preset.movementRule;
-		return structure.blocksMovement || rule.walkable === false;
+		return blocksMapEntity(
+			structure,
+			structure.blocksMovement || rule.walkable === false,
+		);
 	});
 
 	if (blockingStructure) {
@@ -173,7 +177,7 @@ export function resolveMovementAt(
 			return false;
 		}
 
-		return object.blocksMovement === true;
+		return blocksMapEntity(object, object.blocksMovement === true);
 	});
 
 	if (blockingObject) {
@@ -181,7 +185,8 @@ export function resolveMovementAt(
 	}
 
 	const blockingNpc = area.npcs.find(
-		(npc) => npc.blocksMovement && npc.x === x && npc.y === y,
+		(npc) =>
+			blocksMapEntity(npc, npc.blocksMovement) && npc.x === x && npc.y === y,
 	);
 	if (blockingNpc) {
 		return block("Blocked by NPC.");
@@ -253,7 +258,10 @@ function isBlockedForDismount(area: GameArea, x: number, y: number): boolean {
 
 		const preset = getStructurePreset(structure.structureId);
 		const rule = structure.movementRule ?? preset.movementRule;
-		return structure.blocksMovement || rule.walkable === false;
+		return blocksMapEntity(
+			structure,
+			structure.blocksMovement || rule.walkable === false,
+		);
 	});
 
 	if (blockingStructure) {
@@ -263,14 +271,16 @@ function isBlockedForDismount(area: GameArea, x: number, y: number): boolean {
 	if (
 		area.objects.some(
 			(object) =>
-				object.blocksMovement === true && objectCoversTile(object, area, x, y),
+				blocksMapEntity(object, object.blocksMovement === true) &&
+				objectCoversTile(object, area, x, y),
 		)
 	) {
 		return true;
 	}
 
 	return area.npcs.some(
-		(npc) => npc.blocksMovement && npc.x === x && npc.y === y,
+		(npc) =>
+			blocksMapEntity(npc, npc.blocksMovement) && npc.x === x && npc.y === y,
 	);
 }
 

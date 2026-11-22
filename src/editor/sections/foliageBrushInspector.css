@@ -1,0 +1,64 @@
+.map-foliage-controls,
+.map-foliage-controls section {
+	display: grid;
+	gap: 8px;
+}
+
+.map-foliage-controls section {
+	border-top: 1px solid var(--map-line, #3a3b32);
+	padding-top: 10px;
+}
+
+.map-foliage-controls h4,
+.map-foliage-controls p {
+	margin: 0;
+}
+
+.map-foliage-controls p,
+.map-foliage-field small {
+	color: var(--map-muted, #a09c8f);
+}
+
+.map-foliage-controls .map-foliage-field {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+}
+
+.map-foliage-field input,
+.map-foliage-field select {
+	width: 100%;
+	min-width: 0;
+}
+
+.map-foliage-controls .map-foliage-mask {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.map-foliage-mode,
+.map-foliage-fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 6px;
+}
+
+.map-foliage-controls .map-foliage-mode {
+	border: 0;
+	margin: 0;
+	min-width: 0;
+	padding: 0;
+}
+
+.map-foliage-asset-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 52px min-content;
+	align-items: end;
+	gap: 5px;
+}
+
+.map-foliage-asset-row > button {
+	min-width: 28px;
+	padding-inline: 4px;
+}

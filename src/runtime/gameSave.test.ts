@@ -2,6 +2,7 @@
 import harbour from "../../docs/assets/quest-objectives/tidewatch-harbour.project.json";
 import courtyard from "../../docs/assets/runtime-parity/runtime-parity-demo.project.json";
 import { defaultProject } from "../data/defaultProject";
+import { DEFAULT_FOLIAGE_BRUSH_SETTINGS } from "../data/foliageBrushSettings";
 import { cloneProject, migrateProject } from "../data/migrateProject";
 import {
 	assertGameSaveSafe,
@@ -57,6 +58,15 @@ function ready() {
 }
 
 describe("renderer-neutral game saves", () => {
+	it("keeps the save identity when changing map brush and hierarchy preferences", () => {
+		const project = migrateProject(harbour);
+		const original = gameSaveProjectId(project);
+		project.foliageBrush = { ...DEFAULT_FOLIAGE_BRUSH_SETTINGS, seed: 29 };
+		project.areas[0].objects[0].scene = { locked: true, group: "Docks" };
+		expect(gameSaveProjectId(project)).toBe(original);
+		project.areas[0].objects[0].scene.hidden = true;
+		expect(gameSaveProjectId(project)).not.toBe(original);
+	});
 	it("continues the actual Harbour Trouble chest/key/objective route and keeps completion latched", () => {
 		const { project, session } = ready();
 		const before = JSON.stringify(project);

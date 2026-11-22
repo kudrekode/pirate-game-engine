@@ -19,6 +19,7 @@ import type {
 	GameProject,
 } from "../../types/game";
 import { AssetCreatorLauncher } from "../AssetCreatorLauncher";
+import { useEditorSource } from "../sections/editorSource";
 import {
 	AssetFields,
 	CreateAssetDialog,
@@ -478,6 +479,13 @@ export function AssetCreatorWorkspace({
 			return;
 		resetAssetSelection(next);
 	}
+	useEditorSource("assets", (request) => {
+		const requestedAsset = assets.find((entry) => entry.id === request.id);
+		if (requestedAsset) {
+			setTab("Assets");
+			selectAsset(requestedAsset);
+		}
+	});
 
 	function resetAssetSelection(next: ThreeVisualAssetDefinition) {
 		setAssetId(next.id);

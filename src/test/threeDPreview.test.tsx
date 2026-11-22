@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultProject } from "../data/defaultProject";
 import { cloneProject } from "../data/migrateProject";
@@ -131,6 +137,7 @@ vi.mock("three", () => {
 	class BufferGeometry extends Disposable {
 		computeBoundingSphere = vi.fn();
 		setAttribute = vi.fn(() => this);
+		setDrawRange = vi.fn();
 		setIndex = vi.fn(() => this);
 	}
 
@@ -194,6 +201,10 @@ vi.mock("three", () => {
 			setFromObject = vi.fn();
 		},
 		BufferGeometry,
+		BufferAttribute: class {
+			setUsage = vi.fn();
+			setXYZ = vi.fn();
+		},
 		Color: class {},
 		ConeGeometry: Disposable,
 		CylinderGeometry: Disposable,
@@ -206,6 +217,7 @@ vi.mock("three", () => {
 				mapSize: { height: 0, set: vi.fn(), width: 0 },
 			};
 		},
+		DynamicDrawUsage: "DynamicDrawUsage",
 		BackSide: "BackSide",
 		Fog: class {},
 		Float32BufferAttribute,
@@ -213,6 +225,10 @@ vi.mock("three", () => {
 		Group: Object3D,
 		HemisphereLight: class {},
 		Mesh,
+		Points: Mesh,
+		PointsMaterial: class extends Disposable {
+			color = { setHex: vi.fn() };
+		},
 		MathUtils: { degToRad: (degrees: number) => (degrees * Math.PI) / 180 },
 		MeshStandardMaterial: Disposable,
 		MeshBasicMaterial: Disposable,
@@ -601,6 +617,100 @@ describe("ThreeDPreview", () => {
 		);
 	});
 
+	it("flies and looks around only from the focused viewport without editing terrain", () => {
+		let now = 1000;
+		let nextFrame: FrameRequestCallback;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		vi.mocked(window.requestAnimationFrame).mockImplementation((callback) => {
+			nextFrame = callback;
+			return 1;
+		});
+		const renderFrame = () => {
+			now += 100;
+			act(() => nextFrame(now));
+		};
+		mockPreviewCanvasRect();
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const projectBefore = JSON.stringify(useProjectStore.getState().project);
+		render(
+			<>
+				<input aria-label="Scene search" />
+				<dialog aria-label="Scene dialog" />
+				<ThreeDPreview terrainHeightTool="raise" />
+			</>,
+		);
+		const viewport = screen.getByLabelText("3D preview viewport");
+		const position = () =>
+			JSON.parse(viewport.dataset.cameraPosition ?? "[]") as number[];
+		const canvas = getPreviewCanvas();
+		const flyButton = screen.getByRole("button", { name: "Fly" });
+		fireEvent.click(flyButton);
+		expect(viewport).toHaveFocus();
+		expect(flyButton).toHaveAttribute("aria-pressed", "true");
+
+		const initial = position();
+		const target = viewport.dataset.cameraTarget;
+		fireEvent.pointerDown(canvas, {
+			button: 2,
+			pointerId: 1,
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerMove(canvas, {
+			buttons: 2,
+			pointerId: 1,
+			clientX: 190,
+			clientY: 80,
+		});
+		fireEvent.pointerUp(canvas, { button: 2, pointerId: 1 });
+		position().forEach((value, axis) => {
+			expect(value).toBeCloseTo(initial[axis]);
+		});
+		expect(viewport.dataset.cameraTarget).not.toBe(target);
+
+		fireEvent.keyDown(viewport, { key: "w" });
+		fireEvent.pointerDown(canvas, {
+			button: 0,
+			pointerId: 1,
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas, {
+			button: 0,
+			pointerId: 1,
+			clientX: 160,
+			clientY: 120,
+		});
+		renderFrame();
+		fireEvent.keyUp(viewport, { key: "w" });
+		expect(position()).not.toEqual(initial);
+		const beforeUp = position();
+		fireEvent.keyDown(viewport, { key: "E", shiftKey: true });
+		renderFrame();
+		fireEvent.keyUp(viewport, { key: "E", shiftKey: true });
+		fireEvent.keyUp(viewport, { key: "Shift" });
+		expect(position()[1] - beforeUp[1]).toBeCloseTo(3.6);
+		expect(position()[0]).toBeCloseTo(beforeUp[0]);
+		expect(position()[2]).toBeCloseTo(beforeUp[2]);
+
+		const beforeTextInput = position();
+		const input = screen.getByRole("textbox", { name: "Scene search" });
+		fireEvent.keyDown(viewport, { key: "w" });
+		input.focus();
+		fireEvent.keyDown(input, { key: "w" });
+		renderFrame();
+		expect(position()).toEqual(beforeTextInput);
+		viewport.focus();
+		const dialog = screen.getByLabelText("Scene dialog");
+		dialog.setAttribute("open", "");
+		fireEvent.keyDown(viewport, { key: "w" });
+		renderFrame();
+		expect(position()).toEqual(beforeTextInput);
+		expect(JSON.stringify(useProjectStore.getState().project)).toBe(
+			projectBefore,
+		);
+	});
+
 	it("renders the empty details state when nothing is selected", () => {
 		useProjectStore.getState().setEditorSelection(null);
 
@@ -954,6 +1064,57 @@ describe("ThreeDPreview", () => {
 		expect(setTilesSpy).toHaveBeenCalledWith(
 			expectedCells.map((cell) => ({ ...cell, tileId: "sand" })),
 		);
+	});
+
+	it("keeps the renderer when undo restores the same palette selection", () => {
+		useProjectStore.getState().setProject(makeThreeTileProject());
+		const original = useProjectStore.getState().project;
+		render(<ThreeDPreview embedded hideDetails />);
+		const builds = () =>
+			window.__THREE_PERF_DIAGNOSTICS__?.getSnapshot("ThreeDPreview")?.scene
+				.buildCount;
+		const initial = builds();
+		expect(initial).toBeGreaterThan(0);
+		act(() =>
+			useProjectStore.getState().updateMetadata({ name: "Test change" }),
+		);
+		act(() => useProjectStore.getState().setProject(original));
+		expect(builds()).toBe(initial);
+	});
+
+	it("restores shoreline material under a water-only brush without painting adjacent land", () => {
+		mockPreviewCanvasRect();
+		const project = makeThreeTileProject();
+		const area = project.areas[0];
+		area.terrainTiles = area.terrainTiles.map((tile) =>
+			tile.x === 1 && tile.y === 1 ? { ...tile, tileId: "water" } : tile,
+		);
+		useProjectStore.getState().setProject(project);
+		const setTilesSpy = spyOnSetTiles();
+		render(
+			<ThreeDPreview
+				embedded
+				hideDetails
+				brushSize={3}
+				terrainBrushMask="water"
+				terrainPaintTileId="sand"
+			/>,
+		);
+		const canvas = getPreviewCanvas();
+		fireEvent.pointerDown(canvas, {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+		});
+		fireEvent.pointerUp(canvas, {
+			button: 0,
+			clientX: 160,
+			clientY: 120,
+		});
+		expect(setTilesSpy).toHaveBeenCalledExactlyOnceWith([
+			{ x: 1, y: 1, tileId: "sand" },
+		]);
+		expect(getPreviewCanvas()).toBe(canvas);
 	});
 
 	it("applies 3D height brushes to the resolved footprint", async () => {

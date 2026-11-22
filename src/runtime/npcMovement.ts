@@ -4,6 +4,7 @@ import {
 	getTerrainPreset,
 } from "../data/mapVisuals";
 import type { GameArea, NPCInstance, PatrolPoint } from "../types/game";
+import { blocksMapEntity } from "./mapCollision";
 
 export type NPCMovementState = {
 	patrolIndex: number;
@@ -313,8 +314,11 @@ export function isNpcTileWalkable(
 				y >= structure.y &&
 				x < structure.x + structure.widthTiles &&
 				y < structure.y + structure.heightTiles &&
-				(structure.blocksMovement ||
-					(structure.movementRule ?? preset.movementRule).walkable === false)
+				blocksMapEntity(
+					structure,
+					structure.blocksMovement ||
+						(structure.movementRule ?? preset.movementRule).walkable === false,
+				)
 			);
 		})
 	) {
@@ -325,7 +329,7 @@ export function isNpcTileWalkable(
 		area.npcs.some(
 			(npc) =>
 				npc.id !== movingNpcId &&
-				npc.blocksMovement &&
+				blocksMapEntity(npc, npc.blocksMovement) &&
 				npc.x === x &&
 				npc.y === y,
 		)
@@ -338,7 +342,7 @@ export function isNpcTileWalkable(
 			const widthTiles = object.widthTiles ?? 1;
 			const heightTiles = object.heightTiles ?? 1;
 			return (
-				object.blocksMovement === true &&
+				blocksMapEntity(object, object.blocksMovement === true) &&
 				x >= object.x &&
 				y >= object.y &&
 				x < object.x + widthTiles &&

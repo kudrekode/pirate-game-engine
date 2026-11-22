@@ -1,6 +1,7 @@
 import {
-	getTerrainPresentationSurfaceY,
+	createTerrainSurfaceSampler,
 	type TerrainSurfaceMode,
+	type TerrainSurfaceSampler,
 } from "../../data/terrainSurface";
 import { resolveNPCInstance } from "../../runtime/npcResolver";
 import type { PlaceholderVisualType } from "../../runtime/three/placeholderMeshes";
@@ -80,19 +81,19 @@ function isVehicleObject(definition: ObjectDefinition | undefined): boolean {
 }
 
 function getFootprintSurfaceY(
-	area: GameArea,
+	terrain: TerrainSurfaceSampler,
 	x: number,
 	y: number,
 	widthTiles = 1,
 	heightTiles = 1,
 	mode: TerrainSurfaceMode = "blocky",
 ): number {
-	let surfaceY = getTerrainPresentationSurfaceY(area, { x, y }, mode);
+	let surfaceY = terrain.sampleSurfaceY({ x, y }, mode);
 	for (let tileY = y; tileY < y + heightTiles; tileY += 1) {
 		for (let tileX = x; tileX < x + widthTiles; tileX += 1) {
 			surfaceY = Math.max(
 				surfaceY,
-				getTerrainPresentationSurfaceY(area, { x: tileX, y: tileY }, mode),
+				terrain.sampleSurfaceY({ x: tileX, y: tileY }, mode),
 			);
 		}
 	}
@@ -111,6 +112,7 @@ export function areaEntitiesToMarkers(
 	if (!area) {
 		return [];
 	}
+	const terrain = createTerrainSurfaceSampler(area);
 	const npcDefinitions = Array.isArray(npcDefinitionsOrFilters)
 		? npcDefinitionsOrFilters
 		: [];
@@ -139,6 +141,7 @@ export function areaEntitiesToMarkers(
 
 	if (filters.structures) {
 		area.structures.forEach((structure) => {
+			if (structure.scene?.hidden) return;
 			const { threeX, threeZ } = toThreePosition(
 				area,
 				structure.x,
@@ -147,7 +150,7 @@ export function areaEntitiesToMarkers(
 				structure.heightTiles,
 			);
 			const surfaceY = getFootprintSurfaceY(
-				area,
+				terrain,
 				structure.x,
 				structure.y,
 				structure.widthTiles,
@@ -182,6 +185,7 @@ export function areaEntitiesToMarkers(
 
 	if (filters.objects) {
 		area.objects.forEach((object) => {
+			if (object.scene?.hidden) return;
 			const definition = objectDefinitionsById.get(object.objectDefinitionId);
 			const widthTiles = object.widthTiles ?? definition?.widthTiles ?? 1;
 			const heightTiles = object.heightTiles ?? definition?.heightTiles ?? 1;
@@ -195,14 +199,21 @@ export function areaEntitiesToMarkers(
 				widthTiles,
 				heightTiles,
 			);
-			const surfaceY = getFootprintSurfaceY(
-				area,
-				object.x,
-				object.y,
-				widthTiles,
-				heightTiles,
-				surfaceMode,
-			);
+			const offset = object.transform?.position;
+			const surfaceY =
+				typeof object.state?.foliageGroupId === "string" && offset
+					? terrain.sampleSurfaceY(
+							{ x: object.x + offset.x, y: object.y + offset.z },
+							surfaceMode,
+						)
+					: getFootprintSurfaceY(
+							terrain,
+							object.x,
+							object.y,
+							widthTiles,
+							heightTiles,
+							surfaceMode,
+						);
 			const markerHeight = isVehicle ? 0.35 : 0.8;
 			const visual = resolveThreeVisual(
 				{
@@ -243,6 +254,7 @@ export function areaEntitiesToMarkers(
 
 	if (filters.npcs) {
 		area.npcs.forEach((npc) => {
+			if (npc.scene?.hidden) return;
 			const definition = npcDefinitionsById.get(npc.npcDefinitionId);
 			const resolvedNpc = resolveNPCInstance(definition, npc);
 			const { threeX, threeZ } = toThreePosition(area, npc.x, npc.y);
@@ -271,11 +283,7 @@ export function areaEntitiesToMarkers(
 				shape: "cylinder",
 				threeX,
 				threeY:
-					getTerrainPresentationSurfaceY(
-						area,
-						{ x: npc.x, y: npc.y },
-						surfaceMode,
-					) +
+					terrain.sampleSurfaceY({ x: npc.x, y: npc.y }, surfaceMode) +
 					markerHeight / 2,
 				threeZ,
 				visual,
@@ -287,6 +295,7 @@ export function areaEntitiesToMarkers(
 
 	if (filters.pickups) {
 		area.pickups.forEach((pickup) => {
+			if (pickup.scene?.hidden) return;
 			const { threeX, threeZ } = toThreePosition(area, pickup.x, pickup.y);
 			const markerHeight = 0.34;
 			const visual = resolveThreeVisual({ kind: "pickup" });
@@ -303,11 +312,8 @@ export function areaEntitiesToMarkers(
 				shape: "box",
 				threeX,
 				threeY:
-					getTerrainPresentationSurfaceY(
-						area,
-						{ x: pickup.x, y: pickup.y },
-						surfaceMode,
-					) + 0.75,
+					terrain.sampleSurfaceY({ x: pickup.x, y: pickup.y }, surfaceMode) +
+					0.75,
 				threeZ,
 				visual,
 				visualType: visual.placeholderType,
@@ -319,6 +325,7 @@ export function areaEntitiesToMarkers(
 	if (filters.eventBlocks || filters.spawnPoints) {
 		area.eventBlocks.forEach((eventBlock) => {
 			if (
+				eventBlock.scene?.hidden ||
 				(eventBlock.kind === "spawn" && !filters.spawnPoints) ||
 				(eventBlock.kind !== "spawn" && !filters.eventBlocks)
 			) {
@@ -347,8 +354,7 @@ export function areaEntitiesToMarkers(
 				shape: "box",
 				threeX,
 				threeY:
-					getTerrainPresentationSurfaceY(
-						area,
+					terrain.sampleSurfaceY(
 						{ x: eventBlock.x, y: eventBlock.y },
 						surfaceMode,
 					) + 0.06,

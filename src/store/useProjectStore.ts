@@ -49,6 +49,7 @@ export type MapPaletteSelection =
 export type EditorSource = {
 	section:
 		| "map"
+		| "assets"
 		| "dialogues"
 		| "quests"
 		| "items"

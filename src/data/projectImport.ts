@@ -139,6 +139,7 @@ const cinematicCue: Check = (value, path) => {
 const transform = fields({
 	nested: { position: point, rotation: point, scale: point },
 });
+const scene = fields({ strings: "group collision", booleans: "hidden locked" });
 const threeVisual = fields({
 	strings: "mode placeholderType assetId",
 	numbers: "scale heightOffset rotationOffset",
@@ -240,6 +241,7 @@ const area = fields({
 				numbers: "x y widthTiles heightTiles",
 				booleans: "blocksMovement",
 				nested: {
+					scene,
 					transform,
 					interaction,
 					movementRule: fields({
@@ -256,6 +258,7 @@ const area = fields({
 				numbers: "x y widthTiles heightTiles",
 				booleans: "blocksMovement",
 				nested: {
+					scene,
 					transform,
 					threeVisual,
 					interaction,
@@ -269,7 +272,7 @@ const area = fields({
 				strings: "id itemId areaId pickupMode collectedFlag",
 				numbers: "x y quantity",
 				booleans: "once",
-				nested: { transform },
+				nested: { scene, transform },
 			}),
 		),
 		npcs: list(
@@ -278,6 +281,7 @@ const area = fields({
 				numbers: "x y movementSpeed",
 				booleans: "blocksMovement",
 				nested: {
+					scene,
 					transform,
 					threeVisual,
 					attributes,
@@ -296,11 +300,12 @@ const area = fields({
 			fields({
 				strings: "id name tag kind",
 				numbers: "x y",
-				nested: { transform, link: target, interaction },
+				nested: { scene, transform, link: target, interaction },
 			}),
 		),
 		theme: fields({
 			strings: "primaryTerrainId accentTerrainId overlayId atmosphere",
+			nested: { fog: fields({ booleans: "enabled", numbers: "near far" }) },
 		}),
 	},
 });
@@ -314,6 +319,14 @@ const progressionStep = fields({
 });
 
 const projectFields: Record<keyof GameProject | "map", Check> = {
+	foliageBrush: fields({
+		numbers:
+			"radius density spacing seed minScale maxScale rotationVariation minHeight maxHeight maxSlope",
+		booleans: "excludeWater excludeRoads",
+		nested: {
+			palette: list(fields({ strings: "assetId", numbers: "weight" })),
+		},
+	}),
 	metadata: fields({ strings: "name version" }),
 	areas: list(area),
 	map: area,

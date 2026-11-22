@@ -83,7 +83,12 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 			castShadow: true,
 			receiveShadow: true,
 			traversal: WORLD_ASSET_TRAVERSAL[`mere-${key}`],
-			tags: ["hollow-kingdom", "merewatch"],
+			tags: [
+				"hollow-kingdom",
+				"merewatch",
+				...(key === "spruce" ? ["foliage", "tree"] : []),
+				...(key === "verge" ? ["foliage", "groundcover"] : []),
+			],
 		}),
 	),
 	{

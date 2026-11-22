@@ -1,10 +1,13 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, expect, it } from "vitest";
+import merewatch from "../../hollow-kingdom.project.json";
+import { importProjectJson } from "../data/projectImport";
 import { createProjectFromPreset } from "../data/projectPresets";
 import {
 	cloneCurrentProject,
 	useMapEditHistory,
 } from "../editor/sections/useMapEditHistory";
+import { useMapFoliageBrush } from "../editor/sections/useMapFoliageBrush";
 import { useProjectStore } from "../store/useProjectStore";
 
 beforeEach(() =>
@@ -92,4 +95,52 @@ it("retains only the last fifty transactions within a workspace mount", () => {
 	);
 	expect(remounted.result.current.canRedo).toBe(false);
 	expect(remounted.result.current.canUndo).toBe(false);
+});
+
+it("commits a Merewatch foliage stroke as one reversible edit and erases the same group", () => {
+	useProjectStore
+		.getState()
+		.setProject(importProjectJson(JSON.stringify(merewatch)));
+	const { result, rerender } = renderHook(
+		({ mode }: { mode: "paint" | "erase" }) => {
+			const project = useProjectStore((state) => state.project);
+			const area = project.areas[0];
+			return {
+				history: useMapEditHistory(area.id, true),
+				brush: useMapFoliageBrush(project, area, mode).brush,
+			};
+		},
+		{ initialProps: { mode: "paint" } },
+	);
+	const painted = () =>
+		useProjectStore
+			.getState()
+			.project.areas[0].objects.filter(
+				(object) => object.state?.foliageGroupId,
+			);
+	function stroke() {
+		act(() => {
+			const { history, brush } = result.current;
+			history.beginMapEdit();
+			brush.apply({ x: 11, y: 43 });
+			brush.apply({ x: 14, y: 43 });
+			brush.finish(true);
+			history.endMapEdit();
+		});
+	}
+	stroke();
+	const planted = painted();
+	expect(planted.length).toBeGreaterThan(2);
+	expect(
+		new Set(planted.map((object) => object.state?.foliageGroupId)).size,
+	).toBe(1);
+	act(() => result.current.history.undoMapEdit());
+	expect(painted()).toEqual([]);
+	act(() => result.current.history.redoMapEdit());
+	expect(painted()).toEqual(planted);
+	rerender({ mode: "erase" });
+	stroke();
+	expect(painted()).toEqual([]);
+	act(() => result.current.history.undoMapEdit());
+	expect(painted()).toEqual(planted);
 });

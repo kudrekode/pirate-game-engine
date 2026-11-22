@@ -18,6 +18,7 @@ import {
 import { resolveNPCInstance } from "../../runtime/npcResolver";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
+	EditorSelection,
 	EventBlock,
 	GameArea,
 	GameAreaKind,
@@ -28,7 +29,22 @@ import type {
 	PixelAsset,
 } from "../../types/game";
 import { AssetBrowser } from "./AssetBrowser";
+import { FoliageBrushInspector } from "./FoliageBrushInspector";
+import {
+	MapBrushInspector,
+	type MapBrushMask,
+	type WaterBrushAction,
+} from "./MapBrushInspector";
 import { MapInspector } from "./MapInspector";
+import {
+	type MapAuthoringMode,
+	MapContextInspector,
+	MapModeToolbar,
+	type MapTerrainTool,
+	MapWorkspaceSidebar,
+	type MapWorldSetting,
+} from "./MapWorkspacePanels";
+import { MapWorldInspector } from "./MapWorldInspector";
 import { resolveMapEditorSelection } from "./mapEditorSelection";
 import {
 	GAMEPLAY_OVERLAY_FILTERS,
@@ -44,11 +60,13 @@ import { SceneTransformInspector } from "./SceneTransformInspector";
 import {
 	deleteSceneSelection,
 	duplicateSceneSelection,
+	getSceneAppearance,
 	getSceneEntity,
 	placeSceneAsset,
 	SCENE_ASSET_MIME,
 	type SceneAsset,
 	sceneAssets,
+	updateSceneAppearance,
 } from "./sceneEditing";
 import { ThreeDPreview } from "./ThreeDPreview";
 import {
@@ -67,7 +85,9 @@ import {
 	type TerrainHeightOperation,
 	terrainBrushCellKey,
 } from "./terrainBrush";
+import { isMapEditorInputBlocked } from "./threeDEditorCamera";
 import { cloneCurrentProject, useMapEditHistory } from "./useMapEditHistory";
+import { useMapFoliageBrush } from "./useMapFoliageBrush";
 
 type MapEditorTool =
 	| "select"
@@ -123,6 +143,14 @@ const MIN_PALETTE_WIDTH = 180;
 const MAX_PALETTE_WIDTH = 420;
 const MIN_INSPECTOR_WIDTH = 220;
 const MAX_INSPECTOR_WIDTH = 520;
+const mapAuthoringModes = ["select", "foliage", "terrain", "water"] as const;
+const worldSettingNames: Record<MapWorldSetting, string> = {
+	area: "Area & Layers",
+	sky: "Sky & Lighting",
+	physics: "Gravity & Physics",
+	spawn: "Player & Spawn",
+	hud: "HUD Settings",
+};
 const areaKindOptions: GameAreaKind[] = [
 	"outdoor",
 	"indoor",
@@ -244,8 +272,16 @@ function emptyPixels(
 
 export function MapEditor({
 	onViewChange,
+	onOpenAsset,
+	onOpenStory,
+	onOpenPlayer,
+	onOpenHud,
 }: {
 	onViewChange?: (view: "2d" | "3d") => void;
+	onOpenAsset?: (id: string) => void;
+	onOpenStory?: (selection: EditorSelection) => void;
+	onOpenPlayer?: () => void;
+	onOpenHud?: () => void;
 } = {}) {
 	const editorRootRef = useRef<HTMLElement>(null);
 	const pointerHistoryRef = useRef(false);
@@ -327,12 +363,37 @@ export function MapEditor({
 	const [activeTool, setActiveTool] = useState<MapEditorTool>(
 		incomingNpcId ? "paint" : "select",
 	);
-	const [mapView, setMapView] = useState<MapWorkspaceView>(() =>
-		localStorage.getItem("map-workspace-view-v1") === "3d" ? "3d" : "2d",
-	);
+	const [mapView, setMapView] = useState<MapWorkspaceView>(() => {
+		try {
+			const stored = localStorage.getItem("map-workspace-view-v1");
+			if (stored === "2d" || stored === "3d") return stored;
+		} catch {
+			/* Workspace preferences are optional. */
+		}
+		return project.objects.some((entry) =>
+			entry.threeVisual?.assetId?.startsWith("mere-"),
+		)
+			? "3d"
+			: "2d";
+	});
+	const [authoringMode, setAuthoringMode] =
+		useState<MapAuthoringMode>("select");
+	const [terrainTool, setTerrainTool] = useState<MapTerrainTool>("raise");
+	const [terrainMask, setTerrainMask] = useState<MapBrushMask>("all");
+	const [worldSetting, setWorldSetting] = useState<MapWorldSetting>();
+	const [placementAsset, setPlacementAsset] = useState<SceneAsset>();
+	const [draggedAsset, setDraggedAsset] = useState<SceneAsset>();
+	const [waterAction, setWaterAction] = useState<WaterBrushAction>("paint");
+	const [waterLevel, setWaterLevel] = useState(0);
+	const [shoreMaterial, setShoreMaterial] = useState("grass");
+	const [foliageMode, setFoliageMode] = useState<"paint" | "erase">("paint");
+	const foliage = useMapFoliageBrush(project, activeArea, foliageMode);
 	useEffect(() => {
 		if (sourceRequest?.section === "map") {
 			setActiveTool("select");
+			setAuthoringMode("select");
+			setWorldSetting(undefined);
+			setPlacementAsset(undefined);
 			setFocusRequest((n) => n + 1);
 		}
 	}, [sourceRequest]);
@@ -514,8 +575,21 @@ export function MapEditor({
 				event.altKey ||
 				event.ctrlKey ||
 				event.metaKey ||
-				isTypingTarget(event.target)
+				isMapEditorInputBlocked(event.target)
 			) {
+				return;
+			}
+			if (mapView === "3d") {
+				const next = /^[1-4]$/.test(event.key)
+					? mapAuthoringModes[Number(event.key) - 1]
+					: undefined;
+				if (next) {
+					event.preventDefault();
+					selectAuthoringMode(next);
+				} else if (event.key === "Escape" && placementAsset) {
+					event.preventDefault();
+					setPlacementAsset(undefined);
+				}
 				return;
 			}
 
@@ -541,14 +615,14 @@ export function MapEditor({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [setMapPaletteSelection]);
+	});
 
 	useEffect(() => {
 		function shortcut(event: KeyboardEvent) {
 			if (
 				editorRootRef.current?.closest("[hidden]") ||
 				event.defaultPrevented ||
-				isTypingTarget(event.target) ||
+				isMapEditorInputBlocked(event.target) ||
 				event.altKey
 			)
 				return;
@@ -569,7 +643,11 @@ export function MapEditor({
 			} else if (!modifier && key === "f") {
 				event.preventDefault();
 				setFocusRequest((value) => value + 1);
-			} else if (!modifier && ["w", "e", "r"].includes(key)) {
+			} else if (
+				mapView === "2d" &&
+				!modifier &&
+				["w", "e", "r"].includes(key)
+			) {
 				event.preventDefault();
 				setTransformMode(
 					key === "w" ? "translate" : key === "e" ? "rotate" : "scale",
@@ -583,9 +661,38 @@ export function MapEditor({
 		return () => window.removeEventListener("keydown", shortcut);
 	});
 
-	function addAsset(asset: SceneAsset, position?: { x: number; y: number }) {
+	function selectAuthoringMode(mode: MapAuthoringMode) {
+		setAuthoringMode(mode);
+		setWorldSetting(undefined);
+		setPlacementAsset(undefined);
 		setActiveTool("select");
 		setIsTerrainPaintArmed(false);
+		setMapPaletteSelection({ type: "none" });
+		if (mode === "water" || (mode === "terrain" && terrainTool !== "paint")) {
+			setTerrainGesture((value) => (value === "fill" ? "brush" : value));
+		}
+	}
+
+	function selectScene(next: EditorSelection) {
+		selectAuthoringMode("select");
+		setSelection(next);
+	}
+
+	function changeMapView(view: MapWorkspaceView) {
+		if (
+			view === "3d" &&
+			mapView === "2d" &&
+			isTerrainPaintArmed &&
+			paintTarget === "terrain"
+		) {
+			setTerrainTool("paint");
+			setAuthoringMode("terrain");
+		}
+		setMapView(view);
+	}
+
+	function addAsset(asset: SceneAsset, position?: { x: number; y: number }) {
+		selectAuthoringMode("select");
 		setTransformMode("translate");
 		if (mapView === "3d" && !position) {
 			setAddAssetRequest({ asset, serial: Date.now() });
@@ -1112,22 +1219,22 @@ export function MapEditor({
 		const npc = npcLookup.get(cellKey(x, y));
 		const structure = findStructureAt(x, y);
 
-		if (object) {
+		if (object && !object.scene?.hidden) {
 			setSelection({ type: "object", areaId: activeArea.id, id: object.id });
 			return true;
 		}
 
-		if (npc) {
+		if (npc && !npc.scene?.hidden) {
 			setSelection({ type: "npc", areaId: activeArea.id, id: npc.id });
 			return true;
 		}
 
-		if (pickup) {
+		if (pickup && !pickup.scene?.hidden) {
 			setSelection({ type: "pickup", areaId: activeArea.id, id: pickup.id });
 			return true;
 		}
 
-		if (eventBlock) {
+		if (eventBlock && !eventBlock.scene?.hidden) {
 			setSelection({
 				type: "eventBlock",
 				areaId: activeArea.id,
@@ -1136,7 +1243,7 @@ export function MapEditor({
 			return true;
 		}
 
-		if (structure) {
+		if (structure && !structure.scene?.hidden) {
 			setSelection({
 				type: "structure",
 				areaId: activeArea.id,
@@ -1156,23 +1263,31 @@ export function MapEditor({
 
 	function getDraggableEntityAt(x: number, y: number) {
 		const object = objectLookup.get(cellKey(x, y)) ?? findObjectAt(x, y);
-		if (object) {
-			return { type: "object" as const, id: object.id };
+		if (object && !object.scene?.hidden) {
+			return object.scene?.locked
+				? undefined
+				: { type: "object" as const, id: object.id };
 		}
 		const npc = npcLookup.get(cellKey(x, y));
-		if (npc) {
-			return { type: "npc" as const, id: npc.id };
+		if (npc && !npc.scene?.hidden) {
+			return npc.scene?.locked
+				? undefined
+				: { type: "npc" as const, id: npc.id };
 		}
 		const pickup = pickupLookup.get(cellKey(x, y));
-		if (pickup) {
-			return { type: "pickup" as const, id: pickup.id };
+		if (pickup && !pickup.scene?.hidden) {
+			return pickup.scene?.locked
+				? undefined
+				: { type: "pickup" as const, id: pickup.id };
 		}
 		const eventBlock = eventLookup.get(cellKey(x, y));
-		if (eventBlock) {
-			return { type: "eventBlock" as const, id: eventBlock.id };
+		if (eventBlock && !eventBlock.scene?.hidden) {
+			return eventBlock.scene?.locked
+				? undefined
+				: { type: "eventBlock" as const, id: eventBlock.id };
 		}
 		const structure = findStructureAt(x, y);
-		return structure
+		return structure && !structure.scene?.hidden && !structure.scene?.locked
 			? { type: "structure" as const, id: structure.id }
 			: undefined;
 	}
@@ -1243,6 +1358,10 @@ export function MapEditor({
 	function deleteEntity(
 		entity: NonNullable<ReturnType<typeof selectedEntityAt>>,
 	) {
+		if (
+			getSceneAppearance(project, { ...entity, areaId: activeArea.id }).locked
+		)
+			return;
 		if (entity.type === "object") {
 			deleteObject(entity.id);
 		} else if (entity.type === "npc") {
@@ -1823,46 +1942,127 @@ export function MapEditor({
 		activeTool === "select"
 			? getCurrentSelectionLabel()
 			: getPaintTargetLabel();
-
-	return (
-		<section
-			className="editor-panel map-editor"
-			ref={editorRootRef}
-			onPointerDownCapture={(event) => {
-				if (
-					event.button === 0 &&
-					event.target instanceof HTMLElement &&
-					event.target.closest(".map-stage, .three-d-preview-host")
-				) {
-					pointerHistoryRef.current = true;
-					beginMapEdit();
-				}
-			}}
-			onPointerUp={() => {
-				if (pointerHistoryRef.current) {
-					pointerHistoryRef.current = false;
-					endMapEdit();
-				}
-			}}
-			onPointerCancel={() => {
-				if (pointerHistoryRef.current) {
-					pointerHistoryRef.current = false;
-					endMapEdit();
-				}
-			}}
-			onFocusCapture={(event) => {
-				if (isTypingTarget(event.target)) beginMapEdit();
-			}}
-			onBlurCapture={(event) => {
-				if (isTypingTarget(event.target)) endMapEdit();
-			}}
-			style={
-				{
-					"--map-inspector-width": `${inspectorWidth}px`,
-					"--map-palette-width": `${paletteWidth}px`,
-				} as CSSProperties
-			}
+	const isThreeWorkspace = mapView === "3d";
+	const sceneEntity = getSceneEntity(project, selection);
+	const sceneAppearance = getSceneAppearance(project, selection);
+	const isBrushInspector =
+		authoringMode === "terrain" || authoringMode === "water";
+	const isWaterBrush = authoringMode === "water";
+	const terrainPaintTile = isWaterBrush
+		? waterAction === "paint"
+			? "water"
+			: waterAction === "restore"
+				? shoreMaterial
+				: undefined
+		: authoringMode === "terrain" && terrainTool === "paint"
+			? selectedTerrainId
+			: undefined;
+	const terrainHeightTool = isWaterBrush
+		? waterAction === "elevation"
+			? "set"
+			: undefined
+		: authoringMode === "terrain" && terrainTool !== "paint"
+			? terrainTool
+			: undefined;
+	const inspectorTitle = worldSetting
+		? worldSettingNames[worldSetting]
+		: authoringMode === "foliage"
+			? "Foliage Scatter"
+			: authoringMode === "terrain"
+				? "Terrain Sculpt"
+				: isWaterBrush
+					? "Water"
+					: sceneEntity
+						? getCurrentSelectionLabel()
+						: "Scene";
+	const properties = (
+		<details
+			className="scene-gameplay"
+			open={!isThreeWorkspace || sourceRequest?.section === "map"}
 		>
+			<summary>Properties & gameplay</summary>
+			<fieldset
+				className="scene-gameplay-fields"
+				disabled={sceneAppearance.locked}
+			>
+				<MapInspector
+					project={project}
+					activeArea={activeArea}
+					selected={selected}
+					selectedTerrainId={selectedTerrainId}
+					selectedOverlayId={selectedOverlayId}
+					recordMapEdit={recordMapEdit}
+				/>
+			</fieldset>
+		</details>
+	);
+	const objectActions = (
+		<fieldset className="scene-selection-actions">
+			<legend className="sr-only">Selected object actions</legend>
+			<button
+				type="button"
+				disabled={!sceneEntity || sceneAppearance?.hidden}
+				onClick={() => setFocusRequest((value) => value + 1)}
+				title="Focus selected (F)"
+			>
+				Focus
+			</button>
+			<button
+				type="button"
+				disabled={!sceneEntity || sceneAppearance?.locked}
+				onClick={() => duplicateSceneSelection(selection)}
+				title="Duplicate (Ctrl/Cmd+D)"
+			>
+				Duplicate
+			</button>
+			<button
+				type="button"
+				disabled={!sceneEntity || sceneAppearance?.locked}
+				onClick={() => deleteSceneSelection(selection)}
+				title="Delete selected (Delete)"
+			>
+				Delete
+			</button>
+		</fieldset>
+	);
+	const historyActions = (
+		<>
+			<button
+				disabled={!canUndo}
+				onClick={undoMapEdit}
+				type="button"
+				title="Undo (Ctrl/Cmd+Z)"
+			>
+				Undo
+			</button>
+			<button
+				disabled={!canRedo}
+				onClick={redoMapEdit}
+				type="button"
+				title="Redo (Ctrl/Cmd+Shift+Z)"
+			>
+				Redo
+			</button>
+		</>
+	);
+	const viewActions = (
+		<div className="segmented-control map-view-toggle">
+			{(["2d", "3d"] as const).map((view) => (
+				<button
+					className={mapView === view ? "selected" : ""}
+					onClick={() => changeMapView(view)}
+					type="button"
+					key={view}
+					aria-pressed={mapView === view}
+				>
+					{view.toUpperCase()} View
+				</button>
+			))}
+		</div>
+	);
+
+	function renderLegacyTools() {
+		return (
 			<aside className="tool-panel map-tool-panel">
 				<div className="map-tool-panel-content">
 					<AssetBrowser project={project} onAdd={(asset) => addAsset(asset)} />
@@ -2585,46 +2785,128 @@ export function MapEditor({
 					onPointerUp={handlePaletteResizeEnd}
 				/>
 			</aside>
+		);
+	}
 
-			<div className="map-workspace-main">
-				<div className="map-workspace-toolbar">
-					<div className="segmented-control map-view-toggle">
-						<button
-							className={mapView === "2d" ? "selected" : ""}
-							onClick={() => setMapView("2d")}
-							type="button"
-						>
-							2D View
-						</button>
-						<button
-							className={mapView === "3d" ? "selected" : ""}
-							onClick={() => setMapView("3d")}
-							type="button"
-						>
-							3D View
-						</button>
+	return (
+		<section
+			className={`editor-panel map-editor${isThreeWorkspace ? " map-workspace-layout" : ""}`}
+			ref={editorRootRef}
+			onPointerDownCapture={(event) => {
+				if (
+					event.button === 0 &&
+					!event.altKey &&
+					event.target instanceof HTMLElement &&
+					event.target.closest(".map-stage, .three-d-preview-host")
+				) {
+					pointerHistoryRef.current = true;
+					beginMapEdit();
+				}
+			}}
+			onPointerUp={() => {
+				if (pointerHistoryRef.current) {
+					pointerHistoryRef.current = false;
+					endMapEdit();
+				}
+			}}
+			onPointerCancel={() => {
+				if (pointerHistoryRef.current) {
+					pointerHistoryRef.current = false;
+					endMapEdit();
+				}
+			}}
+			onFocusCapture={(event) => {
+				if (isTypingTarget(event.target)) beginMapEdit();
+			}}
+			onBlurCapture={(event) => {
+				if (isTypingTarget(event.target)) endMapEdit();
+			}}
+			style={
+				{
+					"--map-inspector-width": `${inspectorWidth}px`,
+					"--map-palette-width": `${paletteWidth}px`,
+				} as CSSProperties
+			}
+		>
+			{isThreeWorkspace ? (
+				<MapWorkspaceSidebar
+					project={project}
+					area={activeArea}
+					selection={selection}
+					selectedAsset={placementAsset}
+					onAssetSelect={(asset) => {
+						const same =
+							placementAsset?.id === asset.id &&
+							placementAsset.kind === asset.kind;
+						selectAuthoringMode("select");
+						if (!same) setPlacementAsset(asset);
+					}}
+					onAssetAdd={addAsset}
+					onAssetDrag={setDraggedAsset}
+					mode={authoringMode}
+					terrainTool={terrainTool}
+					onModeChange={selectAuthoringMode}
+					onTerrainToolChange={(tool) => {
+						selectAuthoringMode("terrain");
+						setTerrainTool(tool);
+						if (tool !== "paint")
+							setTerrainGesture((value) =>
+								value === "fill" ? "brush" : value,
+							);
+					}}
+					worldSetting={worldSetting}
+					onWorldSettingChange={(setting) => {
+						selectAuthoringMode("select");
+						setWorldSetting(setting);
+					}}
+					onAreaChange={(areaId) => {
+						setActiveArea(areaId);
+						setPlacementAsset(undefined);
+					}}
+					onSelect={selectScene}
+					onFocus={(next) => {
+						selectScene(next);
+						setFocusRequest((value) => value + 1);
+					}}
+					getSceneAppearance={(next) => getSceneAppearance(project, next)}
+					onToggleVisibility={(next) =>
+						updateSceneAppearance(next, {
+							hidden: !getSceneAppearance(project, next)?.hidden,
+						})
+					}
+					onToggleLock={(next) =>
+						updateSceneAppearance(next, {
+							locked: !getSceneAppearance(project, next)?.locked,
+						})
+					}
+				/>
+			) : (
+				renderLegacyTools()
+			)}
+
+			<div
+				className={
+					isThreeWorkspace ? "map-workspace-viewport" : "map-workspace-main"
+				}
+			>
+				{isThreeWorkspace ? (
+					<MapModeToolbar
+						mode={authoringMode}
+						onModeChange={selectAuthoringMode}
+					>
+						{historyActions}
+						{viewActions}
+					</MapModeToolbar>
+				) : (
+					<div className="map-workspace-toolbar">
+						{viewActions}
+						<div className="map-workspace-status">
+							<strong title={mapWorkspaceStatus}>{activeArea.name}</strong>
+							<span className="edit-mode-badge">Editing</span>
+							{historyActions}
+						</div>
 					</div>
-					<div className="map-workspace-status">
-						<strong title={mapWorkspaceStatus}>{activeArea.name}</strong>
-						<span className="edit-mode-badge">Editing</span>
-						<button
-							disabled={!canUndo}
-							onClick={undoMapEdit}
-							type="button"
-							title="Undo (Ctrl/Cmd+Z)"
-						>
-							Undo
-						</button>
-						<button
-							disabled={!canRedo}
-							onClick={redoMapEdit}
-							type="button"
-							title="Redo (Ctrl/Cmd+Shift+Z)"
-						>
-							Redo
-						</button>
-					</div>
-				</div>
+				)}
 				{mapView === "2d" ? (
 					<div
 						aria-label="Map editing canvas"
@@ -2724,6 +3006,7 @@ export function MapEditor({
 									const rawEventBlock = eventLookup.get(key);
 									const eventBlock =
 										rawEventBlock &&
+										!rawEventBlock.scene?.hidden &&
 										(rawEventBlock.kind === "spawn"
 											? overlayFilters.spawnPoints || overlayFilters.eventBlocks
 											: overlayFilters.eventBlocks)
@@ -2819,7 +3102,7 @@ export function MapEditor({
 													</span>
 												</span>
 											) : null}
-											{object ? (
+											{object && !object.scene?.hidden ? (
 												<span
 													className={`object-marker ${
 														selection?.type === "object" &&
@@ -2842,7 +3125,7 @@ export function MapEditor({
 													</span>
 												</span>
 											) : null}
-											{pickup ? (
+											{pickup && !pickup.scene?.hidden ? (
 												<span
 													className={`pickup-marker ${
 														selection?.type === "pickup" &&
@@ -2859,7 +3142,7 @@ export function MapEditor({
 													</span>
 												</span>
 											) : null}
-											{npc ? (
+											{npc && !npc.scene?.hidden ? (
 												<span
 													className={`npc-marker alignment-${resolvedNpc?.attributes.alignment ?? "friendly"} ${
 														selection?.type === "npc" && selection.id === npc.id
@@ -2993,6 +3276,7 @@ export function MapEditor({
 							) : null}
 							{overlayFilters.structures
 								? activeArea.structures.map((structure) => {
+										if (structure.scene?.hidden) return null;
 										const preset = getStructurePreset(structure.structureId);
 										return (
 											<button
@@ -3043,8 +3327,7 @@ export function MapEditor({
 						transformMode={transformMode}
 						onTransformModeChange={(mode) => {
 							setTransformMode(mode);
-							setActiveTool("select");
-							setIsTerrainPaintArmed(false);
+							selectAuthoringMode("select");
 						}}
 						positionSnap={positionSnap}
 						onPositionSnapChange={setPositionSnap}
@@ -3053,114 +3336,198 @@ export function MapEditor({
 						focusRequest={focusRequest}
 						addAssetRequest={addAssetRequest}
 						onAssetDrop={addAsset}
+						placementAsset={placementAsset}
+						draggedAsset={draggedAsset}
+						onViewportSelect={() => setWorldSetting(undefined)}
+						externalBrush={
+							authoringMode === "foliage" ? foliage.brush : undefined
+						}
 						brushFalloff={brushFalloff}
 						brushShape={brushShape}
 						brushSize={brushSize}
 						brushStrength={brushStrength}
 						embedded
-						heightToolValue={heightToolValue}
+						heightToolValue={isWaterBrush ? waterLevel : heightToolValue}
 						hideDetails
-						onBrushFalloffChange={setBrushFalloff}
-						onBrushShapeChange={setBrushShape}
-						onBrushSizeChange={setBrushSize}
-						onBrushStrengthChange={setBrushStrength}
-						onTerrainGestureChange={selectTerrainGesture}
 						overlayFilters={overlayFilters}
 						terrainGesture={terrainGesture}
-						terrainPaintTileId={
-							isTerrainPaintArmed &&
-							activeTool === "paint" &&
-							paintTarget === "terrain"
-								? selectedTerrainId
-								: undefined
-						}
-						terrainHeightTool={
-							activeTool === "raise-height"
-								? "raise"
-								: activeTool === "lower-height"
-									? "lower"
-									: activeTool === "flatten-height"
-										? "flatten"
-										: activeTool === "slope-height"
-											? "slope"
-											: activeTool === "set-height"
-												? "set"
-												: activeTool === "smooth-height"
-													? "smooth"
-													: activeTool === "roughen-height"
-														? "roughen"
-														: undefined
+						terrainPaintTileId={terrainPaintTile}
+						terrainHeightTool={terrainHeightTool}
+						terrainBrushMask={
+							isWaterBrush
+								? waterAction === "paint"
+									? "all"
+									: "water"
+								: terrainMask
 						}
 					/>
 				)}
+				{isThreeWorkspace && (
+					<div className="map-workspace-nav">
+						<span title={mapWorkspaceStatus}>Editing · {activeArea.name}</span>
+						{placementAsset && (
+							<button
+								type="button"
+								onClick={() => setPlacementAsset(undefined)}
+							>
+								Cancel placement · Esc
+							</button>
+						)}
+						<span>v{project.metadata.version}</span>
+					</div>
+				)}
 			</div>
 
-			<aside className="inspector-panel map-inspector-panel">
-				<div
-					aria-hidden="true"
-					className={`inspector-resize-handle ${
-						isResizingInspector ? "active" : ""
-					}`}
-					onPointerDown={handleInspectorResizeStart}
-					onPointerMove={handleInspectorResizeMove}
-					onPointerUp={handleInspectorResizeEnd}
-				/>
-				<SceneHierarchy
-					project={project}
-					area={activeArea}
-					selection={selection}
-					onSelect={(next) => {
-						setSelection(next);
-						setMapPaletteSelection({ type: "none" });
-						setActiveTool("select");
-						setIsTerrainPaintArmed(false);
-					}}
-				/>
-				<fieldset className="scene-selection-actions">
-					<legend className="sr-only">Selected object actions</legend>
-					<button
-						type="button"
-						disabled={!getSceneEntity(project, selection)}
-						onClick={() => setFocusRequest((value) => value + 1)}
-						title="Focus selected (F)"
-					>
-						Focus
-					</button>
-					<button
-						type="button"
-						disabled={!getSceneEntity(project, selection)}
-						onClick={() => duplicateSceneSelection(selection)}
-						title="Duplicate (Ctrl/Cmd+D)"
-					>
-						Duplicate
-					</button>
-					<button
-						type="button"
-						disabled={!getSceneEntity(project, selection)}
-						onClick={() => deleteSceneSelection(selection)}
-						title="Delete selected (Delete)"
-					>
-						Delete
-					</button>
-				</fieldset>
-				<div className="scene-inspector-scroll">
-					<SceneTransformInspector project={project} selection={selection} />
-					<details
-						className="scene-gameplay"
-						open={mapView === "2d" || sourceRequest?.section === "map"}
-					>
-						<summary>Properties & gameplay</summary>
-						<MapInspector
+			{isThreeWorkspace ? (
+				<MapContextInspector
+					title={inspectorTitle}
+					subtitle={
+						worldSetting
+							? activeArea.name
+							: authoringMode === "select" && sceneEntity
+								? sceneEntity.id
+								: undefined
+					}
+				>
+					{worldSetting ? (
+						<MapWorldInspector
 							project={project}
-							activeArea={activeArea}
-							selected={selected}
-							selectedTerrainId={selectedTerrainId}
-							selectedOverlayId={selectedOverlayId}
-							recordMapEdit={recordMapEdit}
+							area={activeArea}
+							setting={worldSetting}
+							onOpenPlayer={onOpenPlayer}
+							onOpenHud={onOpenHud}
+						>
+							{worldSetting === "area" && (
+								<>
+									<div className="map-context-fields">
+										<label>
+											Area name
+											<input
+												value={activeArea.name}
+												onChange={(event) =>
+													updateActiveArea({ name: event.target.value })
+												}
+											/>
+										</label>
+										<label>
+											Area kind
+											<select
+												value={activeArea.kind}
+												onChange={(event) =>
+													updateActiveArea({
+														kind: event.target.value as GameAreaKind,
+													})
+												}
+											>
+												{areaKindOptions.map((kind) => (
+													<option key={kind} value={kind}>
+														{kind}
+													</option>
+												))}
+											</select>
+										</label>
+										<p className="map-context-note">
+											{activeArea.width} × {activeArea.height} tiles
+										</p>
+									</div>
+									<fieldset className="map-context-fields">
+										<legend>Editor overlays</legend>
+										{OVERLAY_FILTER_OPTIONS.map((option) => (
+											<label className="checkbox-row compact" key={option.key}>
+												<input
+													checked={overlayFilters[option.key]}
+													onChange={() =>
+														setOverlayFilters((filters) =>
+															toggleMapOverlayFilter(filters, option.key),
+														)
+													}
+													type="checkbox"
+												/>
+												{option.label}
+											</label>
+										))}
+									</fieldset>
+								</>
+							)}
+						</MapWorldInspector>
+					) : isBrushInspector ? (
+						<MapBrushInspector
+							tool={terrainTool}
+							waterAction={isWaterBrush ? waterAction : undefined}
+							onWaterActionChange={setWaterAction}
+							size={brushSize}
+							onSizeChange={setBrushSize}
+							shape={brushShape}
+							onShapeChange={setBrushShape}
+							gesture={terrainGesture}
+							onGestureChange={setTerrainGesture}
+							strength={brushStrength}
+							onStrengthChange={setBrushStrength}
+							falloff={brushFalloff}
+							onFalloffChange={setBrushFalloff}
+							height={isWaterBrush ? waterLevel : heightToolValue}
+							onHeightChange={isWaterBrush ? setWaterLevel : setHeightToolValue}
+							material={isWaterBrush ? shoreMaterial : selectedTerrainId}
+							onMaterialChange={
+								isWaterBrush ? setShoreMaterial : setSelectedTerrainId
+							}
+							mask={terrainMask}
+							onMaskChange={setTerrainMask}
 						/>
-					</details>
-				</div>
-			</aside>
+					) : authoringMode === "foliage" ? (
+						<FoliageBrushInspector
+							assets={foliage.assets}
+							settings={foliage.settings}
+							mode={foliageMode}
+							onModeChange={setFoliageMode}
+							onChange={(settings) =>
+								useProjectStore.getState().updateProject((draft) => {
+									draft.foliageBrush = settings;
+								})
+							}
+						/>
+					) : (
+						<>
+							{objectActions}
+							<SceneTransformInspector
+								project={project}
+								selection={selection}
+								onOpenAsset={onOpenAsset}
+								onOpenStory={onOpenStory}
+							/>
+							{properties}
+						</>
+					)}
+				</MapContextInspector>
+			) : (
+				<aside className="inspector-panel map-inspector-panel">
+					<div
+						aria-hidden="true"
+						className={`inspector-resize-handle ${
+							isResizingInspector ? "active" : ""
+						}`}
+						onPointerDown={handleInspectorResizeStart}
+						onPointerMove={handleInspectorResizeMove}
+						onPointerUp={handleInspectorResizeEnd}
+					/>
+					<SceneHierarchy
+						project={project}
+						area={activeArea}
+						selection={selection}
+						onSelect={(next) => {
+							setSelection(next);
+							setMapPaletteSelection({ type: "none" });
+							setActiveTool("select");
+							setIsTerrainPaintArmed(false);
+						}}
+					/>
+					{objectActions}
+					<div className="scene-inspector-scroll">
+						<SceneTransformInspector project={project} selection={selection} />
+						{properties}
+					</div>
+				</aside>
+			)}
 
 			{isPixelEditorOpen && editingPixelAsset ? (
 				<div className="pixel-editor-backdrop">

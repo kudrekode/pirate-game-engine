@@ -2833,6 +2833,7 @@ export function ThreeRuntimePanel({
 		renderer.domElement.tabIndex = 0;
 		const atmosphere = applyAtmosphere(scene, renderer, {
 			preset: area.theme?.atmosphere,
+			fogOverride: area.theme?.fog,
 			enableShadows: true,
 		});
 		// The moonlit scene has dense foliage in the shadow pass. Keep the

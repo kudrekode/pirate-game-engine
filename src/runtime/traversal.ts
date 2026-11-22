@@ -3,10 +3,9 @@ import {
 	createTerrainSurfaceSampler,
 	type TerrainSurfaceMode,
 } from "../data/terrainSurface";
-import {
-	type TraversalBox,
-	type TraversalSurface,
-	WORLD_ASSET_TRAVERSAL,
+import type {
+	TraversalBox,
+	TraversalSurface,
 } from "../data/worldAssetTraversal";
 import type {
 	GameArea,
@@ -14,6 +13,7 @@ import type {
 	MapEntityTransform,
 	ThreeVisualConfig,
 } from "../types/game";
+import { getTraversalAssetProfile } from "./mapCollision";
 import { type MovementResolveOptions, resolveMovementAt } from "./movement";
 
 // Below knee height for the 1.82 m authored human. Also admits the harbour's
@@ -267,11 +267,12 @@ export function createTraversalWorld(
 			(d) => d.id === object.objectDefinitionId,
 		);
 		const visual = { ...definition?.threeVisual, ...object.threeVisual };
-		const profile =
-			visual.mode === "asset" && visual.assetId
-				? WORLD_ASSET_TRAVERSAL[visual.assetId]
-				: undefined;
-		if (!profile) continue;
+		const collision = object.scene?.collision;
+		if (collision === "none" || collision === "trigger") continue;
+		const asset = getTraversalAssetProfile(project, visual, !!collision);
+		const profile = asset?.profile;
+		if (collision === "walkable-floor" && !profile?.surfaces?.length) continue;
+		if (!profile && collision !== "solid") continue;
 		profiledObjects.add(object.id);
 		labels.set(
 			object.id,
@@ -279,6 +280,17 @@ export function createTraversalWorld(
 		);
 		const width = object.widthTiles ?? definition?.widthTiles ?? 1;
 		const depth = object.heightTiles ?? definition?.heightTiles ?? 1;
+		const solidVolumes: TraversalBox[] =
+			profile?.solids ??
+			(profile
+				? []
+				: [
+						{
+							min: [-width / 2, 0, -depth / 2],
+							max: [width / 2, 2, depth / 2],
+						},
+					]);
+		const surfaces = profile?.surfaces ?? [];
 		let base = sampler.sampleSurfaceY(object, mode);
 		for (let y = object.y; y < object.y + depth; y++)
 			for (let x = object.x; x < object.x + width; x++)
@@ -290,18 +302,23 @@ export function createTraversalWorld(
 				object.y + (depth - 1) / 2,
 			],
 			object.transform,
-			visual,
+			asset?.variant
+				? { ...visual, scale: visual.scale ?? asset.variant.scale }
+				: visual,
 		);
 		solids.push(
-			...(profile.solids ?? []).map((b) =>
-				transformTraversalBox(object.id, frame, b),
-			),
+			...solidVolumes.map((b) => transformTraversalBox(object.id, frame, b)),
 		);
-		floors.push(
-			...(profile.surfaces ?? []).map((f) =>
-				transformFloor(object.id, frame, f),
-			),
-		);
+		for (const surface of surfaces) {
+			if (collision === "solid") {
+				solids.push(
+					transformTraversalBox(object.id, frame, {
+						min: [surface.x[0], 0, surface.z[0]],
+						max: [surface.x[1], Math.max(0.08, ...surface.y), surface.z[1]],
+					}),
+				);
+			} else floors.push(transformFloor(object.id, frame, surface));
+		}
 	}
 	// A floor rotated upright is a barrier, not an invisible non-walkable plane.
 	for (const floor of floors) {
@@ -424,7 +441,11 @@ export function resolveTraversalFloor(
 	if (cell && !isTerrainWaterTileId(cell.tileId) && terrainMove.canMove)
 		candidates.push({ height: sampleTraversalTerrain(world, point) });
 	for (const candidate of world.candidates(point.x, point.y)) {
-		if (!candidate.floor) continue;
+		if (
+			!candidate.floor ||
+			candidate.floor.id === activeVehicle?.vehicleObjectInstanceId
+		)
+			continue;
 		const height = floorHeightAt(candidate.floor, point.x, point.y);
 		if (height !== undefined)
 			candidates.push({ height, surface: candidate.floor.id });
@@ -500,6 +521,11 @@ function checkPosition(
 	if (!movement.canMove) return { reason: movement.reason };
 	const position = { ...point, height: floor.height };
 	for (const candidate of world.candidates(point.x, point.y)) {
+		if (
+			(candidate.solid ?? candidate.floor)?.id ===
+			activeVehicle?.vehicleObjectInstanceId
+		)
+			continue;
 		if (
 			candidate.solid &&
 			intersectsTraversalSolid(

@@ -1,0 +1,24 @@
+.map-context-content .map-world-readouts {
+	display: grid;
+	gap: 7px;
+	margin: 0 0 4px;
+}
+
+.map-world-readouts > div {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 10px;
+}
+
+.map-world-readouts dt {
+	color: var(--map-muted);
+}
+
+.map-world-readouts dd {
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.map-context-content .map-world-pair {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}

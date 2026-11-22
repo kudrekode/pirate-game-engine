@@ -133,6 +133,28 @@ describe("Three world presentation helpers", () => {
 		expect(threeRuntimePanelSource).not.toContain("configureThreeWorldScene");
 	});
 
+	it("overrides preset fog ranges and visibility without changing the sky or lighting", () => {
+		const scene = new THREE.Scene();
+		const renderer = createRendererStub();
+		const atmosphere = applyAtmosphere(scene, renderer, {
+			preset: "golden-hour",
+			fogOverride: { near: 22, far: 41 },
+		});
+		expect(scene.fog).toMatchObject({ near: 22, far: 41 });
+		expect(atmosphere.preset).toBe(ATMOSPHERE_PRESETS["golden-hour"]);
+		atmosphere.dispose();
+
+		const withoutFog = applyAtmosphere(scene, renderer, {
+			preset: "golden-hour",
+			fogOverride: { enabled: false },
+		});
+		expect(scene.fog).toBeNull();
+		expect(withoutFog.lights.ambient.intensity).toBe(
+			atmosphere.preset.lighting.ambientIntensity,
+		);
+		withoutFog.dispose();
+	});
+
 	it("keeps presentation helpers independent from gameplay runtime helpers", () => {
 		expect(worldPresentationSource).not.toMatch(/runtimeSession/);
 		expect(worldPresentationSource).not.toMatch(/playerMovementTransaction/);

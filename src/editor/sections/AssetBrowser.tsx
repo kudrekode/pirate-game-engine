@@ -9,9 +9,15 @@ import { SCENE_ASSET_MIME, type SceneAsset, sceneAssets } from "./sceneEditing";
 export function AssetBrowser({
 	project,
 	onAdd,
+	selectedAsset,
+	onSelect,
+	onDragAsset,
 }: {
 	project: GameProject;
 	onAdd: (asset: SceneAsset) => void;
+	selectedAsset?: SceneAsset;
+	onSelect?: (asset: SceneAsset) => void;
+	onDragAsset?: (asset: SceneAsset | undefined) => void;
 }) {
 	const [query, setQuery] = useState("");
 	const [category, setCategory] = useState("All");
@@ -75,9 +81,11 @@ export function AssetBrowser({
 	);
 	return (
 		<section className="scene-asset-browser" aria-label="Asset Browser">
-			<div className="panel-title">
-				Asset Browser <span>{assets.length}</span>
-			</div>
+			{!onSelect && (
+				<div className="panel-title">
+					Asset Browser <span>{assets.length}</span>
+				</div>
+			)}
 			<label className="asset-search">
 				<span className="sr-only">Search assets</span>
 				<input
@@ -99,7 +107,9 @@ export function AssetBrowser({
 					</button>
 				))}
 			</fieldset>
-			<p className="scene-hint">Drag into the world, or use Add.</p>
+			{!onSelect && (
+				<p className="scene-hint">Drag into the world, or use Add.</p>
+			)}
 			<div className="asset-card-grid">
 				{visible.map((asset) => {
 					const thumbnail =
@@ -108,20 +118,10 @@ export function AssetBrowser({
 							project.characterAssets,
 							project.assetCreator?.variants,
 						)?.thumbnailUrl ?? thumbnails[asset.visual?.assetId ?? ""];
-					return (
-						<article
-							className="asset-card"
-							key={`${asset.kind}:${asset.id}`}
-							aria-label={asset.name}
-							draggable
-							onDragStart={(event) => {
-								event.dataTransfer.setData(
-									SCENE_ASSET_MIME,
-									JSON.stringify({ id: asset.id, kind: asset.kind }),
-								);
-								event.dataTransfer.effectAllowed = "copy";
-							}}
-						>
+					const selected =
+						selectedAsset?.id === asset.id && selectedAsset.kind === asset.kind;
+					const preview = (
+						<>
 							<div className="asset-card-preview">
 								{thumbnail ? (
 									<img draggable={false} src={thumbnail} alt={asset.name} />
@@ -139,12 +139,44 @@ export function AssetBrowser({
 							</div>
 							<strong title={asset.name}>{asset.name}</strong>
 							<small>{asset.category}</small>
+						</>
+					);
+					return (
+						<article
+							className={`asset-card${selected ? " is-selected" : ""}`}
+							key={`${asset.kind}:${asset.id}`}
+							aria-label={asset.name}
+							draggable
+							onDragStart={(event) => {
+								event.dataTransfer.setData(
+									SCENE_ASSET_MIME,
+									JSON.stringify({ id: asset.id, kind: asset.kind }),
+								);
+								event.dataTransfer.effectAllowed = "copy";
+								onDragAsset?.(asset);
+							}}
+							onDragEnd={() => onDragAsset?.(undefined)}
+						>
+							{onSelect ? (
+								<button
+									type="button"
+									className="asset-card-select"
+									aria-label={`Place ${asset.name}`}
+									aria-pressed={selected}
+									onClick={() => onSelect(asset)}
+								>
+									{preview}
+								</button>
+							) : (
+								preview
+							)}
 							<button
 								type="button"
+								className="asset-card-add"
 								aria-label={`Add ${asset.name}`}
 								onClick={() => onAdd(asset)}
 							>
-								+ Add
+								{onSelect ? "+" : "+ Add"}
 							</button>
 						</article>
 					);

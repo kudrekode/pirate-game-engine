@@ -4,7 +4,10 @@ import {
 	TransformControls,
 	type TransformControlsMode,
 } from "three/examples/jsm/controls/TransformControls.js";
+import { getStructurePreset } from "../../data/mapVisuals";
+import { isTerrainWaterTileId } from "../../data/terrainHeight";
 import {
+	createTerrainSurfaceSampler,
 	getTerrainPresentationSurfaceY,
 	type TerrainSurfaceMode,
 } from "../../data/terrainSurface";
@@ -56,6 +59,8 @@ import {
 	createTerrainMaterial,
 	createWorldMaterial,
 	getWorldMaterialColor,
+	resolveAtmosphereFog,
+	resolveAtmospherePreset,
 	resolveTerrainMaterialKey,
 } from "../../runtime/three/worldPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
@@ -66,6 +71,8 @@ import type {
 	PlayerConfig,
 } from "../../types/game";
 import { areaEntitiesToMarkers, type EntityMarker } from "./entityMarkers";
+import type { MapBrushMask } from "./MapBrushInspector";
+import { resolveMapSpawn } from "./mapSpawn";
 import {
 	GAMEPLAY_OVERLAY_FILTERS,
 	HIDE_ALL_OVERLAY_FILTERS,
@@ -96,6 +103,7 @@ import {
 } from "./previewSelection";
 import { getPreviewSelectionDetails } from "./previewSelectionDetails";
 import {
+	getSceneAppearance,
 	getSceneEntity,
 	readSceneTransform,
 	SCENE_ASSET_MIME,
@@ -127,6 +135,11 @@ import {
 	terrainBrushCellKey,
 } from "./terrainBrush";
 import {
+	isMapEditorInputBlocked,
+	moveEditorFlyCamera,
+	rotateEditorFlyCamera,
+} from "./threeDEditorCamera";
+import {
 	getCanvasPointerNdc,
 	resolveSelectionMetadataFromIntersection,
 	terrainIntersectionToPreviewGridPosition,
@@ -136,8 +149,12 @@ import {
 	getWalkPreviewStart,
 	moveWalkPreview,
 } from "./threeDWalkPreview";
+import type { MapViewportBrush } from "./useMapFoliageBrush";
 
 type PreviewCameraMode = OrbitCameraPreset | "custom";
+type EditorCameraNavigation = "orbit" | "fly";
+type PreviewCameraDragMode = "orbit" | "pan" | "fly";
+const FLY_MOVEMENT_KEYS = new Set(["w", "a", "s", "d", "q", "e"]);
 export type TerrainHeightTool =
 	| "raise"
 	| "lower"
@@ -169,6 +186,10 @@ type ThreeDPreviewProps = {
 	focusRequest?: number;
 	addAssetRequest?: { asset: SceneAsset; serial: number };
 	onAssetDrop?: (asset: SceneAsset, position: PreviewGridPosition) => void;
+	placementAsset?: SceneAsset;
+	draggedAsset?: SceneAsset;
+	onViewportSelect?: () => void;
+	externalBrush?: MapViewportBrush;
 	brushFalloff?: TerrainBrushFalloff;
 	brushShape?: TerrainBrushShape;
 	brushSize?: TerrainBrushSize;
@@ -186,6 +207,7 @@ type ThreeDPreviewProps = {
 	terrainGesture?: TerrainGesture;
 	terrainPaintTileId?: string;
 	terrainHeightTool?: TerrainHeightTool;
+	terrainBrushMask?: MapBrushMask;
 };
 
 function createThreeDPreviewSelectionKey(selection: unknown): string {
@@ -331,14 +353,9 @@ export function createPlayerSpawnPreviewMarker(
 	surfaceMode: TerrainSurfaceMode,
 	projectAssets: CharacterGameAsset[] = [],
 	variants: AssetCreatorVariant[] = [],
+	spawn = area?.eventBlocks.find((eventBlock) => eventBlock.kind === "spawn"),
 ): EntityMarker | undefined {
-	if (!area) {
-		return undefined;
-	}
-	const spawn = area.eventBlocks.find(
-		(eventBlock) => eventBlock.kind === "spawn",
-	);
-	if (!spawn) {
+	if (!area || !spawn) {
 		return undefined;
 	}
 	const point = previewGridPositionToThreePoint(area, spawn, {
@@ -416,6 +433,10 @@ export function ThreeDPreview({
 	focusRequest = 0,
 	addAssetRequest,
 	onAssetDrop,
+	placementAsset,
+	draggedAsset,
+	onViewportSelect,
+	externalBrush,
 	brushFalloff = "hard",
 	brushShape = "square",
 	brushSize = 1,
@@ -433,8 +454,10 @@ export function ThreeDPreview({
 	terrainGesture = "brush",
 	terrainPaintTileId,
 	terrainHeightTool,
+	terrainBrushMask = "all",
 }: ThreeDPreviewProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const rendererRef = useRef<THREE.WebGLRenderer | undefined>(undefined);
 	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
 	if (!diagnosticsRef.current) {
 		diagnosticsRef.current = createThreePerformanceDiagnostics({
@@ -445,6 +468,7 @@ export function ThreeDPreview({
 	const cameraStateRef = useRef<OrbitCameraState>(
 		resetOrbitCameraState({ height: 8, width: 8 }),
 	);
+	const flyKeysRef = useRef(new Set<string>());
 	const terrainBrushStrokeRef = useRef<TerrainBrushStroke | null>(null);
 	const previousBuildInputsRef = useRef<ThreeDPreviewBuildInputs | null>(null);
 	const [mountError, setMountError] = useState("");
@@ -454,6 +478,14 @@ export function ThreeDPreview({
 	);
 	const [cameraPreset, setCameraPreset] =
 		useState<PreviewCameraMode>("isometric");
+	const [cameraNavigation, setCameraNavigation] =
+		useState<EditorCameraNavigation>("orbit");
+	const [flySpeed, setFlySpeed] = useState(12);
+	const cameraNavigationRef = useRef({
+		mode: cameraNavigation,
+		speed: flySpeed,
+	});
+	cameraNavigationRef.current = { mode: cameraNavigation, speed: flySpeed };
 	const [assetRenderVersion, setAssetRenderVersion] = useState(0);
 	const [terrainRenderMode, setTerrainRenderMode] =
 		useState<TerrainRenderMode>("smooth");
@@ -470,12 +502,20 @@ export function ThreeDPreview({
 		positionSnap,
 		rotationSnap,
 		onAssetDrop,
+		placementAsset,
+		draggedAsset,
+		onViewportSelect,
+		externalBrush,
 	});
 	controlsStateRef.current = {
 		transformMode,
 		positionSnap,
 		rotationSnap,
 		onAssetDrop,
+		placementAsset,
+		draggedAsset,
+		onViewportSelect,
+		externalBrush,
 	};
 	const sceneUiRef = useRef<
 		| {
@@ -488,6 +528,8 @@ export function ThreeDPreview({
 	>(undefined);
 	const sceneUiSyncKey = JSON.stringify([
 		editorSelection,
+		getSceneAppearance(project, editorSelection)?.locked,
+		Boolean(placementAsset || externalBrush),
 		transformMode,
 		positionSnap,
 		rotationSnap,
@@ -533,6 +575,10 @@ export function ThreeDPreview({
 		activeArea?.terrainTiles,
 		activeArea?.terrainHeights,
 	]);
+	const atmosphereContentKey = JSON.stringify([
+		activeArea?.theme?.atmosphere,
+		activeArea?.theme?.fog,
+	]);
 	const terrainBlocks = useMemo(
 		() => terrainTilesToBlocks(activeArea),
 		[activeArea],
@@ -570,9 +616,17 @@ export function ThreeDPreview({
 				terrainRenderMode,
 				project.characterAssets,
 				project.assetCreator?.variants,
+				activeArea
+					? resolveMapSpawn(
+							{ areas: project.areas, progression: project.progression },
+							activeArea,
+						).marker
+					: undefined,
 			),
 		[
 			activeArea,
+			project.areas,
+			project.progression,
 			project.player,
 			project.characterAssets,
 			project.assetCreator?.variants,
@@ -636,6 +690,12 @@ export function ThreeDPreview({
 		isMovablePreviewSelection(editorSelection) &&
 		editorSelection.areaId === activeArea?.id;
 	const isWalkPreviewActive = Boolean(walkPreviewPosition);
+	const canFocusSelection = renderMarkers.some((marker) =>
+		selectionMatchesMetadata(
+			editorSelection,
+			entityMarkerToSelectionMetadata(marker, activeArea?.id ?? ""),
+		),
+	);
 	const isTerrainEditing = Boolean(terrainPaintTileId || terrainHeightTool);
 	const canUseBrushShape = terrainGesture === "brush";
 	const canUseHeightBrushOptions = Boolean(
@@ -643,11 +703,15 @@ export function ThreeDPreview({
 			terrainHeightTool !== "flatten" &&
 			terrainHeightTool !== "set",
 	);
-	const toolbarModeLabel = getTerrainEditorModeLabel({
-		placementLabel: placementInfo.active ? placementInfo.label : undefined,
-		terrainHeightTool,
-		terrainPaintTileId,
-	});
+	const toolbarModeLabel =
+		externalBrush?.label ??
+		getTerrainEditorModeLabel({
+			placementLabel:
+				placementAsset?.name ??
+				(placementInfo.active ? placementInfo.label : undefined),
+			terrainHeightTool,
+			terrainPaintTileId,
+		});
 	const activeAreaId = activeArea?.id;
 	const cameraDimensions = useMemo(
 		() => getPreviewCameraDimensions(activeArea?.height, activeArea?.width),
@@ -663,10 +727,37 @@ export function ThreeDPreview({
 	);
 
 	const resetCamera = useCallback(() => {
-		cameraStateRef.current = resetOrbitCameraState(cameraDimensions);
-		if (embedded) cameraStateRef.current.distance *= 0.8;
+		flyKeysRef.current.clear();
+		const state = resetOrbitCameraState(cameraDimensions);
+		if (embedded) {
+			state.distance *= 0.8;
+			const { project } = useProjectStore.getState();
+			const area = project.areas.find(
+				(entry) => entry.id === project.activeAreaId,
+			);
+			if (area) {
+				const preset = resolveAtmospherePreset(area.theme?.atmosphere);
+				const fog = resolveAtmosphereFog(preset, area.theme?.fog);
+				// Prefer a useful working distance when the complete map is beyond the authored fog.
+				if (fog.enabled && state.distance > fog.far * 0.7) {
+					state.distance = Math.max(12, fog.far * 0.48);
+					const spawn = resolveMapSpawn(project, area).marker;
+					if (spawn) {
+						const point = previewGridPositionToThreePoint(area, spawn);
+						state.focus = { x: point.x * 0.5, y: 1, z: point.z * 0.5 };
+					}
+				}
+			}
+		}
+		cameraStateRef.current = state;
 		setCameraPreset("isometric");
 	}, [cameraDimensions, embedded]);
+
+	const changeCameraNavigation = (mode: EditorCameraNavigation) => {
+		flyKeysRef.current.clear();
+		setCameraNavigation(mode);
+		hostRef.current?.focus({ preventScroll: true });
+	};
 
 	useEffect(() => {
 		if (!activeAreaId) {
@@ -679,6 +770,9 @@ export function ThreeDPreview({
 	useEffect(() => {
 		return () => {
 			terrainBrushStrokeRef.current = null;
+			rendererRef.current?.dispose();
+			rendererRef.current?.domElement.remove();
+			rendererRef.current = undefined;
 		};
 	}, []);
 
@@ -702,12 +796,12 @@ export function ThreeDPreview({
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (
+				event.defaultPrevented ||
 				hostRef.current?.closest("[hidden]") ||
-				(event.target instanceof HTMLElement &&
-					(event.target.matches("input, select, textarea") ||
-						event.target.isContentEditable))
-			)
+				isMapEditorInputBlocked(event.target)
+			) {
 				return;
+			}
 			if (event.key === "Escape") {
 				if (walkPreviewPosition) {
 					event.preventDefault();
@@ -803,10 +897,11 @@ export function ThreeDPreview({
 
 		const areaWidth = Math.max(activeArea?.width ?? 8, 8);
 		const areaHeight = Math.max(activeArea?.height ?? 8, 8);
-		const cameraBounds = getOrbitCameraBounds({
+		const orbitBounds = getOrbitCameraBounds({
 			height: areaHeight,
 			width: areaWidth,
 		});
+		const cameraBounds = { ...orbitBounds, minPitch: -orbitBounds.maxPitch };
 		const camera = new THREE.PerspectiveCamera(
 			50,
 			1,
@@ -820,18 +915,31 @@ export function ThreeDPreview({
 						width: 1,
 					})
 				: undefined;
+		let appliedCameraState: OrbitCameraState | undefined;
 		const applyCameraFromState = () => {
-			cameraStateRef.current = clampOrbitCameraState(
-				cameraStateRef.current,
-				cameraBounds,
-			);
-			const cameraPosition = getOrbitCameraPosition(cameraStateRef.current);
-			const cameraTarget = getOrbitCameraLookTarget(cameraStateRef.current);
+			if (appliedCameraState === cameraStateRef.current) return;
+			const state = clampOrbitCameraState(cameraStateRef.current, cameraBounds);
+			cameraStateRef.current = state;
+			appliedCameraState = state;
+			const cameraPosition = getOrbitCameraPosition(state);
+			const cameraTarget = getOrbitCameraLookTarget(state);
 			camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
 			camera.lookAt(
 				new THREE.Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
 			);
 			camera.updateMatrixWorld(true);
+			if (import.meta.env.DEV) {
+				host.dataset.cameraPosition = JSON.stringify([
+					cameraPosition.x,
+					cameraPosition.y,
+					cameraPosition.z,
+				]);
+				host.dataset.cameraTarget = JSON.stringify([
+					cameraTarget.x,
+					cameraTarget.y,
+					cameraTarget.z,
+				]);
+			}
 		};
 		applyCameraFromState();
 
@@ -1048,7 +1156,8 @@ export function ThreeDPreview({
 
 		let renderer: THREE.WebGLRenderer;
 		try {
-			renderer = new THREE.WebGLRenderer({ antialias: true });
+			rendererRef.current ??= new THREE.WebGLRenderer({ antialias: true });
+			renderer = rendererRef.current;
 		} catch (error) {
 			setMountError(
 				error instanceof Error
@@ -1060,10 +1169,13 @@ export function ThreeDPreview({
 
 		const atmosphere = applyAtmosphere(scene, renderer, {
 			preset: activeArea?.theme?.atmosphere,
+			fogOverride: activeArea?.theme?.fog,
 			enableShadows: true,
 		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-		host.appendChild(renderer.domElement);
+		if (renderer.domElement.parentElement !== host) {
+			host.appendChild(renderer.domElement);
+		}
 		const transformControls = new TransformControls(
 			camera,
 			renderer.domElement,
@@ -1137,14 +1249,17 @@ export function ThreeDPreview({
 				writeSceneTransform(draft, start.selection, next),
 			);
 		});
-		const syncSelection = () => {
+		const getSelectedMarkerGroup = () => {
 			const index = renderMarkersRef.current.findIndex((marker) =>
 				selectionMatchesMetadata(
 					selectionRef.current,
 					entityMarkerToSelectionMetadata(marker, activeArea?.id ?? ""),
 				),
 			);
-			const group = markerRenderResults[index]?.group;
+			return markerRenderResults[index]?.group;
+		};
+		const syncSelection = () => {
+			const group = getSelectedMarkerGroup();
 			const state = controlsStateRef.current;
 			transformControls.setMode(state.transformMode);
 			transformControls.setSpace(
@@ -1159,6 +1274,12 @@ export function ThreeDPreview({
 			if (
 				group &&
 				!isTerrainEditing &&
+				!state.placementAsset &&
+				!state.externalBrush &&
+				!getSceneAppearance(
+					useProjectStore.getState().project,
+					selectionRef.current,
+				)?.locked &&
 				!placementInfo.active &&
 				!isWalkPreviewActive
 			) {
@@ -1187,7 +1308,7 @@ export function ThreeDPreview({
 				syncSelection();
 			},
 			focus: () => {
-				const object = transformControls.object;
+				const object = getSelectedMarkerGroup();
 				if (!object) return;
 				const box = new THREE.Box3().setFromObject(object);
 				const focus = box.getCenter(new THREE.Vector3());
@@ -1200,6 +1321,7 @@ export function ThreeDPreview({
 					),
 				};
 				setCameraPreset("custom");
+				applyCameraFromState();
 			},
 			add: (asset) => {
 				if (!activeArea) return;
@@ -1217,6 +1339,9 @@ export function ThreeDPreview({
 		let dragGhost: THREE.Mesh | null = null;
 		let placementGhost: THREE.Mesh | null = null;
 		let terrainBrushGhost: THREE.Group | null = null;
+		let customBrushPointer:
+			| { pointerId: number; brush: MapViewportBrush }
+			| undefined;
 		let terrainShapeGesture: TerrainShapeGesture | null = null;
 		let latestPlacementPosition: PreviewGridPosition | undefined;
 		let pointerStart: {
@@ -1228,23 +1353,71 @@ export function ThreeDPreview({
 			heightEditing?: boolean;
 			terrainPainting?: boolean;
 			terrainShape?: boolean;
+			assetPlacement?: SceneAsset;
 			latestPosition?: PreviewGridPosition;
 		} | null = null;
 		let cameraDrag: {
 			pointerId: number;
-			mode: "orbit" | "pan";
+			mode: PreviewCameraDragMode;
 			x: number;
 			y: number;
 		} | null = null;
 		const markCustomCamera = () => {
 			setCameraPreset((current) => (current === "custom" ? current : "custom"));
 		};
+		const flyKeys = flyKeysRef.current;
+		const clearFlyKeys = () => flyKeys.clear();
+		const stopCameraInput = () => {
+			clearFlyKeys();
+			if (!cameraDrag) return;
+			const { pointerId } = cameraDrag;
+			cameraDrag = null;
+			const canvas = renderer.domElement;
+			if (canvas.hasPointerCapture?.(pointerId)) {
+				canvas.releasePointerCapture(pointerId);
+			}
+		};
+		const isFlyMode = () =>
+			!isWalkPreviewActive && cameraNavigationRef.current.mode === "fly";
+		const isFlyMoving = () =>
+			isFlyMode() && flyKeys.size > Number(flyKeys.has("shift"));
+		const canUseCameraInput = (target: EventTarget | null) =>
+			!host.closest("[hidden]") &&
+			!isMapEditorInputBlocked(target, host.ownerDocument);
+		const handleCameraKeyDown = (event: KeyboardEvent) => {
+			if (
+				event.defaultPrevented ||
+				event.altKey ||
+				event.ctrlKey ||
+				event.metaKey ||
+				isWalkPreviewActive ||
+				host.ownerDocument.activeElement !== host ||
+				!canUseCameraInput(event.target)
+			)
+				return;
+			const key = event.key.toLowerCase();
+			if (key === "f" && !event.repeat) {
+				event.preventDefault();
+				sceneUiRef.current?.focus();
+			} else if (isFlyMode() && FLY_MOVEMENT_KEYS.has(key)) {
+				event.preventDefault();
+				flyKeys.add(key);
+				if (event.shiftKey) flyKeys.add("shift");
+			} else if (isFlyMode() && key === "shift") {
+				flyKeys.add(key);
+			}
+		};
+		const handleCameraKeyUp = (event: KeyboardEvent) => {
+			flyKeys.delete(event.key.toLowerCase());
+		};
 
 		const isPrimaryEditorPointer = (event: PointerEvent) =>
 			event.button === 0 && !event.altKey;
 
 		const releasePointerCapture = (event: PointerEvent) => {
-			renderer.domElement.releasePointerCapture?.(event.pointerId);
+			if (renderer.domElement.hasPointerCapture?.(event.pointerId)) {
+				renderer.domElement.releasePointerCapture(event.pointerId);
+			}
 		};
 
 		const setPointerFromEvent = (event: {
@@ -1308,6 +1481,7 @@ export function ThreeDPreview({
 		};
 
 		const selectFromPointer = (event: PointerEvent) => {
+			controlsStateRef.current.onViewportSelect?.();
 			const metadata = getPointerHit(event);
 			if (
 				!metadata ||
@@ -1323,7 +1497,7 @@ export function ThreeDPreview({
 		const dropGhost = new THREE.Mesh(
 			new THREE.BoxGeometry(0.95, 0.05, 0.95),
 			new THREE.MeshBasicMaterial({
-				color: 0x00b9ff,
+				color: 0xbee2a9,
 				transparent: true,
 				opacity: 0.65,
 				depthTest: false,
@@ -1331,57 +1505,135 @@ export function ThreeDPreview({
 		);
 		dropGhost.visible = false;
 		scene.add(dropGhost);
+		const terrainSampler = activeArea
+			? createTerrainSurfaceSampler(activeArea)
+			: undefined;
+		const dropPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+		const dropPoint = new THREE.Vector3();
 		const dropPosition = (
-			event: DragEvent,
-		): PreviewGridPosition | undefined => {
-			if (!activeArea) return;
-			if (updateRaycasterFromPointer(event)) {
-				const hit = raycaster.intersectObjects(
-					terrainSurfacePickMeshes,
-					false,
-				)[0];
-				if (hit)
-					return terrainIntersectionToPreviewGridPosition(activeArea, hit);
-				const point = raycaster.ray.intersectPlane(
-					new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
-					new THREE.Vector3(),
-				);
-				if (point)
-					return {
-						x: Math.min(
-							activeArea.width - 1,
-							Math.max(0, Math.round(point.x + (activeArea.width - 1) / 2)),
-						),
-						y: Math.min(
-							activeArea.height - 1,
-							Math.max(0, Math.round(point.z + (activeArea.height - 1) / 2)),
-						),
-					};
-			}
-			return {
-				x: cameraStateRef.current.focus.x + (activeArea.width - 1) / 2,
-				y: cameraStateRef.current.focus.z + (activeArea.height - 1) / 2,
+			event: { clientX: number; clientY: number },
+			asset?: SceneAsset,
+		) => {
+			if (!activeArea || !updateRaycasterFromPointer(event)) return;
+			const hit = raycaster.intersectObjects(
+				terrainSurfacePickMeshes,
+				false,
+			)[0];
+			const rawPoint =
+				hit?.point ?? raycaster.ray.intersectPlane(dropPlane, dropPoint);
+			if (!rawPoint) return;
+			const footprint =
+				asset?.kind === "object"
+					? useProjectStore
+							.getState()
+							.project.objects.find((entry) => entry.id === asset.id)
+					: asset?.kind === "structure"
+						? getStructurePreset(asset.id)
+						: undefined;
+			const width = footprint?.widthTiles ?? 1;
+			const height = footprint?.heightTiles ?? 1;
+			const position = {
+				x: Math.round(rawPoint.x + (activeArea.width - width) / 2),
+				y: Math.round(rawPoint.z + (activeArea.height - height) / 2),
 			};
+			return {
+				position,
+				width,
+				height,
+				valid: Boolean(
+					hit &&
+						position.x >= 0 &&
+						position.y >= 0 &&
+						position.x + width <= activeArea.width &&
+						position.y + height <= activeArea.height,
+				),
+			};
+		};
+		const updateAssetGhost = (target: ReturnType<typeof dropPosition>) => {
+			dropGhost.visible = Boolean(target);
+			if (!activeArea || !target) return;
+			const point = previewGridPositionToThreePoint(
+				activeArea,
+				target.position,
+				target,
+			);
+			dropGhost.scale.set(target.width, 1, target.height);
+			dropGhost.position.set(
+				point.x,
+				(target.valid
+					? (terrainSampler?.sampleSurfaceY(
+							target.position,
+							terrainRenderMode,
+						) ?? 0)
+					: 0) + 0.08,
+				point.z,
+			);
+			dropGhost.material.color.setHex(target.valid ? 0xbee2a9 : 0xf17a72);
+		};
+		const brushGeometry = new THREE.BufferGeometry();
+		const brushPointLimit = 192;
+		const brushPositions = new THREE.BufferAttribute(
+			new Float32Array(brushPointLimit * 3),
+			3,
+		);
+		brushPositions.setUsage(THREE.DynamicDrawUsage);
+		brushGeometry.setAttribute("position", brushPositions);
+		const brushPoints = new THREE.Points(
+			brushGeometry,
+			new THREE.PointsMaterial({
+				color: 0xc5e5ad,
+				size: 7,
+				sizeAttenuation: false,
+				depthWrite: false,
+			}),
+		);
+		brushPoints.frustumCulled = false;
+		brushPoints.visible = false;
+		scene.add(brushPoints);
+		let lastBrushPreview:
+			| { x: number; y: number; brush: MapViewportBrush }
+			| undefined;
+		const hideCustomBrush = () => {
+			brushPoints.visible = false;
+			lastBrushPreview = undefined;
+		};
+		const updateCustomBrush = (
+			brush: MapViewportBrush,
+			center: PreviewGridPosition,
+		) => {
+			if (!activeArea || !terrainSampler) return;
+			if (
+				lastBrushPreview?.brush === brush &&
+				lastBrushPreview.x === center.x &&
+				lastBrushPreview.y === center.y
+			)
+				return;
+			lastBrushPreview = { ...center, brush };
+			const points = brush.preview(center).slice(0, brushPointLimit);
+			points.forEach((point, index) => {
+				const { x, z } = previewGridPositionToThreePoint(activeArea, point);
+				brushPositions.setXYZ(
+					index,
+					x,
+					(point.surfaceY ??
+						terrainSampler.sampleSurfaceY(point, terrainRenderMode)) + 0.15,
+					z,
+				);
+			});
+			brushPositions.needsUpdate = true;
+			brushGeometry.setDrawRange(0, points.length);
+			brushPoints.material.color.setHex(
+				brush.label === "Erase foliage" ? 0xf17a72 : 0xc5e5ad,
+			);
+			brushPoints.visible = points.length > 0;
 		};
 		const handleDragOver = (event: DragEvent) => {
 			if (!event.dataTransfer?.types.includes(SCENE_ASSET_MIME) || !activeArea)
 				return;
 			event.preventDefault();
-			event.dataTransfer.dropEffect = "copy";
-			const position = dropPosition(event);
-			if (position) {
-				const point = previewGridPositionToThreePoint(activeArea, position);
-				dropGhost.position.set(
-					point.x,
-					getTerrainPresentationSurfaceY(
-						activeArea,
-						position,
-						terrainRenderMode,
-					) + 0.08,
-					point.z,
-				);
-				dropGhost.visible = true;
-			}
+			const target = dropPosition(event, controlsStateRef.current.draggedAsset);
+			event.dataTransfer.dropEffect = target?.valid ? "copy" : "none";
+			updateAssetGhost(target);
 		};
 		const handleDragLeave = () => {
 			dropGhost.visible = false;
@@ -1397,9 +1649,9 @@ export function ThreeDPreview({
 				const asset = sceneAssets(useProjectStore.getState().project).find(
 					(entry) => entry.id === identity.id && entry.kind === identity.kind,
 				);
-				const position = dropPosition(event);
-				if (asset && position)
-					controlsStateRef.current.onAssetDrop?.(asset, position);
+				const target = asset && dropPosition(event, asset);
+				if (asset && target?.valid)
+					controlsStateRef.current.onAssetDrop?.(asset, target.position);
 			} catch {
 				/* Unrelated drag data must never mutate a project. */
 			}
@@ -1460,7 +1712,11 @@ export function ThreeDPreview({
 		};
 
 		const metadataIsMovable = (metadata: PreviewSelectionMetadata) =>
-			isMovablePreviewSelection(metadataToEditorSelection(metadata));
+			isMovablePreviewSelection(metadataToEditorSelection(metadata)) &&
+			!getSceneAppearance(
+				useProjectStore.getState().project,
+				metadataToEditorSelection(metadata),
+			)?.locked;
 
 		const getTerrainPositionFromPointer = (
 			event: PointerEvent,
@@ -1610,6 +1866,12 @@ export function ThreeDPreview({
 				lookup.get(terrainBrushCellKey(cell)) ?? "grass";
 		};
 
+		const allowsTerrainCell = (cell: TerrainBrushCell) => {
+			if (terrainBrushMask === "all") return true;
+			const tileId = terrainSampler?.getTile(cell.x, cell.y)?.tileId;
+			return isTerrainWaterTileId(tileId) === (terrainBrushMask === "water");
+		};
+
 		const getFillPositions = (position: PreviewGridPosition) => {
 			if (!activeArea || !terrainPaintTileId || terrainHeightTool) {
 				return [];
@@ -1630,7 +1892,8 @@ export function ThreeDPreview({
 				influence: 1,
 			})),
 		) => {
-			if (!activeArea || positions.length === 0) {
+			const allowed = positions.filter(allowsTerrainCell);
+			if (!activeArea || allowed.length === 0) {
 				return false;
 			}
 			const heightOperation = getTerrainHeightOperation();
@@ -1638,16 +1901,16 @@ export function ThreeDPreview({
 				const updates = resolveTerrainHeightUpdates({
 					area: activeArea,
 					operation: heightOperation,
-					samples,
+					samples: samples.filter(allowsTerrainCell),
 					strength: brushStrength,
-					targetHeight: heightOperation === "flatten" ? 0 : heightToolValue,
+					targetHeight: heightToolValue,
 				});
 				if (updates.length > 0) {
 					setTerrainHeights(updates);
 				}
 			} else if (terrainPaintTileId) {
 				const updates = resolveTerrainPaintUpdates({
-					cells: positions,
+					cells: allowed,
 					getTileId: makeTerrainTileReader(),
 					knownBounds: { height: activeArea.height, width: activeArea.width },
 					targetTileId: terrainPaintTileId,
@@ -1848,7 +2111,7 @@ export function ThreeDPreview({
 
 			cleanupTerrainBrushGhost();
 			terrainBrushGhost = new THREE.Group();
-			positions.forEach((cell) => {
+			positions.filter(allowsTerrainCell).forEach((cell) => {
 				const threePoint = previewGridPositionToThreePoint(activeArea, cell, {
 					height: 1,
 					width: 1,
@@ -1876,25 +2139,72 @@ export function ThreeDPreview({
 		};
 
 		const handlePointerDown = (event: PointerEvent) => {
-			if (host.closest("[hidden]") || transformControls.dragging) return;
-			// Alt-modified drags are reserved for camera control so unmodified
-			// pointer input remains owned by paint, sculpt, placement, and selection.
+			if (
+				transformControls.dragging ||
+				cameraDrag ||
+				!canUseCameraInput(event.target)
+			)
+				return;
 			if (
 				event.button === 1 ||
 				event.button === 2 ||
 				(event.altKey && event.button === 0)
 			) {
 				event.preventDefault();
+				if (
+					pointerStart ||
+					customBrushPointer ||
+					terrainBrushStrokeRef.current ||
+					terrainShapeGesture
+				)
+					return;
+				let mode: PreviewCameraDragMode = "orbit";
+				if (isFlyMode() && event.button === 2) mode = "fly";
+				else if (event.shiftKey || event.button === 1) mode = "pan";
 				cameraDrag = {
 					pointerId: event.pointerId,
-					mode: event.shiftKey || event.button === 1 ? "pan" : "orbit",
+					mode,
 					x: event.clientX,
 					y: event.clientY,
 				};
+				cleanupDragGhost();
+				cleanupPlacementGhost();
+				cleanupTerrainBrushGhost();
+				hideCustomBrush();
+				dropGhost.visible = false;
 				renderer.domElement.setPointerCapture?.(event.pointerId);
 				return;
 			}
-			if (!isPrimaryEditorPointer(event)) {
+			if (!isPrimaryEditorPointer(event) || isFlyMoving()) {
+				return;
+			}
+			const { externalBrush: brush, placementAsset: asset } =
+				controlsStateRef.current;
+			if (brush) {
+				const position = getTerrainPositionFromPointer(event);
+				if (position) {
+					event.preventDefault();
+					customBrushPointer = { pointerId: event.pointerId, brush };
+					renderer.domElement.setPointerCapture?.(event.pointerId);
+					brush.apply(position);
+					updateCustomBrush(brush, position);
+				}
+				return;
+			}
+			if (asset) {
+				const target = dropPosition(event, asset);
+				updateAssetGhost(target);
+				if (target?.valid) {
+					event.preventDefault();
+					pointerStart = {
+						pointerId: event.pointerId,
+						didDrag: false,
+						x: event.clientX,
+						y: event.clientY,
+						assetPlacement: asset,
+					};
+					renderer.domElement.setPointerCapture?.(event.pointerId);
+				}
 				return;
 			}
 			if (
@@ -2046,15 +2356,28 @@ export function ThreeDPreview({
 				const deltaX = event.clientX - cameraDrag.x;
 				const deltaY = event.clientY - cameraDrag.y;
 				if (deltaX !== 0 || deltaY !== 0) {
-					cameraStateRef.current =
-						cameraDrag.mode === "pan"
-							? panOrbitCamera(cameraStateRef.current, deltaX, deltaY)
-							: rotateOrbitCamera(
-									cameraStateRef.current,
-									deltaX,
-									deltaY,
-									cameraBounds,
-								);
+					const state = cameraStateRef.current;
+					switch (cameraDrag.mode) {
+						case "pan":
+							cameraStateRef.current = panOrbitCamera(state, deltaX, deltaY);
+							break;
+						case "fly":
+							cameraStateRef.current = rotateEditorFlyCamera(
+								state,
+								deltaX,
+								deltaY,
+								cameraBounds.maxPitch,
+							);
+							break;
+						case "orbit":
+							cameraStateRef.current = rotateOrbitCamera(
+								state,
+								deltaX,
+								deltaY,
+								cameraBounds,
+							);
+							break;
+					}
 					markCustomCamera();
 					applyCameraFromState();
 					cameraDrag = {
@@ -2063,6 +2386,27 @@ export function ThreeDPreview({
 						y: event.clientY,
 					};
 				}
+				return;
+			}
+			if (isFlyMoving() && !pointerStart && !customBrushPointer) return;
+			const brush =
+				customBrushPointer?.brush ?? controlsStateRef.current.externalBrush;
+			if (brush) {
+				if (
+					customBrushPointer &&
+					customBrushPointer.pointerId !== event.pointerId
+				)
+					return;
+				const position = getTerrainPositionFromPointer(event);
+				if (position) {
+					if (customBrushPointer) brush.apply(position);
+					updateCustomBrush(brush, position);
+				} else hideCustomBrush();
+				return;
+			}
+			const asset = controlsStateRef.current.placementAsset;
+			if (asset) {
+				updateAssetGhost(dropPosition(event, asset));
 				return;
 			}
 			if (terrainShapeGesture) {
@@ -2198,6 +2542,27 @@ export function ThreeDPreview({
 				releasePointerCapture(event);
 				return;
 			}
+			if (customBrushPointer?.pointerId === event.pointerId) {
+				const { brush } = customBrushPointer;
+				customBrushPointer = undefined;
+				hideCustomBrush();
+				releasePointerCapture(event);
+				brush.finish(true);
+				return;
+			}
+			if (
+				pointerStart?.assetPlacement &&
+				pointerStart.pointerId === event.pointerId
+			) {
+				const asset = pointerStart.assetPlacement;
+				pointerStart = null;
+				dropGhost.visible = false;
+				releasePointerCapture(event);
+				const target = dropPosition(event, asset);
+				if (target?.valid)
+					controlsStateRef.current.onAssetDrop?.(asset, target.position);
+				return;
+			}
 			if (terrainShapeGesture) {
 				if (terrainShapeGesture.pointerId !== event.pointerId) {
 					return;
@@ -2256,7 +2621,7 @@ export function ThreeDPreview({
 					latestPlacementPosition ?? getPlacementPositionFromPointer(event);
 				if (deltaX <= 4 && deltaY <= 4 && activeArea && nextPosition) {
 					const nextSelection = placePreviewEntity(
-						mapPaletteSelection,
+						useProjectStore.getState().mapPaletteSelection,
 						nextPosition,
 						{
 							addEventBlock,
@@ -2298,6 +2663,15 @@ export function ThreeDPreview({
 		};
 
 		const cancelPointerInteraction = (event: PointerEvent) => {
+			hideCustomBrush();
+			dropGhost.visible = false;
+			if (customBrushPointer?.pointerId === event.pointerId) {
+				const { brush } = customBrushPointer;
+				customBrushPointer = undefined;
+				releasePointerCapture(event);
+				brush.finish(false);
+				return;
+			}
 			if (cameraDrag?.pointerId === event.pointerId) {
 				cameraDrag = null;
 				releasePointerCapture(event);
@@ -2333,12 +2707,28 @@ export function ThreeDPreview({
 		};
 
 		const handleWheel = (event: WheelEvent) => {
+			if (
+				!canUseCameraInput(event.target) ||
+				pointerStart ||
+				transformControls.dragging
+			)
+				return;
 			event.preventDefault();
-			cameraStateRef.current = zoomOrbitCamera(
-				cameraStateRef.current,
-				event.deltaY,
-				cameraBounds,
-			);
+			const delta =
+				event.deltaY *
+				(event.deltaMode === 1
+					? 16
+					: event.deltaMode === 2
+						? host.clientHeight
+						: 1);
+			const state = cameraStateRef.current;
+			cameraStateRef.current = isFlyMode()
+				? moveEditorFlyCamera(
+						state,
+						{ forward: 1, right: 0, up: 0 },
+						(-delta * cameraNavigationRef.current.speed) / 600,
+					)
+				: zoomOrbitCamera(state, delta, cameraBounds);
 			markCustomCamera();
 			applyCameraFromState();
 		};
@@ -2364,10 +2754,23 @@ export function ThreeDPreview({
 		};
 
 		const preparePointer = (event: PointerEvent) => {
+			const canFocusHost = canUseCameraInput(event.target);
+			if (canFocusHost) host.focus({ preventScroll: true });
+			if (transformControls.dragging) return;
 			transformControls.enabled =
-				event.button === 0 && !event.altKey && !host.closest("[hidden]");
+				canFocusHost &&
+				event.button === 0 &&
+				!event.altKey &&
+				!cameraDrag &&
+				!controlsStateRef.current.externalBrush &&
+				!controlsStateRef.current.placementAsset &&
+				!isFlyMoving();
 		};
 		const preventContextMenu = (event: Event) => event.preventDefault();
+		host.addEventListener("blur", stopCameraInput);
+		window.addEventListener("blur", stopCameraInput);
+		window.addEventListener("keydown", handleCameraKeyDown, true);
+		window.addEventListener("keyup", handleCameraKeyUp, true);
 		renderer.domElement.addEventListener("pointerdown", preparePointer, true);
 		renderer.domElement.addEventListener("contextmenu", preventContextMenu);
 		renderer.domElement.addEventListener("dragover", handleDragOver);
@@ -2403,13 +2806,43 @@ export function ThreeDPreview({
 		};
 
 		const render = () => {
+			const now = performance.now();
 			if (host.closest("[hidden]")) {
+				stopCameraInput();
+				lastFrameMs = now;
 				animationFrame = window.requestAnimationFrame(render);
 				return;
 			}
-			const now = performance.now();
-			diagnostics.recordFrame(now - lastFrameMs);
+			const frameMs = now - lastFrameMs;
+			diagnostics.recordFrame(frameMs);
 			lastFrameMs = now;
+			if (
+				isFlyMoving() &&
+				!pointerStart &&
+				!customBrushPointer &&
+				!transformControls.dragging
+			) {
+				if (
+					host.ownerDocument.activeElement !== host ||
+					!canUseCameraInput(host)
+				) {
+					clearFlyKeys();
+				} else {
+					const state = cameraStateRef.current;
+					const speed =
+						cameraNavigationRef.current.speed * (flyKeys.has("shift") ? 3 : 1);
+					cameraStateRef.current = moveEditorFlyCamera(
+						state,
+						{
+							forward: Number(flyKeys.has("w")) - Number(flyKeys.has("s")),
+							right: Number(flyKeys.has("d")) - Number(flyKeys.has("a")),
+							up: Number(flyKeys.has("e")) - Number(flyKeys.has("q")),
+						},
+						(speed * Math.min(frameMs, 100)) / 1000,
+					);
+					if (cameraStateRef.current !== state) markCustomCamera();
+				}
+			}
 			applyCameraFromState();
 			if (
 				waterSurfaceMeshCount > 0 ||
@@ -2419,6 +2852,12 @@ export function ThreeDPreview({
 				updateWaterPresentation(waterPresentation, now);
 				diagnostics.recordWaterUpdate(performance.now() - waterUpdateStartedAt);
 			}
+			if (!controlsStateRef.current.externalBrush) hideCustomBrush();
+			if (
+				!controlsStateRef.current.placementAsset &&
+				!controlsStateRef.current.draggedAsset
+			)
+				dropGhost.visible = false;
 			const renderStartedAt = performance.now();
 			renderer.render(scene, camera);
 			diagnostics.recordRenderCall(performance.now() - renderStartedAt);
@@ -2440,11 +2879,18 @@ export function ThreeDPreview({
 
 		return () => {
 			sceneUiRef.current = undefined;
+			host.removeEventListener("blur", stopCameraInput);
+			window.removeEventListener("blur", stopCameraInput);
+			window.removeEventListener("keydown", handleCameraKeyDown, true);
+			window.removeEventListener("keyup", handleCameraKeyUp, true);
 			transformControls.dispose();
 			selectionBox.geometry.dispose();
 			(selectionBox.material as THREE.Material).dispose();
 			dropGhost.geometry.dispose();
 			dropGhost.material.dispose();
+			customBrushPointer?.brush.finish(false);
+			brushGeometry.dispose();
+			brushPoints.material.dispose();
 			renderer.domElement.removeEventListener(
 				"pointerdown",
 				preparePointer,
@@ -2480,7 +2926,7 @@ export function ThreeDPreview({
 			cleanupDragGhost();
 			cleanupPlacementGhost();
 			cleanupTerrainBrushGhost();
-			renderer.dispose();
+			renderer.renderLists?.dispose();
 			atmosphere.dispose();
 			groundPresentation.dispose();
 			const disposeTracker: ThreeResourceDisposeTracker = {
@@ -2516,12 +2962,10 @@ export function ThreeDPreview({
 					walkPreviewMesh.material.dispose();
 				}
 			}
-			if (host.contains(renderer.domElement)) {
-				host.removeChild(renderer.domElement);
-			}
 		};
 	}, [
 		terrainContentKey,
+		atmosphereContentKey,
 		markerContentKey,
 		placementContentKey,
 		addEventBlock,
@@ -2535,13 +2979,13 @@ export function ThreeDPreview({
 		brushSize,
 		brushStrength,
 		heightToolValue,
-		mapPaletteSelection,
 		setEditorSelection,
 		setTiles,
 		setTerrainHeights,
 		terrainGesture,
 		terrainPaintTileId,
 		terrainHeightTool,
+		terrainBrushMask,
 		terrainRenderMode,
 		updatePickup,
 		updateProject,
@@ -2581,10 +3025,10 @@ export function ThreeDPreview({
 										}}
 										title={
 											mode === "translate"
-												? "Move (W)"
+												? "Move"
 												: mode === "rotate"
-													? "Rotate (E)"
-													: "Scale (R)"
+													? "Rotate"
+													: "Scale"
 										}
 									>
 										{mode === "translate"
@@ -2630,11 +3074,15 @@ export function ThreeDPreview({
 						</div>
 					)}
 					<div className="three-d-toolbar-row">
-						{embedded && (placementInfo.active || isTerrainEditing) && (
-							<span className="scene-hint" role="status">
-								{toolbarModeLabel}
-							</span>
-						)}
+						{embedded &&
+							(placementAsset ||
+								externalBrush ||
+								placementInfo.active ||
+								isTerrainEditing) && (
+								<span className="scene-hint" role="status">
+									{toolbarModeLabel}
+								</span>
+							)}
 						{!embedded && (
 							<div className="three-d-toolbar-title">
 								<strong>3D Map</strong>
@@ -2646,6 +3094,33 @@ export function ThreeDPreview({
 							aria-label="3D camera controls"
 							className="three-d-toolbar-group"
 						>
+							{(["orbit", "fly"] as const).map((mode) => (
+								<button
+									aria-pressed={cameraNavigation === mode}
+									className={cameraNavigation === mode ? "active" : ""}
+									disabled={isWalkPreviewActive}
+									key={mode}
+									onClick={() => changeCameraNavigation(mode)}
+									type="button"
+								>
+									{mode === "fly" ? "Fly" : "Orbit"}
+								</button>
+							))}
+							{cameraNavigation === "fly" && !isWalkPreviewActive && (
+								<label>
+									Fly speed
+									<select
+										value={flySpeed}
+										onChange={(event) =>
+											setFlySpeed(Number(event.target.value))
+										}
+									>
+										<option value={4}>4 m/s</option>
+										<option value={12}>12 m/s</option>
+										<option value={28}>28 m/s</option>
+									</select>
+								</label>
+							)}
 							<button
 								className={cameraPreset === "top" ? "active" : ""}
 								onClick={() => applyCameraPreset("top")}
@@ -2672,7 +3147,7 @@ export function ThreeDPreview({
 							</button>
 							<button
 								type="button"
-								disabled={!canMoveSelection}
+								disabled={!canFocusSelection}
 								onClick={() => sceneUiRef.current?.focus()}
 							>
 								Focus selected
@@ -2713,139 +3188,148 @@ export function ThreeDPreview({
 							</>
 						)}
 					</div>
-					<div className="three-d-toolbar-row compact">
-						<div className="three-d-nav-hints">
-							<span>Right / Alt + drag: Orbit</span>
-							<span>Middle / Alt + Shift + drag: Pan</span>
-							<span>Wheel: Zoom</span>
-						</div>
-						{isTerrainEditing ? (
-							<fieldset
-								aria-label="3D terrain brush controls"
-								className="three-d-toolbar-group terrain-brush"
-							>
-								<span className="three-d-toolbar-label">
-									{terrainHeightTool
-										? getTerrainHeightToolLabel(terrainHeightTool)
-										: "Paint"}
-								</span>
-								{onTerrainGestureChange ? (
-									<select
-										aria-label="3D terrain gesture"
-										onChange={(event) =>
-											onTerrainGestureChange(
-												event.target.value as TerrainGesture,
-											)
-										}
-										value={terrainGesture}
-									>
-										{(["brush", "line", "rectangle", "fill"] as const).map(
-											(gesture) => (
-												<option
-													disabled={Boolean(
-														terrainHeightTool && gesture === "fill",
-													)}
-													key={gesture}
-													value={gesture}
-												>
-													{getTerrainGestureLabel(gesture)}
-												</option>
-											),
-										)}
-									</select>
-								) : (
-									<span>{getTerrainGestureLabel(terrainGesture)}</span>
-								)}
-								{canUseBrushShape ? (
+					{!(embedded && hideDetails) && (
+						<div className="three-d-toolbar-row compact">
+							<div className="three-d-nav-hints">
+								{cameraNavigation === "fly" && !isWalkPreviewActive ? (
 									<>
-										{onBrushSizeChange ? (
-											<label>
-												Radius
+										<span>Right drag: Look</span>
+										<span>WASD: Fly · Q/E: Down/Up · Shift: Fast</span>
+									</>
+								) : (
+									<span>Right / Alt + drag: Orbit</span>
+								)}
+								<span>Middle / Alt + Shift + drag: Pan</span>
+								<span>Wheel: Zoom</span>
+							</div>
+							{isTerrainEditing ? (
+								<fieldset
+									aria-label="3D terrain brush controls"
+									className="three-d-toolbar-group terrain-brush"
+								>
+									<span className="three-d-toolbar-label">
+										{terrainHeightTool
+											? getTerrainHeightToolLabel(terrainHeightTool)
+											: "Paint"}
+									</span>
+									{onTerrainGestureChange ? (
+										<select
+											aria-label="3D terrain gesture"
+											onChange={(event) =>
+												onTerrainGestureChange(
+													event.target.value as TerrainGesture,
+												)
+											}
+											value={terrainGesture}
+										>
+											{(["brush", "line", "rectangle", "fill"] as const).map(
+												(gesture) => (
+													<option
+														disabled={Boolean(
+															terrainHeightTool && gesture === "fill",
+														)}
+														key={gesture}
+														value={gesture}
+													>
+														{getTerrainGestureLabel(gesture)}
+													</option>
+												),
+											)}
+										</select>
+									) : (
+										<span>{getTerrainGestureLabel(terrainGesture)}</span>
+									)}
+									{canUseBrushShape ? (
+										<>
+											{onBrushSizeChange ? (
+												<label>
+													Radius
+													<select
+														aria-label="3D brush radius"
+														onChange={(event) =>
+															onBrushSizeChange(
+																Number(event.target.value) as TerrainBrushSize,
+															)
+														}
+														value={brushSize}
+													>
+														{([1, 2, 3, 4, 5, 6, 7, 8] as const).map((size) => (
+															<option key={size} value={size}>
+																{size}
+															</option>
+														))}
+													</select>
+												</label>
+											) : (
+												<span>Radius {brushSize}</span>
+											)}
+											{onBrushShapeChange ? (
 												<select
-													aria-label="3D brush radius"
+													aria-label="3D brush shape"
 													onChange={(event) =>
-														onBrushSizeChange(
-															Number(event.target.value) as TerrainBrushSize,
+														onBrushShapeChange(
+															event.target.value as TerrainBrushShape,
 														)
 													}
-													value={brushSize}
+													value={brushShape}
 												>
-													{([1, 2, 3, 4, 5, 6, 7, 8] as const).map((size) => (
-														<option key={size} value={size}>
-															{size}
-														</option>
-													))}
+													<option value="square">Square</option>
+													<option value="circle">Circle</option>
 												</select>
-											</label>
-										) : (
-											<span>Radius {brushSize}</span>
-										)}
-										{onBrushShapeChange ? (
-											<select
-												aria-label="3D brush shape"
+											) : (
+												<span>
+													{brushShape === "square" ? "Square" : "Circle"}
+												</span>
+											)}
+										</>
+									) : null}
+									{terrainHeightTool && onBrushStrengthChange ? (
+										<label>
+											Strength
+											<input
+												aria-label="3D brush strength"
+												max="4"
+												min="1"
 												onChange={(event) =>
-													onBrushShapeChange(
-														event.target.value as TerrainBrushShape,
-													)
+													onBrushStrengthChange(Number(event.target.value))
 												}
-												value={brushShape}
-											>
-												<option value="square">Square</option>
-												<option value="circle">Circle</option>
-											</select>
-										) : (
-											<span>
-												{brushShape === "square" ? "Square" : "Circle"}
-											</span>
-										)}
-									</>
-								) : null}
-								{terrainHeightTool && onBrushStrengthChange ? (
-									<label>
-										Strength
-										<input
-											aria-label="3D brush strength"
-											max="4"
-											min="1"
+												step="1"
+												type="range"
+												value={brushStrength}
+											/>
+											<span>{brushStrength}</span>
+										</label>
+									) : null}
+									{canUseBrushShape &&
+									canUseHeightBrushOptions &&
+									onBrushFalloffChange ? (
+										<select
+											aria-label="3D brush falloff"
 											onChange={(event) =>
-												onBrushStrengthChange(Number(event.target.value))
+												onBrushFalloffChange(
+													event.target.value as TerrainBrushFalloff,
+												)
 											}
-											step="1"
-											type="range"
-											value={brushStrength}
-										/>
-										<span>{brushStrength}</span>
-									</label>
-								) : null}
-								{canUseBrushShape &&
-								canUseHeightBrushOptions &&
-								onBrushFalloffChange ? (
-									<select
-										aria-label="3D brush falloff"
-										onChange={(event) =>
-											onBrushFalloffChange(
-												event.target.value as TerrainBrushFalloff,
-											)
-										}
-										value={brushFalloff}
-									>
-										<option value="hard">Hard falloff</option>
-										<option value="linear">Linear falloff</option>
-										<option value="smooth">Smooth falloff</option>
-									</select>
-								) : null}
-							</fieldset>
-						) : (
-							<div className="three-d-nav-hints">
-								<span>Click: Select</span>
-								<span>
-									{embedded
-										? "Drag handles to transform · F: Focus"
-										: "Drag selected marker: Move"}
-								</span>
-							</div>
-						)}
-					</div>
+											value={brushFalloff}
+										>
+											<option value="hard">Hard falloff</option>
+											<option value="linear">Linear falloff</option>
+											<option value="smooth">Smooth falloff</option>
+										</select>
+									) : null}
+								</fieldset>
+							) : (
+								<div className="three-d-nav-hints">
+									<span>Click: Select</span>
+									<span>
+										{embedded
+											? "Drag handles to transform · F: Focus"
+											: "Drag selected marker: Move"}
+									</span>
+								</div>
+							)}
+						</div>
+					)}
 					{walkPreviewPosition || walkPreviewMessage ? (
 						<div className="three-d-toolbar-row compact">
 							<p className="three-d-toolbar-message">
@@ -2907,6 +3391,7 @@ export function ThreeDPreview({
 					className="three-d-preview-host"
 					ref={hostRef}
 					role="img"
+					tabIndex={-1}
 				>
 					{embedded &&
 						activeArea &&
@@ -2918,6 +3403,25 @@ export function ThreeDPreview({
 							</div>
 						)}
 				</div>
+				{embedded && hideDetails && (
+					<div className="three-d-nav-hints map-viewport-navigation">
+						{cameraNavigation === "fly" ? (
+							<span>
+								Right drag: Look · WASD: Fly · Q/E: Down/Up · Shift: Fast
+							</span>
+						) : (
+							<span>Right drag: Orbit</span>
+						)}
+						<span>Middle drag: Pan · Wheel: Zoom · F: Focus</span>
+						{placementAsset ? (
+							<span>Click terrain to place</span>
+						) : externalBrush || isTerrainEditing ? (
+							<span>Drag to paint a stroke</span>
+						) : (
+							<span>Click to select · Drag handles to transform</span>
+						)}
+					</div>
+				)}
 				<ThreePerformanceOverlay
 					diagnostics={diagnostics}
 					title="3D Preview Perf"

@@ -94,6 +94,7 @@ export type AtmospherePreset = {
 export type ApplyAtmosphereOptions = {
 	enableShadows?: boolean;
 	fog?: boolean;
+	fogOverride?: AreaThemeConfig["fog"];
 	preset?: AtmospherePresetId | string;
 };
 
@@ -366,11 +367,12 @@ export function applyAtmosphere(
 ): AppliedAtmosphere {
 	const preset = resolveAtmospherePreset(options.preset);
 	const enableShadows = options.enableShadows ?? false;
+	const fog = resolveAtmosphereFog(preset, options.fogOverride);
 	scene.background = new THREE.Color(preset.palette.horizon);
 	scene.fog =
-		options.fog === false
+		options.fog === false || !fog.enabled
 			? null
-			: new THREE.Fog(preset.palette.fog, preset.fog.near, preset.fog.far);
+			: new THREE.Fog(preset.palette.fog, fog.near, fog.far);
 
 	const sky = createAtmosphereSky(preset);
 	const ambient = new THREE.HemisphereLight(
@@ -414,6 +416,20 @@ export function applyAtmosphere(
 		lights: { ambient, sun },
 		preset,
 		sky,
+	};
+}
+
+export function resolveAtmosphereFog(
+	preset: AtmospherePreset,
+	override?: AreaThemeConfig["fog"],
+) {
+	const near =
+		override?.near ??
+		Math.min(preset.fog.near, (override?.far ?? preset.fog.far) - 1);
+	return {
+		enabled: override?.enabled ?? true,
+		near,
+		far: Math.max(near + 1, override?.far ?? preset.fog.far),
 	};
 }
 

@@ -1,5 +1,6 @@
 import type {
 	GameProject,
+	MapSceneAppearance,
 	NPCAttributes,
 	PlayerVehicleState,
 	QuestStatus,
@@ -45,7 +46,30 @@ function projectFingerprint(project: GameProject, legacy: boolean): string {
 				.join(",")}}`;
 		return JSON.stringify(value);
 	};
-	const { activeAreaId: _selection, ruleGroups, ...authored } = project;
+	const {
+		activeAreaId: _selection,
+		foliageBrush: _brush,
+		ruleGroups,
+		...authored
+	} = project;
+	const omitEditorSceneState = <T extends { scene?: MapSceneAppearance }>(
+		instance: T,
+	): T => {
+		if (!instance.scene?.locked && !instance.scene?.group) return instance;
+		const { locked: _locked, group: _group, ...scene } = instance.scene;
+		return {
+			...instance,
+			scene: Object.keys(scene).length ? scene : undefined,
+		};
+	};
+	authored.areas = authored.areas.map((area) => ({
+		...area,
+		objects: area.objects.map(omitEditorSceneState),
+		npcs: area.npcs.map(omitEditorSceneState),
+		structures: area.structures.map(omitEditorSceneState),
+		pickups: area.pickups.map(omitEditorSceneState),
+		eventBlocks: area.eventBlocks.map(omitEditorSceneState),
+	}));
 	authored.dialogues = authored.dialogues.map(
 		({ editorLayout: _layout, ...dialogue }) => dialogue,
 	);

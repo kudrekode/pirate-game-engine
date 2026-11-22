@@ -11,6 +11,7 @@ import type {
 	PickupObject,
 	RuleTrigger,
 } from "../types/game";
+import { blocksMapEntity } from "./mapCollision";
 import { resolveNPCInstance } from "./npcResolver";
 import type { RuntimeGameState } from "./ruleEngine";
 import {
@@ -502,7 +503,7 @@ export function findNearestInteractableTarget(
 						context.area.structures.some(
 							(s) =>
 								s.id !== target.id &&
-								s.blocksMovement &&
+								blocksMapEntity(s, s.blocksMovement) &&
 								x >= s.x &&
 								x < s.x + s.widthTiles &&
 								y >= s.y &&
@@ -515,8 +516,13 @@ export function findNearestInteractableTarget(
 							(o) =>
 								o.id !== target.id &&
 								!context.traversal?.world.profiledObjects.has(o.id) &&
-								(o.blocksMovement ??
-									findObjectDefinition(context.project, o)?.blocksMovement) &&
+								blocksMapEntity(
+									o,
+									!!(
+										o.blocksMovement ??
+										findObjectDefinition(context.project, o)?.blocksMovement
+									),
+								) &&
 								x >= o.x &&
 								x < o.x + (o.widthTiles ?? 1) &&
 								y >= o.y &&

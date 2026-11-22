@@ -35,9 +35,23 @@ export type MapEntityTransform = {
 	scale: { x: number; y: number; z: number };
 };
 
+export type MapCollisionProfile =
+	| "none"
+	| "solid"
+	| "walkable-floor"
+	| "trigger";
+
+export type MapSceneAppearance = {
+	hidden?: boolean;
+	locked?: boolean;
+	group?: string;
+	collision?: MapCollisionProfile;
+};
+
 export type GameProject = {
 	characterAssets?: CharacterGameAsset[];
 	assetCreator?: AssetCreatorLibrary;
+	foliageBrush?: FoliageBrushSettings;
 	metadata: ProjectMetadata;
 	areas: GameArea[];
 	activeAreaId: string;
@@ -57,6 +71,22 @@ export type GameProject = {
 	objects: ObjectDefinition[];
 	ruleGroups: RuleGroup[];
 	rules: GameRule[];
+};
+
+export type FoliageBrushSettings = {
+	palette: { assetId: string; weight: number }[];
+	radius: number;
+	density: number;
+	spacing: number;
+	seed: number;
+	minScale: number;
+	maxScale: number;
+	rotationVariation: number;
+	minHeight: number;
+	maxHeight: number;
+	maxSlope: number;
+	excludeWater: boolean;
+	excludeRoads: boolean;
 };
 
 export type AssetCreatorCategory =
@@ -147,6 +177,7 @@ export type GameAreaKind =
 
 export type AreaThemeConfig = {
 	atmosphere?: "clear-day" | "golden-hour" | "overcast" | "moonlit";
+	fog?: { enabled?: boolean; near?: number; far?: number };
 	primaryTerrainId?: string;
 	accentTerrainId?: string;
 	overlayId?: string;
@@ -264,6 +295,7 @@ export type OverlayTile = {
 };
 
 export type MapStructure = {
+	scene?: MapSceneAppearance;
 	transform?: MapEntityTransform;
 	id: string;
 	structureId: string;
@@ -326,6 +358,7 @@ export type ObjectBehaviour =
 	  };
 
 export type ObjectInstance = {
+	scene?: MapSceneAppearance;
 	transform?: MapEntityTransform;
 	threeVisual?: ThreeVisualConfig;
 	id: string;
@@ -343,6 +376,7 @@ export type ObjectInstance = {
 };
 
 export type PickupObject = {
+	scene?: MapSceneAppearance;
 	transform?: MapEntityTransform;
 	id: string;
 	itemId: string;
@@ -414,6 +448,7 @@ export type EnemyBehaviour = {
 };
 
 export type NPCInstance = {
+	scene?: MapSceneAppearance;
 	transform?: MapEntityTransform;
 	nameOverride?: string;
 	threeVisual?: ThreeVisualConfig;
@@ -458,6 +493,7 @@ export type MapOverlayFilter =
 	| "none";
 
 export type EventBlock = {
+	scene?: MapSceneAppearance;
 	transform?: MapEntityTransform;
 	id: string;
 	name: string;
