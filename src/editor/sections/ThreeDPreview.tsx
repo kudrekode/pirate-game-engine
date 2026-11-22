@@ -60,6 +60,7 @@ import {
 } from "../../runtime/three/worldPresentation";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
+	AssetCreatorVariant,
 	CharacterGameAsset,
 	GameArea,
 	PlayerConfig,
@@ -329,6 +330,7 @@ export function createPlayerSpawnPreviewMarker(
 	player: PlayerConfig,
 	surfaceMode: TerrainSurfaceMode,
 	projectAssets: CharacterGameAsset[] = [],
+	variants: AssetCreatorVariant[] = [],
 ): EntityMarker | undefined {
 	if (!area) {
 		return undefined;
@@ -350,6 +352,7 @@ export function createPlayerSpawnPreviewMarker(
 			threeVisual: player.threeVisual,
 		},
 		projectAssets,
+		variants,
 	);
 	return {
 		color: getWorldMaterialColor("friendly"),
@@ -547,6 +550,7 @@ export function ThreeDPreview({
 				overlayFilters,
 				terrainRenderMode,
 				project.characterAssets,
+				project.assetCreator?.variants,
 			),
 		[
 			activeArea,
@@ -554,6 +558,7 @@ export function ThreeDPreview({
 			project.npcs,
 			project.objects,
 			project.characterAssets,
+			project.assetCreator?.variants,
 			terrainRenderMode,
 		],
 	);
@@ -564,8 +569,15 @@ export function ThreeDPreview({
 				project.player,
 				terrainRenderMode,
 				project.characterAssets,
+				project.assetCreator?.variants,
 			),
-		[activeArea, project.player, project.characterAssets, terrainRenderMode],
+		[
+			activeArea,
+			project.player,
+			project.characterAssets,
+			project.assetCreator?.variants,
+			terrainRenderMode,
+		],
 	);
 	const renderMarkers = useMemo(
 		() => [

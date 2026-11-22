@@ -10,6 +10,7 @@ import {
 	THREE_PLACEHOLDER_VISUAL_OPTIONS,
 } from "../../runtime/three/threeVisuals";
 import type {
+	AssetCreatorVariant,
 	CharacterGameAsset,
 	ThreePlaceholderVisualType,
 	ThreeVisualConfig,
@@ -17,6 +18,7 @@ import type {
 
 type ThreeVisualControlsProps = {
 	projectAssets?: CharacterGameAsset[];
+	variants?: AssetCreatorVariant[];
 	assetCategories?: ThreeVisualAssetCategory[];
 	inferredPlaceholderType: ThreePlaceholderVisualType;
 	onChange: (visual: ThreeVisualConfig) => void;
@@ -27,6 +29,7 @@ type ThreeVisualControlsProps = {
 
 export function ThreeVisualControls({
 	projectAssets,
+	variants,
 	assetCategories,
 	inferredPlaceholderType,
 	onChange,
@@ -34,7 +37,7 @@ export function ThreeVisualControls({
 	value,
 	showTransformControls = true,
 }: ThreeVisualControlsProps) {
-	const assets = listThreeVisualAssets(projectAssets).filter(
+	const assets = listThreeVisualAssets(projectAssets, variants).filter(
 		(asset) =>
 			asset.animationOnly !== true &&
 			(!assetCategories ||
@@ -46,7 +49,11 @@ export function ThreeVisualControls({
 		typeof value?.assetId === "string" && value.assetId.trim()
 			? value.assetId
 			: "";
-	const registeredAsset = getThreeVisualAssetDefinition(assetId, projectAssets);
+	const registeredAsset = getThreeVisualAssetDefinition(
+		assetId,
+		projectAssets,
+		variants,
+	);
 	const resolvedAsset = assets.find((asset) => asset.id === assetId);
 	const hasUnresolvedAsset = Boolean(assetId && !resolvedAsset);
 	const assetTransformDefaults = mode === "asset" ? resolvedAsset : undefined;

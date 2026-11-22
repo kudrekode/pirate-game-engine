@@ -318,6 +318,54 @@ const projectFields: Record<keyof GameProject | "map", Check> = {
 	areas: list(area),
 	map: area,
 	activeAreaId: string,
+	assetCreator: fields({
+		nested: {
+			variants: list(
+				fields({
+					strings:
+						"id name baseAssetId forkedFromId category description constraint tint effectId",
+					numbers: "scale",
+					nested: {
+						referenceImages: list(string),
+						pose: dictionary(point),
+						attachment: fields({
+							strings: "assetId socket",
+							numbers: "scale",
+							nested: { position: point, rotation: point },
+						}),
+					},
+					required: ["id", "baseAssetId"],
+				}),
+			),
+			clips: list(
+				fields({
+					strings: "id name sourceAssetId sourceClipName",
+					booleans: "loop",
+					nested: {
+						keys: list(
+							fields({
+								strings: "bone",
+								numbers: "time",
+								nested: { rotation: point },
+							}),
+						),
+					},
+					required: ["id", "sourceAssetId", "sourceClipName"],
+				}),
+			),
+			effects: list(
+				tagged(
+					fields({
+						strings: "id name type color socket",
+						numbers: "intensity duration",
+						booleans: "loop",
+						required: ["id"],
+					}),
+					"glow fog embers",
+				),
+			),
+		},
+	}),
 	characterAssets: list(
 		fields({
 			strings:

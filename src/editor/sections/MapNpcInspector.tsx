@@ -622,6 +622,7 @@ export function MapNpcInspector({
 				{interactionEditor}
 				<ThreeVisualControls
 					projectAssets={project.characterAssets}
+					variants={project.assetCreator?.variants}
 					assetCategories={["character"]}
 					inferredPlaceholderType="npc"
 					title="3D instance visual"

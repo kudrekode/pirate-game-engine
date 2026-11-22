@@ -43,7 +43,7 @@ export const primaryWorkspaces = [
 	{
 		id: "assets",
 		label: "Asset Creator",
-		description: "Create and preview humanoid assets in Asset Studio.",
+		description: "Asset library, rigs, animations, effects and variants.",
 		icon: "◈",
 	},
 	{

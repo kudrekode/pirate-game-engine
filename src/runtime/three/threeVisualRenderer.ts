@@ -5,6 +5,7 @@ import {
 	createPlaceholderMeshGroup,
 	type PlaceholderSelectionMetadata,
 } from "./placeholderMeshes";
+import { applyAssetVariantPresentation } from "./threeAssetVariantPresentation";
 import type { ThreePerformanceDiagnostics } from "./threePerformanceDiagnostics";
 import type { ThreeVisualAssetAnalysis } from "./threeVisualAssetAnalysis";
 import {
@@ -137,13 +138,26 @@ function createMarkerGroup(
 	}
 
 	options.diagnostics?.recordAssetClone(assetRequest.definition.id);
+	const definition = marker.visual.asset;
+	const disposeWorldMaterials = applyWorldKitMaterials(
+		assetRequest.object,
+		definition.variant?.baseAssetId ?? definition.id,
+		marker.id,
+	);
+	const disposeVariant = applyAssetVariantPresentation(
+		assetRequest.object,
+		definition.variant,
+		definition.attachmentAsset,
+	);
 	return {
 		assetAnalysis: assetRequest.analysis,
-		disposePresentation: applyWorldKitMaterials(
-			assetRequest.object,
-			assetRequest.definition.id,
-			marker.id,
-		),
+		disposePresentation:
+			disposeWorldMaterials || disposeVariant
+				? () => {
+						disposeVariant?.();
+						disposeWorldMaterials?.();
+					}
+				: undefined,
 		assetCategory: assetRequest.definition.category,
 		assetDefinitionId: assetRequest.definition.id,
 		assetStatus: "loaded",

@@ -26,10 +26,12 @@ export type ThreeVisualAssetDefinition = VisualAssetDefinition & {
 	traversal?: AssetTraversalProfile;
 	mountedSeat?: { height: number; node?: string };
 	gaitSpeeds?: { walk: number; run: number };
+	variant?: AssetCreatorVariant;
+	attachmentAsset?: ThreeVisualAssetDefinition;
 };
 
 import { characterAssetProblem } from "../../data/characterAssets";
-import type { CharacterGameAsset } from "../../types/game";
+import type { AssetCreatorVariant, CharacterGameAsset } from "../../types/game";
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
@@ -723,8 +725,9 @@ function getAssetMap(): Map<string, ThreeVisualAssetDefinition> {
 
 export function listThreeVisualAssets(
 	projectAssets: CharacterGameAsset[] = [],
+	variants: AssetCreatorVariant[] = [],
 ): ThreeVisualAssetDefinition[] {
-	return [
+	const bases = [
 		...activeRegistry,
 		...projectAssets.flatMap((asset) => {
 			if (characterAssetProblem(asset)) return [];
@@ -739,15 +742,58 @@ export function listThreeVisualAssets(
 			];
 		}),
 	];
+	if (!variants.length) return bases;
+	const byId = new Map(bases.map((asset) => [asset.id, asset]));
+	const definitions = variants.flatMap(
+		(variant): ThreeVisualAssetDefinition[] => {
+			const base = byId.get(variant.baseAssetId);
+			if (!base || base.animationOnly || byId.has(variant.id)) return [];
+			return [
+				{
+					...base,
+					id: variant.id,
+					name: variant.name,
+					hiddenFromBrowser: false,
+					defaultScale: (base.defaultScale ?? 1) * variant.scale,
+					browserCategory:
+						variant.category === "Humans"
+							? "Characters"
+							: variant.category === "Foliage"
+								? "Nature"
+								: variant.category === "Animals"
+									? "Props"
+									: variant.category,
+					variant,
+				},
+			];
+		},
+	);
+	const props = new Map(
+		[...bases, ...definitions].map((asset) => [asset.id, asset]),
+	);
+	return [
+		...bases,
+		...definitions.map((asset) => {
+			const attachmentId = asset.variant?.attachment?.assetId;
+			const prop = attachmentId ? props.get(attachmentId) : undefined;
+			return prop &&
+				prop.id !== asset.id &&
+				!prop.animationOnly &&
+				prop.category !== "character"
+				? { ...asset, attachmentAsset: prop }
+				: asset;
+		}),
+	];
 }
 
 export function getThreeVisualAssetDefinition(
 	assetId: string | undefined,
 	projectAssets: CharacterGameAsset[] = [],
+	variants: AssetCreatorVariant[] = [],
 ): ThreeVisualAssetDefinition | undefined {
 	return assetId
 		? (getAssetMap().get(assetId) ??
-				listThreeVisualAssets(projectAssets).find(
+				listThreeVisualAssets(projectAssets, variants).find(
 					(asset) => asset.id === assetId,
 				))
 		: undefined;

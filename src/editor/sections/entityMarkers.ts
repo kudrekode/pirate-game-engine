@@ -10,6 +10,7 @@ import {
 	resolveThreeVisual,
 } from "../../runtime/three/threeVisuals";
 import type {
+	AssetCreatorVariant,
 	CharacterGameAsset,
 	GameArea,
 	MapEntityTransform,
@@ -105,6 +106,7 @@ export function areaEntitiesToMarkers(
 	filtersMaybe?: boolean | MapOverlayFilters,
 	surfaceMode: TerrainSurfaceMode = "blocky",
 	projectAssets: CharacterGameAsset[] = [],
+	variants: AssetCreatorVariant[] = [],
 ): EntityMarker[] {
 	if (!area) {
 		return [];
@@ -212,6 +214,7 @@ export function areaEntitiesToMarkers(
 					threeVisual: { ...definition?.threeVisual, ...object.threeVisual },
 				},
 				projectAssets,
+				variants,
 			);
 			markers.push({
 				color: isVehicle
@@ -253,6 +256,7 @@ export function areaEntitiesToMarkers(
 					threeVisual: resolvedNpc.threeVisual,
 				},
 				projectAssets,
+				variants,
 			);
 			markers.push({
 				color: ENTITY_MARKER_COLORS.npc,

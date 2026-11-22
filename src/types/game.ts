@@ -37,6 +37,7 @@ export type MapEntityTransform = {
 
 export type GameProject = {
 	characterAssets?: CharacterGameAsset[];
+	assetCreator?: AssetCreatorLibrary;
 	metadata: ProjectMetadata;
 	areas: GameArea[];
 	activeAreaId: string;
@@ -56,6 +57,63 @@ export type GameProject = {
 	objects: ObjectDefinition[];
 	ruleGroups: RuleGroup[];
 	rules: GameRule[];
+};
+
+export type AssetCreatorCategory =
+	| "Humans"
+	| "Animals"
+	| "Buildings"
+	| "Foliage"
+	| "Props";
+export type AssetCreatorVector = { x: number; y: number; z: number };
+export type AssetCreatorAttachment = {
+	assetId: string;
+	socket: string;
+	position: AssetCreatorVector;
+	rotation: AssetCreatorVector;
+	scale: number;
+};
+
+export type AssetCreatorVariant = {
+	id: string;
+	name: string;
+	baseAssetId: string;
+	forkedFromId?: string;
+	category: AssetCreatorCategory;
+	description: string;
+	constraint: "Constrained" | "Extended" | "Custom";
+	referenceImages: string[];
+	tint?: string;
+	scale: number;
+	pose: Record<string, AssetCreatorVector>;
+	attachment?: AssetCreatorAttachment;
+	effectId?: string;
+};
+
+export type AssetCreatorClip = {
+	id: string;
+	name: string;
+	sourceAssetId: string;
+	sourceClipName: string;
+	loop: boolean;
+	keys: { bone: string; time: number; rotation: AssetCreatorVector }[];
+};
+
+export type AssetCreatorEffect = {
+	id: string;
+	name: string;
+	type: "glow" | "fog" | "embers";
+	color: string;
+	intensity: number;
+	duration: number;
+	loop: boolean;
+	socket?: string;
+};
+
+export type AssetCreatorLibrary = {
+	variants: AssetCreatorVariant[];
+	clips: AssetCreatorClip[];
+	effects: AssetCreatorEffect[];
 };
 
 // Finalised source records only; renderer objects and preview URLs never enter a project.

@@ -14,6 +14,9 @@ export function CharacterEditor() {
 	const projectAssets = useProjectStore(
 		(state) => state.project.characterAssets,
 	);
+	const variants = useProjectStore(
+		(state) => state.project.assetCreator?.variants,
+	);
 	const updatePlayer = useProjectStore((state) => state.updatePlayer);
 	const combat = getPlayerCombatStats(player);
 	const threeVisual = resolveThreeCharacterVisual(
@@ -23,6 +26,7 @@ export function CharacterEditor() {
 			threeVisual: player.threeVisual,
 		},
 		projectAssets,
+		variants,
 	);
 
 	function toggleWalkable(tileId: string) {
@@ -94,6 +98,7 @@ export function CharacterEditor() {
 
 					<ThreeVisualControls
 						projectAssets={projectAssets}
+						variants={variants}
 						assetCategories={["character"]}
 						inferredPlaceholderType={threeVisual.placeholderType}
 						onChange={(nextThreeVisual) =>

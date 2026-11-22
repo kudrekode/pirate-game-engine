@@ -71,7 +71,7 @@ export async function projectTool(page: Page, name: string) {
 export async function openAssetCreator(page: Page) {
 	await openEditor(page, "assets");
 	await page
-		.getByRole("button", { name: "Open Asset Creator", exact: true })
+		.getByRole("button", { name: "Blender Studio", exact: true })
 		.click();
 }
 

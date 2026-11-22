@@ -475,6 +475,7 @@ export function NpcsEditor() {
 									</p>
 									<ThreeVisualControls
 										projectAssets={project.characterAssets}
+										variants={project.assetCreator?.variants}
 										inferredPlaceholderType={inferredVisual.placeholderType}
 										onChange={(threeVisual) => updateNpc({ threeVisual })}
 										title="3D Character Visual"

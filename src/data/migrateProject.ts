@@ -55,6 +55,7 @@ import {
 	CINEMATIC_ACTOR_ANIMATIONS,
 	THREE_PLACEHOLDER_VISUAL_TYPES,
 } from "../types/game";
+import { migrateAssetCreator } from "./assetCreator";
 import { migrateCharacterAssets } from "./characterAssets";
 import { defaultProject } from "./defaultProject";
 import { migrateMapEntityTransform } from "./mapEntityTransform";
@@ -2293,6 +2294,9 @@ export function migrateProject(value: unknown): GameProject {
 		areas,
 		...(source.characterAssets !== undefined
 			? { characterAssets: migrateCharacterAssets(source.characterAssets) }
+			: {}),
+		...(source.assetCreator !== undefined
+			? { assetCreator: migrateAssetCreator(source.assetCreator) }
 			: {}),
 		activeAreaId,
 		camera: migrateCamera(source.camera),

@@ -7,10 +7,7 @@ import {
 	migrateMapEntityTransform,
 } from "../../data/mapEntityTransform";
 import { structurePresets } from "../../data/mapVisuals";
-import {
-	getThreeVisualAssetDefinition,
-	listThreeVisualAssets,
-} from "../../runtime/three/threeVisualAssetRegistry";
+import { listThreeVisualAssets } from "../../runtime/three/threeVisualAssetRegistry";
 import { useProjectStore } from "../../store/useProjectStore";
 import type {
 	EditorSelection,
@@ -32,19 +29,24 @@ export type SceneAsset = {
 };
 
 export function sceneAssets(project: GameProject): SceneAsset[] {
+	const definitions = listThreeVisualAssets(
+		project.characterAssets,
+		project.assetCreator?.variants,
+	);
+	const byId = new Map(
+		definitions.map((definition) => [definition.id, definition]),
+	);
 	const assets: SceneAsset[] = [
 		...project.objects.map(
 			(entry): SceneAsset => ({
 				id: entry.id,
 				name: entry.name,
 				category:
-					getThreeVisualAssetDefinition(entry.threeVisual?.assetId)
-						?.browserCategory ??
+					byId.get(entry.threeVisual?.assetId ?? "")?.browserCategory ??
 					(/tree|palm|rock/i.test(entry.name) ? "Nature" : "Props"),
 				tags: [
 					entry.category,
-					...(getThreeVisualAssetDefinition(entry.threeVisual?.assetId)?.tags ??
-						[]),
+					...(byId.get(entry.threeVisual?.assetId ?? "")?.tags ?? []),
 				],
 				kind: "object",
 				visual: entry.threeVisual,
@@ -73,7 +75,7 @@ export function sceneAssets(project: GameProject): SceneAsset[] {
 			),
 	];
 	const used = new Set(assets.map((asset) => asset.visual?.assetId));
-	for (const asset of listThreeVisualAssets(project.characterAssets)) {
+	for (const asset of definitions) {
 		if (asset.animationOnly || asset.hiddenFromBrowser || used.has(asset.id))
 			continue;
 		const imported = project.characterAssets?.find(

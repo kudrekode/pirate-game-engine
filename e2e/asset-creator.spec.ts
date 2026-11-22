@@ -390,7 +390,7 @@ test("opens Asset Creator and explains an unavailable Studio @integration", asyn
 	await createStarterProject(page, "blank");
 	await openEditor(page, "assets");
 	const launcher = page.getByRole("button", {
-		name: "Open Asset Creator",
+		name: "Blender Studio",
 		exact: true,
 	});
 	await launcher.click();
@@ -772,4 +772,153 @@ test("creates and reopens a dressed character @first-outfit", async ({
 	await expect(
 		studio.getByRole("button", { name: "Asset Creator", exact: true }),
 	).toBeVisible();
+});
+
+test("authors, reopens and places an animated Oswin variant @integration @asset-creator-workspace", async ({
+	page,
+}, testInfo) => {
+	await page.goto("/");
+	await importProjectFile(page, "hollow-kingdom.project.json", false);
+	await openEditor(page, "assets");
+	const inspector = page.getByRole("complementary", {
+		name: "Asset Creator inspector",
+	});
+	const animated = page.locator('[data-preview="animation"]');
+	const reference = page.locator('[data-preview="reference"]');
+	await page.getByLabel("Search assets").fill("Oswin");
+	await page
+		.getByRole("button", { name: "Oswin the Ferryman", exact: true })
+		.click();
+	await expect(reference).toHaveAttribute("data-bones", "65");
+	await expect(animated).toHaveAttribute("data-model-status", "loaded");
+	for (const view of [reference, animated]) {
+		const camera = await view.getAttribute("data-camera");
+		await view.hover();
+		await page.mouse.wheel(0, 160);
+		await expect.poll(() => view.getAttribute("data-camera")).not.toBe(camera);
+	}
+	await page.getByRole("button", { name: "forest", exact: true }).click();
+	await page.getByLabel("Lighting").selectOption("warm");
+	await page.getByRole("button", { name: "Reset view" }).click();
+	await page.getByRole("button", { name: "grid", exact: true }).click();
+	await page.getByLabel("Lighting").selectOption("studio");
+	await page.getByRole("button", { name: "Skeleton", exact: true }).click();
+	await inspector
+		.getByRole("listbox", { name: "Bone", exact: true })
+		.selectOption("hand_r");
+	await inspector
+		.getByRole("group", { name: "Local rotation (°)" })
+		.getByLabel("X")
+		.fill("25");
+	await inspector.getByRole("button", { name: "Reset bone" }).click();
+	await inspector.getByLabel("Attached prop").selectOption("weapon-sword-v1");
+	await expect(animated).toHaveAttribute("data-attachment", "hand_r");
+	await expect(
+		inspector.getByRole("button", { name: "Save", exact: true }),
+	).toBeDisabled();
+	await inspector.getByRole("button", { name: "Save as New" }).click();
+	const assetDialog = page.getByRole("dialog", { name: "Save asset as new" });
+	await assetDialog
+		.getByLabel("Name", { exact: true })
+		.fill("Oswin Sword Variant");
+	await assetDialog.getByRole("button", { name: "Save as New" }).click();
+
+	await page.getByRole("button", { name: "Animations", exact: true }).click();
+	await page.getByRole("button", { name: /^Sword attack/ }).click();
+	const playhead = page.getByRole("slider", { name: "Playhead" });
+	await expect(playhead).toBeEnabled();
+	await playhead.fill("0");
+	await expect(animated).toHaveAttribute("data-time", "0.000");
+	const start = await animated.getAttribute("data-attachment-position");
+	await playhead.fill("0.4");
+	await expect(animated).toHaveAttribute("data-time", "0.400");
+	await expect
+		.poll(() => animated.getAttribute("data-attachment-position"))
+		.not.toBe(start);
+	await page.getByLabel("Bone track").selectOption("hand_r");
+	await inspector
+		.getByRole("group", { name: "Keyframe rotation (°)" })
+		.getByLabel("X")
+		.fill("33");
+	await inspector.getByRole("button", { name: "Add Keyframe" }).click();
+	await expect(inspector.getByText("1 authored keys")).toBeVisible();
+	await inspector.getByRole("button", { name: "Save as New" }).click();
+	const clipDialog = page.getByRole("dialog", { name: "Save clip as new" });
+	await clipDialog.getByLabel("Name", { exact: true }).fill("Oswin Sword Turn");
+	await clipDialog.getByRole("button", { name: "Save as New" }).click();
+	await page
+		.getByRole("button", { name: /^Oswin Sword Turn/ })
+		.scrollIntoViewIfNeeded();
+	await page.screenshot({
+		path: testInfo.outputPath("asset-creator-animation.png"),
+	});
+
+	await page.getByRole("button", { name: "Effects", exact: true }).click();
+	await page.getByRole("button", { name: /^Fire Embers/ }).click();
+	await inspector.getByLabel("Attachment target").selectOption("right_hand");
+	await inspector.getByRole("button", { name: "Save as New" }).click();
+	const effectDialog = page.getByRole("dialog", { name: "Save effect as new" });
+	await effectDialog.getByLabel("Name", { exact: true }).fill("Oswin Embers");
+	await effectDialog.getByRole("button", { name: "Save as New" }).click();
+	await page.screenshot({
+		path: testInfo.outputPath("asset-creator-effects.png"),
+	});
+
+	await page.getByRole("button", { name: "Assets", exact: true }).click();
+	await inspector
+		.getByLabel("Preview effect")
+		.selectOption({ label: "Oswin Embers" });
+	await inspector.getByRole("button", { name: "Save", exact: true }).click();
+	const saved = await savedProject(page);
+	const variant = saved.assetCreator?.variants[0];
+	expect(variant?.attachment?.assetId).toBe("weapon-sword-v1");
+	expect(variant?.effectId).toBe(saved.assetCreator?.effects[0]?.id);
+	expect(
+		saved.npcs.find((npc) => npc.name === "Oswin the Ferryman")?.threeVisual
+			?.assetId,
+	).toBe("mere-ferryman");
+
+	await reloadProject(page, false);
+	await openEditor(page, "assets");
+	await page.getByLabel("Search assets").fill("Oswin Sword Variant");
+	await page
+		.getByRole("button", { name: "Oswin Sword Variant", exact: true })
+		.click();
+	await expect(animated).toHaveAttribute("data-attachment", "hand_r");
+	await page.screenshot({
+		path: testInfo.outputPath("asset-creator-variant.png"),
+	});
+	await page.getByRole("button", { name: "Animations", exact: true }).click();
+	await page.getByRole("button", { name: /^Oswin Sword Turn/ }).click();
+	await expect(inspector.getByLabel("Clip name")).toHaveValue(
+		"Oswin Sword Turn",
+	);
+	await expect(playhead).toBeEnabled();
+	await playhead.fill("0.4");
+	await page.getByLabel("Bone track").selectOption("hand_r");
+	await expect(
+		inspector
+			.getByRole("group", { name: "Keyframe rotation (°)" })
+			.getByLabel("X"),
+	).toHaveValue("33");
+	await page.getByRole("button", { name: "Effects", exact: true }).click();
+	await page.getByRole("button", { name: /^Oswin Embers/ }).click();
+	await expect(inspector.getByLabel("Attachment target")).toHaveValue(
+		"right_hand",
+	);
+
+	await openEditor(page, "map");
+	await page.getByLabel("Search assets").fill("Oswin Sword Variant");
+	await page.getByRole("button", { name: "Add Oswin Sword Variant" }).click();
+	await page.getByRole("button", { name: "Save", exact: true }).click();
+	const placed = await savedProject(page);
+	const definition = placed.npcs.find(
+		(npc) => npc.threeVisual?.assetId === variant?.id,
+	);
+	expect(definition).toBeDefined();
+	expect(
+		placed.areas.some((area) =>
+			area.npcs.some((npc) => npc.npcDefinitionId === definition?.id),
+		),
+	).toBe(true);
 });

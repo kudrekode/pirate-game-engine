@@ -21,7 +21,7 @@ import {
 } from "./data/projectCatalog";
 import { importProjectJson, readProjectJson } from "./data/projectImport";
 import { createProjectFromPreset } from "./data/projectPresets";
-import { AssetCreatorLauncher } from "./editor/AssetCreatorLauncher";
+import { AssetCreatorWorkspace } from "./editor/assets/AssetCreatorWorkspace";
 import {
 	EditorNavigationContext,
 	openEntity,
@@ -102,6 +102,10 @@ export default function App() {
 	const importInput = useRef<HTMLInputElement>(null);
 	const importRequest = useRef(0);
 	const activeRecord = useRef<ProjectRecord | null>(null);
+	const assetDraft = useRef(false);
+	const onAssetDraftChange = useCallback((dirty: boolean) => {
+		assetDraft.current = dirty;
+	}, []);
 	const checkpoint = useRef("");
 	const scrollPositions = useRef(
 		new Map<string, { left: number; top: number }[]>(),
@@ -199,7 +203,7 @@ export default function App() {
 			}
 		}
 		function handleUnload(event: BeforeUnloadEvent) {
-			if (persist("draft")) return;
+			if (persist("draft") && !assetDraft.current) return;
 			event.preventDefault();
 			event.returnValue = true;
 		}
@@ -305,6 +309,7 @@ export default function App() {
 		openWorkspace("map");
 		setStatus("Character added to the Asset Browser. Drag it into your scene.");
 	}, [openWorkspace]);
+	const saveAssetProject = useCallback(() => persist("save"), [persist]);
 
 	function activate(record: ProjectRecord, raw: string, message: string) {
 		const selected = readProjectJson(raw);
@@ -352,6 +357,13 @@ export default function App() {
 	}
 
 	function leaveProject(next: () => void) {
+		if (
+			assetDraft.current &&
+			!window.confirm(
+				"Discard the unsaved Asset Creator changes and leave this project?",
+			)
+		)
+			return;
 		const latest = useProjectStore.getState().project;
 		if (
 			activeRecord.current &&
@@ -573,29 +585,14 @@ export default function App() {
 				)}
 
 				{active && (
-					<main
+					<AssetCreatorWorkspace
 						key={active.id}
-						className="project-asset-workspace"
-						hidden={route !== "assets" || Boolean(runtime)}
-						aria-labelledby={
-							route === "assets" ? "editor-route-heading" : undefined
-						}
-					>
-						<h1
-							id={route === "assets" ? "editor-route-heading" : undefined}
-							tabIndex={-1}
-						>
-							Asset Creator
-						</h1>
-						<p>
-							Create, preview and send humanoid characters to this project from
-							Asset Studio.
-						</p>
-						<AssetCreatorLauncher
-							buttonLabel="Open Asset Creator"
-							onImported={onAssetImported}
-						/>
-					</main>
+						project={project}
+						visible={route === "assets" && !runtime}
+						saveProject={saveAssetProject}
+						onImported={onAssetImported}
+						onDraftChange={onAssetDraftChange}
+					/>
 				)}
 				{ActiveSection && active && (
 					<main

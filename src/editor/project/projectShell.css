@@ -191,38 +191,6 @@
 	background: #eef1f4;
 }
 
-.project-asset-workspace:not([hidden]) {
-	flex: 1;
-	min-height: 0;
-	overflow: auto;
-	padding: 26px;
-	background: radial-gradient(ellipse at 55% 0%, #2d3d32, #121916 75%);
-	color: var(--shell-ink);
-}
-
-.project-asset-workspace h1 {
-	margin: 0;
-	font:
-		32px Georgia,
-		serif;
-}
-
-.project-asset-workspace > p {
-	color: var(--shell-muted);
-}
-
-.project-shell .project-asset-workspace > button {
-	border-color: var(--shell-accent);
-	background: var(--shell-accent);
-	color: #18251c;
-	font-weight: 700;
-}
-
-.project-asset-workspace > button:focus-visible {
-	outline: 2px solid var(--shell-accent);
-	outline-offset: 3px;
-}
-
 .project-route-title {
 	position: absolute;
 	width: 1px;

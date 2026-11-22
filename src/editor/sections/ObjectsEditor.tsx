@@ -308,6 +308,8 @@ export function ObjectsEditor() {
 						) : null}
 						{inferredVisual ? (
 							<ThreeVisualControls
+								projectAssets={project.characterAssets}
+								variants={project.assetCreator?.variants}
 								inferredPlaceholderType={inferredVisual.placeholderType}
 								onChange={(threeVisual) => updateObject({ threeVisual })}
 								value={selectedObject.threeVisual}

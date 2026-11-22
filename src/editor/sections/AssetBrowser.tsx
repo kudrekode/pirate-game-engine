@@ -34,6 +34,7 @@ export function AssetBrowser({
 			const definition = getThreeVisualAssetDefinition(
 				assetId,
 				project.characterAssets,
+				project.assetCreator?.variants,
 			);
 			if (!definition || definition.thumbnailUrl) continue;
 			const loaded = requestThreeVisualAsset(definition, {
@@ -58,7 +59,12 @@ export function AssetBrowser({
 		return () => {
 			active = false;
 		};
-	}, [assets, project.characterAssets, thumbnails]);
+	}, [
+		assets,
+		project.characterAssets,
+		project.assetCreator?.variants,
+		thumbnails,
+	]);
 	const categories = ["All", ...new Set(assets.map((asset) => asset.category))];
 	const visible = assets.filter(
 		(asset) =>
@@ -100,6 +106,7 @@ export function AssetBrowser({
 						getThreeVisualAssetDefinition(
 							asset.visual?.assetId,
 							project.characterAssets,
+							project.assetCreator?.variants,
 						)?.thumbnailUrl ?? thumbnails[asset.visual?.assetId ?? ""];
 					return (
 						<article

@@ -2513,6 +2513,7 @@ export function ThreeRuntimePanel({
 			true,
 			terrainRenderMode,
 			session.project.characterAssets,
+			session.project.assetCreator?.variants,
 		);
 		const openedLabels: {
 			id: string;
@@ -2637,6 +2638,7 @@ export function ThreeRuntimePanel({
 				threeVisual: session.project.player.threeVisual,
 			},
 			session.project.characterAssets,
+			session.project.assetCreator?.variants,
 		);
 		const playerRenderResult = createThreeVisualMarkerGroup(
 			createRuntimePlayerMarker(

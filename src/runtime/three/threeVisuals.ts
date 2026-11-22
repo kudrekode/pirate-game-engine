@@ -1,4 +1,5 @@
 import {
+	type AssetCreatorVariant,
 	type CharacterGameAsset,
 	type Interaction,
 	type NPCAttributes,
@@ -215,6 +216,7 @@ export function resolveInferredPlaceholderVisualType(
 export function resolveThreeVisual(
 	entity: PlaceholderVisualEntity,
 	projectAssets: CharacterGameAsset[] = [],
+	variants: AssetCreatorVariant[] = [],
 ): ResolvedThreeVisual {
 	const config =
 		entity.kind === "object" ||
@@ -238,7 +240,7 @@ export function resolveThreeVisual(
 			: undefined;
 	const assetDefinition =
 		requestedMode === "asset"
-			? getThreeVisualAssetDefinition(requestedAssetId, projectAssets)
+			? getThreeVisualAssetDefinition(requestedAssetId, projectAssets, variants)
 			: undefined;
 	const hasAuthoredTransform =
 		(typeof config?.scale === "number" && Number.isFinite(config.scale)) ||
@@ -290,8 +292,9 @@ export function resolveThreeVisual(
 export function resolveThreeCharacterVisual(
 	entity: ThreeCharacterVisualEntity,
 	projectAssets: CharacterGameAsset[] = [],
+	variants: AssetCreatorVariant[] = [],
 ): ResolvedThreeVisual {
-	const visual = resolveThreeVisual(entity, projectAssets);
+	const visual = resolveThreeVisual(entity, projectAssets, variants);
 	if (
 		entity.kind !== "player" ||
 		visual.mode !== "asset" ||

@@ -116,7 +116,7 @@ test("opens Merewatch, switches independent projects and round-trips authored ch
 	const firstAuthoringSnapshot = await savedProjectJson(page);
 	await openEditor(page, "assets");
 	await expect(
-		page.getByRole("button", { name: "Open Asset Creator", exact: true }),
+		page.getByRole("button", { name: "Blender Studio", exact: true }),
 	).toBeVisible();
 	await home.click();
 	await openEditor(page, "cutscenes");

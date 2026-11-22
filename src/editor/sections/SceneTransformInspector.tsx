@@ -131,6 +131,7 @@ export function SceneTransformInspector({
 						title="Appearance"
 						showTransformControls={false}
 						projectAssets={project.characterAssets}
+						variants={project.assetCreator?.variants}
 						value={{ ...definition?.threeVisual, ...entity.threeVisual }}
 						inferredPlaceholderType={
 							"npcDefinitionId" in entity ? "npc" : "genericObject"
