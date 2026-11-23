@@ -1,6 +1,33 @@
+import {
+	ArrowDownToLine,
+	ArrowUpToLine,
+	ChevronDown,
+	Crosshair,
+	Eye,
+	EyeOff,
+	Gauge,
+	Layers3,
+	LayoutPanelTop,
+	LibraryBig,
+	Lock,
+	LockOpen,
+	type LucideIcon,
+	Minus,
+	Mountain,
+	MousePointer2,
+	Paintbrush,
+	Shovel,
+	Sprout,
+	Sun,
+	Waves,
+	Wind,
+	Wrench,
+} from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import type { EditorSelection, GameArea, GameProject } from "../../types/game";
 import { AssetBrowser } from "./AssetBrowser";
+import { sceneEntityIcons } from "./mapIcons";
 import { type SceneAsset, sceneEntries } from "./sceneEditing";
 import "./mapWorkspace.css";
 
@@ -15,27 +42,32 @@ export type MapTerrainTool =
 export type MapWorldSetting = "area" | "sky" | "physics" | "spawn" | "hud";
 
 const modes = [
-	{ id: "select", label: "Select", key: "1", icon: "◇" },
-	{ id: "foliage", label: "Foliage Scatter", key: "2", icon: "♠" },
-	{ id: "terrain", label: "Terrain Sculpt", key: "3", icon: "↟" },
-	{ id: "water", label: "Water", key: "4", icon: "≈" },
+	{ id: "select", label: "Select", key: "1", icon: MousePointer2 },
+	{ id: "foliage", label: "Foliage Scatter", key: "2", icon: Sprout },
+	{ id: "terrain", label: "Terrain Sculpt", key: "3", icon: Mountain },
+	{ id: "water", label: "Water", key: "4", icon: Waves },
 ] as const;
 
-const terrainTools: { id: MapTerrainTool; label: string; icon: string }[] = [
-	{ id: "raise", label: "Raise terrain", icon: "↥" },
-	{ id: "lower", label: "Lower terrain", icon: "↧" },
-	{ id: "smooth", label: "Smooth terrain", icon: "∿" },
-	{ id: "roughen", label: "Roughen terrain", icon: "≋" },
-	{ id: "flatten", label: "Flatten terrain", icon: "−" },
-	{ id: "paint", label: "Paint terrain", icon: "▧" },
-];
+const terrainTools: { id: MapTerrainTool; label: string; icon: LucideIcon }[] =
+	[
+		{ id: "raise", label: "Raise terrain", icon: ArrowUpToLine },
+		{ id: "lower", label: "Lower terrain", icon: ArrowDownToLine },
+		{ id: "smooth", label: "Smooth terrain", icon: Wind },
+		{ id: "roughen", label: "Roughen terrain", icon: Shovel },
+		{ id: "flatten", label: "Flatten terrain", icon: Minus },
+		{ id: "paint", label: "Paint terrain", icon: Paintbrush },
+	];
 
-const worldSettings: { id: MapWorldSetting; label: string; icon: string }[] = [
-	{ id: "area", label: "Area & layers", icon: "▱" },
-	{ id: "sky", label: "Sky, fog & lighting", icon: "☼" },
-	{ id: "physics", label: "Physics & gravity", icon: "↓" },
-	{ id: "spawn", label: "Player & spawn", icon: "◎" },
-	{ id: "hud", label: "HUD settings", icon: "▤" },
+const worldSettings: {
+	id: MapWorldSetting;
+	label: string;
+	icon: LucideIcon;
+}[] = [
+	{ id: "area", label: "Area & layers", icon: Layers3 },
+	{ id: "sky", label: "Sky, fog & lighting", icon: Sun },
+	{ id: "physics", label: "Physics & gravity", icon: Gauge },
+	{ id: "spawn", label: "Player & spawn", icon: Crosshair },
+	{ id: "hud", label: "HUD settings", icon: LayoutPanelTop },
 ];
 
 const drawerPreferencesKey = "map-workspace-drawers-v1";
@@ -62,13 +94,13 @@ function readDrawers(): typeof openDrawers {
 
 function MapDrawer({
 	title,
-	icon,
+	icon: Icon,
 	open,
 	onToggle,
 	children,
 }: {
 	title: string;
-	icon: string;
+	icon: LucideIcon;
 	open: boolean;
 	onToggle: () => void;
 	children: ReactNode;
@@ -77,19 +109,18 @@ function MapDrawer({
 	return (
 		<section className="map-workspace-drawer">
 			<h3>
-				<button
+				<Button
+					variant="ghost"
 					type="button"
 					className="map-drawer-toggle"
 					aria-expanded={open}
 					aria-controls={id}
 					onClick={onToggle}
 				>
-					<span aria-hidden="true">{icon}</span>
+					<Icon aria-hidden="true" />
 					{title}
-					<span className="map-drawer-chevron" aria-hidden="true">
-						⌄
-					</span>
-				</button>
+					<ChevronDown className="map-drawer-chevron" aria-hidden="true" />
+				</Button>
 			</h3>
 			<div id={id} className="map-drawer-body" hidden={!open}>
 				{children}
@@ -148,9 +179,11 @@ function MapSceneHierarchy({
 			selection.id === entry.id &&
 			selection.areaId === area.id;
 		const rows = groups.get(group) ?? [];
+		const Icon = sceneEntityIcons[entry.type];
 		rows.push(
 			<div className="map-scene-row" key={`${entry.type}:${entry.id}`}>
-				<button
+				<Button
+					variant="ghost"
 					type="button"
 					role="option"
 					className="map-scene-option"
@@ -159,27 +192,27 @@ function MapSceneHierarchy({
 					title={`${entry.name} (${type})`}
 					onClick={() => onSelect(next)}
 				>
-					<span aria-hidden="true">{entry.icon}</span>
+					<Icon aria-hidden="true" />
 					<span>{entry.name}</span>
-				</button>
+				</Button>
 				{onFocus && (
 					<MapSceneAction
 						label={`Focus ${entry.name}`}
-						icon="◎"
+						icon={Crosshair}
 						onClick={() => onFocus(next)}
 					/>
 				)}
 				{onToggleVisibility && (
 					<MapSceneAction
 						label={`${appearance?.hidden ? "Show" : "Hide"} ${entry.name}`}
-						icon={appearance?.hidden ? "◌" : "◉"}
+						icon={appearance?.hidden ? EyeOff : Eye}
 						onClick={() => onToggleVisibility(next)}
 					/>
 				)}
 				{onToggleLock && (
 					<MapSceneAction
 						label={`${appearance?.locked ? "Unlock" : "Lock"} ${entry.name}`}
-						icon={appearance?.locked ? "▣" : "□"}
+						icon={appearance?.locked ? Lock : LockOpen}
 						onClick={() => onToggleLock(next)}
 					/>
 				)}
@@ -191,7 +224,7 @@ function MapSceneHierarchy({
 	return (
 		<section className="map-scene-hierarchy" aria-label="Scene hierarchy">
 			<h4>Scene Hierarchy</h4>
-			<input
+			<Input
 				aria-label="Search scene"
 				placeholder="Find in scene"
 				value={query}
@@ -225,23 +258,24 @@ function MapSceneHierarchy({
 
 function MapSceneAction({
 	label,
-	icon,
+	icon: Icon,
 	onClick,
 }: {
 	label: string;
-	icon: string;
+	icon: LucideIcon;
 	onClick: () => void;
 }) {
 	return (
-		<button
+		<Button
+			variant="ghost"
 			type="button"
 			className="map-scene-action"
 			aria-label={label}
 			title={label}
 			onClick={onClick}
 		>
-			{icon}
-		</button>
+			<Icon aria-hidden="true" />
+		</Button>
 	);
 }
 
@@ -293,7 +327,7 @@ export function MapWorkspaceSidebar({
 			</header>
 			<MapDrawer
 				title="Asset Drawer"
-				icon="▧"
+				icon={LibraryBig}
 				open={drawers.assets}
 				onToggle={() => toggleDrawer("assets")}
 			>
@@ -310,49 +344,51 @@ export function MapWorkspaceSidebar({
 			</MapDrawer>
 			<MapDrawer
 				title="Tools Drawer"
-				icon="◇"
+				icon={Wrench}
 				open={drawers.tools}
 				onToggle={() => toggleDrawer("tools")}
 			>
 				<div className="map-drawer-choices map-drawer-mode-choices">
-					<button
+					<Button
 						type="button"
 						aria-pressed={mode === "foliage"}
 						onClick={() => onModeChange("foliage")}
 					>
-						<span aria-hidden="true">♠</span>Scatter foliage
-					</button>
-					<button
+						<Sprout aria-hidden="true" />
+						Scatter foliage
+					</Button>
+					<Button
 						type="button"
 						aria-pressed={mode === "water"}
 						onClick={() => onModeChange("water")}
 					>
-						<span aria-hidden="true">≈</span>Edit water
-					</button>
+						<Waves aria-hidden="true" />
+						Edit water
+					</Button>
 				</div>
 				<div className="map-drawer-choices map-terrain-tool-grid">
 					{terrainTools.map((tool) => (
-						<button
+						<Button
 							type="button"
 							key={tool.id}
 							aria-pressed={mode === "terrain" && terrainTool === tool.id}
 							onClick={() => onTerrainToolChange(tool.id)}
 						>
-							<span aria-hidden="true">{tool.icon}</span>
+							<tool.icon aria-hidden="true" />
 							{tool.label}
-						</button>
+						</Button>
 					))}
 				</div>
 			</MapDrawer>
 			<MapDrawer
 				title="World Details"
-				icon="◎"
+				icon={Layers3}
 				open={drawers.world}
 				onToggle={() => toggleDrawer("world")}
 			>
 				<label className="map-workspace-area-picker">
 					<span>Editing area</span>
-					<select
+					<NativeSelect
 						value={area.id}
 						onChange={(event) => onAreaChange(event.target.value)}
 					>
@@ -361,19 +397,19 @@ export function MapWorkspaceSidebar({
 								{entry.name}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 				<div className="map-drawer-choices">
 					{worldSettings.map((setting) => (
-						<button
+						<Button
 							type="button"
 							key={setting.id}
 							aria-pressed={worldSetting === setting.id}
 							onClick={() => onWorldSettingChange(setting.id)}
 						>
-							<span aria-hidden="true">{setting.icon}</span>
+							<setting.icon aria-hidden="true" />
 							{setting.label}
-						</button>
+						</Button>
 					))}
 				</div>
 				<MapSceneHierarchy {...hierarchy} />
@@ -399,7 +435,8 @@ export function MapModeToolbar({
 		>
 			<div className="map-workspace-modebuttons">
 				{modes.map((item) => (
-					<button
+					<Button
+						variant="ghost"
 						key={item.id}
 						type="button"
 						aria-label={item.label}
@@ -407,10 +444,10 @@ export function MapModeToolbar({
 						aria-keyshortcuts={item.key}
 						onClick={() => onModeChange(item.id)}
 					>
-						<span aria-hidden="true">{item.icon}</span>
+						<item.icon aria-hidden="true" />
 						{item.label}
 						<kbd>{item.key}</kbd>
-					</button>
+					</Button>
 				))}
 			</div>
 			{children && <div className="map-workspace-modeactions">{children}</div>}

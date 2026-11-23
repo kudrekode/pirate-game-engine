@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import {
 	FOLIAGE_BRUSH_LIMITS,
 	FOLIAGE_PALETTE_LIMIT,
@@ -44,7 +45,7 @@ function NumberField({
 				{label}
 				{unit && <small> {unit}</small>}
 			</span>
-			<input
+			<Input
 				aria-label={inputLabel}
 				type="number"
 				min={range[0]}
@@ -99,20 +100,20 @@ export function FoliageBrushInspector({
 	return (
 		<div className="map-foliage-controls">
 			<fieldset className="map-foliage-mode" aria-label="Foliage mode">
-				<button
+				<Button
 					type="button"
 					aria-pressed={mode === "paint"}
 					onClick={() => onModeChange("paint")}
 				>
 					Paint
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
 					aria-pressed={mode === "erase"}
 					onClick={() => onModeChange("erase")}
 				>
 					Erase
-				</button>
+				</Button>
 			</fieldset>
 			<NumberField
 				label="Brush radius"
@@ -134,7 +135,7 @@ export function FoliageBrushInspector({
 								<div className="map-foliage-asset-row" key={assetId}>
 									<label className="map-foliage-field">
 										<span>Asset</span>
-										<select
+										<NativeSelect
 											aria-label={`Foliage asset ${name}`}
 											value={assetId}
 											onChange={(event) =>
@@ -155,7 +156,7 @@ export function FoliageBrushInspector({
 													{asset.name}
 												</option>
 											))}
-										</select>
+										</NativeSelect>
 									</label>
 									<NumberField
 										label="Weight"
@@ -165,7 +166,7 @@ export function FoliageBrushInspector({
 										step={0.25}
 										onChange={(next) => updateEntry(assetId, { weight: next })}
 									/>
-									<button
+									<Button
 										type="button"
 										aria-label={`Remove ${name} from mixture`}
 										title={`Remove ${name}`}
@@ -178,11 +179,11 @@ export function FoliageBrushInspector({
 										}
 									>
 										×
-									</button>
+									</Button>
 								</div>
 							);
 						})}
-						<button
+						<Button
 							type="button"
 							disabled={!nextAsset || palette.length >= FOLIAGE_PALETTE_LIMIT}
 							onClick={() => {
@@ -194,7 +195,7 @@ export function FoliageBrushInspector({
 							}}
 						>
 							Add asset
-						</button>
+						</Button>
 						{!palette.some(
 							({ assetId, weight }) => weight > 0 && assetNames.has(assetId),
 						) && <p>Add an available asset with a positive weight to paint.</p>}
@@ -302,7 +303,7 @@ export function FoliageBrushInspector({
 							/>
 						</div>
 						<label className="map-foliage-mask">
-							<input
+							<Input
 								type="checkbox"
 								checked={settings.excludeWater}
 								onChange={(event) =>
@@ -312,7 +313,7 @@ export function FoliageBrushInspector({
 							Exclude water
 						</label>
 						<label className="map-foliage-mask">
-							<input
+							<Input
 								type="checkbox"
 								checked={settings.excludeRoads}
 								onChange={(event) =>

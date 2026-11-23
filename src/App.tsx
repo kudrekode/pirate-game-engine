@@ -1,3 +1,4 @@
+import { FolderOpen, House, Play, Save, Settings2, Upload } from "lucide-react";
 import {
 	type ChangeEvent,
 	useCallback,
@@ -8,6 +9,7 @@ import {
 	useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { Button, NativeSelect } from "@/components/ui/control";
 import { migrateProject } from "./data/migrateProject";
 import {
 	createProjectRecord,
@@ -537,7 +539,7 @@ export default function App() {
 				<header className="project-topbar">
 					<div className="project-brand">
 						<span className="project-monogram" aria-hidden="true">
-							{active ? Array.from(projectName)[0].toLocaleUpperCase() : "◆"}
+							<FolderOpen className="editor-icon" />
 						</span>
 						<div>
 							<strong>{active ? projectName : "Adventure Game Builder"}</strong>
@@ -557,45 +559,43 @@ export default function App() {
 								className="project-breadcrumbs"
 								aria-label="Project navigation"
 							>
-								<button type="button" onClick={showProjects}>
+								<Button variant="ghost" onClick={showProjects}>
+									<FolderOpen aria-hidden="true" />
 									Projects
-								</button>
+								</Button>
 								{route !== "home" && (
-									<button type="button" onClick={() => changeRoute("home")}>
+									<Button variant="ghost" onClick={() => changeRoute("home")}>
+										<House aria-hidden="true" />
 										Home
-									</button>
+									</Button>
 								)}
 							</nav>
-							<button
-								type="button"
+							<Button
+								variant="ghost"
 								onClick={() => setDialog({ kind: "tools" })}
 							>
+								<Settings2 aria-hidden="true" />
 								Project tools
-							</button>
-							<button
-								type="button"
+							</Button>
+							<Button
 								onClick={() => persist("save")}
 								title="Save project (Ctrl/Cmd+S)"
 							>
+								<Save aria-hidden="true" />
 								Save
-							</button>
-							<button
-								type="button"
-								className="project-primary"
-								onClick={() => play()}
-							>
-								<span aria-hidden="true">▶ </span>Play
-							</button>
+							</Button>
+							<Button type="button" variant="default" onClick={() => play()}>
+								<Play aria-hidden="true" />
+								Play
+							</Button>
 						</div>
 					) : (
 						!active && (
 							<div className="project-header-actions">
-								<button
-									type="button"
-									onClick={() => importInput.current?.click()}
-								>
+								<Button onClick={() => importInput.current?.click()}>
+									<Upload aria-hidden="true" />
 									Import JSON
-								</button>
+								</Button>
 							</div>
 						)
 					)}
@@ -632,20 +632,24 @@ export default function App() {
 					/>
 				)}
 				{active && route !== "home" && route !== "projects" && !runtime && (
-					<nav className="project-workspace-nav" aria-label="Editor workspaces">
+					<nav
+						className="project-workspace-nav editor-toolbar"
+						aria-label="Editor workspaces"
+					>
 						{primaryWorkspaces.map((item) => (
-							<button
-								type="button"
+							<Button
+								variant="ghost"
 								key={item.id}
 								aria-current={route === item.id ? "page" : undefined}
 								onClick={() => openWorkspace(item.id)}
 							>
+								<item.icon aria-hidden="true" />
 								{item.label}
-							</button>
+							</Button>
 						))}
 						<div className="project-workspace-secondary">
 							<label htmlFor="more-editors">More editors</label>
-							<select
+							<NativeSelect
 								id="more-editors"
 								value={workspace ? "" : route}
 								onChange={(event) => {
@@ -661,7 +665,7 @@ export default function App() {
 										{item.label}
 									</option>
 								))}
-							</select>
+							</NativeSelect>
 						</div>
 					</nav>
 				)}
@@ -762,22 +766,22 @@ export default function App() {
 						<p>Saved project: {recoveryName(dialog.record.saved)}</p>
 						<p>Recovery draft: {recoveryName(dialog.record.draft)}</p>
 						<div className="project-dialog-actions">
-							<button type="button" onClick={() => setDialog(null)}>
+							<Button type="button" onClick={() => setDialog(null)}>
 								Cancel
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
 								onClick={() => openRecord(dialog.record, "saved")}
 							>
 								Use saved project
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
-								className="project-primary"
+								variant="default"
 								onClick={() => openRecord(dialog.record, "draft")}
 							>
 								Recover draft
-							</button>
+							</Button>
 						</div>
 					</ProjectDialog>
 				)}
@@ -792,26 +796,26 @@ export default function App() {
 						</p>
 						{dialogError && <p role="alert">{dialogError}</p>}
 						<div className="project-dialog-actions">
-							<button type="button" onClick={() => setDialog(null)}>
+							<Button type="button" onClick={() => setDialog(null)}>
 								Cancel
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
 								onClick={() => {
 									if (persist("draft")) dialog.next();
 								}}
 							>
 								Keep draft and continue
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
-								className="project-primary"
+								variant="default"
 								onClick={() => {
 									if (persist("save")) dialog.next();
 								}}
 							>
 								Save and continue
-							</button>
+							</Button>
 						</div>
 					</ProjectDialog>
 				)}

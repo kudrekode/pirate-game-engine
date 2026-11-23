@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import {
 	defaultEnemyBehaviour,
 	resolveNPCInstance,
@@ -240,7 +241,7 @@ export function MapNpcInspector({
 			<div className="form-stack">
 				<label>
 					NPC
-					<select
+					<NativeSelect
 						onChange={(event) =>
 							updateSelectedNpc({ npcDefinitionId: event.target.value })
 						}
@@ -251,12 +252,12 @@ export function MapNpcInspector({
 								{npc.name}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 				<div className="form-grid compact">
 					<label>
 						X
-						<input
+						<Input
 							min={0}
 							onChange={(event) =>
 								updateSelectedNpc({ x: Number(event.target.value) })
@@ -267,7 +268,7 @@ export function MapNpcInspector({
 					</label>
 					<label>
 						Y
-						<input
+						<Input
 							min={0}
 							onChange={(event) =>
 								updateSelectedNpc({ y: Number(event.target.value) })
@@ -279,7 +280,7 @@ export function MapNpcInspector({
 				</div>
 				<label>
 					Facing
-					<select
+					<NativeSelect
 						onChange={(event) =>
 							updateSelectedNpc({
 								facing: event.target.value as NonNullable<
@@ -293,11 +294,11 @@ export function MapNpcInspector({
 						<option value="down">Down</option>
 						<option value="left">Left</option>
 						<option value="right">Right</option>
-					</select>
+					</NativeSelect>
 				</label>
 				{!selectedNpc.scene?.collision && (
 					<label className="checkbox-row standalone">
-						<input
+						<Input
 							checked={selectedNpc.blocksMovement}
 							onChange={(event) =>
 								updateSelectedNpc({ blocksMovement: event.target.checked })
@@ -315,7 +316,7 @@ export function MapNpcInspector({
 				<div className="form-grid compact">
 					<label>
 						Current health
-						<input
+						<Input
 							min={0}
 							max={attributes.maxHealth}
 							onChange={(event) =>
@@ -332,7 +333,7 @@ export function MapNpcInspector({
 					</label>
 					<label>
 						Max health
-						<input
+						<Input
 							min={1}
 							onChange={(event) => {
 								const maxHealth = Math.max(1, Number(event.target.value));
@@ -348,7 +349,7 @@ export function MapNpcInspector({
 				</div>
 				<label>
 					Faction
-					<input
+					<Input
 						onChange={(event) =>
 							updateSelectedNpcAttributes({ faction: event.target.value })
 						}
@@ -357,7 +358,7 @@ export function MapNpcInspector({
 				</label>
 				<label>
 					Alignment
-					<select
+					<NativeSelect
 						onChange={(event) =>
 							updateSelectedNpcAttributes({
 								alignment: event.target
@@ -369,10 +370,10 @@ export function MapNpcInspector({
 						<option value="friendly">Friendly</option>
 						<option value="neutral">Neutral</option>
 						<option value="hostile">Hostile</option>
-					</select>
+					</NativeSelect>
 				</label>
 				<label className="checkbox-row standalone">
-					<input
+					<Input
 						checked={attributes.canInteract}
 						onChange={(event) =>
 							updateSelectedNpcAttributes({
@@ -385,7 +386,7 @@ export function MapNpcInspector({
 				</label>
 				<label>
 					Movement speed
-					<input
+					<Input
 						min={0.1}
 						max={10}
 						step={0.1}
@@ -399,12 +400,12 @@ export function MapNpcInspector({
 					/>
 				</label>
 				{hasAttributeOverride ? (
-					<button
+					<Button
 						onClick={() => resetSelectedNpcSection("attributes")}
 						type="button"
 					>
 						Reset attributes to definition default
-					</button>
+					</Button>
 				) : null}
 				{attributes.alignment === "hostile" ? (
 					<>
@@ -414,7 +415,7 @@ export function MapNpcInspector({
 							{hasEnemyOverride ? "instance override" : "definition default"}
 						</div>
 						<label className="checkbox-row standalone">
-							<input
+							<Input
 								checked={enemyBehaviour.enabled}
 								onChange={(event) =>
 									updateSelectedNpcEnemyBehaviour({
@@ -428,7 +429,7 @@ export function MapNpcInspector({
 						<div className="form-grid compact">
 							<label>
 								Detection radius
-								<input
+								<Input
 									min={0}
 									onChange={(event) =>
 										updateSelectedNpcEnemyBehaviour({
@@ -444,7 +445,7 @@ export function MapNpcInspector({
 							</label>
 							<label>
 								Chase radius
-								<input
+								<Input
 									min={0}
 									onChange={(event) =>
 										updateSelectedNpcEnemyBehaviour({
@@ -457,7 +458,7 @@ export function MapNpcInspector({
 							</label>
 							<label>
 								Contact damage
-								<input
+								<Input
 									min={0}
 									onChange={(event) =>
 										updateSelectedNpcEnemyBehaviour({
@@ -470,7 +471,7 @@ export function MapNpcInspector({
 							</label>
 						</div>
 						<label className="checkbox-row standalone">
-							<input
+							<Input
 								checked={enemyBehaviour.returnToOrigin}
 								onChange={(event) =>
 									updateSelectedNpcEnemyBehaviour({
@@ -482,12 +483,12 @@ export function MapNpcInspector({
 							Return to origin when player leaves chase radius
 						</label>
 						{hasEnemyOverride ? (
-							<button
+							<Button
 								onClick={() => resetSelectedNpcSection("enemy")}
 								type="button"
 							>
 								Reset enemy behaviour to definition default
-							</button>
+							</Button>
 						) : null}
 					</>
 				) : null}
@@ -498,7 +499,7 @@ export function MapNpcInspector({
 				</div>
 				<label>
 					Mode
-					<select
+					<NativeSelect
 						onChange={(event) =>
 							updateSelectedNpcMovementMode(
 								event.target.value as NPCInstance["movementMode"],
@@ -509,12 +510,12 @@ export function MapNpcInspector({
 						<option value="stationary">Stationary</option>
 						<option value="patrol">Patrol</option>
 						<option value="wander">Wander</option>
-					</select>
+					</NativeSelect>
 				</label>
 				{selectedResolvedNpc.movementMode === "patrol" ? (
 					<div className="form-stack">
 						<label className="checkbox-row">
-							<input
+							<Input
 								checked={selectedResolvedNpc.patrolPath?.loop ?? true}
 								onChange={(event) =>
 									updateSelectedNpcMovement({
@@ -536,7 +537,7 @@ export function MapNpcInspector({
 									key={`${selectedNpc.id}_${point.x}_${point.y}_${index}`}
 								>
 									<span>{index + 1}</span>
-									<input
+									<Input
 										aria-label={`Patrol point ${index + 1} X`}
 										min={0}
 										onChange={(event) =>
@@ -547,7 +548,7 @@ export function MapNpcInspector({
 										type="number"
 										value={point.x}
 									/>
-									<input
+									<Input
 										aria-label={`Patrol point ${index + 1} Y`}
 										min={0}
 										onChange={(event) =>
@@ -558,19 +559,19 @@ export function MapNpcInspector({
 										type="number"
 										value={point.y}
 									/>
-									<button
-										className="danger-button compact"
+									<Button
+										variant="destructive"
 										onClick={() => deletePatrolPoint(index)}
 										type="button"
 									>
 										Delete
-									</button>
+									</Button>
 								</div>
 							),
 						)}
-						<button onClick={addPatrolPoint} type="button">
+						<Button onClick={addPatrolPoint} type="button">
 							Add patrol point
-						</button>
+						</Button>
 					</div>
 				) : null}
 				{selectedResolvedNpc.movementMode === "wander" ? (
@@ -578,7 +579,7 @@ export function MapNpcInspector({
 						{(["x", "y", "width", "height"] as const).map((field) => (
 							<label key={field}>
 								Zone {field}
-								<input
+								<Input
 									min={field === "width" || field === "height" ? 1 : 0}
 									onChange={(event) =>
 										updateSelectedNpcMovement({
@@ -607,12 +608,12 @@ export function MapNpcInspector({
 					</div>
 				) : null}
 				{hasMovementOverride ? (
-					<button
+					<Button
 						onClick={() => resetSelectedNpcSection("movement")}
 						type="button"
 					>
 						Reset movement to definition default
-					</button>
+					</Button>
 				) : null}
 				<div className="coordinate-readout">
 					{definition?.description ?? "Friendly interactable NPC."}
@@ -632,33 +633,29 @@ export function MapNpcInspector({
 					onChange={(threeVisual) => updateSelectedNpc({ threeVisual })}
 				/>
 				{selectedNpc.threeVisual && (
-					<button
+					<Button
 						type="button"
 						onClick={() => updateSelectedNpc({ threeVisual: undefined })}
 					>
 						Reset visual to definition default
-					</button>
+					</Button>
 				)}
 				{hasInteractionOverride ? (
-					<button
+					<Button
 						onClick={() => resetSelectedNpcSection("interaction")}
 						type="button"
 					>
 						Reset interaction to definition default
-					</button>
+					</Button>
 				) : null}
 				{duplicateSelectedNpc && (
-					<button type="button" onClick={duplicateSelectedNpc}>
+					<Button type="button" onClick={duplicateSelectedNpc}>
 						Duplicate NPC instance
-					</button>
+					</Button>
 				)}
-				<button
-					className="danger-button"
-					onClick={deleteSelectedNpc}
-					type="button"
-				>
+				<Button variant="destructive" onClick={deleteSelectedNpc} type="button">
 					Delete NPC instance
-				</button>
+				</Button>
 			</div>
 		</>
 	);

@@ -1,4 +1,6 @@
+import { ArrowUpRight, Copy, MapPin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import {
 	resolveStoryMapPosition,
 	type StoryField,
@@ -51,7 +53,7 @@ export function StoryTextField({
 	return (
 		<label className="story-graph-field">
 			<span>{label}</span>
-			<input
+			<Input
 				type={numeric ? "number" : "text"}
 				min={numeric?.min}
 				max={numeric?.max}
@@ -147,33 +149,42 @@ function ReferenceLinks({
 					};
 		return (
 			<div className="story-graph-reference-links">
-				<button
+				<Button
 					type="button"
+					variant="outline"
+					size="sm"
 					onClick={() => onNavigate({ workspace: "map", areaId, selection })}
 				>
+					<MapPin aria-hidden="true" />
 					{field.kind === "area" ? "Open Map" : "Find in Map"}
-				</button>
+				</Button>
 				{assetId && (
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="sm"
 						onClick={() => onNavigate({ workspace: "assets", assetId })}
 					>
 						Edit Asset
-					</button>
+						<ArrowUpRight aria-hidden="true" />
+					</Button>
 				)}
 			</div>
 		);
 	}
 	if (field.kind === "cinematic") {
 		return (
-			<button
+			<Button
 				type="button"
+				variant="outline"
+				size="sm"
 				onClick={() =>
 					onNavigate({ workspace: "cinematics", cinematicId: value })
 				}
 			>
 				Open Cinematic
-			</button>
+				<ArrowUpRight aria-hidden="true" />
+			</Button>
 		);
 	}
 	const section = (
@@ -187,8 +198,10 @@ function ReferenceLinks({
 	)[field.kind as "quest" | "item" | "flag" | "variable" | "dialogue"];
 	if (!section) return null;
 	return (
-		<button
+		<Button
 			type="button"
+			variant="outline"
+			size="sm"
 			onClick={() =>
 				openEntity({
 					section,
@@ -198,7 +211,7 @@ function ReferenceLinks({
 			}
 		>
 			Open {field.label}
-		</button>
+		</Button>
 	);
 }
 
@@ -282,13 +295,13 @@ function StoryNodeField({
 		return (
 			<label className="story-graph-field">
 				<span>{field.label}</span>
-				<select
+				<NativeSelect
 					value={String(value)}
 					onChange={(event) => update(event.target.value === "true")}
 				>
 					<option value="true">True</option>
 					<option value="false">False</option>
-				</select>
+				</NativeSelect>
 			</label>
 		);
 	}
@@ -299,7 +312,7 @@ function StoryNodeField({
 		<div className="story-graph-field-group">
 			<label className="story-graph-field">
 				<span>{field.label}</span>
-				<select
+				<NativeSelect
 					value={current}
 					onChange={(event) => update(event.target.value)}
 				>
@@ -316,7 +329,7 @@ function StoryNodeField({
 							{option.label}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<ReferenceLinks field={field} option={selected} onNavigate={onNavigate} />
 		</div>
@@ -341,7 +354,7 @@ function StoryMarkerField({
 		<div className="story-graph-field-group">
 			<label className="story-graph-field">
 				<span>Map marker or object</span>
-				<select
+				<NativeSelect
 					value={current}
 					onChange={(event) => {
 						const next = positions.find(
@@ -371,12 +384,14 @@ function StoryMarkerField({
 							{position.label}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			{tile && (
 				<div className="story-graph-reference-links">
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="sm"
 						onClick={() =>
 							onNavigate({
 								workspace: "map",
@@ -391,11 +406,14 @@ function StoryMarkerField({
 							})
 						}
 					>
+						<MapPin aria-hidden="true" />
 						Find in Map
-					</button>
+					</Button>
 					{selected?.assetId && (
-						<button
+						<Button
 							type="button"
+							variant="outline"
+							size="sm"
 							onClick={() =>
 								onNavigate({
 									workspace: "assets",
@@ -404,7 +422,8 @@ function StoryMarkerField({
 							}
 						>
 							Edit Asset
-						</button>
+							<ArrowUpRight aria-hidden="true" />
+						</Button>
 					)}
 				</div>
 			)}
@@ -461,12 +480,19 @@ export function StoryNodeInspector(props: NodeProps) {
 				)}
 			</div>
 			<div className="story-graph-section story-graph-reference-links">
-				<button type="button" onClick={onDelete}>
-					Delete node
-				</button>
-				<button type="button" onClick={onDuplicate}>
+				<Button type="button" variant="outline" size="sm" onClick={onDuplicate}>
+					<Copy aria-hidden="true" />
 					Duplicate node
-				</button>
+				</Button>
+				<Button
+					type="button"
+					variant="destructive"
+					size="sm"
+					onClick={onDelete}
+				>
+					<Trash2 aria-hidden="true" />
+					Delete node
+				</Button>
 			</div>
 		</>
 	);
@@ -499,7 +525,7 @@ export function StoryEdgeInspector({
 				<p>From {from ? label(from) : edge.from}</p>
 				<label className="story-graph-field">
 					<span>Destination</span>
-					<select
+					<NativeSelect
 						value={edge.to}
 						onChange={(event) => onRedirect(event.target.value)}
 					>
@@ -511,11 +537,18 @@ export function StoryEdgeInspector({
 								{label(node)}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
-				<button type="button" onClick={onDelete}>
+				<Button
+					type="button"
+					variant="destructive"
+					size="sm"
+					className="justify-self-start"
+					onClick={onDelete}
+				>
+					<Trash2 aria-hidden="true" />
 					Delete connection
-				</button>
+				</Button>
 			</div>
 		</>
 	);
@@ -544,7 +577,7 @@ export function StoryGraphInspector({
 				/>
 				<label className="story-graph-field">
 					<span>Graph type</span>
-					<select
+					<NativeSelect
 						value={graph.kind}
 						onChange={(event) =>
 							onKind(event.target.value as StoryGraph["kind"])
@@ -555,7 +588,7 @@ export function StoryGraphInspector({
 								{title}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 			</div>
 		</>

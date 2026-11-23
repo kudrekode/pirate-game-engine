@@ -4,6 +4,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { registerCharacterAsset } from "../data/characterAssets";
@@ -70,24 +71,35 @@ it("assigns player, places and duplicates NPCs, edits transforms, deletes and sa
 	await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
 	character.unmount();
 	const map = render(<MapEditor />);
-	fireEvent.pointerDown(screen.getByLabelText("Tile 5, 5"), { button: 0 });
+	const tile = map.container.querySelector('button[aria-label="Tile 5, 5"]');
+	if (!tile) throw new Error("Expected tile 5, 5 in the map.");
+	fireEvent.pointerDown(tile, { button: 0 });
 	fireEvent.pointerUp(window);
 	fireEvent.keyDown(window, { key: "1" });
-	fireEvent.pointerDown(screen.getByLabelText("Tile 5, 5"), { button: 0 });
+	fireEvent.pointerDown(tile, { button: 0 });
 	fireEvent.pointerUp(window);
 	expect(useProjectStore.getState().project.areas[0].npcs).toHaveLength(1);
-	fireEvent.change(screen.getByLabelText("Scale", { exact: true }), {
+	const inspector = within(
+		screen.getByRole("complementary", { name: "Map inspector" }),
+	);
+	fireEvent.change(inspector.getByLabelText("Scale", { exact: true }), {
 		target: { value: "1.2" },
 	});
-	fireEvent.change(screen.getByLabelText("Rotation offset"), {
+	fireEvent.change(inspector.getByLabelText("Rotation offset"), {
 		target: { value: "30" },
 	});
-	fireEvent.click(screen.getByText("Duplicate NPC instance"));
-	fireEvent.change(screen.getByLabelText("Position X"), {
+	fireEvent.click(
+		inspector.getByRole("button", { name: "Duplicate NPC instance" }),
+	);
+	fireEvent.change(inspector.getByLabelText("Position X"), {
 		target: { value: "6" },
 	});
-	fireEvent.click(screen.getByText("Duplicate NPC instance"));
-	fireEvent.click(screen.getByText("Delete NPC instance"));
+	fireEvent.click(
+		inspector.getByRole("button", { name: "Duplicate NPC instance" }),
+	);
+	fireEvent.click(
+		inspector.getByRole("button", { name: "Delete NPC instance" }),
+	);
 	const saved = useProjectStore.getState().project;
 	expect(saved.areas[0].npcs).toHaveLength(2);
 	expect(saved.areas[0].npcs[0].threeVisual).toEqual(
@@ -125,7 +137,17 @@ it("accepts imports only from the launched creator and refuses a changed project
 	const originalFetch = vi.mocked(fetch);
 	const view = render(<AssetCreatorLauncher />);
 	try {
-		fireEvent.click(screen.getByText("Open Asset Creator"));
+		fireEvent.click(screen.getByRole("button", { name: "Asset Creator" }));
+		const dialog = within(
+			screen.getByRole("dialog", { name: "Asset Creator" }),
+		);
+		await waitFor(() =>
+			expect(dialog.getByRole("status")).toHaveTextContent(
+				"could not be reached",
+			),
+		);
+		originalFetch.mockClear();
+		fireEvent.click(dialog.getByRole("link", { name: "Open Asset Creator" }));
 		const target = new URL(String(open.mock.calls[0][0]));
 		const data = {
 			type: "game-character-import",

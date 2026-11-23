@@ -1,3 +1,4 @@
+import { Input, NativeSelect } from "@/components/ui/control";
 import {
 	getThreeVisualAssetDefinition,
 	listThreeVisualAssets,
@@ -98,7 +99,7 @@ export function ThreeVisualControls({
 		<>
 			<label>
 				Scale
-				<input
+				<Input
 					max={5}
 					min={0.1}
 					onChange={(event) =>
@@ -113,7 +114,7 @@ export function ThreeVisualControls({
 			</label>
 			<label>
 				Height offset
-				<input
+				<Input
 					max={5}
 					min={-5}
 					onChange={(event) =>
@@ -130,7 +131,7 @@ export function ThreeVisualControls({
 			</label>
 			<label>
 				Rotation offset
-				<input
+				<Input
 					max={360}
 					min={-360}
 					onChange={(event) =>
@@ -154,7 +155,7 @@ export function ThreeVisualControls({
 			<div className="form-grid compact">
 				<label>
 					Visual source
-					<select
+					<NativeSelect
 						onChange={(event) =>
 							updateMode(event.target.value as ThreeVisualConfig["mode"])
 						}
@@ -162,14 +163,14 @@ export function ThreeVisualControls({
 					>
 						<option value="placeholder">Placeholder</option>
 						<option value="asset">Asset</option>
-					</select>
+					</NativeSelect>
 				</label>
 			</div>
 			<div className="form-grid compact">
 				{mode === "placeholder" ? (
 					<label>
 						Placeholder type
-						<select
+						<NativeSelect
 							onChange={(event) =>
 								updateVisual({
 									placeholderType: event.target
@@ -183,12 +184,12 @@ export function ThreeVisualControls({
 									{option.label}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 				) : (
 					<label>
 						Asset
-						<select
+						<NativeSelect
 							disabled={assets.length === 0}
 							onChange={(event) =>
 								updateVisual({
@@ -207,7 +208,7 @@ export function ThreeVisualControls({
 									{asset.name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 				)}
 				{showTransformControls && renderTransformControls()}

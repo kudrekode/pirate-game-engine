@@ -1,3 +1,4 @@
+import { Input, NativeSelect, RangeInput } from "@/components/ui/control";
 import { terrainPresets } from "../../data/mapVisuals";
 import {
 	MAX_TERRAIN_HEIGHT,
@@ -64,7 +65,7 @@ export function MapBrushInspector({
 			{waterAction && (
 				<label>
 					Water brush action
-					<select
+					<NativeSelect
 						value={waterAction}
 						onChange={(event) =>
 							onWaterActionChange(event.target.value as WaterBrushAction)
@@ -73,12 +74,12 @@ export function MapBrushInspector({
 						<option value="paint">Paint water</option>
 						<option value="restore">Restore land</option>
 						<option value="elevation">Set water elevation</option>
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			<label>
 				Brush gesture
-				<select
+				<NativeSelect
 					value={gesture}
 					onChange={(event) =>
 						onGestureChange(event.target.value as MapBrushGesture)
@@ -90,14 +91,13 @@ export function MapBrushInspector({
 					{!waterAction && tool === "paint" && (
 						<option value="fill">Fill matching terrain</option>
 					)}
-				</select>
+				</NativeSelect>
 			</label>
 			{gesture === "brush" && (
 				<>
 					<label>
 						Brush diameter <span>{size} tiles</span>
-						<input
-							type="range"
+						<RangeInput
 							min={1}
 							max={8}
 							step={1}
@@ -109,7 +109,7 @@ export function MapBrushInspector({
 					</label>
 					<label>
 						Footprint
-						<select
+						<NativeSelect
 							value={shape}
 							onChange={(event) =>
 								onShapeChange(event.target.value as TerrainBrushShape)
@@ -117,7 +117,7 @@ export function MapBrushInspector({
 						>
 							<option value="circle">Circle</option>
 							<option value="square">Square</option>
-						</select>
+						</NativeSelect>
 					</label>
 				</>
 			)}
@@ -125,8 +125,7 @@ export function MapBrushInspector({
 				<>
 					<label>
 						Strength <span>{strength}</span>
-						<input
-							type="range"
+						<RangeInput
 							min={1}
 							max={4}
 							step={1}
@@ -137,7 +136,7 @@ export function MapBrushInspector({
 					{gesture === "brush" && (
 						<label>
 							Falloff
-							<select
+							<NativeSelect
 								value={falloff}
 								onChange={(event) =>
 									onFalloffChange(event.target.value as TerrainBrushFalloff)
@@ -146,7 +145,7 @@ export function MapBrushInspector({
 								<option value="hard">Hard</option>
 								<option value="linear">Linear</option>
 								<option value="smooth">Smooth</option>
-							</select>
+							</NativeSelect>
 						</label>
 					)}
 				</>
@@ -154,7 +153,7 @@ export function MapBrushInspector({
 			{showMaterial && (
 				<label>
 					{waterAction ? "Shore material" : "Terrain material"}
-					<select
+					<NativeSelect
 						value={material}
 						onChange={(event) => onMaterialChange(event.target.value)}
 					>
@@ -165,13 +164,13 @@ export function MapBrushInspector({
 									{tile.label}
 								</option>
 							))}
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			{showHeight && (
 				<label>
 					{waterAction ? "Water level offset" : "Target height"}
-					<input
+					<Input
 						type="number"
 						min={MIN_TERRAIN_HEIGHT}
 						max={MAX_TERRAIN_HEIGHT}
@@ -192,7 +191,7 @@ export function MapBrushInspector({
 			{!waterAction && (
 				<label>
 					Terrain mask
-					<select
+					<NativeSelect
 						value={mask}
 						onChange={(event) =>
 							onMaskChange(event.target.value as MapBrushMask)
@@ -201,7 +200,7 @@ export function MapBrushInspector({
 						<option value="all">Whole terrain</option>
 						<option value="land">Land only</option>
 						<option value="water">Water only</option>
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			{waterAction && (

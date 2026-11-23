@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { configDefaults, defineConfig } from "vitest/config";
 
@@ -11,6 +12,7 @@ const domTests = [
 	"src/runtime/three/*.test.tsx",
 	"src/runtime/three/threePerformanceDiagnostics.test.ts",
 ];
+const sourceAlias = { "@": fileURLToPath(new URL("./src", import.meta.url)) };
 
 export default defineConfig({
 	test: {
@@ -19,6 +21,7 @@ export default defineConfig({
 		isolate: true,
 		projects: [
 			{
+				resolve: { alias: sourceAlias },
 				test: {
 					name: "root-node",
 					include: ["src/**/*.test.{ts,tsx}"],
@@ -28,6 +31,7 @@ export default defineConfig({
 				},
 			},
 			{
+				resolve: { alias: sourceAlias },
 				plugins: [react()],
 				test: {
 					name: "root-dom",

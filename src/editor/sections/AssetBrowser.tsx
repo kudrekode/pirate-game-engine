@@ -1,5 +1,7 @@
+import { Box, House, Plus, Trees, UserRound } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { Button, Input } from "@/components/ui/control";
 import { requestThreeVisualAsset } from "../../runtime/three/threeVisualAssetLoader";
 import { getThreeVisualAssetDefinition } from "../../runtime/three/threeVisualAssetRegistry";
 import type { GameProject } from "../../types/game";
@@ -88,7 +90,7 @@ export function AssetBrowser({
 			)}
 			<label className="asset-search">
 				<span className="sr-only">Search assets</span>
-				<input
+				<Input
 					placeholder="Search assets…"
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
@@ -97,14 +99,14 @@ export function AssetBrowser({
 			<fieldset className="asset-categories">
 				<legend className="sr-only">Asset categories</legend>
 				{categories.map((name) => (
-					<button
+					<Button
 						type="button"
 						key={name}
 						aria-pressed={category === name}
 						onClick={() => setCategory(name)}
 					>
 						{name}
-					</button>
+					</Button>
 				))}
 			</fieldset>
 			{!onSelect && (
@@ -120,21 +122,21 @@ export function AssetBrowser({
 						)?.thumbnailUrl ?? thumbnails[asset.visual?.assetId ?? ""];
 					const selected =
 						selectedAsset?.id === asset.id && selectedAsset.kind === asset.kind;
+					const Icon =
+						asset.category === "Characters"
+							? UserRound
+							: asset.category === "Buildings"
+								? House
+								: asset.category === "Nature"
+									? Trees
+									: Box;
 					const preview = (
 						<>
 							<div className="asset-card-preview">
 								{thumbnail ? (
 									<img draggable={false} src={thumbnail} alt={asset.name} />
 								) : (
-									<span aria-hidden="true">
-										{asset.category === "Characters"
-											? "♟"
-											: asset.category === "Buildings"
-												? "⌂"
-												: asset.category === "Nature"
-													? "♧"
-													: "◇"}
-									</span>
+									<Icon aria-hidden="true" />
 								)}
 							</div>
 							<strong title={asset.name}>{asset.name}</strong>
@@ -158,7 +160,8 @@ export function AssetBrowser({
 							onDragEnd={() => onDragAsset?.(undefined)}
 						>
 							{onSelect ? (
-								<button
+								<Button
+									variant="ghost"
 									type="button"
 									className="asset-card-select"
 									aria-label={`Place ${asset.name}`}
@@ -166,18 +169,19 @@ export function AssetBrowser({
 									onClick={() => onSelect(asset)}
 								>
 									{preview}
-								</button>
+								</Button>
 							) : (
 								preview
 							)}
-							<button
+							<Button
 								type="button"
 								className="asset-card-add"
 								aria-label={`Add ${asset.name}`}
 								onClick={() => onAdd(asset)}
 							>
-								{onSelect ? "+" : "+ Add"}
-							</button>
+								<Plus aria-hidden="true" />
+								{!onSelect && "Add"}
+							</Button>
 						</article>
 					);
 				})}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button, Input, NativeSelect, Textarea } from "@/components/ui/control";
 import { DEFAULT_CINEMATIC_FOV } from "../../runtime/three/cinematicCamera";
 import {
 	CINEMATIC_ACTOR_ANIMATIONS,
@@ -100,7 +101,7 @@ export function CinematicShotInspector({
 			</header>
 			<label>
 				Shot preset
-				<select
+				<NativeSelect
 					value={shot.preset ?? ""}
 					onChange={(event) =>
 						onFrame(event.target.value as CinematicShotPreset)
@@ -115,12 +116,12 @@ export function CinematicShotInspector({
 					{shot.preset === "current-view" && (
 						<option value="current-view">Current View</option>
 					)}
-				</select>
+				</NativeSelect>
 			</label>
 			{shot.preset && shot.preset !== "current-view" && (
 				<label>
 					Look at
-					<select
+					<NativeSelect
 						value={shot.targetId ?? ""}
 						onChange={(event) =>
 							onFrame(
@@ -138,7 +139,7 @@ export function CinematicShotInspector({
 								{name}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			{twoActors && (
@@ -146,7 +147,7 @@ export function CinematicShotInspector({
 					{shot.preset === "over-shoulder"
 						? "Foreground actor"
 						: "Second actor"}
-					<select
+					<NativeSelect
 						value={shot.secondaryTargetId ?? ""}
 						onChange={(event) =>
 							onFrame(
@@ -168,12 +169,12 @@ export function CinematicShotInspector({
 									{name}
 								</option>
 							))}
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			<label>
 				Speaker
-				<select
+				<NativeSelect
 					value={speakerId}
 					onChange={(event) => {
 						if (subtitle) onSubtitle(subtitle.text, event.target.value);
@@ -188,11 +189,11 @@ export function CinematicShotInspector({
 							{name}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<label>
 				Dialogue / Subtitle
-				<textarea
+				<Textarea
 					rows={3}
 					key={subtitle?.text}
 					defaultValue={subtitle?.text ?? ""}
@@ -204,7 +205,7 @@ export function CinematicShotInspector({
 			</label>
 			<label>
 				Actor
-				<select
+				<NativeSelect
 					value={actorId}
 					onChange={(event) => {
 						if (gesture) onGesture(gesture.animation, event.target.value);
@@ -216,11 +217,11 @@ export function CinematicShotInspector({
 							{name}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<label>
 				Actor action
-				<select
+				<NativeSelect
 					value={gesture?.animation ?? ""}
 					disabled={!actorId}
 					onChange={(event) =>
@@ -238,12 +239,12 @@ export function CinematicShotInspector({
 							{cinematicAnimationLabels[animation]}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<div className="cinema-duration-fields">
 				<label>
 					Timing
-					<select
+					<NativeSelect
 						value={shot.durationMode ?? "manual"}
 						onChange={(event) =>
 							onShotChange({
@@ -254,7 +255,7 @@ export function CinematicShotInspector({
 					>
 						<option value="auto">Auto from dialogue</option>
 						<option value="manual">Manual</option>
-					</select>
+					</NativeSelect>
 				</label>
 				{shot.durationMode === "auto" ? (
 					<span>{(shot.durationMs / 1000).toFixed(1)} s</span>
@@ -270,22 +271,22 @@ export function CinematicShotInspector({
 				)}
 			</div>
 			<div className="cinema-actions">
-				<button type="button" disabled={index === 0} onClick={() => onMove(-1)}>
+				<Button type="button" disabled={index === 0} onClick={() => onMove(-1)}>
 					← Earlier
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
 					disabled={index === shotCount - 1}
 					onClick={() => onMove(1)}
 				>
 					Later →
-				</button>
-				<button type="button" onClick={onDuplicate}>
+				</Button>
+				<Button type="button" onClick={onDuplicate}>
 					Duplicate
-				</button>
-				<button type="button" disabled={shotCount <= 1} onClick={onRemove}>
+				</Button>
+				<Button type="button" disabled={shotCount <= 1} onClick={onRemove}>
 					Delete shot
-				</button>
+				</Button>
 			</div>
 		</section>
 	);
@@ -307,7 +308,7 @@ function NumberInput({
 	return (
 		<label>
 			{label}
-			<input
+			<Input
 				key={value}
 				type="number"
 				defaultValue={value}
@@ -349,7 +350,7 @@ export function AdvancedCameraFields({
 				/>
 				<label>
 					Interpolation
-					<select
+					<NativeSelect
 						value={shot.ease ?? "smooth"}
 						onChange={(event) =>
 							onChange({
@@ -360,11 +361,11 @@ export function AdvancedCameraFields({
 					>
 						<option value="smooth">Ease in and out</option>
 						<option value="linear">Linear</option>
-					</select>
+					</NativeSelect>
 				</label>
 			</div>
 			<label className="cinema-check">
-				<input
+				<Input
 					type="checkbox"
 					checked={!!shot.clearance}
 					onChange={(event) =>
@@ -375,7 +376,7 @@ export function AdvancedCameraFields({
 			</label>
 			{trackingTarget && (
 				<label className="cinema-check">
-					<input
+					<Input
 						type="checkbox"
 						checked={!!shot.trackingOrigin}
 						onChange={(event) =>

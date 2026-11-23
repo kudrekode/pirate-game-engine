@@ -5,7 +5,7 @@
 }
 
 .map-foliage-controls section {
-	border-top: 1px solid var(--map-line, #3a3b32);
+	border-top: 1px solid var(--border);
 	padding-top: 10px;
 }
 
@@ -16,7 +16,7 @@
 
 .map-foliage-controls p,
 .map-foliage-field small {
-	color: var(--map-muted, #a09c8f);
+	color: var(--muted-foreground);
 }
 
 .map-foliage-controls .map-foliage-field {

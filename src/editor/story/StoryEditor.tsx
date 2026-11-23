@@ -1,4 +1,6 @@
+import { ArrowUpRight, Plus, Redo2, Undo2, Workflow } from "lucide-react";
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { Button, Input } from "@/components/ui/control";
 import type { StoryDebugSnapshot } from "../../runtime/storyRuntime";
 import {
 	createStoryNode,
@@ -356,15 +358,16 @@ function StoryWorkspace({
 			>
 				<header className="story-graph-sidehead">
 					<h2>Story &amp; State</h2>
-					<p>Create and follow gameplay sequences.</p>
 				</header>
 				<div className="story-graph-section">
 					<h3 className="story-graph-eyebrow">Graphs</h3>
 					<div className="story-graph-list">
 						{graphs.map((candidate) => (
-							<button
+							<Button
 								key={candidate.id}
 								type="button"
+								variant="ghost"
+								size="sm"
 								className="story-graph-library-item"
 								aria-current={candidate.id === graph?.id ? "true" : undefined}
 								aria-label={candidate.name || "Untitled graph"}
@@ -373,25 +376,31 @@ function StoryWorkspace({
 									choose({ graphId: candidate.id, selection: null });
 								}}
 							>
-								<strong>{candidate.name || "Untitled graph"}</strong>
-								<small>
-									{graphKindLabels[candidate.kind]} · {candidate.nodes.length}{" "}
-									nodes · {candidate.edges.length} links
-								</small>
-							</button>
+								<Workflow aria-hidden="true" />
+								<span>
+									<strong>{candidate.name || "Untitled graph"}</strong>
+									<small>
+										{graphKindLabels[candidate.kind]} · {candidate.nodes.length}{" "}
+										nodes · {candidate.edges.length} links
+									</small>
+								</span>
+							</Button>
 						))}
-						<button
+						<Button
 							type="button"
+							variant="outline"
+							size="sm"
 							className="story-graph-new"
 							onClick={createGraph}
 						>
-							+ New Graph
-						</button>
+							<Plus aria-hidden="true" />
+							New Graph
+						</Button>
 					</div>
 				</div>
 				<div className="story-graph-section story-graph-palette">
 					<h3 className="story-graph-eyebrow">Add node</h3>
-					<input
+					<Input
 						type="search"
 						aria-label="Search nodes"
 						placeholder="Search nodes"
@@ -408,8 +417,10 @@ function StoryWorkspace({
 								<div key={category} className="story-graph-palette-group">
 									<h4>{category}</h4>
 									{options.map(([type, node]) => (
-										<button
+										<Button
 											type="button"
+											variant="ghost"
+											size="sm"
 											key={type}
 											data-category={category}
 											title={node.description}
@@ -418,8 +429,8 @@ function StoryWorkspace({
 											onClick={() => addNode(type)}
 										>
 											<span>{node.label}</span>
-											<span aria-hidden="true">+</span>
-										</button>
+											<Plus aria-hidden="true" />
+										</Button>
 									))}
 								</div>
 							)
@@ -428,34 +439,43 @@ function StoryWorkspace({
 				</div>
 				<div className="story-graph-section story-graph-legacy">
 					<h3 className="story-graph-eyebrow">Specialised editors</h3>
-					<button type="button" onClick={onLegacy}>
+					<Button type="button" variant="outline" size="sm" onClick={onLegacy}>
 						Story relationships
-					</button>
+						<ArrowUpRight aria-hidden="true" />
+					</Button>
 					<div className="story-graph-reference-links">
-						<button
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
 							onClick={() => openEntity({ section: "dialogues", id: "" })}
 						>
 							Dialogue
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
 							onClick={() => openEntity({ section: "quests", id: "" })}
 						>
 							Quests
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
 							onClick={() => openEntity({ section: "progression", id: "" })}
 						>
 							Rules
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
 							onClick={() => openEntity({ section: "game-state", id: "" })}
 						>
 							Game state
-						</button>
+						</Button>
 					</div>
 				</div>
 			</aside>
@@ -516,18 +536,36 @@ function StoryWorkspace({
 				<section className="story-graph-empty" aria-label="Graph canvas">
 					<h2>No story graphs</h2>
 					<p>Create an opening sequence, quest or gameplay event.</p>
-					<button type="button" onClick={createGraph}>
+					<Button
+						type="button"
+						variant="default"
+						size="sm"
+						onClick={createGraph}
+					>
+						<Plus aria-hidden="true" />
 						Create a graph
-					</button>
+					</Button>
 					{memory.undo.length > 0 && (
-						<button type="button" onClick={() => restore("undo")}>
-							↶ Undo
-						</button>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => restore("undo")}
+						>
+							<Undo2 aria-hidden="true" />
+							Undo
+						</Button>
 					)}
 					{memory.redo.length > 0 && (
-						<button type="button" onClick={() => restore("redo")}>
-							↷ Redo
-						</button>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => restore("redo")}
+						>
+							<Redo2 aria-hidden="true" />
+							Redo
+						</Button>
 					)}
 				</section>
 			)}
@@ -598,14 +636,16 @@ function StoryWorkspace({
 							{graphDebug.detail ? ` · ${graphDebug.detail}` : ""}
 						</p>
 						{graphDebug.nodeId && (
-							<button
+							<Button
 								type="button"
+								variant="outline"
+								size="sm"
 								onClick={() =>
 									select({ kind: "node", id: graphDebug.nodeId as string })
 								}
 							>
 								Select active node
-							</button>
+							</Button>
 						)}
 					</div>
 				)}
@@ -632,12 +672,15 @@ function StoryWorkspace({
 														{severity === "error" ? "Error" : "Warning"}
 													</strong>
 													{target ? (
-														<button
+														<Button
 															type="button"
+															variant="ghost"
+															size="sm"
+															className="story-graph-issue"
 															onClick={() => select(target)}
 														>
 															{issue}
-														</button>
+														</Button>
 													) : (
 														<p>{issue}</p>
 													)}

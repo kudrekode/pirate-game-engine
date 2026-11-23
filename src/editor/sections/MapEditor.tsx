@@ -1,3 +1,4 @@
+import { Box, Copy, Focus, Grid2X2, Redo2, Trash2, Undo2 } from "lucide-react";
 import {
 	type CSSProperties,
 	type PointerEvent,
@@ -6,6 +7,12 @@ import {
 	useRef,
 	useState,
 } from "react";
+import {
+	Button,
+	Input,
+	NativeSelect,
+	RangeInput,
+} from "@/components/ui/control";
 import { type AreaTemplateId, areaTemplates } from "../../data/areaTemplates";
 import {
 	getOverlayPreset,
@@ -28,6 +35,7 @@ import type {
 	PickupObject,
 	PixelAsset,
 } from "../../types/game";
+import { ProjectDialog } from "../project/ProjectDialog";
 import { AssetBrowser } from "./AssetBrowser";
 import { FoliageBrushInspector } from "./FoliageBrushInspector";
 import {
@@ -1999,64 +2007,75 @@ export function MapEditor({
 	const objectActions = (
 		<fieldset className="scene-selection-actions">
 			<legend className="sr-only">Selected object actions</legend>
-			<button
+			<Button
 				type="button"
 				disabled={!sceneEntity || sceneAppearance?.hidden}
 				onClick={() => setFocusRequest((value) => value + 1)}
 				title="Focus selected (F)"
 			>
+				<Focus aria-hidden="true" />
 				Focus
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
 				disabled={!sceneEntity || sceneAppearance?.locked}
 				onClick={() => duplicateSceneSelection(selection)}
 				title="Duplicate (Ctrl/Cmd+D)"
 			>
+				<Copy aria-hidden="true" />
 				Duplicate
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
 				disabled={!sceneEntity || sceneAppearance?.locked}
 				onClick={() => deleteSceneSelection(selection)}
 				title="Delete selected (Delete)"
 			>
+				<Trash2 aria-hidden="true" />
 				Delete
-			</button>
+			</Button>
 		</fieldset>
 	);
 	const historyActions = (
 		<>
-			<button
+			<Button
 				disabled={!canUndo}
 				onClick={undoMapEdit}
 				type="button"
 				title="Undo (Ctrl/Cmd+Z)"
 			>
+				<Undo2 aria-hidden="true" />
 				Undo
-			</button>
-			<button
+			</Button>
+			<Button
 				disabled={!canRedo}
 				onClick={redoMapEdit}
 				type="button"
 				title="Redo (Ctrl/Cmd+Shift+Z)"
 			>
+				<Redo2 aria-hidden="true" />
 				Redo
-			</button>
+			</Button>
 		</>
 	);
 	const viewActions = (
-		<div className="segmented-control map-view-toggle">
+		<div className="editor-tab-group map-view-toggle">
 			{(["2d", "3d"] as const).map((view) => (
-				<button
+				<Button
+					variant="ghost"
 					className={mapView === view ? "selected" : ""}
 					onClick={() => changeMapView(view)}
 					type="button"
 					key={view}
 					aria-pressed={mapView === view}
 				>
+					{view === "2d" ? (
+						<Grid2X2 aria-hidden="true" />
+					) : (
+						<Box aria-hidden="true" />
+					)}
 					{view.toUpperCase()} View
-				</button>
+				</Button>
 			))}
 		</div>
 	);
@@ -2072,7 +2091,7 @@ export function MapEditor({
 						<div className="form-stack area-panel">
 							<label>
 								Editing
-								<select
+								<NativeSelect
 									onChange={(event) => setActiveArea(event.target.value)}
 									value={activeArea.id}
 								>
@@ -2081,11 +2100,11 @@ export function MapEditor({
 											{area.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<label>
 								Name
-								<input
+								<Input
 									onChange={(event) =>
 										updateActiveArea({ name: event.target.value })
 									}
@@ -2094,7 +2113,7 @@ export function MapEditor({
 							</label>
 							<label>
 								Kind
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateActiveArea({
 											kind: event.target.value as GameAreaKind,
@@ -2107,10 +2126,10 @@ export function MapEditor({
 											{kind}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<div className="area-create-row">
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										setNewAreaTemplateId(event.target.value as AreaTemplateId)
 									}
@@ -2121,19 +2140,19 @@ export function MapEditor({
 											{template.label}
 										</option>
 									))}
-								</select>
-								<button onClick={createNewArea} type="button">
+								</NativeSelect>
+								<Button onClick={createNewArea} type="button">
 									Add
-								</button>
+								</Button>
 							</div>
-							<button
-								className="danger-button compact"
+							<Button
+								variant="destructive"
 								disabled={project.areas.length <= 1}
 								onClick={() => deleteArea(activeArea.id)}
 								type="button"
 							>
 								Delete area
-							</button>
+							</Button>
 							{areaLinks.length > 0 ? (
 								<div className="area-link-list">
 									{areaLinks.map((eventBlock) => {
@@ -2157,7 +2176,7 @@ export function MapEditor({
 						<div className="form-grid map-size-grid">
 							<label>
 								Width
-								<input
+								<Input
 									min={1}
 									onChange={(event) =>
 										setDraftMapSize((size) => ({
@@ -2171,7 +2190,7 @@ export function MapEditor({
 							</label>
 							<label>
 								Height
-								<input
+								<Input
 									min={1}
 									onChange={(event) =>
 										setDraftMapSize((size) => ({
@@ -2184,20 +2203,20 @@ export function MapEditor({
 								/>
 							</label>
 						</div>
-						<button
+						<Button
 							className="full-width"
 							onClick={applyMapResize}
 							type="button"
 						>
 							Apply Resize
-						</button>
+						</Button>
 						<div className="quick-grow-actions">
-							<button onClick={() => growMap(10, 0)} type="button">
+							<Button onClick={() => growMap(10, 0)} type="button">
 								Add 10 Right
-							</button>
-							<button onClick={() => growMap(0, 10)} type="button">
+							</Button>
+							<Button onClick={() => growMap(0, 10)} type="button">
 								Add 10 Down
-							</button>
+							</Button>
 						</div>
 						{resizeMessage ? (
 							<p className="tool-note">{resizeMessage}</p>
@@ -2212,7 +2231,7 @@ export function MapEditor({
 										label: tile.label,
 									};
 									return (
-										<button
+										<Button
 											className={`palette-item ${
 												selectedTerrainId === tile.id &&
 												paintTarget === "terrain"
@@ -2231,7 +2250,7 @@ export function MapEditor({
 												}}
 											/>
 											{style.label ?? tile.label}
-										</button>
+										</Button>
 									);
 								})}
 							</div>
@@ -2241,7 +2260,7 @@ export function MapEditor({
 							<summary>Overlays</summary>
 							<div className="palette-list tile-palette">
 								{overlayPresets.map((overlay) => (
-									<button
+									<Button
 										className={`palette-item ${
 											selectedOverlayId === overlay.id &&
 											paintTarget === "overlay"
@@ -2260,7 +2279,7 @@ export function MapEditor({
 											}}
 										/>
 										{overlay.label}
-									</button>
+									</Button>
 								))}
 							</div>
 						</details>
@@ -2269,7 +2288,7 @@ export function MapEditor({
 							<summary>Structures</summary>
 							<div className="palette-list tile-palette">
 								{structurePresets.map((structure) => (
-									<button
+									<Button
 										className={`palette-item ${
 											selectedStructureId === structure.id &&
 											paintTarget === "structure"
@@ -2285,7 +2304,7 @@ export function MapEditor({
 											style={{ background: structure.roofColor }}
 										/>
 										{structure.label}
-									</button>
+									</Button>
 								))}
 							</div>
 						</details>
@@ -2294,7 +2313,7 @@ export function MapEditor({
 							<summary>Objects</summary>
 							<label>
 								Object definition
-								<select
+								<NativeSelect
 									onChange={(event) => {
 										setSelectedObjectDefinitionId(event.target.value);
 										if (paintTarget === "object") {
@@ -2311,9 +2330,9 @@ export function MapEditor({
 											{object.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
-							<button
+							<Button
 								className={`palette-item ${paintTarget === "object" ? "selected" : ""}`}
 								disabled={!selectedObjectDefinitionId}
 								onClick={() => {
@@ -2329,12 +2348,12 @@ export function MapEditor({
 							>
 								<span className="swatch object-swatch">O</span>
 								{selectedObjectDefinition?.name ?? "Object"}
-							</button>
+							</Button>
 						</details>
 
 						<details className="palette-section">
 							<summary>Special</summary>
-							<button
+							<Button
 								className={`palette-item ${paintTarget === "eventBlock" ? "selected" : ""}`}
 								onClick={() => {
 									setActiveTool("paint");
@@ -2346,8 +2365,8 @@ export function MapEditor({
 							>
 								<span className="swatch event-swatch">E</span>
 								Event block
-							</button>
-							<button
+							</Button>
+							<Button
 								className={`palette-item ${paintTarget === "pickup" ? "selected" : ""}`}
 								onClick={() => {
 									setActiveTool("paint");
@@ -2362,10 +2381,10 @@ export function MapEditor({
 							>
 								<span className="swatch pickup-swatch">P</span>
 								Pickup
-							</button>
+							</Button>
 							<label>
 								NPC definition
-								<select
+								<NativeSelect
 									onChange={(event) => {
 										setSelectedNpcDefinitionId(event.target.value);
 										if (paintTarget === "npc") {
@@ -2382,9 +2401,9 @@ export function MapEditor({
 											{npc.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
-							<button
+							<Button
 								className={`palette-item ${paintTarget === "npc" ? "selected" : ""}`}
 								disabled={!selectedNpcDefinitionId}
 								onClick={() => {
@@ -2400,12 +2419,12 @@ export function MapEditor({
 							>
 								<span className="swatch npc-swatch">N</span>
 								NPC
-							</button>
+							</Button>
 						</details>
 
 						<div className="panel-title">Tools</div>
 						<div className="tool-button-grid">
-							<button
+							<Button
 								className={activeTool === "select" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("select");
@@ -2415,8 +2434,8 @@ export function MapEditor({
 								type="button"
 							>
 								Select
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "paint" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("paint");
@@ -2426,8 +2445,8 @@ export function MapEditor({
 								type="button"
 							>
 								Paint
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "erase" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("erase");
@@ -2437,8 +2456,8 @@ export function MapEditor({
 								type="button"
 							>
 								Erase
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "pan" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("pan");
@@ -2448,11 +2467,11 @@ export function MapEditor({
 								type="button"
 							>
 								Pan
-							</button>
+							</Button>
 						</div>
 						<div className="panel-title secondary">Height</div>
 						<div className="tool-button-grid">
-							<button
+							<Button
 								className={activeTool === "raise-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("raise-height");
@@ -2463,8 +2482,8 @@ export function MapEditor({
 								type="button"
 							>
 								Raise
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "lower-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("lower-height");
@@ -2475,8 +2494,8 @@ export function MapEditor({
 								type="button"
 							>
 								Lower
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "flatten-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("flatten-height");
@@ -2487,8 +2506,8 @@ export function MapEditor({
 								type="button"
 							>
 								Flatten
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "slope-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("slope-height");
@@ -2499,8 +2518,8 @@ export function MapEditor({
 								type="button"
 							>
 								Slope
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "set-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("set-height");
@@ -2511,8 +2530,8 @@ export function MapEditor({
 								type="button"
 							>
 								Set Height
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "smooth-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("smooth-height");
@@ -2523,8 +2542,8 @@ export function MapEditor({
 								type="button"
 							>
 								Smooth
-							</button>
-							<button
+							</Button>
+							<Button
 								className={activeTool === "roughen-height" ? "selected" : ""}
 								onClick={() => {
 									setActiveTool("roughen-height");
@@ -2535,14 +2554,14 @@ export function MapEditor({
 								type="button"
 							>
 								Roughen
-							</button>
+							</Button>
 						</div>
 						{activeTool === "set-height" || activeTool === "slope-height" ? (
 							<label>
 								{activeTool === "slope-height"
 									? "Slope end height"
 									: "Height value"}
-								<input
+								<Input
 									max="8"
 									min="-2"
 									onChange={(event) =>
@@ -2562,7 +2581,7 @@ export function MapEditor({
 						<div className="segmented-control">
 							{(["brush", "line", "rectangle", "fill"] as TerrainGesture[]).map(
 								(gesture) => (
-									<button
+									<Button
 										className={terrainGesture === gesture ? "selected" : ""}
 										key={gesture}
 										onClick={() => selectTerrainGesture(gesture)}
@@ -2575,14 +2594,14 @@ export function MapEditor({
 												: gesture === "rectangle"
 													? "Rectangle"
 													: "Fill"}
-									</button>
+									</Button>
 								),
 							)}
 						</div>
 						{terrainGesture !== "fill" ? (
 							<label>
 								Mode
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										selectTerrainBrushMode(
 											event.target.value as TerrainBrushMode,
@@ -2598,34 +2617,34 @@ export function MapEditor({
 									<option value="set-height">Set height</option>
 									<option value="smooth-height">Smooth height</option>
 									<option value="roughen-height">Roughen height</option>
-								</select>
+								</NativeSelect>
 							</label>
 						) : null}
 						{terrainGesture === "brush" ? (
 							<>
 								<div className="segmented-control">
 									{([1, 2, 3, 4, 5, 6, 7, 8] as BrushSize[]).map((size) => (
-										<button
+										<Button
 											className={brushSize === size ? "selected" : ""}
 											key={size}
 											onClick={() => setBrushSize(size)}
 											type="button"
 										>
 											{size}
-										</button>
+										</Button>
 									))}
 								</div>
 								<div className="segmented-control">
 									{(["square", "circle"] as TerrainBrushShape[]).map(
 										(shape) => (
-											<button
+											<Button
 												className={brushShape === shape ? "selected" : ""}
 												key={shape}
 												onClick={() => setBrushShape(shape)}
 												type="button"
 											>
 												{shape === "square" ? "Square" : "Circle"}
-											</button>
+											</Button>
 										),
 									)}
 								</div>
@@ -2634,14 +2653,13 @@ export function MapEditor({
 						{terrainGesture !== "fill" && isHeightTool(activeTool) ? (
 							<label>
 								Strength
-								<input
+								<RangeInput
 									max="4"
 									min="1"
 									onChange={(event) =>
 										setBrushStrength(Number(event.target.value))
 									}
 									step="1"
-									type="range"
 									value={brushStrength}
 								/>
 								<span>{brushStrength}</span>
@@ -2655,7 +2673,7 @@ export function MapEditor({
 							activeTool === "roughen-height") ? (
 							<label>
 								Falloff
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										setBrushFalloff(event.target.value as TerrainBrushFalloff)
 									}
@@ -2664,13 +2682,13 @@ export function MapEditor({
 									<option value="hard">Hard</option>
 									<option value="linear">Linear</option>
 									<option value="smooth">Smooth</option>
-								</select>
+								</NativeSelect>
 							</label>
 						) : null}
 
 						<div className="panel-title secondary">View</div>
 						<div className="inline-actions">
-							<button
+							<Button
 								onClick={() =>
 									setZoom((value) =>
 										Math.max(0.4, Number((value - 0.2).toFixed(1))),
@@ -2679,9 +2697,9 @@ export function MapEditor({
 								type="button"
 							>
 								-
-							</button>
+							</Button>
 							<span className="zoom-readout">{Math.round(zoom * 100)}%</span>
-							<button
+							<Button
 								onClick={() =>
 									setZoom((value) =>
 										Math.min(2.4, Number((value + 0.2).toFixed(1))),
@@ -2690,17 +2708,17 @@ export function MapEditor({
 								type="button"
 							>
 								+
-							</button>
+							</Button>
 						</div>
-						<button
+						<Button
 							className="full-width reset-zoom-button"
 							onClick={() => setZoom(1)}
 							type="button"
 						>
 							Reset Zoom
-						</button>
+						</Button>
 						<label className="checkbox-row standalone">
-							<input
+							<Input
 								checked={showGrid}
 								onChange={(event) => setShowGrid(event.target.checked)}
 								type="checkbox"
@@ -2709,29 +2727,29 @@ export function MapEditor({
 						</label>
 						<div className="panel-title">Filters</div>
 						<div className="filter-button-row">
-							<button
+							<Button
 								onClick={() => setOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)}
 								type="button"
 							>
 								Show All
-							</button>
-							<button
+							</Button>
+							<Button
 								onClick={() => setOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)}
 								type="button"
 							>
 								Hide All
-							</button>
-							<button
+							</Button>
+							<Button
 								onClick={() => setOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)}
 								type="button"
 							>
 								Gameplay View
-							</button>
+							</Button>
 						</div>
 						<div className="filter-grid">
 							{OVERLAY_FILTER_OPTIONS.map((option) => (
 								<label className="checkbox-row compact" key={option.key}>
-									<input
+									<Input
 										checked={overlayFilters[option.key]}
 										onChange={() =>
 											setOverlayFilters((filters) =>
@@ -2745,13 +2763,13 @@ export function MapEditor({
 							))}
 						</div>
 
-						<button
+						<Button
 							className="primary-button full-width"
 							onClick={() => setIsPixelEditorOpen(true)}
 							type="button"
 						>
 							Tile Editor
-						</button>
+						</Button>
 
 						<div className="panel-title secondary">Tile style</div>
 						<div className="tile-style-list">
@@ -2763,7 +2781,7 @@ export function MapEditor({
 								return (
 									<label className="tile-style-row" key={tile.id}>
 										<span>{style.label ?? tile.label}</span>
-										<input
+										<Input
 											aria-label={`${tile.label} color`}
 											onChange={(event) =>
 												updateTileStyle(tile.id, { color: event.target.value })
@@ -2902,7 +2920,7 @@ export function MapEditor({
 						{viewActions}
 						<div className="map-workspace-status">
 							<strong title={mapWorkspaceStatus}>{activeArea.name}</strong>
-							<span className="edit-mode-badge">Editing</span>
+							<span className="map-editing-label">Editing</span>
 							{historyActions}
 						</div>
 					</div>
@@ -3366,12 +3384,12 @@ export function MapEditor({
 					<div className="map-workspace-nav">
 						<span title={mapWorkspaceStatus}>Editing · {activeArea.name}</span>
 						{placementAsset && (
-							<button
+							<Button
 								type="button"
 								onClick={() => setPlacementAsset(undefined)}
 							>
 								Cancel placement · Esc
-							</button>
+							</Button>
 						)}
 						<span>v{project.metadata.version}</span>
 					</div>
@@ -3402,7 +3420,7 @@ export function MapEditor({
 									<div className="map-context-fields">
 										<label>
 											Area name
-											<input
+											<Input
 												value={activeArea.name}
 												onChange={(event) =>
 													updateActiveArea({ name: event.target.value })
@@ -3411,7 +3429,7 @@ export function MapEditor({
 										</label>
 										<label>
 											Area kind
-											<select
+											<NativeSelect
 												value={activeArea.kind}
 												onChange={(event) =>
 													updateActiveArea({
@@ -3424,7 +3442,7 @@ export function MapEditor({
 														{kind}
 													</option>
 												))}
-											</select>
+											</NativeSelect>
 										</label>
 										<p className="map-context-note">
 											{activeArea.width} × {activeArea.height} tiles
@@ -3434,7 +3452,7 @@ export function MapEditor({
 										<legend>Editor overlays</legend>
 										{OVERLAY_FILTER_OPTIONS.map((option) => (
 											<label className="checkbox-row compact" key={option.key}>
-												<input
+												<Input
 													checked={overlayFilters[option.key]}
 													onChange={() =>
 														setOverlayFilters((filters) =>
@@ -3500,7 +3518,10 @@ export function MapEditor({
 					)}
 				</MapContextInspector>
 			) : (
-				<aside className="inspector-panel map-inspector-panel">
+				<aside
+					className="inspector-panel map-inspector-panel"
+					aria-label="Map inspector"
+				>
 					<div
 						aria-hidden="true"
 						className={`inspector-resize-handle ${
@@ -3530,79 +3551,79 @@ export function MapEditor({
 			)}
 
 			{isPixelEditorOpen && editingPixelAsset ? (
-				<div className="pixel-editor-backdrop">
-					<section className="pixel-editor-panel">
-						<div className="pixel-editor-header">
-							<strong>Tile Editor</strong>
-							<button onClick={() => setIsPixelEditorOpen(false)} type="button">
-								Close
-							</button>
-						</div>
-						<div className="pixel-editor-controls">
-							<label>
-								Asset
-								<select
-									onChange={(event) => setPixelAssetId(event.target.value)}
-									value={pixelAssetId}
-								>
-									{editablePixelAssetIds.map((id) => (
-										<option key={id} value={id}>
-											{project.pixelAssets[id]?.name ?? id}
-										</option>
-									))}
-								</select>
-							</label>
-							<label>
-								Colour
-								<input
-									onChange={(event) => setPixelColor(event.target.value)}
-									type="color"
-									value={pixelColor}
-								/>
-							</label>
-							<button onClick={clearPixelAsset} type="button">
+				<ProjectDialog
+					title="Tile Editor"
+					onClose={() => setIsPixelEditorOpen(false)}
+				>
+					<div className="pixel-editor-controls">
+						<label>
+							Asset
+							<NativeSelect
+								onChange={(event) => setPixelAssetId(event.target.value)}
+								value={pixelAssetId}
+							>
+								{editablePixelAssetIds.map((id) => (
+									<option key={id} value={id}>
+										{project.pixelAssets[id]?.name ?? id}
+									</option>
+								))}
+							</NativeSelect>
+						</label>
+						<label>
+							Colour
+							<Input
+								onChange={(event) => setPixelColor(event.target.value)}
+								type="color"
+								value={pixelColor}
+							/>
+						</label>
+						<div className="map-pixel-dialog-actions">
+							<Button onClick={clearPixelAsset} type="button">
 								Clear
-							</button>
-							<button
+							</Button>
+							<Button
 								onClick={() => resetPixelAsset(pixelAssetId)}
 								type="button"
 							>
 								Reset
-							</button>
+							</Button>
+							<Button onClick={() => setIsPixelEditorOpen(false)} type="button">
+								Close
+							</Button>
 						</div>
-						<div
-							className="pixel-grid"
-							onPointerLeave={() => setIsPaintingPixel(false)}
-							onPointerUp={() => setIsPaintingPixel(false)}
-							style={{
-								gridTemplateColumns: `repeat(${editingPixelAsset.width}, 18px)`,
-							}}
-						>
-							{editingPixelAsset.pixels.map((row, y) =>
-								row.map((color, x) => (
-									<button
-										aria-label={`Pixel ${x}, ${y}`}
-										className="pixel-cell"
-										key={pixelCellKey(editingPixelAsset.id, x, y)}
-										onPointerDown={() => {
-											setIsPaintingPixel(true);
+					</div>
+					<div
+						className="pixel-grid"
+						onPointerLeave={() => setIsPaintingPixel(false)}
+						onPointerUp={() => setIsPaintingPixel(false)}
+						style={{
+							gridTemplateColumns: `repeat(${editingPixelAsset.width}, 18px)`,
+						}}
+					>
+						{editingPixelAsset.pixels.map((row, y) =>
+							row.map((color, x) => (
+								<button
+									aria-label={`Pixel ${x}, ${y}`}
+									className="pixel-cell"
+									key={pixelCellKey(editingPixelAsset.id, x, y)}
+									onPointerDown={() => {
+										setIsPaintingPixel(true);
+										paintPixel(x, y);
+									}}
+									onPointerEnter={() => {
+										if (isPaintingPixel) {
 											paintPixel(x, y);
-										}}
-										onPointerEnter={() => {
-											if (isPaintingPixel) {
-												paintPixel(x, y);
-											}
-										}}
-										style={{
-											background: color === "transparent" ? "#f8fafc" : color,
-										}}
-										type="button"
-									/>
-								)),
-							)}
-						</div>
-					</section>
-				</div>
+										}
+									}}
+									style={{
+										background: color,
+									}}
+									type="button"
+								/>
+							)),
+						)}
+					</div>
+				</ProjectDialog>
 			) : null}
 		</section>
 	);

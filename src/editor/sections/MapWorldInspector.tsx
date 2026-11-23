@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import { defaultProject } from "../../data/defaultProject";
 import { JUMP_GRAVITY, JUMP_SPEED } from "../../runtime/playerLocomotion";
 import { getPlayerMoveDurationMs } from "../../runtime/playerMovementTransaction";
@@ -49,7 +50,7 @@ function AtmosphereFields({ area }: { area: GameArea }) {
 		<div className="form-stack">
 			<label>
 				Atmosphere
-				<select
+				<NativeSelect
 					value={area.theme?.atmosphere ?? ""}
 					onChange={(event) => {
 						const value = event.currentTarget.value as AtmospherePresetId | "";
@@ -65,13 +66,13 @@ function AtmosphereFields({ area }: { area: GameArea }) {
 							{entry.label}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<p className="scene-hint">
 				The area preset sets the sky, horizon and lighting in 3D Edit and Play.
 			</p>
 			<label className="checkbox-row">
-				<input
+				<Input
 					type="checkbox"
 					checked={fog.enabled}
 					onChange={(event) =>
@@ -83,7 +84,7 @@ function AtmosphereFields({ area }: { area: GameArea }) {
 			<div className="form-grid map-world-pair">
 				<label>
 					Fog near (m)
-					<input
+					<Input
 						type="number"
 						min={0}
 						max={fog.far - 1}
@@ -98,7 +99,7 @@ function AtmosphereFields({ area }: { area: GameArea }) {
 				</label>
 				<label>
 					Fog far (m)
-					<input
+					<Input
 						type="number"
 						min={fog.near + 1}
 						max={500}
@@ -114,7 +115,7 @@ function AtmosphereFields({ area }: { area: GameArea }) {
 					/>
 				</label>
 			</div>
-			<button
+			<Button
 				type="button"
 				disabled={!area.theme?.fog}
 				onClick={() =>
@@ -124,7 +125,7 @@ function AtmosphereFields({ area }: { area: GameArea }) {
 				}
 			>
 				Use preset fog
-			</button>
+			</Button>
 		</div>
 	);
 }
@@ -161,7 +162,7 @@ function SpawnFields({
 							return (
 								<label key={axis}>
 									{axis === "x" ? "Spawn X" : "Spawn Z"}
-									<input
+									<Input
 										type="number"
 										min={0}
 										max={max}
@@ -183,7 +184,7 @@ function SpawnFields({
 						surface.
 					</p>
 					{!isProjectStart && (
-						<button
+						<Button
 							type="button"
 							onClick={() =>
 								useProjectStore
@@ -194,18 +195,18 @@ function SpawnFields({
 							}
 						>
 							Set as project start
-						</button>
+						</Button>
 					)}
 				</>
 			) : (
-				<button type="button" onClick={addSpawn}>
+				<Button type="button" onClick={addSpawn}>
 					Add spawn marker
-				</button>
+				</Button>
 			)}
 			{onOpenPlayer && (
-				<button type="button" onClick={onOpenPlayer}>
+				<Button type="button" onClick={onOpenPlayer}>
 					Open Character editor
-				</button>
+				</Button>
 			)}
 		</div>
 	);
@@ -247,7 +248,7 @@ export function MapWorldInspector({
 				</dl>
 				<label>
 					Player movement speed
-					<input
+					<Input
 						type="number"
 						min={1}
 						max={20}
@@ -265,7 +266,7 @@ export function MapWorldInspector({
 					Project-wide speed setting. A normal movement step takes{" "}
 					{getPlayerMoveDurationMs(project.player.speed)} ms.
 				</p>
-				<button
+				<Button
 					type="button"
 					disabled={project.player.speed === defaultProject.player.speed}
 					onClick={() =>
@@ -275,7 +276,7 @@ export function MapWorldInspector({
 					}
 				>
 					Reset player speed
-				</button>
+				</Button>
 			</div>
 		);
 	}
@@ -287,7 +288,7 @@ export function MapWorldInspector({
 				</p>
 				<label>
 					Tracked Quest HUD
-					<select
+					<NativeSelect
 						value={project.trackedQuestId ?? ""}
 						onChange={(event) => {
 							const id = event.currentTarget.value;
@@ -302,12 +303,12 @@ export function MapWorldInspector({
 								{quest.name}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 				{onOpenHud && (
-					<button type="button" onClick={onOpenHud}>
+					<Button type="button" onClick={onOpenHud}>
 						Open Quests editor
-					</button>
+					</Button>
 				)}
 			</div>
 		);

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Input, NativeSelect, Textarea } from "@/components/ui/control";
 import { isCinematicAudioUrl } from "../../runtime/cinematicTimeline";
 import type {
 	CinematicActorAnimation,
@@ -36,7 +37,7 @@ function NumberField({
 	return (
 		<label>
 			{label}
-			<input
+			<Input
 				key={value}
 				type="number"
 				defaultValue={value}
@@ -114,7 +115,7 @@ export function ShotFields({
 				onChange={(from) => onChange({ ...shot, from })}
 			/>
 			<label className="checkbox-row">
-				<input
+				<Input
 					type="checkbox"
 					checked={!!shot.to}
 					onChange={(event) =>
@@ -176,7 +177,7 @@ export function CueFields({
 					{linkSubtitleSpeaker && (
 						<label>
 							Speaker actor
-							<select
+							<NativeSelect
 								value={cue.speakerId ?? ""}
 								onChange={(event) => {
 									const speaker = actors.find(
@@ -201,12 +202,12 @@ export function CueFields({
 										{name}
 									</option>
 								))}
-							</select>
+							</NativeSelect>
 						</label>
 					)}
 					<label>
 						Subtitle speaker
-						<input
+						<Input
 							value={cue.speaker ?? ""}
 							disabled={linkSubtitleSpeaker && !!cue.speakerId}
 							onChange={(event) =>
@@ -216,7 +217,7 @@ export function CueFields({
 					</label>
 					<label>
 						Subtitle text
-						<textarea
+						<Textarea
 							key={cue.text}
 							rows={3}
 							required
@@ -234,7 +235,7 @@ export function CueFields({
 				<>
 					<label>
 						Actor
-						<select
+						<NativeSelect
 							value={cue.actorId}
 							onChange={(event) =>
 								onChange({ ...cue, actorId: event.target.value })
@@ -250,11 +251,11 @@ export function CueFields({
 									{name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					<label>
 						Animation
-						<select
+						<NativeSelect
 							value={cue.animation ?? ""}
 							onChange={(event) =>
 								onChange({
@@ -271,10 +272,10 @@ export function CueFields({
 									{label}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					<label className="checkbox-row">
-						<input
+						<Input
 							type="checkbox"
 							checked={!!cue.face}
 							disabled={!cue.face && !target}
@@ -313,7 +314,7 @@ export function CueFields({
 					{audioSourceFields ?? (
 						<label>
 							Audio file URL
-							<input
+							<Input
 								key={cue.url}
 								defaultValue={cue.url}
 								required

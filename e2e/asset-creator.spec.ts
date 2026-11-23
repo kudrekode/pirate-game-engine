@@ -780,6 +780,21 @@ test("authors, reopens and places an animated Oswin variant @integration @asset-
 	await page.goto("/");
 	await importProjectFile(page, "hollow-kingdom.project.json", false);
 	await openEditor(page, "assets");
+
+	const createAsset = page.getByRole("button", {
+		name: "Create Asset",
+		exact: true,
+	});
+	await createAsset.focus();
+	await createAsset.press("Enter");
+	const createDialog = page.getByRole("dialog", { name: "Create Asset" });
+	await expect(createDialog).toBeVisible();
+	await expect(
+		createDialog.getByRole("button", { name: "Create variant" }),
+	).toBeDisabled();
+	await page.keyboard.press("Escape");
+	await expect(createDialog).toBeHidden();
+	await expect(createAsset).toBeFocused();
 	const inspector = page.getByRole("complementary", {
 		name: "Asset Creator inspector",
 	});

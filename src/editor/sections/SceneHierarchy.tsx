@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Button, Input } from "@/components/ui/control";
 import type { EditorSelection, GameArea, GameProject } from "../../types/game";
+import { sceneEntityIcons } from "./mapIcons";
 import { sceneEntries } from "./sceneEditing";
 
 export function SceneHierarchy({
@@ -20,7 +22,7 @@ export function SceneHierarchy({
 			<div className="panel-title">
 				Scene <span>{entries.length}</span>
 			</div>
-			<input
+			<Input
 				aria-label="Search scene"
 				placeholder="Find in scene…"
 				value={query}
@@ -31,32 +33,36 @@ export function SceneHierarchy({
 					.filter((entry) =>
 						entry.name.toLowerCase().includes(query.toLowerCase()),
 					)
-					.map((entry) => (
-						<button
-							type="button"
-							role="option"
-							aria-label={`${entry.name} ${entry.type === "npc" ? "Character" : entry.type === "eventBlock" ? "Event" : entry.type}`}
-							aria-selected={
-								selection?.type === entry.type &&
-								"id" in selection &&
-								selection.id === entry.id
-							}
-							key={`${entry.type}:${entry.id}`}
-							onClick={() =>
-								onSelect({ type: entry.type, id: entry.id, areaId: area.id })
-							}
-						>
-							<span aria-hidden="true">{entry.icon}</span>
-							<span>{entry.name}</span>
-							<small>
-								{entry.type === "npc"
-									? "Character"
-									: entry.type === "eventBlock"
-										? "Event"
-										: entry.type}
-							</small>
-						</button>
-					))}
+					.map((entry) => {
+						const Icon = sceneEntityIcons[entry.type];
+						return (
+							<Button
+								variant="ghost"
+								type="button"
+								role="option"
+								aria-label={`${entry.name} ${entry.type === "npc" ? "Character" : entry.type === "eventBlock" ? "Event" : entry.type}`}
+								aria-selected={
+									selection?.type === entry.type &&
+									"id" in selection &&
+									selection.id === entry.id
+								}
+								key={`${entry.type}:${entry.id}`}
+								onClick={() =>
+									onSelect({ type: entry.type, id: entry.id, areaId: area.id })
+								}
+							>
+								<Icon aria-hidden="true" />
+								<span>{entry.name}</span>
+								<small>
+									{entry.type === "npc"
+										? "Character"
+										: entry.type === "eventBlock"
+											? "Event"
+											: entry.type}
+								</small>
+							</Button>
+						);
+					})}
 			</div>
 			{!entries.length && (
 				<p className="empty-state">

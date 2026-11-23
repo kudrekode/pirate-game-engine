@@ -1,5 +1,22 @@
+import {
+	Box,
+	Clapperboard,
+	DiamondPlus,
+	Pause,
+	Play,
+	Plus,
+	RotateCcw,
+	Search,
+	Sparkles,
+} from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import type { AnimationClip } from "three";
+import {
+	Button,
+	Input,
+	NativeSelect,
+	RangeInput,
+} from "@/components/ui/control";
 import {
 	ASSET_CREATOR_CATEGORIES,
 	assetCreatorVariantDraft,
@@ -58,6 +75,7 @@ const EMPTY_LIBRARY: AssetCreatorLibrary = {
 };
 const TABS = ["Assets", "Animations", "Effects"] as const;
 type Tab = (typeof TABS)[number];
+const TAB_ICONS = { Assets: Box, Animations: Clapperboard, Effects: Sparkles };
 type Modal = "create" | "asset" | "clip" | "effect";
 const STANDARD_EFFECTS: AssetCreatorEffect[] = [
 	{
@@ -149,7 +167,9 @@ function AssetLibrary({
 				{assets.length} asset definitions
 			</PanelHead>
 			<div className="creator-search">
-				<input
+				<Search size={14} aria-hidden="true" />
+				<Input
+					type="search"
 					aria-label="Search assets"
 					placeholder="Search assets…"
 					value={query}
@@ -161,7 +181,9 @@ function AssetLibrary({
 			</div>
 			<fieldset className="creator-categories" aria-label="Asset categories">
 				{["All", ...ASSET_CREATOR_CATEGORIES].map((value) => (
-					<button
+					<Button
+						variant="ghost"
+						size="sm"
 						type="button"
 						key={value}
 						aria-pressed={category === value}
@@ -171,18 +193,25 @@ function AssetLibrary({
 						}}
 					>
 						{value}
-					</button>
+					</Button>
 				))}
 			</fieldset>
 			<div className="creator-asset-grid">
-				<button type="button" className="creator-create" onClick={onCreate}>
-					<span aria-hidden="true">+</span>Create Asset
-				</button>
+				<Button
+					variant="outline"
+					type="button"
+					className="creator-create"
+					onClick={onCreate}
+				>
+					<Plus aria-hidden="true" />
+					Create Asset
+				</Button>
 				{visible.map((asset) => {
 					const name = assetDisplayName(asset, project);
 					const thumb = asset.thumbnailUrl ?? thumbnails[asset.url];
 					return (
-						<button
+						<Button
+							variant="outline"
 							type="button"
 							className="creator-asset-card"
 							aria-pressed={selected === asset.id}
@@ -191,14 +220,18 @@ function AssetLibrary({
 							onClick={() => onSelect(asset)}
 						>
 							<div className="creator-thumb">
-								{thumb ? <img src={thumb} alt="" /> : <span>GLB</span>}
+								{thumb ? (
+									<img src={thumb} alt="" />
+								) : (
+									<Box size={20} aria-hidden="true" />
+								)}
 							</div>
 							<strong title={name}>{name}</strong>
 							<small>
 								{creatorCategory(asset)}
 								{asset.variant ? " · Variant" : ""}
 							</small>
-						</button>
+						</Button>
 					);
 				})}
 			</div>
@@ -206,13 +239,14 @@ function AssetLibrary({
 				<p className="creator-note">No assets match your search.</p>
 			)}
 			{visible.length < filtered.length && (
-				<button
+				<Button
+					variant="outline"
 					type="button"
 					className="creator-more"
 					onClick={() => setLimit(limit + 16)}
 				>
 					Show more
-				</button>
+				</Button>
 			)}
 		</>
 	);
@@ -249,12 +283,19 @@ function AnimationTimeline({
 		<div className="creator-timeline">
 			<div className="creator-timeline-head">
 				<strong>Clip timeline</strong>
-				<button type="button" onClick={onPlay} disabled={!clip}>
+				<Button
+					variant="outline"
+					type="button"
+					onClick={onPlay}
+					disabled={!clip}
+				>
+					{playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
 					{playing ? "Pause preview" : "Play preview"}
-				</button>
+				</Button>
 				<label>
 					Speed{" "}
-					<select
+					<NativeSelect
+						className="font-mono"
 						value={speed}
 						onChange={(event) => onSpeed(Number(event.target.value))}
 					>
@@ -262,15 +303,14 @@ function AnimationTimeline({
 						<option value={0.5}>½×</option>
 						<option value={1}>1×</option>
 						<option value={2}>2×</option>
-					</select>
+					</NativeSelect>
 				</label>
-				<span>
+				<span className="creator-timecode">
 					{Math.min(time, clip?.duration ?? 0).toFixed(2)} /{" "}
 					{(clip?.duration ?? 0).toFixed(2)} s
 				</span>
 			</div>
-			<input
-				type="range"
+			<RangeInput
 				aria-label="Playhead"
 				min={0}
 				max={clip?.duration ?? 0}
@@ -280,7 +320,7 @@ function AnimationTimeline({
 				onChange={(event) => onSeek(event.target.valueAsNumber)}
 			/>
 			<div className="creator-track">
-				<select
+				<NativeSelect
 					aria-label="Bone track"
 					value={editable.some((entry) => entry.name === bone) ? bone : ""}
 					onChange={(event) => onBone(event.target.value)}
@@ -292,7 +332,7 @@ function AnimationTimeline({
 							{entry.name}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 				<div className="creator-keybar" aria-hidden="true">
 					{clip &&
 						track &&
@@ -577,7 +617,10 @@ export function AssetCreatorWorkspace({
 				Asset Creator
 			</h1>
 			<div className="creator-workspace">
-				<aside className="creator-panel creator-library">
+				<aside
+					className="creator-panel creator-library"
+					aria-label="Asset Creator library"
+				>
 					{visible && tab === "Assets" && (
 						<AssetLibrary
 							assets={assets}
@@ -595,7 +638,7 @@ export function AssetCreatorWorkspace({
 							<div className="creator-fields">
 								<label>
 									Show clips
-									<select
+									<NativeSelect
 										value={showAll ? "all" : "compatible"}
 										onChange={(event) =>
 											setShowAll(event.target.value === "all")
@@ -603,7 +646,7 @@ export function AssetCreatorWorkspace({
 									>
 										<option value="compatible">Compatible clips</option>
 										<option value="all">All clips</option>
-									</select>
+									</NativeSelect>
 								</label>
 								{!clips.length && (
 									<small>
@@ -613,7 +656,8 @@ export function AssetCreatorWorkspace({
 									</small>
 								)}
 								{clips.map((entry) => (
-									<button
+									<Button
+										variant="outline"
 										type="button"
 										className="creator-resource"
 										key={entry.id}
@@ -643,7 +687,7 @@ export function AssetCreatorWorkspace({
 												? `${entry.duration?.toFixed(2)} s`
 												: entry.status}
 										</small>
-									</button>
+									</Button>
 								))}
 							</div>
 						</>
@@ -655,7 +699,8 @@ export function AssetCreatorWorkspace({
 							</PanelHead>
 							<div className="creator-fields">
 								{effects.map((entry) => (
-									<button
+									<Button
+										variant="outline"
 										type="button"
 										className="creator-resource"
 										key={entry.id}
@@ -674,7 +719,7 @@ export function AssetCreatorWorkspace({
 									>
 										<strong>{entry.name}</strong>
 										<small>{entry.type}</small>
-									</button>
+									</Button>
 								))}
 							</div>
 						</>
@@ -685,16 +730,24 @@ export function AssetCreatorWorkspace({
 					aria-label="Asset preview workspace"
 				>
 					<nav className="creator-tabs" aria-label="Asset Creator views">
-						{TABS.map((name) => (
-							<button
-								type="button"
-								key={name}
-								aria-pressed={name === tab}
-								onClick={() => setTab(name)}
-							>
-								{name}
-							</button>
-						))}
+						<div className="editor-tab-group">
+							{TABS.map((name) => {
+								const Icon = TAB_ICONS[name];
+								return (
+									<Button
+										variant="ghost"
+										size="sm"
+										type="button"
+										key={name}
+										aria-pressed={name === tab}
+										onClick={() => setTab(name)}
+									>
+										<Icon aria-hidden="true" />
+										{name}
+									</Button>
+								);
+							})}
+						</div>
 						<div className="creator-studio">
 							<AssetCreatorLauncher
 								buttonLabel="Blender Studio"
@@ -827,7 +880,7 @@ export function AssetCreatorWorkspace({
 									<div className="creator-fields">
 										<label>
 											Clip name
-											<input
+											<Input
 												value={clipDraft.name}
 												onChange={(event) =>
 													setClipEdit({
@@ -839,7 +892,7 @@ export function AssetCreatorWorkspace({
 										</label>
 										<label>
 											Loop mode
-											<select
+											<NativeSelect
 												value={clipDraft.loop ? "loop" : "once"}
 												onChange={(event) =>
 													setClipEdit({
@@ -850,7 +903,7 @@ export function AssetCreatorWorkspace({
 											>
 												<option value="loop">Loop</option>
 												<option value="once">Once</option>
-											</select>
+											</NativeSelect>
 										</label>
 										<small>
 											Rig ·{" "}
@@ -879,7 +932,8 @@ export function AssetCreatorWorkspace({
 														setRotationEdit(rotation);
 													}}
 												/>
-												<button
+												<Button
+													variant="outline"
 													type="button"
 													onClick={() => {
 														const rotation =
@@ -897,8 +951,9 @@ export function AssetCreatorWorkspace({
 														seekTo(time);
 													}}
 												>
+													<DiamondPlus aria-hidden="true" />
 													Add Keyframe
-												</button>
+												</Button>
 												<small>{clipDraft.keys.length} authored keys</small>
 											</>
 										)}
@@ -942,7 +997,7 @@ export function AssetCreatorWorkspace({
 							<div className="creator-fields">
 								<label>
 									Effect name
-									<input
+									<Input
 										value={effectDraft.name}
 										onChange={(event) =>
 											updateEffect({ name: event.target.value })
@@ -951,7 +1006,7 @@ export function AssetCreatorWorkspace({
 								</label>
 								<label>
 									Effect type
-									<select
+									<NativeSelect
 										value={effectDraft.type}
 										onChange={(event) =>
 											updateEffect({
@@ -962,11 +1017,11 @@ export function AssetCreatorWorkspace({
 										<option value="glow">Glow</option>
 										<option value="fog">Fog</option>
 										<option value="embers">Embers</option>
-									</select>
+									</NativeSelect>
 								</label>
 								<label>
 									Colour
-									<input
+									<Input
 										type="color"
 										value={effectDraft.color}
 										onChange={(event) =>
@@ -992,7 +1047,7 @@ export function AssetCreatorWorkspace({
 								/>
 								<label>
 									Loop mode
-									<select
+									<NativeSelect
 										value={effectDraft.loop ? "loop" : "once"}
 										onChange={(event) =>
 											updateEffect({ loop: event.target.value === "loop" })
@@ -1000,11 +1055,11 @@ export function AssetCreatorWorkspace({
 									>
 										<option value="loop">Loop</option>
 										<option value="once">Once</option>
-									</select>
+									</NativeSelect>
 								</label>
 								<label>
 									Attachment target
-									<select
+									<NativeSelect
 										value={effectDraft.socket ?? ""}
 										onChange={(event) =>
 											updateEffect({ socket: event.target.value || undefined })
@@ -1024,14 +1079,16 @@ export function AssetCreatorWorkspace({
 												{socketLabel(socket.name)}
 											</option>
 										))}
-									</select>
+									</NativeSelect>
 								</label>
-								<button
+								<Button
+									variant="outline"
 									type="button"
 									onClick={() => setEffectRestart((value) => value + 1)}
 								>
+									<RotateCcw aria-hidden="true" />
 									Replay effect
-								</button>
+								</Button>
 							</div>
 						</>
 					)}

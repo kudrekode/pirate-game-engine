@@ -1,3 +1,10 @@
+import {
+	Boxes,
+	Clapperboard,
+	type LucideIcon,
+	Map as MapIcon,
+	Waypoints,
+} from "lucide-react";
 import type { ComponentType } from "react";
 import { CameraEditor } from "./CameraEditor";
 import { CharacterEditor } from "./CharacterEditor";
@@ -45,31 +52,31 @@ export const primaryWorkspaces = [
 		id: "assets",
 		label: "Asset Creator",
 		description: "Asset library, rigs, animations, effects and variants.",
-		icon: "◈",
+		icon: Boxes,
 	},
 	{
 		id: "cutscenes",
 		label: "Cinematics",
 		description: "Camera shots, actors, dialogue and audio.",
-		icon: "▣",
+		icon: Clapperboard,
 	},
 	{
 		id: "map",
 		label: "Map Editor",
 		description: "Terrain, object placement and world settings.",
-		icon: "▦",
+		icon: MapIcon,
 	},
 	{
 		id: "story",
 		label: "Story",
 		description: "Story relationships, branching quests and game state.",
-		icon: "◇",
+		icon: Waypoints,
 	},
 ] as const satisfies readonly {
 	id: WorkspaceId;
 	label: string;
 	description: string;
-	icon: string;
+	icon: LucideIcon;
 }[];
 
 export const editorSections: EditorSectionConfig[] = [

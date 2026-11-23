@@ -1,17 +1,10 @@
 .cinema-shell {
-	--cinema-bg: #111a15;
-	--cinema-panel: #19251e;
-	--cinema-raised: #233329;
-	--cinema-border: #405747;
-	--cinema-text: #eef3e9;
-	--cinema-muted: #aabdae;
-	--cinema-accent: #bfd5ae;
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	min-height: 0;
-	background: var(--cinema-bg);
-	color: var(--cinema-text);
+	background: var(--background);
+	color: var(--foreground);
 	font-size: 12px;
 }
 
@@ -20,62 +13,17 @@
 }
 
 .cinema-shell h2 {
-	font:
-		19px Georgia,
-		serif;
+	font-size: 13px;
+	font-weight: 650;
 }
 
 .cinema-shell h3 {
 	font-size: 12px;
 }
 
-.cinema-shell
-	:is(button, select, textarea, input:not([type="range"], [type="checkbox"])) {
-	border: 1px solid var(--cinema-border);
-	border-radius: 6px;
-	background: var(--cinema-raised);
-	color: var(--cinema-text);
-	font-size: 12px;
-}
-
-.cinema-shell
-	:is(select, textarea, input:not([type="range"], [type="checkbox"])) {
-	width: 100%;
-	min-width: 0;
-	background: #121d16;
-}
-
-.cinema-shell button {
-	line-height: 1.2;
-	padding: 6px 9px;
-}
-
-.cinema-shell :is(input, select, textarea, button):focus-visible {
-	outline: 2px solid var(--cinema-accent);
-	outline-offset: 2px;
-}
-
-.cinema-shell button:hover:not(:disabled) {
-	border-color: var(--cinema-accent);
-}
-
-.cinema-shell button:disabled {
-	opacity: 0.5;
-}
-
 .cinema-shell summary {
-	color: var(--cinema-muted);
+	color: var(--muted-foreground);
 	cursor: pointer;
-}
-
-.cinema-shell :is(input[type="checkbox"], input[type="range"]) {
-	accent-color: var(--cinema-accent);
-}
-
-.cinema-shell input[type="checkbox"] {
-	flex: none;
-	width: auto;
-	padding: 0;
 }
 
 .cinema-toolbar,
@@ -92,47 +40,20 @@
 .cinema-toolbar {
 	flex: none;
 	justify-content: space-between;
-	padding: 7px 14px;
-	border-bottom: 1px solid var(--cinema-border);
-	background: #1d2a22;
+	padding: 4px 10px;
+	border-bottom: 1px solid var(--border);
+	background: var(--card);
 }
 
 .cinema-modes {
-	display: inline-flex;
 	margin: 0;
-	padding: 0;
-	border: 1px solid var(--cinema-border);
-	border-radius: 6px;
-}
-
-.cinema-shell .cinema-modes button {
-	border: 0;
-	border-radius: 0;
-	padding: 7px 13px;
-	background: transparent;
-	color: var(--cinema-muted);
-}
-
-.cinema-shell .cinema-modes button:first-child {
-	border-radius: 5px 0 0 5px;
-}
-.cinema-shell .cinema-modes button:last-child {
-	border-radius: 0 5px 5px 0;
-}
-
-.cinema-shell .cinema-modes button[aria-pressed="true"] {
-	background: var(--cinema-accent);
-	color: #132017;
-	font-weight: 700;
 }
 
 .cinema-workspace {
 	display: grid;
 	flex: 1;
-	grid-template-columns: clamp(175px, 15.7vw, 235px) minmax(0, 1fr) clamp(
-			230px,
-			20vw,
-			310px
+	grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(
+			--inspector-width
 		);
 	min-height: 0;
 }
@@ -142,14 +63,14 @@
 	min-width: 0;
 	overflow: auto;
 	scrollbar-width: thin;
-	background: var(--cinema-panel);
+	background: var(--card);
 }
 
 .cinema-library {
-	border-right: 1px solid var(--cinema-border);
+	border-right: 1px solid var(--border);
 }
 .cinema-inspector {
-	border-left: 1px solid var(--cinema-border);
+	border-left: 1px solid var(--border);
 }
 
 .cinema-side-block,
@@ -158,7 +79,7 @@
 	align-content: start;
 	gap: 8px;
 	padding: 12px;
-	border-bottom: 1px solid var(--cinema-border);
+	border-bottom: 1px solid var(--border);
 }
 
 .cinema-side-block h3,
@@ -170,7 +91,7 @@
 
 .cinema-eyebrow {
 	margin-bottom: 6px;
-	color: var(--cinema-muted);
+	color: var(--muted-foreground);
 	font-size: 10px;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
@@ -180,14 +101,16 @@
 	display: grid;
 	gap: 3px;
 	width: 100%;
-	padding: 10px;
+	height: auto;
+	white-space: normal;
+	padding: 7px 9px;
 	text-align: left;
 }
 
 .cinema-shell
 	:is(.cinema-sequence, .cinema-storyboard-card)[aria-pressed="true"] {
-	border-color: #d5ba7f;
-	background: #304137;
+	border-color: var(--selected-border);
+	background: var(--selected);
 }
 
 .cinema-shell .cinema-dashed {
@@ -198,7 +121,7 @@
 .cinema-storyboard small,
 .cinema-center-header > span,
 .cinema-transport > span {
-	color: var(--cinema-muted);
+	color: var(--muted-foreground);
 	font-size: 11px;
 }
 
@@ -214,9 +137,9 @@
 	align-items: center;
 	gap: 8px;
 	padding: 7px;
-	border: 1px solid var(--cinema-border);
+	border: 1px solid var(--border);
 	border-radius: 6px;
-	background: #1f2e24;
+	background: var(--secondary);
 }
 
 .cinema-cast-member span {
@@ -225,7 +148,7 @@
 
 .cinema-cast-member strong,
 .cinema-view-tools .cinema-check {
-	color: var(--cinema-text);
+	color: var(--foreground);
 }
 
 .cinema-shell .cinema-preset {
@@ -238,7 +161,7 @@
 }
 
 .cinema-preset > span {
-	color: var(--cinema-muted);
+	color: var(--muted-foreground);
 }
 
 .cinema-center {
@@ -254,8 +177,8 @@
 	min-height: 36px;
 	flex: none;
 	padding: 5px 12px;
-	border-bottom: 1px solid var(--cinema-border);
-	background: #1f2c24;
+	border-bottom: 1px solid var(--border);
+	background: var(--card);
 }
 
 .cinema-center-header > strong {
@@ -283,9 +206,9 @@
 	min-width: 0;
 	min-height: 230px;
 	overflow: hidden;
-	border: 1px solid var(--cinema-border);
+	border: 1px solid var(--border);
 	border-radius: 6px;
-	background: #0d151c;
+	background: var(--canvas);
 }
 
 .cinema-stage > .three-runtime-panel {
@@ -306,9 +229,9 @@
 	left: 9px;
 	max-width: calc(100% - 18px);
 	padding: 5px 8px;
-	border: 1px solid var(--cinema-border);
+	border: 1px solid var(--border);
 	border-radius: 4px;
-	background: rgb(13 24 18 / 87%);
+	background: var(--overlay);
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
 	pointer-events: none;
@@ -320,8 +243,8 @@
 	right: 10px;
 	padding: 5px 8px;
 	border-radius: 4px;
-	background: rgb(13 24 18 / 87%);
-	color: var(--cinema-muted);
+	background: var(--overlay);
+	color: var(--muted-foreground);
 	pointer-events: none;
 }
 
@@ -334,15 +257,20 @@
 	transform: translateX(-50%);
 	padding: 5px 10px;
 	border-radius: 4px;
-	background: rgb(5 10 7 / 83%);
+	background: var(--overlay);
 	color: #fff;
 	text-align: center;
 	pointer-events: none;
 }
 
 .cinema-caption strong {
-	color: #f0d394;
+	color: var(--primary);
 }
+.cinema-transport > span,
+.cinema-shot-slate small {
+	font-family: var(--ui-mono);
+}
+
 .cinema-transport input[type="range"] {
 	flex: 1;
 	min-width: 45px;
@@ -351,7 +279,7 @@
 	flex-wrap: wrap;
 }
 .cinema-view-tools [role="alert"] {
-	color: #f7c090;
+	color: var(--warning);
 }
 
 .cinema-shell .cinema-check {
@@ -364,8 +292,8 @@
 	flex: none;
 	min-width: 0;
 	padding: 10px 12px;
-	border-top: 1px solid var(--cinema-border);
-	background: #1b2921;
+	border-top: 1px solid var(--border);
+	background: var(--card);
 }
 
 .cinema-storyboard > header {
@@ -388,8 +316,8 @@
 .cinema-inspector .cinematic-track-inspector {
 	border-width: 0 0 1px;
 	border-radius: 0;
-	border-color: var(--cinema-border);
-	background: var(--cinema-panel);
+	border-color: var(--border);
+	background: var(--card);
 }
 
 .cinema-shell .cinema-storyboard-card {
@@ -397,6 +325,7 @@
 	flex: 0 0 clamp(113px, 11vw, 160px);
 	gap: 4px;
 	min-width: 0;
+	height: auto;
 	padding: 6px;
 	text-align: start;
 }
@@ -407,8 +336,8 @@
 	place-items: center;
 	height: 39px;
 	border-radius: 4px;
-	background: linear-gradient(160deg, #27322d 18%, #405747 58%, #1a2720 59%);
-	color: #d8c698;
+	background: var(--canvas);
+	color: var(--primary);
 	font-size: 19px;
 }
 
@@ -420,7 +349,7 @@
 	font-variant-numeric: tabular-nums;
 }
 
-.cinema-storyboard-card > small {
+.cinema-storyboard-card > :is(strong, small) {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -434,7 +363,7 @@
 .cinema-side-block details[open] {
 	display: grid;
 	gap: 5px;
-	color: var(--cinema-muted);
+	color: var(--muted-foreground);
 }
 
 .cinema-duration-fields {
@@ -459,17 +388,17 @@
 	gap: 4px;
 	margin: 10px;
 	padding: 8px 8px 8px 24px;
-	border: 1px solid #846744;
+	border: 1px solid var(--selected-border);
 	border-radius: 6px;
-	background: #2b251b;
-	color: #ffdaa9;
+	background: var(--secondary);
+	color: var(--warning);
 }
 
 .cinema-empty {
 	display: grid;
 	place-items: center;
 	padding: 16px;
-	color: var(--cinema-muted);
+	color: var(--muted-foreground);
 }
 
 .cinema-static-preview {

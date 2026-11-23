@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button, Input, NativeSelect, Textarea } from "@/components/ui/control";
 import type {
 	GameProject,
 	Interaction,
@@ -149,7 +150,7 @@ export function EntityInteractionEditor({
 		<section className="form-stack simple-interaction" aria-label="Interaction">
 			<div className="panel-title secondary">Interaction</div>
 			<label className="checkbox-row">
-				<input
+				<Input
 					type="checkbox"
 					checked={enabled}
 					onChange={(event) => {
@@ -177,7 +178,7 @@ export function EntityInteractionEditor({
 							interaction?.type === "start_dialogue") && (
 							<label>
 								Start Quest
-								<select
+								<NativeSelect
 									aria-label="Start Quest"
 									value={
 										interaction?.completionActions?.find(
@@ -216,7 +217,7 @@ export function EntityInteractionEditor({
 											{quest.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 								<span className="helper-text">
 									Starts after this interaction finishes. Quest progress resets
 									each Play session.
@@ -225,7 +226,7 @@ export function EntityInteractionEditor({
 						)}
 					<label>
 						Interaction type
-						<select
+						<NativeSelect
 							value={type}
 							onChange={(event) => choose(event.target.value)}
 						>
@@ -254,7 +255,7 @@ export function EntityInteractionEditor({
 									Existing interaction (advanced)
 								</option>
 							)}
-						</select>
+						</NativeSelect>
 					</label>
 					{type !== "advanced" && (
 						<>
@@ -262,7 +263,7 @@ export function EntityInteractionEditor({
 								<>
 									<label>
 										Pickup item
-										<select
+										<NativeSelect
 											value={interaction?.itemId ?? ""}
 											onChange={(e) => patch({ itemId: e.target.value })}
 										>
@@ -272,11 +273,11 @@ export function EntityInteractionEditor({
 													{item.name}
 												</option>
 											))}
-										</select>
+										</NativeSelect>
 									</label>
 									<label>
 										Pickup quantity
-										<input
+										<Input
 											type="number"
 											min={1}
 											step={1}
@@ -312,7 +313,7 @@ export function EntityInteractionEditor({
 							{kind !== "event" && (
 								<label>
 									Prompt label
-									<input
+									<Input
 										value={interaction?.prompt ?? ""}
 										placeholder={kind === "npc" ? "Talk" : "Examine"}
 										onChange={(e) => patch({ prompt: e.target.value })}
@@ -334,7 +335,7 @@ export function EntityInteractionEditor({
 									{kind === "npc" && (
 										<label>
 											Speaker
-											<input
+											<Input
 												value={interaction?.speaker ?? ""}
 												onChange={(e) => patch({ speaker: e.target.value })}
 											/>
@@ -345,7 +346,7 @@ export function EntityInteractionEditor({
 											{kind === "npc"
 												? `Dialogue line ${index + 1}`
 												: "Message text"}
-											<textarea
+											<Textarea
 												rows={3}
 												value={line}
 												onChange={(e) =>
@@ -357,7 +358,7 @@ export function EntityInteractionEditor({
 												}
 											/>
 											{(interaction?.lines?.length ?? 0) > 1 && (
-												<button
+												<Button
 													type="button"
 													onClick={() =>
 														patch({
@@ -368,23 +369,23 @@ export function EntityInteractionEditor({
 													}
 												>
 													Remove line {index + 1}
-												</button>
+												</Button>
 											)}
 										</label>
 									))}
 									{kind === "npc" && (
-										<button
+										<Button
 											type="button"
 											onClick={() =>
 												patch({ lines: [...(interaction?.lines ?? []), ""] })
 											}
 										>
 											Add dialogue line
-										</button>
+										</Button>
 									)}
 									{kind === "event" && (
 										<label className="checkbox-row">
-											<input
+											<Input
 												type="checkbox"
 												checked={interaction?.once ?? false}
 												onChange={(e) => patch({ once: e.target.checked })}
@@ -398,7 +399,7 @@ export function EntityInteractionEditor({
 								<>
 									<label>
 										Reward item
-										<select
+										<NativeSelect
 											value={container.contents[0]?.itemId ?? ""}
 											onChange={(e) => reward(e.target.value)}
 										>
@@ -408,7 +409,7 @@ export function EntityInteractionEditor({
 													{item.name}
 												</option>
 											))}
-										</select>
+										</NativeSelect>
 									</label>
 									{container.contents.length > 1 && (
 										<p className="muted">
@@ -420,7 +421,7 @@ export function EntityInteractionEditor({
 									{container.contents.length > 0 && (
 										<label>
 											Reward quantity
-											<input
+											<Input
 												type="number"
 												min={1}
 												step={1}
@@ -441,12 +442,12 @@ export function EntityInteractionEditor({
 										<summary>Create reward item</summary>
 										<label>
 											New item name
-											<input
+											<Input
 												value={newItemName}
 												onChange={(e) => setNewItemName(e.target.value)}
 											/>
 										</label>
-										<button
+										<Button
 											type="button"
 											disabled={!newItemName.trim()}
 											onClick={() => {
@@ -455,7 +456,7 @@ export function EntityInteractionEditor({
 											}}
 										>
 											Create item and use
-										</button>
+										</Button>
 									</details>
 									<p className="muted">
 										{container.once
@@ -468,7 +469,7 @@ export function EntityInteractionEditor({
 								<>
 									<label>
 										Destination area
-										<select
+										<NativeSelect
 											value={targetArea?.id ?? ""}
 											onChange={(e) =>
 												destination({
@@ -485,11 +486,11 @@ export function EntityInteractionEditor({
 													{area.name}
 												</option>
 											))}
-										</select>
+										</NativeSelect>
 									</label>
 									<label>
 										Arrival point
-										<select
+										<NativeSelect
 											value={
 												door?.targetEventBlockId ??
 												interaction?.targetEventBlockId ??
@@ -505,12 +506,12 @@ export function EntityInteractionEditor({
 													{block.name}
 												</option>
 											))}
-										</select>
+										</NativeSelect>
 									</label>
 									{door && (
 										<label>
 											Required item
-											<select
+											<NativeSelect
 												value={door.requiredItemId ?? ""}
 												onChange={(e) =>
 													onChange(
@@ -531,7 +532,7 @@ export function EntityInteractionEditor({
 														{item.name}
 													</option>
 												))}
-											</select>
+											</NativeSelect>
 										</label>
 									)}
 									{!targetArea && (
@@ -551,14 +552,14 @@ export function EntityInteractionEditor({
 								<>
 									<label>
 										Flag name
-										<input
+										<Input
 											value={interaction?.flag ?? ""}
 											onChange={(e) => patch({ flag: e.target.value })}
 										/>
 									</label>
 									<label>
 										Flag value
-										<select
+										<NativeSelect
 											value={String(interaction?.value ?? true)}
 											onChange={(e) =>
 												patch({ value: e.target.value === "true" })
@@ -566,7 +567,7 @@ export function EntityInteractionEditor({
 										>
 											<option value="true">True</option>
 											<option value="false">False</option>
-										</select>
+										</NativeSelect>
 									</label>
 								</>
 							)}

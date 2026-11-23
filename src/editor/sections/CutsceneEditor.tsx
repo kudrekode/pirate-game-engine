@@ -1,4 +1,6 @@
+import { Plus } from "lucide-react";
 import { useState } from "react";
+import { Button, Input, NativeSelect, Textarea } from "@/components/ui/control";
 import { backgroundPresets, portraitPresets } from "../../data/presets";
 import { useProjectStore } from "../../store/useProjectStore";
 import type { Cutscene, GameProject } from "../../types/game";
@@ -31,7 +33,7 @@ function StaticFields({
 		<>
 			<label>
 				Background image
-				<select
+				<NativeSelect
 					value={cutscene.backgroundImageId}
 					onChange={(event) =>
 						onChange({ backgroundImageId: event.target.value })
@@ -42,11 +44,11 @@ function StaticFields({
 							{label}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<label>
 				Portrait image
-				<select
+				<NativeSelect
 					value={cutscene.portraitImageId ?? ""}
 					onChange={(event) =>
 						onChange({ portraitImageId: event.target.value || undefined })
@@ -58,18 +60,18 @@ function StaticFields({
 							{label}
 						</option>
 					))}
-				</select>
+				</NativeSelect>
 			</label>
 			<label>
 				Speaker name
-				<input
+				<Input
 					value={cutscene.speakerName ?? ""}
 					onChange={(event) => onChange({ speakerName: event.target.value })}
 				/>
 			</label>
 			<label>
 				Text
-				<textarea
+				<Textarea
 					value={cutscene.text}
 					rows={4}
 					onChange={(event) => onChange({ text: event.target.value })}
@@ -105,7 +107,7 @@ export function CutsceneEditor() {
 			<p className="cinema-eyebrow">Cinematic library</p>
 			<h3>Sequences</h3>
 			{project.cutscenes.map((entry) => (
-				<button
+				<Button
 					className="cinema-sequence"
 					type="button"
 					key={entry.id}
@@ -119,10 +121,11 @@ export function CutsceneEditor() {
 							? `${entry.cinematic.shots.length} ${entry.cinematic.shots.length === 1 ? "shot" : "shots"}`
 							: "Static cutscene"}
 					</small>
-				</button>
+				</Button>
 			))}
-			<button
+			<Button
 				className="cinema-dashed"
+				aria-label="+ New sequence"
 				type="button"
 				onClick={() => {
 					const cinematic = establish(project);
@@ -136,13 +139,13 @@ export function CutsceneEditor() {
 					);
 				}}
 			>
-				+ New sequence
-			</button>
+				<Plus aria-hidden="true" /> New sequence
+			</Button>
 			<details>
 				<summary>Legacy cutscenes</summary>
-				<button type="button" onClick={() => select(addCutscene())}>
+				<Button type="button" onClick={() => select(addCutscene())}>
 					Add cutscene
-				</button>
+				</Button>
 			</details>
 		</section>
 	);
@@ -154,7 +157,7 @@ export function CutsceneEditor() {
 		<>
 			<label>
 				Sequence name
-				<input
+				<Input
 					value={cutscene.name}
 					onChange={(event) => change({ name: event.target.value })}
 				/>
@@ -163,7 +166,7 @@ export function CutsceneEditor() {
 				<>
 					<label>
 						Sequence area
-						<select
+						<NativeSelect
 							value={sequence.areaId}
 							onChange={(event) =>
 								change({
@@ -185,7 +188,7 @@ export function CutsceneEditor() {
 									{name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					<details>
 						<summary>Static cutscene presentation</summary>
@@ -195,10 +198,10 @@ export function CutsceneEditor() {
 								<p role="status">
 									This will remove the 3D shots and cues from this sequence.
 								</p>
-								<button type="button" onClick={() => setConfirmStatic(false)}>
+								<Button type="button" onClick={() => setConfirmStatic(false)}>
 									Cancel
-								</button>
-								<button
+								</Button>
+								<Button
 									type="button"
 									onClick={() => {
 										setConfirmStatic(false);
@@ -206,12 +209,12 @@ export function CutsceneEditor() {
 									}}
 								>
 									Remove 3D sequence
-								</button>
+								</Button>
 							</div>
 						) : (
-							<button type="button" onClick={() => setConfirmStatic(true)}>
+							<Button type="button" onClick={() => setConfirmStatic(true)}>
 								Convert to static cutscene
-							</button>
+							</Button>
 						)}
 					</details>
 				</>
@@ -221,10 +224,10 @@ export function CutsceneEditor() {
 					<p role="status">
 						Delete this sequence and remove its trigger references?
 					</p>
-					<button type="button" onClick={() => setConfirmDelete(false)}>
+					<Button type="button" onClick={() => setConfirmDelete(false)}>
 						Cancel
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
 						onClick={() => {
 							deleteCutscene(cutscene.id);
@@ -232,35 +235,42 @@ export function CutsceneEditor() {
 						}}
 					>
 						Confirm delete
-					</button>
+					</Button>
 				</div>
 			) : (
-				<button type="button" onClick={() => setConfirmDelete(true)}>
+				<Button type="button" onClick={() => setConfirmDelete(true)}>
 					Delete sequence
-				</button>
+				</Button>
 			)}
 		</>
 	);
 
 	return (
 		<section className="cinema-shell" aria-label="Cinematics workspace">
-			<header className="cinema-toolbar">
+			<header className="cinema-toolbar editor-toolbar">
 				<h2>Cinematics</h2>
-				<fieldset className="cinema-modes" aria-label="Editing mode">
-					<button
+				<fieldset
+					className="cinema-modes editor-tab-group"
+					aria-label="Editing mode"
+				>
+					<Button
 						type="button"
+						variant="ghost"
+						size="sm"
 						aria-pressed={!advanced}
 						onClick={() => setAdvanced(false)}
 					>
 						Simple
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="ghost"
+						size="sm"
 						aria-pressed={advanced}
 						onClick={() => setAdvanced(true)}
 					>
 						Advanced
-					</button>
+					</Button>
 				</fieldset>
 			</header>
 			{cutscene && sequence ? (
@@ -293,7 +303,7 @@ export function CutsceneEditor() {
 									<strong>{cutscene.speakerName}</strong>
 								)}
 								<p>{cutscene.text}</p>
-								<button
+								<Button
 									type="button"
 									onClick={() => {
 										const cinematic = establish(project);
@@ -301,7 +311,7 @@ export function CutsceneEditor() {
 									}}
 								>
 									Create 3D sequence
-								</button>
+								</Button>
 							</div>
 						) : (
 							<p>Create a sequence to start filming.</p>

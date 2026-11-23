@@ -1,3 +1,4 @@
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import {
 	getOverlayPreset,
 	getStructurePreset,
@@ -468,7 +469,7 @@ export function MapInspector({
 					) : null}
 					<label>
 						Type
-						<select
+						<NativeSelect
 							onChange={(event) => {
 								const nextType = event.target.value as InteractionTypeOption;
 								updateSelectedInteraction(
@@ -490,14 +491,14 @@ export function MapInspector({
 							<option value="open_shop">Open shop</option>
 							<option value="set_flag">Set flag</option>
 							<option value="change_movement_mode">Change movement mode</option>
-						</select>
+						</NativeSelect>
 					</label>
 
 					{interaction ? (
 						<>
 							<label>
 								Activation
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateSelectedInteraction({
 											...interaction,
@@ -518,11 +519,11 @@ export function MapInspector({
 														: "Disabled"}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<label>
 								Prompt
-								<input
+								<Input
 									onChange={(event) =>
 										updateSelectedInteraction({
 											...interaction,
@@ -544,7 +545,7 @@ export function MapInspector({
 						<>
 							<label>
 								Target area
-								<select
+								<NativeSelect
 									onChange={(event) => {
 										const nextArea = project.areas.find(
 											(area) => area.id === event.target.value,
@@ -562,11 +563,11 @@ export function MapInspector({
 											{area.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<label>
 								Target spawn/event
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateSelectedInteraction({
 											...interaction,
@@ -582,7 +583,7 @@ export function MapInspector({
 											{eventBlock.name} ({eventBlock.kind})
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 						</>
 					) : null}
@@ -590,7 +591,7 @@ export function MapInspector({
 					{interaction?.type === "play_cutscene" ? (
 						<label>
 							Cutscene
-							<select
+							<NativeSelect
 								onChange={(event) =>
 									updateSelectedInteraction({
 										...interaction,
@@ -604,7 +605,7 @@ export function MapInspector({
 										{cutscene.name}
 									</option>
 								))}
-							</select>
+							</NativeSelect>
 						</label>
 					) : null}
 
@@ -612,7 +613,7 @@ export function MapInspector({
 						<div>
 							<label>
 								Dialogue
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateSelectedInteraction({
 											...interaction,
@@ -627,9 +628,9 @@ export function MapInspector({
 											{dialogue.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
-							<button
+							<Button
 								type="button"
 								disabled={
 									!project.dialogues.some(
@@ -643,14 +644,14 @@ export function MapInspector({
 								}
 							>
 								Open dialogue
-							</button>
+							</Button>
 						</div>
 					) : null}
 
 					{interaction?.type === "open_shop" ? (
 						<label>
 							Shop
-							<select
+							<NativeSelect
 								onChange={(event) =>
 									updateSelectedInteraction({
 										...interaction,
@@ -665,7 +666,7 @@ export function MapInspector({
 										{shop.name}
 									</option>
 								))}
-							</select>
+							</NativeSelect>
 						</label>
 					) : null}
 
@@ -673,7 +674,7 @@ export function MapInspector({
 						<>
 							<label>
 								Flag
-								<input
+								<Input
 									onChange={(event) =>
 										updateSelectedInteraction({
 											...interaction,
@@ -687,7 +688,7 @@ export function MapInspector({
 							!(interaction.flag in project.gameState.flags) ? (
 								<div className="validation-message">
 									Missing flag "{interaction.flag}".
-									<button
+									<Button
 										onClick={() =>
 											updateProject((draft) => {
 												if (interaction.flag) {
@@ -698,12 +699,12 @@ export function MapInspector({
 										type="button"
 									>
 										Create flag
-									</button>
+									</Button>
 								</div>
 							) : null}
 							<label>
 								Set flag to:
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateSelectedInteraction({
 											...interaction,
@@ -714,7 +715,7 @@ export function MapInspector({
 								>
 									<option value="true">true</option>
 									<option value="false">false</option>
-								</select>
+								</NativeSelect>
 							</label>
 						</>
 					) : null}
@@ -722,7 +723,7 @@ export function MapInspector({
 					{interaction?.type === "change_movement_mode" ? (
 						<label>
 							Mode
-							<select
+							<NativeSelect
 								onChange={(event) =>
 									updateSelectedInteraction({
 										...interaction,
@@ -736,7 +737,7 @@ export function MapInspector({
 								<option value="walk">Walk</option>
 								<option value="sail">Sail</option>
 								<option value="ride">Ride</option>
-							</select>
+							</NativeSelect>
 						</label>
 					) : null}
 				</details>
@@ -856,7 +857,7 @@ export function MapInspector({
 						pickups, {activeArea.npcs.length} NPCs,{" "}
 						{activeArea.eventBlocks.length} events
 					</div>
-					<button
+					<Button
 						className="full-width"
 						onClick={() =>
 							setSelection({ type: "area", areaId: activeArea.id })
@@ -864,7 +865,7 @@ export function MapInspector({
 						type="button"
 					>
 						Select area
-					</button>
+					</Button>
 				</div>
 			</>
 		);
@@ -890,7 +891,7 @@ export function MapInspector({
 					</div>
 					<label>
 						Height
-						<input
+						<Input
 							max="8"
 							min="-2"
 							onChange={(event) =>
@@ -906,7 +907,7 @@ export function MapInspector({
 							value={selectedTerrainTile.height}
 						/>
 					</label>
-					<button
+					<Button
 						onClick={() =>
 							setTiles([
 								{
@@ -919,8 +920,8 @@ export function MapInspector({
 						type="button"
 					>
 						Replace with selected terrain
-					</button>
-					<button
+					</Button>
+					<Button
 						onClick={() =>
 							setTiles([
 								{
@@ -933,7 +934,7 @@ export function MapInspector({
 						type="button"
 					>
 						Reset to grass
-					</button>
+					</Button>
 				</div>
 			</>
 		);
@@ -957,7 +958,7 @@ export function MapInspector({
 					<div className="coordinate-readout">
 						{movementRuleSummary(overlay.movementRule, "Uses terrain movement")}
 					</div>
-					<button
+					<Button
 						onClick={() =>
 							setOverlayTiles([
 								{
@@ -970,9 +971,9 @@ export function MapInspector({
 						type="button"
 					>
 						Replace with selected overlay
-					</button>
-					<button
-						className="danger-button"
+					</Button>
+					<Button
+						variant="destructive"
 						onClick={() => {
 							eraseOverlayTiles([
 								{ x: selectedOverlayTile.x, y: selectedOverlayTile.y },
@@ -987,7 +988,7 @@ export function MapInspector({
 						type="button"
 					>
 						Delete overlay
-					</button>
+					</Button>
 				</div>
 			</>
 		);
@@ -1006,7 +1007,7 @@ export function MapInspector({
 				<div className="form-stack">
 					<label>
 						Name
-						<input
+						<Input
 							onChange={(event) =>
 								updateSelectedStructure({ name: event.target.value })
 							}
@@ -1015,7 +1016,7 @@ export function MapInspector({
 					</label>
 					<label>
 						Type
-						<select
+						<NativeSelect
 							onChange={(event) => {
 								const nextPreset = getStructurePreset(event.target.value);
 								updateSelectedStructure({
@@ -1032,12 +1033,12 @@ export function MapInspector({
 									{structure.label}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					<div className="form-grid compact">
 						<label>
 							X
-							<input
+							<Input
 								min={0}
 								onChange={(event) =>
 									updateSelectedStructure({ x: Number(event.target.value) })
@@ -1048,7 +1049,7 @@ export function MapInspector({
 						</label>
 						<label>
 							Y
-							<input
+							<Input
 								min={0}
 								onChange={(event) =>
 									updateSelectedStructure({ y: Number(event.target.value) })
@@ -1059,7 +1060,7 @@ export function MapInspector({
 						</label>
 						<label>
 							Width
-							<input
+							<Input
 								min={1}
 								onChange={(event) =>
 									updateSelectedStructure({
@@ -1072,7 +1073,7 @@ export function MapInspector({
 						</label>
 						<label>
 							Height
-							<input
+							<Input
 								min={1}
 								onChange={(event) =>
 									updateSelectedStructure({
@@ -1086,7 +1087,7 @@ export function MapInspector({
 					</div>
 					{!selectedMapStructure.scene?.collision && (
 						<label className="checkbox-row standalone">
-							<input
+							<Input
 								checked={selectedMapStructure.blocksMovement}
 								onChange={(event) =>
 									updateSelectedStructure({
@@ -1108,13 +1109,13 @@ export function MapInspector({
 						selectedMapStructure.interaction,
 						selectedMapStructure.id,
 					)}
-					<button
-						className="danger-button"
+					<Button
+						variant="destructive"
 						onClick={deleteSelectedStructure}
 						type="button"
 					>
 						Delete structure
-					</button>
+					</Button>
 				</div>
 			</>
 		);
@@ -1131,7 +1132,7 @@ export function MapInspector({
 				<div className="form-stack">
 					<label>
 						Item
-						<select
+						<NativeSelect
 							onChange={(event) =>
 								updateSelectedPickup({ itemId: event.target.value })
 							}
@@ -1142,11 +1143,11 @@ export function MapInspector({
 									{item.name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					<label>
 						Quantity
-						<input
+						<Input
 							min={1}
 							onChange={(event) =>
 								updateSelectedPickup({
@@ -1159,7 +1160,7 @@ export function MapInspector({
 					</label>
 					<label>
 						Pickup mode
-						<select
+						<NativeSelect
 							onChange={(event) =>
 								updateSelectedPickup({
 									pickupMode: event.target.value as PickupObject["pickupMode"],
@@ -1169,10 +1170,10 @@ export function MapInspector({
 						>
 							<option value="on_touch">On touch</option>
 							<option value="on_interact">On interact</option>
-						</select>
+						</NativeSelect>
 					</label>
 					<label className="checkbox-row standalone">
-						<input
+						<Input
 							checked={selectedPickup.once}
 							onChange={(event) =>
 								updateSelectedPickup({ once: event.target.checked })
@@ -1184,13 +1185,13 @@ export function MapInspector({
 					<div className="coordinate-readout">
 						x {selectedPickup.x}, y {selectedPickup.y}
 					</div>
-					<button
-						className="danger-button"
+					<Button
+						variant="destructive"
 						onClick={deleteSelectedPickup}
 						type="button"
 					>
 						Delete pickup
-					</button>
+					</Button>
 				</div>
 			</>
 		);
@@ -1234,7 +1235,7 @@ export function MapInspector({
 				<div className="form-stack">
 					<label>
 						Definition
-						<select
+						<NativeSelect
 							onChange={(event) => {
 								const nextDefinition = project.objects.find(
 									(object) => object.id === event.target.value,
@@ -1254,11 +1255,11 @@ export function MapInspector({
 									{object.name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					<label>
 						Name override
-						<input
+						<Input
 							onChange={(event) =>
 								updateSelectedObject({
 									nameOverride: event.target.value || undefined,
@@ -1270,7 +1271,7 @@ export function MapInspector({
 					<div className="form-grid compact">
 						<label>
 							X
-							<input
+							<Input
 								min={0}
 								onChange={(event) =>
 									updateSelectedObject({ x: Number(event.target.value) })
@@ -1281,7 +1282,7 @@ export function MapInspector({
 						</label>
 						<label>
 							Y
-							<input
+							<Input
 								min={0}
 								onChange={(event) =>
 									updateSelectedObject({ y: Number(event.target.value) })
@@ -1293,7 +1294,7 @@ export function MapInspector({
 					</div>
 					{!selectedObject.scene?.collision && (
 						<label className="checkbox-row standalone">
-							<input
+							<Input
 								checked={blocksMovement}
 								onChange={(event) =>
 									updateSelectedObject({ blocksMovement: event.target.checked })
@@ -1318,7 +1319,7 @@ export function MapInspector({
 							Resolved behaviour: {resolvedBehaviour.type}
 						</div>
 						<label className="checkbox-row standalone">
-							<input
+							<Input
 								checked={useDefaultBehaviour}
 								onChange={(event) =>
 									updateSelectedObject({
@@ -1347,7 +1348,7 @@ export function MapInspector({
 					<div className="panel-title secondary">State</div>
 					{Object.entries(objectState).map(([key, value]) => (
 						<div className="state-row variable" key={key}>
-							<input
+							<Input
 								aria-label={`Object state ${key} key`}
 								onChange={(event) => {
 									const nextKey = event.target.value.trim();
@@ -1360,7 +1361,7 @@ export function MapInspector({
 								}}
 								value={key}
 							/>
-							<input
+							<Input
 								aria-label={`Object state ${key} value`}
 								onChange={(event) =>
 									updateSelectedObject({
@@ -1372,8 +1373,8 @@ export function MapInspector({
 								}
 								value={String(value)}
 							/>
-							<button
-								className="danger-button compact"
+							<Button
+								variant="destructive"
 								onClick={() => {
 									const nextState = { ...objectState };
 									delete nextState[key];
@@ -1382,10 +1383,10 @@ export function MapInspector({
 								type="button"
 							>
 								Delete
-							</button>
+							</Button>
 						</div>
 					))}
-					<button
+					<Button
 						onClick={() =>
 							updateSelectedObject({
 								state: {
@@ -1397,14 +1398,14 @@ export function MapInspector({
 						type="button"
 					>
 						Add state
-					</button>
-					<button
-						className="danger-button"
+					</Button>
+					<Button
+						variant="destructive"
 						onClick={deleteSelectedObject}
 						type="button"
 					>
 						Delete object instance
-					</button>
+					</Button>
 				</div>
 			</>
 		);
@@ -1421,7 +1422,7 @@ export function MapInspector({
 				<div className="form-stack">
 					<label>
 						Name
-						<input
+						<Input
 							onChange={(event) =>
 								updateSelectedEventBlock({ name: event.target.value })
 							}
@@ -1430,7 +1431,7 @@ export function MapInspector({
 					</label>
 					<label>
 						Tag
-						<input
+						<Input
 							onChange={(event) =>
 								updateSelectedEventBlock({ tag: event.target.value })
 							}
@@ -1439,7 +1440,7 @@ export function MapInspector({
 					</label>
 					<label>
 						Kind
-						<select
+						<NativeSelect
 							onChange={(event) =>
 								updateSelectedEventKind(
 									event.target.value as EventBlock["kind"],
@@ -1450,12 +1451,12 @@ export function MapInspector({
 							<option value="spawn">Spawn</option>
 							<option value="trigger">Trigger</option>
 							<option value="area_link">Area Link</option>
-						</select>
+						</NativeSelect>
 					</label>
 					<div className="form-grid compact">
 						<label>
 							X
-							<input
+							<Input
 								min={0}
 								onChange={(event) =>
 									updateSelectedEventBlock({ x: Number(event.target.value) })
@@ -1466,7 +1467,7 @@ export function MapInspector({
 						</label>
 						<label>
 							Y
-							<input
+							<Input
 								min={0}
 								onChange={(event) =>
 									updateSelectedEventBlock({ y: Number(event.target.value) })
@@ -1480,7 +1481,7 @@ export function MapInspector({
 						<>
 							<label>
 								Target area
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateSelectedAreaLinkTargetArea(event.target.value)
 									}
@@ -1491,11 +1492,11 @@ export function MapInspector({
 											{area.name}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<label>
 								Target spawn/event
-								<select
+								<NativeSelect
 									onChange={(event) =>
 										updateSelectedAreaLinkTargetEvent(event.target.value)
 									}
@@ -1506,7 +1507,7 @@ export function MapInspector({
 											{eventBlock.name} ({eventBlock.kind})
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 						</>
 					) : null}
@@ -1522,13 +1523,13 @@ export function MapInspector({
 						selectedEventBlock.interaction,
 						selectedEventBlock.id,
 					)}
-					<button
-						className="danger-button"
+					<Button
+						variant="destructive"
 						onClick={deleteSelectedEventBlock}
 						type="button"
 					>
 						Delete event block
-					</button>
+					</Button>
 				</div>
 			</>
 		);

@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import {
 	type CSSProperties,
 	type PointerEvent,
@@ -7,6 +8,7 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Button, RangeInput } from "@/components/ui/control";
 import { getCinematicDuration } from "../../runtime/cinematicTimeline";
 import { sampleCinematicShot } from "../../runtime/three/cinematicCamera";
 import type { CinematicCue, CinematicSequence } from "../../types/game";
@@ -316,7 +318,7 @@ export function CinematicTracks({
 		const width =
 			(Math.min(clip.durationMs, scaleMs - startMs) / scaleMs) * 100;
 		return (
-			<button
+			<Button
 				key={clip.id}
 				className="cinematic-track-clip"
 				data-draggable={!camera || !!onMoveShot}
@@ -339,7 +341,7 @@ export function CinematicTracks({
 				onLostPointerCapture={cancelDrag}
 			>
 				{clip.label}
-			</button>
+			</Button>
 		);
 	}
 
@@ -409,10 +411,9 @@ export function CinematicTracks({
 									{tickMs / 1000}s
 								</span>
 							))}
-							<input
+							<RangeInput
 								aria-label="Timeline playhead"
 								aria-valuetext={formatTime(playhead)}
-								type="range"
 								min={0}
 								max={scaleMs}
 								step={1}
@@ -433,15 +434,15 @@ export function CinematicTracks({
 								<div className="cinematic-track-label">
 									<span>{trackLabels[kind]}</span>
 									{action && (
-										<button
+										<Button
 											type="button"
 											title={action.label}
 											aria-label={action.label}
 											disabled={action.disabled}
 											onClick={action.run}
 										>
-											+
-										</button>
+											<Plus aria-hidden="true" />
+										</Button>
 									)}
 								</div>
 								<fieldset
@@ -532,9 +533,9 @@ export function CinematicTracks({
 								)
 							}
 						/>
-						<button
+						<Button
 							type="button"
-							className="danger-button"
+							variant="destructive"
 							onClick={() => {
 								onChange({
 									...sequence,
@@ -544,7 +545,7 @@ export function CinematicTracks({
 							}}
 						>
 							Delete cue
-						</button>
+						</Button>
 					</>
 				) : (
 					activeShot && (

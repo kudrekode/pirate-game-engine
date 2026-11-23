@@ -153,7 +153,6 @@ export function sceneEntries(project: GameProject, area: GameArea) {
 					(definition) => definition.id === entry.objectDefinitionId,
 				)?.name ||
 				"Object",
-			icon: "◇",
 		})),
 		...area.npcs.map((entry) => ({
 			id: entry.id,
@@ -164,13 +163,11 @@ export function sceneEntries(project: GameProject, area: GameArea) {
 					(definition) => definition.id === entry.npcDefinitionId,
 				)?.name ||
 				"Character",
-			icon: "♟",
 		})),
 		...area.structures.map((entry) => ({
 			id: entry.id,
 			type: "structure" as const,
 			name: entry.name,
-			icon: "⌂",
 		})),
 		...area.pickups.map((entry) => ({
 			id: entry.id,
@@ -178,13 +175,11 @@ export function sceneEntries(project: GameProject, area: GameArea) {
 			name:
 				project.items.find((item) => item.id === entry.itemId)?.name ||
 				"Pickup",
-			icon: "✦",
 		})),
 		...area.eventBlocks.map((entry) => ({
 			id: entry.id,
 			type: "eventBlock" as const,
 			name: entry.name,
-			icon: entry.kind === "spawn" ? "⚑" : "◎",
 		})),
 	];
 }

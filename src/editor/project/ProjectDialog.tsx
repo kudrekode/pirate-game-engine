@@ -1,4 +1,6 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
+import { Button, Input } from "@/components/ui/control";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { ProjectPresetId } from "../../data/projectPresets";
 import { projectPresets } from "../../data/projectPresets";
 import { validateProject } from "../../data/validateProject";
@@ -14,31 +16,32 @@ export function ProjectDialog({
 	onClose: () => void;
 	children: ReactNode;
 }) {
-	const dialog = useRef<HTMLDialogElement>(null);
-	useEffect(() => {
-		const element = dialog.current;
-		if (!element) return;
-		if (element.showModal) element.showModal();
-		else element.open = true;
-		return () => {
-			if (element.close) element.close();
-			else element.open = false;
-		};
-	}, []);
+	const [opener] = useState(() =>
+		document.activeElement instanceof HTMLElement
+			? document.activeElement
+			: null,
+	);
 
 	return (
-		<dialog
-			ref={dialog}
-			className="project-dialog"
-			aria-label={title}
-			onCancel={(event) => {
-				event.preventDefault();
-				onClose();
+		<Dialog
+			open
+			onOpenChange={(open) => {
+				if (!open) onClose();
 			}}
 		>
-			<h2>{title}</h2>
-			{children}
-		</dialog>
+			<DialogContent
+				className="project-dialog"
+				aria-describedby={undefined}
+				onPointerDownOutside={(event) => event.preventDefault()}
+				onCloseAutoFocus={(event) => {
+					event.preventDefault();
+					if (document.activeElement === document.body) opener?.focus();
+				}}
+			>
+				<DialogTitle>{title}</DialogTitle>
+				{children}
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -79,7 +82,7 @@ export function NewProjectDialog({
 			>
 				<label>
 					Project name
-					<input
+					<Input
 						value={name}
 						onChange={(event) => setName(event.target.value)}
 						placeholder="Name your world"
@@ -89,7 +92,7 @@ export function NewProjectDialog({
 					<legend>Start from</legend>
 					{projectPresets.map((item) => (
 						<label key={item.id}>
-							<input
+							<Input
 								type="radio"
 								name="project-preset"
 								checked={preset === item.id}
@@ -100,12 +103,12 @@ export function NewProjectDialog({
 					))}
 				</fieldset>
 				<div className="project-dialog-actions">
-					<button type="button" onClick={onClose}>
+					<Button type="button" onClick={onClose}>
 						Cancel
-					</button>
-					<button type="submit" className="project-primary">
+					</Button>
+					<Button type="submit" variant="default">
 						Create project
-					</button>
+					</Button>
 				</div>
 			</form>
 		</ProjectDialog>
@@ -137,7 +140,7 @@ export function ProjectTools({
 		<ProjectDialog title="Project tools" onClose={onClose}>
 			<label>
 				Project
-				<input
+				<Input
 					value={project.metadata.name}
 					onChange={(event) =>
 						useProjectStore
@@ -147,18 +150,18 @@ export function ProjectTools({
 				/>
 			</label>
 			<div className="project-tool-buttons">
-				<button type="button" onClick={() => downloadJson(project)}>
+				<Button type="button" onClick={() => downloadJson(project)}>
 					Export JSON
-				</button>
-				<button type="button" onClick={onImport}>
+				</Button>
+				<Button type="button" onClick={onImport}>
 					Import JSON
-				</button>
-				<button type="button" onClick={onLoad} disabled={!canLoad}>
+				</Button>
+				<Button type="button" onClick={onLoad} disabled={!canLoad}>
 					Load
-				</button>
-				<button type="button" onClick={onReset}>
+				</Button>
+				<Button type="button" onClick={onReset}>
 					Reset
-				</button>
+				</Button>
 			</div>
 			<details className="project-validation">
 				<summary>Validation · {issueLabel}</summary>
@@ -177,9 +180,9 @@ export function ProjectTools({
 				</section>
 			</details>
 			<div className="project-dialog-actions">
-				<button type="button" onClick={onClose}>
+				<Button type="button" onClick={onClose}>
 					Close
-				</button>
+				</Button>
 			</div>
 		</ProjectDialog>
 	);

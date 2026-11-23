@@ -169,12 +169,13 @@ function createOwnedModel(
 }
 
 const BACKGROUNDS = {
-	grid: 0x22372b,
+	grid: 0x252b33,
 	black: 0x101211,
 	white: 0xe6e8e2,
 	forest: 0x1b392a,
 	castle: 0x3e3936,
 };
+const GRID_GROUND_COLOR = 0x313b48;
 const LIGHTING = {
 	studio: { sky: 0xe2f3ff, ground: 0x665e52, key: 0xffedce, intensity: 3.1 },
 	warm: { sky: 0xffdfaf, ground: 0x775040, key: 0xffbe78, intensity: 3.8 },
@@ -194,13 +195,13 @@ function makeView(element: HTMLDivElement) {
 	light.position.set(3, 5, 4);
 	const fill = new THREE.DirectionalLight(0xc1d6c6, 1.2);
 	fill.position.set(-4, 3, -3);
-	const grid = new THREE.GridHelper(12, 24, 0x78917b, 0x55715d);
+	const grid = new THREE.GridHelper(12, 24, 0x747e8c, 0x424b56);
 	const gridMaterial = grid.material;
 	gridMaterial.transparent = true;
 	gridMaterial.opacity = 0.7;
 	const ground = new THREE.Mesh(
 		new THREE.PlaneGeometry(200, 200),
-		new THREE.MeshStandardMaterial({ color: 0x566352, roughness: 1 }),
+		new THREE.MeshStandardMaterial({ color: GRID_GROUND_COLOR, roughness: 1 }),
 	);
 	ground.rotation.x = -Math.PI / 2;
 	ground.position.y = -0.013;
@@ -339,7 +340,7 @@ function syncView(
 	view.grid.visible = settings.ground && settings.background === "grid";
 	view.ground.material.color.setHex(
 		settings.background === "grid"
-			? 0x4b6050
+			? GRID_GROUND_COLOR
 			: BACKGROUNDS[settings.background],
 	);
 	view.modelGroup.scale.setScalar((asset.defaultScale ?? 1) * draft.scale);
@@ -838,34 +839,15 @@ export function AssetPreview(props: AssetPreviewProps) {
 					? "Model file could not be loaded."
 					: "";
 	return (
-		<div
-			className="asset-preview"
-			ref={host}
-			style={{
-				display: "grid",
-				gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-				gap: "8px",
-				position: "relative",
-				isolation: "isolate",
-			}}
-		>
+		<div className="asset-preview" ref={host}>
 			<div
 				className="asset-preview-view"
 				data-preview="reference"
 				data-model-status={status}
 				ref={reference}
-				style={{ position: "relative", touchAction: "none" }}
 			>
-				<span
-					className="asset-preview-label"
-					style={{ position: "absolute", left: 8, top: 8 }}
-				>
-					Reference · edit
-				</span>
-				<span
-					className="asset-preview-caption"
-					style={{ position: "absolute", left: 8, right: 8, bottom: 8 }}
-				>
+				<span className="asset-preview-label">Reference pose</span>
+				<span className="asset-preview-caption">
 					{settings.skeleton
 						? "Select a bone on the model or in the inspector"
 						: "Drag to orbit · scroll to zoom · right-drag to pan"}
@@ -876,34 +858,16 @@ export function AssetPreview(props: AssetPreviewProps) {
 				data-preview="animation"
 				data-model-status={status}
 				ref={animation}
-				style={{ position: "relative", touchAction: "none" }}
 			>
-				<span
-					className="asset-preview-label"
-					style={{ position: "absolute", left: 8, top: 8 }}
-				>
-					Animation preview
-				</span>
-				<span
-					className="asset-preview-caption"
-					style={{ position: "absolute", left: 8, right: 8, bottom: 8 }}
-				>
+				<span className="asset-preview-label">Animation preview</span>
+				<span className="asset-preview-caption">
 					{clip
 						? `${props.playing ? "Playing" : "Paused"} · ${clip.name}`
 						: "Reference pose · no animation selected"}
 				</span>
 			</div>
 			{(message || attachmentStatus) && (
-				<div
-					className="asset-preview-message"
-					role="status"
-					style={{
-						position: "absolute",
-						left: "50%",
-						top: "50%",
-						transform: "translate(-50%, -50%)",
-					}}
-				>
+				<div className="asset-preview-message" role="status">
 					{message || attachmentStatus}
 				</div>
 			)}

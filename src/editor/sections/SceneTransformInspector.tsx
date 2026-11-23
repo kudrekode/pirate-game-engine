@@ -1,3 +1,4 @@
+import { Button, Input, NativeSelect } from "@/components/ui/control";
 import { defaultMapEntityTransform } from "../../data/mapEntityTransform";
 import { getTraversalAssetProfile } from "../../runtime/mapCollision";
 import { useProjectStore } from "../../store/useProjectStore";
@@ -71,20 +72,20 @@ export function SceneTransformInspector({
 			<div className="scene-instance-links">
 				<code title="Instance ID">{entity.id}</code>
 				{assetId && onOpenAsset ? (
-					<button type="button" onClick={() => onOpenAsset(assetId)}>
+					<Button type="button" onClick={() => onOpenAsset(assetId)}>
 						Open Asset
-					</button>
+					</Button>
 				) : null}
 				{onOpenStory ? (
-					<button type="button" onClick={() => onOpenStory(selection)}>
+					<Button type="button" onClick={() => onOpenStory(selection)}>
 						Open in Story
-					</button>
+					</Button>
 				) : null}
 			</div>
 			{canRename && (
 				<label className="scene-name">
 					Name
-					<input
+					<Input
 						aria-label="Scene name"
 						disabled={locked}
 						value={
@@ -113,7 +114,7 @@ export function SceneTransformInspector({
 			)}
 			<div className="scene-instance-flags">
 				<label className="checkbox-row">
-					<input
+					<Input
 						type="checkbox"
 						checked={!entity.scene?.hidden}
 						onChange={(event) =>
@@ -125,7 +126,7 @@ export function SceneTransformInspector({
 					Visible
 				</label>
 				<label className="checkbox-row">
-					<input
+					<Input
 						type="checkbox"
 						checked={locked}
 						onChange={(event) =>
@@ -137,7 +138,7 @@ export function SceneTransformInspector({
 			</div>
 			<label>
 				Group / layer
-				<input
+				<Input
 					key={`${entity.id}:${entity.scene?.group ?? ""}`}
 					defaultValue={entity.scene?.group ?? ""}
 					maxLength={80}
@@ -161,7 +162,7 @@ export function SceneTransformInspector({
 						{(["x", "y", "z"] as const).map((axis) => (
 							<label key={axis}>
 								<span className={`axis-${axis}`}>{axis.toUpperCase()}</span>
-								<input
+								<Input
 									aria-label={`${group[0].toUpperCase()}${group.slice(1)} ${axis.toUpperCase()}`}
 									type="number"
 									step={group === "rotation" ? 1 : 0.25}
@@ -192,7 +193,7 @@ export function SceneTransformInspector({
 				X / Z: map position · Y: elevation. Supported world-kit assets use these
 				transforms for collision in 3D Play.
 			</p>
-			<button
+			<Button
 				type="button"
 				disabled={locked}
 				onClick={() =>
@@ -207,11 +208,11 @@ export function SceneTransformInspector({
 				}
 			>
 				Reset rotation & scale
-			</button>
+			</Button>
 			{supportsCollision && (
 				<label>
 					Collision profile
-					<select
+					<NativeSelect
 						disabled={locked}
 						value={currentCollision ?? ""}
 						onChange={(event) =>
@@ -235,7 +236,7 @@ export function SceneTransformInspector({
 								Trigger
 							</option>
 						)}
-					</select>
+					</NativeSelect>
 				</label>
 			)}
 			{("objectDefinitionId" in entity || "npcDefinitionId" in entity) && (

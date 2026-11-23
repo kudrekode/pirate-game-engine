@@ -1,0 +1,164 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@source "./";
+@source not "../docs";
+
+@font-face {
+	font-family: Inter;
+	src: url("./editor/fonts/inter.woff2") format("woff2");
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+:root {
+	color-scheme: dark;
+	--background: #15171b;
+	--foreground: #e6e9ef;
+	--canvas: #111317;
+	--card: #1b1e23;
+	--card-foreground: var(--foreground);
+	--popover: #20242a;
+	--popover-foreground: var(--foreground);
+	--field: #14171c;
+	--secondary: #23272e;
+	--secondary-foreground: var(--foreground);
+	--muted: #262a31;
+	--muted-foreground: #a3adbc;
+	--accent: #2c333e;
+	--accent-foreground: #f0f4fa;
+	--primary: #a4b8d3;
+	--primary-hover: #bdd0e8;
+	--primary-foreground: #151c27;
+	--border: #303640;
+	--input: #4a5565;
+	--ring: #96b8e3;
+	--selected: #2c394b;
+	--selected-border: #647e9e;
+	--destructive: #f1a0a3;
+	--warning: #dfb882;
+	--success: #99c5ab;
+	--track-camera: #34505f;
+	--track-actor: #4b435d;
+	--track-subtitle: #554a3a;
+	--track-audio: #354f49;
+	--overlay: #090b10b8;
+	--radius: 5px;
+	--sidebar-width: 224px;
+	--inspector-width: 292px;
+	--toolbar-height: 40px;
+	--ui-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+	--ui-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+@theme inline {
+	--font-sans: var(--ui-sans);
+	--font-mono: var(--ui-mono);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-field: var(--field);
+	--color-primary: var(--primary);
+	--color-primary-hover: var(--primary-hover);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-destructive: var(--destructive);
+	--color-overlay: var(--overlay);
+	--radius-sm: 4px;
+	--radius-md: var(--radius);
+	--radius-lg: 6px;
+}
+
+[data-slot="button"] {
+	border-style: solid;
+}
+
+:where(button, input, select, textarea)[data-slot] {
+	font-family: var(--ui-sans);
+}
+
+[data-slot="button"] > svg,
+.editor-icon {
+	width: 14px;
+	height: 14px;
+	stroke-width: 1.65;
+}
+
+:where([data-slot="button"]):is(
+	[aria-current="page"],
+	[aria-pressed="true"],
+	.active,
+	.selected
+) {
+	border-color: var(--selected-border);
+	background: var(--selected);
+	color: var(--accent-foreground);
+}
+
+[data-slot="native-select"],
+[data-slot="input"],
+[data-slot="textarea"] {
+	border-style: solid;
+}
+
+[data-slot="native-select"]:not([multiple]) {
+	cursor: pointer;
+}
+
+.editor-tab-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--field);
+}
+
+.editor-toolbar {
+	min-height: var(--toolbar-height);
+}
+
+.editor-panel-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 36px;
+	padding: 0 10px;
+	border-bottom: 1px solid var(--border);
+}
+
+:is(
+	input[type="number"][data-slot],
+	input[type="number"],
+	code,
+	kbd,
+	.coordinate-readout,
+	.zoom-readout,
+	.map-size-readout,
+	.map-status-bar,
+	.cinema-time,
+	.story-coordinate
+) {
+	font-family: var(--ui-mono);
+	font-variant-numeric: tabular-nums;
+}
+
+:where(button, input, select, textarea, summary, a):focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}

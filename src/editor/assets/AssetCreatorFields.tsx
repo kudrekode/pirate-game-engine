@@ -1,4 +1,6 @@
+import { Bone, Grid2X2, Link2, RotateCcw, Save, Waypoints } from "lucide-react";
 import { useState } from "react";
+import { Button, Input, NativeSelect, Textarea } from "@/components/ui/control";
 import {
 	ASSET_CREATOR_CATEGORIES,
 	ZERO_ASSET_VECTOR,
@@ -34,7 +36,7 @@ export function NumberField({
 	return (
 		<label>
 			{label}
-			<input
+			<Input
 				type="number"
 				value={Number(value.toFixed(4))}
 				min={min}
@@ -98,20 +100,31 @@ export function SaveControls({
 }) {
 	return (
 		<div className="creator-save-controls">
-			<button
+			<Button
+				variant="default"
 				type="button"
-				className="creator-primary"
 				onClick={onSave}
 				disabled={!canSave || !dirty}
 			>
+				<Save aria-hidden="true" />
 				Save
-			</button>
-			<button type="button" onClick={onFork} disabled={!canFork}>
+			</Button>
+			<Button
+				variant="outline"
+				type="button"
+				onClick={onFork}
+				disabled={!canFork}
+			>
 				Save as New
-			</button>
-			<button type="button" onClick={onRevert} disabled={!dirty}>
+			</Button>
+			<Button
+				variant="outline"
+				type="button"
+				onClick={onRevert}
+				disabled={!dirty}
+			>
 				Revert
-			</button>
+			</Button>
 		</div>
 	);
 }
@@ -166,7 +179,7 @@ export function AssetFields({
 			<div className="creator-fields">
 				<label>
 					Asset name
-					<input
+					<Input
 						value={draft.name}
 						onChange={(event) => onChange({ name: event.target.value })}
 					/>
@@ -182,21 +195,25 @@ export function AssetFields({
 				<div className="creator-color">
 					<label>
 						Material tint
-						<input
+						<Input
 							type="color"
 							value={draft.tint ?? "#ffffff"}
 							onChange={(event) => onChange({ tint: event.target.value })}
 						/>
 					</label>
 					{draft.tint && (
-						<button type="button" onClick={() => onChange({ tint: undefined })}>
+						<Button
+							variant="outline"
+							type="button"
+							onClick={() => onChange({ tint: undefined })}
+						>
 							Clear tint
-						</button>
+						</Button>
 					)}
 				</div>
 				<label>
 					Description
-					<textarea
+					<Textarea
 						rows={2}
 						value={draft.description}
 						onChange={(event) => onChange({ description: event.target.value })}
@@ -205,7 +222,7 @@ export function AssetFields({
 				{(effects.length > 0 || draft.effectId) && (
 					<label>
 						Preview effect
-						<select
+						<NativeSelect
 							value={draft.effectId ?? ""}
 							onChange={(event) =>
 								onChange({ effectId: event.target.value || undefined })
@@ -221,7 +238,7 @@ export function AssetFields({
 									{effect.name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 				)}
 			</div>
@@ -232,7 +249,7 @@ export function AssetFields({
 					</h4>
 					<label>
 						Bone
-						<select
+						<NativeSelect
 							size={5}
 							value={bone}
 							onChange={(event) => setBone(event.target.value)}
@@ -244,7 +261,7 @@ export function AssetFields({
 									{entry.name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					{selectedBone && (
 						<>
@@ -258,7 +275,8 @@ export function AssetFields({
 							<div className="creator-inline">
 								{Object.getOwnPropertyDescriptor(draft.pose, bone) !==
 									undefined && (
-									<button
+									<Button
+										variant="outline"
 										type="button"
 										onClick={() => {
 											const pose = { ...draft.pose };
@@ -267,12 +285,16 @@ export function AssetFields({
 										}}
 									>
 										Reset bone
-									</button>
+									</Button>
 								)}
 								{Object.keys(draft.pose).length > 0 && (
-									<button type="button" onClick={() => onChange({ pose: {} })}>
+									<Button
+										variant="outline"
+										type="button"
+										onClick={() => onChange({ pose: {} })}
+									>
 										Reset pose
-									</button>
+									</Button>
 								)}
 							</div>
 						</>
@@ -284,7 +306,7 @@ export function AssetFields({
 					<h4>Prop attachment</h4>
 					<label>
 						Attached prop
-						<select
+						<NativeSelect
 							value={attachment?.assetId ?? ""}
 							onChange={(event) => {
 								const id = event.target.value;
@@ -308,13 +330,13 @@ export function AssetFields({
 									{prop.name}
 								</option>
 							))}
-						</select>
+						</NativeSelect>
 					</label>
 					{attachment && (
 						<>
 							<label>
 								Rig socket
-								<select
+								<NativeSelect
 									value={attachment.socket}
 									onChange={(event) =>
 										onChange({
@@ -337,7 +359,7 @@ export function AssetFields({
 											{socketLabel(socket.name)}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<details className="creator-local-transform">
 								<summary>Local transform</summary>
@@ -404,37 +426,44 @@ export function PreviewToolbar({
 			<span>Background</span>
 			{(["grid", "black", "white", "forest", "castle"] as const).map(
 				(background) => (
-					<button
+					<Button
+						variant="outline"
+						size="sm"
 						key={background}
 						type="button"
 						aria-pressed={settings.background === background}
 						onClick={() => onChange({ ...settings, background })}
 					>
 						{background}
-					</button>
+					</Button>
 				),
 			)}
 			<span className="creator-divider" aria-hidden="true" />
 			{(
 				[
-					["skeleton", "Skeleton"],
-					["wireframe", "Wireframe"],
-					["ground", "Ground"],
-					["linked", "Link cameras"],
+					["skeleton", "Skeleton", Bone],
+					["wireframe", "Wireframe", Waypoints],
+					["ground", "Ground", Grid2X2],
+					["linked", "Link cameras", Link2],
 				] as const
-			).map(([key, label]) => (
-				<button
+			).map(([key, label, Icon]) => (
+				<Button
+					variant="outline"
+					size="sm"
 					type="button"
 					key={key}
+					aria-label={label}
+					title={label}
 					aria-pressed={settings[key]}
 					onClick={() => onChange({ ...settings, [key]: !settings[key] })}
 				>
-					{label}
-				</button>
+					<Icon aria-hidden="true" />
+					<span>{label}</span>
+				</Button>
 			))}
 			<label>
 				Lighting
-				<select
+				<NativeSelect
 					value={settings.light}
 					onChange={(event) =>
 						onChange({
@@ -446,14 +475,19 @@ export function PreviewToolbar({
 					<option value="studio">Studio</option>
 					<option value="warm">Warm</option>
 					<option value="cool">Cool</option>
-				</select>
+				</NativeSelect>
 			</label>
-			<button
+			<Button
+				variant="outline"
+				size="sm"
 				type="button"
+				aria-label="Reset view"
+				title="Reset view"
 				onClick={() => onChange({ ...settings, reset: settings.reset + 1 })}
 			>
-				Reset view
-			</button>
+				<RotateCcw aria-hidden="true" />
+				<span>Reset view</span>
+			</Button>
 		</fieldset>
 	);
 }
@@ -507,7 +541,7 @@ export function CreateAssetDialog({
 			>
 				<label>
 					Name
-					<input
+					<Input
 						required
 						value={name}
 						onChange={(event) => setName(event.target.value)}
@@ -515,7 +549,7 @@ export function CreateAssetDialog({
 				</label>
 				<label>
 					Category
-					<select
+					<NativeSelect
 						value={category}
 						onChange={(event) =>
 							setCategory(event.target.value as AssetCreatorCategory)
@@ -524,11 +558,11 @@ export function CreateAssetDialog({
 						{ASSET_CREATOR_CATEGORIES.map((value) => (
 							<option key={value}>{value}</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 				<label>
 					Base asset or variant
-					<select
+					<NativeSelect
 						value={base?.id ?? ""}
 						onChange={(event) => setBaseId(event.target.value)}
 					>
@@ -537,11 +571,11 @@ export function CreateAssetDialog({
 								{asset.name}
 							</option>
 						))}
-					</select>
+					</NativeSelect>
 				</label>
 				<label>
 					Description
-					<textarea
+					<Textarea
 						rows={2}
 						value={description}
 						onChange={(event) => setDescription(event.target.value)}
@@ -549,7 +583,7 @@ export function CreateAssetDialog({
 				</label>
 				<label>
 					Constraint level
-					<select
+					<NativeSelect
 						value={constraint}
 						onChange={(event) =>
 							setConstraint(
@@ -560,11 +594,11 @@ export function CreateAssetDialog({
 						<option>Constrained</option>
 						<option>Extended</option>
 						<option>Custom</option>
-					</select>
+					</NativeSelect>
 				</label>
 				<label>
 					Reference image URLs (optional, one per line)
-					<textarea
+					<Textarea
 						rows={2}
 						value={images}
 						onChange={(event) => setImages(event.target.value)}
@@ -574,10 +608,10 @@ export function CreateAssetDialog({
 					This creates a variant from the selected GLB. For new character
 					geometry, open Blender Studio.
 				</p>
-				<div className="creator-inline">
-					<button
+				<div className="project-dialog-actions">
+					<Button
+						variant="default"
 						type="submit"
-						className="project-primary"
 						disabled={
 							!base ||
 							!name.trim() ||
@@ -590,10 +624,10 @@ export function CreateAssetDialog({
 						}
 					>
 						Create variant
-					</button>
-					<button type="button" onClick={onClose}>
+					</Button>
+					<Button variant="outline" type="button" onClick={onClose}>
 						Cancel
-					</button>
+					</Button>
 				</div>
 			</form>
 		</ProjectDialog>
@@ -623,19 +657,19 @@ export function NameResourceDialog({
 			>
 				<label>
 					Name
-					<input
+					<Input
 						required
 						value={name}
 						onChange={(event) => setName(event.target.value)}
 					/>
 				</label>
-				<div className="creator-inline">
-					<button type="submit" className="project-primary">
+				<div className="project-dialog-actions">
+					<Button variant="default" type="submit">
 						Save as New
-					</button>
-					<button type="button" onClick={onClose}>
+					</Button>
+					<Button variant="outline" type="button" onClick={onClose}>
 						Cancel
-					</button>
+					</Button>
 				</div>
 			</form>
 		</ProjectDialog>

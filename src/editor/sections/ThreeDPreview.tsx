@@ -1,9 +1,24 @@
+import {
+	Focus,
+	Maximize2,
+	Move,
+	Navigation,
+	Orbit,
+	RotateCcw,
+	RotateCw,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import {
 	TransformControls,
 	type TransformControlsMode,
 } from "three/examples/jsm/controls/TransformControls.js";
+import {
+	Button,
+	Input,
+	NativeSelect,
+	RangeInput,
+} from "@/components/ui/control";
 import { getStructurePreset } from "../../data/mapVisuals";
 import { isTerrainWaterTileId } from "../../data/terrainHeight";
 import {
@@ -3012,10 +3027,11 @@ export function ThreeDPreview({
 				>
 					{embedded && (
 						<div className="scene-transform-toolbar">
-							<fieldset className="scene-transform-modes">
+							<fieldset className="editor-tab-group scene-transform-modes">
 								<legend className="sr-only">Transform tools</legend>
 								{(["translate", "rotate", "scale"] as const).map((mode) => (
-									<button
+									<Button
+										variant="ghost"
 										type="button"
 										aria-pressed={transformMode === mode}
 										key={mode}
@@ -3031,17 +3047,24 @@ export function ThreeDPreview({
 													: "Scale"
 										}
 									>
+										{mode === "translate" ? (
+											<Move aria-hidden="true" />
+										) : mode === "rotate" ? (
+											<RotateCw aria-hidden="true" />
+										) : (
+											<Maximize2 aria-hidden="true" />
+										)}
 										{mode === "translate"
 											? "Move"
 											: mode === "rotate"
 												? "Rotate"
 												: "Scale"}
-									</button>
+									</Button>
 								))}
 							</fieldset>
 							<label>
 								Move snap
-								<select
+								<NativeSelect
 									aria-label="Position snap"
 									value={positionSnap}
 									onChange={(event) =>
@@ -3053,11 +3076,11 @@ export function ThreeDPreview({
 											{value || "Off"}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 							<label>
 								Turn snap
-								<select
+								<NativeSelect
 									aria-label="Rotation snap"
 									value={rotationSnap}
 									onChange={(event) =>
@@ -3069,7 +3092,7 @@ export function ThreeDPreview({
 											{value ? `${value}°` : "Off"}
 										</option>
 									))}
-								</select>
+								</NativeSelect>
 							</label>
 						</div>
 					)}
@@ -3095,7 +3118,7 @@ export function ThreeDPreview({
 							className="three-d-toolbar-group"
 						>
 							{(["orbit", "fly"] as const).map((mode) => (
-								<button
+								<Button
 									aria-pressed={cameraNavigation === mode}
 									className={cameraNavigation === mode ? "active" : ""}
 									disabled={isWalkPreviewActive}
@@ -3103,13 +3126,18 @@ export function ThreeDPreview({
 									onClick={() => changeCameraNavigation(mode)}
 									type="button"
 								>
+									{mode === "fly" ? (
+										<Navigation aria-hidden="true" />
+									) : (
+										<Orbit aria-hidden="true" />
+									)}
 									{mode === "fly" ? "Fly" : "Orbit"}
-								</button>
+								</Button>
 							))}
 							{cameraNavigation === "fly" && !isWalkPreviewActive && (
 								<label>
 									Fly speed
-									<select
+									<NativeSelect
 										value={flySpeed}
 										onChange={(event) =>
 											setFlySpeed(Number(event.target.value))
@@ -3118,40 +3146,45 @@ export function ThreeDPreview({
 										<option value={4}>4 m/s</option>
 										<option value={12}>12 m/s</option>
 										<option value={28}>28 m/s</option>
-									</select>
+									</NativeSelect>
 								</label>
 							)}
-							<button
+							<Button
+								aria-pressed={cameraPreset === "top"}
 								className={cameraPreset === "top" ? "active" : ""}
 								onClick={() => applyCameraPreset("top")}
 								type="button"
 							>
 								Top
-							</button>
-							<button
+							</Button>
+							<Button
+								aria-pressed={cameraPreset === "isometric"}
 								className={cameraPreset === "isometric" ? "active" : ""}
 								onClick={() => applyCameraPreset("isometric")}
 								type="button"
 							>
 								Isometric
-							</button>
-							<button
+							</Button>
+							<Button
+								aria-pressed={cameraPreset === "low"}
 								className={cameraPreset === "low" ? "active" : ""}
 								onClick={() => applyCameraPreset("low")}
 								type="button"
 							>
 								Low angle
-							</button>
-							<button onClick={resetCamera} type="button">
+							</Button>
+							<Button onClick={resetCamera} type="button">
+								<RotateCcw aria-hidden="true" />
 								Reset camera
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
 								disabled={!canFocusSelection}
 								onClick={() => sceneUiRef.current?.focus()}
 							>
+								<Focus aria-hidden="true" />
 								Focus selected
-							</button>
+							</Button>
 						</fieldset>
 						{!embedded && (
 							<>
@@ -3159,30 +3192,30 @@ export function ThreeDPreview({
 									aria-label="3D terrain render mode"
 									className="three-d-toolbar-group"
 								>
-									<button
+									<Button
 										className={terrainRenderMode === "blocky" ? "active" : ""}
 										onClick={() => setTerrainRenderMode("blocky")}
 										type="button"
 									>
 										Blocky terrain
-									</button>
-									<button
+									</Button>
+									<Button
 										className={terrainRenderMode === "smooth" ? "active" : ""}
 										onClick={() => setTerrainRenderMode("smooth")}
 										type="button"
 									>
 										Smooth terrain
-									</button>
+									</Button>
 								</fieldset>
 								<div className="three-d-toolbar-group">
 									{isWalkPreviewActive ? (
-										<button onClick={stopWalkPreview} type="button">
+										<Button onClick={stopWalkPreview} type="button">
 											Stop 3D Walk Preview
-										</button>
+										</Button>
 									) : (
-										<button onClick={startWalkPreview} type="button">
+										<Button onClick={startWalkPreview} type="button">
 											Start 3D Walk Preview
-										</button>
+										</Button>
 									)}
 								</div>
 							</>
@@ -3213,7 +3246,7 @@ export function ThreeDPreview({
 											: "Paint"}
 									</span>
 									{onTerrainGestureChange ? (
-										<select
+										<NativeSelect
 											aria-label="3D terrain gesture"
 											onChange={(event) =>
 												onTerrainGestureChange(
@@ -3235,7 +3268,7 @@ export function ThreeDPreview({
 													</option>
 												),
 											)}
-										</select>
+										</NativeSelect>
 									) : (
 										<span>{getTerrainGestureLabel(terrainGesture)}</span>
 									)}
@@ -3244,7 +3277,7 @@ export function ThreeDPreview({
 											{onBrushSizeChange ? (
 												<label>
 													Radius
-													<select
+													<NativeSelect
 														aria-label="3D brush radius"
 														onChange={(event) =>
 															onBrushSizeChange(
@@ -3258,13 +3291,13 @@ export function ThreeDPreview({
 																{size}
 															</option>
 														))}
-													</select>
+													</NativeSelect>
 												</label>
 											) : (
 												<span>Radius {brushSize}</span>
 											)}
 											{onBrushShapeChange ? (
-												<select
+												<NativeSelect
 													aria-label="3D brush shape"
 													onChange={(event) =>
 														onBrushShapeChange(
@@ -3275,7 +3308,7 @@ export function ThreeDPreview({
 												>
 													<option value="square">Square</option>
 													<option value="circle">Circle</option>
-												</select>
+												</NativeSelect>
 											) : (
 												<span>
 													{brushShape === "square" ? "Square" : "Circle"}
@@ -3286,7 +3319,7 @@ export function ThreeDPreview({
 									{terrainHeightTool && onBrushStrengthChange ? (
 										<label>
 											Strength
-											<input
+											<RangeInput
 												aria-label="3D brush strength"
 												max="4"
 												min="1"
@@ -3294,7 +3327,6 @@ export function ThreeDPreview({
 													onBrushStrengthChange(Number(event.target.value))
 												}
 												step="1"
-												type="range"
 												value={brushStrength}
 											/>
 											<span>{brushStrength}</span>
@@ -3303,7 +3335,7 @@ export function ThreeDPreview({
 									{canUseBrushShape &&
 									canUseHeightBrushOptions &&
 									onBrushFalloffChange ? (
-										<select
+										<NativeSelect
 											aria-label="3D brush falloff"
 											onChange={(event) =>
 												onBrushFalloffChange(
@@ -3315,7 +3347,7 @@ export function ThreeDPreview({
 											<option value="hard">Hard falloff</option>
 											<option value="linear">Linear falloff</option>
 											<option value="smooth">Smooth falloff</option>
-										</select>
+										</NativeSelect>
 									) : null}
 								</fieldset>
 							) : (
@@ -3343,35 +3375,35 @@ export function ThreeDPreview({
 				{controlledOverlayFilters ? null : (
 					<div className="preview-filter-panel">
 						<div className="filter-button-row">
-							<button
+							<Button
 								onClick={() =>
 									updateLocalOverlayFilters(SHOW_ALL_OVERLAY_FILTERS)
 								}
 								type="button"
 							>
 								Show All
-							</button>
-							<button
+							</Button>
+							<Button
 								onClick={() =>
 									updateLocalOverlayFilters(HIDE_ALL_OVERLAY_FILTERS)
 								}
 								type="button"
 							>
 								Hide All
-							</button>
-							<button
+							</Button>
+							<Button
 								onClick={() =>
 									updateLocalOverlayFilters(GAMEPLAY_OVERLAY_FILTERS)
 								}
 								type="button"
 							>
 								Gameplay View
-							</button>
+							</Button>
 						</div>
 						<div className="filter-grid">
 							{OVERLAY_FILTER_OPTIONS.map((option) => (
 								<label className="checkbox-row compact" key={option.key}>
-									<input
+									<Input
 										checked={overlayFilters[option.key]}
 										onChange={() =>
 											updateLocalOverlayFilters(
@@ -3444,9 +3476,9 @@ export function ThreeDPreview({
 									))}
 								</dl>
 								{selectionDetails.canOpenInMap && onOpenInMapEditor ? (
-									<button onClick={onOpenInMapEditor} type="button">
+									<Button onClick={onOpenInMapEditor} type="button">
 										Open in Map Editor
-									</button>
+									</Button>
 								) : null}
 								{canMoveSelection ? (
 									<p className="helper-text three-d-move-hint">

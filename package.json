@@ -54,11 +54,17 @@
 		"test:e2e:asset-studio:all-current": "playwright test -c apps/asset-studio/playwright.config.ts --grep \"@integration|@compiler|@visual\""
 	},
 	"dependencies": {
-		"@vitejs/plugin-react": "^4.3.4",
 		"@adventure-game-builder/three-asset-preview": "0.1.0",
+		"@radix-ui/react-dialog": "^1.1.15",
+		"@radix-ui/react-slot": "^1.2.3",
+		"@vitejs/plugin-react": "^4.3.4",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"lucide-react": "^0.522.0",
 		"phaser": "^3.87.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
+		"tailwind-merge": "^3.3.1",
 		"three": "^0.184.0",
 		"vite": "^6.0.5",
 		"zustand": "^5.0.2"
@@ -66,6 +72,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.4.16",
 		"@playwright/test": "^1.61.1",
+		"@tailwindcss/vite": "^4.3.3",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.2",
 		"@types/react": "^19.2.15",
@@ -74,6 +81,7 @@
 		"husky": "^9.1.7",
 		"jsdom": "^28.1.0",
 		"lint-staged": "^16.4.0",
+		"tailwindcss": "^4.3.3",
 		"typescript": "^5.7.2",
 		"vitest": "^4.1.7"
 	},

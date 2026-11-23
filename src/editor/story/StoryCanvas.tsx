@@ -1,4 +1,15 @@
 import {
+	CircleCheck,
+	Link2,
+	Minus,
+	MousePointer2,
+	Play,
+	Plus,
+	Redo2,
+	Trash2,
+	Undo2,
+} from "lucide-react";
+import {
 	type KeyboardEvent,
 	type PointerEvent,
 	useEffect,
@@ -6,6 +17,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Button } from "@/components/ui/control";
 import type { StoryDebugSnapshot } from "../../runtime/storyRuntime";
 import {
 	storyNodeCatalogue,
@@ -315,17 +327,23 @@ export function StoryCanvas({
 	const source = connection && nodeById.get(connection.from);
 	return (
 		<section className="story-graph-middle" aria-label="Graph canvas">
-			<div className="story-graph-toolbar">
-				<div className="story-graph-controls">
-					<button
+			<div className="story-graph-toolbar editor-toolbar">
+				<div className="editor-tab-group">
+					<Button
 						type="button"
+						variant="ghost"
+						size="sm"
 						aria-pressed={!connecting}
+						title="Select (Esc)"
 						onClick={controls.onCancel}
 					>
+						<MousePointer2 aria-hidden="true" />
 						Select
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="ghost"
+						size="sm"
 						aria-pressed={connecting}
 						disabled={
 							!graph.nodes.some(
@@ -334,68 +352,97 @@ export function StoryCanvas({
 						}
 						onClick={controls.onConnectMode}
 					>
-						◇ Connect
-					</button>
-					<button
+						<Link2 aria-hidden="true" />
+						Connect
+					</Button>
+				</div>
+				<div className="story-graph-controls story-graph-edit-controls">
+					<Button
 						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label="Delete"
+						title="Delete selected node or connection"
 						disabled={!selection}
 						onClick={controls.onDelete}
 					>
-						Delete
-					</button>
-					<button
+						<Trash2 aria-hidden="true" />
+					</Button>
+					<Button
 						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label="Undo"
+						title="Undo"
 						disabled={!controls.canUndo}
 						onClick={controls.onUndo}
 					>
-						↶ Undo
-					</button>
-					<button
+						<Undo2 aria-hidden="true" />
+					</Button>
+					<Button
 						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label="Redo"
+						title="Redo"
 						disabled={!controls.canRedo}
 						onClick={controls.onRedo}
 					>
-						↷ Redo
-					</button>
+						<Redo2 aria-hidden="true" />
+					</Button>
 				</div>
 				<div className="story-graph-controls">
-					<button
+					<Button
 						type="button"
+						variant="ghost"
+						size="icon-sm"
 						aria-label="Zoom out"
+						title="Zoom out"
 						onClick={() => scaleAt(1 / 1.2)}
 					>
-						−
-					</button>
-					<button
+						<Minus aria-hidden="true" />
+					</Button>
+					<Button
 						type="button"
+						variant="ghost"
+						size="sm"
+						className="story-graph-zoom"
 						aria-label="Fit graph"
 						title="Fit graph (F)"
 						onClick={fitGraph}
 					>
 						{Math.round(view.zoom * 100)}%
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="ghost"
+						size="icon-sm"
 						aria-label="Zoom in"
+						title="Zoom in"
 						onClick={() => scaleAt(1.2)}
 					>
-						+
-					</button>
-					<button
+						<Plus aria-hidden="true" />
+					</Button>
+					<Button
 						type="button"
+						variant="outline"
+						size="sm"
 						aria-pressed={controls.showValidation}
 						onClick={controls.onToggleValidation}
 					>
+						<CircleCheck aria-hidden="true" />
 						Validate{controls.issueCount ? ` (${controls.issueCount})` : ""}
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
-						className="story-graph-primary"
+						variant="default"
+						size="sm"
 						disabled={!controls.canPlay}
 						onClick={controls.onPlay}
 					>
-						▶ Test Flow
-					</button>
+						<Play aria-hidden="true" />
+						Test Flow
+					</Button>
 				</div>
 			</div>
 			<fieldset

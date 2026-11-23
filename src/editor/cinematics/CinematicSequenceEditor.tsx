@@ -1,4 +1,25 @@
+import {
+	Aperture,
+	Camera,
+	Focus,
+	Image,
+	Move,
+	Pause,
+	Play,
+	Plus,
+	Redo2,
+	RotateCcw,
+	Scan,
+	SkipForward,
+	Undo2,
+} from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Button,
+	Input,
+	NativeSelect,
+	RangeInput,
+} from "@/components/ui/control";
 import { getCinematicDuration } from "../../runtime/cinematicTimeline";
 import type { CinematicPreviewTransport } from "../../runtime/three/ThreeRuntimePanel";
 import type {
@@ -35,14 +56,14 @@ import {
 
 const HISTORY_LIMIT = 40;
 const PLAYER = "runtime_player";
-const PRESET_SYMBOLS: Record<CinematicShotPreset, string> = {
-	establishing: "▤",
-	"close-up": "◎",
-	"over-shoulder": "◈",
-	"two-shot": "♙♙",
-	detail: "◇",
-	reveal: "♜",
-	"current-view": "⊡",
+const presetIcons: Record<CinematicShotPreset, typeof Camera> = {
+	establishing: Image,
+	"close-up": Focus,
+	"over-shoulder": Aperture,
+	"two-shot": Camera,
+	detail: Scan,
+	reveal: Move,
+	"current-view": Move,
 };
 
 function clock(ms: number) {
@@ -461,7 +482,7 @@ export function CinematicSequenceEditor({
 					<div className="cinema-cast">
 						{actors.map((actor) => (
 							<label key={actor.id} className="cinema-cast-member">
-								<input
+								<Input
 									type="checkbox"
 									checked={castIds.includes(actor.id)}
 									onChange={(event) =>
@@ -491,19 +512,22 @@ export function CinematicSequenceEditor({
 				</section>
 				<section className="cinema-side-block">
 					<h3>Shot presets</h3>
-					{CINEMATIC_PRESETS.map(({ id, label }) => (
-						<button
-							className="cinema-preset"
-							key={id}
-							type="button"
-							disabled={!area}
-							onClick={() => addShot(id)}
-						>
-							<span aria-hidden="true">{PRESET_SYMBOLS[id]}</span>
-							{label}
-							<span aria-hidden="true">+</span>
-						</button>
-					))}
+					{CINEMATIC_PRESETS.map(({ id, label }) => {
+						const Icon = presetIcons[id];
+						return (
+							<Button
+								className="cinema-preset"
+								key={id}
+								type="button"
+								disabled={!area}
+								onClick={() => addShot(id)}
+							>
+								<Icon aria-hidden="true" />
+								{label}
+								<Plus aria-hidden="true" />
+							</Button>
+						);
+					})}
 				</section>
 			</aside>
 			<div className="cinema-center">
@@ -515,20 +539,22 @@ export function CinematicSequenceEditor({
 						{(duration / 1000).toFixed(1)} s
 					</span>
 					<div className="cinema-actions">
-						<button
+						<Button
 							type="button"
 							onClick={() => restore("undo")}
 							disabled={!undo.length}
 						>
+							<Undo2 aria-hidden="true" />
 							Undo
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
 							onClick={() => restore("redo")}
 							disabled={!redo.length}
 						>
+							<Redo2 aria-hidden="true" />
 							Redo
-						</button>
+						</Button>
 					</div>
 				</header>
 				<div className="cinema-viewer">
@@ -549,7 +575,7 @@ export function CinematicSequenceEditor({
 						</div>
 					)}
 					<div className="cinema-transport">
-						<button
+						<Button
 							type="button"
 							disabled={!ready}
 							onClick={() => {
@@ -564,29 +590,38 @@ export function CinematicSequenceEditor({
 								}
 							}}
 						>
+							{playing ? (
+								<Pause aria-hidden="true" />
+							) : (
+								<Play aria-hidden="true" />
+							)}
 							{playing ? "Pause preview" : "Play preview"}
-						</button>
+						</Button>
 						<span>
 							{clock(timeMs)} / {clock(duration)}
 						</span>
-						<input
+						<RangeInput
 							aria-label="Preview playhead"
-							type="range"
 							min={0}
 							max={duration}
 							value={Math.min(timeMs, duration)}
 							onChange={(event) => seek(event.currentTarget.valueAsNumber)}
 						/>
-						<button
+						<Button
 							type="button"
 							disabled={!playing && timeMs === playbackStart}
 							onClick={() => seek(playbackStart)}
 						>
+							{playing ? (
+								<SkipForward aria-hidden="true" />
+							) : (
+								<RotateCcw aria-hidden="true" />
+							)}
 							{playing ? "Skip preview" : "Reset preview"}
-						</button>
+						</Button>
 					</div>
 					<div className="cinema-view-tools">
-						<button
+						<Button
 							type="button"
 							disabled={!ready}
 							aria-pressed={orbit}
@@ -597,12 +632,12 @@ export function CinematicSequenceEditor({
 							}}
 						>
 							Orbit view
-						</button>
-						<button type="button" disabled={!ready} onClick={useCurrentView}>
+						</Button>
+						<Button type="button" disabled={!ready} onClick={useCurrentView}>
 							Use Current View
-						</button>
+						</Button>
 						<label className="cinema-check">
-							<input
+							<Input
 								type="checkbox"
 								checked={isolateShot}
 								onChange={(event) => {
@@ -618,23 +653,25 @@ export function CinematicSequenceEditor({
 				<section className="cinema-storyboard" aria-label="Storyboard">
 					<header>
 						<h3>{advanced ? "Timeline + storyboard" : "Storyboard"}</h3>
-						<button
+						<Button
 							type="button"
 							disabled={!area}
+							aria-label="+ Add shot"
 							onClick={() => addShot("establishing")}
 						>
-							+ Add shot
-						</button>
+							<Plus aria-hidden="true" /> Add shot
+						</Button>
 					</header>
 					<div className="cinema-storyboard-strip">
 						{sequence.shots.map((entry, i) => {
+							const Icon = presetIcons[entry.preset ?? "current-view"];
 							const reference = subjects.find(
 								({ id }) => id === entry.targetId,
 							);
 							const cue =
 								sequence.cues?.[getStoryboardCueIndex(sequence, i, "subtitle")];
 							return (
-								<button
+								<Button
 									key={entry.id ?? `legacy-${i}`}
 									type="button"
 									className="cinema-storyboard-card"
@@ -660,7 +697,7 @@ export function CinematicSequenceEditor({
 									}}
 								>
 									<span className="cinema-shot-slate" aria-hidden="true">
-										{PRESET_SYMBOLS[entry.preset ?? "current-view"]}
+										<Icon className="editor-icon" />
 										<small>{clock(getShotStart(sequence, i))}</small>
 									</span>
 									<strong>
@@ -675,7 +712,7 @@ export function CinematicSequenceEditor({
 											.filter(Boolean)
 											.join(" · ")}
 									</small>
-								</button>
+								</Button>
 							);
 						})}
 					</div>
@@ -751,7 +788,7 @@ export function CinematicSequenceEditor({
 						{actors.length > 1 && (
 							<label>
 								Stage player near
-								<select
+								<NativeSelect
 									value={sequence.playerMark ? "staged" : ""}
 									onChange={(event) => setPlayerMark(event.target.value)}
 								>
@@ -768,7 +805,7 @@ export function CinematicSequenceEditor({
 												{name}
 											</option>
 										))}
-								</select>
+								</NativeSelect>
 							</label>
 						)}
 					</details>

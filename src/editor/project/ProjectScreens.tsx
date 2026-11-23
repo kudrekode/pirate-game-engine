@@ -1,3 +1,5 @@
+import { ChevronRight, Folder, type LucideIcon, Plus } from "lucide-react";
+import { Button } from "@/components/ui/control";
 import "./projectShell.css";
 
 export type ProjectSummary = {
@@ -45,7 +47,7 @@ export function ProjectsScreen({
 						const displayName = name.trim() || "Untitled project";
 						const modified = modifiedAt ? new Date(modifiedAt) : null;
 						return (
-							<button
+							<Button
 								aria-describedby={`project-details-${id}`}
 								aria-label={displayName}
 								className="project-list-card"
@@ -56,7 +58,7 @@ export function ProjectsScreen({
 								type="button"
 							>
 								<span className="project-card-mark" aria-hidden="true">
-									{Array.from(displayName)[0].toLocaleUpperCase()}
+									<Folder className="editor-icon" />
 								</span>
 								<span className="project-card-content">
 									<span className="project-card-title">{displayName}</span>
@@ -78,19 +80,19 @@ export function ProjectsScreen({
 									</span>
 								</span>
 								<span aria-hidden="true" className="project-card-arrow">
-									›
+									<ChevronRight className="editor-icon" />
 								</span>
-							</button>
+							</Button>
 						);
 					})}
-					<button
+					<Button
 						aria-label="New Project"
 						className="project-list-card project-new-card"
 						onClick={onNew}
 						type="button"
 					>
 						<span className="project-card-mark" aria-hidden="true">
-							+
+							<Plus className="editor-icon" />
 						</span>
 						<span className="project-card-content">
 							<strong>New Project</strong>
@@ -98,7 +100,7 @@ export function ProjectsScreen({
 								Start from a blank world or the feature demo
 							</span>
 						</span>
-					</button>
+					</Button>
 				</div>
 			</div>
 		</main>
@@ -115,7 +117,7 @@ export function ProjectHome<Id extends string>({
 		id: Id;
 		label: string;
 		description: string;
-		icon: string;
+		icon: LucideIcon;
 	}[];
 	onOpen: (id: Id) => void;
 }) {
@@ -124,40 +126,40 @@ export function ProjectHome<Id extends string>({
 			className="project-home-screen"
 			aria-labelledby="editor-route-heading"
 		>
-			<div className="project-home-heading">
-				<p className="project-eyebrow">Project Home</p>
-				<h1
-					id="editor-route-heading"
-					className="project-headline"
-					tabIndex={-1}
-				>
-					{name.trim() || "Untitled project"}
-				</h1>
-				<p className="project-screen-copy">
-					Assets, placements and story references are shared across workspaces.
-				</p>
-			</div>
-			<nav className="project-home-grid" aria-label="Project workspaces">
-				{workspaces.map(({ id, label, description, icon }) => (
-					<button
-						aria-describedby={`workspace-description-${id}`}
-						aria-label={label}
-						className="project-home-tile"
-						data-workspace={id}
-						key={id}
-						onClick={() => onOpen(id)}
-						type="button"
+			<div className="project-home-content">
+				<div className="project-home-heading">
+					<p className="project-eyebrow">Project Home</p>
+					<h1
+						id="editor-route-heading"
+						className="project-headline"
+						tabIndex={-1}
 					>
-						<span className="project-tile-icon" aria-hidden="true">
-							{icon}
-						</span>
-						<span className="project-tile-copy">
-							<span className="project-tile-title">{label}</span>
-							<span id={`workspace-description-${id}`}>{description}</span>
-						</span>
-					</button>
-				))}
-			</nav>
+						{name.trim() || "Untitled project"}
+					</h1>
+				</div>
+				<nav className="project-home-grid" aria-label="Project workspaces">
+					{workspaces.map(({ id, label, description, icon: Icon }) => (
+						<Button
+							aria-describedby={`workspace-description-${id}`}
+							aria-label={label}
+							variant="ghost"
+							className="project-home-tile"
+							data-workspace={id}
+							key={id}
+							onClick={() => onOpen(id)}
+							type="button"
+						>
+							<span className="project-tile-icon" aria-hidden="true">
+								<Icon className="editor-icon" />
+							</span>
+							<span className="project-tile-copy">
+								<span className="project-tile-title">{label}</span>
+								<span id={`workspace-description-${id}`}>{description}</span>
+							</span>
+						</Button>
+					))}
+				</nav>
+			</div>
 		</main>
 	);
 }

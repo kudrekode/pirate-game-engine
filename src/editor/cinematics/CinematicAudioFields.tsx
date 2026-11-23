@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { Button, Input } from "@/components/ui/control";
 import {
 	cinematicAudioFileAccept,
 	type ImportedCinematicAudio,
@@ -59,7 +60,7 @@ function AudioFileInput({
 		<>
 			<label>
 				Import audio file
-				<input
+				<Input
 					type="file"
 					accept={cinematicAudioFileAccept}
 					aria-describedby={helpId}
@@ -103,7 +104,7 @@ export function AudioCueCreator({
 		>
 			<label>
 				Audio file URL
-				<input
+				<Input
 					value={url}
 					disabled={reading}
 					aria-invalid={!!error}
@@ -126,12 +127,12 @@ export function AudioCueCreator({
 			/>
 			{embedded && <small>{embedded.sourceName}</small>}
 			<div className="cinematic-editor-actions">
-				<button type="submit" className="primary-button" disabled={reading}>
+				<Button type="submit" variant="default" disabled={reading}>
 					Add audio cue
-				</button>
-				<button type="button" onClick={onCancel}>
+				</Button>
+				<Button type="button" onClick={onCancel}>
 					Cancel
-				</button>
+				</Button>
 			</div>
 		</form>
 	);
@@ -155,7 +156,7 @@ export function CinematicAudioSourceFields({
 			{embedded && <small>{sourceName || "Embedded audio file"}</small>}
 			<label>
 				Audio file URL
-				<input
+				<Input
 					key={externalUrl}
 					defaultValue={externalUrl}
 					disabled={reading}

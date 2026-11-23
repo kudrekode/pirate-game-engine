@@ -1,27 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AssetCreatorLauncher } from "../editor/AssetCreatorLauncher";
 
-const originalShowModal = Object.getOwnPropertyDescriptor(
-	HTMLDialogElement.prototype,
-	"showModal",
-);
-beforeEach(() => {
-	Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
-		configurable: true,
-		value: function (this: HTMLDialogElement) {
-			this.open = true;
-		},
-	});
-});
 afterEach(() => {
-	if (originalShowModal)
-		Object.defineProperty(
-			HTMLDialogElement.prototype,
-			"showModal",
-			originalShowModal,
-		);
-	else Reflect.deleteProperty(HTMLDialogElement.prototype, "showModal");
 	vi.restoreAllMocks();
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
@@ -65,9 +46,8 @@ describe("Asset Creator entry point", () => {
 			),
 		);
 		expect(screen.getByText("npm run dev:asset-studio")).toBeInTheDocument();
-		expect(new URL(screen.getByRole("link").getAttribute("href")!).port).toBe(
-			"5174",
-		);
+		const link = screen.getByRole<HTMLAnchorElement>("link");
+		expect(new URL(link.href).port).toBe("5174");
 	});
 	it("rejects unsafe address schemes without making a request", () => {
 		vi.stubEnv("VITE_ASSET_STUDIO_URL", "javascript:alert(1)");
