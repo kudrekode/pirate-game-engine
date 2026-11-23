@@ -17,7 +17,7 @@ export type RuntimeProgressionEvent =
 	| {
 			type: "spawnPlayer";
 			areaId: string;
-			eventBlockId: string;
+			eventBlockId?: string;
 			x: number;
 			y: number;
 	  }
@@ -110,6 +110,18 @@ export function transitionRuntimeArea(
 	if (!nextArea || !eventBlock) {
 		return;
 	}
+	moveRuntimePlayer(session, areaId, eventBlock, emit, eventBlockId);
+}
+
+export function moveRuntimePlayer(
+	session: RuntimeSessionState,
+	areaId: string,
+	position: { x: number; y: number },
+	emit: RuntimeProgressionEventEmitter,
+	eventBlockId?: string,
+): void {
+	const nextArea = findArea(session, areaId);
+	if (!nextArea) return;
 
 	if (session.playerVehicleState.active) {
 		session.playerVehicleState = { active: false };
@@ -123,24 +135,24 @@ export function transitionRuntimeArea(
 		emit({ type: "areaChanged", areaId: nextArea.id });
 	}
 
-	session.playerPosition = { x: eventBlock.x, y: eventBlock.y };
+	session.playerPosition = { x: position.x, y: position.y };
 	// A transition invalidates continuous coordinates as well as the grid clock.
 	session.traversal = undefined;
-	if (!session.startupPending) {
+	if (!session.startupPending && eventBlockId) {
 		recordQuestFact(
 			session.runtimeQuestState,
 			"enter_event",
 			nextArea.id,
-			eventBlock.id,
+			eventBlockId,
 		);
 	}
 	session.nextMoveAt = 0;
 	emit({
 		type: "spawnPlayer",
 		areaId: nextArea.id,
-		eventBlockId: eventBlock.id,
-		x: eventBlock.x,
-		y: eventBlock.y,
+		eventBlockId,
+		x: position.x,
+		y: position.y,
 	});
 
 	markRuntimeAreaEntered(session, nextArea.id, emit);

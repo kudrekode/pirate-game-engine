@@ -10559,6 +10559,236 @@
 				{ "type": "give_item", "itemId": "ferry-penny", "quantity": 12 }
 			],
 			"completionMessage": "The Last Watch complete. Oswin pays you twelve ferry pennies."
+		},
+		{
+			"id": "beacon-trail",
+			"name": "The Beacon Trail",
+			"status": "inactive",
+			"objectiveMode": "sequence",
+			"description": "Follow Oswin's directions to the beacon across the mere.",
+			"objectives": [
+				{
+					"id": "briefed",
+					"description": "Hear Oswin's account of the beacon.",
+					"condition": {
+						"type": "interaction_completed",
+						"areaId": "merewatch",
+						"targetId": "oswin-at-the-well"
+					}
+				},
+				{
+					"id": "find-key",
+					"description": "Find the Beacon Key.",
+					"condition": {
+						"type": "has_item",
+						"itemId": "beacon-key",
+						"quantity": 1
+					}
+				},
+				{
+					"id": "reach",
+					"description": "Reach the watchtower across the mere.",
+					"condition": {
+						"type": "has_item",
+						"itemId": "watch-letter",
+						"quantity": 1
+					}
+				}
+			],
+			"completionMessage": "The Beacon Trail complete. You reached the watchtower."
+		}
+	],
+	"storyGraphs": [
+		{
+			"id": "beacon-trail",
+			"name": "The Beacon Trail",
+			"kind": "quest",
+			"nodes": [
+				{ "id": "opening", "type": "newGame", "x": 0, "y": 0, "data": {} },
+				{
+					"id": "cottage-lane",
+					"type": "spawn",
+					"title": "Spawn at Cottage Lane",
+					"x": 245,
+					"y": 0,
+					"data": {
+						"areaId": "merewatch",
+						"x": 20,
+						"y": 56,
+						"target": { "type": "eventBlock", "id": "lane" }
+					}
+				},
+				{
+					"id": "oswin-interaction",
+					"type": "waitNpc",
+					"title": "Wait for Oswin",
+					"x": 490,
+					"y": 0,
+					"data": { "areaId": "merewatch", "npcId": "oswin-at-the-well" }
+				},
+				{
+					"id": "accept-offer",
+					"type": "waitDialogueChoice",
+					"title": "Accept Oswin’s offer",
+					"x": 735,
+					"y": 0,
+					"data": {
+						"dialogueId": "oswins-watch",
+						"nodeId": "offer",
+						"choiceId": "accept"
+					}
+				},
+				{
+					"id": "light-across-mere",
+					"type": "cinematic",
+					"title": "The Light Across the Mere",
+					"x": 980,
+					"y": 0,
+					"data": { "cinematicId": "the-light-across-the-mere" }
+				},
+				{
+					"id": "start-trail",
+					"type": "startQuest",
+					"x": 0,
+					"y": 180,
+					"data": { "questId": "beacon-trail" }
+				},
+				{
+					"id": "finish-briefing",
+					"type": "objective",
+					"title": "Set the key objective",
+					"x": 245,
+					"y": 180,
+					"data": { "questId": "beacon-trail", "objectiveId": "briefed" }
+				},
+				{
+					"id": "has-key",
+					"type": "hasItem",
+					"title": "Has the Beacon Key?",
+					"x": 490,
+					"y": 180,
+					"data": { "itemId": "beacon-key", "quantity": 1 }
+				},
+				{
+					"id": "watchtower",
+					"type": "waitLocation",
+					"title": "Reach the watchtower",
+					"x": 735,
+					"y": 153,
+					"data": {
+						"areaId": "merewatch",
+						"x": 23,
+						"y": 4,
+						"radius": 2.25,
+						"target": { "type": "object", "id": "tower-dispatch-box" }
+					}
+				},
+				{
+					"id": "complete-trail",
+					"type": "objective",
+					"title": "Complete the watchtower objective",
+					"x": 980,
+					"y": 153,
+					"data": { "questId": "beacon-trail", "objectiveId": "reach" }
+				},
+				{ "id": "trail-end", "type": "end", "x": 1225, "y": 153, "data": {} },
+				{
+					"id": "key-reminder",
+					"type": "notify",
+					"title": "Show a key reminder",
+					"x": 735,
+					"y": 312,
+					"data": { "message": "Find the Beacon Key in the poachers’ coffer." }
+				},
+				{
+					"id": "wait-for-key",
+					"type": "waitItem",
+					"title": "Wait for the Beacon Key",
+					"x": 980,
+					"y": 312,
+					"data": { "itemId": "beacon-key" }
+				}
+			],
+			"edges": [
+				{
+					"id": "arrive",
+					"from": "opening",
+					"port": "next",
+					"to": "cottage-lane"
+				},
+				{
+					"id": "find-oswin",
+					"from": "cottage-lane",
+					"port": "next",
+					"to": "oswin-interaction"
+				},
+				{
+					"id": "listen",
+					"from": "oswin-interaction",
+					"port": "next",
+					"to": "accept-offer"
+				},
+				{
+					"id": "watch",
+					"from": "accept-offer",
+					"port": "next",
+					"to": "light-across-mere"
+				},
+				{
+					"id": "begin-trail",
+					"from": "light-across-mere",
+					"port": "next",
+					"to": "start-trail"
+				},
+				{
+					"id": "briefing",
+					"from": "start-trail",
+					"port": "next",
+					"to": "finish-briefing"
+				},
+				{
+					"id": "check-key",
+					"from": "finish-briefing",
+					"port": "next",
+					"to": "has-key"
+				},
+				{
+					"id": "cross-mere",
+					"from": "has-key",
+					"port": "true",
+					"to": "watchtower"
+				},
+				{
+					"id": "need-key",
+					"from": "has-key",
+					"port": "false",
+					"to": "key-reminder"
+				},
+				{
+					"id": "search",
+					"from": "key-reminder",
+					"port": "next",
+					"to": "wait-for-key"
+				},
+				{
+					"id": "recheck",
+					"from": "wait-for-key",
+					"port": "next",
+					"to": "has-key"
+				},
+				{
+					"id": "arrive-tower",
+					"from": "watchtower",
+					"port": "next",
+					"to": "complete-trail"
+				},
+				{
+					"id": "finished",
+					"from": "complete-trail",
+					"port": "next",
+					"to": "trail-end"
+				}
+			]
 		}
 	],
 	"cutscenes": [
@@ -10770,10 +11000,6 @@
 					"speaker": "Oswin",
 					"text": "Take my hanger. Open Inventory (I) and equip it. Turn back down the cottage lane and take the dirt track east to their lamp. Face them and press F to strike.",
 					"actions": [
-						{
-							"type": "play_cutscene",
-							"cutsceneId": "the-light-across-the-mere"
-						},
 						{ "type": "activate_quest", "questId": "last-watch" },
 						{ "type": "give_item", "itemId": "watch-sword", "quantity": 1 }
 					]
@@ -10977,16 +11203,7 @@
 			]
 		}
 	],
-	"progression": [
-		{
-			"id": "arrive",
-			"action": {
-				"type": "spawn_player",
-				"areaId": "merewatch",
-				"eventBlockId": "lane"
-			}
-		}
-	],
+	"progression": [],
 	"gameState": { "flags": {}, "variables": {}, "inventory": {} },
 	"rules": [],
 	"ruleGroups": [],

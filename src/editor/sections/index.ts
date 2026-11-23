@@ -16,6 +16,7 @@ import { ThreeDPreview } from "./ThreeDPreview";
 
 export type EditorSectionId =
 	| "story"
+	| "story-relationships"
 	| "map"
 	| "character"
 	| "camera"
@@ -81,8 +82,14 @@ export const editorSections: EditorSectionConfig[] = [
 	{
 		id: "story",
 		label: "Story",
+		description: "Author executable story graphs and reference game state.",
+		component: StoryWorkspace,
+	},
+	{
+		id: "story-relationships",
+		label: "Story Relationships",
 		description:
-			"Understand story relationships and open their owning editors.",
+			"Inspect existing quests, dialogue, rules and their references.",
 		component: StoryWorkspace,
 	},
 	{

@@ -72,6 +72,27 @@ Play mode starts from a cloned project snapshot and creates a `RuntimeSession` i
 
 Runtime helpers may mutate this state. Editor defaults must not be mutated by a play session.
 
+### Story graphs
+
+`GameProject.storyGraphs` holds typed nodes, control-flow connections and editor
+positions. The Story editor uses the shared catalogue to validate references
+and cycles. Each runtime adapter sends player interactions, dialogue choices
+and cinematic outcomes to the same runner. The runner observes changes to
+position, inventory, flags, quests and enemy defeats, then uses the existing
+rule, quest and area-transition helpers to apply actions.
+
+An entry has at most one active cursor. Repeatable entries can start again
+after the cursor completes. A wait listens for a later matching event and
+can resume into a loop. Each synchronous segment has a fixed step limit.
+Play Cinematic waits for its own playback to finish or be skipped.
+
+Game saves retain cursors, timer time remaining and once-only effects.
+Continue restores these records without emitting New Game. Saves use the
+authored gameplay revision, with node placement and titles excluded from
+the revision so rearranging the canvas preserves Continue. Known bundled
+Merewatch saves migrate from the original slot without replaying Oswin's
+accepted offer or rewards.
+
 ## Shared Runtime Helpers
 
 Shared helpers are renderer-independent and own gameplay semantics:

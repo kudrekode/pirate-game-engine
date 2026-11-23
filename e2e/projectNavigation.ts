@@ -27,6 +27,7 @@ type EditorDestination =
 	| "progression"
 	| "quests"
 	| "shops"
+	| "story-relationships"
 	| "three-d-preview";
 
 export function projectCard(page: Page, id: string) {

@@ -26,7 +26,7 @@ export function getTraversalAssetProfile(
 			)
 		: undefined;
 	const id = variant?.baseAssetId ?? visual.assetId;
-	if (!Object.hasOwn(WORLD_ASSET_TRAVERSAL, id)) return;
+	if (!Object.getOwnPropertyDescriptor(WORLD_ASSET_TRAVERSAL, id)) return;
 	const profile = WORLD_ASSET_TRAVERSAL[id];
 	return { profile, variant };
 }

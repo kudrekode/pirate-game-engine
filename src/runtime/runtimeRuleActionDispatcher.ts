@@ -20,7 +20,12 @@ export type RuntimeRuleEvent =
 	| { type: "questsChanged"; quests: QuestView[] }
 	| { type: "questRewardsGranted"; questIds: string[] }
 	| { type: "shopOpened"; shopId: string; message: string }
-	| { type: "cutsceneRequested"; cutsceneId: string; onDone: () => void }
+	| {
+			type: "cutsceneRequested";
+			cutsceneId: string;
+			onDone: () => void;
+			storyPlaybackId?: string;
+	  }
 	| { type: "dialogueRequested"; dialogueId: string }
 	| { type: "teleportRequested"; areaId: string; eventBlockId: string }
 	| { type: "gameEnded" }

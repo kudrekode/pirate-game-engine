@@ -100,6 +100,12 @@ import {
 	type RuntimeSessionState,
 } from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
+import {
+	initializeRuntimeStory,
+	queueStoryEvent,
+	type StoryDebugSnapshot,
+	tickRuntimeStory,
+} from "./storyRuntime";
 import { createTraversalWorld, type TraversalWorld } from "./traversal";
 import { equipRuntimeWeapon, getEquippedWeapon } from "./weaponRuntime";
 
@@ -223,6 +229,7 @@ export class AdventureScene extends Phaser.Scene {
 		onDebugEventsChanged?: (events: RuntimeDebugEvent[]) => void,
 		onItemFeedback?: (message: string) => void,
 		private readonly initialSave?: GameSave,
+		private readonly onStoryDebug?: (snapshot: StoryDebugSnapshot) => void,
 	) {
 		super("AdventureScene");
 		this.session = initialSave
@@ -373,6 +380,7 @@ export class AdventureScene extends Phaser.Scene {
 
 	// Phaser scene lifecycle.
 	getSaveSession(): RuntimeSessionState {
+		this.tickStory();
 		assertGameSaveSafe(
 			this.session,
 			!this.playerMarker ||
@@ -445,15 +453,35 @@ export class AdventureScene extends Phaser.Scene {
 			this.setStatus("Saved game continued.");
 			return;
 		}
+		initializeRuntimeStory(this.session, true);
 		startRuntimeSession(
 			this.session,
 			(onDone) => this.fireRuleTrigger({ type: "on_game_start" }, onDone),
 			(event) => this.handleRuntimeProgressionEvent(event),
 		);
+		this.tickStory();
+	}
+
+	private tickStory(deltaMs = 0) {
+		if (!this.session.story || this.isFinished) return;
+		tickRuntimeStory(
+			this.session,
+			{
+				emitRule: (event) => this.handleRuntimeRuleEvent(event),
+				emitProgression: (event) => this.handleRuntimeProgressionEvent(event),
+				canPresent: () =>
+					!this.isCutsceneOpen &&
+					!this.isInventoryOpen &&
+					!this.session.activeShopId,
+				onDebug: this.onStoryDebug,
+			},
+			deltaMs,
+		);
 	}
 
 	// Input translation into shared runtime transactions.
 	update(time: number, delta = 0) {
+		this.tickStory(delta);
 		const bowBlocked =
 			this.isInventoryOpen ||
 			this.isCutsceneOpen ||
@@ -532,7 +560,7 @@ export class AdventureScene extends Phaser.Scene {
 					);
 			}
 		}
-		if (this.isInventoryOpen) return;
+		if (this.isInventoryOpen || this.isCutsceneOpen) return;
 		if (this.isDialogueOpen && this.activeDialogue) {
 			if (this.wasInteractPressed()) {
 				const active = this.activeDialogue;
@@ -597,6 +625,18 @@ export class AdventureScene extends Phaser.Scene {
 				this.collectPickupObject(interactable.pickup);
 				return;
 			}
+			if (interactable.type === "npc")
+				queueStoryEvent(this.session, {
+					type: "npc",
+					areaId: this.currentArea.id,
+					npcId: targetId,
+				});
+			if (interactable.type === "eventBlock")
+				queueStoryEvent(this.session, {
+					type: "mapEvent",
+					areaId: this.currentArea.id,
+					eventBlockId: targetId,
+				});
 			this.fireRuleTrigger({ type: "on_interact", targetId }, () => {
 				if (
 					interactable.type === "object" &&
@@ -1100,10 +1140,7 @@ export class AdventureScene extends Phaser.Scene {
 		}
 
 		if (event.type === "spawnPlayer") {
-			const eventBlock = this.findEventBlock(event.eventBlockId, event.areaId);
-			if (eventBlock) {
-				this.spawnPlayer(eventBlock);
-			}
+			this.spawnPlayer(event);
 			return;
 		}
 
@@ -1468,7 +1505,11 @@ export class AdventureScene extends Phaser.Scene {
 	}
 
 	// UI/cutscene/dialogue presentation.
-	private showCutscene(cutscene: Cutscene, onDone: () => void) {
+	private showCutscene(
+		cutscene: Cutscene,
+		onDone: () => void,
+		storyPlaybackId?: string,
+	) {
 		this.promptText?.setText("");
 		const width = this.scale.width;
 		const height = this.scale.height;
@@ -1486,6 +1527,8 @@ export class AdventureScene extends Phaser.Scene {
 		const container = this.add.container(0, 0).setDepth(500).setScrollFactor(0);
 		this.uiLayer?.add(container);
 
+		const coveredDialogue = this.activeDialogue?.container;
+		coveredDialogue?.setVisible(false);
 		this.isCutsceneOpen = true;
 		container.add(
 			this.add
@@ -1574,7 +1617,18 @@ export class AdventureScene extends Phaser.Scene {
 			closed = true;
 			this.isCutsceneOpen = false;
 			container.destroy(true);
+			if (this.activeDialogue?.container === coveredDialogue)
+				coveredDialogue?.setVisible(true);
 			onDone();
+			if (cutscene.cinematic) {
+				queueStoryEvent(this.session, {
+					type: "cinematic",
+					cinematicId: cutscene.id,
+					outcome: "finished",
+					playbackId: storyPlaybackId,
+				});
+				this.tickStory();
+			}
 		};
 
 		this.input.once(Phaser.Input.Events.POINTER_DOWN, close);
@@ -1717,8 +1771,18 @@ export class AdventureScene extends Phaser.Scene {
 					)
 					.setInteractive({ useHandCursor: true });
 				choiceText.on(Phaser.Input.Events.POINTER_DOWN, () => {
-					advanceDialogue(active.definition, active.state, choice.id);
-					this.renderActiveDialogueNode();
+					if (this.isCutsceneOpen) return;
+					const origin = active.state.nodeId;
+					if (advanceDialogue(active.definition, active.state, choice.id)) {
+						queueStoryEvent(this.session, {
+							type: "dialogueChoice",
+							dialogueId: active.definition.id,
+							nodeId: origin,
+							choiceId: choice.id,
+						});
+						this.renderActiveDialogueNode();
+						this.tickStory();
+					}
 				});
 				container.add(choiceText);
 			});
@@ -2348,12 +2412,16 @@ export class AdventureScene extends Phaser.Scene {
 			}
 
 			this.promptText?.setText("");
-			this.showCutscene(cutscene, () => {
-				this.fireRuleTrigger(
-					{ type: "on_cutscene_end", cutsceneId: event.cutsceneId },
-					event.onDone,
-				);
-			});
+			this.showCutscene(
+				cutscene,
+				() => {
+					this.fireRuleTrigger(
+						{ type: "on_cutscene_end", cutsceneId: event.cutsceneId },
+						event.onDone,
+					);
+				},
+				event.storyPlaybackId,
+			);
 			return;
 		}
 

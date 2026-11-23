@@ -25,6 +25,13 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+PR 05 Story acceptance is opt-in with `npm run test:e2e -- e2e/story-editor.spec.ts --grep @story-editor`.
+It covers graph editing and workspace links, natural cinematic completion,
+and the Merewatch skip, Save/Continue, Beacon Key, skiff and watchtower route.
+The full route uses an imported fixture with the camp victory flags set and
+keeps the original dialogue, key, quest, skiff and map placements. The Last
+Watch unit tests exercise the original combat gates.
+
 Dialogue Entity Wiring V1 has one opt-in case in the existing dialogue suite:
 `node node_modules/@playwright/test/cli.js test e2e/dialogue-graph.spec.ts --grep @dialogue-entities`.
 Inspect `--list` first. It uses native palette dragging onto a response, Undo/Redo,

@@ -352,6 +352,32 @@ export function activateQuest(
 	return true;
 }
 
+export function completeQuestObjective(
+	state: RuntimeQuestState,
+	questId: string,
+	objectiveId: string,
+): boolean {
+	const quest = state.quests.find((entry) => entry.id === questId);
+	if (!quest) return false;
+	const index = quest.objectives.findIndex((entry) => entry.id === objectiveId);
+	if (index < 0) return false;
+	if (state.completedObjectiveIds.has(objectiveKey(questId, objectiveId)))
+		return true;
+	if (quest.status !== "active") return false;
+	if (
+		quest.objectiveMode === "sequence" &&
+		quest.objectives
+			.slice(0, index)
+			.some(
+				(entry) =>
+					!state.completedObjectiveIds.has(objectiveKey(questId, entry.id)),
+			)
+	)
+		return false;
+	state.completedObjectiveIds.add(objectiveKey(questId, objectiveId));
+	return true;
+}
+
 export function failQuest(state: RuntimeQuestState, questId: string): boolean {
 	const quest = state.quests.find((candidate) => candidate.id === questId);
 	if (!quest || quest.status === "failed") {

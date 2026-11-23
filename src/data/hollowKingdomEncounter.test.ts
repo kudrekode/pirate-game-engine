@@ -21,21 +21,41 @@ import { createRuntimeSession } from "../runtime/runtimeSession";
 import { equipRuntimeWeapon } from "../runtime/weaponRuntime";
 import { importProjectJson } from "./projectImport";
 
-it("continues the original Merewatch save slot with the cinematic project", () => {
+it.each([
+	true,
+	false,
+])("continues the original Merewatch slot after Story migration (legacy cinematic: %s)", (legacyCinematic) => {
 	const updated = importProjectJson(JSON.stringify(demo));
 	const original = structuredClone(updated);
-	original.cutscenes = [];
+	delete original.storyGraphs;
+	original.quests = original.quests.filter(
+		(quest) => quest.id !== "beacon-trail",
+	);
+	original.progression = [
+		{
+			id: "arrive",
+			action: {
+				type: "spawn_player",
+				areaId: "merewatch",
+				eventBlockId: "lane",
+			},
+		},
+	];
 	const acceptance = original.dialogues
 		.find((dialogue) => dialogue.id === "oswins-watch")
 		?.nodes.find((node) => node.id === "accept");
 	if (!acceptance?.actions)
 		throw new Error("Merewatch acceptance node missing");
-	acceptance.actions = acceptance.actions.filter(
-		(action) => action.type !== "play_cutscene",
-	);
+	if (legacyCinematic)
+		acceptance.actions.unshift({
+			type: "play_cutscene",
+			cutsceneId: "the-light-across-the-mere",
+		});
+	else original.cutscenes = [];
 
 	const previous = createRuntimeSession(original);
 	previous.runtimeState.inventory.items["watch-sword"] = 1;
+	previous.progressionIndex = 1;
 	activateQuest(previous.runtimeQuestState, "last-watch");
 	const entries = new Map<string, string>();
 	const storage = {
@@ -49,6 +69,8 @@ it("continues the original Merewatch save slot with the cinematic project", () =
 	if (!save) throw new Error("Original Merewatch save missing");
 	const resumed = restoreGameSave(updated, save);
 	expect(resumed.runtimeState.inventory.items["watch-sword"]).toBe(1);
+	expect(resumed.story?.cursors).toEqual([]);
+	expect(resumed.progressionIndex).toBe(0);
 	expect(
 		resumed.runtimeQuestState.quests.find((quest) => quest.id === "last-watch")
 			?.status,

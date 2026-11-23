@@ -140,6 +140,12 @@ import {
 	type RuntimeSessionState,
 } from "../runtimeSession";
 import {
+	initializeRuntimeStory,
+	queueStoryEvent,
+	type StoryDebugSnapshot,
+	tickRuntimeStory,
+} from "../storyRuntime";
+import {
 	createRuntimeTraversal,
 	createTraversalWorld,
 	isTraversalMoving,
@@ -257,6 +263,7 @@ type PendingCutscene = {
 	cutscene: Cutscene;
 	continueLabel: string;
 	onContinue: () => void;
+	storyPlaybackId?: string;
 };
 
 type CinematicPlayback = {
@@ -358,6 +365,7 @@ type ThreeRuntimePanelProps = {
 	initialSave?: GameSave;
 	cinematicPreview?: MutableRefObject<CinematicPreviewTransport>;
 	saveSessionRef?: MutableRefObject<(() => RuntimeSessionState) | null>;
+	onStoryDebug?: (snapshot: StoryDebugSnapshot) => void;
 };
 
 export type CinematicPreviewTransport = {
@@ -602,6 +610,7 @@ export function ThreeRuntimePanel({
 	initialSave,
 	cinematicPreview,
 	saveSessionRef,
+	onStoryDebug,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
 	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
@@ -721,8 +730,39 @@ export function ThreeRuntimePanel({
 		setPendingCutsceneState(value);
 	}
 
-	function finishCutscene(request: PendingCutscene) {
-		if (pendingCutsceneRef.current === request) request.onContinue();
+	function finishCutscene(
+		request: PendingCutscene,
+		outcome: "finished" | "skipped" = "skipped",
+	) {
+		if (pendingCutsceneRef.current !== request) return;
+		request.onContinue();
+		const session = getSession();
+		if (session && request.cutscene.cinematic && !cinematicPreview) {
+			queueStoryEvent(session, {
+				type: "cinematic",
+				cinematicId: request.cutscene.id,
+				outcome,
+				playbackId: request.storyPlaybackId,
+			});
+			tickStory(session);
+		}
+	}
+
+	function tickStory(session: RuntimeSessionState, deltaMs = 0) {
+		if (!session.story || cinematicPreview || gameOverRef.current) return;
+		tickRuntimeStory(
+			session,
+			{
+				emitRule: handleRuleEvent,
+				emitProgression: handleProgressionEvent,
+				canPresent: () =>
+					!pendingCutsceneRef.current &&
+					!inventoryOpenRef.current &&
+					!session.activeShopId,
+				onDebug: onStoryDebug,
+			},
+			deltaMs,
+		);
 	}
 
 	function gameplayBlocked(session: RuntimeSessionState): boolean {
@@ -839,8 +879,18 @@ export function ThreeRuntimePanel({
 			).some((choice) => choice.id === choiceId)
 		)
 			return;
-		if (advanceDialogue(definition, state, choiceId)) renderDialogueNode();
-		else closeDialogue();
+		const origin = state.nodeId;
+		if (advanceDialogue(definition, state, choiceId)) {
+			if (choiceId)
+				queueStoryEvent(session, {
+					type: "dialogueChoice",
+					dialogueId: definition.id,
+					nodeId: origin,
+					choiceId,
+				});
+			renderDialogueNode();
+			tickStory(session);
+		} else closeDialogue();
 	}
 	const [mountError, setMountError] = useState<string | null>(null);
 	const [missingAssets, setMissingAssets] = useState(false);
@@ -1262,6 +1312,7 @@ export function ThreeRuntimePanel({
 			setPendingCutscene({
 				continueLabel: "Continue",
 				cutscene,
+				storyPlaybackId: event.storyPlaybackId,
 				onContinue: () => {
 					setPendingCutscene(null);
 					fireRuntimeTrigger(
@@ -1819,6 +1870,20 @@ export function ThreeRuntimePanel({
 			collectRuntimePickup(session, target.pickup, handleObjectEvent);
 			return;
 		}
+		if (target.type === "npc") {
+			queueStoryEvent(session, {
+				type: "npc",
+				areaId: area.id,
+				npcId: target.id,
+			});
+		}
+		if (target.type === "eventBlock") {
+			queueStoryEvent(session, {
+				type: "mapEvent",
+				areaId: area.id,
+				eventBlockId: target.id,
+			});
+		}
 
 		fireRuntimeTrigger(
 			{ type: "on_interact", targetId: getTargetId(target) },
@@ -1894,12 +1959,15 @@ export function ThreeRuntimePanel({
 			setStatus(initialSave ? "Saved game continued." : "3D runtime started.");
 
 			setDialogueNode(null);
-			if (!cinematicPreview && !initialSave)
+			if (!cinematicPreview && !initialSave) {
+				initializeRuntimeStory(session, true);
 				startRuntimeSession(
 					session,
 					(onDone) => fireRuntimeTrigger({ type: "on_game_start" }, onDone),
 					handleProgressionEvent,
 				);
+				tickStory(session);
+			}
 			nextRebuildReasonRef.current = "initial runtime start";
 		} catch (error) {
 			sessionRef.current = null;
@@ -1922,6 +1990,7 @@ export function ThreeRuntimePanel({
 		saveSessionRef.current = () => {
 			const session = getSession();
 			if (!session) throw new Error("Game is still starting.");
+			tickStory(session);
 			assertGameSaveSafe(session, gameplayBlocked(session));
 			return session;
 		};
@@ -3302,6 +3371,7 @@ export function ThreeRuntimePanel({
 					),
 				);
 			}
+			tickStory(session, deltaMs);
 			const visualUpdateStartedAt = performance.now();
 			updateRuntimeBowDraw(session, now, gameplayBlocked(session));
 			characterAnimationControllers
@@ -3892,7 +3962,7 @@ export function ThreeRuntimePanel({
 						view = activeCinematic.last;
 						fov = sample.shot.fov ?? DEFAULT_CINEMATIC_FOV;
 					}
-				} else finishCutscene(activeCinematic.request);
+				} else finishCutscene(activeCinematic.request, "finished");
 			}
 			if (cinematic && cinematic.request !== pendingCutsceneRef.current) {
 				cinematic.returnMs ??= now;
@@ -4386,7 +4456,7 @@ export function ThreeRuntimePanel({
 					})}
 				</div>
 			) : null}
-			{dialogueNode && session?.dialogue ? (
+			{dialogueNode && session?.dialogue && !pendingCutscene ? (
 				<div
 					className="three-runtime-modal"
 					role="dialog"

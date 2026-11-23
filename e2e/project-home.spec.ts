@@ -128,7 +128,7 @@ test("opens Merewatch, switches independent projects and round-trips authored ch
 	).toBeVisible();
 	await home.click();
 	await openEditor(page, "story");
-	await expect(page.getByLabel("Story inspector")).toBeVisible();
+	await expect(page.getByLabel("Story graph inspector")).toBeVisible();
 	await home.click();
 	await openEditor(page, "map");
 	await expect(

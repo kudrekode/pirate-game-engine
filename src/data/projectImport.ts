@@ -1,3 +1,4 @@
+import { isKnownStoryNode, storyNodeCatalogue } from "../story/storyCatalogue";
 import type { GameProject } from "../types/game";
 import { migrateProject } from "./migrateProject";
 import { validateProject } from "./validateProject";
@@ -318,7 +319,51 @@ const progressionStep = fields({
 	nested: { action: progressionAction },
 });
 
+const storyNode: Check = (value, path) => {
+	const { type } = object(value, path);
+	if (!isKnownStoryNode(type))
+		throw new Error(`${path}.type: Unsupported Story node.`);
+	const data: Record<string, Check> = {};
+	for (const field of storyNodeCatalogue[type].fields) {
+		data[field.key] =
+			field.kind === "value"
+				? stateValue
+				: field.kind === "boolean"
+					? boolean
+					: field.kind === "number" || field.kind === "coordinate"
+						? number
+						: string;
+	}
+	if (type === "spawn" || type === "teleport" || type === "waitLocation") {
+		data.target = tagged(
+			fields({ strings: "type id", required: ["type", "id"] }),
+			"eventBlock object structure pickup npc",
+		);
+	}
+	fields({
+		strings: "id title type",
+		numbers: "x y",
+		nested: { data: fields({ nested: data }) },
+		required: ["id", "type", "x", "y", "data"],
+	})(value, path);
+};
+
 const projectFields: Record<keyof GameProject | "map", Check> = {
+	storyGraphs: list(
+		fields({
+			strings: "id name kind",
+			nested: {
+				nodes: list(storyNode),
+				edges: list(
+					fields({
+						strings: "id from to port",
+						required: ["id", "from", "to", "port"],
+					}),
+				),
+			},
+			required: ["id", "name", "kind", "nodes", "edges"],
+		}),
+	),
 	foliageBrush: fields({
 		numbers:
 			"radius density spacing seed minScale maxScale rotationVariation minHeight maxHeight maxSlope",

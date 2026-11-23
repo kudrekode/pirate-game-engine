@@ -1,3 +1,4 @@
+import { storyNodeCatalogue } from "../story/storyCatalogue";
 import type {
 	GameProject,
 	MapSceneAppearance,
@@ -11,6 +12,7 @@ import {
 	createRuntimeSession,
 	type RuntimeSessionState,
 } from "./runtimeSession";
+import { initializeRuntimeStory, type StoryProgress } from "./storyRuntime";
 import { createRuntimeTraversal, createTraversalWorld } from "./traversal";
 import { getEquippedWeapon } from "./weaponRuntime";
 
@@ -21,17 +23,18 @@ const MEREWATCH_CINEMATIC_REVISIONS = new Set([
 	"b322be3eaf2b95c65df6339b98c5173e",
 	"fc96310b3d257a05d7d1d3a9287fc864",
 ]);
+const MEREWATCH_STORY_REVISION = "2338f6f927f069e5e4a36b9d5fa8cd63";
+const MEREWATCH_SAVE_SLOT = "66e4b756e72938db833b640eacc1aa73";
 
 // An exact authored-revision identity avoids assigning a new ID every time an old
 // JSON project is imported. Exclude editor selection, layout and rule organization.
 // FNV-1a 128 is an identity checksum, not a security/authentication mechanism.
 export function gameSaveProjectId(project: GameProject): string {
 	const fingerprint = projectFingerprint(project, false);
-	// The bundled Merewatch cinematic changed the authored revision while
-	// keeping every persisted quest, object, inventory and area reference valid.
-	// Share the original slot only for these exact published revisions.
-	return MEREWATCH_CINEMATIC_REVISIONS.has(fingerprint)
-		? "66e4b756e72938db833b640eacc1aa73"
+	// Share the published Merewatch slot across its known revisions only.
+	return fingerprint === MEREWATCH_STORY_REVISION ||
+		MEREWATCH_CINEMATIC_REVISIONS.has(fingerprint)
+		? MEREWATCH_SAVE_SLOT
 		: fingerprint;
 }
 
@@ -50,6 +53,7 @@ function projectFingerprint(project: GameProject, legacy: boolean): string {
 		activeAreaId: _selection,
 		foliageBrush: _brush,
 		ruleGroups,
+		storyGraphs,
 		...authored
 	} = project;
 	const omitEditorSceneState = <T extends { scene?: MapSceneAppearance }>(
@@ -78,7 +82,21 @@ function projectFingerprint(project: GameProject, legacy: boolean): string {
 			({ groupId: _folder, ...rule }) => rule,
 		);
 	// An empty folder list already had this fingerprint in older releases.
-	const revision = { ...authored, ruleGroups: legacy ? ruleGroups : [] };
+	const revision = {
+		...authored,
+		ruleGroups: legacy ? ruleGroups : [],
+		...(storyGraphs?.length
+			? {
+					storyGraphs: storyGraphs.map(({ id, nodes, edges }) => ({
+						id,
+						nodes: nodes.map(
+							({ x: _x, y: _y, title: _title, ...node }) => node,
+						),
+						edges: edges.map(({ id: _id, ...edge }) => edge),
+					})),
+				}
+			: {}),
+	};
 	let hash = 0x6c62272e07bb014262b821756295c58dn;
 	for (const byte of new TextEncoder().encode(canonical(revision))) {
 		hash = BigInt.asUintN(
@@ -133,6 +151,7 @@ export type GameSave = {
 		objectPositions: { areaId: string; id: string; x: number; y: number }[];
 	};
 	shops: RuntimeSessionState["runtimeShopStocks"];
+	story?: StoryProgress;
 	progression: {
 		index: number;
 		waiting: RuntimeSessionState["waitingForTrigger"];
@@ -151,6 +170,7 @@ export function assertGameSaveSafe(
 		session.dialogue ||
 		session.pendingInteraction ||
 		session.activeShopId ||
+		session.story?.cursors.some((cursor) => cursor.playing) ||
 		session.runtimeQuestState.syncing ||
 		session.runtimePlayerHealth <= 0
 	)
@@ -229,6 +249,14 @@ export function createGameSave(
 			),
 		},
 		shops: session.runtimeShopStocks,
+		...(session.story
+			? {
+					story: {
+						cursors: session.story.cursors,
+						effects: session.story.effects,
+					},
+				}
+			: {}),
 		progression: {
 			index: session.progressionIndex,
 			waiting: session.waitingForTrigger,
@@ -336,6 +364,21 @@ const saveShape = shape({
 		),
 	}),
 	shops: record(record(count)),
+	story: optional(
+		shape({
+			cursors: list(
+				shape({
+					graphId: text,
+					entryId: text,
+					nodeId: optional(text),
+					status: oneOf("running", "waiting", "completed", "blocked"),
+					remainingMs: optional(number),
+					detail: optional(text),
+				}),
+			),
+			effects: list(shape({ graphId: text, nodeId: text })),
+		}),
+	),
 	progression: shape({
 		index: count,
 		waiting: (v) =>
@@ -360,9 +403,14 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 		throw new Error("Save game has an unsupported version or invalid format.");
 	const save = value as GameSave;
 	const projectId = gameSaveProjectId(project);
+	const legacyMerewatch =
+		projectId === MEREWATCH_SAVE_SLOT &&
+		(save.projectId === MEREWATCH_SAVE_SLOT ||
+			MEREWATCH_CINEMATIC_REVISIONS.has(save.projectId));
 	if (
 		save.projectVersion !== project.metadata.version ||
 		(save.projectId !== projectId &&
+			!legacyMerewatch &&
 			save.projectId !== projectFingerprint(project, true))
 	)
 		throw new Error(
@@ -372,6 +420,29 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 		if (!condition)
 			throw new Error("Save game contains invalid progress or references.");
 	};
+	if (
+		legacyMerewatch &&
+		project.quests.some((quest) => quest.id === "beacon-trail") &&
+		!save.story &&
+		save.quests.statuses["beacon-trail"] === undefined
+	) {
+		valid(save.progression.index <= 1 && save.progression.waiting === null);
+		save.progression.index = 0;
+		save.quests.statuses["beacon-trail"] = "inactive";
+		// A legacy Continue never moves the player or replays a completed offer.
+		if (save.quests.statuses["last-watch"] === "inactive")
+			save.story = {
+				effects: [],
+				cursors: [
+					{
+						graphId: "beacon-trail",
+						entryId: "opening",
+						nodeId: "oswin-interaction",
+						status: "waiting",
+					},
+				],
+			};
+	}
 	const area = project.areas.find((a) => a.id === save.player.areaId);
 	valid(area);
 	const inArea = (p: { x: number; y: number }, a = area!) =>
@@ -543,6 +614,61 @@ export function parseGameSave(raw: string, project: GameProject): GameSave {
 				].some((e) => e.id === targetId),
 		);
 	}
+	if (save.story) {
+		const graphs = new Map(
+			project.storyGraphs?.map((graph) => [graph.id, graph]),
+		);
+		const cursors = new Set<string>();
+		const effects = new Set<string>();
+		for (const cursor of save.story.cursors) {
+			const graph = graphs.get(cursor.graphId);
+			const key = JSON.stringify([cursor.graphId, cursor.entryId]);
+			const node = graph?.nodes.find(
+				(candidate) => candidate.id === cursor.nodeId,
+			);
+			valid(graph && !cursors.has(key));
+			valid(
+				graph?.nodes.some(
+					(candidate) =>
+						candidate.id === cursor.entryId &&
+						!storyNodeCatalogue[candidate.type].input,
+				) ||
+					(cursor.status === "blocked" && cursor.entryId === ""),
+			);
+			valid(
+				cursor.nodeId === undefined
+					? ["completed", "blocked"].includes(cursor.status)
+					: node,
+			);
+			valid(
+				cursor.status !== "waiting" ||
+					(node &&
+						node.type !== "cinematic" &&
+						storyNodeCatalogue[node.type].suspends),
+			);
+			valid(
+				cursor.remainingMs === undefined ||
+					(node?.type === "delay" &&
+						cursor.status === "waiting" &&
+						cursor.remainingMs >= 0 &&
+						cursor.remainingMs <= node.data.seconds * 1000),
+			);
+			cursors.add(key);
+		}
+		for (const effect of save.story.effects) {
+			const key = JSON.stringify([effect.graphId, effect.nodeId]);
+			valid(
+				!effects.has(key) &&
+					graphs
+						.get(effect.graphId)
+						?.nodes.some(
+							(node) =>
+								node.id === effect.nodeId && storyNodeCatalogue[node.type].once,
+						),
+			);
+			effects.add(key);
+		}
+	}
 	return { ...save, projectId };
 }
 
@@ -580,6 +706,7 @@ export function restoreGameSave(
 	s.runtimeShopStocks = save.shops;
 	s.progressionIndex = save.progression.index;
 	s.waitingForTrigger = save.progression.waiting;
+	initializeRuntimeStory(s, false, save.story);
 	for (const area of s.project.areas) {
 		area.npcs = area.npcs.filter((n) => !s.defeatedNpcIds.has(n.id));
 		area.objects = area.objects.filter((o) => !s.collectedPickupIds.has(o.id));

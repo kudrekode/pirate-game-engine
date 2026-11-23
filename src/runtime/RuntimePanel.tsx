@@ -20,6 +20,7 @@ import type { QuestView } from "./questEngine";
 import { getCurrencyHudEntries } from "./runtimeHud";
 import type { RuntimeSessionState } from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
+import type { StoryDebugSnapshot } from "./storyRuntime";
 import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
 import {
 	InventoryNotifications,
@@ -34,6 +35,7 @@ type RuntimePanelProps = {
 	initialMode?: "2d" | "3d";
 	project: GameProject;
 	onClose: () => void;
+	onStoryDebug?: (snapshot: StoryDebugSnapshot) => void;
 };
 
 export function RuntimePanel(props: RuntimePanelProps) {
@@ -105,6 +107,7 @@ export function RuntimePanel(props: RuntimePanelProps) {
 function RuntimePlayPanel({
 	project,
 	onClose,
+	onStoryDebug,
 	saveStorage,
 	initialMode = "2d",
 	initialSave,
@@ -242,6 +245,7 @@ function RuntimePlayPanel({
 			setDebugEvents,
 			showItemFeedback,
 			resumeSave,
+			onStoryDebug,
 		);
 		sceneRef.current = scene;
 		saveSessionRef.current = () => scene.getSaveSession();
@@ -275,6 +279,7 @@ function RuntimePlayPanel({
 		setInventory,
 		setQuests,
 		showItemFeedback,
+		onStoryDebug,
 	]);
 
 	const currencyHudEntries = getCurrencyHudEntries(project, inventory);
@@ -374,6 +379,7 @@ function RuntimePlayPanel({
 						onRestart={restartGame}
 						initialSave={resumeSave}
 						saveSessionRef={saveSessionRef}
+						onStoryDebug={onStoryDebug}
 						project={project}
 					/>
 				) : (

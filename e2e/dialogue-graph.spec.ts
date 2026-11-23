@@ -29,7 +29,7 @@ test("navigates a complete story and authors a conditional response from context
 	});
 	const click = (name: string) =>
 		page.getByRole("button", { name, exact: true }).click();
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	await page.getByLabel("Search entities", { exact: true }).fill("Guard");
 	await click("Guard — Village (4, 5) · Characters");
 	await expect(page.getByLabel("Story inspector")).toContainText(
@@ -45,7 +45,7 @@ test("navigates a complete story and authors a conditional response from context
 	await expect(page.getByLabel("Name", { exact: true })).toHaveValue(
 		"Guard Conversation",
 	);
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	const start = page
 		.locator(".story-relationship")
 		.filter({ hasText: "Start Village Passage" });
@@ -59,7 +59,7 @@ test("navigates a complete story and authors a conditional response from context
 		"data-source-focus",
 		"true",
 	);
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	await page
 		.locator(".story-relationship")
 		.filter({ hasText: "Start Village Passage" })
@@ -73,7 +73,7 @@ test("navigates a complete story and authors a conditional response from context
 	).toContainText("Possible source of Harbour Key");
 	await click("Open Quest Sequence");
 	await expect(page.locator(".story-step")).toHaveCount(3);
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	await page.getByLabel("Search entities", { exact: true }).fill("Harbour Key");
 	await click("Harbour Key · Items");
 	await expect(page.getByLabel("Used by")).toContainText("Container grants");
@@ -132,7 +132,7 @@ test("navigates a complete story and authors a conditional response from context
 		})
 		.click();
 	await click("Story state is Yes");
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	await page
 		.getByLabel("Search entities", { exact: true })
 		.fill("Key remembered");
@@ -230,7 +230,7 @@ test("navigates a complete story and authors a conditional response from context
 	await click("Save");
 	expect(await savedProjectJson(page)).toBe(authored);
 	expect(errors).toEqual([]);
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	const large = createCompleteStoryDemo();
 	for (let i = 0; i < 150; i++) {
 		large.areas[0].npcs.push({
@@ -260,7 +260,7 @@ test("navigates a complete story and authors a conditional response from context
 		buffer: Buffer.from(JSON.stringify(large)),
 	});
 	const focusStarted = Date.now();
-	await openEditor(page, "story");
+	await openEditor(page, "story-relationships");
 	await page.getByLabel("Search entities", { exact: true }).fill("Guard 149");
 	await click("Guard 149 — Village (4, 5) · Characters");
 	await expect(page.getByLabel("Story inspector")).toContainText("Guard 149");

@@ -49,6 +49,7 @@ export type MapSceneAppearance = {
 };
 
 export type GameProject = {
+	storyGraphs?: StoryGraph[];
 	characterAssets?: CharacterGameAsset[];
 	assetCreator?: AssetCreatorLibrary;
 	foliageBrush?: FoliageBrushSettings;
@@ -71,6 +72,80 @@ export type GameProject = {
 	objects: ObjectDefinition[];
 	ruleGroups: RuleGroup[];
 	rules: GameRule[];
+};
+
+export type StoryMapTarget = {
+	type: "eventBlock" | "object" | "structure" | "pickup" | "npc";
+	id: string;
+};
+
+export type StoryMapPosition = {
+	areaId: string;
+	x: number;
+	y: number;
+	target?: StoryMapTarget;
+};
+
+export type StoryNodeData = {
+	newGame: Record<string, never>;
+	areaEnter: { areaId: string };
+	questStart: { questId: string };
+	questComplete: { questId: string };
+	flagChanged: { flagId: string };
+	mapEvent: { areaId: string; eventBlockId: string };
+	waitNpc: { areaId: string; npcId: string };
+	waitLocation: StoryMapPosition & { radius: number };
+	waitItem: { itemId: string };
+	waitEnemy: { areaId: string; npcId: string };
+	waitDialogueChoice: { dialogueId: string; nodeId: string; choiceId: string };
+	waitCinematic: { cinematicId: string };
+	delay: { seconds: number };
+	spawn: StoryMapPosition;
+	cinematic: { cinematicId: string };
+	startQuest: { questId: string };
+	completeQuest: { questId: string };
+	objective: { questId: string; objectiveId: string };
+	notify: { message: string };
+	setFlag: { flagId: string; value: boolean };
+	setVariable: { variableId: string; value: GameStateValue };
+	giveItem: { itemId: string; quantity: number };
+	teleport: StoryMapPosition;
+	hasItem: { itemId: string; quantity: number };
+	questState: { questId: string; status: QuestStatus };
+	flagSet: { flagId: string };
+	compareVariable: {
+		variableId: string;
+		operator: VariableComparisonOperator;
+		value: GameStateValue;
+	};
+	inArea: { areaId: string };
+	once: Record<string, never>;
+	end: Record<string, never>;
+};
+
+export type StoryNodeKind = keyof StoryNodeData;
+export type StoryNode = {
+	[K in StoryNodeKind]: {
+		id: string;
+		x: number;
+		y: number;
+		title?: string;
+		type: K;
+		data: StoryNodeData[K];
+	};
+}[StoryNodeKind];
+export type StoryEdge = {
+	id: string;
+	from: string;
+	to: string;
+	port: "next" | "true" | "false";
+};
+export type StoryGraph = {
+	id: string;
+	name: string;
+	kind: "opening" | "quest" | "event";
+	nodes: StoryNode[];
+	edges: StoryEdge[];
 };
 
 export type FoliageBrushSettings = {

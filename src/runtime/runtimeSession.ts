@@ -15,6 +15,7 @@ import type { BowDrawState, RuntimeProjectiles } from "./projectileRuntime";
 import { createRuntimeQuestState, type RuntimeQuestState } from "./questEngine";
 import { createRuntimeState, type RuntimeGameState } from "./ruleEngine";
 import { createRuntimeShopStocks, type RuntimeShopStocks } from "./shopRuntime";
+import type { RuntimeStoryState } from "./storyRuntime";
 import type { RuntimeTraversal } from "./traversal";
 
 export type RuntimeGridPosition = { x: number; y: number };
@@ -44,6 +45,7 @@ export type RuntimeSessionState = {
 	// Optional metre-space traversal; integer playerPosition still owns triggers.
 	traversal?: RuntimeTraversal;
 	project: GameProject;
+	story?: RuntimeStoryState;
 	currentAreaId: string;
 	playerPosition: RuntimeGridPosition;
 	playerFacing: RuntimeGridPosition;

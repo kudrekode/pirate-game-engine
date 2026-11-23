@@ -42,8 +42,11 @@ import {
 import { entityKey } from "./editor/sections/dialogueEntities";
 import { MapEditor } from "./editor/sections/MapEditor";
 import { ThreeDPreview } from "./editor/sections/ThreeDPreview";
+import { StoryEditor } from "./editor/story/StoryEditor";
+import type { StoryNavigationTarget } from "./editor/story/StoryInspector";
 import type { GameSaveStorage } from "./runtime/gameSave";
 import { RuntimePanel } from "./runtime/RuntimePanel";
+import type { StoryDebugSnapshot } from "./runtime/storyRuntime";
 import { useProjectStore } from "./store/useProjectStore";
 import type { EditorSelection, GameProject } from "./types/game";
 
@@ -93,6 +96,7 @@ function recoveryName(raw: string | null) {
 
 export default function App() {
 	const project = useProjectStore((state) => state.project);
+	const projectContextId = useProjectStore((state) => state.projectContextId);
 	const requestedDialogueId = useProjectStore(
 		(state) => state.requestedDialogueId,
 	);
@@ -110,7 +114,14 @@ export default function App() {
 	const [runtime, setRuntime] = useState<{
 		project: GameProject;
 		storage: GameSaveStorage;
+		mode: "2d" | "3d";
 	} | null>(null);
+	const [storyDebug, setStoryDebug] = useState<StoryDebugSnapshot>();
+	const [storyFocus, setStoryFocus] = useState<{
+		graphId: string;
+		nodeId: string;
+		projectContextId: string;
+	}>();
 	const editorShell = useRef<HTMLElement>(null);
 	const importInput = useRef<HTMLInputElement>(null);
 	const importRequest = useRef(0);
@@ -315,7 +326,9 @@ export default function App() {
 			);
 			setEditorView("2d");
 		}
-		openWorkspace(source.section);
+		openWorkspace(
+			source.section === "story" ? "story-relationships" : source.section,
+		);
 	}, [requestedEditorSource, openWorkspace]);
 
 	const onAssetImported = useCallback(() => {
@@ -335,6 +348,8 @@ export default function App() {
 		setRoute("home");
 		setDialog(null);
 		setRuntime(null);
+		setStoryDebug(undefined);
+		setStoryFocus(undefined);
 		setEditorView(mapViewPreference());
 		setDraftTimestamp("");
 		setStatus(message);
@@ -451,12 +466,14 @@ export default function App() {
 		}
 	}
 
-	function play() {
+	function play(mode = editorView) {
 		const record = activeRecord.current;
 		if (!record) return;
 		const playable = JSON.parse(snapshot) as GameProject;
+		setStoryDebug(undefined);
 		setRuntime({
 			project: playable,
+			mode,
 			storage: projectGameSaveStorage(
 				record,
 				playable,
@@ -464,6 +481,54 @@ export default function App() {
 				records,
 			),
 		});
+	}
+
+	function followStoryReference(target: StoryNavigationTarget) {
+		setStoryFocus(undefined);
+		if (target.workspace === "assets")
+			openEntity({ section: "assets", id: target.assetId });
+		else if (target.workspace === "cinematics")
+			openEntity({ section: "cutscenes", id: target.cinematicId });
+		else if (target.selection?.type === "terrain") {
+			const store = useProjectStore.getState();
+			store.setActiveArea(target.areaId);
+			store.setEditorSelection(target.selection);
+			setEditorView("2d");
+			openWorkspace("map");
+		} else
+			openEntity({
+				section: "map",
+				areaId: target.areaId,
+				id:
+					target.selection && "id" in target.selection
+						? target.selection.id
+						: target.areaId,
+			});
+	}
+
+	function findMapEntityInStory(selection: EditorSelection) {
+		if (!selection || !("id" in selection)) return;
+		for (const graph of project.storyGraphs ?? []) {
+			const node = graph.nodes.find(
+				({ data }) =>
+					"areaId" in data &&
+					data.areaId === selection.areaId &&
+					(("target" in data &&
+						data.target?.id === selection.id &&
+						data.target.type === selection.type) ||
+						("npcId" in data &&
+							selection.type === "npc" &&
+							data.npcId === selection.id) ||
+						("eventBlockId" in data &&
+							selection.type === "eventBlock" &&
+							data.eventBlockId === selection.id)),
+			);
+			if (!node) continue;
+			setStoryFocus({ graphId: graph.id, nodeId: node.id, projectContextId });
+			openWorkspace("story");
+			return;
+		}
+		openMapEntityInStory(selection);
 	}
 
 	return (
@@ -514,7 +579,11 @@ export default function App() {
 							>
 								Save
 							</button>
-							<button type="button" className="project-primary" onClick={play}>
+							<button
+								type="button"
+								className="project-primary"
+								onClick={() => play()}
+							>
 								<span aria-hidden="true">▶ </span>Play
 							</button>
 						</div>
@@ -628,9 +697,28 @@ export default function App() {
 							<MapEditor
 								onViewChange={setEditorView}
 								onOpenAsset={(id) => openEntity({ section: "assets", id })}
-								onOpenStory={openMapEntityInStory}
+								onOpenStory={findMapEntityInStory}
 								onOpenPlayer={() => openWorkspace("character")}
 								onOpenHud={() => openWorkspace("quests")}
+							/>
+						) : route === "story" ? (
+							<StoryEditor
+								project={project}
+								projectContextId={projectContextId}
+								focusNode={
+									storyFocus?.projectContextId === projectContextId
+										? storyFocus
+										: undefined
+								}
+								debug={storyDebug}
+								onPlay={() => play("3d")}
+								onLegacy={() => openWorkspace("story-relationships")}
+								onNavigate={followStoryReference}
+								onChange={(graphs) =>
+									useProjectStore.getState().updateProject((current) => {
+										current.storyGraphs = graphs;
+									})
+								}
 							/>
 						) : (
 							<ActiveSection />
@@ -639,9 +727,10 @@ export default function App() {
 				)}
 				{runtime && (
 					<RuntimePanel
-						initialMode={editorView}
+						initialMode={runtime.mode}
 						project={runtime.project}
 						saveStorage={runtime.storage}
+						onStoryDebug={setStoryDebug}
 						onClose={() => setRuntime(null)}
 					/>
 				)}

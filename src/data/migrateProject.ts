@@ -1,4 +1,5 @@
 import { isCinematicAudioUrl } from "../runtime/cinematicTimeline";
+import { isKnownStoryNode, storyNodeCatalogue } from "../story/storyCatalogue";
 import type {
 	AreaLink,
 	CameraConfig,
@@ -45,6 +46,7 @@ import type {
 	RuleTrigger,
 	ShopDefinition,
 	SingleCondition,
+	StoryGraph,
 	ThreePlaceholderVisualType,
 	ThreeRuntimeCameraConfig,
 	ThreeVisualConfig,
@@ -2408,6 +2410,59 @@ function validateCinematicCue(
 	}
 }
 
+function migrateStoryGraphs(value: unknown): StoryGraph[] {
+	const fail = (path: string): never => {
+		throw new Error(`Invalid story graph data at ${path}.`);
+	};
+	if (!Array.isArray(value)) return fail("storyGraphs");
+	return value.map((graph, index) => {
+		const path = `storyGraphs[${index}]`;
+		if (
+			!isRecord(graph) ||
+			typeof graph.id !== "string" ||
+			typeof graph.name !== "string" ||
+			!["opening", "quest", "event"].some((kind) => kind === graph.kind) ||
+			!Array.isArray(graph.nodes) ||
+			!Array.isArray(graph.edges)
+		)
+			return fail(path);
+		const nodes = graph.nodes.map((node: unknown, index: number) => {
+			if (
+				!isRecord(node) ||
+				!isKnownStoryNode(node.type) ||
+				typeof node.id !== "string" ||
+				typeof node.x !== "number" ||
+				!Number.isFinite(node.x) ||
+				typeof node.y !== "number" ||
+				!Number.isFinite(node.y) ||
+				(node.title !== undefined && typeof node.title !== "string") ||
+				!isRecord(node.data)
+			)
+				return fail(`${path}.nodes[${index}]`);
+			const defaults = storyNodeCatalogue[node.type].defaults;
+			return { ...node, data: { ...defaults, ...node.data } };
+		});
+		const edges = graph.edges.map((edge: unknown, index: number) => {
+			if (
+				!isRecord(edge) ||
+				typeof edge.id !== "string" ||
+				typeof edge.from !== "string" ||
+				typeof edge.to !== "string" ||
+				typeof edge.port !== "string"
+			)
+				return fail(`${path}.edges[${index}]`);
+			return edge;
+		});
+		return {
+			id: graph.id,
+			name: graph.name,
+			kind: graph.kind,
+			nodes,
+			edges,
+		} as StoryGraph;
+	});
+}
+
 export function migrateProject(value: unknown): GameProject {
 	const source = isRecord(value) ? value : {};
 	const metadataSource = isRecord(source.metadata) ? source.metadata : {};
@@ -2432,6 +2487,9 @@ export function migrateProject(value: unknown): GameProject {
 			),
 		},
 		areas,
+		...(source.storyGraphs !== undefined
+			? { storyGraphs: migrateStoryGraphs(source.storyGraphs) }
+			: {}),
 		...(source.characterAssets !== undefined
 			? { characterAssets: migrateCharacterAssets(source.characterAssets) }
 			: {}),
