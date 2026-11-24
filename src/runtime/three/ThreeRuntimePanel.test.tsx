@@ -1163,7 +1163,7 @@ describe("ThreeRuntimePanel", () => {
 	});
 
 	it("coalesces asset-load rebuilds and preserves cached imported resources", () => {
-		expect(threeRuntimeSource).toContain("assetStateChangeQueued");
+		expect(threeRuntimeSource).toContain("watchSceneAssetLoads");
 		expect(threeRuntimeSource).toContain(
 			"disposeResources: !renderResult.usedAsset",
 		);
@@ -1248,7 +1248,7 @@ describe("ThreeRuntimePanel", () => {
 });
 
 describe("RuntimePanel play modes", () => {
-	it("defaults to Phaser Play 2D and leaves that path available", () => {
+	it("loads Phaser when entering default 2D Play", async () => {
 		render(<RuntimePanel onClose={vi.fn()} project={makeProject()} />);
 
 		expect(screen.getByRole("button", { name: "Play 2D" })).toHaveClass(
@@ -1257,7 +1257,7 @@ describe("RuntimePanel play modes", () => {
 		expect(
 			screen.getByRole("button", { name: "Play 3D Experimental" }),
 		).toBeInTheDocument();
-		expect(phaserSpies.Game).toHaveBeenCalledTimes(1);
+		await waitFor(() => expect(phaserSpies.Game).toHaveBeenCalledTimes(1));
 	});
 
 	it("switches to the experimental Three.js runtime mode", async () => {

@@ -197,6 +197,8 @@ import {
 	disposePlaceholderObject,
 	type ThreeResourceDisposeTracker,
 } from "./placeholderMeshes";
+import { prepareSceneShaders } from "./prepareSceneShaders";
+import { watchSceneAssetLoads } from "./sceneAssetLoads";
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import { createThreeArrowPresentation } from "./threeArrowPresentation";
@@ -214,7 +216,11 @@ import {
 	interactionFacingYaw,
 } from "./threePropAnimation";
 import { getThreeRuntimeAction } from "./threeRuntimeInput";
-import { createThreeVisualMarkerGroup } from "./threeVisualRenderer";
+import { forgetFailedThreeVisualAsset } from "./threeVisualAssetLoader";
+import {
+	createThreeVisualMarkerGroup,
+	disposeCloneSkeletons,
+} from "./threeVisualRenderer";
 import {
 	type ResolvedThreeVisual,
 	resolveThreeCharacterFacingYaw,
@@ -614,6 +620,19 @@ export function ThreeRuntimePanel({
 	onStoryDebug,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const rendererRef = useRef<THREE.WebGLRenderer | undefined>(undefined);
+	const failedModels = useRef<string[]>([]);
+	const [modelProgress, setModelProgress] = useState("");
+	const [shaderProgress, setShaderProgress] = useState("");
+	const [groundPending, setGroundPending] = useState(true);
+	useEffect(
+		() => () => {
+			rendererRef.current?.dispose();
+			rendererRef.current?.forceContextLoss?.();
+			rendererRef.current = undefined;
+		},
+		[],
+	);
 	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
 	if (!diagnosticsRef.current) {
 		diagnosticsRef.current = createThreePerformanceDiagnostics({
@@ -2276,6 +2295,68 @@ export function ThreeRuntimePanel({
 		if (!host || !session || !area) {
 			return undefined;
 		}
+		const runtimeArea: GameArea = {
+			...area,
+			// Spawn helpers stay in Edit; the player's feet and shadow sit on the
+			// authored ground in Play. This copy is only used to build visual markers.
+			eventBlocks: area.eventBlocks.filter(
+				(block) => block.kind === "area_link",
+			),
+			npcs: area.npcs.filter((npc) => !session.defeatedNpcIds.has(npc.id)),
+			pickups: area.pickups.filter(
+				(pickup) =>
+					!isPickupCollected(
+						pickup,
+						session.runtimeState,
+						session.collectedPickupIds,
+					),
+			),
+		};
+		const runtimeMarkers = areaEntitiesToMarkers(
+			runtimeArea,
+			session.project.objects,
+			session.project.npcs,
+			true,
+			terrainRenderMode,
+			session.project.characterAssets,
+			session.project.assetCreator?.variants,
+		);
+		const playerRenderVisual = resolveThreeCharacterVisual(
+			{
+				kind: "player",
+				name: session.project.player.name,
+				threeVisual: session.project.player.threeVisual,
+			},
+			session.project.characterAssets,
+			session.project.assetCreator?.variants,
+		);
+		const assets = watchSceneAssetLoads(
+			[
+				...runtimeMarkers.map((marker) => marker.visual?.asset),
+				playerRenderVisual.asset,
+			],
+			setModelProgress,
+			() => {
+				nextRebuildReasonRef.current = "asset state changed";
+				setRenderVersion((version) => version + 1);
+			},
+		);
+		if (cinematicPreview && assets.pending) return assets.cancel;
+		let renderer: THREE.WebGLRenderer;
+		try {
+			rendererRef.current ??= new THREE.WebGLRenderer({ antialias: true });
+			renderer = rendererRef.current;
+			setMountError(null);
+		} catch (error) {
+			assets.cancel();
+			setMountError(
+				error instanceof Error
+					? error.message
+					: "Three.js renderer could not be created.",
+			);
+			return;
+		}
+		let live = true;
 		const nextBuildInputs: ThreeRuntimeBuildInputs = {
 			areaId: area.id,
 			renderVersion,
@@ -2320,8 +2401,7 @@ export function ThreeRuntimePanel({
 
 		host.replaceChildren();
 		const scene = new THREE.Scene();
-		const collisionDebug = createTraversalDebugGroup(traversalWorld, area);
-		scene.add(collisionDebug);
+		let collisionDebug: THREE.Group | undefined;
 		const camera = new THREE.PerspectiveCamera(
 			55,
 			(host.clientWidth || 640) / (host.clientHeight || 480),
@@ -2408,6 +2488,9 @@ export function ThreeRuntimePanel({
 			area.theme?.atmosphere,
 		);
 		const groundPresentation = createGroundPresentation(area);
+		const terrainTextures = [groundPresentation.ready];
+		setGroundPending(true);
+		let terrainReady = !groundPresentation.ready;
 		let terrainMeshCount = 0;
 		let terrainTriangleCount = 0;
 		let terrainVertexCount = 0;
@@ -2477,11 +2560,18 @@ export function ThreeRuntimePanel({
 			area,
 			waterPresentation.waterMaterial,
 			terrainRenderMode,
+			(ready) => terrainTextures.push(ready),
 		).forEach((mesh) => {
 			addRenderObject(mesh);
 		});
-		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
-		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
+		void Promise.all(terrainTextures).then(() => {
+			if (!live) return;
+			terrainReady = true;
+			setGroundPending(false);
+		});
+
+		const coastlineTriangleCount = coastlinePresentation.edges.length * 4;
+		const coastlineVertexCount = coastlinePresentation.edges.length * 8;
 		diagnostics.recordTerrainRebuild({
 			coastlineEdgeCount: coastlinePresentation.edges.length,
 			durationMs: performance.now() - terrainRebuildStartedAt,
@@ -2493,23 +2583,6 @@ export function ThreeRuntimePanel({
 			waterMeshCount: waterSurfaceMeshCount,
 		});
 
-		const runtimeArea: GameArea = {
-			...area,
-			// Spawn helpers stay in Edit; the player's feet and shadow sit on the
-			// authored ground in Play. This copy is only used to build visual markers.
-			eventBlocks: area.eventBlocks.filter(
-				(block) => block.kind === "area_link",
-			),
-			npcs: area.npcs.filter((npc) => !session.defeatedNpcIds.has(npc.id)),
-			pickups: area.pickups.filter(
-				(pickup) =>
-					!isPickupCollected(
-						pickup,
-						session.runtimeState,
-						session.collectedPickupIds,
-					),
-			),
-		};
 		const npcRenderGroups = new Map<string, THREE.Group>();
 		const npcRenderVisuals = new Map<string, ResolvedThreeVisual | undefined>();
 		const characterAnimationControllers = new Map<
@@ -2598,24 +2671,6 @@ export function ThreeRuntimePanel({
 				}),
 			);
 		};
-		let assetStateChangeQueued = false;
-		const handleAssetStateChange = () => {
-			if (assetStateChangeQueued) {
-				return;
-			}
-			assetStateChangeQueued = true;
-			nextRebuildReasonRef.current = "asset state changed";
-			setRenderVersion((version) => version + 1);
-		};
-		const runtimeMarkers = areaEntitiesToMarkers(
-			runtimeArea,
-			session.project.objects,
-			session.project.npcs,
-			true,
-			terrainRenderMode,
-			session.project.characterAssets,
-			session.project.assetCreator?.variants,
-		);
 		const openedLabels: {
 			id: string;
 			flag?: string;
@@ -2642,7 +2697,6 @@ export function ThreeRuntimePanel({
 		const markerRenderResults = runtimeMarkers.map((marker) => {
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
-				onAssetStateChange: handleAssetStateChange,
 			});
 			const { group } = renderResult;
 			markerGroups.set(marker.id, group);
@@ -2732,15 +2786,6 @@ export function ThreeRuntimePanel({
 			return renderResult;
 		});
 
-		const playerRenderVisual = resolveThreeCharacterVisual(
-			{
-				kind: "player",
-				name: session.project.player.name,
-				threeVisual: session.project.player.threeVisual,
-			},
-			session.project.characterAssets,
-			session.project.assetCreator?.variants,
-		);
 		const playerRenderResult = createThreeVisualMarkerGroup(
 			createRuntimePlayerMarker(
 				area,
@@ -2750,7 +2795,6 @@ export function ThreeRuntimePanel({
 			),
 			{
 				diagnostics,
-				onAssetStateChange: handleAssetStateChange,
 			},
 		);
 		const playerMesh = playerRenderResult.group;
@@ -2786,6 +2830,12 @@ export function ThreeRuntimePanel({
 		addRenderObject(playerMesh, {
 			disposeResources: !playerRenderResult.usedAsset,
 		});
+		failedModels.current = [...markerRenderResults, playerRenderResult].flatMap(
+			(result) =>
+				result.assetStatus === "error" && result.assetDefinitionId
+					? [result.assetDefinitionId]
+					: [],
+		);
 		setMissingAssets(
 			[...markerRenderResults, playerRenderResult].some(
 				(result) =>
@@ -2842,14 +2892,7 @@ export function ThreeRuntimePanel({
 				const [result] = markerRenderResults.splice(index, 1);
 				result.disposePresentation?.();
 				if (!result.usedAsset) disposePlaceholderObject(group);
-				else {
-					const skeletons = new Set<THREE.Skeleton>();
-					group.traverse((o) => {
-						if ((o as THREE.SkinnedMesh).isSkinnedMesh)
-							skeletons.add((o as THREE.SkinnedMesh).skeleton);
-					});
-					for (const skeleton of skeletons) skeleton.dispose();
-				}
+				else disposeCloneSkeletons(group);
 			}
 			const renderIndex = renderObjects.findIndex((r) => r.object === group);
 			if (renderIndex >= 0) renderObjects.splice(renderIndex, 1);
@@ -2876,14 +2919,7 @@ export function ThreeRuntimePanel({
 			const [result] = markerRenderResults.splice(resultIndex, 1);
 			result.disposePresentation?.();
 			if (result.usedAsset) {
-				// Skeleton clones own their bone textures; GLTF geometry/materials
-				// remain shared with the loader cache and surviving actors.
-				const skeletons = new Set<THREE.Skeleton>();
-				group.traverse((object) => {
-					const mesh = object as THREE.SkinnedMesh;
-					if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton);
-				});
-				for (const skeleton of skeletons) skeleton.dispose();
+				disposeCloneSkeletons(group);
 			} else {
 				disposePlaceholderObject(group);
 			}
@@ -2909,28 +2945,6 @@ export function ThreeRuntimePanel({
 			} else removeNpcPresentation(npcId);
 		};
 
-		let renderer: THREE.WebGLRenderer;
-		try {
-			renderer = new THREE.WebGLRenderer({ antialias: true });
-		} catch (error) {
-			for (const prop of propAnimations.values()) prop.controller.dispose();
-			weaponAttachment.dispose();
-			characterAnimationControllers.forEach((controller) => {
-				controller.dispose();
-			});
-			if (
-				characterAnimationControllersRef.current ===
-				characterAnimationControllers
-			) {
-				characterAnimationControllersRef.current = new Map();
-			}
-			setMountError(
-				error instanceof Error
-					? error.message
-					: "Three.js renderer could not be created.",
-			);
-			return undefined;
-		}
 		renderer.domElement.setAttribute("aria-label", "Three runtime viewport");
 		renderer.domElement.tabIndex = 0;
 		const atmosphere = applyAtmosphere(scene, renderer, {
@@ -3343,6 +3357,7 @@ export function ThreeRuntimePanel({
 			if (
 				preview &&
 				!previewReady &&
+				terrainReady &&
 				(now - cinematicPreviewStartedAt.current >= CINEMATIC_ASSET_WAIT_MS ||
 					(!assetsLoading &&
 						![...characterAnimationControllers.values()].some(
@@ -3517,7 +3532,11 @@ export function ThreeRuntimePanel({
 				playerMark ? undefined : grounded?.height,
 				traversalWorld.sampler,
 			);
-			collisionDebug.visible = showCollisionRef.current;
+			if (showCollisionRef.current && !collisionDebug) {
+				collisionDebug = createTraversalDebugGroup(traversalWorld, area);
+				scene.add(collisionDebug);
+			}
+			if (collisionDebug) collisionDebug.visible = showCollisionRef.current;
 			if (grounded) {
 				host.dataset.traversal = JSON.stringify({
 					...grounded,
@@ -4115,9 +4134,19 @@ export function ThreeRuntimePanel({
 			performance.now() - sceneBuildStartedAt,
 		);
 		diagnostics.recordRafLoopStart(rebuildReason);
-		render();
+		const cancelShaderPreparation = prepareSceneShaders(
+			renderer,
+			scene,
+			camera,
+			setShaderProgress,
+			render,
+			setMountError,
+		);
 
 		return () => {
+			live = false;
+			cancelShaderPreparation();
+			assets.cancel();
 			audio.dispose();
 			previewOrbit?.dispose();
 			if (
@@ -4170,17 +4199,20 @@ export function ThreeRuntimePanel({
 			) {
 				characterAnimationControllersRef.current = new Map();
 			}
-			renderer.dispose();
+			renderer.renderLists?.dispose();
 			atmosphere.dispose();
 			viewportObserver?.disconnect();
 			groundPresentation.dispose();
-			for (const result of [...markerRenderResults, playerRenderResult])
+			for (const result of [...markerRenderResults, playerRenderResult]) {
 				result.disposePresentation?.();
+				if (result.usedAsset) disposeCloneSkeletons(result.group);
+			}
 			const disposeTracker: ThreeResourceDisposeTracker = {
 				geometries: new Set(),
 				materials: new Set(),
 			};
-			disposePlaceholderObject(collisionDebug, disposeTracker);
+			if (collisionDebug)
+				disposePlaceholderObject(collisionDebug, disposeTracker);
 			renderObjects.forEach((entry) => {
 				if (entry.disposeResources) {
 					disposePlaceholderObject(entry.object, disposeTracker);
@@ -4216,12 +4248,24 @@ export function ThreeRuntimePanel({
 
 	return (
 		<div
+			data-ground-ready={!groundPending}
 			className={`three-runtime-panel${isCinematic || cinematicPreview ? " playing-cinematic" : ""}`}
 		>
 			{missingAssets && (
 				<p role="alert">
 					A visual asset is unavailable. Restore its project asset files or
 					reimport it through Asset Creator. Saved assignments are preserved.
+					{failedModels.current.length > 0 && (
+						<button
+							type="button"
+							onClick={() => {
+								failedModels.current.forEach(forgetFailedThreeVisualAsset);
+								setRenderVersion((version) => version + 1);
+							}}
+						>
+							Retry models
+						</button>
+					)}
 				</p>
 			)}
 			{session &&
@@ -4244,11 +4288,26 @@ export function ThreeRuntimePanel({
 						/>
 					</div>
 				)}
-			<div className="three-runtime-host" ref={hostRef}>
-				{mountError ? (
-					<div className="three-runtime-error">{mountError}</div>
-				) : null}
-			</div>
+			<div className="three-runtime-host" ref={hostRef} />
+			{mountError ? (
+				<div role="alert" className="three-runtime-error">
+					{mountError}{" "}
+					{session && (
+						<button
+							type="button"
+							onClick={() => setRenderVersion((version) => version + 1)}
+						>
+							Retry 3D view
+						</button>
+					)}
+				</div>
+			) : (
+				(modelProgress || shaderProgress || groundPending) && (
+					<span className="scene-loading" role="status">
+						{modelProgress || shaderProgress || "Preparing terrain…"}
+					</span>
+				)
+			)}
 			<InventoryNotifications items={project.items} notices={notices} />
 			{isInventoryOpen && (
 				<InventoryPanel

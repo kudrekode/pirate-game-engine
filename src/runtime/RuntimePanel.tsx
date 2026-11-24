@@ -1,7 +1,7 @@
-import Phaser from "phaser";
+import type Phaser from "phaser";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameProject } from "../types/game";
-import { AdventureScene } from "./AdventureScene";
+import type { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { RuntimeDebugEvent } from "./debugLog";
 import {
@@ -119,6 +119,9 @@ function RuntimePlayPanel({
 	const [resumeSave, setResumeSave] = useState(initialSave);
 	const [protectSave, setProtectSave] = useState(protectPreviousSave);
 	const [saveMessage, setSaveMessage] = useState("");
+	const [phaserState, setPhaserState] = useState<"loading" | "ready" | "error">(
+		"loading",
+	);
 	const [replacePending, setReplacePending] = useState(false);
 	const saveSessionRef = useRef<(() => RuntimeSessionState) | null>(null);
 	function saveGame(replace = false) {
@@ -236,34 +239,49 @@ function RuntimePlayPanel({
 				restoringQuests = false;
 			} else setQuests(next);
 		};
-		const scene = new AdventureScene(
-			project,
-			setInventory,
-			presentQuests,
-			setShopState,
-			setCombat,
-			setDebugEvents,
-			showItemFeedback,
-			resumeSave,
-			onStoryDebug,
-		);
-		sceneRef.current = scene;
-		saveSessionRef.current = () => scene.getSaveSession();
-		const game = new Phaser.Game({
-			type: Phaser.AUTO,
-			parent: containerRef.current,
-			width: RUNTIME_SCREEN_WIDTH,
-			height: RUNTIME_SCREEN_HEIGHT,
-			backgroundColor: "#111827",
-			scene: [scene],
-			scale: {
-				mode: Phaser.Scale.FIT,
-				autoCenter: Phaser.Scale.CENTER_BOTH,
-			},
-		});
-
+		const host = containerRef.current;
+		let active = true;
+		let game: Phaser.Game | undefined;
+		setPhaserState("loading");
+		Promise.all([import("phaser"), import("./AdventureScene")])
+			.then(([{ default: Phaser }, { AdventureScene }]) => {
+				if (!active) return;
+				const scene = new AdventureScene(
+					project,
+					setInventory,
+					presentQuests,
+					setShopState,
+					setCombat,
+					setDebugEvents,
+					showItemFeedback,
+					resumeSave,
+					onStoryDebug,
+				);
+				sceneRef.current = scene;
+				saveSessionRef.current = () => scene.getSaveSession();
+				game = new Phaser.Game({
+					type: Phaser.AUTO,
+					parent: host,
+					width: RUNTIME_SCREEN_WIDTH,
+					height: RUNTIME_SCREEN_HEIGHT,
+					backgroundColor: "#111827",
+					scene: [scene],
+					scale: {
+						mode: Phaser.Scale.FIT,
+						autoCenter: Phaser.Scale.CENTER_BOTH,
+					},
+				});
+				setPhaserState("ready");
+			})
+			.catch(() => {
+				if (!active) return;
+				sceneRef.current = null;
+				saveSessionRef.current = null;
+				setPhaserState("error");
+			});
 		return () => {
-			game.destroy(true);
+			active = false;
+			game?.destroy(true);
 			sceneRef.current = null;
 			saveSessionRef.current = null;
 		};
@@ -384,6 +402,20 @@ function RuntimePlayPanel({
 					/>
 				) : (
 					<>
+						{phaserState === "loading" && (
+							<p role="status">Loading 2D runtime…</p>
+						)}
+						{phaserState === "error" && (
+							<p role="alert">
+								The 2D runtime could not start.{" "}
+								<button
+									type="button"
+									onClick={() => setRuntimeKey((key) => key + 1)}
+								>
+									Retry 2D runtime
+								</button>
+							</p>
+						)}
 						<div className="phaser-host" ref={containerRef} />
 						<div className="inventory-hud">
 							<button type="button" onClick={toggleInventory}>

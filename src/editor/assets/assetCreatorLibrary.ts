@@ -27,12 +27,14 @@ export function assetDisplayName(
 	);
 }
 
-export function useCreatorThumbnails(assets: ThreeVisualAssetDefinition[]) {
+export function useCreatorThumbnails(
+	assets: ThreeVisualAssetDefinition[],
+	cache: Map<string, string>,
+) {
 	const renderer = useRef<THREE.WebGLRenderer | undefined>(undefined);
-	const cache = useRef<Record<string, string>>({});
-	const failed = useRef(false);
-	const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
-	const [revision, setRevision] = useState(0);
+	const [thumbnails, setThumbnails] = useState<Record<string, string>>(() =>
+		Object.fromEntries(cache),
+	);
 	useEffect(
 		() => () => {
 			renderer.current?.dispose();
@@ -41,43 +43,50 @@ export function useCreatorThumbnails(assets: ThreeVisualAssetDefinition[]) {
 		},
 		[],
 	);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: retry thumbnails when a GLB cache entry finishes loading
 	useEffect(() => {
-		if (failed.current || typeof WebGLRenderingContext === "undefined") return;
+		if (typeof WebGLRenderingContext === "undefined") return;
 		let live = true;
-		let changed = false;
-		const refresh = () => {
-			if (live) setRevision((value) => value + 1);
-		};
-		for (const asset of assets) {
-			if (asset.thumbnailUrl || cache.current[asset.url]) continue;
-			const request = requestThreeVisualAsset(asset, {
-				onStateChange: refresh,
-			});
-			if (request.status !== "loaded") continue;
-			try {
-				renderer.current ??= new THREE.WebGLRenderer({ antialias: true });
-				cache.current[asset.url] = renderAssetThumbnail(
-					renderer.current,
-					request.object,
-					156,
-					106,
-				);
-				changed = true;
-			} catch {
-				failed.current = true;
-				break;
-			} finally {
-				request.object.traverse((node) => {
-					const mesh = node as THREE.SkinnedMesh;
-					if (mesh.isSkinnedMesh) mesh.skeleton.dispose();
-				});
+		let index = 0;
+		let frame = 0;
+		const batch = assets.filter((asset) => !asset.thumbnailUrl);
+		setThumbnails(Object.fromEntries(cache));
+		function next() {
+			if (!live) return;
+			while (index < batch.length && cache.has(batch[index].url)) index++;
+			const asset = batch[index];
+			if (!asset) return;
+			const request = requestThreeVisualAsset(asset, { onStateChange: next });
+			if (request.status === "loading") return;
+			index++;
+			if (request.status === "loaded") {
+				try {
+					renderer.current ??= new THREE.WebGLRenderer({ antialias: true });
+					const url = renderAssetThumbnail(
+						renderer.current,
+						request.object,
+						156,
+						106,
+					);
+					cache.set(asset.url, url);
+					if (cache.size > 64)
+						cache.delete(cache.keys().next().value as string);
+					setThumbnails((current) => ({ ...current, [asset.url]: url }));
+				} catch {
+					return;
+				} finally {
+					request.object.traverse((node) => {
+						const mesh = node as THREE.SkinnedMesh;
+						if (mesh.isSkinnedMesh) mesh.skeleton.dispose();
+					});
+				}
 			}
+			frame = requestAnimationFrame(next);
 		}
-		if (changed) setThumbnails({ ...cache.current });
+		frame = requestAnimationFrame(next);
 		return () => {
 			live = false;
+			cancelAnimationFrame(frame);
 		};
-	}, [assets, /* Cache-completion notification */ revision]);
+	}, [assets, cache]);
 	return thumbnails;
 }

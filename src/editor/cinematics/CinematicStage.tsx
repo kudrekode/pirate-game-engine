@@ -49,11 +49,6 @@ export function CinematicStage({
 			<span className="cinema-frame-label">
 				{orbit ? "Orbit camera" : label}
 			</span>
-			{!ready && (
-				<span className="cinema-loading" role="status">
-					Loading scene…
-				</span>
-			)}
 			{caption && !orbit && (
 				<p className="cinema-caption">
 					{speaker && <strong>{speaker} </strong>}

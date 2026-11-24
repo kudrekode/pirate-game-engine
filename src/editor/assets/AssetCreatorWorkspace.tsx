@@ -9,7 +9,7 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { AnimationClip } from "three";
 import {
 	Button,
@@ -132,12 +132,14 @@ function PanelHead({
 
 function AssetLibrary({
 	assets,
+	thumbnailCache,
 	project,
 	selected,
 	onSelect,
 	onCreate,
 }: {
 	assets: ThreeVisualAssetDefinition[];
+	thumbnailCache: Map<string, string>;
 	project: GameProject;
 	selected: string;
 	onSelect: (asset: ThreeVisualAssetDefinition) => void;
@@ -160,7 +162,7 @@ function AssetLibrary({
 		[assets, category, project, query],
 	);
 	const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
-	const thumbnails = useCreatorThumbnails(visible);
+	const thumbnails = useCreatorThumbnails(visible, thumbnailCache);
 	return (
 		<>
 			<PanelHead title="Asset Library">
@@ -370,6 +372,7 @@ export function AssetCreatorWorkspace({
 	onImported: () => void;
 	onDraftChange: (dirty: boolean) => void;
 }) {
+	const thumbnailCache = useRef(new Map<string, string>()).current;
 	const library = project.assetCreator ?? EMPTY_LIBRARY;
 	const registry = useMemo(
 		() => listThreeVisualAssets(project.characterAssets, library.variants),
@@ -419,10 +422,13 @@ export function AssetCreatorWorkspace({
 	const base =
 		registry.find((entry) => entry.id === asset?.variant?.baseAssetId) ?? asset;
 	const assetName = asset ? assetDisplayName(asset, project) : "";
-	const assetBase =
-		asset &&
-		(asset.variant ??
-			assetCreatorVariantDraft(asset.id, assetName, creatorCategory(asset)));
+	const assetBase = useMemo(
+		() =>
+			asset &&
+			(asset.variant ??
+				assetCreatorVariantDraft(asset.id, assetName, creatorCategory(asset))),
+		[asset, assetName],
+	);
 	const draft = assetEdit ?? assetBase;
 	const assetDirty = isDirty(assetBase, assetEdit);
 	const props = assets.filter(
@@ -439,6 +445,7 @@ export function AssetCreatorWorkspace({
 		library.clips,
 		rig.nodes,
 		showAll,
+		tab === "Animations" ? undefined : clipId,
 	);
 	const selectedClip =
 		clips.find((clip) => clip.id === clipId) ??
@@ -624,6 +631,7 @@ export function AssetCreatorWorkspace({
 					{visible && tab === "Assets" && (
 						<AssetLibrary
 							assets={assets}
+							thumbnailCache={thumbnailCache}
 							project={project}
 							selected={asset?.id ?? ""}
 							onSelect={selectAsset}

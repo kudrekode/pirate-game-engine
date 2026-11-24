@@ -97,14 +97,35 @@ function projectFingerprint(project: GameProject, legacy: boolean): string {
 				}
 			: {}),
 	};
-	let hash = 0x6c62272e07bb014262b821756295c58dn;
-	for (const byte of new TextEncoder().encode(canonical(revision))) {
-		hash = BigInt.asUintN(
-			128,
-			(hash ^ BigInt(byte)) * 0x1000000000000000000013bn,
-		);
+	return fnv128(new TextEncoder().encode(canonical(revision)));
+}
+
+// The save format uses FNV-1a 128. Its prime is 2^88 + 315. Four little-endian
+// 32-bit words keep every product and carry exact within Number's 53-bit range.
+export function fnv128(bytes: Uint8Array): string {
+	let lo = 0x6295c58d,
+		midLo = 0x62b82175,
+		midHi = 0x07bb0142,
+		hi = 0x6c62272e;
+	const word = 2 ** 32;
+	for (const byte of bytes) {
+		const low = (lo ^ byte) >>> 0;
+		const p0 = low * 315;
+		const p1 = midLo * 315 + Math.floor(p0 / word);
+		const p2 = midHi * 315 + (low & 255) * 2 ** 24 + Math.floor(p1 / word);
+		hi =
+			(hi * 315 +
+				(midLo & 255) * 2 ** 24 +
+				(low >>> 8) +
+				Math.floor(p2 / word)) >>>
+			0;
+		lo = p0 >>> 0;
+		midLo = p1 >>> 0;
+		midHi = p2 >>> 0;
 	}
-	return hash.toString(16).padStart(32, "0");
+	return [hi, midHi, midLo, lo]
+		.map((value) => value.toString(16).padStart(8, "0"))
+		.join("");
 }
 
 export type GameSave = {

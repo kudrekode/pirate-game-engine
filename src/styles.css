@@ -3670,3 +3670,15 @@ label {
 		grid-column: 2;
 	}
 }
+
+.scene-loading {
+	position: absolute;
+	z-index: 2;
+	top: 0.5rem;
+	right: 0.5rem;
+	padding: 0.3rem 0.55rem;
+	border-radius: 4px;
+	background: var(--overlay, #20252c);
+	color: var(--foreground, white);
+	pointer-events: none;
+}

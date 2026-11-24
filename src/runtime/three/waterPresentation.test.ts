@@ -85,11 +85,11 @@ describe("water presentation helpers", () => {
 			"east",
 			"west",
 		]);
-		expect(presentation.meshes).toHaveLength(4);
+		expect(presentation.meshes).toHaveLength(3);
 		expect(presentation.meshes[0]?.material).toBe(state.coastlineMaterial);
 		expect(presentation.meshes[1]?.material).toBe(state.shallowWaterMaterial);
-		expect(presentation.meshes[2]?.material).toBe(state.coastlineMaterial);
-		expect(presentation.meshes[3]?.material).toBe(state.shallowWaterMaterial);
+		expect(presentation.meshes[0].geometry.index?.count).toBe(12);
+		expect(presentation.meshes[2]?.material).toBe(state.shallowWaterMaterial);
 		expect(presentation.meshes[0]?.userData).toMatchObject({
 			ignoreTerrainPicking: true,
 			presentationOnly: true,

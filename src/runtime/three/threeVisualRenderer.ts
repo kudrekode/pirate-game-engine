@@ -18,6 +18,17 @@ import { resolveThreeVisualAssetTransform } from "./threeVisuals";
 import { applyWorldKitMaterials } from "./worldKitMaterials";
 import { applyShadowRole } from "./worldPresentation";
 
+/** SkeletonUtils gives each skinned instance its own GPU bone texture.
+ * Geometry, materials and the cached source remain owned by the asset loader. */
+export function disposeCloneSkeletons(root: THREE.Object3D) {
+	const skeletons = new Set<THREE.Skeleton>();
+	root.traverse((node) => {
+		const mesh = node as THREE.SkinnedMesh;
+		if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton);
+	});
+	for (const skeleton of skeletons) skeleton.dispose();
+}
+
 export type ThreeVisualRenderResult = {
 	disposePresentation?: () => void;
 	assetAnalysis?: ThreeVisualAssetAnalysis;

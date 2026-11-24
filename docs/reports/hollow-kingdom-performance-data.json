@@ -1,0 +1,1515 @@
+{
+	"date": "2026-11-24",
+	"referenceCommit": "799b817",
+	"units": "Milliseconds unless a field explicitly names bytes or a count.",
+	"before": {
+		"chrome": "158.0.8127.37",
+		"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+		"viewport": {
+			"width": 960,
+			"height": 600
+		},
+		"transport": "Playwright fulfillment with HTTP cache disabled",
+		"fixtures": {
+			"merewatch": {
+				"projectFile": "hollow-kingdom.project.json",
+				"editor": {
+					"startup": {
+						"shellMs": 730,
+						"readyMs": 730,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 8476760,
+						"maxLongTaskMs": 261,
+						"glbRequests": 0
+					},
+					"import-json": {
+						"shellMs": 236,
+						"readyMs": 236,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 11879064,
+						"maxLongTaskMs": 217,
+						"glbRequests": 0
+					},
+					"saved-relaunch": {
+						"shellMs": 358,
+						"readyMs": 358,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 20028960,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"open-saved-project": {
+						"shellMs": 37,
+						"readyMs": 37,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 19541004,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"cinematics-1": {
+						"shellMs": 2645,
+						"readyMs": 11859,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 3,
+						"jsHeapBytes": 29692856,
+						"maxLongTaskMs": 5276,
+						"glbRequests": 16
+					},
+					"cinematics-2": {
+						"shellMs": 2467,
+						"readyMs": 2691,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 34129136,
+						"maxLongTaskMs": 2471,
+						"glbRequests": 0
+					},
+					"cinematics-3": {
+						"shellMs": 2184,
+						"readyMs": 2216,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 33774936,
+						"maxLongTaskMs": 2186,
+						"glbRequests": 0
+					},
+					"asset-creator-open": {
+						"shellMs": 1908,
+						"readyMs": 3107,
+						"thumbnailEncodes": 9,
+						"thumbnailEncodesAfterReady": 7,
+						"thumbnailsReadyMs": 3760,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 49668432,
+						"previewGeometries": "15",
+						"previewTextures": "33",
+						"maxLongTaskMs": 1909,
+						"glbRequests": 8
+					},
+					"asset-select-1-Pine Lookout": {
+						"shellMs": 10,
+						"readyMs": 143,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 30564136,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 123,
+						"glbRequests": 0
+					},
+					"asset-select-2-Mere Drake": {
+						"shellMs": 6,
+						"readyMs": 385,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 46332536,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 368,
+						"glbRequests": 0
+					},
+					"asset-select-3-Pine Lookout": {
+						"shellMs": 9,
+						"readyMs": 412,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 34917872,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 377,
+						"glbRequests": 0
+					},
+					"asset-select-4-Mere Drake": {
+						"shellMs": 10,
+						"readyMs": 393,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 50901436,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 374,
+						"glbRequests": 0
+					},
+					"asset-creator-reopen": {
+						"shellMs": 1053,
+						"readyMs": 1184,
+						"thumbnailEncodes": 16,
+						"thumbnailEncodesAfterReady": 0,
+						"thumbnailsReadyMs": 1204,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 45543768,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 1054,
+						"glbRequests": 0
+					}
+				},
+				"externalClip": {
+					"clipName": "GoldenSword_Attack_V1",
+					"advancedToSeconds": 0.04,
+					"resources": [
+						"/assets/derived/humanoid-animations/golden-sword-v1/actions.glb"
+					]
+				},
+				"settledHomeHeapBytes": 20577304,
+				"editorGlbBytes": 47620268,
+				"playRouteGlb": {
+					"requests": 33,
+					"encodedBytes": 47599084,
+					"localFetchMedianMs": 152.2,
+					"localFetchP95Ms": 730.6,
+					"slowest": {
+						"path": "/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+						"durationMs": 1041.3,
+						"encodedBytes": 15828832,
+						"transferBytes": 15829132
+					}
+				},
+				"map": {
+					"merewatch": {
+						"readyMs": 15994.89,
+						"sceneBuildMs": 1763.2,
+						"cumulativeSceneBuilds": 4,
+						"renderer": {
+							"drawCalls": 618,
+							"triangles": 499888,
+							"geometries": 329,
+							"textures": 161,
+							"programs": 23
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 191,
+								"p50": 16.6,
+								"p95": 20.7,
+								"p99": 21,
+								"max": 29.1,
+								"over33": 0,
+								"over50": 0
+							}
+						}
+					}
+				},
+				"play": {
+					"merewatch": {
+						"readyMs": 4568.24,
+						"sceneBuildMs": 1438.7,
+						"cumulativeSceneBuilds": 1,
+						"renderer": {
+							"drawCalls": 561,
+							"triangles": 450530,
+							"geometries": 300,
+							"textures": 83,
+							"programs": 22
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 152,
+								"p50": 20.8,
+								"p95": 25,
+								"p99": 29.2,
+								"max": 29.2,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToOswin": {
+								"count": 612,
+								"p50": 16.7,
+								"p95": 24.9,
+								"p99": 29.1,
+								"max": 29.2,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToCamp": {
+								"count": 896,
+								"p50": 16.5,
+								"p95": 20.9,
+								"p99": 25.2,
+								"max": 37.5,
+								"over33": 2,
+								"over50": 0
+							}
+						},
+						"movementLatencyMs": 23.8
+					}
+				},
+				"saveExitContinue": [
+					{
+						"saveMs": 232.52,
+						"exitMs": 134.91,
+						"chooserMs": 114.04,
+						"continueMs": 2196.08,
+						"playMemory": {
+							"usedSize": 26801532,
+							"totalSize": 28536832,
+							"embedderHeapUsedSize": 2836680,
+							"backingStorageSize": 21108544
+						},
+						"editMemory": {
+							"usedSize": 20602108,
+							"totalSize": 23293952,
+							"embedderHeapUsedSize": 3104072,
+							"backingStorageSize": 15108875
+						}
+					},
+					{
+						"saveMs": 141.16,
+						"exitMs": 59.51,
+						"chooserMs": 82.21,
+						"continueMs": 1540.65,
+						"playMemory": {
+							"usedSize": 26861100,
+							"totalSize": 28274688,
+							"embedderHeapUsedSize": 2829048,
+							"backingStorageSize": 21151515
+						},
+						"editMemory": {
+							"usedSize": 21873232,
+							"totalSize": 23818240,
+							"embedderHeapUsedSize": 3414304,
+							"backingStorageSize": 15109042
+						}
+					},
+					{
+						"saveMs": 85.46,
+						"exitMs": 58.3,
+						"chooserMs": 73.91,
+						"continueMs": 1360.0,
+						"playMemory": {
+							"usedSize": 27879128,
+							"totalSize": 29323264,
+							"embedderHeapUsedSize": 2916440,
+							"backingStorageSize": 21151515
+						},
+						"editMemory": {
+							"usedSize": 22484780,
+							"totalSize": 24604672,
+							"embedderHeapUsedSize": 3450032,
+							"backingStorageSize": 15109042
+						}
+					}
+				],
+				"camera": {
+					"wheelToCameraUiMs": 12.1,
+					"intervals": {
+						"count": 282,
+						"p50": 16.6,
+						"p95": 21,
+						"p99": 29.2,
+						"max": 33.2,
+						"over33": 0,
+						"over50": 0
+					},
+					"durationMs": 4443.81
+				}
+			},
+			"chapter-one": {
+				"projectFile": "hollow-kingdom-chapter-one.project.json",
+				"editor": {
+					"startup": {
+						"shellMs": 423,
+						"readyMs": 423,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 8518184,
+						"maxLongTaskMs": 174,
+						"glbRequests": 0
+					},
+					"import-json": {
+						"shellMs": 417,
+						"readyMs": 417,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 20561176,
+						"maxLongTaskMs": 381,
+						"glbRequests": 0
+					},
+					"saved-relaunch": {
+						"shellMs": 292,
+						"readyMs": 293,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 30682448,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"open-saved-project": {
+						"shellMs": 55,
+						"readyMs": 55,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 32070880,
+						"maxLongTaskMs": 56,
+						"glbRequests": 0
+					},
+					"cinematics-1": {
+						"shellMs": 1890,
+						"readyMs": 11372,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 4,
+						"jsHeapBytes": 52385164,
+						"maxLongTaskMs": 4662,
+						"glbRequests": 17
+					},
+					"cinematics-cavern-sequence": {
+						"shellMs": 4613,
+						"readyMs": 7140,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 30299704,
+						"maxLongTaskMs": 4619,
+						"glbRequests": 6
+					},
+					"cinematics-2": {
+						"shellMs": 1919,
+						"readyMs": 1951,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 49226644,
+						"maxLongTaskMs": 1921,
+						"glbRequests": 0
+					},
+					"cinematics-3": {
+						"shellMs": 1577,
+						"readyMs": 1605,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 66078964,
+						"maxLongTaskMs": 1579,
+						"glbRequests": 0
+					},
+					"asset-creator-open": {
+						"shellMs": 760,
+						"readyMs": 1101,
+						"thumbnailEncodes": 15,
+						"thumbnailEncodesAfterReady": 1,
+						"thumbnailsReadyMs": 1233,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 68741432,
+						"previewGeometries": "15",
+						"previewTextures": "33",
+						"maxLongTaskMs": 761,
+						"glbRequests": 1
+					},
+					"asset-select-1-Warrant Runner": {
+						"shellMs": 16,
+						"readyMs": 239,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 62070604,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 196,
+						"glbRequests": 0
+					},
+					"asset-select-2-Hollowwood Ashling": {
+						"shellMs": 11,
+						"readyMs": 200,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 47420548,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 178,
+						"glbRequests": 0
+					},
+					"asset-select-3-Warrant Runner": {
+						"shellMs": 10,
+						"readyMs": 378,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 69776556,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 341,
+						"glbRequests": 0
+					},
+					"asset-select-4-Hollowwood Ashling": {
+						"shellMs": 12,
+						"readyMs": 369,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 53402688,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 348,
+						"glbRequests": 0
+					},
+					"asset-creator-reopen": {
+						"shellMs": 819,
+						"readyMs": 951,
+						"thumbnailEncodes": 16,
+						"thumbnailEncodesAfterReady": 0,
+						"thumbnailsReadyMs": 972,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 51485844,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 943,
+						"glbRequests": 0
+					}
+				},
+				"externalClip": {
+					"clipName": "GoldenSword_Attack_V1",
+					"advancedToSeconds": 0.05,
+					"resources": [
+						"/assets/derived/humanoid-animations/golden-sword-v1/actions.glb"
+					]
+				},
+				"settledHomeHeapBytes": 25696840,
+				"editorGlbBytes": 47628580,
+				"playRouteGlb": {
+					"requests": 35,
+					"encodedBytes": 47686180,
+					"localFetchMedianMs": 498.3,
+					"localFetchP95Ms": 758.8,
+					"slowest": {
+						"path": "/assets/hollow-kingdom/ferryman.glb",
+						"durationMs": 798.9,
+						"encodedBytes": 2369012,
+						"transferBytes": 2369312
+					}
+				},
+				"map": {
+					"merewatch": {
+						"readyMs": 15386.28,
+						"sceneBuildMs": 1867.7,
+						"cumulativeSceneBuilds": 4,
+						"renderer": {
+							"drawCalls": 589,
+							"triangles": 490816,
+							"geometries": 314,
+							"textures": 97,
+							"programs": 29
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 217,
+								"p50": 12.6,
+								"p95": 16.7,
+								"p99": 16.9,
+								"max": 66.6,
+								"over33": 1,
+								"over50": 1
+							}
+						}
+					},
+					"hollowwood": {
+						"readyMs": 3693.22,
+						"sceneBuildMs": 1120.6,
+						"cumulativeSceneBuilds": 5,
+						"renderer": {
+							"drawCalls": 288,
+							"triangles": 482622,
+							"geometries": 113,
+							"textures": 181,
+							"programs": 41
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 159,
+								"p50": 16.7,
+								"p95": 29.1,
+								"p99": 66.6,
+								"max": 79.1,
+								"over33": 4,
+								"over50": 2
+							}
+						}
+					},
+					"ashen-chapel": {
+						"readyMs": 1499.36,
+						"sceneBuildMs": 1272.4,
+						"cumulativeSceneBuilds": 6,
+						"renderer": {
+							"drawCalls": 129,
+							"triangles": 199900,
+							"geometries": 120,
+							"textures": 207,
+							"programs": 41
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 343,
+								"p50": 8.3,
+								"p95": 16.6,
+								"p99": 20.7,
+								"max": 25.2,
+								"over33": 0,
+								"over50": 0
+							}
+						}
+					},
+					"wyrms-hollow": {
+						"readyMs": 2042.86,
+						"sceneBuildMs": 1181.8,
+						"cumulativeSceneBuilds": 7,
+						"renderer": {
+							"drawCalls": 188,
+							"triangles": 70856,
+							"geometries": 159,
+							"textures": 246,
+							"programs": 43
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 433,
+								"p50": 8.2,
+								"p95": 12.5,
+								"p99": 16.6,
+								"max": 66.7,
+								"over33": 1,
+								"over50": 1
+							}
+						}
+					}
+				},
+				"play": {
+					"merewatch": {
+						"readyMs": 4638.72,
+						"sceneBuildMs": 1525.4,
+						"cumulativeSceneBuilds": 1,
+						"renderer": {
+							"drawCalls": 481,
+							"triangles": 377750,
+							"geometries": 276,
+							"textures": 85,
+							"programs": 24
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 203,
+								"p50": 12.7,
+								"p95": 20.8,
+								"p99": 20.9,
+								"max": 20.9,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToOswin": {
+								"count": 162,
+								"p50": 16.6,
+								"p95": 20.9,
+								"p99": 24.5,
+								"max": 25,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToRidge": {
+								"count": 1131,
+								"p50": 12.7,
+								"p95": 20.8,
+								"p99": 21,
+								"max": 29,
+								"over33": 0,
+								"over50": 0
+							}
+						},
+						"movementLatencyMs": 13.6
+					},
+					"hollowwood": {
+						"readyMs": 2274.36,
+						"sceneBuildMs": 1305.2,
+						"cumulativeSceneBuilds": 2,
+						"renderer": {
+							"drawCalls": 98,
+							"triangles": 192244,
+							"geometries": 73,
+							"textures": 88,
+							"programs": 19
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 259,
+								"p50": 8.4,
+								"p95": 20.8,
+								"p99": 21,
+								"max": 25.2,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToMilestone": {
+								"count": 544,
+								"p50": 8.4,
+								"p95": 20.7,
+								"p99": 21,
+								"max": 25.1,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToIven": {
+								"count": 1394,
+								"p50": 8.4,
+								"p95": 20.8,
+								"p99": 21,
+								"max": 29.4,
+								"over33": 0,
+								"over50": 0
+							}
+						}
+					}
+				},
+				"saveExitContinue": [
+					{
+						"saveMs": 294.68,
+						"exitMs": 70.14,
+						"chooserMs": 185.07,
+						"continueMs": 1772.38,
+						"playMemory": {
+							"usedSize": 32328308,
+							"totalSize": 36646912,
+							"embedderHeapUsedSize": 2877712,
+							"backingStorageSize": 21517738
+						},
+						"editMemory": {
+							"usedSize": 26694764,
+							"totalSize": 28782592,
+							"embedderHeapUsedSize": 3250568,
+							"backingStorageSize": 15262465
+						}
+					},
+					{
+						"saveMs": 291.48,
+						"exitMs": 79.12,
+						"chooserMs": 196.27,
+						"continueMs": 1751.54,
+						"playMemory": {
+							"usedSize": 32482436,
+							"totalSize": 34025472,
+							"embedderHeapUsedSize": 2791800,
+							"backingStorageSize": 21515814
+						},
+						"editMemory": {
+							"usedSize": 27386760,
+							"totalSize": 29569024,
+							"embedderHeapUsedSize": 3334352,
+							"backingStorageSize": 15262483
+						}
+					},
+					{
+						"saveMs": 277.16,
+						"exitMs": 85.82,
+						"chooserMs": 203.18,
+						"continueMs": 1715.7,
+						"playMemory": {
+							"usedSize": 33284020,
+							"totalSize": 34549760,
+							"embedderHeapUsedSize": 2926112,
+							"backingStorageSize": 21515814
+						},
+						"editMemory": {
+							"usedSize": 27948956,
+							"totalSize": 29831168,
+							"embedderHeapUsedSize": 3297264,
+							"backingStorageSize": 15262483
+						}
+					}
+				]
+			}
+		}
+	},
+	"after": {
+		"chrome": "158.0.8127.37",
+		"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+		"viewport": {
+			"width": 960,
+			"height": 600
+		},
+		"transport": "Playwright fulfillment with HTTP cache disabled",
+		"fixtures": {
+			"merewatch": {
+				"projectFile": "hollow-kingdom.project.json",
+				"editor": {
+					"startup": {
+						"shellMs": 346,
+						"readyMs": 346,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 5625044,
+						"maxLongTaskMs": 76,
+						"glbRequests": 0
+					},
+					"import-json": {
+						"shellMs": 73,
+						"readyMs": 73,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 8101836,
+						"maxLongTaskMs": 52,
+						"glbRequests": 0
+					},
+					"saved-relaunch": {
+						"shellMs": 247,
+						"readyMs": 247,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 13779180,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"open-saved-project": {
+						"shellMs": 35,
+						"readyMs": 35,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 14632908,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"cinematics-1": {
+						"shellMs": 139,
+						"readyMs": 4617,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 24926116,
+						"maxLongTaskMs": 783,
+						"glbRequests": 23
+					},
+					"cinematics-2": {
+						"shellMs": 97,
+						"readyMs": 814,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 19567184,
+						"maxLongTaskMs": 392,
+						"glbRequests": 0
+					},
+					"cinematics-3": {
+						"shellMs": 110,
+						"readyMs": 817,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 26358536,
+						"maxLongTaskMs": 405,
+						"glbRequests": 0
+					},
+					"asset-creator-open": {
+						"shellMs": 25,
+						"readyMs": 1300,
+						"thumbnailEncodes": 0,
+						"thumbnailEncodesAfterReady": 16,
+						"thumbnailsReadyMs": 3715,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 52510444,
+						"previewGeometries": "15",
+						"previewTextures": "33",
+						"maxLongTaskMs": 1243,
+						"glbRequests": 7
+					},
+					"asset-select-1-Pine Lookout": {
+						"shellMs": 9,
+						"readyMs": 159,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 38474008,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 139,
+						"glbRequests": 0
+					},
+					"asset-select-2-Mere Drake": {
+						"shellMs": 8,
+						"readyMs": 409,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 54242168,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 389,
+						"glbRequests": 0
+					},
+					"asset-select-3-Pine Lookout": {
+						"shellMs": 8,
+						"readyMs": 441,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 45322576,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 411,
+						"glbRequests": 0
+					},
+					"asset-select-4-Mere Drake": {
+						"shellMs": 12,
+						"readyMs": 427,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 33575544,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 405,
+						"glbRequests": 0
+					},
+					"asset-creator-reopen": {
+						"shellMs": 24,
+						"readyMs": 203,
+						"thumbnailEncodes": 0,
+						"thumbnailEncodesAfterReady": 0,
+						"thumbnailsReadyMs": 223,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 51274404,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 171,
+						"glbRequests": 0
+					}
+				},
+				"externalClip": {
+					"clipName": "GoldenSword_Attack_V1",
+					"advancedToSeconds": 0.04,
+					"resources": [
+						"/assets/derived/humanoid-animations/golden-sword-v1/actions.glb"
+					]
+				},
+				"settledHomeHeapBytes": 16672764,
+				"editorGlbBytes": 47541484,
+				"playRouteGlb": {
+					"requests": 33,
+					"encodedBytes": 47599084,
+					"localFetchMedianMs": 248.7,
+					"localFetchP95Ms": 609.4,
+					"slowest": {
+						"path": "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+						"durationMs": 804.7,
+						"encodedBytes": 15588768,
+						"transferBytes": 15589068
+					}
+				},
+				"map": {
+					"merewatch": {
+						"readyMs": 4988.6,
+						"sceneBuildMs": 42.8,
+						"cumulativeSceneBuilds": 2,
+						"renderer": {
+							"drawCalls": 501,
+							"triangles": 499898,
+							"geometries": 212,
+							"textures": 116,
+							"programs": 31
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 149,
+								"p50": 4.2,
+								"p95": 20.8,
+								"p99": 79.4,
+								"max": 1975,
+								"over33": 2,
+								"over50": 2
+							}
+						}
+					}
+				},
+				"play": {
+					"merewatch": {
+						"readyMs": 3341.72,
+						"sceneBuildMs": 48.6,
+						"cumulativeSceneBuilds": 1,
+						"renderer": {
+							"drawCalls": 453,
+							"triangles": 450558,
+							"geometries": 192,
+							"textures": 83,
+							"programs": 20
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 164,
+								"p50": 16.7,
+								"p95": 25.1,
+								"p99": 29.3,
+								"max": 29.4,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToOswin": {
+								"count": 672,
+								"p50": 16.6,
+								"p95": 21.1,
+								"p99": 29.2,
+								"max": 33.5,
+								"over33": 1,
+								"over50": 0
+							},
+							"walkToCamp": {
+								"count": 742,
+								"p50": 16.8,
+								"p95": 25,
+								"p99": 29.1,
+								"max": 33.4,
+								"over33": 0,
+								"over50": 0
+							}
+						},
+						"movementLatencyMs": 20.9
+					}
+				},
+				"saveExitContinue": [
+					{
+						"saveMs": 144.53,
+						"exitMs": 134.33,
+						"chooserMs": 84.78,
+						"chooserBrowserTimings": {
+							"setup": 46012.6,
+							"pointerdown": {
+								"event": 46046.1,
+								"handler": 46047.9
+							},
+							"click": {
+								"event": 46046.4,
+								"handler": 46048.5
+							},
+							"dom": 46086.6
+						},
+						"continueMs": 812.67,
+						"playMemory": {
+							"usedSize": 23259140,
+							"totalSize": 27750400,
+							"embedderHeapUsedSize": 2781104,
+							"backingStorageSize": 19506481
+						},
+						"editMemory": {
+							"usedSize": 18005296,
+							"totalSize": 19623936,
+							"embedderHeapUsedSize": 3100936,
+							"backingStorageSize": 18835684
+						}
+					},
+					{
+						"saveMs": 146.92,
+						"exitMs": 280.83,
+						"chooserMs": 2936.42,
+						"chooserBrowserTimings": {
+							"setup": 47984.3,
+							"pointerdown": {
+								"event": 50875.6,
+								"handler": 50877
+							},
+							"click": {
+								"event": 50875.6,
+								"handler": 50877.6
+							},
+							"dom": 50909.8
+						},
+						"continueMs": 886.32,
+						"playMemory": {
+							"usedSize": 23849644,
+							"totalSize": 24866816,
+							"embedderHeapUsedSize": 2674216,
+							"backingStorageSize": 19564881
+						},
+						"editMemory": {
+							"usedSize": 19260644,
+							"totalSize": 20934656,
+							"embedderHeapUsedSize": 3142344,
+							"backingStorageSize": 18836291
+						}
+					},
+					{
+						"saveMs": 196.73,
+						"exitMs": 308.75,
+						"chooserMs": 2793.99,
+						"chooserBrowserTimings": {
+							"setup": 52994.5,
+							"pointerdown": {
+								"event": 55749.8,
+								"handler": 55751
+							},
+							"click": {
+								"event": 55749.9,
+								"handler": 55751.4
+							},
+							"dom": 55779.2
+						},
+						"continueMs": 772.46,
+						"playMemory": {
+							"usedSize": 24669972,
+							"totalSize": 25915392,
+							"embedderHeapUsedSize": 2747488,
+							"backingStorageSize": 19564881
+						},
+						"editMemory": {
+							"usedSize": 19964460,
+							"totalSize": 22245376,
+							"embedderHeapUsedSize": 3261264,
+							"backingStorageSize": 18836291
+						}
+					}
+				],
+				"camera": {
+					"wheelToCameraUiMs": 10.7,
+					"intervals": {
+						"count": 234,
+						"p50": 16.6,
+						"p95": 24.9,
+						"p99": 29.2,
+						"max": 33.3,
+						"over33": 0,
+						"over50": 0
+					},
+					"durationMs": 3830.76
+				}
+			},
+			"chapter-one": {
+				"projectFile": "hollow-kingdom-chapter-one.project.json",
+				"editor": {
+					"startup": {
+						"shellMs": 213,
+						"readyMs": 213,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 5620484,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"import-json": {
+						"shellMs": 85,
+						"readyMs": 85,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 11766708,
+						"maxLongTaskMs": 69,
+						"glbRequests": 0
+					},
+					"saved-relaunch": {
+						"shellMs": 155,
+						"readyMs": 155,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 15251568,
+						"maxLongTaskMs": 0,
+						"glbRequests": 0
+					},
+					"open-saved-project": {
+						"shellMs": 54,
+						"readyMs": 54,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 18641892,
+						"maxLongTaskMs": 55,
+						"glbRequests": 0
+					},
+					"cinematics-1": {
+						"shellMs": 105,
+						"readyMs": 3949,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 27121712,
+						"maxLongTaskMs": 586,
+						"glbRequests": 25
+					},
+					"cinematics-cavern-sequence": {
+						"shellMs": 123,
+						"readyMs": 4742,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 35275828,
+						"maxLongTaskMs": 3054,
+						"glbRequests": 6
+					},
+					"cinematics-2": {
+						"shellMs": 89,
+						"readyMs": 741,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 52383488,
+						"maxLongTaskMs": 312,
+						"glbRequests": 0
+					},
+					"cinematics-3": {
+						"shellMs": 103,
+						"readyMs": 782,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 69869924,
+						"maxLongTaskMs": 351,
+						"glbRequests": 0
+					},
+					"asset-creator-open": {
+						"shellMs": 43,
+						"readyMs": 486,
+						"thumbnailEncodes": 1,
+						"thumbnailEncodesAfterReady": 15,
+						"thumbnailsReadyMs": 1429,
+						"webglContextsCreated": 2,
+						"jsHeapBytes": 42733588,
+						"previewGeometries": "15",
+						"previewTextures": "33",
+						"maxLongTaskMs": 395,
+						"glbRequests": 1
+					},
+					"asset-select-1-Warrant Runner": {
+						"shellMs": 10,
+						"readyMs": 161,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 46460712,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 139,
+						"glbRequests": 0
+					},
+					"asset-select-2-Hollowwood Ashling": {
+						"shellMs": 7,
+						"readyMs": 135,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 62162264,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 104,
+						"glbRequests": 0
+					},
+					"asset-select-3-Warrant Runner": {
+						"shellMs": 9,
+						"readyMs": 342,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 53266944,
+						"previewGeometries": "16",
+						"previewTextures": "35",
+						"maxLongTaskMs": 321,
+						"glbRequests": 0
+					},
+					"asset-select-4-Hollowwood Ashling": {
+						"shellMs": 8,
+						"readyMs": 472,
+						"thumbnailEncodes": 0,
+						"webglContextsCreated": 0,
+						"jsHeapBytes": 69081340,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 456,
+						"glbRequests": 0
+					},
+					"asset-creator-reopen": {
+						"shellMs": 23,
+						"readyMs": 169,
+						"thumbnailEncodes": 0,
+						"thumbnailEncodesAfterReady": 0,
+						"thumbnailsReadyMs": 191,
+						"webglContextsCreated": 1,
+						"jsHeapBytes": 54996368,
+						"previewGeometries": "14",
+						"previewTextures": "24",
+						"maxLongTaskMs": 163,
+						"glbRequests": 0
+					}
+				},
+				"externalClip": {
+					"clipName": "GoldenSword_Attack_V1",
+					"advancedToSeconds": 0.05,
+					"resources": [
+						"/assets/derived/humanoid-animations/golden-sword-v1/actions.glb"
+					]
+				},
+				"settledHomeHeapBytes": 20633176,
+				"editorGlbBytes": 47628580,
+				"playRouteGlb": {
+					"requests": 35,
+					"encodedBytes": 47686180,
+					"localFetchMedianMs": 193.1,
+					"localFetchP95Ms": 574.7,
+					"slowest": {
+						"path": "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+						"durationMs": 750.9,
+						"encodedBytes": 15588768,
+						"transferBytes": 15589068
+					}
+				},
+				"map": {
+					"merewatch": {
+						"readyMs": 5103.84,
+						"sceneBuildMs": 39.4,
+						"cumulativeSceneBuilds": 2,
+						"renderer": {
+							"drawCalls": 476,
+							"triangles": 490834,
+							"geometries": 201,
+							"textures": 86,
+							"programs": 34
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 98,
+								"p50": 25,
+								"p95": 54.2,
+								"p99": 283.3,
+								"max": 283.3,
+								"over33": 20,
+								"over50": 5
+							}
+						}
+					},
+					"hollowwood": {
+						"readyMs": 2236.9,
+						"sceneBuildMs": 93.5,
+						"cumulativeSceneBuilds": 3,
+						"renderer": {
+							"drawCalls": 288,
+							"triangles": 482622,
+							"geometries": 113,
+							"textures": 137,
+							"programs": 47
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 140,
+								"p50": 16.7,
+								"p95": 21,
+								"p99": 37.5,
+								"max": 224.9,
+								"over33": 3,
+								"over50": 1
+							}
+						}
+					},
+					"ashen-chapel": {
+						"readyMs": 782.32,
+						"sceneBuildMs": 40.6,
+						"cumulativeSceneBuilds": 4,
+						"renderer": {
+							"drawCalls": 129,
+							"triangles": 199900,
+							"geometries": 120,
+							"textures": 95,
+							"programs": 47
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 373,
+								"p50": 8.3,
+								"p95": 12.4,
+								"p99": 12.7,
+								"max": 33.6,
+								"over33": 1,
+								"over50": 0
+							}
+						}
+					},
+					"wyrms-hollow": {
+						"readyMs": 1273.5,
+						"sceneBuildMs": 52.4,
+						"cumulativeSceneBuilds": 5,
+						"renderer": {
+							"drawCalls": 173,
+							"triangles": 70856,
+							"geometries": 144,
+							"textures": 112,
+							"programs": 49
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 450,
+								"p50": 4.2,
+								"p95": 8.5,
+								"p99": 12.6,
+								"max": 41.5,
+								"over33": 1,
+								"over50": 0
+							}
+						}
+					}
+				},
+				"play": {
+					"merewatch": {
+						"readyMs": 2276.98,
+						"sceneBuildMs": 38.1,
+						"cumulativeSceneBuilds": 1,
+						"renderer": {
+							"drawCalls": 386,
+							"triangles": 377804,
+							"geometries": 181,
+							"textures": 85,
+							"programs": 21
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 189,
+								"p50": 16.6,
+								"p95": 21,
+								"p99": 25.1,
+								"max": 29.1,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToOswin": {
+								"count": 158,
+								"p50": 16.5,
+								"p95": 20.9,
+								"p99": 25,
+								"max": 25.1,
+								"over33": 0,
+								"over50": 0
+							},
+							"walkToRidge": {
+								"count": 1296,
+								"p50": 12.5,
+								"p95": 16.8,
+								"p99": 24.9,
+								"max": 29.3,
+								"over33": 0,
+								"over50": 0
+							}
+						},
+						"movementLatencyMs": 16.4
+					},
+					"hollowwood": {
+						"readyMs": 1031.48,
+						"sceneBuildMs": 78,
+						"cumulativeSceneBuilds": 2,
+						"renderer": {
+							"drawCalls": 98,
+							"triangles": 192244,
+							"geometries": 113,
+							"textures": 120,
+							"programs": 36
+						},
+						"frameIntervals": {
+							"idle": {
+								"count": 148,
+								"p50": 16.4,
+								"p95": 53.9,
+								"p99": 58.5,
+								"max": 62.5,
+								"over33": 30,
+								"over50": 10
+							},
+							"walkToMilestone": {
+								"count": 505,
+								"p50": 8.4,
+								"p95": 21,
+								"p99": 29.2,
+								"max": 37.5,
+								"over33": 2,
+								"over50": 0
+							},
+							"walkToIven": {
+								"count": 1664,
+								"p50": 8.3,
+								"p95": 16.7,
+								"p99": 20.8,
+								"max": 21,
+								"over33": 0,
+								"over50": 0
+							}
+						}
+					}
+				},
+				"saveExitContinue": [
+					{
+						"saveMs": 178.07,
+						"exitMs": 81.4,
+						"chooserMs": 105.89,
+						"chooserBrowserTimings": {
+							"setup": 76636.4,
+							"pointerdown": {
+								"event": 76653.9,
+								"handler": 76656.3
+							},
+							"click": {
+								"event": 76654,
+								"handler": 76656.9
+							},
+							"dom": 76734.5
+						},
+						"continueMs": 715.9,
+						"playMemory": {
+							"usedSize": 33734116,
+							"totalSize": 38219776,
+							"embedderHeapUsedSize": 6040912,
+							"backingStorageSize": 25672441
+						},
+						"editMemory": {
+							"usedSize": 28310464,
+							"totalSize": 30093312,
+							"embedderHeapUsedSize": 6123112,
+							"backingStorageSize": 24779419
+						}
+					},
+					{
+						"saveMs": 222.93,
+						"exitMs": 468.62,
+						"chooserMs": 1421.07,
+						"chooserBrowserTimings": {
+							"setup": 78846.6,
+							"pointerdown": {
+								"event": 80216.4,
+								"handler": 80217.2
+							},
+							"click": {
+								"event": 80216.5,
+								"handler": 80217.4
+							},
+							"dom": 80262.2
+						},
+						"continueMs": 728.82,
+						"playMemory": {
+							"usedSize": 33816528,
+							"totalSize": 37433344,
+							"embedderHeapUsedSize": 5972400,
+							"backingStorageSize": 25670628
+						},
+						"editMemory": {
+							"usedSize": 29051488,
+							"totalSize": 30879744,
+							"embedderHeapUsedSize": 6238992,
+							"backingStorageSize": 24779457
+						}
+					},
+					{
+						"saveMs": 193.87,
+						"exitMs": 470.17,
+						"chooserMs": 2001.7,
+						"chooserBrowserTimings": {
+							"setup": 82344.4,
+							"pointerdown": {
+								"event": 84290.3,
+								"handler": 84291.2
+							},
+							"click": {
+								"event": 84290.4,
+								"handler": 84291.5
+							},
+							"dom": 84340.5
+						},
+						"continueMs": 678.17,
+						"playMemory": {
+							"usedSize": 34504004,
+							"totalSize": 36122624,
+							"embedderHeapUsedSize": 6147616,
+							"backingStorageSize": 25670628
+						},
+						"editMemory": {
+							"usedSize": 29702680,
+							"totalSize": 31404032,
+							"embedderHeapUsedSize": 6342696,
+							"backingStorageSize": 24779457
+						}
+					}
+				]
+			}
+		},
+		"previewRetry": [
+			{
+				"file": "hollow-kingdom.project.json",
+				"asset": "Mere Drake",
+				"failure": "Model file could not be loaded.",
+				"requests": 2,
+				"advancedToSeconds": 0.09
+			},
+			{
+				"file": "hollow-kingdom-chapter-one.project.json",
+				"asset": "Hollowwood Ashling",
+				"failure": "Model file could not be loaded.",
+				"requests": 2,
+				"advancedToSeconds": 0.07
+			}
+		]
+	}
+}

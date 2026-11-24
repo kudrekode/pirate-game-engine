@@ -1,39 +1,40 @@
 import * as THREE from "three";
 import { createTerrainSurfaceSampler } from "../../data/terrainSurface";
 import type { GameArea } from "../../types/game";
+import { groundRowRenderer } from "./groundRaster";
 import {
 	getWorldMaterialColor,
 	resolveTerrainMaterialKey,
 } from "./worldPresentation";
 
-function noise(x: number, y: number): number {
-	const ix = Math.floor(x);
-	const iy = Math.floor(y);
-	const hash = (a: number, b: number) => {
-		let n = Math.imul(a, 374761393) ^ Math.imul(b, 668265263);
-		n = Math.imul(n ^ (n >>> 13), 1274126177);
-		return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
-	};
-	const fx = x - ix;
-	const fy = y - iy;
-	const u = fx * fx * (3 - 2 * fx);
-	const v = fy * fy * (3 - 2 * fy);
-	return (
-		((hash(ix, iy) * (1 - u) + hash(ix + 1, iy) * u) * (1 - v) +
-			(hash(ix, iy + 1) * (1 - u) + hash(ix + 1, iy + 1) * u) * v) *
-			2 -
-		1
-	);
-}
+type GroundPixels = {
+	cancel?: () => void;
+	pixels: Uint8Array<ArrayBuffer>;
+	size: number;
+	ready: Promise<void>;
+	complete: boolean;
+	users: number;
+};
 
-// A bounded, disposable colour wash over the existing terrain. Nothing is authored
-// or displaced: tile identities, picking, heights and gameplay bounds stay intact.
-export function createGroundPresentation(
-	area: GameArea | undefined,
-	padding = 0,
-) {
-	if (!area) return { apply: (_mesh: THREE.Mesh) => {}, dispose: () => {} };
-	const sampler = createTerrainSurfaceSampler(area);
+// Keep at most four completed/in-flight colour rasters in the reuse list.
+// GPU textures and materials still belong to individual scenes.
+const rasters = new Map<string, GroundPixels>();
+function acquireGroundPixels(area: GameArea, padding: number) {
+	const moonlit = area.theme?.atmosphere === "moonlit";
+	const key = JSON.stringify([
+		area.width,
+		area.height,
+		padding,
+		moonlit,
+		area.terrainTiles,
+	]);
+	const cached = rasters.get(key);
+	if (cached) {
+		cached.users++;
+		rasters.delete(key);
+		rasters.set(key, cached);
+		return cached;
+	}
 	const width = area.width + padding * 2;
 	const height = area.height + padding * 2;
 	const size = Math.min(
@@ -42,16 +43,11 @@ export function createGroundPresentation(
 	);
 	const pixels = new Uint8Array(size * size * 4);
 	const palette = new Map<string, number[]>();
-	const moonlit = area.theme?.atmosphere === "moonlit";
-	const colour = (x: number, y: number) => {
-		const tile = sampler.getTile(
-			Math.max(0, Math.min(area.width - 1, x)),
-			Math.max(0, Math.min(area.height - 1, y)),
-		);
-		const key = resolveTerrainMaterialKey(tile?.tileId ?? "");
+	const cells = new Map<number, number[]>();
+	function tileColour(tileId: string) {
+		const key = resolveTerrainMaterialKey(tileId);
 		let result = palette.get(key);
 		if (!result) {
-			// Damp sand under the water-facing end of the existing sloping bank.
 			const hex =
 				key === "water"
 					? 0x8b9d8b
@@ -62,58 +58,151 @@ export function createGroundPresentation(
 			palette.set(key, result);
 		}
 		return result;
-	};
-	const smooth = (v: number) => {
-		const t = Math.max(0, Math.min(1, (v - 0.16) / 0.68));
-		return t * t * (3 - 2 * t);
-	};
-	for (let py = 0; py < size; py++) {
-		for (let px = 0; px < size; px++) {
-			const x = ((px + 0.5) / size) * width - padding - 0.5;
-			const y = ((py + 0.5) / size) * height - padding - 0.5;
-			const mottling = noise(x * 1.1, y * 1.1) + noise(x * 3.7, y * 3.7) * 0.3;
-			const gx = x + mottling * 0.14;
-			const gy = y + noise(x * 2.3 + 19, y * 2.3) * 0.09;
-			const ix = Math.floor(gx);
-			const iy = Math.floor(gy);
-			const u = smooth(gx - ix);
-			const v = smooth(gy - iy);
-			const colours = [
-				colour(ix, iy),
-				colour(ix + 1, iy),
-				colour(ix, iy + 1),
-				colour(ix + 1, iy + 1),
-			];
-			const grain = Math.sin(px * 127.1 + py * 311.7) * 43758.5453;
-			const tint =
-				1 +
-				mottling * 0.05 +
-				Math.sin(x * 0.65 + y * 0.8) * 0.025 +
-				(grain - Math.floor(grain) - 0.5) * 0.035 +
-				(moonlit
-					? mottling * 0.18 +
-						noise(x * 6.1, y * 6.1) * 0.12 +
-						(grain - Math.floor(grain) - 0.5) * 0.22
-					: 0);
-			const offset = (py * size + px) * 4;
-			for (let channel = 0; channel < 3; channel++) {
-				const top = colours[0][channel] * (1 - u) + colours[1][channel] * u;
-				const bottom = colours[2][channel] * (1 - u) + colours[3][channel] * u;
-				pixels[offset + channel] = Math.min(
-					255,
-					(top * (1 - v) + bottom * v) * tint,
-				);
-			}
-			pixels[offset + 3] = 255;
-		}
 	}
-	const texture = new THREE.DataTexture(pixels, size, size, THREE.RGBAFormat);
+	const background = tileColour("");
+	for (const tile of area.terrainTiles) {
+		if (
+			tile.x >= 0 &&
+			tile.x < area.width &&
+			tile.y >= 0 &&
+			tile.y < area.height
+		)
+			cells.set(tile.y * area.width + tile.x, tileColour(tile.tileId));
+	}
+	const input = {
+		mapWidth: area.width,
+		mapHeight: area.height,
+		padding,
+		size,
+		moonlit,
+		cells,
+		background,
+	};
+	const renderRow = groundRowRenderer(input, pixels);
+	let nextRow = 0;
+	const entry: GroundPixels = {
+		pixels,
+		size,
+		complete: false,
+		users: 1,
+		ready: Promise.resolve(),
+	};
+	entry.ready = new Promise<void>((resolve) => {
+		function renderSlice() {
+			if (!entry.users) {
+				if (rasters.get(key) === entry) rasters.delete(key);
+				resolve();
+				return;
+			}
+			const until = performance.now() + 5;
+			do {
+				renderRow(nextRow++);
+			} while (nextRow < size && performance.now() < until);
+			if (nextRow < size) setTimeout(renderSlice, 0);
+			else {
+				entry.complete = true;
+				entry.cancel = undefined;
+				resolve();
+			}
+		}
+		// A blocked worker URL (for example in an offline deployment) uses the
+		// same pixel kernel cooperatively on the UI thread.
+		let worker: Worker | undefined;
+		let deadline: ReturnType<typeof setTimeout> | undefined;
+		const stopWorker = () => {
+			clearTimeout(deadline);
+			worker?.terminate();
+			worker = undefined;
+		};
+		entry.cancel = () => {
+			stopWorker();
+			if (rasters.get(key) === entry) rasters.delete(key);
+			resolve();
+		};
+		let usingFallback = false;
+		const fallback = () => {
+			if (usingFallback) return;
+			usingFallback = true;
+			stopWorker();
+			if (entry.users) setTimeout(renderSlice, 0);
+		};
+		if (typeof Worker === "undefined") {
+			fallback();
+			return;
+		}
+		try {
+			worker = new Worker(
+				new URL("./groundRaster.worker.ts", import.meta.url),
+				{ type: "module" },
+			);
+			worker.onmessage = (event: MessageEvent<Uint8Array>) => {
+				if (!worker) return;
+				if (
+					!(event.data instanceof Uint8Array) ||
+					event.data.length !== pixels.length
+				) {
+					fallback();
+					return;
+				}
+				pixels.set(event.data);
+				entry.complete = true;
+				entry.cancel = undefined;
+				stopWorker();
+				resolve();
+			};
+			worker.onerror = fallback;
+			worker.onmessageerror = fallback;
+			deadline = setTimeout(fallback, 15_000);
+			worker.postMessage(input);
+		} catch {
+			fallback();
+		}
+	});
+	rasters.set(key, entry);
+	if (rasters.size > 4) rasters.delete(rasters.keys().next().value as string);
+	return entry;
+}
+
+export function createGroundPresentation(
+	area: GameArea | undefined,
+	padding = 0,
+) {
+	if (!area)
+		return {
+			ready: Promise.resolve(),
+			apply: (_mesh: THREE.Mesh) => {},
+			dispose: () => {},
+		};
+	const raster = acquireGroundPixels(area, padding);
+	const width = area.width + padding * 2;
+	const height = area.height + padding * 2;
+	const texture = new THREE.DataTexture(
+		raster.pixels,
+		raster.size,
+		raster.size,
+		THREE.RGBAFormat,
+	);
+	let live = true;
+	const pending = new Set<THREE.MeshStandardMaterial>();
+	let baseColourMap: THREE.DataTexture | undefined;
+	function applyTexture(material: THREE.MeshStandardMaterial) {
+		material.color.set(0xffffff);
+		material.map = texture;
+		material.needsUpdate = true;
+	}
+	const ready = raster.ready.then(() => {
+		if (live) for (const material of pending) applyTexture(material);
+		pending.clear();
+		baseColourMap?.dispose();
+		baseColourMap = undefined;
+	});
 	texture.colorSpace = THREE.SRGBColorSpace;
 	texture.magFilter = THREE.LinearFilter;
 	texture.minFilter = THREE.LinearMipmapLinearFilter;
 	texture.generateMipmaps = true;
 	texture.needsUpdate = true;
 	return {
+		ready,
 		texture,
 		apply(mesh: THREE.Mesh) {
 			const positions = mesh.geometry.getAttribute("position");
@@ -132,12 +221,33 @@ export function createGroundPresentation(
 					material instanceof THREE.MeshStandardMaterial &&
 					!material.transparent
 				) {
-					material.color.set(0xffffff);
-					material.map = texture;
+					if (raster.complete) applyTexture(material);
+					else {
+						// White keeps the authored colour visible and the shader's USE_MAP
+						// variant stable while the full terrain texture is being computed.
+						if (!baseColourMap) {
+							baseColourMap = new THREE.DataTexture(
+								new Uint8Array([255, 255, 255, 255]),
+								1,
+								1,
+							);
+							baseColourMap.needsUpdate = true;
+						}
+						material.map = baseColourMap;
+						material.needsUpdate = true;
+						pending.add(material);
+					}
 				}
 			}
 		},
-		dispose: () => texture.dispose(),
+		dispose() {
+			if (!live) return;
+			live = false;
+			pending.clear();
+			raster.users--;
+			if (!raster.users && !raster.complete) raster.cancel?.();
+			texture.dispose();
+		},
 	};
 }
 
@@ -148,6 +258,7 @@ export function createWorldEdgePresentation(
 	area: GameArea | undefined,
 	waterMaterial: THREE.MeshStandardMaterial,
 	mode: "smooth" | "blocky",
+	onGround?: (ready: Promise<void>) => void,
 ): THREE.Mesh[] {
 	if (
 		area?.kind !== "outdoor" ||
@@ -260,6 +371,7 @@ export function createWorldEdgePresentation(
 			if (kind === "land") {
 				const backdropGround = createGroundPresentation(area, 120);
 				backdropGround.apply(mesh);
+				onGround?.(backdropGround.ready);
 				mesh.material.addEventListener("dispose", backdropGround.dispose);
 			}
 			return [mesh];

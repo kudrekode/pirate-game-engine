@@ -7,6 +7,7 @@ import { cloneProject, migrateProject } from "../data/migrateProject";
 import {
 	assertGameSaveSafe,
 	createGameSave,
+	fnv128,
 	GAME_SAVE_PREFIX,
 	gameSaveProjectId,
 	loadGameSave,
@@ -58,6 +59,21 @@ function ready() {
 }
 
 describe("renderer-neutral game saves", () => {
+	it("matches the original 128-bit save checksum byte for byte", () => {
+		for (const bytes of [
+			new Uint8Array(),
+			new TextEncoder().encode("Merewatch • 水"),
+			Uint8Array.from({ length: 8192 }, (_, i) => i % 256),
+		]) {
+			let hash = 0x6c62272e07bb014262b821756295c58dn;
+			for (const byte of bytes)
+				hash = BigInt.asUintN(
+					128,
+					(hash ^ BigInt(byte)) * 0x1000000000000000000013bn,
+				);
+			expect(fnv128(bytes)).toBe(hash.toString(16).padStart(32, "0"));
+		}
+	});
 	it("keeps the save identity when changing map brush and hierarchy preferences", () => {
 		const project = migrateProject(harbour);
 		const original = gameSaveProjectId(project);

@@ -1,7 +1,4 @@
-import {
-	getTerrainHeight,
-	isTerrainWaterTileId,
-} from "../../data/terrainHeight";
+import { isTerrainWaterTileId } from "../../data/terrainHeight";
 import {
 	createTerrainSurfaceSampler,
 	type TerrainSurfaceSampler,
@@ -127,13 +124,12 @@ function average(values: number[]): number {
 }
 
 function getTerrainSurface(
-	area: GameArea,
 	tile: MapTile,
 	sampler: TerrainSurfaceSampler,
 ): TerrainSurface {
 	const kind = getTerrainBlockKind(tile.tileId);
 	const materialKey = resolveTerrainMaterialKey(tile.tileId);
-	const terrainHeight = getTerrainHeight(area, tile.x, tile.y);
+	const terrainHeight = sampler.getHeight(tile.x, tile.y);
 	return {
 		color: getTerrainBlockColor(tile.tileId),
 		gridX: tile.x,
@@ -158,7 +154,7 @@ export function terrainTilesToBlocks(
 	const sampler = createTerrainSurfaceSampler(area);
 
 	return getTerrainTilesInBounds(area).map((tile) => {
-		const surface = getTerrainSurface(area, tile, sampler);
+		const surface = getTerrainSurface(tile, sampler);
 		const baseY = Math.min(0, surface.terrainHeight);
 		const height = Math.max(0.18, surface.surfaceY - baseY);
 		return {
@@ -390,7 +386,7 @@ export function terrainTilesToSmoothMeshes(
 	const centerX = (area.width - 1) / 2;
 	const centerZ = (area.height - 1) / 2;
 	const sampler = createTerrainSurfaceSampler(area);
-	const surfaces = tiles.map((tile) => getTerrainSurface(area, tile, sampler));
+	const surfaces = tiles.map((tile) => getTerrainSurface(tile, sampler));
 	const landSurfaces = surfaces.filter((surface) => surface.kind !== "water");
 	const waterSurfaces = surfaces.filter((surface) => surface.kind === "water");
 	const landMesh = createSharedSmoothTerrainMesh({

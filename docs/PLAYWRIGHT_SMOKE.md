@@ -25,6 +25,10 @@ compiler/provenance/installed-GLB tests. Run it once at completion, followed by
 
 ## Browser commands and costs
 
+For startup, animated Asset Creator previews, repeated Cinematics visits, Map
+and Three Play routes, use the [Hollow Kingdom performance baseline](reports/HOLLOW_KINGDOM_PERFORMANCE_BASELINE.md).
+It includes the commands, both project fixtures, measured boundaries and hardware.
+
 PR 05 Story acceptance is opt-in with `npm run test:e2e -- e2e/story-editor.spec.ts --grep @story-editor`.
 It covers graph editing and workspace links, natural cinematic completion,
 and the Merewatch skip, Save/Continue, Beacon Key, skiff and watchtower route.

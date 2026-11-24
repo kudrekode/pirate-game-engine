@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { watchSceneAssetLoads } from "./sceneAssetLoads";
 import {
 	subscribeThreePerformanceDiagnosticsEvents,
 	type ThreeAssetDiagnosticsEvent,
 } from "./threePerformanceDiagnostics";
 import {
 	clearThreeVisualAssetCacheForTests,
+	forgetFailedThreeVisualAsset,
 	getThreeVisualAssetCloneType,
 	requestThreeVisualAsset,
 	requestThreeVisualAssetAnimationClip,
@@ -33,6 +35,50 @@ describe("Three visual asset loader cache", () => {
 
 	afterEach(() => {
 		clearThreeVisualAssetCacheForTests();
+	});
+
+	it("rebuilds once after distinct models settle and retries only a timed-out source", async () => {
+		vi.useFakeTimers();
+		const other = { ...assetDefinition, id: "second", url: "/second.glb" };
+		const root = new THREE.Group();
+		const clone = vi.spyOn(root, "clone");
+		const load = vi
+			.fn()
+			.mockResolvedValueOnce({ scene: root })
+			.mockImplementationOnce(() => new Promise(() => {}))
+			.mockResolvedValueOnce({ scene: root });
+		const restore = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync: load,
+		}));
+		try {
+			const models = [assetDefinition, other, assetDefinition];
+			const progress = vi.fn(),
+				settled = vi.fn(),
+				stale = vi.fn();
+			watchSceneAssetLoads(models, progress, stale).cancel();
+			watchSceneAssetLoads(models, progress, settled);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(progress).toHaveBeenLastCalledWith(expect.stringContaining("1/2"));
+			expect(settled).not.toHaveBeenCalled();
+			await vi.advanceTimersByTimeAsync(60_000);
+			expect(settled).toHaveBeenCalledOnce();
+			expect(stale).not.toHaveBeenCalled();
+			expect(requestThreeVisualAsset(other).status).toBe("error");
+			forgetFailedThreeVisualAsset(other.id);
+			watchSceneAssetLoads(models, progress, settled);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(settled).toHaveBeenCalledTimes(2);
+			expect(load.mock.calls.map(([url]) => url)).toEqual([
+				assetDefinition.url,
+				other.url,
+				other.url,
+			]);
+			expect(clone).not.toHaveBeenCalled();
+			expect(requestThreeVisualAsset(other).status).toBe("loaded");
+		} finally {
+			restore();
+			vi.useRealTimers();
+		}
 	});
 
 	it("resolves registry-scoped dependent resource aliases without changing the glTF URL", () => {

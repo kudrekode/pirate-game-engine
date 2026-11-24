@@ -1,8 +1,5 @@
 import * as THREE from "three";
-import {
-	getTerrainSurfaceY,
-	isTerrainWaterTileId,
-} from "../../data/terrainHeight";
+import { isTerrainWaterTileId } from "../../data/terrainHeight";
 import { createTerrainSurfaceSampler } from "../../data/terrainSurface";
 import type { AreaThemeConfig, GameArea } from "../../types/game";
 import { createWorldMaterial } from "./worldPresentation";
@@ -163,8 +160,9 @@ export function updateWaterPresentation(
 
 export function deriveCoastlineEdges(
 	area: WaterPresentationArea | undefined,
+	sampler = area && createTerrainSurfaceSampler(area),
 ): CoastlineEdge[] {
-	if (!area) {
+	if (!area || !sampler) {
 		return [];
 	}
 
@@ -202,12 +200,11 @@ export function deriveCoastlineEdges(
 				continue;
 			}
 
-			const waterSurfaceY = getTerrainSurfaceY(
-				area,
+			const waterSurfaceY = sampler.getCellSurfaceY(
 				adjacentWaterX,
 				adjacentWaterY,
 			);
-			const landSurfaceY = getTerrainSurfaceY(area, tile.x, tile.y);
+			const landSurfaceY = sampler.getCellSurfaceY(tile.x, tile.y);
 			let worldX = tile.x - centerX;
 			let worldZ = tile.y - centerZ;
 			if (direction === "north") {
@@ -291,11 +288,11 @@ function gridToWorld(area: WaterPresentationArea, x: number, y: number) {
 	};
 }
 
-function getCoastlineGeometry(
+function getCoastlineVertices(
 	area: WaterPresentationArea,
 	edge: CoastlineEdge,
 	sampler: ReturnType<typeof createTerrainSurfaceSampler>,
-): THREE.BufferGeometry {
+): ShoreVertex[] {
 	const landInset = 0.01;
 	const waterInset = COASTLINE_STRIP_WIDTH;
 	const x0 = edge.gridX - 0.5;
@@ -334,49 +331,36 @@ function getCoastlineGeometry(
 	const landEndWorld = gridToWorld(area, landEnd.x, landEnd.y);
 	const waterEndWorld = gridToWorld(area, waterEnd.x, waterEnd.y);
 	const waterStartWorld = gridToWorld(area, waterStart.x, waterStart.y);
-	const geometry = createQuadGeometry(
-		[
-			{
-				x: landStartWorld.x,
-				y:
-					sampler.getCornerSurfaceY(
-						Math.round(landStart.x + 0.5),
-						Math.round(landStart.y + 0.5),
-					) + COASTLINE_Y_OFFSET,
-				z: landStartWorld.z,
-			},
-			{
-				x: landEndWorld.x,
-				y:
-					sampler.getCornerSurfaceY(
-						Math.round(landEnd.x + 0.5),
-						Math.round(landEnd.y + 0.5),
-					) + COASTLINE_Y_OFFSET,
-				z: landEndWorld.z,
-			},
-			{
-				x: waterEndWorld.x,
-				y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
-				z: waterEndWorld.z,
-			},
-			{
-				x: waterStartWorld.x,
-				y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
-				z: waterStartWorld.z,
-			},
-		],
-		[1, 1, 1, 1],
-	);
-	const sand = new THREE.Color(0xc7b791);
-	const wet = new THREE.Color(0x77998c);
-	geometry.setAttribute(
-		"color",
-		new THREE.Float32BufferAttribute(
-			[sand, sand, wet, wet].flatMap((color) => [color.r, color.g, color.b, 1]),
-			4,
-		),
-	);
-	return geometry;
+	return [
+		{
+			x: landStartWorld.x,
+			y:
+				sampler.getCornerSurfaceY(
+					Math.round(landStart.x + 0.5),
+					Math.round(landStart.y + 0.5),
+				) + COASTLINE_Y_OFFSET,
+			z: landStartWorld.z,
+		},
+		{
+			x: landEndWorld.x,
+			y:
+				sampler.getCornerSurfaceY(
+					Math.round(landEnd.x + 0.5),
+					Math.round(landEnd.y + 0.5),
+				) + COASTLINE_Y_OFFSET,
+			z: landEndWorld.z,
+		},
+		{
+			x: waterEndWorld.x,
+			y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
+			z: waterEndWorld.z,
+		},
+		{
+			x: waterStartWorld.x,
+			y: edge.waterSurfaceY + COASTLINE_Y_OFFSET,
+			z: waterStartWorld.z,
+		},
+	];
 }
 
 function getShallowWaterGeometry(
@@ -437,25 +421,40 @@ export function createCoastlinePresentation(
 	area: WaterPresentationArea | undefined,
 	state: WaterPresentationState,
 ): CoastlinePresentation {
-	const edges = deriveCoastlineEdges(area);
-	if (!area) {
-		return { edges, meshes: [] };
-	}
+	if (!area) return { edges: [], meshes: [] };
 	const sampler = createTerrainSurfaceSampler(area);
-	const meshes = edges.flatMap((edge) => {
-		const coastlineMesh = new THREE.Mesh(
-			getCoastlineGeometry(area, edge, sampler),
-			state.coastlineMaterial,
-		);
-		applyPresentationMetadata(coastlineMesh, "coastline");
+	const edges = deriveCoastlineEdges(area, sampler);
+	if (!edges.length) return { edges, meshes: [] };
 
-		const shallowWaterMesh = new THREE.Mesh(
+	// Opaque bank strips share one material. Keep translucent shallows separate
+	// so Three can still depth-sort them with water and other transparent meshes.
+	const positions: number[] = [];
+	const colors: number[] = [];
+	const indices: number[] = [];
+	const sand = new THREE.Color(0xc7b791);
+	const wet = new THREE.Color(0x77998c);
+	const shallows = edges.map((edge) => {
+		const base = positions.length / 3;
+		getCoastlineVertices(area, edge, sampler).forEach((vertex, i) => {
+			positions.push(vertex.x, vertex.y, vertex.z);
+			const color = i < 2 ? sand : wet;
+			colors.push(color.r, color.g, color.b, 1);
+		});
+		indices.push(base, base + 1, base + 2, base + 2, base + 3, base);
+		const mesh = new THREE.Mesh(
 			getShallowWaterGeometry(area, edge),
 			state.shallowWaterMaterial,
 		);
-		applyPresentationMetadata(shallowWaterMesh, "shallowWater");
-		return [coastlineMesh, shallowWaterMesh];
+		applyPresentationMetadata(mesh, "shallowWater");
+		return mesh;
 	});
-
-	return { edges, meshes };
+	const bank = new THREE.BufferGeometry();
+	bank.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+	bank.setAttribute("color", new THREE.Float32BufferAttribute(colors, 4));
+	bank.setIndex(indices);
+	bank.computeVertexNormals?.();
+	bank.computeBoundingSphere();
+	const coast = new THREE.Mesh(bank, state.coastlineMaterial);
+	applyPresentationMetadata(coast, "coastline");
+	return { edges, meshes: [coast, ...shallows] };
 }

@@ -39,6 +39,25 @@ describe("terrain surface sampling", () => {
 		expect(getTerrainPresentationSurfaceY(area, { x: 1, y: 0 })).toBe(0.18);
 	});
 
+	it("preserves first surface heights and sparse blocky cells when indexing", () => {
+		const sampler = createTerrainSurfaceSampler(
+			makeArea({
+				terrainHeights: [
+					{ x: 0, y: 0, height: 20 },
+					{ x: 0, y: 0, height: 1 },
+				],
+				terrainTiles: [
+					{ x: 0, y: 0, tileId: "water" },
+					{ x: 0, y: 0, tileId: "grass" },
+				],
+			}),
+		);
+		expect(sampler.getTile(0, 0)?.tileId).toBe("grass");
+		expect(sampler.getCellSurfaceY(0, 0)).toBeCloseTo(8.18);
+		expect(sampler.getCellSurfaceY(1, 0)).toBe(0);
+		expect(sampler.sampleSurfaceY({ x: 1, y: 0 }, "blocky")).toBe(1);
+	});
+
 	it("samples smooth terrain from derived corner heights", () => {
 		const area = makeArea({
 			height: 3,

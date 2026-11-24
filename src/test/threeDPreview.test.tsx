@@ -579,7 +579,7 @@ describe("ThreeDPreview", () => {
 	});
 
 	it("coalesces asset-load rebuilds and preserves cached imported resources", () => {
-		expect(threeDPreviewSource).toContain("assetStateChangeQueued");
+		expect(threeDPreviewSource).toContain("watchSceneAssetLoads");
 		expect(threeDPreviewSource).toContain("if (!renderResult.usedAsset)");
 	});
 

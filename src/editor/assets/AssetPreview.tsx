@@ -2,7 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { resolveAssetVariantSocket } from "../../runtime/three/threeAssetVariantPresentation";
-import { requestThreeVisualAsset } from "../../runtime/three/threeVisualAssetLoader";
+import {
+	forgetFailedThreeVisualAsset,
+	requestThreeVisualAsset,
+} from "../../runtime/three/threeVisualAssetLoader";
 import type { ThreeVisualAssetDefinition } from "../../runtime/three/threeVisualAssetRegistry";
 import type {
 	AssetCreatorEffect,
@@ -448,6 +451,8 @@ export function AssetPreview(props: AssetPreviewProps) {
 	const animation = useRef<HTMLDivElement>(null);
 	const scene = useRef<PreviewScene | undefined>(undefined);
 	const latest = useRef(props);
+	const [attempt, setAttempt] = useState(0);
+	const [contextAttempt, setContextAttempt] = useState(0);
 	const [status, setStatus] = useState("loading");
 	const [attachmentStatus, setAttachmentStatus] = useState("");
 	latest.current = props;
@@ -468,6 +473,7 @@ export function AssetPreview(props: AssetPreviewProps) {
 	const propUrl = prop?.url;
 
 	useLayoutEffect(() => {
+		void contextAttempt;
 		if (!host.current || !reference.current || !animation.current) return;
 		const element = host.current;
 		let renderer: THREE.WebGLRenderer;
@@ -640,7 +646,7 @@ export function AssetPreview(props: AssetPreviewProps) {
 			renderer.forceContextLoss();
 			renderer.domElement.remove();
 		};
-	}, []);
+	}, [contextAttempt]);
 
 	// The asset ID and artifact URL are the load identity. Draft edits reuse these clones.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: read the current definition and callbacks through the ref
@@ -698,7 +704,7 @@ export function AssetPreview(props: AssetPreviewProps) {
 			resources.dispose();
 			state.dirty = true;
 		};
-	}, [assetId, assetUrl]);
+	}, [assetId, assetUrl, attempt, contextAttempt]);
 
 	// Asset swaps rerun attachment loading once the new socket hierarchy exists.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: artifact identity is the load dependency
@@ -742,7 +748,7 @@ export function AssetPreview(props: AssetPreviewProps) {
 			resources.dispose();
 			state.dirty = true;
 		};
-	}, [status, assetId, assetUrl, propId, propUrl]);
+	}, [status, assetId, assetUrl, propId, propUrl, attempt]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: restart is an explicit effect replay command
 	useEffect(() => {
@@ -869,6 +875,22 @@ export function AssetPreview(props: AssetPreviewProps) {
 			{(message || attachmentStatus) && (
 				<div className="asset-preview-message" role="status">
 					{message || attachmentStatus}
+					{(status === "error" ||
+						status === "unavailable" ||
+						attachmentStatus.startsWith("Attachment file")) && (
+						<button
+							type="button"
+							onClick={() => {
+								forgetFailedThreeVisualAsset(asset.id || asset.url);
+								if (prop) forgetFailedThreeVisualAsset(prop.id || prop.url);
+								if (status === "unavailable")
+									setContextAttempt((value) => value + 1);
+								setAttempt((value) => value + 1);
+							}}
+						>
+							Retry preview
+						</button>
+					)}
 				</div>
 			)}
 		</div>

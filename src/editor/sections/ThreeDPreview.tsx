@@ -49,6 +49,8 @@ import {
 	getPlaceholderSelectableObjects,
 	type ThreeResourceDisposeTracker,
 } from "../../runtime/three/placeholderMeshes";
+import { prepareSceneShaders } from "../../runtime/three/prepareSceneShaders";
+import { watchSceneAssetLoads } from "../../runtime/three/sceneAssetLoads";
 import { ThreePerformanceOverlay } from "../../runtime/three/ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "../../runtime/three/terrainMeshGeometry";
 import {
@@ -56,8 +58,10 @@ import {
 	registerThreePerformanceDiagnostics,
 	type ThreePerformanceDiagnostics,
 } from "../../runtime/three/threePerformanceDiagnostics";
+import { forgetFailedThreeVisualAsset } from "../../runtime/three/threeVisualAssetLoader";
 import {
 	createThreeVisualMarkerGroup,
+	disposeCloneSkeletons,
 	updateThreeVisualMarkerTransform,
 } from "../../runtime/three/threeVisualRenderer";
 import { resolveThreeCharacterVisual } from "../../runtime/three/threeVisuals";
@@ -487,6 +491,10 @@ export function ThreeDPreview({
 	const terrainBrushStrokeRef = useRef<TerrainBrushStroke | null>(null);
 	const previousBuildInputsRef = useRef<ThreeDPreviewBuildInputs | null>(null);
 	const [mountError, setMountError] = useState("");
+	const failedModels = useRef<string[]>([]);
+	const [modelProgress, setModelProgress] = useState("");
+	const [shaderProgress, setShaderProgress] = useState("");
+	const [groundPending, setGroundPending] = useState(false);
 	const [missingAssets, setMissingAssets] = useState(false);
 	const [localOverlayFilters, setLocalOverlayFilters] = useState(
 		readStoredMapOverlayFilters,
@@ -595,12 +603,16 @@ export function ThreeDPreview({
 		activeArea?.theme?.fog,
 	]);
 	const terrainBlocks = useMemo(
-		() => terrainTilesToBlocks(activeArea),
-		[activeArea],
+		() =>
+			terrainRenderMode === "blocky" ? terrainTilesToBlocks(activeArea) : [],
+		[activeArea, terrainRenderMode],
 	);
 	const smoothTerrainMeshes = useMemo(
-		() => terrainTilesToSmoothMeshes(activeArea),
-		[activeArea],
+		() =>
+			terrainRenderMode === "smooth"
+				? terrainTilesToSmoothMeshes(activeArea)
+				: [],
+		[activeArea, terrainRenderMode],
 	);
 	const entityMarkers = useMemo(
 		() =>
@@ -786,6 +798,7 @@ export function ThreeDPreview({
 		return () => {
 			terrainBrushStrokeRef.current = null;
 			rendererRef.current?.dispose();
+			rendererRef.current?.forceContextLoss?.();
 			rendererRef.current?.domElement.remove();
 			rendererRef.current = undefined;
 		};
@@ -905,6 +918,26 @@ export function ThreeDPreview({
 		if (!host) {
 			return;
 		}
+		let renderer: THREE.WebGLRenderer;
+		try {
+			rendererRef.current ??= new THREE.WebGLRenderer({ antialias: true });
+			renderer = rendererRef.current;
+			setMountError("");
+		} catch (error) {
+			setMountError(
+				error instanceof Error
+					? error.message
+					: "Three.js renderer could not be created.",
+			);
+			return;
+		}
+
+		let live = true;
+		const assets = watchSceneAssetLoads(
+			renderMarkers.map((marker) => marker.visual?.asset),
+			setModelProgress,
+			() => setAssetRenderVersion((version) => version + 1),
+		);
 		const sceneBuildStartedAt = performance.now();
 		const rebuildReason = getSceneBuildReason();
 
@@ -972,6 +1005,8 @@ export function ThreeDPreview({
 			activeArea?.theme?.atmosphere,
 		);
 		const groundPresentation = createGroundPresentation(activeArea);
+		const terrainTextures = [groundPresentation.ready];
+		setGroundPending(true);
 		let waterSurfaceMeshCount = 0;
 		const terrainRebuildStartedAt = performance.now();
 		const smoothTerrainVisualMeshes =
@@ -1042,10 +1077,16 @@ export function ThreeDPreview({
 			activeArea,
 			waterPresentation.waterMaterial,
 			terrainRenderMode,
+			(ready) => terrainTextures.push(ready),
 		);
 		worldEdgeMeshes.forEach((mesh) => {
 			scene.add(mesh);
 		});
+		void Promise.all(terrainTextures).then(() => {
+			if (!live) return;
+			setGroundPending(false);
+		});
+
 		const smoothTerrainVertexCount = smoothTerrainMeshes.reduce(
 			(total, mesh) => total + mesh.vertices.length / 3,
 			0,
@@ -1058,8 +1099,8 @@ export function ThreeDPreview({
 			terrainRenderMode === "smooth" ? 0 : terrainPickMeshes.length * 24;
 		const terrainPickTriangleCount =
 			terrainRenderMode === "smooth" ? 0 : terrainPickMeshes.length * 12;
-		const coastlineVertexCount = coastlinePresentation.meshes.length * 4;
-		const coastlineTriangleCount = coastlinePresentation.meshes.length * 2;
+		const coastlineVertexCount = coastlinePresentation.edges.length * 8;
+		const coastlineTriangleCount = coastlinePresentation.edges.length * 4;
 		diagnostics.recordTerrainRebuild({
 			coastlineEdgeCount: coastlinePresentation.edges.length,
 			durationMs: performance.now() - terrainRebuildStartedAt,
@@ -1068,7 +1109,13 @@ export function ThreeDPreview({
 				terrainPickMeshes.length +
 				coastlinePresentation.meshes.length,
 			mode: terrainRenderMode,
-			tileCount: terrainBlocks.length,
+			tileCount:
+				terrainRenderMode === "blocky"
+					? terrainBlocks.length
+					: smoothTerrainMeshes.reduce(
+							(count, mesh) => count + mesh.tileCount,
+							0,
+						),
 			triangleCount:
 				smoothTerrainTriangleCount +
 				terrainPickTriangleCount +
@@ -1079,14 +1126,6 @@ export function ThreeDPreview({
 				coastlineVertexCount,
 			waterMeshCount: waterSurfaceMeshCount,
 		});
-		let assetStateChangeQueued = false;
-		const handleAssetStateChange = () => {
-			if (assetStateChangeQueued) {
-				return;
-			}
-			assetStateChangeQueued = true;
-			setAssetRenderVersion((version) => version + 1);
-		};
 		const markerRenderResults = renderMarkers.map((marker) => {
 			const selectionMetadata = entityMarkerToSelectionMetadata(
 				marker,
@@ -1096,7 +1135,6 @@ export function ThreeDPreview({
 			const renderResult = createThreeVisualMarkerGroup(marker, {
 				diagnostics,
 				metadata: selectionMetadata,
-				onAssetStateChange: handleAssetStateChange,
 				selected: isSelected,
 			});
 			if (!renderResult.usedAsset) {
@@ -1138,6 +1176,11 @@ export function ThreeDPreview({
 			);
 			scene.add(walkPreviewMesh);
 		}
+		failedModels.current = markerRenderResults.flatMap((result) =>
+			result.assetStatus === "error" && result.assetDefinitionId
+				? [result.assetDefinitionId]
+				: [],
+		);
 		setMissingAssets(
 			markerRenderResults.some(
 				(result) =>
@@ -1168,19 +1211,6 @@ export function ThreeDPreview({
 			...terrainSurfacePickMeshes,
 			...markerMeshes.flatMap(getPlaceholderSelectableObjects),
 		];
-
-		let renderer: THREE.WebGLRenderer;
-		try {
-			rendererRef.current ??= new THREE.WebGLRenderer({ antialias: true });
-			renderer = rendererRef.current;
-		} catch (error) {
-			setMountError(
-				error instanceof Error
-					? error.message
-					: "Three.js renderer could not be created.",
-			);
-			return;
-		}
 
 		const atmosphere = applyAtmosphere(scene, renderer, {
 			preset: activeArea?.theme?.atmosphere,
@@ -2890,9 +2920,19 @@ export function ThreeDPreview({
 			rebuildReason,
 			performance.now() - sceneBuildStartedAt,
 		);
-		render();
+		const cancelShaderPreparation = prepareSceneShaders(
+			renderer,
+			scene,
+			camera,
+			setShaderProgress,
+			render,
+			setMountError,
+		);
 
 		return () => {
+			live = false;
+			cancelShaderPreparation();
+			assets.cancel();
 			sceneUiRef.current = undefined;
 			host.removeEventListener("blur", stopCameraInput);
 			window.removeEventListener("blur", stopCameraInput);
@@ -2962,7 +3002,8 @@ export function ThreeDPreview({
 			});
 			markerRenderResults.forEach((result) => {
 				result.disposePresentation?.();
-				if (!result.usedAsset) {
+				if (result.usedAsset) disposeCloneSkeletons(result.group);
+				else {
 					disposePlaceholderObject(result.group, disposeTracker);
 				}
 			});
@@ -3013,11 +3054,30 @@ export function ThreeDPreview({
 				embedded ? "three-d-preview-workspace" : "editor-panel three-d-preview"
 			}
 		>
-			<div className="content-panel three-d-preview-panel">
+			<div
+				className="content-panel three-d-preview-panel"
+				data-ground-ready={!groundPending}
+			>
+				{!mountError && (modelProgress || shaderProgress || groundPending) && (
+					<span className="scene-loading" role="status">
+						{modelProgress || shaderProgress || "Preparing terrain…"}
+					</span>
+				)}
 				{missingAssets && (
 					<p role="alert">
 						A visual asset is unavailable. Restore its project asset files or
 						reimport it through Asset Creator. Saved assignments are preserved.
+						{failedModels.current.length > 0 && (
+							<button
+								type="button"
+								onClick={() => {
+									failedModels.current.forEach(forgetFailedThreeVisualAsset);
+									setAssetRenderVersion((version) => version + 1);
+								}}
+							>
+								Retry models
+							</button>
+						)}
 					</p>
 				)}
 				<div
@@ -3495,7 +3555,15 @@ export function ThreeDPreview({
 					</aside>
 				)}
 				{mountError ? (
-					<div className="validation-message">{mountError}</div>
+					<div className="validation-message" role="alert">
+						{mountError}{" "}
+						<button
+							type="button"
+							onClick={() => setAssetRenderVersion((version) => version + 1)}
+						>
+							Retry 3D view
+						</button>
+					</div>
 				) : null}
 			</div>
 		</section>

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { BOW } from "../../data/bow";
 import { SWORD } from "../../data/sword";
 import {
-	requestThreeVisualAsset,
+	requestThreeVisualAssetAnalysis,
 	requestThreeVisualAssetAnimationClip,
 	type ThreeVisualAssetAnalysis,
 } from "../../runtime/three/threeVisualAssetLoader";
@@ -251,10 +251,8 @@ function useEmbeddedClips(asset: ThreeVisualAssetDefinition | undefined) {
 		let live = true;
 		const refresh = () => {
 			if (!live) return;
-			const request = requestThreeVisualAsset(asset, {
-				onStateChange: refresh,
-			});
-			if (request.status === "loaded")
+			const request = requestThreeVisualAssetAnalysis(asset, refresh);
+			if (request.analysis)
 				setResult({ asset, clips: request.analysis.animationClips });
 		};
 		refresh();
@@ -262,7 +260,7 @@ function useEmbeddedClips(asset: ThreeVisualAssetDefinition | undefined) {
 			live = false;
 		};
 	}, [asset]);
-	return result?.asset.id === asset?.id
+	return result?.asset === asset
 		? (result?.clips ?? NO_EMBEDDED_CLIPS)
 		: NO_EMBEDDED_CLIPS;
 }
@@ -306,11 +304,13 @@ export function useAssetCreatorClips(
 	variants: readonly AssetCreatorClip[],
 	nodeNames: readonly string[],
 	showAll: boolean,
+	previewClipId?: string,
 ): AssetCreatorClipRow[] {
 	const definitions = useRegistry(asset, registry);
-	const embedded = useEmbeddedClips(asset);
+	const embedded = useEmbeddedClips(nodeNames.length ? asset : undefined);
 	const sources = useMemo(() => {
-		const selected = asset ? getMappedSources(asset, definitions) : [];
+		if (!asset) return [];
+		const selected = getMappedSources(asset, definitions);
 		if (asset)
 			for (const clip of embedded)
 				selected.push(
@@ -387,22 +387,43 @@ export function useAssetCreatorClips(
 		const nodes = new Set(nodeNames);
 		const refresh = () => {
 			if (!live) return;
-			const rows = sources.map(({ clip, local }): AssetCreatorClipRow => {
-				if (!local) return { ...clip, status: "unchecked" };
+			const candidates =
+				previewClipId === undefined
+					? sources
+					: previewClipId
+						? sources.filter(({ clip }) => clip.id === previewClipId)
+						: [...sources]
+								.filter((row) => row.local)
+								.sort(
+									(a, b) =>
+										Number(b.clip.name === "Idle") -
+										Number(a.clip.name === "Idle"),
+								);
+			const rows: AssetCreatorClipRow[] = [];
+			for (const { clip, local } of candidates) {
+				if (!local && previewClipId === undefined) {
+					rows.push({ ...clip, status: "unchecked" });
+					continue;
+				}
 				const result = readClip(definitions, clip, nodes, refresh);
-				return {
+				rows.push({
 					...clip,
 					status: result.status,
 					duration: result.clip?.duration,
-				};
-			});
+				});
+				if (
+					previewClipId !== undefined &&
+					(result.status === "ready" || result.status === "loading")
+				)
+					break;
+			}
 			setResult({ sources, nodeNames, rows });
 		};
 		refresh();
 		return () => {
 			live = false;
 		};
-	}, [definitions, nodeNames, sources]);
+	}, [definitions, nodeNames, sources, previewClipId]);
 	const rows =
 		result?.sources === sources && result.nodeNames === nodeNames
 			? result.rows

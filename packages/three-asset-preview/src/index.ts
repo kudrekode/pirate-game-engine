@@ -522,15 +522,26 @@ function start(
 		status: "load_start",
 		url: definition.url,
 	});
-	Promise.resolve(loaderFactory())
+	let timeout: ReturnType<typeof setTimeout>;
+	const load = Promise.resolve()
+		.then(loaderFactory)
 		.then((loader) => {
 			if (loader.manager && definition.resourceUrlAliases)
 				loader.manager.setURLModifier((url) =>
 					resolveThreeVisualAssetResourceUrl(definition, url),
 				);
 			return loader.loadAsync(definition.url);
-		})
+		});
+	// Bound the shared request so a stalled file releases every waiting viewport.
+	const deadline = new Promise<never>((_, reject) => {
+		timeout = setTimeout(
+			() => reject(new Error(`Timed out loading ${definition.name}.`)),
+			60_000,
+		);
+	});
+	Promise.race([load, deadline])
 		.then((gltf) => {
+			if (cache.get(key) !== entry) return;
 			const root = gltf.scene ?? gltf.scenes?.[0];
 			if (!root)
 				throw new Error(`Three visual asset "${definition.id}" has no scene.`);
@@ -549,6 +560,7 @@ function start(
 			});
 		})
 		.catch((error) => {
+			if (cache.get(key) !== entry) return;
 			cache.set(key, { definition, error, status: "error" });
 			emit({
 				definitionId: definition.id,
@@ -558,6 +570,7 @@ function start(
 			});
 		})
 		.finally(() => {
+			clearTimeout(timeout);
 			for (const listener of entry.listeners) listener();
 			entry.listeners.clear();
 		});
@@ -581,6 +594,24 @@ export function cloneThreeVisualAssetRoot(
 		? cloneSkeleton(root)
 		: root.clone(true);
 }
+/** Inspect a source without creating an instance or exposing the cached scene. */
+export function requestThreeVisualAssetAnalysis(
+	definition: ThreeVisualAssetDefinition,
+	onStateChange?: () => void,
+) {
+	const key = definition.id || definition.url;
+	const entry = cache.get(key) ?? start(definition, key);
+	if (entry.status === "loaded")
+		return { status: entry.status, analysis: entry.analysis };
+	if (entry.status === "loading" && onStateChange)
+		entry.listeners.add(onStateChange);
+	return { status: entry.status };
+}
+
+export function forgetFailedThreeVisualAsset(id: string) {
+	if (cache.get(id)?.status === "error") cache.delete(id);
+}
+
 export function requestThreeVisualAsset(
 	definition: ThreeVisualAssetDefinition | undefined,
 	options: { onStateChange?: () => void } = {},

@@ -19,11 +19,57 @@ function area() {
 }
 
 describe("coastal ground presentation", () => {
-	it("makes deterministic bounded colour variation and a gradual grass/sand boundary without changing authored data", () => {
+	it("shares a cold worker and finishes the same texture if the worker file fails", async () => {
+		const postMessage = vi.fn();
+		const terminate = vi.fn();
+		let fail: (() => void) | undefined;
+		vi.stubGlobal(
+			"Worker",
+			class {
+				postMessage = postMessage;
+				terminate = terminate;
+				set onerror(fn: () => void) {
+					fail = fn;
+				}
+			},
+		);
+		try {
+			const input = { ...area(), width: 4 };
+			const first = createGroundPresentation(input);
+			const second = createGroundPresentation(input);
+			const groundMesh = new THREE.Mesh(
+				new THREE.PlaneGeometry(),
+				new THREE.MeshStandardMaterial(),
+			);
+			second.apply(groundMesh);
+			expect(groundMesh.material.map?.image).toMatchObject({
+				width: 1,
+				height: 1,
+			});
+			expect(postMessage).toHaveBeenCalledOnce();
+			first.dispose();
+			expect(terminate).not.toHaveBeenCalled();
+			fail?.();
+			await second.ready;
+			expect(terminate).toHaveBeenCalledOnce();
+			expect(second.texture?.image.data?.[3]).toBe(255);
+			expect(groundMesh.material.map).toBe(second.texture);
+			second.dispose();
+			groundMesh.material.dispose();
+			groundMesh.geometry.dispose();
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("makes deterministic bounded colour variation and a gradual grass/sand boundary without changing authored data", async () => {
 		const input = area();
 		const before = JSON.stringify(input);
 		const first = createGroundPresentation(input);
 		const second = createGroundPresentation(input);
+		await Promise.all([first.ready, second.ready]);
+		expect(first.texture?.image.data).toBe(second.texture?.image.data);
+		expect(first.texture).not.toBe(second.texture);
 		expect(first.texture?.image.data).toEqual(second.texture?.image.data);
 		const texture = first.texture;
 		if (!texture?.image.data)
@@ -51,12 +97,13 @@ describe("coastal ground presentation", () => {
 		expect(dispose).toHaveBeenCalledOnce();
 	});
 
-	it("uses continuous world UVs across separate terrain meshes and keeps water material intact", () => {
+	it("uses continuous world UVs across separate terrain meshes and keeps water material intact", async () => {
 		const ground = createGroundPresentation(area());
 		const material = new THREE.MeshStandardMaterial();
 		const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
 		mesh.position.x = 1;
 		ground.apply(mesh);
+		await ground.ready;
 		expect(material.map).toBe(ground.texture);
 		const position = mesh.geometry.getAttribute("position");
 		const uv = mesh.geometry.getAttribute("uv");

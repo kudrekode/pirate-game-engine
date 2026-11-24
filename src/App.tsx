@@ -111,6 +111,7 @@ export default function App() {
 	const [route, setRoute] = useState<Route>("projects");
 	const [dialog, setDialog] = useState<Dialog | null>(null);
 	const [status, setStatus] = useState("");
+	const [importStatus, setImportStatus] = useState("");
 	const [draftTimestamp, setDraftTimestamp] = useState("");
 	const [editorView, setEditorView] = useState<"2d" | "3d">(mapViewPreference);
 	const [runtime, setRuntime] = useState<{
@@ -339,8 +340,11 @@ export default function App() {
 	}, [openWorkspace]);
 	const saveAssetProject = useCallback(() => persist("save"), [persist]);
 
-	function activate(record: ProjectRecord, raw: string, message: string) {
-		const selected = readProjectJson(raw);
+	function activate(
+		record: ProjectRecord,
+		selected: GameProject,
+		message: string,
+	) {
 		useProjectStore.getState().setProject(selected);
 		checkpoint.current = JSON.stringify(useProjectStore.getState().project);
 		scrollPositions.current.clear();
@@ -373,7 +377,7 @@ export default function App() {
 		try {
 			activate(
 				record,
-				raw,
+				readProjectJson(raw),
 				raw === record.saved
 					? "Loaded saved project."
 					: "Loaded autosaved draft.",
@@ -431,10 +435,10 @@ export default function App() {
 						localStorage,
 					)
 				: undefined;
-			const record = createProjectRecord(migrateProject(selected), legacyId);
+			const record = createProjectRecord(selected, legacyId);
 			writeProjectRecord(localStorage, record);
 			rememberRecord(record);
-			activate(record, record.saved, message);
+			activate(record, selected, message);
 		} catch (error) {
 			setStatus(
 				`Could not store project. ${error instanceof Error ? error.message : ""}`,
@@ -449,7 +453,15 @@ export default function App() {
 		const request = ++importRequest.current;
 		const context = useProjectStore.getState().projectContextId;
 		try {
-			const imported = importProjectJson(await file.text());
+			setImportStatus(`Reading ${file.name}…`);
+			const raw = await file.text();
+			if (
+				request !== importRequest.current ||
+				context !== useProjectStore.getState().projectContextId
+			)
+				return;
+			setImportStatus(`Checking ${file.name}…`);
+			const imported = importProjectJson(raw);
 			if (
 				request !== importRequest.current ||
 				context !== useProjectStore.getState().projectContextId
@@ -465,6 +477,8 @@ export default function App() {
 			setStatus(
 				`Import failed: ${error instanceof Error ? error.message : "Could not read the project file."}`,
 			);
+		} finally {
+			if (request === importRequest.current) setImportStatus("");
 		}
 	}
 
@@ -739,7 +753,9 @@ export default function App() {
 					/>
 				)}
 				<footer className="project-shell-footer">
-					<span role="status">{dialogError ? "" : status}</span>
+					<span role="status">
+						{importStatus || (dialogError ? "" : status)}
+					</span>
 					{draftTimestamp && <span>Draft autosaved {draftTimestamp}</span>}
 				</footer>
 
@@ -750,7 +766,10 @@ export default function App() {
 						onCreate={(selected, name) => {
 							const next = createProjectFromPreset(selected);
 							next.metadata.name = name.trim() || next.metadata.name;
-							addProject(next, `Created ${next.metadata.name}.`);
+							addProject(
+								migrateProject(next),
+								`Created ${next.metadata.name}.`,
+							);
 						}}
 					/>
 				)}

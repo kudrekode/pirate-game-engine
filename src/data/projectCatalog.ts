@@ -1,4 +1,5 @@
 import {
+	GAME_SAVE_PREFIX,
 	type GameSaveStorage,
 	gameSaveProjectId,
 	loadGameSave,
@@ -141,16 +142,22 @@ export function updateProjectRecord(
 export function unclaimedLegacySave(
 	project: GameProject,
 	records: ProjectRecord[],
-	storage: GameSaveStorage,
+	storage: GameSaveStorage & Partial<Pick<Storage, "key" | "length">>,
 ): string | undefined {
-	const id = gameSaveProjectId(project);
-	if (records.some((record) => record.legacySaveId === id)) return;
+	if (storage.key && typeof storage.length === "number") {
+		let found = false;
+		for (let i = 0; i < storage.length && !found; i++)
+			found = !!storage.key(i)?.startsWith(GAME_SAVE_PREFIX);
+		if (!found) return;
+	}
 	try {
 		const legacySave = loadGameSave(project, {
 			getItem: (key) => storage.getItem(key),
 			setItem: () => {},
 		});
 		if (!legacySave) return;
+		const id = gameSaveProjectId(project);
+		if (records.some((record) => record.legacySaveId === id)) return;
 		const legacyRecord = records.find(
 			(record) => record.id === LEGACY_PROJECT_ID,
 		);
