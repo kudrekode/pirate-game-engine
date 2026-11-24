@@ -224,6 +224,15 @@ const movement = fields({
 const enemy = fields({
 	numbers: "detectionRadiusTiles chaseRadiusTiles contactDamage",
 	booleans: "enabled returnToOrigin",
+	nested: {
+		attacks: list(
+			fields({
+				strings: "label windupClip strikeClip",
+				numbers: "damage rangeTiles arcDegrees windupMs impactMs recoveryMs",
+				required: ["label"],
+			}),
+		),
+	},
 });
 const terrain = list(fields({ strings: "tileId", numbers: "x y" }));
 const area = fields({

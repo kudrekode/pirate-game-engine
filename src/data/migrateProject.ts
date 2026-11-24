@@ -675,6 +675,28 @@ function migrateEnemyBehaviour(value: unknown): EnemyBehaviour | undefined {
 		return undefined;
 	}
 
+	const attacks = Array.isArray(value.attacks)
+		? value.attacks.flatMap((attack) => {
+				if (!isRecord(attack) || typeof attack.label !== "string") return [];
+				const label = attack.label.trim();
+				if (!label) return [];
+				const windupClip = readString(attack.windupClip, "").trim();
+				const strikeClip = readString(attack.strikeClip, "").trim();
+				return [
+					{
+						label,
+						damage: Math.round(readNumber(attack.damage, 10, 0, 999)),
+						rangeTiles: readNumber(attack.rangeTiles, 2, 0.5, 20),
+						arcDegrees: readNumber(attack.arcDegrees, 100, 1, 360),
+						windupMs: readNumber(attack.windupMs, 700, 100, 5000),
+						impactMs: readNumber(attack.impactMs, 150, 0, 3000),
+						recoveryMs: readNumber(attack.recoveryMs, 600, 100, 5000),
+						...(windupClip && { windupClip }),
+						...(strikeClip && { strikeClip }),
+					},
+				];
+			})
+		: undefined;
 	return {
 		enabled: readBoolean(value.enabled, false),
 		detectionRadiusTiles: Math.round(
@@ -687,7 +709,23 @@ function migrateEnemyBehaviour(value: unknown): EnemyBehaviour | undefined {
 					contactDamage: Math.round(readNumber(value.contactDamage, 0, 0, 999)),
 				}
 			: {}),
+		...(attacks && { attacks }),
 	};
+}
+
+function migrateEnemyBehaviourOverride(
+	value: unknown,
+): Partial<EnemyBehaviour> | undefined {
+	if (!isRecord(value)) return undefined;
+	const normalized = migrateEnemyBehaviour(value);
+	return (
+		normalized &&
+		Object.fromEntries(
+			Object.entries(normalized).filter(([key]) =>
+				Object.getOwnPropertyDescriptor(value, key),
+			),
+		)
+	);
 }
 
 function definitionHasNpcDefaults(definition?: NPCDefinition): boolean {
@@ -760,7 +798,7 @@ function migrateNpcInstances(
 				movementMode: "stationary",
 				movementSpeed: 1,
 			};
-		const explicitEnemyOverride = migrateEnemyBehaviour(
+		const explicitEnemyOverride = migrateEnemyBehaviourOverride(
 			item.enemyBehaviourOverride,
 		);
 		const legacyEnemyOverride = !hasDefinitionDefaults
@@ -769,8 +807,8 @@ function migrateNpcInstances(
 		const enemyBehaviourOverride = explicitEnemyOverride ?? legacyEnemyOverride;
 		const enemyBehaviour =
 			migrateEnemyBehaviour(item.enemyBehaviour) ??
-			enemyBehaviourOverride ??
-			definition?.defaultEnemyBehaviour;
+			definition?.defaultEnemyBehaviour ??
+			migrateEnemyBehaviour(item.enemyBehaviourOverride);
 		const interactionOverride =
 			migrateInteraction(item.interactionOverride, "on_interact") ??
 			(!hasDefinitionDefaults

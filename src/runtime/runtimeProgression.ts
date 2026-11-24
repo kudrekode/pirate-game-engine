@@ -130,6 +130,7 @@ export function moveRuntimePlayer(
 	}
 
 	const enteredNewArea = nextArea.id !== session.currentAreaId;
+	session.enemyAttacks.clear();
 	session.currentAreaId = nextArea.id;
 	if (enteredNewArea) {
 		emit({ type: "areaChanged", areaId: nextArea.id });

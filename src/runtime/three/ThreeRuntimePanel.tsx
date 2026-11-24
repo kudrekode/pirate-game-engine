@@ -72,6 +72,7 @@ import {
 	prepareInteractionMessage,
 } from "../interactionMessages";
 import { interactionPrompt } from "../interactionPrompt";
+import { resolveNPCInstance } from "../npcResolver";
 import {
 	advancePlayerLocomotion,
 	isPlayerAirborne,
@@ -1477,23 +1478,42 @@ export function ThreeRuntimePanel({
 			}
 			return;
 		}
-		if (event.type === "npcFacingChanged") {
+		if (
+			event.type === "npcFacingChanged" ||
+			event.type === "enemyAttackWindup"
+		) {
 			const session = getSession();
 			const area = session ? getArea(session) : undefined;
 			const npc = area?.npcs.find((candidate) => candidate.id === event.npcId);
 			if (session && area && npc) {
 				const currentVisual = npcVisualsRef.current.get(event.npcId);
+				const facing =
+					event.type === "enemyAttackWindup"
+						? event.direction
+						: toVisualFacing(event.facing);
 				npcVisualsRef.current.set(
 					event.npcId,
 					currentVisual?.areaId === area.id
-						? { ...currentVisual, facing: toVisualFacing(event.facing) }
+						? { ...currentVisual, facing }
 						: resetVisualEntityState(
 								session.currentAreaId,
 								{ x: npc.x, y: npc.y },
-								toVisualFacing(event.facing),
+								facing,
 							),
 				);
 			}
+			if (event.type === "enemyAttackWindup" && event.clip)
+				characterAnimationControllersRef.current
+					.get(event.npcId)
+					?.triggerNpcAttack(event.clip, event.durationMs);
+			return;
+		}
+		if (event.type === "enemyAttackStrike") {
+			const controller = characterAnimationControllersRef.current.get(
+				event.npcId,
+			);
+			if (event.clip) controller?.triggerNpcAttack(event.clip);
+			else controller?.triggerAttack();
 			return;
 		}
 		if (event.type === "stateChanged" || event.type === "combatChanged") {
@@ -1502,9 +1522,10 @@ export function ThreeRuntimePanel({
 			return;
 		}
 		if (event.type === "playerDamaged" && event.damage > 0) {
-			characterAnimationControllersRef.current
-				.get(event.npcId)
-				?.triggerAttack();
+			if (!event.patterned)
+				characterAnimationControllersRef.current
+					.get(event.npcId)
+					?.triggerAttack();
 			if (event.health > 0)
 				characterAnimationControllersRef.current
 					.get("runtime_player")
@@ -2542,11 +2563,23 @@ export function ThreeRuntimePanel({
 			) {
 				return;
 			}
+			const npc = runtimeArea.npcs.find((candidate) => candidate.id === id);
+			const attacks =
+				npc &&
+				resolveNPCInstance(
+					session.project.npcs.find(
+						(definition) => definition.id === npc.npcDefinitionId,
+					),
+					npc,
+				).enemyBehaviour?.attacks;
 			characterAnimationControllers.set(
 				id,
 				createThreeCharacterAnimationController({
 					asset: visual.asset,
 					root: group,
+					npcAttackClips: attacks?.flatMap(({ windupClip, strikeClip }) =>
+						[windupClip, strikeClip].filter((clip) => clip !== undefined),
+					),
 					attackVariants:
 						id === "runtime_player"
 							? {

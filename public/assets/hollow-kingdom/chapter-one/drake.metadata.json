@@ -1,0 +1,98 @@
+{
+	"asset": "Mere Wyrm",
+	"source": "tools/hollow-kingdom/chapter-one/drake.py",
+	"metresPerUnit": 1,
+	"forward": "+Z",
+	"skinBones": 23,
+	"materials": 10,
+	"embeddedImages": 3,
+	"triangles": 14118,
+	"blenderRoundTrip": "5.2.0 LTS",
+	"restSizeMetres": {
+		"width": 1.631,
+		"height": 1.889,
+		"length": 4.27
+	},
+	"clips": {
+		"Idle": {
+			"seconds": 2.4,
+			"maxJointTravelMetres": {
+				"Root": 0.013,
+				"Head": 0.028,
+				"Jaw": 0.027,
+				"ForeFoot.L": 0.0,
+				"Tail4": 0.335
+			}
+		},
+		"Walk": {
+			"seconds": 1.1,
+			"maxJointTravelMetres": {
+				"Root": 0.033,
+				"Head": 0.059,
+				"Jaw": 0.059,
+				"ForeFoot.L": 0.389,
+				"Tail4": 0.642
+			}
+		},
+		"BiteWindup": {
+			"seconds": 0.8,
+			"maxJointTravelMetres": {
+				"Root": 0.104,
+				"Head": 0.372,
+				"Jaw": 0.38,
+				"ForeFoot.L": 0.0,
+				"Tail4": 0.428
+			}
+		},
+		"Bite": {
+			"seconds": 0.567,
+			"maxJointTravelMetres": {
+				"Root": 0.378,
+				"Head": 0.787,
+				"Jaw": 0.792,
+				"ForeFoot.L": 0.194,
+				"Tail4": 0.66
+			}
+		},
+		"SweepWindup": {
+			"seconds": 1.1,
+			"maxJointTravelMetres": {
+				"Root": 0.098,
+				"Head": 0.263,
+				"Jaw": 0.262,
+				"ForeFoot.L": 0.0,
+				"Tail4": 1.1
+			}
+		},
+		"Sweep": {
+			"seconds": 0.733,
+			"maxJointTravelMetres": {
+				"Root": 0.166,
+				"Head": 0.456,
+				"Jaw": 0.453,
+				"ForeFoot.L": 0.017,
+				"Tail4": 1.938
+			}
+		},
+		"Hit": {
+			"seconds": 0.467,
+			"maxJointTravelMetres": {
+				"Root": 0.111,
+				"Head": 0.271,
+				"Jaw": 0.277,
+				"ForeFoot.L": 0.001,
+				"Tail4": 0.298
+			}
+		},
+		"Death": {
+			"seconds": 1.433,
+			"maxJointTravelMetres": {
+				"Root": 0.502,
+				"Head": 1.035,
+				"Jaw": 1.063,
+				"ForeFoot.L": 0.337,
+				"Tail4": 0.333
+			}
+		}
+	}
+}

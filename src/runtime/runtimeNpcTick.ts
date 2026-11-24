@@ -1,5 +1,5 @@
 import type { GameArea, NPCInstance } from "../types/game";
-import { damagePlayer } from "./combat";
+import { applyRuntimeEnemyDamage, tickEnemyAttack } from "./enemyAttack";
 import {
 	isEnemyTouchingPlayer,
 	isNpcTileWalkable,
@@ -38,7 +38,21 @@ export type RuntimeNpcTickEvent =
 	| { type: "enemyDetectedPlayer"; npcId: string }
 	| { type: "enemyLostPlayer"; npcId: string }
 	| { type: "enemyTouchedPlayer"; npcId: string }
-	| { type: "playerDamaged"; npcId: string; damage: number; health: number }
+	| {
+			type: "enemyAttackWindup";
+			npcId: string;
+			clip?: string;
+			durationMs: number;
+			direction: RuntimeGridPosition;
+	  }
+	| { type: "enemyAttackStrike"; npcId: string; clip?: string }
+	| {
+			type: "playerDamaged";
+			npcId: string;
+			damage: number;
+			health: number;
+			patterned?: boolean;
+	  }
 	| { type: "gameOver" }
 	| { type: "combatChanged" }
 	| { type: "stateChanged" }
@@ -85,31 +99,14 @@ function applyEnemyContact(
 	}
 
 	emit({ type: "enemyTouchedPlayer", npcId: npc.id });
-	const damage = npc.enemyBehaviour?.contactDamage ?? 0;
-	if (damage > 0) {
-		const result = damagePlayer(session.runtimePlayerHealth, damage);
-		session.runtimePlayerHealth = result.health;
-		session.bowDraw = undefined;
-		emit({
-			type: "playerDamaged",
-			npcId: npc.id,
-			damage,
-			health: session.runtimePlayerHealth,
-		});
-		emit({
-			type: "status",
-			message: `Enemy touched player. Health ${session.runtimePlayerHealth}/${session.playerCombat.maxHealth}.`,
-		});
-		if (result.defeated) {
-			emit({ type: "gameOver" });
-		}
-	} else {
-		emit({ type: "status", message: "Enemy touched player." });
-	}
-
 	session.enemyContactCooldowns.set(npc.id, time + 1200);
-	emit({ type: "stateChanged" });
-	emit({ type: "combatChanged" });
+	applyRuntimeEnemyDamage(
+		session,
+		npc.id,
+		npc.enemyBehaviour?.contactDamage ?? 0,
+		"Enemy touched player.",
+		emit,
+	);
 }
 
 function shouldEmitBlocked(
@@ -132,7 +129,10 @@ export function tickRuntimeNpcs(
 	options: RuntimeNpcTickOptions = {},
 ): void {
 	area.npcs.forEach((npc) => {
-		if (session.defeatedNpcIds.has(npc.id)) {
+		if (
+			session.runtimePlayerHealth <= 0 ||
+			session.defeatedNpcIds.has(npc.id)
+		) {
 			return;
 		}
 
@@ -140,17 +140,21 @@ export function tickRuntimeNpcs(
 			movement: { patrolIndex: 0 },
 			nextMoveAt: time + 450,
 		};
-		if (time < runtime.nextMoveAt) {
+		const moveDue = time >= runtime.nextMoveAt;
+		const attackPending = session.enemyAttacks.get(npc.id)?.pending;
+		if (!moveDue && !attackPending) {
 			session.npcMovementStates.set(npc.id, runtime);
 			return;
 		}
+		const resolved = getResolvedNpc(session, npc);
+		if (tickEnemyAttack(session, area, resolved, time, moveDue, emit)) return;
+		if (!moveDue) return;
 
 		const canMove = (x: number, y: number) =>
 			!(session.playerPosition.x === x && session.playerPosition.y === y) &&
 			isNpcTileWalkable(area, npc.id, x, y);
 		const origin = session.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
 		session.enemyOrigins.set(npc.id, origin);
-		const resolved = getResolvedNpc(session, npc);
 		const canUseEnemyMovement =
 			resolved.attributes.alignment === "hostile" &&
 			resolved.enemyBehaviour?.enabled === true;
@@ -218,7 +222,10 @@ export function tickRuntimeNpcs(
 			emit({ type: "npcBlocked", npcId: npc.id, x: npc.x, y: npc.y });
 		}
 
-		if (isEnemyTouchingPlayer(resolved, session.playerPosition)) {
+		if (
+			!resolved.enemyBehaviour?.attacks?.length &&
+			isEnemyTouchingPlayer(resolved, session.playerPosition)
+		) {
 			applyEnemyContact(session, resolved, time, emit);
 		}
 	});

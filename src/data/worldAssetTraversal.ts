@@ -24,6 +24,21 @@ const solid = (x: number, y: number, z: number): AssetTraversalProfile => ({
 });
 
 export const WORLD_ASSET_TRAVERSAL: Record<string, AssetTraversalProfile> = {
+	"chapter-chapel-arch": {
+		solids: [
+			{ min: [-2.7, 0, -0.74], max: [-1.28, 4.0, 0.74] },
+			{ min: [1.28, 0, -0.74], max: [2.7, 4.0, 0.74] },
+		],
+	},
+	"chapter-chapel-wall": solid(6, 3.1, 0.75),
+	"chapter-vigil-altar": solid(2.6, 1.6, 1.05),
+	"chapter-mere-mouth": {
+		solids: [
+			{ min: [-4, 0, -0.9], max: [-1.72, 3.6, 0.9] },
+			{ min: [1.72, 0, -0.9], max: [4, 3.6, 0.9] },
+		],
+	},
+	"chapter-cinder-crystal": solid(1.28, 1.85, 0.86),
 	"mere-cottage": {
 		solids: [
 			box(4.78, 4.6, 4.55),

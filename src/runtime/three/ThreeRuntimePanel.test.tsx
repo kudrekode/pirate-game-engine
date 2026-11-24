@@ -1278,7 +1278,9 @@ describe("RuntimePanel play modes", () => {
 });
 
 function latestSession(): import("../runtimeSession").RuntimeSessionState {
-	return runtimeSpies.sessionCreated.mock.calls.slice(-1)[0]![0];
+	const session = runtimeSpies.sessionCreated.mock.calls.slice(-1)[0]?.[0];
+	if (!session) throw new Error("Expected a runtime session");
+	return session;
 }
 
 function dialogueProject() {
@@ -1733,7 +1735,7 @@ it.each([
 	render(<ThreeRuntimePanel project={dialogueProject()} onRestart={vi.fn()} />);
 	const tick = intervals.mock.calls.find(
 		(call) => call[1] === 50,
-	)![0] as () => void;
+	)?.[0] as () => void;
 	if (modal === "dialogue") fireEvent.keyDown(window, { key: "e" });
 	else latestSession().activeShopId = "store";
 	runtimeSpies.tickRuntimeNpcs.mockClear();
@@ -1842,10 +1844,10 @@ it("restores fractional traversal coordinates before the first Three scene build
 				saveSessionRef={saveSessionRef}
 			/>,
 		);
-		expect(saveSessionRef.current!().traversal?.position).toEqual(
+		expect(saveSessionRef.current?.().traversal?.position).toEqual(
 			s.traversal.position,
 		);
-		expect(saveSessionRef.current!().nextMoveAt).toBe(0);
+		expect(saveSessionRef.current?.().nextMoveAt).toBe(0);
 		act(() => runLatestAnimationFrame());
 		const camera = readCameraFeel();
 		for (const part of ["lookAt", "position"])
@@ -1863,10 +1865,10 @@ it("restores fractional traversal coordinates before the first Three scene build
 });
 
 function readCameraFeel() {
-	return JSON.parse(
-		document.querySelector<HTMLElement>(".three-runtime-host")!.dataset
-			.cameraFeel!,
-	);
+	const cameraFeel = document.querySelector<HTMLElement>(".three-runtime-host")
+		?.dataset.cameraFeel;
+	if (cameraFeel === undefined) throw new Error("Expected camera feel data");
+	return JSON.parse(cameraFeel);
 }
 
 it.each([
@@ -2106,7 +2108,7 @@ it.each([
 	);
 	const tick = intervals.mock.calls.find(
 		(call) => call[1] === 50,
-	)![0] as () => void;
+	)?.[0] as () => void;
 	const session = latestSession();
 	const builds = getRuntimeDiagnosticsSnapshot().scene.buildCount;
 	const renderers = threeSpies.WebGLRenderer.mock.calls.length;
@@ -2192,6 +2194,7 @@ function mockCombatActors(deathAvailable = true) {
 			dispose: vi.fn(),
 			refresh: vi.fn(),
 			triggerAttack: vi.fn(),
+			triggerNpcAttack: vi.fn(),
 			syncBowDraw: vi.fn(),
 			triggerHit: vi.fn(),
 			triggerInteraction: vi.fn(() => false),
@@ -2592,7 +2595,7 @@ it.each([
 	fireEvent.keyDown(window, { key: "Escape" });
 	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(latestSession().bowDraw).toBeDefined();
-	const tick = intervals.mock.calls.find((c) => c[1] === 50)![0] as () => void;
+	const tick = intervals.mock.calls.find((c) => c[1] === 50)?.[0] as () => void;
 	act(() => tick());
 	now += 2000;
 	act(() => tick());
@@ -2629,25 +2632,25 @@ it("maps Three Space to a real jump, F to attack and Shift to sprint without reb
 		before = getRuntimeDiagnosticsSnapshot();
 	fireEvent.keyDown(window, { key: "Shift", code: "ShiftLeft" });
 	fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
-	expect(session.traversal!.motion.sprinting).toBe(true);
-	const sampler = session.traversal!.world.sampler;
+	expect(session.traversal?.motion.sprinting).toBe(true);
+	const sampler = session.traversal?.world.sampler;
 	fireEvent.keyDown(window, { key: " ", code: "Space" });
-	expect(session.traversal!.motion.phase).toBe("jump");
+	expect(session.traversal?.motion.phase).toBe("jump");
 	expect(session.nextAttackAt).toBe(0);
 	fireEvent.keyDown(window, { key: "f", code: "KeyF" });
 	expect(session.nextAttackAt).toBe(0);
 	now += 100;
 	act(() => runLatestAnimationFrame());
-	expect(session.traversal!.motion.height).toBeGreaterThan(
-		session.traversal!.position.height,
-	);
+	const traversal = session.traversal;
+	if (!traversal) throw new Error("Expected active traversal after jumping");
+	expect(traversal.motion.height).toBeGreaterThan(traversal.position.height);
 	fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
 	fireEvent.keyUp(window, { key: "Shift", code: "ShiftLeft" });
 	for (let i = 0; i < 20; i++) {
 		now += 100;
 		act(() => runLatestAnimationFrame());
 	}
-	expect(session.traversal!.motion).toMatchObject({
+	expect(session.traversal?.motion).toMatchObject({
 		phase: "grounded",
 		verticalVelocity: 0,
 		sprinting: false,
@@ -2658,7 +2661,7 @@ it("maps Three Space to a real jump, F to attack and Shift to sprint without reb
 	expect(after.scene.buildCount).toBe(before.scene.buildCount);
 	expect(after.raf.activeLoopCount).toBe(1);
 	expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
-	expect(session.traversal!.world.sampler).toBe(sampler);
+	expect(session.traversal?.world.sampler).toBe(sampler);
 	expect(JSON.stringify(p)).toBe(authored);
 });
 
@@ -2699,8 +2702,8 @@ it("hands held legacy grid movement into sprint without another movement keydown
 	await act(async () => {
 		await new Promise((resolve) => setTimeout(resolve, 40));
 	});
-	expect(session.traversal!.position.x).toBeCloseTo(1.2);
-	expect(session.traversal!.motion.sprinting).toBe(true);
+	expect(session.traversal?.position.x).toBeCloseTo(1.2);
+	expect(session.traversal?.motion.sprinting).toBe(true);
 	fireEvent.blur(window);
 });
 

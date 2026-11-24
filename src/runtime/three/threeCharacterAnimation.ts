@@ -51,12 +51,14 @@ export type ThreeCharacterAnimationController = {
 	sync: (context: CharacterAnimationContext) => void;
 	syncBowDraw: (charge: number | undefined) => void;
 	triggerAttack: (variant?: "sword" | "bow") => void;
+	triggerNpcAttack: (clip: string, durationMs?: number) => void;
 	triggerHit: () => void;
 	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
 };
 
 const TRANSITION_SECONDS = 0.12;
+type AttackClipKey = `npc:${string}`;
 const preparedClipCache = new Map<string, THREE.AnimationClip>();
 
 function getTrackTargetName(trackName: string): string | undefined {
@@ -164,13 +166,6 @@ export function resolveCharacterAnimationState(
 	return context.moving ? (context.sprinting ? "run" : "walk") : "idle";
 }
 
-function getSourceAssetId(
-	asset: ThreeVisualAssetDefinition,
-	state: CharacterAnimationSemanticState,
-): string | undefined {
-	return asset.animations?.[state]?.assetId ?? asset.id;
-}
-
 function getAnimationMapping(
 	asset: ThreeVisualAssetDefinition,
 	state: CharacterAnimationSemanticState,
@@ -182,16 +177,18 @@ export function createThreeCharacterAnimationController({
 	asset,
 	root,
 	attackVariants,
+	npcAttackClips = [],
 }: {
 	asset: ThreeVisualAssetDefinition;
 	root: THREE.Object3D;
 	attackVariants?: Partial<
 		Record<"sword" | "bow", { assetId?: string; clipName: string }>
 	>;
+	npcAttackClips?: string[];
 }): ThreeCharacterAnimationController {
 	const mixer = new THREE.AnimationMixer(root);
 	const actions = new Map<
-		CharacterAnimationSemanticState | "sword" | "bow",
+		CharacterAnimationSemanticState | "sword" | "bow" | AttackClipKey,
 		THREE.AnimationAction
 	>();
 	const loadingSourceIds = new Set<string>();
@@ -216,7 +213,8 @@ export function createThreeCharacterAnimationController({
 	let incompatibleClipCount = 0;
 	let oneShotActionsTriggered = 0;
 	let disposed = false;
-	let attackVariant: "sword" | "bow" | undefined;
+	let attackVariant: "sword" | "bow" | AttackClipKey | undefined;
+	let npcAttackDurationMs: number | undefined;
 	let bowDrawCharge: number | undefined;
 	let cinematicAnimation: CinematicActorAnimation | undefined;
 	let cinematicCueKey: number | undefined;
@@ -276,7 +274,12 @@ export function createThreeCharacterAnimationController({
 								(gaitSpeed ?? (nextState === "run" ? 7.64 : 4.63)),
 						),
 					)
-				: 1;
+				: !cinematic &&
+						nextState === "attack" &&
+						npcAttackDurationMs &&
+						nextAction
+					? (nextAction.getClip().duration * 1000) / npcAttackDurationMs
+					: 1;
 		nextAction?.setEffectiveTimeScale(rate);
 		if (
 			semanticState === nextState &&
@@ -383,22 +386,28 @@ export function createThreeCharacterAnimationController({
 			"defeated",
 			"sword",
 			"bow",
+			...npcAttackClips.map((clip): AttackClipKey => `npc:${clip}`),
 		] as const) {
 			if (actions.has(state)) {
 				continue;
 			}
-			const mapping =
-				state === "sword" || state === "bow"
+			const embeddedAttack = state.startsWith("npc:");
+			const mapping = embeddedAttack
+				? { clipName: state.slice(4), assetId: asset.id }
+				: state === "sword" || state === "bow"
 					? attackVariants?.[state]
-					: getAnimationMapping(asset, state);
+					: getAnimationMapping(
+							asset,
+							state as CharacterAnimationSemanticState,
+						);
 			if (!mapping) {
 				continue;
 			}
-			const sourceAssetId =
-				state === "sword" || state === "bow"
-					? mapping.assetId
-					: getSourceAssetId(asset, state);
-			const sourceAsset = getThreeVisualAssetDefinition(sourceAssetId);
+			const sourceAssetId = mapping.assetId ?? asset.id;
+			const sourceAsset =
+				sourceAssetId === asset.id
+					? asset
+					: getThreeVisualAssetDefinition(sourceAssetId);
 			if (sourceAssetId) {
 				sourceAssetIds.add(sourceAssetId);
 			}
@@ -549,6 +558,7 @@ export function createThreeCharacterAnimationController({
 			if (starting) {
 				oneShotState = undefined;
 				attackVariant = "bow";
+				npcAttackDurationMs = undefined;
 				applySemanticState("attack", true);
 			}
 			syncResolvedState();
@@ -578,6 +588,7 @@ export function createThreeCharacterAnimationController({
 			oneShotState = "attack";
 			bowDrawCharge = undefined;
 			attackVariant = variant;
+			npcAttackDurationMs = undefined;
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
 			if (
@@ -587,10 +598,26 @@ export function createThreeCharacterAnimationController({
 			)
 				activeAction.time = BOW.drawPoseSeconds;
 		},
+		triggerNpcAttack: (clip, durationMs) => {
+			const key = `npc:${clip}` as const;
+			if (
+				disposed ||
+				playingCinematicAnimation ||
+				currentContext.defeated ||
+				!actions.has(key)
+			)
+				return;
+			oneShotState = "attack";
+			attackVariant = key;
+			npcAttackDurationMs = durationMs;
+			oneShotActionsTriggered += 1;
+			applySemanticState("attack", true);
+		},
 		triggerHit: () => {
 			if (
 				playingCinematicAnimation ||
 				currentContext.defeated ||
+				(oneShotState === "attack" && attackVariant?.startsWith("npc:")) ||
 				disposed ||
 				!actions.has("hit")
 			)

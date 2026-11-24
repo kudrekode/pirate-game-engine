@@ -1050,5 +1050,90 @@ describe("migrateProject", () => {
 				contactDamage: 10,
 			},
 		});
+		expect(project.areas[0].npcs[0].enemyBehaviour?.attacks).toBeUndefined();
+	});
+
+	it("round-trips authored enemy attack definitions and instance overrides", () => {
+		const attack = {
+			label: "a bite",
+			damage: 12,
+			rangeTiles: 2.15,
+			arcDegrees: 66,
+			windupMs: 820,
+			impactMs: 140,
+			recoveryMs: 730,
+			windupClip: "BiteWindup",
+			strikeClip: "Bite",
+		};
+		const behaviour = {
+			enabled: true,
+			detectionRadiusTiles: 6,
+			chaseRadiusTiles: 9,
+			returnToOrigin: true,
+			attacks: [attack],
+		};
+		const variant = { ...attack, windupMs: 420, damage: 6 };
+		const authored = {
+			npcs: [{ id: "drake", name: "Drake", defaultEnemyBehaviour: behaviour }],
+			areas: [
+				{
+					id: "hollow",
+					width: 3,
+					height: 3,
+					npcs: [
+						{
+							id: "ashling",
+							npcDefinitionId: "drake",
+							x: 1,
+							y: 1,
+							enemyBehaviourOverride: { ...behaviour, attacks: [variant] },
+						},
+					],
+				},
+			],
+		};
+		const project = importProjectJson(JSON.stringify(authored));
+		const roundTrip = importProjectJson(JSON.stringify(project));
+		expect(roundTrip.npcs[0].defaultEnemyBehaviour?.attacks).toEqual([attack]);
+		expect(roundTrip.areas[0].npcs[0].enemyBehaviourOverride?.attacks).toEqual([
+			variant,
+		]);
+	});
+
+	it("rejects malformed enemy attack input and bounds legacy migration", () => {
+		const definition = {
+			id: "drake",
+			name: "Drake",
+			defaultEnemyBehaviour: {
+				attacks: [
+					{ label: " ", damage: 99 },
+					{
+						label: " bite ",
+						rangeTiles: -3,
+						arcDegrees: 600,
+						windupMs: "fast",
+						windupClip: " Windup ",
+					},
+				],
+			},
+		};
+		const source = { npcs: [definition] };
+		expect(() => importProjectJson(JSON.stringify(source))).toThrow(
+			/defaultEnemyBehaviour\.attacks\.1\.windupMs/,
+		);
+		expect(
+			migrateProject(source).npcs[0].defaultEnemyBehaviour?.attacks,
+		).toEqual([
+			{
+				label: "bite",
+				damage: 10,
+				rangeTiles: 0.5,
+				arcDegrees: 360,
+				windupMs: 700,
+				impactMs: 150,
+				recoveryMs: 600,
+				windupClip: "Windup",
+			},
+		]);
 	});
 });

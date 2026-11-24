@@ -10,6 +10,7 @@ import type {
 } from "../types/game";
 import { getPlayerCombatStats } from "./combat";
 import type { RuntimeDialogueState } from "./dialogueEngine";
+import type { RuntimeEnemyAttack } from "./enemyAttack";
 import type { NPCMovementState } from "./npcMovement";
 import type { BowDrawState, RuntimeProjectiles } from "./projectileRuntime";
 import { createRuntimeQuestState, type RuntimeQuestState } from "./questEngine";
@@ -66,6 +67,8 @@ export type RuntimeSessionState = {
 	npcMovementStates: Map<string, RuntimeNpcMovementTiming>;
 	enemyOrigins: Map<string, RuntimeGridPosition>;
 	enemyContactCooldowns: Map<string, number>;
+	/** Transient local encounter timings. Save/Continue starts a fresh telegraph. */
+	enemyAttacks: Map<string, RuntimeEnemyAttack>;
 	activeShopId?: string;
 	nextAttackAt: number;
 	nextMoveAt: number;
@@ -125,6 +128,7 @@ export function createRuntimeSession(
 		npcMovementStates: new Map<string, RuntimeNpcMovementTiming>(),
 		enemyOrigins: new Map<string, RuntimeGridPosition>(),
 		enemyContactCooldowns: new Map<string, number>(),
+		enemyAttacks: new Map(),
 		nextAttackAt: 0,
 		nextMoveAt: 0,
 		startupPending: false,

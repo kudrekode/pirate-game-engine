@@ -114,3 +114,24 @@ Check the echoed command before letting a heavy browser/compiler selection run.
 - `npm run test` watches all owners; `npm run test:run` runs them once.
   `npm run test:root` selects only the root app. Workspace scripts remain usable
   for focused work; they overlap the final gate and are not extra CI steps.
+
+## Code quality and commits
+
+Before completing any implementation or creating a commit:
+
+1. Inspect package.json and biome.json to determine the project's actual quality commands.
+2. Run Biome formatting, import organisation and linting on files modified by this task.
+3. Apply safe automatic fixes where appropriate.
+4. Resolve remaining Biome diagnostics without suppressing rules unnecessarily.
+5. Run Biome checks again to confirm success.
+6. Run relevant TypeScript checks and tests.
+7. Review git diff for unrelated formatting or accidental changes.
+8. Stage the intended files and verify the staged content passes Biome before committing.
+
+Never bypass Git hooks using --no-verify just to make a commit succeed.
+
+Do not format the entire repository unless explicitly requested.
+
+If a commit fails, distinguish Biome diagnostics from Git permissions, lock-file errors and other environment failures.
+
+Report unresolved failures accurately.

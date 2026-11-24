@@ -106,6 +106,7 @@ function defeatRuntimeNpc(
 	area.npcs = removeDefeatedNpc(area.npcs, npc.id);
 	session.npcMovementStates.delete(npc.id);
 	session.enemyContactCooldowns.delete(npc.id);
+	session.enemyAttacks.delete(npc.id);
 
 	emit({ type: "npcDefeated", npcId: npc.id, name: enemyName });
 	emit({ type: "flagChanged", flag: defeatedFlag, value: true });

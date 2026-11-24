@@ -520,6 +520,21 @@ export type EnemyBehaviour = {
 	chaseRadiusTiles: number;
 	returnToOrigin: boolean;
 	contactDamage?: number;
+	/** Cycles in authored order. A nonempty list replaces legacy contact damage. */
+	attacks?: EnemyAttack[];
+};
+
+export type EnemyAttack = {
+	label: string;
+	damage: number;
+	rangeTiles: number;
+	arcDegrees: number;
+	windupMs: number;
+	impactMs: number;
+	recoveryMs: number;
+	/** Optional names of embedded clips in the NPC's existing Three asset. */
+	windupClip?: string;
+	strikeClip?: string;
 };
 
 export type NPCInstance = {

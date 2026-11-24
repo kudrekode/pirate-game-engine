@@ -38,6 +38,47 @@ import type { AssetCreatorVariant, CharacterGameAsset } from "../../types/game";
 export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 	...(
 		[
+			["chapel-arch", "Ashen Chapel Arch"],
+			["chapel-wall", "Ruined Lancet Wall"],
+			["vigil-altar", "Vigil Altar"],
+			["mere-mouth", "Schist Cavern Mouth"],
+			["cinder-crystal", "Cinder Crystal"],
+			["cave-vault", "Schist Cavern Vault"],
+		] as const
+	).map(
+		([key, name]): ThreeVisualAssetDefinition => ({
+			id: `chapter-${key}`,
+			name,
+			kind: "glb",
+			category: "environment",
+			browserCategory: key.startsWith("chapel-") ? "Buildings" : "Props",
+			url: `/assets/hollow-kingdom/chapter-one/${key}.glb`,
+			castShadow: true,
+			receiveShadow: true,
+			traversal: WORLD_ASSET_TRAVERSAL[`chapter-${key}`],
+			tags: ["hollow-kingdom"],
+		}),
+	),
+	{
+		id: "chapter-mere-drake",
+		name: "Mere Drake",
+		kind: "glb",
+		category: "character",
+		url: "/assets/hollow-kingdom/chapter-one/drake.glb",
+		defaultRotationOffset: 180,
+		animations: {
+			idle: { clipName: "Idle" },
+			walk: { clipName: "Walk" },
+			attack: { clipName: "Bite" },
+			hit: { clipName: "Hit" },
+			defeated: { clipName: "Death" },
+		},
+		castShadow: true,
+		receiveShadow: true,
+		tags: ["hollow-kingdom", "creature"],
+	},
+	...(
+		[
 			["wayfarer", "Cloaked Wayfarer"],
 			["ferryman", "Merewatch Ferryman"],
 			["poacher", "Ashwood Poacher"],
