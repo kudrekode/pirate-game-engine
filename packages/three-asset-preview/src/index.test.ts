@@ -149,12 +149,12 @@ describe("shared Three asset preview", () => {
 		expect(GOLDEN_REFERENCE_IDLE_BAKED_ASSET).toMatchObject({
 			animationOnly: true,
 			kind: "glb",
-			url: expect.stringMatching(/idle\.glb$/u),
+			url: expect.stringMatching(/idle\.clip\.glb$/u),
 		});
 		expect(GOLDEN_REFERENCE_WALK_BAKED_ASSET).toMatchObject({
 			animationOnly: true,
 			kind: "glb",
-			url: expect.stringMatching(/walk-in-place\.glb$/u),
+			url: expect.stringMatching(/walk-in-place\.clip\.glb$/u),
 		});
 	});
 

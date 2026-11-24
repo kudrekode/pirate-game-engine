@@ -1,0 +1,2512 @@
+{
+	"date": "2026-11-24",
+	"reference": "c59d857",
+	"chrome": "158.0.8127.37",
+	"backend": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+	"viewport": {
+		"width": 960,
+		"height": 600
+	},
+	"fixtureSHA256": "beb71d245fc73d09da1d8d69863f8a9b6335bbf415b10872d6456eb930a4ab7c",
+	"transport": "Playwright fulfillment from actual Vite build and public assets; HTTP cache bypassed",
+	"before": {
+		"coldReadyMs": 5139.23,
+		"actions": {
+			"initialFrames": {
+				"durationMs": 3023.43,
+				"intervalMs": {
+					"count": 179,
+					"p50": 16.7,
+					"p95": 24.7,
+					"p99": 25.1,
+					"max": 33.3,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 180,
+				"gpuMs": {
+					"count": 15,
+					"p50": 16.37,
+					"p95": 24.7,
+					"p99": 24.7,
+					"max": 24.7,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [3, 3],
+				"mixers": [3, 3],
+				"mainDraws": 395,
+				"mainTriangles": 379628,
+				"shadowFrames": 77,
+				"shadowDraws": 23870,
+				"shadowDrawsPerPass": 310,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.3
+					},
+					"cameraUpdate": {
+						"avg": 0.3,
+						"max": 0.7
+					},
+					"frameCallback": {
+						"avg": 6.4,
+						"max": 17.4
+					},
+					"render": {
+						"avg": 5.7,
+						"max": 16.7
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.6
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"followWalk": {
+				"durationMs": 1689.9,
+				"intervalMs": {
+					"count": 110,
+					"p50": 16.6,
+					"p95": 20.8,
+					"p99": 20.9,
+					"max": 25,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 111,
+				"gpuMs": {
+					"count": 9,
+					"p50": 15.16,
+					"p95": 18.78,
+					"p99": 18.78,
+					"max": 18.78,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [2, 3],
+				"mixers": [3, 3],
+				"mainDraws": 330,
+				"mainTriangles": 323894,
+				"shadowFrames": 39,
+				"shadowDraws": 12090,
+				"shadowDrawsPerPass": 310,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 1.5
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"frameCallback": {
+						"avg": 5.3,
+						"max": 9.6
+					},
+					"render": {
+						"avg": 4.6,
+						"max": 8.7
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 1.8
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				},
+				"heldSpeedTilesPerSecond": {
+					"intervals": 107,
+					"blocked": 0,
+					"p05": 2.38,
+					"p50": 3.79,
+					"p95": 5.51,
+					"outside3to4_6": 19
+				}
+			},
+			"walk": {
+				"durationMs": 2632.73,
+				"intervalMs": {
+					"count": 220,
+					"p50": 12.4,
+					"p95": 16.7,
+					"p99": 16.9,
+					"max": 25.2,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 221,
+				"gpuMs": {
+					"count": 18,
+					"p50": 10.12,
+					"p95": 13.24,
+					"p99": 13.24,
+					"max": 13.24,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [1, 2],
+				"mixers": [3, 3],
+				"mainDraws": 92,
+				"mainTriangles": 154620,
+				"shadowFrames": 69,
+				"shadowDraws": 21459,
+				"shadowDrawsPerPass": 311,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"cameraUpdate": {
+						"avg": 0.1,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 3.3,
+						"max": 8.2
+					},
+					"render": {
+						"avg": 2.8,
+						"max": 7.6
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"orbit": {
+				"durationMs": 4869.04,
+				"intervalMs": {
+					"count": 426,
+					"p50": 12.4,
+					"p95": 16.7,
+					"p99": 20.9,
+					"max": 25,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 427,
+				"gpuMs": {
+					"count": 36,
+					"p50": 9.31,
+					"p95": 14.45,
+					"p99": 17.68,
+					"max": 17.68,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [1, 1],
+				"mixers": [3, 3],
+				"mainDraws": 83,
+				"mainTriangles": 136170,
+				"shadowFrames": 129,
+				"shadowDraws": 40119,
+				"shadowDrawsPerPass": 311,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.3
+					},
+					"cameraUpdate": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 3.4,
+						"max": 12
+					},
+					"render": {
+						"avg": 3,
+						"max": 11.4
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"returnFromCinematic": {
+				"durationMs": 4457.82,
+				"intervalMs": {
+					"count": 442,
+					"p50": 8.5,
+					"p95": 12.6,
+					"p99": 16.7,
+					"max": 16.7,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 443,
+				"gpuMs": {
+					"count": 37,
+					"p50": 8.66,
+					"p95": 12.92,
+					"p99": 13.21,
+					"max": 13.21,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [1, 2],
+				"mixers": [3, 3],
+				"mainDraws": 96,
+				"mainTriangles": 157900,
+				"shadowFrames": 120,
+				"shadowDraws": 37320,
+				"shadowDrawsPerPass": 311,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 3,
+						"max": 6.6
+					},
+					"render": {
+						"avg": 2.6,
+						"max": 6.1
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.6
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"ride": {
+				"durationMs": 3097.51,
+				"intervalMs": {
+					"count": 294,
+					"p50": 8.5,
+					"p95": 16.6,
+					"p99": 20.9,
+					"max": 25,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 295,
+				"gpuMs": {
+					"count": 25,
+					"p50": 8.55,
+					"p95": 12.88,
+					"p99": 20.42,
+					"max": 20.42,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [2, 2],
+				"mixers": [3, 3],
+				"mainDraws": 91,
+				"mainTriangles": 145996,
+				"shadowFrames": 81,
+				"shadowDraws": 25110,
+				"shadowDrawsPerPass": 310,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 2.8,
+						"max": 6.2
+					},
+					"render": {
+						"avg": 2.5,
+						"max": 5.7
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"ridgeTransition": {
+				"durationMs": 3651.91,
+				"intervalMs": {
+					"count": 315,
+					"p50": 4.2,
+					"p95": 25,
+					"p99": 212.5,
+					"max": 512.5,
+					"over33": 11,
+					"over50": 8
+				},
+				"activeRenderFrames": 6,
+				"gpuMs": {
+					"count": 1,
+					"p50": 36.85,
+					"p95": 36.85,
+					"p99": 36.85,
+					"max": 36.85,
+					"over33": 1,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 148,
+				"visibleSkinnedRoots": [3, 3],
+				"mixers": [3, 6],
+				"mainDraws": 292,
+				"mainTriangles": 297038,
+				"shadowFrames": 3,
+				"shadowDraws": 989,
+				"shadowDrawsPerPass": 329.67,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.3,
+						"max": 0.9
+					},
+					"cameraUpdate": {
+						"avg": 0.3,
+						"max": 0.6
+					},
+					"frameCallback": {
+						"avg": 28.2,
+						"max": 149.9
+					},
+					"render": {
+						"avg": 27.4,
+						"max": 148.1
+					},
+					"runtimeTick": {
+						"avg": 0.1,
+						"max": 1
+					},
+					"visualUpdate": {
+						"avg": 0.5,
+						"max": 1.2
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				}
+			},
+			"hollowwoodArrival": {
+				"durationMs": 3015.41,
+				"intervalMs": {
+					"count": 179,
+					"p50": 12.5,
+					"p95": 20.8,
+					"p99": 21,
+					"max": 54.3,
+					"over33": 1,
+					"over50": 1
+				},
+				"activeRenderFrames": 180,
+				"gpuMs": {
+					"count": 16,
+					"p50": 11.78,
+					"p95": 21.13,
+					"p99": 21.13,
+					"max": 21.13,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 148,
+				"visibleSkinnedRoots": [1, 1],
+				"mixers": [6, 6],
+				"mainDraws": 98,
+				"mainTriangles": 192244,
+				"shadowFrames": 63,
+				"shadowDraws": 21735,
+				"shadowDrawsPerPass": 345,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.7
+					},
+					"frameCallback": {
+						"avg": 3.2,
+						"max": 8.8
+					},
+					"render": {
+						"avg": 2.6,
+						"max": 7.5
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				}
+			},
+			"hollowwoodSettled": {
+				"durationMs": 3024.53,
+				"intervalMs": {
+					"count": 238,
+					"p50": 12.3,
+					"p95": 21,
+					"p99": 25,
+					"max": 25.2,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 239,
+				"gpuMs": {
+					"count": 20,
+					"p50": 8.68,
+					"p95": 10.36,
+					"p99": 19.07,
+					"max": 19.07,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 148,
+				"visibleSkinnedRoots": [1, 1],
+				"mixers": [6, 6],
+				"mainDraws": 98,
+				"mainTriangles": 192244,
+				"shadowFrames": 82,
+				"shadowDraws": 28290,
+				"shadowDrawsPerPass": 345,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"frameCallback": {
+						"avg": 3.8,
+						"max": 9.6
+					},
+					"render": {
+						"avg": 3.1,
+						"max": 8.7
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"visualUpdate": {
+						"avg": 0.4,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				}
+			},
+			"woodCombat": {
+				"durationMs": 11367.72,
+				"intervalMs": {
+					"count": 1106,
+					"p50": 8.4,
+					"p95": 20.9,
+					"p99": 25.1,
+					"max": 37.6,
+					"over33": 1,
+					"over50": 0
+				},
+				"activeRenderFrames": 1107,
+				"gpuMs": {
+					"count": 92,
+					"p50": 7.41,
+					"p95": 21.55,
+					"p99": 24.87,
+					"max": 24.87,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 146,
+				"visibleSkinnedRoots": [1, 3],
+				"mixers": [6, 4],
+				"mainDraws": 95,
+				"mainTriangles": 161792,
+				"shadowFrames": 306,
+				"shadowDraws": 102448,
+				"shadowDrawsPerPass": 334.8,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 1
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.8
+					},
+					"frameCallback": {
+						"avg": 3.2,
+						"max": 16.3
+					},
+					"render": {
+						"avg": 2.7,
+						"max": 15.3
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.7
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 1.1
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				},
+				"combat": {
+					"playerHealth": 140,
+					"enemies": {
+						"oath-reader": 0,
+						"ashling": 0
+					}
+				}
+			},
+			"wyrm": {
+				"durationMs": 11528.17,
+				"intervalMs": {
+					"count": 2164,
+					"p50": 4.2,
+					"p95": 8.4,
+					"p99": 12.4,
+					"max": 29.2,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 2165,
+				"gpuMs": {
+					"count": 180,
+					"p50": 4.52,
+					"p95": 6.4,
+					"p99": 8.16,
+					"max": 8.21,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "wyrms-hollow",
+				"entities": 36,
+				"visibleSkinnedRoots": [2, 3],
+				"mixers": [3, 2],
+				"mainDraws": 99,
+				"mainTriangles": 49216,
+				"shadowFrames": 332,
+				"shadowDraws": 49236,
+				"shadowDrawsPerPass": 148.3,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.6
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.7
+					},
+					"frameCallback": {
+						"avg": 2.7,
+						"max": 9.1
+					},
+					"render": {
+						"avg": 2.2,
+						"max": 8.1
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.3
+					},
+					"visualUpdate": {
+						"avg": 0.2,
+						"max": 0.9
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				},
+				"combat": {
+					"playerHealth": 74,
+					"enemies": {
+						"mere-wyrm": 0
+					}
+				}
+			}
+		},
+		"cycles": [
+			{
+				"saveMs": 190.86,
+				"exitMs": 128.34,
+				"chooserMs": 866.13,
+				"continueMs": 585.75,
+				"playHeap": 27577684,
+				"editHeap": 21985536,
+				"backingStore": 23962135,
+				"geometries": 73,
+				"textures": 88,
+				"programs": 21,
+				"loops": 1
+			},
+			{
+				"saveMs": 185.12,
+				"exitMs": 446.34,
+				"chooserMs": 787.32,
+				"continueMs": 585.99,
+				"playHeap": 27301832,
+				"editHeap": 22511720,
+				"backingStore": 23962105,
+				"geometries": 73,
+				"textures": 88,
+				"programs": 21,
+				"loops": 1
+			},
+			{
+				"saveMs": 191.57,
+				"exitMs": 368.84,
+				"chooserMs": 1675.87,
+				"continueMs": 572.06,
+				"playHeap": 27998156,
+				"editHeap": 23132108,
+				"backingStore": 23962105,
+				"geometries": 73,
+				"textures": 88,
+				"programs": 21,
+				"loops": 1
+			}
+		],
+		"errors": []
+	},
+	"after": {
+		"coldReadyMs": 4235.78,
+		"actions": {
+			"initialFrames": {
+				"durationMs": 3019.13,
+				"intervalMs": {
+					"count": 200,
+					"p50": 12.7,
+					"p95": 20.9,
+					"p99": 29.4,
+					"max": 33.4,
+					"over33": 1,
+					"over50": 0
+				},
+				"activeRenderFrames": 201,
+				"gpuMs": {
+					"count": 17,
+					"p50": 14.03,
+					"p95": 28.59,
+					"p99": 28.59,
+					"max": 28.59,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [3, 3],
+				"mixers": [3, 3],
+				"mainDraws": 396,
+				"mainTriangles": 379628,
+				"shadowFrames": 71,
+				"shadowDraws": 8662,
+				"shadowDrawsPerPass": 122,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.3
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 1
+					},
+					"frameCallback": {
+						"avg": 5.1,
+						"max": 8.5
+					},
+					"render": {
+						"avg": 4.5,
+						"max": 8.1
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"visualUpdate": {
+						"avg": 0.2,
+						"max": 0.8
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"followWalk": {
+				"durationMs": 1720.25,
+				"intervalMs": {
+					"count": 117,
+					"p50": 12.7,
+					"p95": 16.8,
+					"p99": 20.8,
+					"max": 29.3,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 118,
+				"gpuMs": {
+					"count": 10,
+					"p50": 13.12,
+					"p95": 15.97,
+					"p99": 15.97,
+					"max": 15.97,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [2, 3],
+				"mixers": [3, 3],
+				"mainDraws": 332,
+				"mainTriangles": 323896,
+				"shadowFrames": 42,
+				"shadowDraws": 5124,
+				"shadowDrawsPerPass": 122,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 1.7
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"frameCallback": {
+						"avg": 5.9,
+						"max": 14.5
+					},
+					"render": {
+						"avg": 5.1,
+						"max": 13.6
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 2
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				},
+				"heldSpeedTilesPerSecond": {
+					"intervals": 113,
+					"blocked": 0,
+					"p05": 3.71,
+					"p50": 3.79,
+					"p95": 3.88,
+					"outside3to4_6": 0
+				}
+			},
+			"walk": {
+				"durationMs": 2625.37,
+				"intervalMs": {
+					"count": 245,
+					"p50": 12.3,
+					"p95": 12.7,
+					"p99": 16.7,
+					"max": 16.8,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 246,
+				"gpuMs": {
+					"count": 21,
+					"p50": 9.77,
+					"p95": 11.93,
+					"p99": 12.26,
+					"max": 12.26,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [1, 2],
+				"mixers": [3, 3],
+				"mainDraws": 93,
+				"mainTriangles": 154620,
+				"shadowFrames": 72,
+				"shadowDraws": 8856,
+				"shadowDrawsPerPass": 123,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"cameraUpdate": {
+						"avg": 0.1,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 3.3,
+						"max": 8.3
+					},
+					"render": {
+						"avg": 2.8,
+						"max": 7.7
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"orbit": {
+				"durationMs": 4927.22,
+				"intervalMs": {
+					"count": 401,
+					"p50": 12.5,
+					"p95": 16.7,
+					"p99": 16.8,
+					"max": 20.9,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 402,
+				"gpuMs": {
+					"count": 34,
+					"p50": 10.44,
+					"p95": 13.68,
+					"p99": 16.09,
+					"max": 16.09,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [1, 1],
+				"mixers": [3, 3],
+				"mainDraws": 84,
+				"mainTriangles": 136170,
+				"shadowFrames": 134,
+				"shadowDraws": 16482,
+				"shadowDrawsPerPass": 123,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 3.8,
+						"max": 10.5
+					},
+					"render": {
+						"avg": 3.4,
+						"max": 9.8
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.6
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"returnFromCinematic": {
+				"durationMs": 4462.77,
+				"intervalMs": {
+					"count": 417,
+					"p50": 12.3,
+					"p95": 12.7,
+					"p99": 16.6,
+					"max": 16.8,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 418,
+				"gpuMs": {
+					"count": 35,
+					"p50": 10.17,
+					"p95": 13.77,
+					"p99": 13.92,
+					"max": 13.92,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [1, 2],
+				"mixers": [3, 3],
+				"mainDraws": 97,
+				"mainTriangles": 157900,
+				"shadowFrames": 123,
+				"shadowDraws": 15129,
+				"shadowDrawsPerPass": 123,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 3.1,
+						"max": 9.3
+					},
+					"render": {
+						"avg": 2.7,
+						"max": 8.5
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"ride": {
+				"durationMs": 3070.01,
+				"intervalMs": {
+					"count": 223,
+					"p50": 12.5,
+					"p95": 20.8,
+					"p99": 29.1,
+					"max": 54.1,
+					"over33": 1,
+					"over50": 1
+				},
+				"activeRenderFrames": 224,
+				"gpuMs": {
+					"count": 19,
+					"p50": 12.89,
+					"p95": 30.07,
+					"p99": 30.07,
+					"max": 30.07,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "merewatch",
+				"entities": 143,
+				"visibleSkinnedRoots": [2, 2],
+				"mixers": [3, 3],
+				"mainDraws": 92,
+				"mainTriangles": 145996,
+				"shadowFrames": 74,
+				"shadowDraws": 9028,
+				"shadowDrawsPerPass": 122,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"cameraUpdate": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"frameCallback": {
+						"avg": 4,
+						"max": 21.5
+					},
+					"render": {
+						"avg": 3.4,
+						"max": 21.2
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.1
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.8
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.1
+					}
+				}
+			},
+			"ridgeTransition": {
+				"durationMs": 3115.13,
+				"intervalMs": {
+					"count": 248,
+					"p50": 4.2,
+					"p95": 8.4,
+					"p99": 149.9,
+					"max": 954.2,
+					"over33": 7,
+					"over50": 6
+				},
+				"activeRenderFrames": 7,
+				"gpuMs": {
+					"count": 1,
+					"p50": 13.37,
+					"p95": 13.37,
+					"p99": 13.37,
+					"max": 13.37,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 148,
+				"visibleSkinnedRoots": [3, 3],
+				"mixers": [3, 6],
+				"mainDraws": 293,
+				"mainTriangles": 297038,
+				"shadowFrames": 3,
+				"shadowDraws": 579,
+				"shadowDrawsPerPass": 193,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.7
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.3
+					},
+					"frameCallback": {
+						"avg": 17.7,
+						"max": 108.1
+					},
+					"render": {
+						"avg": 17.2,
+						"max": 106.8
+					},
+					"runtimeTick": {
+						"avg": 0.1,
+						"max": 0.9
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 1
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				}
+			},
+			"hollowwoodArrival": {
+				"durationMs": 3015.97,
+				"intervalMs": {
+					"count": 102,
+					"p50": 12.7,
+					"p95": 33,
+					"p99": 37.4,
+					"max": 41.5,
+					"over33": 3,
+					"over50": 0
+				},
+				"activeRenderFrames": 103,
+				"gpuMs": {
+					"count": 9,
+					"p50": 13.32,
+					"p95": 33.78,
+					"p99": 33.78,
+					"max": 33.78,
+					"over33": 1,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 148,
+				"visibleSkinnedRoots": [1, 1],
+				"mixers": [6, 6],
+				"mainDraws": 99,
+				"mainTriangles": 192244,
+				"shadowFrames": 42,
+				"shadowDraws": 5124,
+				"shadowDrawsPerPass": 122,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.4
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.4
+					},
+					"frameCallback": {
+						"avg": 2.4,
+						"max": 4.8
+					},
+					"render": {
+						"avg": 1.9,
+						"max": 4
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.6
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				}
+			},
+			"hollowwoodSettled": {
+				"durationMs": 3015.34,
+				"intervalMs": {
+					"count": 288,
+					"p50": 8.7,
+					"p95": 12.6,
+					"p99": 16.6,
+					"max": 16.6,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 289,
+				"gpuMs": {
+					"count": 24,
+					"p50": 9.74,
+					"p95": 11.31,
+					"p99": 11.33,
+					"max": 11.33,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 148,
+				"visibleSkinnedRoots": [1, 1],
+				"mixers": [6, 6],
+				"mainDraws": 99,
+				"mainTriangles": 192244,
+				"shadowFrames": 78,
+				"shadowDraws": 9516,
+				"shadowDrawsPerPass": 122,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 0.6
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.6
+					},
+					"frameCallback": {
+						"avg": 3.1,
+						"max": 6.4
+					},
+					"render": {
+						"avg": 2.5,
+						"max": 5.7
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.2
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 0.8
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				}
+			},
+			"woodCombat": {
+				"durationMs": 11350.22,
+				"intervalMs": {
+					"count": 1234,
+					"p50": 8.4,
+					"p95": 12.7,
+					"p99": 16.7,
+					"max": 17.3,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 1235,
+				"gpuMs": {
+					"count": 103,
+					"p50": 8.36,
+					"p95": 12.8,
+					"p99": 13.19,
+					"max": 13.77,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "hollowwood",
+				"entities": 146,
+				"visibleSkinnedRoots": [1, 3],
+				"mixers": [6, 4],
+				"mainDraws": 100,
+				"mainTriangles": 169482,
+				"shadowFrames": 310,
+				"shadowDraws": 34342,
+				"shadowDrawsPerPass": 110.78,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.2,
+						"max": 1.2
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"frameCallback": {
+						"avg": 3.2,
+						"max": 12.3
+					},
+					"render": {
+						"avg": 2.6,
+						"max": 11.1
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.7
+					},
+					"visualUpdate": {
+						"avg": 0.3,
+						"max": 1.3
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0
+					}
+				},
+				"combat": {
+					"playerHealth": 146,
+					"enemies": {
+						"oath-reader": 0,
+						"ashling": 0
+					}
+				}
+			},
+			"wyrm": {
+				"durationMs": 11433.52,
+				"intervalMs": {
+					"count": 2170,
+					"p50": 4.2,
+					"p95": 8.4,
+					"p99": 8.5,
+					"max": 24.9,
+					"over33": 0,
+					"over50": 0
+				},
+				"activeRenderFrames": 2171,
+				"gpuMs": {
+					"count": 181,
+					"p50": 4.63,
+					"p95": 6.2,
+					"p99": 6.81,
+					"max": 7.22,
+					"over33": 0,
+					"over50": 0
+				},
+				"scene": "wyrms-hollow",
+				"entities": 36,
+				"visibleSkinnedRoots": [2, 3],
+				"mixers": [3, 2],
+				"mainDraws": 99,
+				"mainTriangles": 49216,
+				"shadowFrames": 330,
+				"shadowDraws": 48970,
+				"shadowDrawsPerPass": 148.39,
+				"cpuPhaseMs": {
+					"animationUpdate": {
+						"avg": 0.1,
+						"max": 0.5
+					},
+					"cameraUpdate": {
+						"avg": 0.2,
+						"max": 0.5
+					},
+					"frameCallback": {
+						"avg": 2.6,
+						"max": 9.2
+					},
+					"render": {
+						"avg": 2.2,
+						"max": 8.3
+					},
+					"runtimeTick": {
+						"avg": 0,
+						"max": 0.4
+					},
+					"visualUpdate": {
+						"avg": 0.2,
+						"max": 0.7
+					},
+					"waterUpdate": {
+						"avg": 0,
+						"max": 0.2
+					}
+				},
+				"combat": {
+					"playerHealth": 81,
+					"enemies": {
+						"mere-wyrm": 0
+					}
+				}
+			}
+		},
+		"cycles": [
+			{
+				"saveMs": 217.58,
+				"exitMs": 201.41,
+				"chooserMs": 1497.97,
+				"continueMs": 639.59,
+				"playHeap": 27842060,
+				"editHeap": 22064160,
+				"backingStore": 22388410,
+				"geometries": 74,
+				"textures": 90,
+				"programs": 22,
+				"loops": 1
+			},
+			{
+				"saveMs": 142.04,
+				"exitMs": 416.19,
+				"chooserMs": 864.33,
+				"continueMs": 643.09,
+				"playHeap": 27318332,
+				"editHeap": 22581172,
+				"backingStore": 22388377,
+				"geometries": 74,
+				"textures": 90,
+				"programs": 22,
+				"loops": 1
+			},
+			{
+				"saveMs": 160.23,
+				"exitMs": 275.45,
+				"chooserMs": 712.68,
+				"continueMs": 610.36,
+				"playHeap": 27978160,
+				"editHeap": 23189424,
+				"backingStore": 22388377,
+				"geometries": 74,
+				"textures": 90,
+				"programs": 22,
+				"loops": 1
+			}
+		],
+		"errors": []
+	},
+	"walkingRepeat": {
+		"before": {
+			"durationMs": 1694.74,
+			"intervalMs": {
+				"count": 81,
+				"p50": 20.6,
+				"p95": 29.2,
+				"p99": 54.3,
+				"max": 54.3,
+				"over33": 2,
+				"over50": 1
+			},
+			"activeRenderFrames": 82,
+			"gpuMs": {
+				"count": 7,
+				"p50": 18.46,
+				"p95": 29.04,
+				"p99": 29.04,
+				"max": 29.04,
+				"over33": 0,
+				"over50": 0
+			},
+			"scene": "merewatch",
+			"entities": 143,
+			"visibleSkinnedRoots": [2, 3],
+			"mixers": [3, 3],
+			"mainDraws": 329,
+			"mainTriangles": 323602,
+			"shadowFrames": 39,
+			"shadowDraws": 12090,
+			"shadowDrawsPerPass": 310,
+			"cpuPhaseMs": {
+				"animationUpdate": {
+					"avg": 0.3,
+					"max": 2.3
+				},
+				"cameraUpdate": {
+					"avg": 0.3,
+					"max": 0.8
+				},
+				"frameCallback": {
+					"avg": 7.2,
+					"max": 19.5
+				},
+				"render": {
+					"avg": 6.3,
+					"max": 17.6
+				},
+				"runtimeTick": {
+					"avg": 0,
+					"max": 0.2
+				},
+				"visualUpdate": {
+					"avg": 0.4,
+					"max": 2.7
+				},
+				"waterUpdate": {
+					"avg": 0,
+					"max": 0.1
+				}
+			},
+			"heldSpeedTilesPerSecond": {
+				"intervals": 79,
+				"blocked": 0,
+				"p05": 2.33,
+				"p50": 3.79,
+				"p95": 5.16,
+				"outside3to4_6": 15
+			}
+		},
+		"after": {
+			"durationMs": 1726.63,
+			"intervalMs": {
+				"count": 123,
+				"p50": 12.6,
+				"p95": 16.8,
+				"p99": 20.7,
+				"max": 20.9,
+				"over33": 0,
+				"over50": 0
+			},
+			"activeRenderFrames": 124,
+			"gpuMs": {
+				"count": 10,
+				"p50": 12.37,
+				"p95": 16.62,
+				"p99": 16.62,
+				"max": 16.62,
+				"over33": 0,
+				"over50": 0
+			},
+			"scene": "merewatch",
+			"entities": 143,
+			"visibleSkinnedRoots": [2, 3],
+			"mixers": [3, 3],
+			"mainDraws": 328,
+			"mainTriangles": 321570,
+			"shadowFrames": 44,
+			"shadowDraws": 5368,
+			"shadowDrawsPerPass": 122,
+			"cpuPhaseMs": {
+				"animationUpdate": {
+					"avg": 0.2,
+					"max": 2.2
+				},
+				"cameraUpdate": {
+					"avg": 0.2,
+					"max": 0.6
+				},
+				"frameCallback": {
+					"avg": 5.6,
+					"max": 10.5
+				},
+				"render": {
+					"avg": 4.9,
+					"max": 10
+				},
+				"runtimeTick": {
+					"avg": 0,
+					"max": 0.1
+				},
+				"visualUpdate": {
+					"avg": 0.3,
+					"max": 2.7
+				},
+				"waterUpdate": {
+					"avg": 0,
+					"max": 0.1
+				}
+			},
+			"heldSpeedTilesPerSecond": {
+				"intervals": 119,
+				"blocked": 0,
+				"p05": 3.7,
+				"p50": 3.79,
+				"p95": 3.88,
+				"outside3to4_6": 0
+			}
+		}
+	},
+	"shadowComparison": {
+		"casters": 236,
+		"channels": 1559040,
+		"count": 0,
+		"max": 0,
+		"error": 0
+	},
+	"cinematics": {
+		"before": [
+			{
+				"failedRequests": [],
+				"errors": [],
+				"actions": [
+					{
+						"id": "cinematics-1",
+						"shellMs": 104,
+						"shellFocusMs": 122.9,
+						"readyMs": 3927,
+						"contexts": 1,
+						"contextMs": 9.3,
+						"mainThreadTaskMs": 2710,
+						"scriptMs": 1146,
+						"longTaskCount": 9,
+						"longestTaskMs": 720,
+						"phases": [
+							["submitPrograms", 70.5],
+							["firstDrawShadow", 421.3],
+							["firstDraw", 711.8]
+						],
+						"glb": {
+							"requests": 25,
+							"transferBytes": 42246884,
+							"encodedBodyBytes": 42239384,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-cavern-sequence",
+						"shellMs": 83,
+						"shellFocusMs": null,
+						"readyMs": 2543,
+						"contexts": 1,
+						"contextMs": 982.3,
+						"mainThreadTaskMs": 1970,
+						"scriptMs": 1470,
+						"longTaskCount": 4,
+						"longestTaskMs": 1013,
+						"phases": [
+							["submitPrograms", 66],
+							["firstDrawShadow", 48.9],
+							["firstDraw", 171.4]
+						],
+						"glb": {
+							"requests": 6,
+							"transferBytes": 4413408,
+							"encodedBodyBytes": 4411608,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-return-sequence",
+						"shellMs": 755,
+						"shellFocusMs": null,
+						"readyMs": 1341,
+						"contexts": 1,
+						"contextMs": 6.2,
+						"mainThreadTaskMs": 1315,
+						"scriptMs": 1250,
+						"longTaskCount": 3,
+						"longestTaskMs": 757,
+						"phases": [
+							["submitPrograms", 72.1],
+							["firstDrawShadow", 130],
+							["firstDraw", 287.7]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-2",
+						"shellMs": 47,
+						"shellFocusMs": null,
+						"readyMs": 564,
+						"contexts": 1,
+						"contextMs": 2.5,
+						"mainThreadTaskMs": 517,
+						"scriptMs": 464,
+						"longTaskCount": 2,
+						"longestTaskMs": 242,
+						"phases": [
+							["submitPrograms", 58.3],
+							["firstDrawShadow", 113],
+							["firstDraw", 239.6]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-3",
+						"shellMs": 40,
+						"shellFocusMs": null,
+						"readyMs": 576,
+						"contexts": 1,
+						"contextMs": 2.5,
+						"mainThreadTaskMs": 530,
+						"scriptMs": 477,
+						"longTaskCount": 2,
+						"longestTaskMs": 276,
+						"phases": [
+							["submitPrograms", 53.4],
+							["firstDrawShadow", 120.7],
+							["firstDraw", 272.7]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					}
+				]
+			},
+			{
+				"failedRequests": [],
+				"errors": [],
+				"actions": [
+					{
+						"id": "cinematics-1",
+						"shellMs": 105,
+						"shellFocusMs": 122.6,
+						"readyMs": 4052,
+						"contexts": 1,
+						"contextMs": 8.6,
+						"mainThreadTaskMs": 2989,
+						"scriptMs": 1326,
+						"longTaskCount": 10,
+						"longestTaskMs": 745,
+						"phases": [
+							["submitPrograms", 94.2],
+							["firstDrawShadow", 417.5],
+							["firstDraw", 731.8]
+						],
+						"glb": {
+							"requests": 25,
+							"transferBytes": 42246884,
+							"encodedBodyBytes": 42239384,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-cavern-sequence",
+						"shellMs": 112,
+						"shellFocusMs": null,
+						"readyMs": 2583,
+						"contexts": 1,
+						"contextMs": 1033.4,
+						"mainThreadTaskMs": 1989,
+						"scriptMs": 1646,
+						"longTaskCount": 4,
+						"longestTaskMs": 1062,
+						"phases": [
+							["submitPrograms", 71.5],
+							["firstDrawShadow", 54.4],
+							["firstDraw", 178.3]
+						],
+						"glb": {
+							"requests": 6,
+							"transferBytes": 4413408,
+							"encodedBodyBytes": 4411608,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-return-sequence",
+						"shellMs": 1112,
+						"shellFocusMs": null,
+						"readyMs": 1743,
+						"contexts": 1,
+						"contextMs": 4.9,
+						"mainThreadTaskMs": 1737,
+						"scriptMs": 1613,
+						"longTaskCount": 3,
+						"longestTaskMs": 1115,
+						"phases": [
+							["submitPrograms", 57.6],
+							["firstDrawShadow", 122.1],
+							["firstDraw", 274.8]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-2",
+						"shellMs": 108,
+						"shellFocusMs": null,
+						"readyMs": 739,
+						"contexts": 1,
+						"contextMs": 5.3,
+						"mainThreadTaskMs": 702,
+						"scriptMs": 642,
+						"longTaskCount": 3,
+						"longestTaskMs": 334,
+						"phases": [
+							["submitPrograms", 84.8],
+							["firstDrawShadow", 152.4],
+							["firstDraw", 327.6]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-3",
+						"shellMs": 57,
+						"shellFocusMs": null,
+						"readyMs": 610,
+						"contexts": 1,
+						"contextMs": 3.4,
+						"mainThreadTaskMs": 566,
+						"scriptMs": 511,
+						"longTaskCount": 3,
+						"longestTaskMs": 258,
+						"phases": [
+							["submitPrograms", 65],
+							["firstDrawShadow", 106.5],
+							["firstDraw", 253.8]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					}
+				]
+			}
+		],
+		"after": [
+			{
+				"failedRequests": [],
+				"errors": [],
+				"actions": [
+					{
+						"id": "cinematics-1",
+						"shellMs": 108,
+						"shellFocusMs": 125.2,
+						"readyMs": 2848,
+						"contexts": 1,
+						"contextMs": 9.2,
+						"mainThreadTaskMs": 1834,
+						"scriptMs": 937,
+						"longTaskCount": 6,
+						"longestTaskMs": 500,
+						"phases": [
+							["submitPrograms", 71.6],
+							["firstDrawShadow", 285.7],
+							["firstDraw", 488.2]
+						],
+						"glb": {
+							"requests": 25,
+							"transferBytes": 11182112,
+							"encodedBodyBytes": 11174612,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-cavern-sequence",
+						"shellMs": 29,
+						"shellFocusMs": null,
+						"readyMs": 1425,
+						"contexts": 0,
+						"contextMs": 0,
+						"mainThreadTaskMs": 469,
+						"scriptMs": 234,
+						"longTaskCount": 2,
+						"longestTaskMs": 77,
+						"phases": [
+							["submitPrograms", 19.4],
+							["firstDrawShadow", 5.4],
+							["firstDraw", 74.3]
+						],
+						"glb": {
+							"requests": 6,
+							"transferBytes": 4413408,
+							"encodedBodyBytes": 4411608,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-return-sequence",
+						"shellMs": 74,
+						"shellFocusMs": null,
+						"readyMs": 217,
+						"contexts": 0,
+						"contextMs": 0,
+						"mainThreadTaskMs": 236,
+						"scriptMs": 197,
+						"longTaskCount": 2,
+						"longestTaskMs": 77,
+						"phases": [
+							["submitPrograms", 30.2],
+							["firstDrawShadow", 3.5],
+							["firstDraw", 54.7]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-2",
+						"shellMs": 71,
+						"shellFocusMs": null,
+						"readyMs": 710,
+						"contexts": 1,
+						"contextMs": 4,
+						"mainThreadTaskMs": 696,
+						"scriptMs": 597,
+						"longTaskCount": 3,
+						"longestTaskMs": 306,
+						"phases": [
+							["submitPrograms", 68.9],
+							["firstDrawShadow", 132.1],
+							["firstDraw", 298.7]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-3",
+						"shellMs": 49,
+						"shellFocusMs": null,
+						"readyMs": 617,
+						"contexts": 1,
+						"contextMs": 2.6,
+						"mainThreadTaskMs": 567,
+						"scriptMs": 516,
+						"longTaskCount": 3,
+						"longestTaskMs": 290,
+						"phases": [
+							["submitPrograms", 58.6],
+							["firstDrawShadow", 127.3],
+							["firstDraw", 285.9]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					}
+				]
+			},
+			{
+				"failedRequests": [],
+				"errors": [],
+				"actions": [
+					{
+						"id": "cinematics-1",
+						"shellMs": 105,
+						"shellFocusMs": 124.7,
+						"readyMs": 2986,
+						"contexts": 1,
+						"contextMs": 9,
+						"mainThreadTaskMs": 2028,
+						"scriptMs": 1098,
+						"longTaskCount": 7,
+						"longestTaskMs": 591,
+						"phases": [
+							["submitPrograms", 69.3],
+							["firstDrawShadow", 291.9],
+							["firstDraw", 583.1]
+						],
+						"glb": {
+							"requests": 25,
+							"transferBytes": 11182112,
+							"encodedBodyBytes": 11174612,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-cavern-sequence",
+						"shellMs": 27,
+						"shellFocusMs": null,
+						"readyMs": 1365,
+						"contexts": 0,
+						"contextMs": 0,
+						"mainThreadTaskMs": 500,
+						"scriptMs": 256,
+						"longTaskCount": 2,
+						"longestTaskMs": 91,
+						"phases": [
+							["submitPrograms", 22.4],
+							["firstDrawShadow", 9.4],
+							["firstDraw", 87.6]
+						],
+						"glb": {
+							"requests": 6,
+							"transferBytes": 4413408,
+							"encodedBodyBytes": 4411608,
+							"cacheHits": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-return-sequence",
+						"shellMs": 85,
+						"shellFocusMs": null,
+						"readyMs": 228,
+						"contexts": 0,
+						"contextMs": 0,
+						"mainThreadTaskMs": 249,
+						"scriptMs": 206,
+						"longTaskCount": 2,
+						"longestTaskMs": 89,
+						"phases": [
+							["submitPrograms", 26.2],
+							["firstDrawShadow", 3.7],
+							["firstDraw", 57.7]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-2",
+						"shellMs": 66,
+						"shellFocusMs": null,
+						"readyMs": 691,
+						"contexts": 1,
+						"contextMs": 3.4,
+						"mainThreadTaskMs": 660,
+						"scriptMs": 605,
+						"longTaskCount": 3,
+						"longestTaskMs": 347,
+						"phases": [
+							["submitPrograms", 68.1],
+							["firstDrawShadow", 149.1],
+							["firstDraw", 338.4]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					},
+					{
+						"id": "cinematics-3",
+						"shellMs": 42,
+						"shellFocusMs": null,
+						"readyMs": 549,
+						"contexts": 1,
+						"contextMs": 2.5,
+						"mainThreadTaskMs": 507,
+						"scriptMs": 442,
+						"longTaskCount": 2,
+						"longestTaskMs": 257,
+						"phases": [
+							["submitPrograms", 38.4],
+							["firstDrawShadow", 120.3],
+							["firstDraw", 254.7]
+						],
+						"glb": {
+							"requests": 0,
+							"encodedBodyBytes": 0
+						},
+						"repeatedGlbs": []
+					}
+				]
+			}
+		],
+		"clipOnlyTrial": {
+			"failedRequests": [],
+			"errors": [],
+			"actions": [
+				{
+					"id": "cinematics-1",
+					"shellMs": 74,
+					"shellFocusMs": null,
+					"readyMs": 2808,
+					"contexts": 1,
+					"contextMs": 6.2,
+					"mainThreadTaskMs": 1797,
+					"scriptMs": 1087,
+					"longTaskCount": 5,
+					"longestTaskMs": 730,
+					"glb": {
+						"requests": 25,
+						"transferBytes": 11182112,
+						"encodedBodyBytes": 11174612,
+						"cacheHits": 0
+					},
+					"repeatedGlbs": []
+				},
+				{
+					"id": "cinematics-cavern-sequence",
+					"shellMs": 78,
+					"shellFocusMs": null,
+					"readyMs": 5600,
+					"contexts": 1,
+					"contextMs": 3592,
+					"mainThreadTaskMs": 4937,
+					"scriptMs": 4465,
+					"longTaskCount": 4,
+					"longestTaskMs": 3720,
+					"glb": {
+						"requests": 6,
+						"transferBytes": 4413408,
+						"encodedBodyBytes": 4411608,
+						"cacheHits": 0
+					},
+					"repeatedGlbs": []
+				},
+				{
+					"id": "cinematics-2",
+					"shellMs": 63,
+					"shellFocusMs": null,
+					"readyMs": 627,
+					"contexts": 1,
+					"contextMs": 3.3,
+					"mainThreadTaskMs": 577,
+					"scriptMs": 523,
+					"longTaskCount": 3,
+					"longestTaskMs": 275,
+					"glb": {
+						"requests": 0,
+						"encodedBodyBytes": 0
+					},
+					"repeatedGlbs": []
+				},
+				{
+					"id": "cinematics-3",
+					"shellMs": 57,
+					"shellFocusMs": null,
+					"readyMs": 645,
+					"contexts": 1,
+					"contextMs": 3.4,
+					"mainThreadTaskMs": 626,
+					"scriptMs": 532,
+					"longTaskCount": 3,
+					"longestTaskMs": 282,
+					"glb": {
+						"requests": 0,
+						"encodedBodyBytes": 0
+					},
+					"repeatedGlbs": []
+				}
+			]
+		}
+	},
+	"stageCycles": {
+		"before": [
+			{
+				"cycle": 1,
+				"name": "The Chain in the Silt",
+				"resources": {
+					"geometries": 77,
+					"textures": 54,
+					"programs": 19
+				}
+			},
+			{
+				"cycle": 1,
+				"name": "Three Horns Under Stone",
+				"resources": {
+					"geometries": 150,
+					"textures": 72,
+					"programs": 22
+				}
+			},
+			{
+				"cycle": 2,
+				"name": "The Chain in the Silt",
+				"resources": {
+					"geometries": 77,
+					"textures": 54,
+					"programs": 19
+				}
+			},
+			{
+				"cycle": 2,
+				"name": "Three Horns Under Stone",
+				"resources": {
+					"geometries": 150,
+					"textures": 72,
+					"programs": 22
+				}
+			},
+			{
+				"cycle": 3,
+				"name": "The Chain in the Silt",
+				"resources": {
+					"geometries": 77,
+					"textures": 54,
+					"programs": 19
+				}
+			},
+			{
+				"cycle": 3,
+				"name": "Three Horns Under Stone",
+				"resources": {
+					"geometries": 150,
+					"textures": 72,
+					"programs": 22
+				}
+			}
+		],
+		"after": [
+			{
+				"cycle": 1,
+				"name": "The Chain in the Silt",
+				"resources": {
+					"geometries": 141,
+					"textures": 84,
+					"programs": 22
+				}
+			},
+			{
+				"cycle": 1,
+				"name": "Three Horns Under Stone",
+				"resources": {
+					"geometries": 191,
+					"textures": 85,
+					"programs": 24
+				}
+			},
+			{
+				"cycle": 2,
+				"name": "The Chain in the Silt",
+				"resources": {
+					"geometries": 141,
+					"textures": 84,
+					"programs": 22
+				}
+			},
+			{
+				"cycle": 2,
+				"name": "Three Horns Under Stone",
+				"resources": {
+					"geometries": 191,
+					"textures": 85,
+					"programs": 24
+				}
+			},
+			{
+				"cycle": 3,
+				"name": "The Chain in the Silt",
+				"resources": {
+					"geometries": 141,
+					"textures": 84,
+					"programs": 22
+				}
+			},
+			{
+				"cycle": 3,
+				"name": "Three Horns Under Stone",
+				"resources": {
+					"geometries": 191,
+					"textures": 85,
+					"programs": 24
+				}
+			}
+		]
+	},
+	"clipDecode": [
+		{
+			"file": "idle.glb",
+			"bytes": 15828832,
+			"fetchMs": 361.2,
+			"parseMs": 156.9,
+			"tracks": 23
+		},
+		{
+			"file": "walk-in-place.glb",
+			"bytes": 15588768,
+			"fetchMs": 289.8,
+			"parseMs": 142.3,
+			"tracks": 23
+		},
+		{
+			"file": "idle.clip.glb",
+			"bytes": 296456,
+			"fetchMs": 13,
+			"parseMs": 1.6,
+			"tracks": 23
+		},
+		{
+			"file": "walk-in-place.clip.glb",
+			"bytes": 56372,
+			"fetchMs": 7.3,
+			"parseMs": 1.2,
+			"tracks": 23
+		},
+		{
+			"file": "idle.clip.glb",
+			"bytes": 296456,
+			"fetchMs": 15.8,
+			"parseMs": 1.6,
+			"tracks": 23
+		},
+		{
+			"file": "walk-in-place.clip.glb",
+			"bytes": 56372,
+			"fetchMs": 5.5,
+			"parseMs": 1.1,
+			"tracks": 23
+		},
+		{
+			"file": "idle.glb",
+			"bytes": 15828832,
+			"fetchMs": 270,
+			"parseMs": 139.1,
+			"tracks": 23
+		},
+		{
+			"file": "walk-in-place.glb",
+			"bytes": 15588768,
+			"fetchMs": 269,
+			"parseMs": 130.2,
+			"tracks": 23
+		},
+		{
+			"file": "idle.glb",
+			"bytes": 15828832,
+			"fetchMs": 250,
+			"parseMs": 132.2,
+			"tracks": 23
+		},
+		{
+			"file": "walk-in-place.glb",
+			"bytes": 15588768,
+			"fetchMs": 234.7,
+			"parseMs": 158.5,
+			"tracks": 23
+		},
+		{
+			"file": "idle.clip.glb",
+			"bytes": 296456,
+			"fetchMs": 16,
+			"parseMs": 1.5,
+			"tracks": 23
+		},
+		{
+			"file": "walk-in-place.clip.glb",
+			"bytes": 56372,
+			"fetchMs": 15.1,
+			"parseMs": 1.3,
+			"tracks": 23
+		}
+	],
+	"clipOnlyBaseline": {
+		"failedRequests": [],
+		"errors": [],
+		"actions": [
+			{
+				"id": "cinematics-1",
+				"shellMs": 76,
+				"shellFocusMs": null,
+				"readyMs": 2524,
+				"contexts": 1,
+				"contextMs": 5.7,
+				"mainThreadTaskMs": 1577,
+				"scriptMs": 832,
+				"longTaskCount": 4,
+				"longestTaskMs": 561,
+				"glb": {
+					"requests": 25,
+					"transferBytes": 42246884,
+					"encodedBodyBytes": 42239384,
+					"cacheHits": 0
+				},
+				"repeatedGlbs": []
+			},
+			{
+				"id": "cinematics-cavern-sequence",
+				"shellMs": 235,
+				"shellFocusMs": null,
+				"readyMs": 2641,
+				"contexts": 1,
+				"contextMs": 1626.1,
+				"mainThreadTaskMs": 2389,
+				"scriptMs": 2152,
+				"longTaskCount": 4,
+				"longestTaskMs": 1683,
+				"glb": {
+					"requests": 6,
+					"transferBytes": 4413408,
+					"encodedBodyBytes": 4411608,
+					"cacheHits": 0
+				},
+				"repeatedGlbs": []
+			},
+			{
+				"id": "cinematics-2",
+				"shellMs": 76,
+				"shellFocusMs": null,
+				"readyMs": 767,
+				"contexts": 1,
+				"contextMs": 4.7,
+				"mainThreadTaskMs": 748,
+				"scriptMs": 698,
+				"longTaskCount": 3,
+				"longestTaskMs": 474,
+				"glb": {
+					"requests": 0,
+					"encodedBodyBytes": 0
+				},
+				"repeatedGlbs": []
+			},
+			{
+				"id": "cinematics-3",
+				"shellMs": 123,
+				"shellFocusMs": null,
+				"readyMs": 457,
+				"contexts": 1,
+				"contextMs": 12.4,
+				"mainThreadTaskMs": 438,
+				"scriptMs": 395,
+				"longTaskCount": 3,
+				"longestTaskMs": 163,
+				"glb": {
+					"requests": 0,
+					"encodedBodyBytes": 0
+				},
+				"repeatedGlbs": []
+			}
+		]
+	},
+	"sceneryTrials": {
+		"smooth-play-batched": {
+			"spawnDraws": 217,
+			"walk": {
+				"count": 107,
+				"p50": 16.6,
+				"p95": 20.8,
+				"p99": 20.9,
+				"max": 20.9,
+				"over33": 0,
+				"over50": 0
+			}
+		},
+		"smooth-play-instanced": {
+			"spawnDraws": 222,
+			"walk": {
+				"count": 79,
+				"p50": 20.8,
+				"p95": 29.2,
+				"p99": 66.6,
+				"max": 66.6,
+				"over33": 3,
+				"over50": 2
+			}
+		}
+	},
+	"previewRetry": {
+		"feedback": "Loading scene models (0/16)…",
+		"focusWhileStalled": true,
+		"failureAlert": true,
+		"retried": true,
+		"requests": 2
+	}
+}

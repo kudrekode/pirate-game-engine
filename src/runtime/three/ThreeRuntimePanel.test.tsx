@@ -31,6 +31,7 @@ import threeRuntimeSource from "./ThreeRuntimePanel.tsx?raw";
 import * as arrowPresentation from "./threeArrowPresentation";
 import * as characterAnimation from "./threeCharacterAnimation";
 import { emitThreePerformanceDiagnosticsEvent } from "./threePerformanceDiagnostics";
+import { CinematicRendererOwner } from "./threeRendererOwner";
 import {
 	clearThreeVisualAssetCacheForTests,
 	setThreeVisualAssetLoaderFactoryForTests,
@@ -58,6 +59,7 @@ const phaserSpies = vi.hoisted(() => ({
 
 const threeSpies = vi.hoisted(() => ({
 	WebGLRenderer: vi.fn(),
+	disposeRenderer: vi.fn(),
 	removeFromScene: vi.fn(),
 }));
 
@@ -313,7 +315,7 @@ vi.mock("three", () => {
 		WebGLRenderer: class {
 			domElement = document.createElement("canvas");
 			outputColorSpace: unknown;
-			dispose = vi.fn();
+			dispose = threeSpies.disposeRenderer;
 			render = vi.fn();
 			setClearColor = vi.fn();
 			setPixelRatio = vi.fn();
@@ -495,6 +497,7 @@ beforeEach(() => {
 	runtimeSpies.runRuntimeObjectBehaviour.mockClear();
 	phaserSpies.Game.mockClear();
 	threeSpies.WebGLRenderer.mockClear();
+	threeSpies.disposeRenderer.mockClear();
 	threeSpies.removeFromScene.mockClear();
 	vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
 	vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
@@ -659,6 +662,23 @@ describe("ThreeRuntimePanel", () => {
 		expect(screen.getByText("Moved to 1, 0.")).toBeInTheDocument();
 	});
 
+	it("keeps the cinematic canvas across sequence remounts and disposes it on workspace exit", () => {
+		const project = makeProject();
+		const workspace = (key: string) => (
+			<CinematicRendererOwner>
+				<ThreeRuntimePanel key={key} onRestart={vi.fn()} project={project} />
+			</CinematicRendererOwner>
+		);
+		const view = render(workspace("first"));
+		const canvas = screen.getByLabelText("Three runtime viewport");
+		view.rerender(workspace("second"));
+		expect(screen.getByLabelText("Three runtime viewport")).toBe(canvas);
+		expect(threeSpies.WebGLRenderer).toHaveBeenCalledTimes(1);
+		expect(threeSpies.disposeRenderer).not.toHaveBeenCalled();
+		view.unmount();
+		expect(threeSpies.disposeRenderer).toHaveBeenCalledTimes(1);
+	});
+
 	it("bridges held diagonal input to subcell session movement and clears it on blur", async () => {
 		const project = makeProject();
 		project.objects = [
@@ -692,9 +712,18 @@ describe("ThreeRuntimePanel", () => {
 			fireEvent.keyDown(window, { key: "ArrowDown", code: "ArrowDown" });
 			expect(latestSession().playerPosition).toEqual({ x: 0, y: 0 });
 			expect(latestSession().traversal?.position.x).toBeCloseTo(0.2);
-			now.mockReturnValue(1100);
-			await waitFor(() =>
-				expect(latestSession().traversal?.position.y).toBeGreaterThan(0.1),
+			// Deliver a render before the next 16 ms timer. The first frame after
+			// the deadline must already interpolate the next diagonal segment.
+			now.mockReturnValue(latestSession().nextMoveAt + 8);
+			act(() => runLatestAnimationFrame());
+			expect(latestSession().traversal?.position.y).toBeGreaterThan(0.1);
+			const display = JSON.parse(
+				screen.getByLabelText("Three runtime viewport").parentElement?.dataset
+					.traversal ?? "{}",
+			);
+			expect(display.y).toBeGreaterThan(0);
+			expect(display.y).toBeLessThan(
+				latestSession().traversal?.position.y ?? 0,
 			);
 			expect(latestSession().traversal?.position.x).toBeCloseTo(
 				0.2 + 0.2 * Math.SQRT1_2,
@@ -2586,7 +2615,9 @@ it.each([
 	const intervals = vi.spyOn(window, "setInterval"),
 		controllers = mockCombatActors(),
 		p = animatedCombatProject();
-	p.areas[0].npcs[0].enemyBehaviour!.contactDamage = damage;
+	const enemy = p.areas[0].npcs[0].enemyBehaviour;
+	if (!enemy) throw new Error("Expected a combat NPC");
+	enemy.contactDamage = damage;
 	p.items = [{ ...BOW_ITEM }];
 	p.gameState.inventory = { bow: 1 };
 	render(<ThreeRuntimePanel project={p} onRestart={vi.fn()} />);

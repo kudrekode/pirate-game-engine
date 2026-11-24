@@ -4,6 +4,7 @@ import { mkdir, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { chromium, expect } from "@playwright/test";
+import { installRenderProbe } from "./hollow-render-probe.mjs";
 
 // Build with Vite's test mode to expose the read-only Three diagnostics.
 // HOLLOW_OFFLINE_ROUTE=1 fulfils requests from the same build and public roots
@@ -11,10 +12,11 @@ import { chromium, expect } from "@playwright/test";
 const [, , buildArgument, outputArgument, ...options] = process.argv;
 const cameraOnly = options.includes("--camera");
 const lifecycleOnly = options.includes("--lifecycle");
+const playSession = options.includes("--play-session");
 const selected = options.filter((option) => !option.startsWith("--"));
 if (!buildArgument || !outputArgument) {
 	throw new Error(
-		"Usage: node e2e/hollow-runtime-baseline.mjs <Vite test-mode build> <output folder> [--camera | --lifecycle] [merewatch] [chapter-one]",
+		"Usage: node e2e/hollow-runtime-baseline.mjs <Vite test-mode build> <output folder> [--camera | --lifecycle | --play-session [--walking-only | --combat-only] [--verify-shadows]] [merewatch] [chapter-one]",
 	);
 }
 
@@ -127,6 +129,10 @@ async function startFrames(page, label) {
 		window.__THREE_PERF_DIAGNOSTICS__.resetSampleWindow(label);
 		const distribution = {
 			intervals: [],
+			gpu: [],
+			renderFrames: 0,
+			shadowFrames: 0,
+			shadowDraws: 0,
 			previous: undefined,
 			active: true,
 		};
@@ -159,11 +165,30 @@ function stats(intervals) {
 }
 
 async function finishFrames(page, label) {
-	const intervals = await page.evaluate(() => {
+	const {
+		intervals,
+		gpu,
+		renderFrames,
+		shadowFrames,
+		shadowDraws,
+		view,
+		motion,
+	} = await page.evaluate(() => {
 		window.hollowBenchmarkFrames.active = false;
-		return window.hollowBenchmarkFrames.intervals;
+		return window.hollowBenchmarkFrames;
 	});
-	return { intervals: stats(intervals), snapshot: await snapshot(page, label) };
+	return {
+		intervals: stats(intervals),
+		...(motion && { motion }),
+		snapshot: await snapshot(page, label),
+		...(view && {
+			view,
+			gpuMs: stats(gpu),
+			renderFrames,
+			shadowFrames,
+			shadowDraws,
+		}),
+	};
 }
 
 async function sample(page, label, action) {
@@ -464,6 +489,242 @@ async function continuedCycles(page, cdp, data, area, saveAuthoring) {
 	}
 }
 
+async function chapterSession(page, cdp, data, checkpoint) {
+	const authored = await savedAuthoring(page);
+	await button(page, "Story").click();
+	const startPlay = () =>
+		page.getByRole("button", { name: /Test Flow$/ }).click();
+	const start = performance.now();
+	await startPlay();
+	await ready(page, runtimeLabel, "merewatch");
+	data.coldPlayMs = performance.now() - start;
+	await button(page, "Save Game").click();
+	await expect(page.locator(".runtime-save-status")).toHaveText("Game saved.");
+	const originalSave = await saveState(page);
+	async function restoreAt(areaId, x, y, facing, flags = {}) {
+		await button(page, "Back to Edit").click();
+		const save = structuredClone(originalSave);
+		Object.assign(save.player, {
+			areaId,
+			position: { x, y },
+			facing,
+			equippedWeaponId: "watch-sword",
+		});
+		delete save.player.traversal;
+		Object.assign(save.state.flags, flags);
+		await page.evaluate((save) => {
+			const key = Object.keys(localStorage).find((name) =>
+				name.includes("adventure-builder-game-save-v1:"),
+			);
+			localStorage.setItem(key, JSON.stringify(save));
+		}, save);
+		await startPlay();
+		await button(page, "Continue").click();
+		await ready(page, runtimeLabel, areaId);
+		await canvas(page).focus();
+	}
+	async function measure(name, action) {
+		const before = await snapshot(page, runtimeLabel);
+		data.runtime[name] = await sample(page, runtimeLabel, action);
+		data.runtime[name].initialMixers =
+			before.asset.character.animation.activeMixers;
+		await checkpoint(name);
+	}
+	if (!options.includes("--combat-only")) {
+		if (options.includes("--verify-shadows")) {
+			data.shadowComparison = await page.evaluate(
+				() =>
+					new Promise((resolve) => {
+						window.compareShadows = resolve;
+					}),
+			);
+			await checkpoint("shadowComparison");
+			assert.ok(data.shadowComparison.casters > 0);
+			assert.equal(
+				data.shadowComparison.count,
+				0,
+				"Cached and native shadows differ",
+			);
+			assert.equal(
+				data.shadowComparison.error,
+				0,
+				"WebGL error during shadow comparison",
+			);
+		}
+		await measure("initialFrames");
+		await canvas(page).focus();
+		await measure("followWalk", async () => {
+			const start = await position(page);
+			await page.evaluate(() => {
+				window.hollowWalking = true;
+			});
+			await page.keyboard.down("w");
+			await page.waitForTimeout(1650);
+			await page.keyboard.up("w");
+			await page.evaluate(() => {
+				window.hollowWalking = false;
+			});
+			assert.notDeepEqual(await position(page), start);
+		});
+		if (options.includes("--walking-only")) return;
+		await restoreAt("merewatch", 22, 47, { x: 0, y: -1 });
+		await inspect(page);
+		await measure("walk", () => walk(page, [[22, 43]]));
+		await canvas(page).hover();
+		await page.keyboard.down("Alt");
+		await page.mouse.down();
+		await measure("orbit", async () => {
+			for (let i = 0; i < 80; i++) {
+				await page.mouse.move(
+					480 + 120 * Math.sin(i / 13),
+					300 + 20 * Math.cos(i / 13),
+				);
+				await page.waitForTimeout(35);
+			}
+		});
+		await page.mouse.up();
+		await page.keyboard.up("Alt");
+		await interact(page);
+		await choice(
+			page,
+			"Tell me what happened after I brought you Mara's letter.",
+		);
+		await choice(page, "Next");
+		await skipCinematic(page);
+		await measure("returnFromCinematic", async () => {
+			await choice(page, "End conversation");
+			await walk(page, [
+				[22, 47],
+				[25, 47],
+			]);
+		});
+		await restoreAt("merewatch", 27, 50, { x: 0, y: -1 });
+		await page.keyboard.press("e");
+		await expect(page.locator(".three-runtime-hud")).toContainText(
+			/E dismounts/i,
+		);
+		await inspect(page);
+		await measure("ride", async () => {
+			const from = await position(page);
+			await canvas(page).focus();
+			for (const key of [
+				"ArrowRight",
+				"ArrowLeft",
+				"ArrowRight",
+				"ArrowLeft",
+			]) {
+				await page.keyboard.down(key);
+				await page.waitForTimeout(750);
+				await page.keyboard.up(key);
+				if (key === "ArrowRight")
+					assert.notDeepEqual(await position(page), from);
+			}
+		});
+		await restoreAt(
+			"merewatch",
+			37,
+			53,
+			{ x: 1, y: 0 },
+			{ "chapter-briefed": true },
+		);
+		await interact(page);
+		await measure("ridgeTransition", async () => {
+			await choice(page, "Follow the ridge into Hollowwood.");
+			await choice(page, "End conversation");
+			await ready(page, runtimeLabel, "hollowwood");
+		});
+		await measure("hollowwoodArrival");
+		await measure("hollowwoodSettled");
+		await continuedCycles(page, cdp, data, "hollowwood", authored);
+	}
+	for (const [name, areaId, x, y] of [
+		["woodCombat", "hollowwood", 35, 19],
+		["wyrm", "wyrms-hollow", 19, 16],
+	]) {
+		if (name === "wyrm") {
+			// Resume at the seam and activate hostility through the authored dialogue.
+			await restoreAt(areaId, 19, 26, { x: 0, y: -1 });
+			await interact(page);
+			await choice(page, "Step out and see what Mara was holding.");
+			await skipCinematic(page);
+			await choice(page, "End conversation");
+			await inspect(page);
+			await walk(page, [
+				[18, 26],
+				[18, 22],
+				[18, 19],
+				[19, 19],
+			]);
+		} else await restoreAt(areaId, x, y, { x: 0, y: 1 });
+		await button(page, "Follow Player").click();
+		await canvas(page).focus();
+		await page.waitForTimeout(400);
+		await page.screenshot({ path: resolve(output, `${name}-view.png`) });
+		await measure(name, async () => {
+			for (let i = 0; i < 50; i++) {
+				const key = await page.evaluate(
+					(drake) => {
+						const roots = window.hollowScene.deref().children;
+						const humans = roots.filter((r) => r.getObjectByName("pelvis"));
+						const player = humans.pop();
+						const enemies = drake
+							? roots.filter((r) => r.getObjectByName("Tail4"))
+							: humans;
+						const nearest = enemies.sort(
+							(a, b) =>
+								a.position.distanceToSquared(player.position) -
+								b.position.distanceToSquared(player.position),
+						)[0];
+						if (!nearest || nearest.position.distanceTo(player.position) > 10)
+							return null;
+						const dx = nearest.position.x - player.position.x,
+							dz = nearest.position.z - player.position.z;
+						const m = window.hollowCamera.deref().matrixWorld.elements;
+						const forward = -dx * m[8] - dz * m[10],
+							right = dx * m[0] + dz * m[2];
+						return Math.abs(forward) > Math.abs(right)
+							? forward > 0
+								? "ArrowUp"
+								: "ArrowDown"
+							: right > 0
+								? "ArrowRight"
+								: "ArrowLeft";
+					},
+					name === "wyrm" || i >= 22,
+				);
+				if (key) await page.keyboard.press(key);
+				await page.keyboard.press("f");
+				await page.waitForTimeout(205);
+			}
+		});
+		await button(page, "Save Game").click();
+		const replace = button(page, "Replace save");
+		if (await replace.isVisible()) await replace.click();
+		await expect(page.locator(".runtime-save-status")).toHaveText(
+			"Game saved.",
+		);
+		const saved = await saveState(page);
+		data.runtime[name].combat = {
+			playerHealth: saved.player.health,
+			enemies: Object.fromEntries(
+				Object.entries(saved.state.npcs)
+					.filter(([id, n]) => n.health !== originalSave.state.npcs[id].health)
+					.map(([id, n]) => [id, n.health]),
+			),
+		};
+		for (const id of name === "woodCombat"
+			? ["oath-reader", "ashling"]
+			: ["mere-wyrm"]) {
+			assert.ok(
+				data.runtime[name].combat.enemies[id] <
+					originalSave.state.npcs[id].health,
+				JSON.stringify(data.runtime[name].combat),
+			);
+		}
+	}
+	assert.equal(await savedAuthoring(page), authored);
+}
+
 async function assets(page) {
 	return page.evaluate(() =>
 		performance
@@ -509,6 +770,11 @@ async function runProject(browser, address, id, machine) {
 		});
 	}
 	const page = await context.newPage();
+	if (playSession)
+		await page.addInitScript(
+			installRenderProbe,
+			options.includes("--verify-shadows"),
+		);
 	page.setDefaultTimeout(timeout);
 	const cdp = await context.newCDPSession(page);
 	const errors = [];
@@ -537,6 +803,13 @@ async function runProject(browser, address, id, machine) {
 		await expect(button(page, "Map Editor")).toBeVisible({ timeout });
 		await button(page, "Save").click();
 		await expect.poll(() => savedAuthoring(page), { timeout }).toBeTruthy();
+		if (playSession) {
+			assert.equal(id, "chapter-one");
+			await chapterSession(page, cdp, data, checkpoint);
+			assert.deepEqual(errors, []);
+			await checkpoint("complete");
+			return;
+		}
 		if (lifecycleOnly) {
 			const saveAuthoring = await savedAuthoring(page);
 			await button(page, "Story").click();
@@ -770,8 +1043,11 @@ try {
 	try {
 		const browserCdp = await browser.newBrowserCDPSession();
 		const { gpu } = await browserCdp.send("SystemInfo.getInfo");
+		if (angle === "d3d11")
+			assert.match(gpu.auxAttributes?.glRenderer ?? "", /direct3d11/i);
 		const machine = { chrome: browser.version(), chromiumArgs, gpu, offline };
-		for (const id of selected.length ? selected : Object.keys(projects)) {
+		const fixtures = playSession ? ["chapter-one"] : Object.keys(projects);
+		for (const id of selected.length ? selected : fixtures) {
 			assert.ok(projects[id], `Unknown fixture ${id}`);
 			try {
 				await runProject(browser, address, id, machine);

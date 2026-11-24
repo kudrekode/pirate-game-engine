@@ -174,7 +174,7 @@ export const GOLDEN_REFERENCE_IDLE_BAKED_ASSET: ThreeVisualAssetDefinition = {
 	materialProfile: "standard",
 	name: "Golden Reference Idle (Offline Baked)",
 	tags: ["animation", "golden-reference", "idle", "offline-baked"],
-	url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+	url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.clip.glb",
 };
 
 export const GOLDEN_REFERENCE_WALK_BAKED_ASSET: ThreeVisualAssetDefinition = {
@@ -185,7 +185,7 @@ export const GOLDEN_REFERENCE_WALK_BAKED_ASSET: ThreeVisualAssetDefinition = {
 	materialProfile: "standard",
 	name: "Golden Reference Walk In Place (Offline Baked)",
 	tags: ["animation", "golden-reference", "offline-baked", "walk"],
-	url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+	url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.clip.glb",
 };
 
 /** Blender-compiled engineering geometry using the Golden compatibility rig. */

@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Button, Input, NativeSelect, Textarea } from "@/components/ui/control";
 import { backgroundPresets, portraitPresets } from "../../data/presets";
+import { CinematicRendererOwner } from "../../runtime/three/threeRendererOwner";
 import { useProjectStore } from "../../store/useProjectStore";
 import type { Cutscene, GameProject } from "../../types/game";
 import { CinematicSequenceEditor } from "../cinematics/CinematicSequenceEditor";
@@ -274,16 +275,18 @@ export function CutsceneEditor() {
 				</fieldset>
 			</header>
 			{cutscene && sequence ? (
-				<CinematicSequenceEditor
-					key={`${cutscene.id}-${sequence.areaId}`}
-					project={project}
-					cutscene={cutscene}
-					sequence={sequence}
-					advanced={advanced}
-					library={library}
-					settings={settings}
-					onChange={(cinematic) => change({ cinematic })}
-				/>
+				<CinematicRendererOwner>
+					<CinematicSequenceEditor
+						key={`${cutscene.id}-${sequence.areaId}`}
+						project={project}
+						cutscene={cutscene}
+						sequence={sequence}
+						advanced={advanced}
+						library={library}
+						settings={settings}
+						onChange={(cinematic) => change({ cinematic })}
+					/>
+				</CinematicRendererOwner>
 			) : (
 				<div className="cinema-workspace">
 					<aside className="cinema-library" aria-label="Cinematic library">

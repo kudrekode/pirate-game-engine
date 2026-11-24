@@ -18,13 +18,16 @@ const projects = [
 
 const [url, output] = process.argv.slice(2);
 const dist = process.env.PROFILE_DIST;
+const cinematicsOnly = process.argv.includes("--chapter-cinematics");
+const measureClips = process.argv.includes("--clip-decode");
+const repeatStages = process.argv.includes("--stage-cycles");
 const hardware = process.env.PROFILE_ANGLE === "d3d11";
 const viewport = hardware
 	? { width: 960, height: 600 }
 	: { width: 1440, height: 900 };
 if (!url || !output || url === "--list") {
 	console.log(
-		"Usage: node tools/profile-hollow-editor.mjs PREVIEW_URL OUTPUT.json",
+		"Usage: node tools/profile-hollow-editor.mjs PREVIEW_URL OUTPUT.json [--chapter-cinematics [--clip-decode] [--stage-cycles]]",
 	);
 	console.log(projects.map(({ file }) => file).join("\n"));
 	console.log(
@@ -79,8 +82,57 @@ async function serveBuildFiles(context) {
 
 function installBrowserProbe() {
 	const timings = {};
-	const counts = { contexts: 0, thumbnails: 0 };
+	const counts = { contexts: 0, contextMs: 0, thumbnails: 0 };
 	const longTasks = [];
+	const preparation = [];
+	let latestRenderer;
+	const events = new EventTarget();
+	window.__THREE_DEVTOOLS__ = events;
+	events.addEventListener("observe", ({ detail: renderer }) => {
+		if (!renderer.isWebGLRenderer) return;
+		latestRenderer = new WeakRef(renderer);
+		const scenes = new WeakSet();
+		const compile = renderer.compile.bind(renderer);
+		renderer.compile = (...args) => {
+			const start = performance.now();
+			const result = compile(...args);
+			preparation.push({
+				phase: "submitPrograms",
+				start,
+				duration: performance.now() - start,
+			});
+			return result;
+		};
+		const render = renderer.render.bind(renderer);
+		const shadow = renderer.shadowMap.render.bind(renderer.shadowMap);
+		let firstDraw = false;
+		renderer.shadowMap.render = (...args) => {
+			if (!firstDraw) return shadow(...args);
+			const start = performance.now();
+			shadow(...args);
+			preparation.push({
+				phase: "firstDrawShadow",
+				start,
+				duration: performance.now() - start,
+			});
+		};
+		renderer.render = (scene, camera) => {
+			if (scenes.has(scene)) return render(scene, camera);
+			scenes.add(scene);
+			firstDraw = true;
+			const start = performance.now();
+			try {
+				return render(scene, camera);
+			} finally {
+				firstDraw = false;
+				preparation.push({
+					phase: "firstDraw",
+					start,
+					duration: performance.now() - start,
+				});
+			}
+		};
+	});
 	performance.setResourceTimingBufferSize(2000);
 	new PerformanceObserver((list) => {
 		for (const entry of list.getEntries()) {
@@ -92,10 +144,12 @@ function installBrowserProbe() {
 	const canvasPrototype = HTMLCanvasElement.prototype;
 	const getContext = canvasPrototype.getContext;
 	canvasPrototype.getContext = function (kind, ...options) {
+		const started = performance.now();
 		const context = getContext.call(this, kind, ...options);
 		if (context && /^webgl/.test(kind) && !canvases.has(this)) {
 			canvases.add(this);
 			counts.contexts += 1;
+			counts.contextMs += performance.now() - started;
 		}
 		return context;
 	};
@@ -117,7 +171,20 @@ function installBrowserProbe() {
 		const check = (mutations = []) => {
 			if (record.start === null) return;
 			if (!document.querySelector(shell)) return;
-			record.shell ??= performance.now();
+			if (record.shell === null) {
+				record.shell = performance.now();
+				if (id === "cinematics-1")
+					requestAnimationFrame(() =>
+						setTimeout(() => {
+							const button = document.querySelector(
+								".cinema-library button[aria-pressed='true']",
+							);
+							button?.focus({ preventScroll: true });
+							if (button && document.activeElement === button)
+								record.shellFocusMs = performance.now() - record.start;
+						}, 0),
+					);
+			}
 			const current = document.querySelector(ready);
 			if (!current || (selection && !document.querySelector(selection))) return;
 			if (
@@ -159,7 +226,19 @@ function installBrowserProbe() {
 		}
 	}
 
-	window.hollowEditorProfile = { arm, counts, longTasks, timings };
+	const rendererResources = () => {
+		const renderer = latestRenderer?.deref();
+		if (!renderer?.domElement.isConnected) return null;
+		return { ...renderer.info.memory, programs: renderer.info.programs.length };
+	};
+	window.hollowEditorProfile = {
+		arm,
+		counts,
+		longTasks,
+		timings,
+		preparation,
+		rendererResources,
+	};
 	arm({
 		id: "startup",
 		shell: ".project-list-screen",
@@ -192,6 +271,57 @@ function resourceMetrics(entries) {
 	return { resources, assets };
 }
 
+// Measure the same native browser loader as the workspace, after the timed
+// visits. Keep fetch/arrayBuffer and GLTF parse (including images) separate.
+async function benchmarkLocomotionClips(page) {
+	return page.evaluate(async () => {
+		const module = performance
+			.getEntriesByType("resource")
+			.find((entry) =>
+				/\/GLTFLoader-[^/]+\.js$/.test(new URL(entry.name).pathname),
+			);
+		if (!module) throw new Error("Expected the optimized GLTFLoader module");
+		const { GLTFLoader } = await import(module.name);
+		const loader = new GLTFLoader();
+		const directory =
+			"/assets/derived/humanoid-animations/golden-reference-v0/";
+		const results = [];
+		for (const order of [
+			["", ".clip"],
+			[".clip", ""],
+			["", ".clip"],
+		]) {
+			for (const suffix of order) {
+				for (const clip of ["idle", "walk-in-place"]) {
+					const file = `${clip}${suffix}.glb`;
+					const start = performance.now();
+					const response = await fetch(directory + file);
+					if (!response.ok) throw new Error(`Failed to fetch ${file}`);
+					const bytes = await response.arrayBuffer();
+					const fetched = performance.now();
+					const result = await loader.parseAsync(bytes, directory);
+					results.push({
+						file,
+						bytes: bytes.byteLength,
+						fetchMs: fetched - start,
+						parseMs: performance.now() - fetched,
+						tracks: result.animations[0].tracks.length,
+					});
+					// No scene is rendered during this isolated decode experiment.
+					result.scene.traverse((node) => {
+						for (const material of [node.material].flat().filter(Boolean)) {
+							for (const texture of Object.values(material)) {
+								if (texture?.isTexture) texture.image?.close?.();
+							}
+						}
+					});
+				}
+			}
+		}
+		return results;
+	});
+}
+
 async function browserMetrics(cdp) {
 	const { metrics } = await cdp.send("Performance.getMetrics");
 	return Object.fromEntries(
@@ -213,10 +343,13 @@ async function readProbe(page, id) {
 		id,
 	);
 	return page.evaluate((id) => {
-		const { timings, longTasks } = window.hollowEditorProfile;
+		const { timings, longTasks, preparation } = window.hollowEditorProfile;
 		const timing = timings[id];
 		return {
 			...timing,
+			preparation: preparation.filter(
+				({ start }) => start >= timing.start && start <= timing.ready,
+			),
 			longTasks: longTasks.filter(
 				({ start, duration }) =>
 					start + duration >= timing.start && start <= timing.ready,
@@ -334,6 +467,7 @@ async function measureProject(browser, scenario) {
 	const results = [];
 	const button = (name) => page.getByRole("button", { name, exact: true });
 	const sequenceName = project.cutscenes[0].name;
+	const stageCycles = [];
 
 	async function measure(
 		id,
@@ -380,6 +514,7 @@ async function measureProject(browser, scenario) {
 			readyMs: Math.round(readyAt - start),
 			webglContextsCreated:
 				(settled?.counts ?? countsAtReady).contexts - countsAtStart.contexts,
+			contextMs: countsAtReady.contextMs - countsAtStart.contextMs,
 			thumbnailEncodes: countsAtReady.thumbnails - countsAtStart.thumbnails,
 			...(settled && {
 				thumbnailsReadyMs: Math.round(settled.at - start),
@@ -455,10 +590,43 @@ async function measureProject(browser, scenario) {
 					},
 					() => button(sequence).click(),
 				);
-				await button(sequenceName).click();
-				await page.locator(stageReady).waitFor();
+				await measure(
+					"cinematics-return-sequence",
+					{
+						shell: stage,
+						ready: stageReady,
+						selection: `button[aria-label=${JSON.stringify(sequenceName)}][aria-pressed='true']`,
+					},
+					() => button(sequenceName).click(),
+				);
+				if (repeatStages) {
+					for (let cycle = 1; cycle <= 3; cycle++) {
+						for (const name of [sequence, sequenceName]) {
+							await button(name).click();
+							await page.locator(stageReady).waitFor();
+							const resources = await page.evaluate(() =>
+								window.hollowEditorProfile.rendererResources(),
+							);
+							stageCycles.push({ cycle, name, resources });
+						}
+					}
+				}
 			}
 			await button("Home").click();
+		}
+		if (cinematicsOnly) {
+			await finishDocument();
+			const clipDecode = measureClips
+				? await benchmarkLocomotionClips(page)
+				: undefined;
+			return {
+				...scenario,
+				documents,
+				errors,
+				requestFailures,
+				clipDecode,
+				stageCycles,
+			};
 		}
 		await measure(
 			"asset-creator-open",
@@ -550,10 +718,15 @@ try {
 		);
 	}
 	for (const scenario of projects) {
+		if (cinematicsOnly && !scenario.alternateSequence) continue;
 		evidence.projects.push(await measureProject(browser, scenario));
 		await writeFile(output, `${JSON.stringify(evidence, null, 2)}\n`);
 	}
-	if (evidence.projects.some(({ externalClip }) => externalClip.error)) {
+	if (
+		evidence.projects.some(
+			({ externalClip, errors }) => externalClip?.error || errors.length,
+		)
+	) {
 		process.exitCode = 1;
 	}
 	if (process.env.PROFILE_RETRY === "1") {

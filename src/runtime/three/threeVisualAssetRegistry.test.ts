@@ -261,12 +261,12 @@ describe("Three visual asset registry", () => {
 		expect(idle).toMatchObject({
 			animationOnly: true,
 			kind: "glb",
-			url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.glb",
+			url: "/assets/derived/humanoid-animations/golden-reference-v0/idle.clip.glb",
 		});
 		expect(walk).toMatchObject({
 			animationOnly: true,
 			kind: "glb",
-			url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.glb",
+			url: "/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.clip.glb",
 		});
 	});
 

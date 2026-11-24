@@ -1,6 +1,7 @@
 import {
 	type MutableRefObject,
 	useCallback,
+	useContext,
 	useEffect,
 	useRef,
 	useState,
@@ -199,6 +200,7 @@ import {
 } from "./placeholderMeshes";
 import { prepareSceneShaders } from "./prepareSceneShaders";
 import { watchSceneAssetLoads } from "./sceneAssetLoads";
+import { cacheSceneryShadows, staticShadowAssetIds } from "./staticScenery";
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
 import { createThreeArrowPresentation } from "./threeArrowPresentation";
@@ -215,6 +217,10 @@ import {
 	createThreePropAnimationController,
 	interactionFacingYaw,
 } from "./threePropAnimation";
+import {
+	CinematicRendererContext,
+	useOwnedThreeRenderer,
+} from "./threeRendererOwner";
 import { getThreeRuntimeAction } from "./threeRuntimeInput";
 import { forgetFailedThreeVisualAsset } from "./threeVisualAssetLoader";
 import {
@@ -620,19 +626,13 @@ export function ThreeRuntimePanel({
 	onStoryDebug,
 }: ThreeRuntimePanelProps) {
 	const hostRef = useRef<HTMLDivElement>(null);
-	const rendererRef = useRef<THREE.WebGLRenderer | undefined>(undefined);
+	const localRenderer = useOwnedThreeRenderer();
+	const workspaceRenderer = useContext(CinematicRendererContext);
+	const rendererRef = workspaceRenderer ?? localRenderer;
 	const failedModels = useRef<string[]>([]);
 	const [modelProgress, setModelProgress] = useState("");
 	const [shaderProgress, setShaderProgress] = useState("");
 	const [groundPending, setGroundPending] = useState(true);
-	useEffect(
-		() => () => {
-			rendererRef.current?.dispose();
-			rendererRef.current?.forceContextLoss?.();
-			rendererRef.current = undefined;
-		},
-		[],
-	);
 	const diagnosticsRef = useRef<ThreePerformanceDiagnostics | null>(null);
 	if (!diagnosticsRef.current) {
 		diagnosticsRef.current = createThreePerformanceDiagnostics({
@@ -643,6 +643,7 @@ export function ThreeRuntimePanel({
 	const sessionRef = useRef<RuntimeSessionState | null>(null);
 	const playerVisualRef = useRef<VisualEntityState | null>(null);
 	const heldMovementKeys = useRef(new Map<string, RuntimeGridPosition>());
+	const pollHeldMovement = useRef<(() => void) | undefined>(undefined);
 	const heldSprintKeys = useRef(new Set<string>());
 	// Camera orientation is independent of travel/facing; only reset/recenter changes this base.
 	const cameraFacingRef = useRef<VisualGridPosition | null>(null);
@@ -2198,9 +2199,14 @@ export function ThreeRuntimePanel({
 			heldMovementKeys.current.clear();
 			heldSprintKeys.current.clear();
 		};
-		const interval = window.setInterval(() => {
+		const poll = () => {
 			const current = getSession();
-			if (!current?.traversal || !heldMovementKeys.current.size) return;
+			if (
+				!current?.traversal ||
+				!heldMovementKeys.current.size ||
+				performance.now() < current.nextMoveAt
+			)
+				return;
 			const direction = [...heldMovementKeys.current.values()].reduce(
 				(sum, d) => ({ x: sum.x + d.x, y: sum.y + d.y }),
 				{ x: 0, y: 0 },
@@ -2214,7 +2220,9 @@ export function ThreeRuntimePanel({
 					}),
 					true,
 				);
-		}, 16);
+		};
+		pollHeldMovement.current = poll;
+		const interval = window.setInterval(poll, 16);
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 		window.addEventListener("blur", clearKeys);
@@ -2223,6 +2231,7 @@ export function ThreeRuntimePanel({
 			window.removeEventListener("keyup", handleKeyUp);
 			window.removeEventListener("blur", clearKeys);
 			window.clearInterval(interval);
+			pollHeldMovement.current = undefined;
 		};
 	});
 
@@ -2685,6 +2694,7 @@ export function ThreeRuntimePanel({
 			}
 		>();
 		const markerGroups = new Map<string, THREE.Group>();
+		const staticScenery: THREE.Group[] = [];
 		const vehicles = new Map<
 			string,
 			{
@@ -2707,6 +2717,14 @@ export function ThreeRuntimePanel({
 			const behaviour = object
 				? resolveObjectBehaviour(session.project, object)
 				: undefined;
+			if (
+				!cinematicPreview &&
+				object &&
+				behaviour?.type === "none" &&
+				renderResult.usedAsset &&
+				staticShadowAssetIds.has(renderResult.assetDefinitionId ?? "")
+			)
+				staticScenery.push(group);
 			if (object && behaviour?.type === "vehicle") {
 				const seat = marker.visual?.asset?.mountedSeat;
 				vehicles.set(marker.id, {
@@ -2952,6 +2970,12 @@ export function ThreeRuntimePanel({
 			fogOverride: area.theme?.fog,
 			enableShadows: true,
 		});
+		const releaseShadowCache = cacheSceneryShadows(
+			scene,
+			staticScenery,
+			atmosphere.lights.sun,
+			renderer,
+		);
 		// The moonlit scene has dense foliage in the shadow pass. Keep the
 		// previous map between updates while the main view renders each frame.
 		const moonShadow =
@@ -3316,6 +3340,15 @@ export function ThreeRuntimePanel({
 		};
 		const render = () => {
 			const frameCallbackStartedAt = performance.now();
+			// A frame can fall between a segment deadline and the next input poll.
+			// Advance the shared transaction before sampling that frame's pose.
+			if (
+				heldMovementKeys.current.size &&
+				session.traversal &&
+				!session.traversal.lastReason &&
+				frameCallbackStartedAt >= session.nextMoveAt
+			)
+				pollHeldMovement.current?.();
 			const now = performance.now();
 			const deltaMs = now - lastFrameMs;
 			lastFrameMs = now;
@@ -4203,6 +4236,7 @@ export function ThreeRuntimePanel({
 			atmosphere.dispose();
 			viewportObserver?.disconnect();
 			groundPresentation.dispose();
+			releaseShadowCache?.();
 			for (const result of [...markerRenderResults, playerRenderResult]) {
 				result.disposePresentation?.();
 				if (result.usedAsset) disposeCloneSkeletons(result.group);
