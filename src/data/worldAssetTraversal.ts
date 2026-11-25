@@ -23,6 +23,13 @@ const solid = (x: number, y: number, z: number): AssetTraversalProfile => ({
 	solids: [box(x, y, z)],
 });
 
+const cottage: AssetTraversalProfile = {
+	solids: [
+		box(4.78, 4.6, 4.55),
+		{ min: [2.32, 0, -0.54], max: [2.9, 4.55, 1.36] },
+	],
+};
+
 export const WORLD_ASSET_TRAVERSAL: Record<string, AssetTraversalProfile> = {
 	"chapter-chapel-arch": {
 		solids: [
@@ -39,12 +46,11 @@ export const WORLD_ASSET_TRAVERSAL: Record<string, AssetTraversalProfile> = {
 		],
 	},
 	"chapter-cinder-crystal": solid(1.28, 1.85, 0.86),
-	"mere-cottage": {
-		solids: [
-			box(4.78, 4.6, 4.55),
-			{ min: [2.32, 0, -0.54], max: [2.9, 4.55, 1.36] },
-		],
-	},
+	"mere-cottage": cottage,
+	"mere-lane-cottage": cottage,
+	"mere-lane-ash": solid(0.38, 6, 0.38),
+	"mere-lane-wall": solid(2.8, 0.68, 0.51),
+	"mere-lane-woodpile": solid(1.3, 0.69, 0.64),
 	"mere-well": solid(1.58, 1, 1.58),
 	"mere-lantern": solid(0.41, 2.85, 0.41),
 	"mere-barrel": solid(0.74, 0.93, 0.74),

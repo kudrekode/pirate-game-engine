@@ -190,6 +190,7 @@ import {
 	DEFAULT_CINEMATIC_FOV,
 	sampleCinematicShot,
 } from "./cinematicCamera";
+import { loadDistantFoliageMeshes } from "./foliageLod";
 import {
 	createGroundPresentation,
 	createWorldEdgePresentation,
@@ -200,6 +201,11 @@ import {
 } from "./placeholderMeshes";
 import { prepareSceneShaders } from "./prepareSceneShaders";
 import { watchSceneAssetLoads } from "./sceneAssetLoads";
+import {
+	batchStaticScenery,
+	isStaticSceneryAsset,
+	type SceneryMarker,
+} from "./sceneryBatches";
 import { cacheSceneryShadows, staticShadowAssetIds } from "./staticScenery";
 import { ThreePerformanceOverlay } from "./ThreePerformanceOverlay";
 import { createSmoothTerrainBufferGeometry } from "./terrainMeshGeometry";
@@ -2344,9 +2350,31 @@ export function ThreeRuntimePanel({
 			session.project.characterAssets,
 			session.project.assetCreator?.variants,
 		);
+		const benchmarkMode =
+			import.meta.env.MODE === "test"
+				? new URLSearchParams(window.location.search).get("sceneryBatching")
+				: null;
+		const batchingMode =
+			cinematicPreview || benchmarkMode === "off"
+				? "off"
+				: benchmarkMode === "instances"
+					? "instances"
+					: "lod";
+		const farModels = new Set(
+			batchingMode === "lod"
+				? runtimeMarkers.flatMap((marker) => {
+						const model =
+							marker.kind === "object" &&
+							isStaticSceneryAsset(marker.visual?.asset) &&
+							marker.visual?.asset?.distantModel;
+						return model ? [model] : [];
+					})
+				: [],
+		);
 		const assets = watchSceneAssetLoads(
 			[
 				...runtimeMarkers.map((marker) => marker.visual?.asset),
+				...farModels,
 				playerRenderVisual.asset,
 			],
 			setModelProgress,
@@ -2724,6 +2752,13 @@ export function ThreeRuntimePanel({
 		>();
 		const markerGroups = new Map<string, THREE.Group>();
 		const staticScenery: THREE.Group[] = [];
+		const batchCandidates: SceneryMarker[] = [];
+		const objectsById = new Map(
+			area.objects.map((object) => [object.id, object]),
+		);
+		const definitionsById = new Map(
+			session.project.objects.map((definition) => [definition.id, definition]),
+		);
 		const vehicles = new Map<
 			string,
 			{
@@ -2741,7 +2776,7 @@ export function ThreeRuntimePanel({
 			markerGroups.set(marker.id, group);
 			const object =
 				marker.kind === "object" || marker.kind === "vehicle"
-					? area.objects.find((o) => o.id === marker.id)
+					? objectsById.get(marker.id)
 					: undefined;
 			const behaviour = object
 				? resolveObjectBehaviour(session.project, object)
@@ -2754,6 +2789,24 @@ export function ThreeRuntimePanel({
 				staticShadowAssetIds.has(renderResult.assetDefinitionId ?? "")
 			)
 				staticScenery.push(group);
+			if (
+				batchingMode !== "off" &&
+				object &&
+				marker.kind === "object" &&
+				behaviour?.type === "none" &&
+				!(
+					object.interaction ??
+					definitionsById.get(object.objectDefinitionId)?.defaultInteraction
+				) &&
+				renderResult.usedAsset &&
+				!renderResult.assetAnalysis?.animationClips.length &&
+				isStaticSceneryAsset(marker.visual?.asset)
+			)
+				batchCandidates.push({
+					id: marker.id,
+					group,
+					farModelId: marker.visual?.asset?.distantModel?.id,
+				});
 			if (object && behaviour?.type === "vehicle") {
 				const seat = marker.visual?.asset?.mountedSeat;
 				vehicles.set(marker.id, {
@@ -2832,6 +2885,18 @@ export function ThreeRuntimePanel({
 			addRenderObject(group, { disposeResources: !renderResult.usedAsset });
 			return renderResult;
 		});
+
+		const sceneryBatches = batchStaticScenery(
+			scene,
+			batchCandidates,
+			loadDistantFoliageMeshes(farModels),
+		);
+		if (import.meta.env.MODE === "test")
+			renderer.domElement.dataset.sceneryBatching = JSON.stringify({
+				enabled: batchingMode !== "off",
+				mode: batchingMode,
+				...sceneryBatches.stats,
+			});
 
 		const playerRenderResult = createThreeVisualMarkerGroup(
 			createRuntimePlayerMarker(
@@ -2999,16 +3064,21 @@ export function ThreeRuntimePanel({
 			fogOverride: area.theme?.fog,
 			enableShadows: true,
 		});
+		sceneryBatches.setShadowLight(atmosphere.lights.sun);
 		const releaseShadowCache = cacheSceneryShadows(
 			scene,
-			staticScenery,
+			[
+				...staticScenery.filter((root) => !sceneryBatches.replaced.has(root)),
+				...sceneryBatches.roots,
+			],
 			atmosphere.lights.sun,
 			renderer,
 		);
-		// The moonlit scene has dense foliage in the shadow pass. Keep the
+		// These evening scenes have dense foliage in the shadow pass. Keep the
 		// previous map between updates while the main view renders each frame.
 		const moonShadow =
-			area.theme?.atmosphere === "moonlit"
+			area.theme?.atmosphere === "moonlit" ||
+			area.theme?.atmosphere === "blue-hour"
 				? atmosphere.lights.sun.shadow
 				: undefined;
 		if (moonShadow) moonShadow.autoUpdate = false;
@@ -4170,6 +4240,7 @@ export function ThreeRuntimePanel({
 				moonShadow.needsUpdate = true;
 				lastMoonShadowMs = now;
 			}
+			sceneryBatches.updateLod(camera.position);
 			renderer.render(scene, camera);
 			for (const label of openedLabels) {
 				if (
@@ -4266,6 +4337,7 @@ export function ThreeRuntimePanel({
 			viewportObserver?.disconnect();
 			groundPresentation.dispose();
 			releaseShadowCache?.();
+			sceneryBatches.dispose();
 			for (const result of [...markerRenderResults, playerRenderResult]) {
 				result.disposePresentation?.();
 				if (result.usedAsset) disposeCloneSkeletons(result.group);

@@ -19,6 +19,41 @@ function area() {
 }
 
 describe("coastal ground presentation", () => {
+	it("tiles blue-hour ground detail every four metres and releases its texture", async () => {
+		const input = area();
+		input.theme = { atmosphere: "blue-hour" };
+		const texture = new THREE.Texture<HTMLImageElement>();
+		const loader = vi
+			.spyOn(THREE.TextureLoader.prototype, "load")
+			.mockReturnValue(texture);
+		const dispose = vi.spyOn(texture, "dispose");
+		const material = new THREE.MeshStandardMaterial();
+		const mesh = new THREE.Mesh(new THREE.PlaneGeometry(), material);
+		try {
+			const ground = createGroundPresentation(input);
+			ground.apply(mesh);
+			await ground.ready;
+			const shader = {
+				uniforms: {},
+				fragmentShader: "#include <map_fragment>",
+			} as THREE.WebGLProgramParametersWithUniforms;
+			material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+			expect(shader.uniforms.groundDetail.value).toBe(texture);
+			expect(shader.uniforms.detailRepeat.value.toArray()).toEqual([
+				input.width / 4,
+				input.height / 4,
+			]);
+			expect(texture.wrapS).toBe(THREE.RepeatWrapping);
+			expect(texture.wrapT).toBe(THREE.RepeatWrapping);
+			ground.dispose();
+			expect(dispose).toHaveBeenCalledOnce();
+		} finally {
+			loader.mockRestore();
+			material.dispose();
+			mesh.geometry.dispose();
+		}
+	});
+
 	it("shares a cold worker and finishes the same texture if the worker file fails", async () => {
 		const postMessage = vi.fn();
 		const terminate = vi.fn();

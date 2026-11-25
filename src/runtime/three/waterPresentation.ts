@@ -69,10 +69,12 @@ export function createWaterPresentationState(
 	waterMaterial.depthWrite = false;
 	waterMaterial.transparent = true;
 	const moonlit = atmosphere === "moonlit";
+	const blueHour = atmosphere === "blue-hour";
 	if (moonlit) {
 		waterMaterial.color.setHex(0x283755);
 		waterMaterial.roughness = 0.27;
 	}
+	if (blueHour) waterMaterial.color.setHex(0x42535a);
 	// Small world-space ripples in the existing Standard material: lighting,
 	// shadows, fog and colour management remain Three's normal rendering path.
 	waterMaterial.onBeforeCompile = (shader) => {
@@ -92,7 +94,7 @@ export function createWaterPresentationState(
 				float ripple = sin(vCoastalPosition.x * 5.1 - vCoastalPosition.z * 3.8 + coastalTime * 0.9);
 				diffuseColor.rgb *= 1.0 + swell * 0.16 + ripple * 0.045;
 				${
-					moonlit
+					moonlit || blueHour
 						? `
 				vec3 viewRay = normalize(vCoastalPosition - cameraPosition);
 				float angle = viewRay.x - 0.28 * -viewRay.z;
@@ -101,8 +103,8 @@ export function createWaterPresentationState(
 				float gust = sin(p.x * 3.3 + p.y * .7 + coastalTime * .3) * cos(p.x * 1.9 - p.y * 1.2);
 				float crest = sin(p.y * 21.0 + 3.2 * swell + 2.3 * ripple + gust + coastalTime);
 				float glint = smoothstep(.66, 1.0, crest) * smoothstep(-.25, .79, gust);
-				diffuseColor.rgb += vec3(.16, .12, .21) * path * glint;
-				diffuseColor.rgb += vec3(.023,.016,.035) * pow(1.0 - abs(viewRay.y), 4.0);
+				diffuseColor.rgb += ${blueHour ? "vec3(.14,.14,.135)" : "vec3(.16,.12,.21)"} * path * glint;
+				diffuseColor.rgb += ${blueHour ? "vec3(.038,.047,.056)" : "vec3(.023,.016,.035)"} * pow(1.0 - abs(viewRay.y), 4.0);
 				`
 						: ""
 				}
@@ -121,10 +123,14 @@ export function createWaterPresentationState(
 				);
 	};
 	waterMaterial.customProgramCacheKey = () =>
-		moonlit ? "moonlit-water-v1" : "coastal-water-v1";
+		blueHour
+			? "blue-hour-water-v1"
+			: moonlit
+				? "moonlit-water-v1"
+				: "coastal-water-v1";
 
 	const coastlineMaterial = new THREE.MeshStandardMaterial({
-		color: moonlit ? 0x626173 : 0xffffff,
+		color: blueHour ? 0x9b9079 : moonlit ? 0x626173 : 0xffffff,
 		depthWrite: true,
 		metalness: 0,
 		opacity: COASTLINE_BASE_OPACITY,
@@ -138,6 +144,7 @@ export function createWaterPresentationState(
 	});
 	shallowWaterMaterial.depthWrite = false;
 	if (moonlit) shallowWaterMaterial.color.setHex(0x444264);
+	if (blueHour) shallowWaterMaterial.color.setHex(0x68776d);
 	shallowWaterMaterial.transparent = true;
 	shallowWaterMaterial.vertexColors = true;
 

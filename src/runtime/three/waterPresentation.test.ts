@@ -31,6 +31,21 @@ function makeArea(overrides: Partial<GameArea> = {}): GameArea {
 }
 
 describe("water presentation helpers", () => {
+	it("shares the blue-hour palette across the lake, shallows and bank", () => {
+		const { waterMaterial, shallowWaterMaterial, coastlineMaterial } =
+			createWaterPresentationState("blue-hour");
+		expect(waterMaterial.customProgramCacheKey()).toBe("blue-hour-water-v1");
+		expect(waterMaterial.color.getHex()).toBe(0x42535a);
+		expect(shallowWaterMaterial.color.getHex()).toBe(0x68776d);
+		expect(coastlineMaterial.color.getHex()).toBe(0x9b9079);
+		for (const material of [
+			waterMaterial,
+			shallowWaterMaterial,
+			coastlineMaterial,
+		])
+			material.dispose();
+	});
+
 	it("derives cardinal coastline edges from authored land-water terrain", () => {
 		const edges = deriveCoastlineEdges(
 			makeArea({

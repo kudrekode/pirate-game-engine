@@ -24,6 +24,8 @@ import {
 } from "../../data/worldAssetTraversal";
 export type ThreeVisualAssetDefinition = VisualAssetDefinition & {
 	traversal?: AssetTraversalProfile;
+	/** Single-primitive distant scenery in the same local coordinates as this GLB. */
+	distantModel?: VisualAssetDefinition;
 	mountedSeat?: { height: number; node?: string };
 	gaitSpeeds?: { walk: number; run: number };
 	variant?: AssetCreatorVariant;
@@ -124,11 +126,57 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 			castShadow: true,
 			receiveShadow: true,
 			traversal: WORLD_ASSET_TRAVERSAL[`mere-${key}`],
+			distantModel:
+				key === "spruce"
+					? {
+							id: "mere-spruce-distant",
+							name: "Distant spruce",
+							kind: "glb",
+							url: "/assets/hollow-kingdom/cottage-lane/spruce-far.glb",
+						}
+					: undefined,
 			tags: [
 				"hollow-kingdom",
 				"merewatch",
 				...(key === "spruce" ? ["foliage", "tree"] : []),
 				...(key === "verge" ? ["foliage", "groundcover"] : []),
+			],
+		}),
+	),
+	...(
+		[
+			["cottage", "Merewatch Hearth Cottage", "Buildings", []],
+			["ash", "Wind-shaped Ash", "Nature", ["foliage", "tree"]],
+			["bank", "Fern and Schist Bank", "Nature", ["foliage", "groundcover"]],
+			["wall", "Dry Schist Wall", "Buildings", []],
+			["woodpile", "Riven Cordwood Stack", "Props", []],
+		] as const
+	).map(
+		([key, name, browserCategory, tags]): ThreeVisualAssetDefinition => ({
+			id: `mere-lane-${key}`,
+			name,
+			kind: "glb",
+			category: "environment",
+			browserCategory,
+			url: `/assets/hollow-kingdom/cottage-lane/${key}.glb`,
+			defaultScale: 1,
+			castShadow: true,
+			receiveShadow: true,
+			traversal: WORLD_ASSET_TRAVERSAL[`mere-lane-${key}`],
+			distantModel:
+				key === "ash"
+					? {
+							id: "mere-lane-ash-distant",
+							name: "Distant ash",
+							kind: "glb",
+							url: "/assets/hollow-kingdom/cottage-lane/ash-far.glb",
+						}
+					: undefined,
+			tags: [
+				"hollow-kingdom",
+				"merewatch",
+				...(key === "cottage" ? [] : ["static-scenery"]),
+				...tags,
 			],
 		}),
 	),

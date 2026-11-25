@@ -158,12 +158,19 @@ export function installRenderProbe(verifyShadows) {
 			const actors = new Set();
 			const meshes = {};
 			const visibleMarkers = window.hollowWorldScale ? new Set() : undefined;
+			const submittedProxies = new Set();
 			for (const { object } of [
 				...list.opaque,
 				...list.transmissive,
 				...list.transparent,
 			]) {
 				if (visibleMarkers) {
+					// Three culls the batch as a unit. Every submitted instance counts
+					// even when its individual bounds fall outside the camera.
+					for (const id of object.userData.sceneryMarkerIds ?? []) {
+						visibleMarkers.add(id);
+						if (object.userData.sceneryLod === "far") submittedProxies.add(id);
+					}
 					let root = object;
 					while (root.parent && root.parent !== scene) root = root.parent;
 					if (Object.hasOwn(root.userData, "mapEntityTransform"))
@@ -179,6 +186,7 @@ export function installRenderProbe(verifyShadows) {
 			}
 			windowData.view = {
 				...(visibleMarkers && {
+					submittedProxyTrees: submittedProxies.size,
 					minVisibleMarkers: Math.min(
 						windowData.view?.minVisibleMarkers ?? Infinity,
 						visibleMarkers.size,
