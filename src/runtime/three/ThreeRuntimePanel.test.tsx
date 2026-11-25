@@ -614,6 +614,99 @@ describe("ThreeRuntimePanel", () => {
 		}
 	});
 
+	it.each([
+		{ loading: "short", provisional: false },
+		{ loading: "stalled", provisional: true },
+	])("keeps destination traversal live during a $loading model request and retries a failed model", async ({
+		provisional,
+	}) => {
+		const project = makeProject();
+		project.player.threeVisual = { mode: "placeholder" };
+		project.areas[0].objects.push(
+			makeObject({
+				x: 0,
+				y: 1,
+				threeVisual: { mode: "placeholder" },
+				interaction: {
+					type: "teleport",
+					activationMode: "on_interact",
+					prompt: "Cross ridge",
+					targetAreaId: "forest",
+					targetEventBlockId: "entry",
+				},
+			}),
+		);
+		project.areas.push(
+			makeArea({
+				id: "forest",
+				eventBlocks: [
+					{ id: "entry", name: "Entry", kind: "spawn", tag: "", x: 1, y: 1 },
+				],
+				objects: [
+					makeObject({
+						areaId: "forest",
+						id: "floor",
+						x: 2,
+						y: 2,
+						threeVisual: { mode: "asset", assetId: "world-floor" },
+					}),
+				],
+			}),
+		);
+		let failLoad!: (reason: Error) => void;
+		const loadAsync = vi.fn(
+			() =>
+				new Promise<never>((_, reject) => {
+					failLoad = reject;
+				}),
+		);
+		const restoreLoader = setThreeVisualAssetLoaderFactoryForTests(() => ({
+			loadAsync,
+		}));
+		try {
+			render(<ThreeRuntimePanel onRestart={vi.fn()} project={project} />);
+			const canvas = screen.getByLabelText("Three runtime viewport");
+			await screen.findByText(/Cross ridge/);
+			fireEvent.keyDown(window, { key: "e", code: "KeyE" });
+			await screen.findByText(/Loading scene models/);
+			expect(latestSession().traversal?.world.areaId).toBe("forest");
+			expect(latestSession().playerPosition).toEqual({ x: 1, y: 1 });
+			expect(getRuntimeDiagnosticsSnapshot().scene.buildCount).toBe(1);
+			expect(loadAsync).toHaveBeenCalledOnce();
+			if (provisional) {
+				await waitFor(
+					() =>
+						expect(getRuntimeDiagnosticsSnapshot().scene).toMatchObject({
+							areaId: "forest",
+							buildCount: 2,
+							lastRebuildReason: "area changed",
+						}),
+					{ timeout: 3000 },
+				);
+				expect(screen.getByLabelText("Three runtime viewport")).toBe(canvas);
+				expect(screen.getByText(/Loading scene models/)).toBeInTheDocument();
+				expect(loadAsync).toHaveBeenCalledOnce();
+			}
+			await act(async () => failLoad(new Error("Model unavailable")));
+			const retry = await screen.findByRole("button", { name: "Retry models" });
+			expect(getRuntimeDiagnosticsSnapshot().scene).toMatchObject({
+				areaId: "forest",
+				buildCount: provisional ? 3 : 2,
+				lastRebuildReason: provisional ? "asset state changed" : "area changed",
+			});
+			expect(screen.getByLabelText("Three runtime viewport")).toBe(canvas);
+			fireEvent.click(retry);
+			await waitFor(() => expect(loadAsync).toHaveBeenCalledTimes(2));
+			await act(async () => failLoad(new Error("Still unavailable")));
+			expect(
+				await screen.findByRole("button", { name: "Retry models" }),
+			).toBeInTheDocument();
+			expect(latestSession().traversal?.world.areaId).toBe("forest");
+		} finally {
+			restoreLoader();
+		}
+	});
+
 	it("requests player character assets through the shared renderer path", async () => {
 		clearThreeVisualAssetCacheForTests();
 		const restoreRegistry = setThreeVisualAssetRegistryForTests([

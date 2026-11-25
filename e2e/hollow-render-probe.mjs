@@ -12,9 +12,20 @@ export function installRenderProbe(verifyShadows) {
 		let pending;
 		let measured;
 		let shadowCalls = 0;
+		let shadowCpuMs = 0;
 		let frame = 0;
 		let eligible;
+		// On the matched mounted control, restore Three's native caster set only
+		// during the measured action. Each rebuild owns a different set of roots.
+		const nativeTrial = verifyShadows === "native-mounted";
+		let observedScene;
+		let nativeActive = false;
 		renderer.shadowMap.render = (...args) => {
+			if (nativeTrial && observedScene !== args[1]) {
+				observedScene = args[1];
+				eligible = undefined;
+				nativeActive = false;
+			}
 			if (
 				verifyShadows &&
 				!eligible &&
@@ -29,14 +40,27 @@ export function installRenderProbe(verifyShadows) {
 					});
 				}
 			}
+			if (nativeTrial && eligible?.length) {
+				const active = Boolean(window.hollowBenchmarkFrames?.active);
+				if (active !== nativeActive) {
+					nativeActive = active;
+					args[1].getObjectByName("Static scenery shadow cache").visible =
+						!active;
+					for (const caster of eligible) caster.castShadow = active;
+				}
+			}
 			const start = renderer.info.render.calls;
+			const startMs = window.hollowWorldScale ? performance.now() : 0;
 			shadow(...args);
+			if (startMs) shadowCpuMs += performance.now() - startMs;
 			shadowCalls += renderer.info.render.calls - start;
 		};
 		renderer.render = (scene, camera) => {
 			if (window.hollowScene?.deref() !== scene) {
 				window.hollowScene = new WeakRef(scene);
 				window.hollowCamera = new WeakRef(camera);
+				if (window.hollowWorldScale)
+					window.hollowWorldRenderer = new WeakRef(renderer);
 			}
 			const windowData = window.hollowBenchmarkFrames;
 			if (window.hollowWalking && windowData?.active) {
@@ -65,6 +89,7 @@ export function installRenderProbe(verifyShadows) {
 			const query = sample && ext && !pending && gl.createQuery();
 			if (query) gl.beginQuery(ext.TIME_ELAPSED_EXT, query);
 			shadowCalls = 0;
+			shadowCpuMs = 0;
 			draw(scene, camera);
 			if (window.compareShadows) {
 				const boundary = scene.getObjectByName("Static scenery shadow cache");
@@ -125,15 +150,25 @@ export function installRenderProbe(verifyShadows) {
 			windowData.renderFrames++;
 			windowData.shadowFrames += Number(shadowCalls > 0);
 			windowData.shadowDraws += shadowCalls;
+			if (window.hollowWorldScale && shadowCalls)
+				windowData.shadowCpuTotalMs =
+					(windowData.shadowCpuTotalMs ?? 0) + shadowCpuMs;
 			if (!sample) return;
 			const list = renderer.renderLists.get(scene, 0);
 			const actors = new Set();
 			const meshes = {};
+			const visibleMarkers = window.hollowWorldScale ? new Set() : undefined;
 			for (const { object } of [
 				...list.opaque,
 				...list.transmissive,
 				...list.transparent,
 			]) {
+				if (visibleMarkers) {
+					let root = object;
+					while (root.parent && root.parent !== scene) root = root.parent;
+					if (Object.hasOwn(root.userData, "mapEntityTransform"))
+						visibleMarkers.add(root);
+				}
 				if (object.isSkinnedMesh) {
 					let root = object;
 					while (root.parent && root.parent !== scene) root = root.parent;
@@ -143,6 +178,19 @@ export function installRenderProbe(verifyShadows) {
 				meshes[name] = (meshes[name] ?? 0) + 1;
 			}
 			windowData.view = {
+				...(visibleMarkers && {
+					minVisibleMarkers: Math.min(
+						windowData.view?.minVisibleMarkers ?? Infinity,
+						visibleMarkers.size,
+					),
+					maxVisibleMarkers: Math.max(
+						windowData.view?.maxVisibleMarkers ?? 0,
+						visibleMarkers.size,
+					),
+					shadowCpuMsPerUpdate: windowData.shadowFrames
+						? windowData.shadowCpuTotalMs / windowData.shadowFrames
+						: null,
+				}),
 				visibleSkinnedRoots: actors.size,
 				minVisible: Math.min(
 					windowData.view?.minVisible ?? Infinity,

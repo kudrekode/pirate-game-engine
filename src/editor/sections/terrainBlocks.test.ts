@@ -136,6 +136,24 @@ describe("terrainTilesToBlocks", () => {
 });
 
 describe("terrainTilesToSmoothMeshes", () => {
+	it("keeps an entire large contiguous material in one indexed draw group", () => {
+		const width = 192;
+		const area = makeArea({
+			width,
+			height: width,
+			terrainTiles: Array.from({ length: width * width }, (_, i) => ({
+				x: i % width,
+				y: Math.floor(i / width),
+				tileId: "grass",
+			})),
+		});
+		const [mesh] = terrainTilesToSmoothMeshes(area);
+		expect(mesh.indices).toHaveLength(width * width * 6);
+		expect(mesh.vertices).toHaveLength((width + 1) ** 2 * 3);
+		expect(mesh.groups).toMatchObject([
+			{ start: 0, count: mesh.indices.length, materialKey: "grass" },
+		]);
+	});
 	function everyNumberIsFinite(values: number[]): boolean {
 		return values.every((value) => Number.isFinite(value));
 	}

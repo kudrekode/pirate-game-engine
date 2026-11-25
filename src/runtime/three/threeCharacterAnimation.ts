@@ -106,6 +106,45 @@ function getPreparedClipCacheKey(assetId: string, clipName: string): string {
 	return `${assetId}:${clipName}`;
 }
 
+/** The baked gait closes on a duplicate pose. Blender gave the first and
+ * last samples flat handles, stopping every limb together once per stride.
+ * Join the two adjacent slopes on the playback copy. Keep genuine turning
+ * points flat and every authored pose, contact time and interior handle intact. */
+function joinBakedGaitTangents(clip: THREE.AnimationClip) {
+	for (const track of clip.tracks) {
+		const { times, values } = track;
+		const stride = track.getValueSize();
+		// glTF cubic TRS keys contain three tuples: in-tangent, pose, out-tangent.
+		if (times.length < 3 || (stride !== 9 && stride !== 12)) continue;
+		const size = stride / 3;
+		const last = (times.length - 1) * stride;
+		const incomingDt = times[times.length - 1] - times[times.length - 2];
+		const outgoingDt = times[1] - times[0];
+		if (incomingDt <= 0 || outgoingDt <= 0) continue;
+		for (let axis = 0; axis < size; axis++) {
+			const firstPose = size + axis;
+			const lastPose = last + firstPose;
+			if (
+				Math.abs(values[firstPose] - values[lastPose]) > 1e-5 ||
+				values[last + axis] !== 0 ||
+				values[2 * size + axis] !== 0
+			)
+				continue;
+			const incoming =
+				(values[lastPose] - values[lastPose - stride]) / incomingDt;
+			const outgoing =
+				(values[firstPose + stride] - values[firstPose]) / outgoingDt;
+			// The harmonic mean avoids overshooting a slow contact on either side.
+			const tangent =
+				incoming * outgoing > 0
+					? (2 * incoming * outgoing) / (incoming + outgoing)
+					: 0;
+			values[last + axis] = tangent;
+			values[2 * size + axis] = tangent;
+		}
+	}
+}
+
 /**
  * Patchbeard sources animate the Hips bone, including horizontal movement.
  * The wrapper remains runtime-positioned, so prepared clips freeze only the
@@ -132,6 +171,12 @@ export function prepareThreeCharacterAnimationClip(
 	if (!prepared) {
 		prepared = clip.clone();
 		neutralizeHorizontalRootMotion(prepared);
+		if (
+			(assetId === "golden-reference-quaternius-walk-baked-v1" &&
+				clip.name === "GoldenReference_Walk_InPlace") ||
+			(assetId === "mere-horse" && clip.name === "HorseWalk")
+		)
+			joinBakedGaitTangents(prepared);
 		preparedClipCache.set(cacheKey, prepared);
 	}
 	return { clip: prepared, status: "prepared" };
@@ -282,10 +327,14 @@ export function createThreeCharacterAnimationController({
 					: 1;
 		nextAction?.setEffectiveTimeScale(rate);
 		if (
-			semanticState === nextState &&
 			activeAction === nextAction &&
-			!forceRestart
+			!forceRestart &&
+			(semanticState === nextState ||
+				// A rig without a run clip uses the same walk action at both speeds.
+				(semanticState === "walk" && nextState === "run") ||
+				(semanticState === "run" && nextState === "walk"))
 		) {
+			semanticState = nextState;
 			return;
 		}
 		semanticState = nextState;

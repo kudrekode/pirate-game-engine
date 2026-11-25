@@ -2799,6 +2799,15 @@ label {
 	transform: translate(-50%, -50%);
 }
 
+.three-runtime-panel > .three-model-error {
+	top: auto;
+	bottom: 12px;
+	z-index: 7;
+	width: min(26rem, calc(100% - 24px));
+	margin: 0;
+	transform: translateX(-50%);
+}
+
 .three-runtime-modal p {
 	margin: 0;
 	color: #e2e8f0;
@@ -3681,4 +3690,8 @@ label {
 	background: var(--overlay, #20252c);
 	color: var(--foreground, white);
 	pointer-events: none;
+}
+
+.three-runtime-panel > .scene-loading {
+	z-index: 7;
 }

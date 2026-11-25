@@ -62,8 +62,6 @@ type TerrainSurface = {
 	gridY: number;
 	kind: TerrainBlockKind;
 	materialKey: WorldMaterialKey;
-	surfaceY: number;
-	terrainHeight: number;
 	tileId: string;
 };
 
@@ -123,21 +121,15 @@ function average(values: number[]): number {
 		: values.reduce((total, value) => total + value, 0) / values.length;
 }
 
-function getTerrainSurface(
-	tile: MapTile,
-	sampler: TerrainSurfaceSampler,
-): TerrainSurface {
+function getTerrainSurface(tile: MapTile): TerrainSurface {
 	const kind = getTerrainBlockKind(tile.tileId);
 	const materialKey = resolveTerrainMaterialKey(tile.tileId);
-	const terrainHeight = sampler.getHeight(tile.x, tile.y);
 	return {
-		color: getTerrainBlockColor(tile.tileId),
+		color: getWorldMaterialColor(materialKey),
 		gridX: tile.x,
 		gridY: tile.y,
 		kind,
 		materialKey,
-		surfaceY: sampler.getCellSurfaceY(tile.x, tile.y),
-		terrainHeight,
 		tileId: tile.tileId,
 	};
 }
@@ -154,9 +146,11 @@ export function terrainTilesToBlocks(
 	const sampler = createTerrainSurfaceSampler(area);
 
 	return getTerrainTilesInBounds(area).map((tile) => {
-		const surface = getTerrainSurface(tile, sampler);
-		const baseY = Math.min(0, surface.terrainHeight);
-		const height = Math.max(0.18, surface.surfaceY - baseY);
+		const surface = getTerrainSurface(tile);
+		const terrainHeight = sampler.getHeight(tile.x, tile.y);
+		const surfaceY = sampler.getCellSurfaceY(tile.x, tile.y);
+		const baseY = Math.min(0, terrainHeight);
+		const height = Math.max(0.18, surfaceY - baseY);
 		return {
 			color: surface.color,
 			gridX: tile.x,
@@ -165,8 +159,8 @@ export function terrainTilesToBlocks(
 			id: `${tile.x}_${tile.y}_${tile.tileId}`,
 			kind: surface.kind,
 			materialKey: surface.materialKey,
-			surfaceY: surface.surfaceY,
-			terrainHeight: surface.terrainHeight,
+			surfaceY,
+			terrainHeight,
 			tileId: surface.tileId,
 			threeX: tile.x - centerX,
 			threeZ: tile.y - centerZ,
@@ -323,7 +317,8 @@ function createSharedSmoothTerrainMesh({
 			return [];
 		}
 		const start = indices.length;
-		indices.push(...group.indices);
+		// Large contiguous materials can exceed the JS argument count limit.
+		for (const index of group.indices) indices.push(index);
 		return [
 			{
 				color: group.color,
@@ -386,7 +381,7 @@ export function terrainTilesToSmoothMeshes(
 	const centerX = (area.width - 1) / 2;
 	const centerZ = (area.height - 1) / 2;
 	const sampler = createTerrainSurfaceSampler(area);
-	const surfaces = tiles.map((tile) => getTerrainSurface(tile, sampler));
+	const surfaces = tiles.map(getTerrainSurface);
 	const landSurfaces = surfaces.filter((surface) => surface.kind !== "water");
 	const waterSurfaces = surfaces.filter((surface) => surface.kind === "water");
 	const landMesh = createSharedSmoothTerrainMesh({

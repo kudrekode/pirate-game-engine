@@ -26,18 +26,8 @@ export type TerrainSurfaceSampler = {
 	) => number;
 };
 
-function keyFor(x: number, y: number): string {
-	return `${x}:${y}`;
-}
-
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
-}
-
-function average(values: number[]): number {
-	return values.length === 0
-		? 0
-		: values.reduce((total, value) => total + value, 0) / values.length;
 }
 
 function isInBounds(area: GameArea, x: number, y: number): boolean {
@@ -53,68 +43,76 @@ export function createTerrainSurfaceSampler(
 ): TerrainSurfaceSampler {
 	// One index per sampler lifetime. Geometry and camera probes repeatedly query
 	// these cells. Preserve the first authored surface for legacy duplicate cells.
-	const tileLookup = new Map<string, MapTile>();
-	const offsets = new Map<string, number>();
-	const heights = new Map<string, number>();
+	type Cell = { tile?: MapTile; height?: number; offset?: number };
+	const rows = new Map<number, Map<number, Cell>>();
+	function ensureCell(x: number, y: number) {
+		let row = rows.get(y);
+		if (!row) {
+			row = new Map();
+			rows.set(y, row);
+		}
+		let cell = row.get(x);
+		if (!cell) {
+			cell = {};
+			row.set(x, cell);
+		}
+		return cell;
+	}
 	for (const tile of area.terrainTiles) {
 		if (!isInBounds(area, tile.x, tile.y)) continue;
-		const key = keyFor(tile.x, tile.y);
-		tileLookup.set(key, tile);
-		if (!offsets.has(key))
-			offsets.set(
-				key,
-				isTerrainWaterTileId(tile.tileId)
-					? TERRAIN_WATER_SURFACE_OFFSET
-					: TERRAIN_LAND_SURFACE_OFFSET,
-			);
+		const cell = ensureCell(tile.x, tile.y);
+		cell.tile = tile;
+		cell.offset ??= isTerrainWaterTileId(tile.tileId)
+			? TERRAIN_WATER_SURFACE_OFFSET
+			: TERRAIN_LAND_SURFACE_OFFSET;
 	}
 	for (const tile of area.terrainHeights ?? []) {
-		const key = keyFor(tile.x, tile.y);
-		if (!heights.has(key))
-			heights.set(
-				key,
-				Number.isFinite(tile.height) ? clampTerrainHeight(tile.height) : 0,
-			);
+		const cell = ensureCell(tile.x, tile.y);
+		cell.height ??= Number.isFinite(tile.height)
+			? clampTerrainHeight(tile.height)
+			: 0;
 	}
-	const getHeight = (x: number, y: number) => heights.get(keyFor(x, y)) ?? 0;
-	const surfaceY = (x: number, y: number) => {
-		const key = keyFor(x, y);
-		return (
-			(heights.get(key) ?? 0) +
-			(offsets.get(key) ?? TERRAIN_LAND_SURFACE_OFFSET)
-		);
-	};
+	const cellAt = (x: number, y: number) => rows.get(y)?.get(x);
+	const getHeight = (x: number, y: number) => cellAt(x, y)?.height ?? 0;
+	const surfaceY = (cell: Cell | undefined) =>
+		(cell?.height ?? 0) + (cell?.offset ?? TERRAIN_LAND_SURFACE_OFFSET);
 	const cornerHeightLookup = new Map<string, number>();
 
 	const getTile = (x: number, y: number): MapTile | undefined =>
-		tileLookup.get(keyFor(x, y));
+		cellAt(x, y)?.tile;
 
-	const getCellSurfaceY = (x: number, y: number): number =>
-		getTile(x, y) ? surfaceY(x, y) : 0;
+	const getCellSurfaceY = (x: number, y: number): number => {
+		const cell = cellAt(x, y);
+		return cell?.tile ? surfaceY(cell) : 0;
+	};
 
 	const getWaterSurfaceY = (x: number, y: number): number => {
-		const tile = getTile(x, y);
-		return isTerrainWaterTileId(tile?.tileId) ? surfaceY(x, y) : 0;
+		const cell = cellAt(x, y);
+		return isTerrainWaterTileId(cell?.tile?.tileId) ? surfaceY(cell) : 0;
 	};
 
 	const getCornerSurfaceY = (cornerX: number, cornerY: number): number => {
 		const clampedX = Math.round(clamp(cornerX, 0, area.width));
 		const clampedY = Math.round(clamp(cornerY, 0, area.height));
-		const key = keyFor(clampedX, clampedY);
+		const key = `${clampedX}:${clampedY}`;
 		const existing = cornerHeightLookup.get(key);
 		if (existing !== undefined) {
 			return existing;
 		}
 
-		const surfaceValues = [
-			{ x: clampedX - 1, y: clampedY - 1 },
-			{ x: clampedX, y: clampedY - 1 },
-			{ x: clampedX - 1, y: clampedY },
-			{ x: clampedX, y: clampedY },
-		].flatMap((cell) =>
-			getTile(cell.x, cell.y) ? [surfaceY(cell.x, cell.y)] : [],
-		);
-		const height = average(surfaceValues);
+		let total = 0;
+		let count = 0;
+		for (let dy = -1; dy <= 0; dy++) {
+			const row = rows.get(clampedY + dy);
+			for (let dx = -1; dx <= 0; dx++) {
+				const cell = row?.get(clampedX + dx);
+				if (cell?.tile) {
+					total += surfaceY(cell);
+					count++;
+				}
+			}
+		}
+		const height = count ? total / count : 0;
 		cornerHeightLookup.set(key, height);
 		return height;
 	};
@@ -128,7 +126,7 @@ export function createTerrainSurfaceSampler(
 		const nearestY = Math.round(clamp(position.y, 0, area.height - 1));
 		const nearestTile = getTile(nearestX, nearestY);
 		if (isTerrainWaterTileId(nearestTile?.tileId)) {
-			return surfaceY(nearestX, nearestY);
+			return surfaceY(cellAt(nearestX, nearestY));
 		}
 
 		const sampleX = clamp(position.x + 0.5, 0, area.width);
@@ -158,7 +156,9 @@ export function createTerrainSurfaceSampler(
 	): number => {
 		const x = Math.round(clamp(position.x, 0, Math.max(0, area.width - 1)));
 		const y = Math.round(clamp(position.y, 0, Math.max(0, area.height - 1)));
-		return mode === "smooth" ? sampleSmoothSurfaceY(position) : surfaceY(x, y);
+		return mode === "smooth"
+			? sampleSmoothSurfaceY(position)
+			: surfaceY(cellAt(x, y));
 	};
 
 	return {

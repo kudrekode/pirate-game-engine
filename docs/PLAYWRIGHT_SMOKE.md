@@ -30,6 +30,8 @@ and Three Play routes, use the [Hollow Kingdom performance baseline](reports/HOL
 It includes the commands, both project fixtures, measured boundaries and hardware.
 The [Chapter One frame pacing follow-up](reports/HOLLOW_CHAPTER_ONE_FRAME_PACING.md)
 adds mounted travel, both fights, GPU timings, shadow parity and cold versus warm stage preparation.
+The [transition and world-scale study](reports/HOLLOW_KINGDOM_TRANSITIONS_AND_SCALE.md)
+covers the ridge trace, failed-model retry, gait continuity and five generated riding routes.
 
 PR 05 Story acceptance is opt-in with `npm run test:e2e -- e2e/story-editor.spec.ts --grep @story-editor`.
 It covers graph editing and workspace links, natural cinematic completion,

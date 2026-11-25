@@ -5,6 +5,10 @@ import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { installRenderProbe } from "./hollow-render-probe.mjs";
+import {
+	installTransitionProbe,
+	traceRidgeTransition,
+} from "./hollow-transition-trace.mjs";
 
 // Build with Vite's test mode to expose the read-only Three diagnostics.
 // HOLLOW_OFFLINE_ROUTE=1 fulfils requests from the same build and public roots
@@ -12,13 +16,35 @@ import { installRenderProbe } from "./hollow-render-probe.mjs";
 const [, , buildArgument, outputArgument, ...options] = process.argv;
 const cameraOnly = options.includes("--camera");
 const lifecycleOnly = options.includes("--lifecycle");
+const worldScale = options.includes("--world-scale");
 const playSession = options.includes("--play-session");
+const transitionOnly = options.includes("--transition-only");
+const traceScheduler = options.includes("--trace-scheduler");
+const traceTransition =
+	options.includes("--trace-transition") || traceScheduler;
 const selected = options.filter((option) => !option.startsWith("--"));
 if (!buildArgument || !outputArgument) {
 	throw new Error(
-		"Usage: node e2e/hollow-runtime-baseline.mjs <Vite test-mode build> <output folder> [--camera | --lifecycle | --play-session [--walking-only | --combat-only] [--verify-shadows]] [merewatch] [chapter-one]",
+		[
+			"Usage: node e2e/hollow-runtime-baseline.mjs <Vite test-mode build> <output folder> <route>",
+			"  [--camera | --lifecycle] [merewatch] [chapter-one]",
+			"  --play-session [--walking-only | --combat-only | --mounted-only | --transition-only] chapter-one",
+			"  Ridge options: --repeat-ridge, --trace-transition, --trace-scheduler, --ridge-recovery",
+			"  Animation/shadow options: --observe-gaits, --view-gaits, --verify-shadows, --native-mounted-shadows",
+			"  --world-scale [small] [medium] [large] [stress] [frontier]",
+			"  World options: --world-phases [--world-fixed-matrices] or --world-pacing-only",
+		].join("\n"),
 	);
 }
+if (
+	worldScale &&
+	options.includes("--world-pacing-only") &&
+	(options.includes("--world-phases") ||
+		options.includes("--world-fixed-matrices"))
+)
+	throw new Error(
+		"Select world phase instrumentation or a pacing-only repeat.",
+	);
 
 const editorLabel = "ThreeDPreview";
 const runtimeLabel = "ThreeRuntimePanel";
@@ -159,6 +185,7 @@ function stats(intervals) {
 		p95: percentile(0.95),
 		p99: percentile(0.99),
 		max: ordered.at(-1),
+		over33ms: ordered.filter((time) => time > 33).length,
 		over33: ordered.filter((time) => time > 33.4).length,
 		over50: ordered.filter((time) => time > 50).length,
 	};
@@ -525,10 +552,104 @@ async function chapterSession(page, cdp, data, checkpoint) {
 	}
 	async function measure(name, action) {
 		const before = await snapshot(page, runtimeLabel);
-		data.runtime[name] = await sample(page, runtimeLabel, action);
+		const capture = async () => {
+			data.runtime[name] = await sample(page, runtimeLabel, action);
+		};
+		if (
+			options.includes("--observe-gaits") &&
+			(name === "followWalk" || name === "ride")
+		) {
+			const { observeGait } = await import("./hollow-gait-observer.mjs");
+			const observed = await observeGait(page, name, capture);
+			data.runtime[name].gait = observed;
+		} else await capture();
 		data.runtime[name].initialMixers =
 			before.asset.character.animation.activeMixers;
 		await checkpoint(name);
+	}
+	async function rideMare() {
+		await restoreAt("merewatch", 27, 50, { x: 0, y: -1 });
+		await page.keyboard.press("e");
+		await expect(page.locator(".three-runtime-hud")).toContainText(
+			/E dismounts/i,
+		);
+		await inspect(page);
+		await measure("ride", async () => {
+			const from = await position(page);
+			await canvas(page).focus();
+			for (const key of [
+				"ArrowRight",
+				"ArrowLeft",
+				"ArrowRight",
+				"ArrowLeft",
+			]) {
+				await page.keyboard.down(key);
+				await page.waitForTimeout(750);
+				await page.keyboard.up(key);
+				if (key === "ArrowRight")
+					assert.notDeepEqual(await position(page), from);
+			}
+		});
+	}
+	async function crossRidge(name = "ridgeTransition") {
+		await restoreAt(
+			"merewatch",
+			37,
+			53,
+			{ x: 1, y: 0 },
+			{ "chapter-briefed": true },
+		);
+		await interact(page);
+		const cross = async () => {
+			await choice(page, "Follow the ridge into Hollowwood.");
+			await choice(page, "End conversation");
+			await ready(page, runtimeLabel, "hollowwood");
+		};
+		if (options.includes("--ridge-recovery")) {
+			const { verifyRidgeRecovery } = await import(
+				"./hollow-ridge-recovery.mjs"
+			);
+			await verifyRidgeRecovery({
+				page,
+				cross,
+				ready: () => ready(page, runtimeLabel, "hollowwood"),
+				snapshot: () => snapshot(page, runtimeLabel),
+				authored: () => savedAuthoring(page),
+			});
+			return;
+		}
+		const run = () => measure(name, cross);
+		if (traceTransition && name === "ridgeTransition")
+			await traceRidgeTransition(
+				page,
+				cdp,
+				output,
+				roots[0],
+				run,
+				traceScheduler,
+			);
+		else await run();
+		const arrival = data.runtime[name].snapshot;
+		assert.equal(arrival.scene.areaId, "hollowwood");
+		assert.equal(arrival.raf.activeLoopCount, 1);
+		const { x, y } = await position(page);
+		assert.deepEqual(
+			{ x, y },
+			{ x: 24, y: 64 },
+			"Arrive at the forest-arrival marker",
+		);
+	}
+	if (options.includes("--mounted-only")) {
+		await rideMare();
+		assert.deepEqual(await savedAuthoring(page), authored);
+		return;
+	}
+	if (transitionOnly) {
+		await crossRidge();
+		if (options.includes("--repeat-ridge"))
+			await crossRidge("ridgeTransitionWarm");
+		assert.deepEqual(await savedAuthoring(page), authored);
+		return;
 	}
 	if (!options.includes("--combat-only")) {
 		if (options.includes("--verify-shadows")) {
@@ -598,41 +719,8 @@ async function chapterSession(page, cdp, data, checkpoint) {
 				[25, 47],
 			]);
 		});
-		await restoreAt("merewatch", 27, 50, { x: 0, y: -1 });
-		await page.keyboard.press("e");
-		await expect(page.locator(".three-runtime-hud")).toContainText(
-			/E dismounts/i,
-		);
-		await inspect(page);
-		await measure("ride", async () => {
-			const from = await position(page);
-			await canvas(page).focus();
-			for (const key of [
-				"ArrowRight",
-				"ArrowLeft",
-				"ArrowRight",
-				"ArrowLeft",
-			]) {
-				await page.keyboard.down(key);
-				await page.waitForTimeout(750);
-				await page.keyboard.up(key);
-				if (key === "ArrowRight")
-					assert.notDeepEqual(await position(page), from);
-			}
-		});
-		await restoreAt(
-			"merewatch",
-			37,
-			53,
-			{ x: 1, y: 0 },
-			{ "chapter-briefed": true },
-		);
-		await interact(page);
-		await measure("ridgeTransition", async () => {
-			await choice(page, "Follow the ridge into Hollowwood.");
-			await choice(page, "End conversation");
-			await ready(page, runtimeLabel, "hollowwood");
-		});
+		await rideMare();
+		await crossRidge();
 		await measure("hollowwoodArrival");
 		await measure("hollowwoodSettled");
 		await continuedCycles(page, cdp, data, "hollowwood", authored);
@@ -770,10 +858,20 @@ async function runProject(browser, address, id, machine) {
 		});
 	}
 	const page = await context.newPage();
-	if (playSession)
+	if (traceTransition)
+		await page.addInitScript({
+			content: `(${installRenderProbe})(false); (${installTransitionProbe})();`,
+		});
+	else if (worldScale && options.includes("--world-pacing-only")) {
+		const { observeWorldCamera } = await import("./hollow-world-scale.mjs");
+		await page.addInitScript(observeWorldCamera);
+	} else if (playSession || worldScale)
 		await page.addInitScript(
 			installRenderProbe,
-			options.includes("--verify-shadows"),
+			options.includes("--native-mounted-shadows") &&
+				options.includes("--mounted-only")
+				? "native-mounted"
+				: options.includes("--verify-shadows"),
 		);
 	page.setDefaultTimeout(timeout);
 	const cdp = await context.newCDPSession(page);
@@ -789,18 +887,65 @@ async function runProject(browser, address, id, machine) {
 		stage: "import",
 	};
 	const report = resolve(output, `${id}.json`);
-	const { file, editorAreas } = projects[id];
+	const fixture = worldScale
+		? await (await import("./hollow-world-fixture.mjs")).createWorldFixture(id)
+		: undefined;
+	const { file, editorAreas } = projects[id] ?? {};
 	const checkpoint = async (stage) => {
 		data.stage = stage;
 		await writeReport(report, data);
 		console.log(`${id}: ${stage}`);
 	};
 	try {
+		if (options.includes("--view-gaits")) {
+			const { captureStationaryGaits } = await import(
+				"./hollow-gait-capture.mjs"
+			);
+			data.stationaryGaits = await captureStationaryGaits(
+				page,
+				address,
+				output,
+			);
+			assert.deepEqual(errors, []);
+			await checkpoint("complete");
+			return;
+		}
 		const navigationStarted = performance.now();
 		await page.goto(address, { waitUntil: "domcontentloaded" });
 		data.domLoadedMs = performance.now() - navigationStarted;
-		await page.locator('input[type="file"]').first().setInputFiles(file);
+		await page
+			.locator('input[type="file"]')
+			.first()
+			.setInputFiles(
+				fixture
+					? {
+							name: `survey-${id}.project.json`,
+							mimeType: "application/json",
+							buffer: Buffer.from(JSON.stringify(fixture.project)),
+						}
+					: file,
+			);
 		await expect(button(page, "Map Editor")).toBeVisible({ timeout });
+		if (fixture) {
+			const { measureWorldScale } = await import("./hollow-world-scale.mjs");
+			await measureWorldScale({
+				page,
+				cdp,
+				fixture,
+				data,
+				checkpoint,
+				build: roots[0],
+				ready,
+				sample,
+				memory,
+				position,
+				inspect,
+				canvas,
+			});
+			assert.deepEqual(errors, []);
+			await checkpoint("complete");
+			return;
+		}
 		await button(page, "Save").click();
 		await expect.poll(() => savedAuthoring(page), { timeout }).toBeTruthy();
 		if (playSession) {
@@ -1046,9 +1191,16 @@ try {
 		if (angle === "d3d11")
 			assert.match(gpu.auxAttributes?.glRenderer ?? "", /direct3d11/i);
 		const machine = { chrome: browser.version(), chromiumArgs, gpu, offline };
-		const fixtures = playSession ? ["chapter-one"] : Object.keys(projects);
+		const fixtures = worldScale
+			? Object.keys((await import("./hollow-world-fixture.mjs")).worldScales)
+			: playSession
+				? ["chapter-one"]
+				: Object.keys(projects);
 		for (const id of selected.length ? selected : fixtures) {
-			assert.ok(projects[id], `Unknown fixture ${id}`);
+			assert.ok(
+				worldScale ? fixtures.includes(id) : projects[id],
+				`Unknown fixture ${id}`,
+			);
 			try {
 				await runProject(browser, address, id, machine);
 			} catch (error) {

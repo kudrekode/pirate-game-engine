@@ -1,0 +1,1976 @@
+{
+	"machine": {
+		"chrome": "158.0.8127.37",
+		"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+		"viewport": {
+			"width": 960,
+			"height": 600
+		},
+		"dpr": 1
+	},
+	"runs": {
+		"reference": {
+			"small": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 44,
+					"height": 60,
+					"tiles": 2640,
+					"raised": 727,
+					"objects": 116,
+					"npcs": 1,
+					"actors": 3,
+					"sha256": "ac891355658ad6c5f546b6c692af82c5f7f4744cb2a8a5f9f0bd2ca7a1676aa9"
+				},
+				"cold": {
+					"ms": 2999.06,
+					"builds": 2,
+					"lastBuildMs": 69.1,
+					"lastTerrainMs": 37.4,
+					"shoreEdges": 128
+				},
+				"warm": {
+					"ms": 1568.07,
+					"builds": 1,
+					"lastBuildMs": 153.3,
+					"lastTerrainMs": 77.7,
+					"shoreEdges": 128
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 206.9,
+					"parses": 17,
+					"maxParseMs": 332.9,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 17.16,
+					"edit": 13.41,
+					"warmPlay": 17.16
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 338,
+						"p50": 4.2,
+						"p95": 12.4,
+						"p99": 16.6,
+						"worst": 20.9,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 4.4,
+						"meanRenderCpu": 3.5,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 28,
+							"p50": 3.83,
+							"p95": 6.86
+						},
+						"visible": [7, 18],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 72,
+						"lastMainTriangles": 114530,
+						"shadowFrames": 60,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 2.19,
+						"geometries": 61,
+						"textures": 70,
+						"programs": 21,
+						"route": [4, 12]
+					},
+					"ride": {
+						"frames": 317,
+						"p50": 12.5,
+						"p95": 16.8,
+						"p99": 21,
+						"worst": 24.9,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 8.4,
+						"meanRenderCpu": 7,
+						"meanMixerCpu": 0.3,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 27,
+							"p50": 12.49,
+							"p95": 15.21
+						},
+						"visible": [21, 72],
+						"skinnedVisible": [3, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 253,
+						"lastMainTriangles": 277734,
+						"shadowFrames": 102,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 2.77,
+						"geometries": 121,
+						"textures": 74,
+						"programs": 21,
+						"route": [13, 37]
+					},
+					"orbit": {
+						"frames": 282,
+						"p50": 12.5,
+						"p95": 16.8,
+						"p99": 20.9,
+						"worst": 21,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 5.5,
+						"meanRenderCpu": 5,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 23,
+							"p50": 10.85,
+							"p95": 14.89
+						},
+						"visible": [62, 74],
+						"skinnedVisible": [3, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 188,
+						"lastMainTriangles": 269392,
+						"shadowFrames": 93,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 1.79,
+						"geometries": 145,
+						"textures": 74,
+						"programs": 21
+					}
+				}
+			},
+			"medium": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 66,
+					"height": 90,
+					"tiles": 5940,
+					"raised": 1510,
+					"objects": 263,
+					"npcs": 5,
+					"actors": 7,
+					"sha256": "c7c3e2e447c9797c97711ae544920593dee09f31e3977f5b40a7c5d540c961b4"
+				},
+				"cold": {
+					"ms": 5158.97,
+					"builds": 2,
+					"lastBuildMs": 252.9,
+					"lastTerrainMs": 134.2,
+					"shoreEdges": 189
+				},
+				"warm": {
+					"ms": 2587.7,
+					"builds": 1,
+					"lastBuildMs": 255.9,
+					"lastTerrainMs": 131.3,
+					"shoreEdges": 189
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 519.9,
+					"parses": 17,
+					"maxParseMs": 538,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 20.52,
+					"edit": 14.45,
+					"warmPlay": 20.71
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 267,
+						"p50": 8.3,
+						"p95": 16.5,
+						"p99": 20.8,
+						"worst": 37.4,
+						"over33_4ms": 1,
+						"over50ms": 0,
+						"meanCallback": 6.2,
+						"meanRenderCpu": 5.2,
+						"meanMixerCpu": 0.3,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 22,
+							"p50": 5.86,
+							"p95": 8.74
+						},
+						"visible": [6, 18],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 7,
+						"lastMainDraws": 77,
+						"lastMainTriangles": 134612,
+						"shadowFrames": 59,
+						"meanShadowDrawsPerUpdate": 99.56,
+						"meanShadowCpuPerUpdate": 3.38,
+						"geometries": 60,
+						"textures": 114,
+						"programs": 21,
+						"route": [4, 12]
+					},
+					"ride": {
+						"frames": 295,
+						"p50": 12.6,
+						"p95": 20.8,
+						"p99": 20.9,
+						"worst": 25,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 9.3,
+						"meanRenderCpu": 7.9,
+						"meanMixerCpu": 0.4,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 25,
+							"p50": 12.89,
+							"p95": 17.11
+						},
+						"visible": [24, 101],
+						"skinnedVisible": [3, 5],
+						"activeMixers": 7,
+						"lastMainDraws": 303,
+						"lastMainTriangles": 378658,
+						"shadowFrames": 104,
+						"meanShadowDrawsPerUpdate": 111,
+						"meanShadowCpuPerUpdate": 4.07,
+						"geometries": 101,
+						"textures": 118,
+						"programs": 21,
+						"route": [13, 37]
+					},
+					"orbit": {
+						"frames": 234,
+						"p50": 16.7,
+						"p95": 24.9,
+						"p99": 29.3,
+						"worst": 37.5,
+						"over33_4ms": 1,
+						"over50ms": 0,
+						"meanCallback": 10.5,
+						"meanRenderCpu": 9.7,
+						"meanMixerCpu": 0.4,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 20,
+							"p50": 16.86,
+							"p95": 21.57
+						},
+						"visible": [86, 104],
+						"skinnedVisible": [5, 5],
+						"activeMixers": 7,
+						"lastMainDraws": 244,
+						"lastMainTriangles": 362208,
+						"shadowFrames": 105,
+						"meanShadowDrawsPerUpdate": 111,
+						"meanShadowCpuPerUpdate": 4.3,
+						"geometries": 143,
+						"textures": 118,
+						"programs": 21
+					}
+				}
+			},
+			"large": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 88,
+					"height": 120,
+					"tiles": 10560,
+					"raised": 3096,
+					"objects": 489,
+					"npcs": 12,
+					"actors": 14,
+					"sha256": "57638c57b3e904bce7831612d934e4a4a6964d5b94b8219ee4b00a0c93439d79"
+				},
+				"cold": {
+					"ms": 4073.17,
+					"builds": 2,
+					"lastBuildMs": 308.2,
+					"lastTerrainMs": 156,
+					"shoreEdges": 255
+				},
+				"warm": {
+					"ms": 5116.64,
+					"builds": 1,
+					"lastBuildMs": 546.4,
+					"lastTerrainMs": 241.7,
+					"shoreEdges": 255
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 368,
+					"parses": 17,
+					"maxParseMs": 210.1,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 25.81,
+					"edit": 15.89,
+					"warmPlay": 25.85
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 222,
+						"p50": 8.4,
+						"p95": 20.8,
+						"p99": 24.9,
+						"worst": 33.3,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 8,
+						"meanRenderCpu": 6.6,
+						"meanMixerCpu": 0.6,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 19,
+							"p50": 4.88,
+							"p95": 8.42
+						},
+						"visible": [3, 16],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 14,
+						"lastMainDraws": 71,
+						"lastMainTriangles": 128304,
+						"shadowFrames": 59,
+						"meanShadowDrawsPerUpdate": 118,
+						"meanShadowCpuPerUpdate": 4.64,
+						"geometries": 60,
+						"textures": 147,
+						"programs": 21,
+						"route": [4, 12]
+					},
+					"ride": {
+						"frames": 251,
+						"p50": 16.6,
+						"p95": 25.1,
+						"p99": 29.2,
+						"worst": 70.8,
+						"over33_4ms": 1,
+						"over50ms": 1,
+						"meanCallback": 12.8,
+						"meanRenderCpu": 10.7,
+						"meanMixerCpu": 0.6,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 22,
+							"p50": 12.25,
+							"p95": 23.34
+						},
+						"visible": [22, 100],
+						"skinnedVisible": [3, 6],
+						"activeMixers": 14,
+						"lastMainDraws": 285,
+						"lastMainTriangles": 389888,
+						"shadowFrames": 104,
+						"meanShadowDrawsPerUpdate": 127.88,
+						"meanShadowCpuPerUpdate": 5.31,
+						"geometries": 81,
+						"textures": 173,
+						"programs": 22,
+						"route": [13, 37]
+					},
+					"orbit": {
+						"frames": 245,
+						"p50": 20.6,
+						"p95": 25.2,
+						"p99": 33.5,
+						"worst": 37.6,
+						"over33_4ms": 3,
+						"over50ms": 0,
+						"meanCallback": 13.4,
+						"meanRenderCpu": 12.2,
+						"meanMixerCpu": 0.6,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 21,
+							"p50": 17.81,
+							"p95": 22.84
+						},
+						"visible": [96, 108],
+						"skinnedVisible": [5, 6],
+						"activeMixers": 14,
+						"lastMainDraws": 279,
+						"lastMainTriangles": 414260,
+						"shadowFrames": 115,
+						"meanShadowDrawsPerUpdate": 140,
+						"meanShadowCpuPerUpdate": 5.34,
+						"geometries": 142,
+						"textures": 173,
+						"programs": 22
+					}
+				}
+			},
+			"stress": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 110,
+					"height": 150,
+					"tiles": 16500,
+					"raised": 4773,
+					"objects": 792,
+					"npcs": 24,
+					"actors": 26,
+					"sha256": "3f049a044538bf0f05e625f4497ccf227211c9d69f78f818976fceff191f6b55"
+				},
+				"cold": {
+					"ms": 6074.07,
+					"builds": 2,
+					"lastBuildMs": 617.8,
+					"lastTerrainMs": 234.4,
+					"shoreEdges": 313
+				},
+				"warm": {
+					"ms": 1914.87,
+					"builds": 1,
+					"lastBuildMs": 537.6,
+					"lastTerrainMs": 183.1,
+					"shoreEdges": 313
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 535.5,
+					"parses": 17,
+					"maxParseMs": 395.3,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 33.22,
+					"edit": 17.66,
+					"warmPlay": 33.07
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 206,
+						"p50": 8.4,
+						"p95": 16.8,
+						"p99": 25.2,
+						"worst": 29.1,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 9,
+						"meanRenderCpu": 7.4,
+						"meanMixerCpu": 0.8,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 17,
+							"p50": 5.96,
+							"p95": 10.03
+						},
+						"visible": [7, 17],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 26,
+						"lastMainDraws": 67,
+						"lastMainTriangles": 136742,
+						"shadowFrames": 58,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.91,
+						"geometries": 58,
+						"textures": 192,
+						"programs": 21,
+						"route": [4, 12]
+					},
+					"ride": {
+						"frames": 287,
+						"p50": 12.5,
+						"p95": 25.1,
+						"p99": 33.5,
+						"worst": 37.5,
+						"over33_4ms": 3,
+						"over50ms": 0,
+						"meanCallback": 11.3,
+						"meanRenderCpu": 9.5,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 24,
+							"p50": 13.19,
+							"p95": 21.89
+						},
+						"visible": [26, 114],
+						"skinnedVisible": [4, 8],
+						"activeMixers": 26,
+						"lastMainDraws": 317,
+						"lastMainTriangles": 494972,
+						"shadowFrames": 104,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.62,
+						"geometries": 60,
+						"textures": 251,
+						"programs": 21,
+						"route": [13, 37.2]
+					},
+					"orbit": {
+						"frames": 230,
+						"p50": 16.7,
+						"p95": 29.3,
+						"p99": 33.4,
+						"worst": 37.6,
+						"over33_4ms": 3,
+						"over50ms": 0,
+						"meanCallback": 12.5,
+						"meanRenderCpu": 11.4,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 20,
+							"p50": 19.23,
+							"p95": 23.07
+						},
+						"visible": [113, 140],
+						"skinnedVisible": [8, 9],
+						"activeMixers": 26,
+						"lastMainDraws": 346,
+						"lastMainTriangles": 531006,
+						"shadowFrames": 110,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.54,
+						"geometries": 141,
+						"textures": 251,
+						"programs": 21
+					}
+				}
+			}
+		},
+		"referenceLongRoad": {
+			"stress": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 110,
+					"height": 150,
+					"tiles": 16500,
+					"raised": 4773,
+					"objects": 792,
+					"npcs": 24,
+					"actors": 26,
+					"sha256": "3f049a044538bf0f05e625f4497ccf227211c9d69f78f818976fceff191f6b55"
+				},
+				"cold": {
+					"ms": 5655.07,
+					"builds": 2,
+					"lastBuildMs": 762.4,
+					"lastTerrainMs": 319.5,
+					"shoreEdges": 313
+				},
+				"warm": {
+					"ms": 1621.89,
+					"builds": 1,
+					"lastBuildMs": 426.3,
+					"lastTerrainMs": 140.1,
+					"shoreEdges": 313
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 505.1,
+					"parses": 17,
+					"maxParseMs": 537.1,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 34.91,
+					"edit": 18.22,
+					"warmPlay": 33.72
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 219,
+						"p50": 8.4,
+						"p95": 20.8,
+						"p99": 25.1,
+						"worst": 29.1,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 8.6,
+						"meanRenderCpu": 7,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 18,
+							"p50": 7.72,
+							"p95": 11.26
+						},
+						"visible": [7, 17],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 26,
+						"lastMainDraws": 67,
+						"lastMainTriangles": 136742,
+						"shadowFrames": 58,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.75,
+						"geometries": 58,
+						"textures": 192,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 2.23,
+							"cameraListMs": 1.91
+						}
+					},
+					"ride": {
+						"frames": 279,
+						"p50": 12.6,
+						"p95": 25.1,
+						"p99": 33.3,
+						"worst": 37.5,
+						"over33_4ms": 2,
+						"over50ms": 0,
+						"meanCallback": 11.2,
+						"meanRenderCpu": 9.5,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 24,
+							"p50": 11.4,
+							"p95": 20.33
+						},
+						"visible": [27, 110],
+						"skinnedVisible": [4, 8],
+						"activeMixers": 26,
+						"lastMainDraws": 311,
+						"lastMainTriangles": 489302,
+						"shadowFrames": 104,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.62,
+						"geometries": 60,
+						"textures": 251,
+						"programs": 21,
+						"route": [13, 37],
+						"phaseProbe": {
+							"matricesMs": 2.23,
+							"cameraListMs": 2.33
+						}
+					},
+					"orbit": {
+						"frames": 239,
+						"p50": 16.6,
+						"p95": 29.1,
+						"p99": 33.3,
+						"worst": 54.2,
+						"over33_4ms": 2,
+						"over50ms": 1,
+						"meanCallback": 10.8,
+						"meanRenderCpu": 9.8,
+						"meanMixerCpu": 0.6,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 21,
+							"p50": 17.43,
+							"p95": 27.67
+						},
+						"visible": [110, 139],
+						"skinnedVisible": [8, 9],
+						"activeMixers": 26,
+						"lastMainDraws": 342,
+						"lastMainTriangles": 519786,
+						"shadowFrames": 102,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 3.98,
+						"geometries": 141,
+						"textures": 251,
+						"programs": 21
+					},
+					"farRide": {
+						"frames": 872,
+						"p50": 20.7,
+						"p95": 33.4,
+						"p99": 62.4,
+						"worst": 79.1,
+						"over33_4ms": 45,
+						"over50ms": 10,
+						"meanCallback": 13.9,
+						"meanRenderCpu": 12.2,
+						"meanMixerCpu": 0.5,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 73,
+							"p50": 18.69,
+							"p95": 33.51
+						},
+						"visible": [117, 712],
+						"skinnedVisible": [8, 26],
+						"activeMixers": 26,
+						"lastMainDraws": 1925,
+						"lastMainTriangles": 2368450,
+						"shadowFrames": 419,
+						"meanShadowDrawsPerUpdate": 175.96,
+						"meanShadowCpuPerUpdate": 3.55,
+						"geometries": 273,
+						"textures": 327,
+						"programs": 22,
+						"route": [37, 142.2],
+						"phaseProbe": {
+							"matricesMs": 1.67,
+							"cameraListMs": 2.37
+						}
+					}
+				}
+			},
+			"frontier": {
+				"stage": "import",
+				"errors": ["Maximum call stack size exceeded"],
+				"fixture": {
+					"width": 154,
+					"height": 204,
+					"tiles": 31416,
+					"raised": 9187,
+					"objects": 1570,
+					"npcs": 48,
+					"actors": 50,
+					"sha256": "50bfcb3f9853b06750e6117fe29b6a6a659fcad6d91497bb19854c1c86c71a93"
+				},
+				"failure": "TimeoutError: page.waitForFunction: Timeout 45000ms exceeded."
+			}
+		},
+		"delivered": {
+			"small": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 44,
+					"height": 60,
+					"tiles": 2640,
+					"raised": 727,
+					"objects": 116,
+					"npcs": 1,
+					"actors": 3,
+					"sha256": "ac891355658ad6c5f546b6c692af82c5f7f4744cb2a8a5f9f0bd2ca7a1676aa9"
+				},
+				"cold": {
+					"ms": 4164,
+					"builds": 2,
+					"lastBuildMs": 78.3,
+					"lastTerrainMs": 36.3,
+					"shoreEdges": 128
+				},
+				"warm": {
+					"ms": 673.63,
+					"builds": 1,
+					"lastBuildMs": 51.5,
+					"lastTerrainMs": 22.2,
+					"shoreEdges": 128
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 295.1,
+					"parses": 17,
+					"maxParseMs": 469.2,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 17.42,
+					"edit": 13.54,
+					"warmPlay": 17.32
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 291,
+						"p50": 8.3,
+						"p95": 12.5,
+						"p99": 16.7,
+						"worst": 20.8,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 5.3,
+						"meanRenderCpu": 4.3,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 24,
+							"p50": 5.34,
+							"p95": 7.86
+						},
+						"visible": [7, 18],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 72,
+						"lastMainTriangles": 114530,
+						"shadowFrames": 60,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 2.66,
+						"geometries": 61,
+						"textures": 70,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 0.61,
+							"cameraListMs": 0.69
+						}
+					},
+					"ride": {
+						"frames": 383,
+						"p50": 12.4,
+						"p95": 12.7,
+						"p99": 16.7,
+						"worst": 20.8,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 5.3,
+						"meanRenderCpu": 4.3,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 32,
+							"p50": 9.74,
+							"p95": 12.98
+						},
+						"visible": [20, 72],
+						"skinnedVisible": [3, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 254,
+						"lastMainTriangles": 277746,
+						"shadowFrames": 109,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 1.69,
+						"geometries": 121,
+						"textures": 74,
+						"programs": 21,
+						"route": [13, 37],
+						"phaseProbe": {
+							"matricesMs": 0.44,
+							"cameraListMs": 0.65
+						}
+					},
+					"orbit": {
+						"frames": 330,
+						"p50": 8.4,
+						"p95": 12.6,
+						"p99": 16.7,
+						"worst": 20.8,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 3.7,
+						"meanRenderCpu": 3.3,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 28,
+							"p50": 8.63,
+							"p95": 10.4
+						},
+						"visible": [62, 74],
+						"skinnedVisible": [3, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 184,
+						"lastMainTriangles": 266878,
+						"shadowFrames": 87,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 1.3,
+						"geometries": 145,
+						"textures": 74,
+						"programs": 21
+					},
+					"farRide": {
+						"frames": 243,
+						"p50": 8.4,
+						"p95": 12.6,
+						"p99": 12.7,
+						"worst": 16.8,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 4.3,
+						"meanRenderCpu": 3.6,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 20,
+							"p50": 9.21,
+							"p95": 11.55
+						},
+						"visible": [74, 107],
+						"skinnedVisible": [3, 3],
+						"activeMixers": 3,
+						"lastMainDraws": 354,
+						"lastMainTriangles": 374492,
+						"shadowFrames": 66,
+						"meanShadowDrawsPerUpdate": 66,
+						"meanShadowCpuPerUpdate": 1.24,
+						"geometries": 145,
+						"textures": 74,
+						"programs": 21,
+						"route": [37, 52],
+						"phaseProbe": {
+							"matricesMs": 0.34,
+							"cameraListMs": 0.49
+						}
+					}
+				}
+			},
+			"medium": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 66,
+					"height": 90,
+					"tiles": 5940,
+					"raised": 1510,
+					"objects": 263,
+					"npcs": 5,
+					"actors": 7,
+					"sha256": "c7c3e2e447c9797c97711ae544920593dee09f31e3977f5b40a7c5d540c961b4"
+				},
+				"cold": {
+					"ms": 3771,
+					"builds": 2,
+					"lastBuildMs": 147.6,
+					"lastTerrainMs": 79.4,
+					"shoreEdges": 189
+				},
+				"warm": {
+					"ms": 811.69,
+					"builds": 1,
+					"lastBuildMs": 75.9,
+					"lastTerrainMs": 35.1,
+					"shoreEdges": 189
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 577.8,
+					"parses": 17,
+					"maxParseMs": 236.2,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 21.53,
+					"edit": 14.84,
+					"warmPlay": 21.17
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 224,
+						"p50": 8.4,
+						"p95": 16.7,
+						"p99": 20.9,
+						"worst": 29.2,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 7.7,
+						"meanRenderCpu": 6.4,
+						"meanMixerCpu": 0.4,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 19,
+							"p50": 6.54,
+							"p95": 8.66
+						},
+						"visible": [6, 18],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 7,
+						"lastMainDraws": 76,
+						"lastMainTriangles": 133044,
+						"shadowFrames": 58,
+						"meanShadowDrawsPerUpdate": 99.64,
+						"meanShadowCpuPerUpdate": 4.04,
+						"geometries": 60,
+						"textures": 114,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 1.49,
+							"cameraListMs": 1.33
+						}
+					},
+					"ride": {
+						"frames": 373,
+						"p50": 12.4,
+						"p95": 12.7,
+						"p99": 16.7,
+						"worst": 16.9,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 5.6,
+						"meanRenderCpu": 4.7,
+						"meanMixerCpu": 0.3,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 31,
+							"p50": 10.03,
+							"p95": 13.07
+						},
+						"visible": [24, 101],
+						"skinnedVisible": [3, 5],
+						"activeMixers": 7,
+						"lastMainDraws": 306,
+						"lastMainTriangles": 382000,
+						"shadowFrames": 108,
+						"meanShadowDrawsPerUpdate": 111,
+						"meanShadowCpuPerUpdate": 2.33,
+						"geometries": 101,
+						"textures": 118,
+						"programs": 21,
+						"route": [13, 37],
+						"phaseProbe": {
+							"matricesMs": 0.96,
+							"cameraListMs": 0.95
+						}
+					},
+					"orbit": {
+						"frames": 298,
+						"p50": 12.4,
+						"p95": 16.5,
+						"p99": 16.7,
+						"worst": 16.9,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 4.9,
+						"meanRenderCpu": 4.5,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 25,
+							"p50": 11.12,
+							"p95": 14.33
+						},
+						"visible": [85, 104],
+						"skinnedVisible": [5, 5],
+						"activeMixers": 7,
+						"lastMainDraws": 242,
+						"lastMainTriangles": 362762,
+						"shadowFrames": 90,
+						"meanShadowDrawsPerUpdate": 111,
+						"meanShadowCpuPerUpdate": 1.85,
+						"geometries": 143,
+						"textures": 118,
+						"programs": 21
+					},
+					"farRide": {
+						"frames": 531,
+						"p50": 12.5,
+						"p95": 20.9,
+						"p99": 25,
+						"worst": 70.9,
+						"over33ms": 2,
+						"over33_4ms": 2,
+						"over50ms": 2,
+						"meanCallback": 7.6,
+						"meanRenderCpu": 6.7,
+						"meanMixerCpu": 0.2,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 44,
+							"p50": 13.09,
+							"p95": 17.8
+						},
+						"visible": [104, 241],
+						"skinnedVisible": [5, 7],
+						"activeMixers": 7,
+						"lastMainDraws": 714,
+						"lastMainTriangles": 791984,
+						"shadowFrames": 196,
+						"meanShadowDrawsPerUpdate": 108.15,
+						"meanShadowCpuPerUpdate": 2.62,
+						"geometries": 194,
+						"textures": 118,
+						"programs": 22,
+						"route": [37, 82],
+						"phaseProbe": {
+							"matricesMs": 0.93,
+							"cameraListMs": 1.13
+						}
+					}
+				}
+			},
+			"large": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 88,
+					"height": 120,
+					"tiles": 10560,
+					"raised": 3096,
+					"objects": 489,
+					"npcs": 12,
+					"actors": 14,
+					"sha256": "57638c57b3e904bce7831612d934e4a4a6964d5b94b8219ee4b00a0c93439d79"
+				},
+				"cold": {
+					"ms": 3177.77,
+					"builds": 2,
+					"lastBuildMs": 145.1,
+					"lastTerrainMs": 74.3,
+					"shoreEdges": 255
+				},
+				"warm": {
+					"ms": 1393.52,
+					"builds": 1,
+					"lastBuildMs": 281.1,
+					"lastTerrainMs": 143.1,
+					"shoreEdges": 255
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 444.2,
+					"parses": 17,
+					"maxParseMs": 175.1,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 27.1,
+					"edit": 16.44,
+					"warmPlay": 26.39
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 382,
+						"p50": 4.2,
+						"p95": 8.5,
+						"p99": 12.6,
+						"worst": 16.7,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 4.7,
+						"meanRenderCpu": 3.8,
+						"meanMixerCpu": 0.3,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 32,
+							"p50": 3.87,
+							"p95": 6.88
+						},
+						"visible": [3, 16],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 14,
+						"lastMainDraws": 71,
+						"lastMainTriangles": 128304,
+						"shadowFrames": 62,
+						"meanShadowDrawsPerUpdate": 118,
+						"meanShadowCpuPerUpdate": 2.43,
+						"geometries": 60,
+						"textures": 147,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 1.1,
+							"cameraListMs": 1.07
+						}
+					},
+					"ride": {
+						"frames": 322,
+						"p50": 12.5,
+						"p95": 20.8,
+						"p99": 25,
+						"worst": 29.3,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 8.9,
+						"meanRenderCpu": 7.5,
+						"meanMixerCpu": 0.5,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 27,
+							"p50": 10.93,
+							"p95": 14.68
+						},
+						"visible": [22, 98],
+						"skinnedVisible": [3, 6],
+						"activeMixers": 14,
+						"lastMainDraws": 280,
+						"lastMainTriangles": 384398,
+						"shadowFrames": 103,
+						"meanShadowDrawsPerUpdate": 127.43,
+						"meanShadowCpuPerUpdate": 3.94,
+						"geometries": 80,
+						"textures": 173,
+						"programs": 22,
+						"route": [13, 37],
+						"phaseProbe": {
+							"matricesMs": 1.52,
+							"cameraListMs": 1.69
+						}
+					},
+					"orbit": {
+						"frames": 329,
+						"p50": 8.4,
+						"p95": 16.7,
+						"p99": 24.9,
+						"worst": 29.2,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 5.7,
+						"meanRenderCpu": 5.1,
+						"meanMixerCpu": 0.3,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 27,
+							"p50": 9.36,
+							"p95": 15.27
+						},
+						"visible": [96, 107],
+						"skinnedVisible": [5, 6],
+						"activeMixers": 14,
+						"lastMainDraws": 278,
+						"lastMainTriangles": 413408,
+						"shadowFrames": 92,
+						"meanShadowDrawsPerUpdate": 140,
+						"meanShadowCpuPerUpdate": 2.39,
+						"geometries": 142,
+						"textures": 173,
+						"programs": 22
+					},
+					"farRide": {
+						"frames": 805,
+						"p50": 12.6,
+						"p95": 29.2,
+						"p99": 37.7,
+						"worst": 58.3,
+						"over33ms": 33,
+						"over33_4ms": 23,
+						"over50ms": 2,
+						"meanCallback": 9.9,
+						"meanRenderCpu": 8.6,
+						"meanMixerCpu": 0.4,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 68,
+							"p50": 12.73,
+							"p95": 25.23
+						},
+						"visible": [108, 425],
+						"skinnedVisible": [6, 14],
+						"activeMixers": 14,
+						"lastMainDraws": 1200,
+						"lastMainTriangles": 1413108,
+						"shadowFrames": 314,
+						"meanShadowDrawsPerUpdate": 134.19,
+						"meanShadowCpuPerUpdate": 2.79,
+						"geometries": 236,
+						"textures": 195,
+						"programs": 22,
+						"route": [37, 112.4],
+						"phaseProbe": {
+							"matricesMs": 1.12,
+							"cameraListMs": 1.62
+						}
+					}
+				}
+			},
+			"stress": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 110,
+					"height": 150,
+					"tiles": 16500,
+					"raised": 4773,
+					"objects": 792,
+					"npcs": 24,
+					"actors": 26,
+					"sha256": "3f049a044538bf0f05e625f4497ccf227211c9d69f78f818976fceff191f6b55"
+				},
+				"cold": {
+					"ms": 4387.01,
+					"builds": 2,
+					"lastBuildMs": 236.9,
+					"lastTerrainMs": 97.7,
+					"shoreEdges": 313
+				},
+				"warm": {
+					"ms": 1194.92,
+					"builds": 1,
+					"lastBuildMs": 218.2,
+					"lastTerrainMs": 81.3,
+					"shoreEdges": 313
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 595.4,
+					"parses": 17,
+					"maxParseMs": 190.8,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 34.43,
+					"edit": 18.08,
+					"warmPlay": 34.11
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 196,
+						"p50": 8.4,
+						"p95": 20.8,
+						"p99": 29.2,
+						"worst": 29.2,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 9.6,
+						"meanRenderCpu": 7.9,
+						"meanMixerCpu": 0.8,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 17,
+							"p50": 6.66,
+							"p95": 10.24
+						},
+						"visible": [7, 17],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 26,
+						"lastMainDraws": 66,
+						"lastMainTriangles": 135174,
+						"shadowFrames": 58,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 5.35,
+						"geometries": 58,
+						"textures": 192,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 2.42,
+							"cameraListMs": 2.07
+						}
+					},
+					"ride": {
+						"frames": 272,
+						"p50": 12.6,
+						"p95": 21,
+						"p99": 33.4,
+						"worst": 45.7,
+						"over33ms": 3,
+						"over33_4ms": 2,
+						"over50ms": 0,
+						"meanCallback": 10.8,
+						"meanRenderCpu": 9,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 23,
+							"p50": 13,
+							"p95": 16.86
+						},
+						"visible": [27, 116],
+						"skinnedVisible": [4, 8],
+						"activeMixers": 26,
+						"lastMainDraws": 320,
+						"lastMainTriangles": 496962,
+						"shadowFrames": 105,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.28,
+						"geometries": 60,
+						"textures": 251,
+						"programs": 21,
+						"route": [13, 37],
+						"phaseProbe": {
+							"matricesMs": 2.11,
+							"cameraListMs": 2.16
+						}
+					},
+					"orbit": {
+						"frames": 207,
+						"p50": 25.1,
+						"p95": 33.4,
+						"p99": 41.6,
+						"worst": 41.7,
+						"over33ms": 40,
+						"over33_4ms": 11,
+						"over50ms": 0,
+						"meanCallback": 21.8,
+						"meanRenderCpu": 20,
+						"meanMixerCpu": 1.1,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 18,
+							"p50": 25.97,
+							"p95": 31.02
+						},
+						"visible": [110, 138],
+						"skinnedVisible": [8, 9],
+						"activeMixers": 26,
+						"lastMainDraws": 341,
+						"lastMainTriangles": 517106,
+						"shadowFrames": 120,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 7.64,
+						"geometries": 141,
+						"textures": 251,
+						"programs": 21
+					},
+					"farRide": {
+						"frames": 635,
+						"p50": 29.1,
+						"p95": 49.9,
+						"p99": 58.3,
+						"worst": 58.5,
+						"over33ms": 254,
+						"over33_4ms": 191,
+						"over50ms": 24,
+						"meanCallback": 22.2,
+						"meanRenderCpu": 18.6,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 54,
+							"p50": 30.4,
+							"p95": 38.75
+						},
+						"visible": [117, 711],
+						"skinnedVisible": [8, 26],
+						"activeMixers": 26,
+						"lastMainDraws": 1924,
+						"lastMainTriangles": 2367598,
+						"shadowFrames": 416,
+						"meanShadowDrawsPerUpdate": 175.48,
+						"meanShadowCpuPerUpdate": 5.42,
+						"geometries": 273,
+						"textures": 327,
+						"programs": 22,
+						"route": [37, 142.2],
+						"phaseProbe": {
+							"matricesMs": 2.31,
+							"cameraListMs": 3.12
+						}
+					}
+				}
+			},
+			"frontier": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 154,
+					"height": 204,
+					"tiles": 31416,
+					"raised": 9187,
+					"objects": 1570,
+					"npcs": 48,
+					"actors": 50,
+					"sha256": "50bfcb3f9853b06750e6117fe29b6a6a659fcad6d91497bb19854c1c86c71a93"
+				},
+				"cold": {
+					"ms": 6221.64,
+					"builds": 2,
+					"lastBuildMs": 562.7,
+					"lastTerrainMs": 182.5,
+					"shoreEdges": 415
+				},
+				"warm": {
+					"ms": 1738.53,
+					"builds": 1,
+					"lastBuildMs": 469.5,
+					"lastTerrainMs": 144.7,
+					"shoreEdges": 415
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 663.4,
+					"parses": 17,
+					"maxParseMs": 224.8,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 52.28,
+					"edit": 22.92,
+					"warmPlay": 50.67
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 164,
+						"p50": 12.5,
+						"p95": 20.8,
+						"p99": 21,
+						"worst": 21.1,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 11.9,
+						"meanRenderCpu": 9.8,
+						"meanMixerCpu": 1.1,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 14,
+							"p50": 7.62,
+							"p95": 12.18
+						},
+						"visible": [5, 21],
+						"skinnedVisible": [1, 4],
+						"activeMixers": 50,
+						"lastMainDraws": 82,
+						"lastMainTriangles": 191920,
+						"shadowFrames": 57,
+						"meanShadowDrawsPerUpdate": 229,
+						"meanShadowCpuPerUpdate": 6.04,
+						"geometries": 58,
+						"textures": 268,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 3.46,
+							"cameraListMs": 2.86
+						}
+					},
+					"ride": {
+						"frames": 131,
+						"p50": 37.6,
+						"p95": 54.2,
+						"p99": 58.3,
+						"worst": 62.5,
+						"over33ms": 103,
+						"over33_4ms": 89,
+						"over50ms": 17,
+						"meanCallback": 34.1,
+						"meanRenderCpu": 27.6,
+						"meanMixerCpu": 1.9,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 12,
+							"p50": 24.63,
+							"p95": 35.3
+						},
+						"visible": [28, 114],
+						"skinnedVisible": [5, 11],
+						"activeMixers": 50,
+						"lastMainDraws": 331,
+						"lastMainTriangles": 536410,
+						"shadowFrames": 115,
+						"meanShadowDrawsPerUpdate": 229,
+						"meanShadowCpuPerUpdate": 11.52,
+						"geometries": 60,
+						"textures": 349,
+						"programs": 21,
+						"route": [13, 37.4],
+						"phaseProbe": {
+							"matricesMs": 6.22,
+							"cameraListMs": 5.75
+						}
+					},
+					"orbit": {
+						"frames": 214,
+						"p50": 20.8,
+						"p95": 33.2,
+						"p99": 41.7,
+						"worst": 45.9,
+						"over33ms": 13,
+						"over33_4ms": 6,
+						"over50ms": 0,
+						"meanCallback": 16.5,
+						"meanRenderCpu": 14.8,
+						"meanMixerCpu": 1.1,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 18,
+							"p50": 20.13,
+							"p95": 31.43
+						},
+						"visible": [114, 180],
+						"skinnedVisible": [10, 11],
+						"activeMixers": 50,
+						"lastMainDraws": 450,
+						"lastMainTriangles": 696008,
+						"shadowFrames": 109,
+						"meanShadowDrawsPerUpdate": 229,
+						"meanShadowCpuPerUpdate": 5.85,
+						"geometries": 139,
+						"textures": 349,
+						"programs": 21
+					},
+					"farRide": {
+						"frames": 997,
+						"p50": 25.2,
+						"p95": 41.6,
+						"p99": 58.4,
+						"worst": 100.1,
+						"over33ms": 312,
+						"over33_4ms": 208,
+						"over50ms": 15,
+						"meanCallback": 22,
+						"meanRenderCpu": 18.6,
+						"meanMixerCpu": 0.9,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 84,
+							"p50": 24.89,
+							"p95": 38.46
+						},
+						"visible": [130, 1363],
+						"skinnedVisible": [11, 50],
+						"activeMixers": 50,
+						"lastMainDraws": 3532,
+						"lastMainTriangles": 4506844,
+						"shadowFrames": 634,
+						"meanShadowDrawsPerUpdate": 237.62,
+						"meanShadowCpuPerUpdate": 4.79,
+						"geometries": 348,
+						"textures": 591,
+						"programs": 22,
+						"route": [37.4, 196.4],
+						"phaseProbe": {
+							"matricesMs": 2.9,
+							"cameraListMs": 3.96
+						}
+					}
+				}
+			}
+		},
+		"fixedMatrixTrial": {
+			"stress": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 110,
+					"height": 150,
+					"tiles": 16500,
+					"raised": 4773,
+					"objects": 792,
+					"npcs": 24,
+					"actors": 26,
+					"sha256": "3f049a044538bf0f05e625f4497ccf227211c9d69f78f818976fceff191f6b55"
+				},
+				"fixedMatrices": {
+					"groups": 781,
+					"nodes": 3709
+				},
+				"cold": {
+					"ms": 5065.02,
+					"builds": 2,
+					"lastBuildMs": 320.3,
+					"lastTerrainMs": 156.2,
+					"shoreEdges": 313
+				},
+				"warm": {
+					"ms": 978.6,
+					"builds": 1,
+					"lastBuildMs": 201.6,
+					"lastTerrainMs": 69.6,
+					"shoreEdges": 313
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 761.8,
+					"parses": 17,
+					"maxParseMs": 586.3,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 34.64,
+					"edit": 18.19,
+					"warmPlay": 33.32
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 234,
+						"p50": 8.3,
+						"p95": 16.7,
+						"p99": 25,
+						"worst": 25.1,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 7.8,
+						"meanRenderCpu": 6.2,
+						"meanMixerCpu": 0.7,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 20,
+							"p50": 6.69,
+							"p95": 11.73
+						},
+						"visible": [7, 17],
+						"skinnedVisible": [1, 3],
+						"activeMixers": 26,
+						"lastMainDraws": 66,
+						"lastMainTriangles": 135174,
+						"shadowFrames": 60,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 4.92,
+						"geometries": 58,
+						"textures": 192,
+						"programs": 21,
+						"route": [4, 12],
+						"phaseProbe": {
+							"matricesMs": 1.4,
+							"cameraListMs": 1.94
+						}
+					},
+					"ride": {
+						"frames": 322,
+						"p50": 12.5,
+						"p95": 16.7,
+						"p99": 20.8,
+						"worst": 24.8,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 8,
+						"meanRenderCpu": 6.5,
+						"meanMixerCpu": 0.6,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 28,
+							"p50": 13.13,
+							"p95": 15.08
+						},
+						"visible": [27, 113],
+						"skinnedVisible": [4, 8],
+						"activeMixers": 26,
+						"lastMainDraws": 315,
+						"lastMainTriangles": 493074,
+						"shadowFrames": 103,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 3.52,
+						"geometries": 60,
+						"textures": 251,
+						"programs": 21,
+						"route": [13, 37],
+						"phaseProbe": {
+							"matricesMs": 1.1,
+							"cameraListMs": 1.87
+						}
+					},
+					"orbit": {
+						"frames": 249,
+						"p50": 12.6,
+						"p95": 16.7,
+						"p99": 16.9,
+						"worst": 21,
+						"over33ms": 0,
+						"over33_4ms": 0,
+						"over50ms": 0,
+						"meanCallback": 6.6,
+						"meanRenderCpu": 5.8,
+						"meanMixerCpu": 0.5,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 21,
+							"p50": 13.39,
+							"p95": 17.45
+						},
+						"visible": [109, 138],
+						"skinnedVisible": [7, 8],
+						"activeMixers": 26,
+						"lastMainDraws": 338,
+						"lastMainTriangles": 519326,
+						"shadowFrames": 85,
+						"meanShadowDrawsPerUpdate": 162,
+						"meanShadowCpuPerUpdate": 2.38,
+						"geometries": 141,
+						"textures": 251,
+						"programs": 21
+					},
+					"farRide": {
+						"frames": 902,
+						"p50": 20.7,
+						"p95": 25.2,
+						"p99": 33.2,
+						"worst": 91.5,
+						"over33ms": 11,
+						"over33_4ms": 8,
+						"over50ms": 3,
+						"meanCallback": 10.9,
+						"meanRenderCpu": 9.6,
+						"meanMixerCpu": 0.5,
+						"meanTickCpu": 0,
+						"gpu": {
+							"samples": 76,
+							"p50": 20.1,
+							"p95": 26.3
+						},
+						"visible": [117, 711],
+						"skinnedVisible": [8, 26],
+						"activeMixers": 26,
+						"lastMainDraws": 1923,
+						"lastMainTriangles": 2367596,
+						"shadowFrames": 415,
+						"meanShadowDrawsPerUpdate": 176.03,
+						"meanShadowCpuPerUpdate": 2.97,
+						"geometries": 272,
+						"textures": 327,
+						"programs": 22,
+						"route": [37, 142],
+						"phaseProbe": {
+							"matricesMs": 0.95,
+							"cameraListMs": 2.04
+						}
+					}
+				}
+			}
+		},
+		"pacingOnly": {
+			"large": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 88,
+					"height": 120,
+					"tiles": 10560,
+					"raised": 3096,
+					"objects": 489,
+					"npcs": 12,
+					"actors": 14,
+					"sha256": "57638c57b3e904bce7831612d934e4a4a6964d5b94b8219ee4b00a0c93439d79"
+				},
+				"cold": {
+					"ms": 3872.71,
+					"builds": 2,
+					"lastBuildMs": 221.2,
+					"lastTerrainMs": 120.4,
+					"shoreEdges": 255
+				},
+				"warm": {
+					"ms": 862.86,
+					"builds": 1,
+					"lastBuildMs": 130,
+					"lastTerrainMs": 57.2,
+					"shoreEdges": 255
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 468.8,
+					"parses": 17,
+					"maxParseMs": 420.8,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 27.1,
+					"edit": 16.26,
+					"warmPlay": 26.11
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 352,
+						"p50": 4.2,
+						"p95": 8.5,
+						"p99": 16.7,
+						"worst": 16.8,
+						"over33ms": 0,
+						"over50ms": 0,
+						"route": [4, 12]
+					},
+					"ride": {
+						"frames": 420,
+						"p50": 8.4,
+						"p95": 12.6,
+						"p99": 16.6,
+						"worst": 91.6,
+						"over33ms": 2,
+						"over50ms": 2,
+						"route": [13, 37]
+					},
+					"orbit": {
+						"frames": 352,
+						"p50": 8.4,
+						"p95": 12.7,
+						"p99": 16.7,
+						"worst": 16.7,
+						"over33ms": 0,
+						"over50ms": 0
+					},
+					"farRide": {
+						"frames": 831,
+						"p50": 12.6,
+						"p95": 21.1,
+						"p99": 29.3,
+						"worst": 46,
+						"over33ms": 7,
+						"over50ms": 0,
+						"route": [37, 112]
+					}
+				}
+			},
+			"stress": {
+				"stage": "complete",
+				"errors": [],
+				"fixture": {
+					"width": 110,
+					"height": 150,
+					"tiles": 16500,
+					"raised": 4773,
+					"objects": 792,
+					"npcs": 24,
+					"actors": 26,
+					"sha256": "3f049a044538bf0f05e625f4497ccf227211c9d69f78f818976fceff191f6b55"
+				},
+				"cold": {
+					"ms": 3472.4,
+					"builds": 2,
+					"lastBuildMs": 199.1,
+					"lastTerrainMs": 92.1,
+					"shoreEdges": 313
+				},
+				"warm": {
+					"ms": 1234.41,
+					"builds": 1,
+					"lastBuildMs": 218.4,
+					"lastTerrainMs": 81.7,
+					"shoreEdges": 313
+				},
+				"glbs": {
+					"requests": 17,
+					"bytes": 8946376,
+					"maxFetchMs": 216.9,
+					"parses": 17,
+					"maxParseMs": 167,
+					"warmParses": 0
+				},
+				"postGcHeapMB": {
+					"play": 34.67,
+					"edit": 18.23,
+					"warmPlay": 33.48
+				},
+				"actions": {
+					"followWalk": {
+						"frames": 275,
+						"p50": 8.3,
+						"p95": 12.5,
+						"p99": 12.7,
+						"worst": 16.7,
+						"over33ms": 0,
+						"over50ms": 0,
+						"route": [4, 12]
+					},
+					"ride": {
+						"frames": 315,
+						"p50": 12.5,
+						"p95": 20.9,
+						"p99": 29.2,
+						"worst": 37.4,
+						"over33ms": 3,
+						"over50ms": 0,
+						"route": [13, 37]
+					},
+					"orbit": {
+						"frames": 222,
+						"p50": 16.7,
+						"p95": 20.9,
+						"p99": 25,
+						"worst": 25.1,
+						"over33ms": 0,
+						"over50ms": 0
+					},
+					"farRide": {
+						"frames": 927,
+						"p50": 16.7,
+						"p95": 45.8,
+						"p99": 62.6,
+						"worst": 70.9,
+						"over33ms": 75,
+						"over50ms": 42,
+						"route": [37, 142.2]
+					}
+				}
+			}
+		}
+	}
+}

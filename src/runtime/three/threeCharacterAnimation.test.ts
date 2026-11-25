@@ -1,6 +1,8 @@
 import { PROCEDURAL_MANNEQUIN_V0_ASSET } from "@adventure-game-builder/three-asset-preview";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import goldenWalkUrl from "../../../public/assets/derived/humanoid-animations/golden-reference-v0/walk-in-place.clip.glb?url&inline";
 import { BOW } from "../../data/bow";
 import {
 	clearThreeCharacterAnimationClipCacheForTests,
@@ -694,6 +696,45 @@ it("shares prepared source clips without mutating the cached source", () => {
 	).toBe("hit");
 });
 
+it("joins Golden walk across its real cubic bake while preserving all keyed poses and interior handles", async () => {
+	const bytes = await (await fetch(goldenWalkUrl)).arrayBuffer();
+	const {
+		scene,
+		animations: [source],
+	} = await new GLTFLoader().parseAsync(bytes, "");
+	const prepared = prepareThreeCharacterAnimationClip(
+		"golden-reference-quaternius-walk-baked-v1",
+		source,
+		scene,
+	);
+	if (prepared.status !== "prepared") throw new Error(prepared.reason);
+	let changedHandles = 0;
+	for (const [index, original] of source.tracks.entries()) {
+		const corrected = prepared.clip.tracks[index];
+		const stride = original.getValueSize();
+		const size = stride / 3;
+		const last = original.values.length - stride;
+		expect(corrected.times).toEqual(original.times);
+		expect(corrected.values.slice(0, 2 * size)).toEqual(
+			original.values.slice(0, 2 * size),
+		);
+		expect(corrected.values.slice(stride, last)).toEqual(
+			original.values.slice(stride, last),
+		);
+		expect(corrected.values.slice(last + size)).toEqual(
+			original.values.slice(last + size),
+		);
+		for (let axis = 0; axis < size; axis++) {
+			expect(corrected.values[2 * size + axis]).toBe(
+				corrected.values[last + axis],
+			);
+			expect(original.values[2 * size + axis]).toBe(0);
+			if (corrected.values[2 * size + axis] !== 0) changedHandles++;
+		}
+	}
+	expect(changedHandles).toBeGreaterThan(0);
+});
+
 async function movementController(missing: string[] = []) {
 	const states = [
 		"idle",
@@ -877,6 +918,27 @@ it("retains combat priority over movement and clamps locomotion playback speed",
 		expect(c.getStats().semanticState).toBe("defeated");
 	} finally {
 		speed.mockRestore();
+		dispose();
+	}
+});
+it("keeps advancing a sustained gait and preserves its phase when sprint uses the walk fallback", async () => {
+	const { controller, dispose } = await movementController(["run"]);
+	const reset = vi.spyOn(THREE.AnimationAction.prototype, "reset");
+	try {
+		for (let frame = 0; frame < 1200; frame++) {
+			controller.sync({
+				defeated: false,
+				moving: true,
+				sprinting: frame >= 600,
+			});
+			controller.update(1 / 60);
+		}
+		expect(controller.getStats().semanticState).toBe("run");
+		expect(reset).toHaveBeenCalledTimes(1);
+		controller.sync({ defeated: false, moving: true });
+		expect(reset).toHaveBeenCalledTimes(1);
+	} finally {
+		reset.mockRestore();
 		dispose();
 	}
 });

@@ -292,6 +292,7 @@ type CinematicPlayback = {
 
 const CINEMATIC_BLEND_MS = 650;
 const CINEMATIC_ASSET_WAIT_MS = 5000;
+const AREA_MODEL_GRACE_MS = 1000;
 const MOUSE_LOOK_STORAGE_KEY = "adventure-builder-mouse-look";
 type MouseLookPreferences = Required<
 	Pick<ThirdPersonMouseLookOptions, "sensitivity" | "invertX" | "invertY">
@@ -696,6 +697,10 @@ export function ThreeRuntimePanel({
 	const playerDefeatedRef = useRef(false);
 	const nextRebuildReasonRef = useRef("initial runtime start");
 	const previousBuildInputsRef = useRef<ThreeRuntimeBuildInputs | null>(null);
+	const waitingForAreaModels = useRef<{
+		area: GameArea;
+		deadline: number;
+	} | null>(null);
 	const isStartingRuntimeRef = useRef(false);
 	const [renderVersion, setRenderVersion] = useState(0);
 	const [, setHudVersion] = useState(0);
@@ -2376,7 +2381,6 @@ export function ThreeRuntimePanel({
 			nextBuildInputs,
 			nextRebuildReasonRef.current,
 		);
-		previousBuildInputsRef.current = nextBuildInputs;
 		const sceneBuildStartedAt = performance.now();
 		const traversalWorld = createTraversalWorld(
 			session.project,
@@ -2404,6 +2408,31 @@ export function ThreeRuntimePanel({
 						: undefined,
 				);
 		} else session.traversal = undefined;
+
+		// The destination's collision world is live as soon as gameplay enters
+		// the area. Give cold models one short window to settle together, then
+		// show playable fallback markers if a request is slow.
+		if (assets.pending && rebuildReason === "area changed") {
+			const now = performance.now();
+			if (waitingForAreaModels.current?.area !== area)
+				waitingForAreaModels.current = {
+					area,
+					deadline: now + AREA_MODEL_GRACE_MS,
+				};
+			const wait = waitingForAreaModels.current;
+			if (now < wait.deadline) {
+				const timer = window.setTimeout(() => {
+					wait.deadline = 0;
+					setRenderVersion((version) => version + 1);
+				}, wait.deadline - now);
+				return () => {
+					window.clearTimeout(timer);
+					assets.cancel();
+				};
+			}
+		}
+		waitingForAreaModels.current = null;
+		previousBuildInputsRef.current = nextBuildInputs;
 
 		syncPlayerVisual(session);
 		syncNpcVisuals(session, area);
@@ -4286,7 +4315,7 @@ export function ThreeRuntimePanel({
 			className={`three-runtime-panel${isCinematic || cinematicPreview ? " playing-cinematic" : ""}`}
 		>
 			{missingAssets && (
-				<p role="alert">
+				<p className="three-runtime-error three-model-error" role="alert">
 					A visual asset is unavailable. Restore its project asset files or
 					reimport it through Asset Creator. Saved assignments are preserved.
 					{failedModels.current.length > 0 && (

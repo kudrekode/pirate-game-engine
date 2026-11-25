@@ -1,0 +1,657 @@
+{
+	"referenceRevision": "72c6256",
+	"method": [
+		"Opt-in traced ridge crossing in a fresh Chrome process. Use uninstrumented repeated routes for performance comparisons.",
+		"All timestamps use the navigation clock. The observed animation-frame interval can include both browser scheduling gaps and long main-thread tasks.",
+		"Nested renderer, shadow and WebGL calls overlap. Resource fetch duration includes waiting for response bytes and excludes subsequent decoding.",
+		"V8 weights are approximations, especially across long sample intervals. Inclusive stack families overlap. Chrome thread slices report elapsed task occupancy, not GPU execution time."
+	],
+	"observations": [
+		{
+			"variant": "reference",
+			"capture": "WebGL calls and V8 sampling",
+			"fixture": "hollow-kingdom-chapter-one.project.json",
+			"browser": "158.0.8127.37",
+			"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+			"viewport": {
+				"width": 960,
+				"height": 600
+			},
+			"dpr": 1,
+			"durationMs": 5743.1,
+			"browserFrames": {
+				"count": 383,
+				"p50": 4.2,
+				"p95": 16.7,
+				"p99": 250,
+				"max": 1929,
+				"over33": 11,
+				"over50": 9
+			},
+			"worstRafGap": {
+				"startFromProbeMs": 1683.2,
+				"ms": 1929,
+				"intersectingLongTasks": [
+					{
+						"startFromProbeMs": 1686.4,
+						"durationMs": 215,
+						"overlapMs": 215.0
+					},
+					{
+						"startFromProbeMs": 1906.2,
+						"durationMs": 99,
+						"overlapMs": 99.0
+					}
+				],
+				"approxIdleV8Ms": 1559.1,
+				"clockAlignment": "End-aligned V8/profile and page probe, before NavigationStart alignment was added."
+			},
+			"sceneRebuildReasons": {
+				"initial runtime build": 1,
+				"area changed": 1,
+				"asset state changed": 1
+			},
+			"finalBuildMs": 194.2,
+			"finalTerrainMs": 113.2,
+			"singleActiveLoop": true,
+			"phaseTotals": {
+				"shadow.render": {
+					"calls": 14,
+					"sumMs": 168.0,
+					"longestMs": 92
+				},
+				"gl.texSubImage2D": {
+					"calls": 439,
+					"sumMs": 95.9,
+					"longestMs": 51.3
+				},
+				"renderer.render": {
+					"calls": 14,
+					"sumMs": 429.1,
+					"longestMs": 205.7
+				},
+				"renderLists.dispose": {
+					"calls": 2,
+					"sumMs": 0,
+					"longestMs": 0
+				},
+				"renderer.compile": {
+					"calls": 2,
+					"sumMs": 152.9,
+					"longestMs": 98.9
+				},
+				"gl.getProgramParameter": {
+					"calls": 3400,
+					"sumMs": 31.9,
+					"longestMs": 18.8
+				},
+				"gl.getProgramInfoLog": {
+					"calls": 40,
+					"sumMs": 333.8,
+					"longestMs": 173.3
+				},
+				"gl.getUniformLocation": {
+					"calls": 2091,
+					"sumMs": 8.0,
+					"longestMs": 0.2
+				}
+			},
+			"destinationResources": [
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/vigil-altar.glb",
+					"fetchMs": 267.3,
+					"encodedBytes": 398796
+				},
+				{
+					"path": "/assets/hollow-kingdom/poacher.glb",
+					"fetchMs": 459.4,
+					"encodedBytes": 2388540
+				},
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/drake.glb",
+					"fetchMs": 342.2,
+					"encodedBytes": 879088
+				}
+			]
+		},
+		{
+			"variant": "reference",
+			"capture": "WebGL calls, V8 sampling and Chrome scheduler tracing",
+			"fixture": "hollow-kingdom-chapter-one.project.json",
+			"browser": "158.0.8127.37",
+			"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+			"viewport": {
+				"width": 960,
+				"height": 600
+			},
+			"dpr": 1,
+			"durationMs": 3841.0,
+			"browserFrames": {
+				"count": 266,
+				"p50": 4.2,
+				"p95": 54,
+				"p99": 287.6,
+				"max": 345.8,
+				"over33": 16,
+				"over50": 14
+			},
+			"worstRafGap": {
+				"startFromProbeMs": 1036.7,
+				"ms": 345.8,
+				"intersectingLongTasks": [
+					{
+						"startFromProbeMs": 1038.9,
+						"durationMs": 343,
+						"overlapMs": 343.0
+					}
+				],
+				"largestSampleIntervalMs": 53.6,
+				"largestSampledLeavesMs": {
+					"Il ../../../src/data/terrainSurface.ts:51": 63.9,
+					"zz ../../../node_modules/three/build/three.core.js:51814": 53.6,
+					"f ../../../src/data/terrainSurface.ts:100": 21.5,
+					"fX ../../../src/runtime/three/waterPresentation.ts:161": 19.6,
+					"l ../../../src/data/terrainSurface.ts:89": 17.8,
+					"(garbage collector)": 12.9
+				},
+				"chromeThreadSlicesWallMs": {
+					"DedicatedWorker thread": 345.8,
+					"CrRendererMain": 345.5,
+					"Compositor": 33.5
+				},
+				"selectedChromeGraphicsSlices": []
+			},
+			"sceneRebuildReasons": {
+				"initial runtime build": 1,
+				"area changed": 1,
+				"asset state changed": 1
+			},
+			"finalBuildMs": 317.6,
+			"finalTerrainMs": 152.5,
+			"singleActiveLoop": true,
+			"phaseTotals": {
+				"shadow.render": {
+					"calls": 12,
+					"sumMs": 147.2,
+					"longestMs": 136.7
+				},
+				"gl.texSubImage2D": {
+					"calls": 371,
+					"sumMs": 57.2,
+					"longestMs": 53.4
+				},
+				"renderer.render": {
+					"calls": 12,
+					"sumMs": 340.9,
+					"longestMs": 271.5
+				},
+				"renderLists.dispose": {
+					"calls": 2,
+					"sumMs": 0.1,
+					"longestMs": 0.1
+				},
+				"renderer.compile": {
+					"calls": 2,
+					"sumMs": 263.1,
+					"longestMs": 201.9
+				},
+				"gl.getProgramParameter": {
+					"calls": 1159,
+					"sumMs": 8.3,
+					"longestMs": 0.8
+				},
+				"gl.getProgramInfoLog": {
+					"calls": 34,
+					"sumMs": 269.4,
+					"longestMs": 83.9
+				},
+				"gl.getUniformLocation": {
+					"calls": 1846,
+					"sumMs": 14.9,
+					"longestMs": 0.4
+				}
+			},
+			"destinationResources": [
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/vigil-altar.glb",
+					"fetchMs": 38.1,
+					"encodedBytes": 398796
+				},
+				{
+					"path": "/assets/hollow-kingdom/poacher.glb",
+					"fetchMs": 156.8,
+					"encodedBytes": 2388540
+				},
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/drake.glb",
+					"fetchMs": 65.2,
+					"encodedBytes": 879088
+				}
+			]
+		},
+		{
+			"variant": "single destination build before shader reflection changes",
+			"capture": "WebGL calls, V8 sampling and Chrome scheduler tracing",
+			"fixture": "hollow-kingdom-chapter-one.project.json",
+			"browser": "158.0.8127.37",
+			"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+			"viewport": {
+				"width": 960,
+				"height": 600
+			},
+			"dpr": 1,
+			"durationMs": 2346.6,
+			"browserFrames": {
+				"count": 106,
+				"p50": 4.2,
+				"p95": 29.3,
+				"p99": 312.5,
+				"max": 966.6,
+				"over33": 4,
+				"over50": 4
+			},
+			"worstRafGap": {
+				"startFromProbeMs": 478.1,
+				"ms": 966.6,
+				"intersectingLongTasks": [
+					{
+						"startFromProbeMs": 378.6,
+						"durationMs": 102,
+						"overlapMs": 2.5
+					},
+					{
+						"startFromProbeMs": 482.7,
+						"durationMs": 951,
+						"overlapMs": 951
+					}
+				],
+				"largestSampleIntervalMs": 196.2,
+				"largestSampledLeavesMs": {
+					"getProgramInfoLog": 871.7,
+					"(garbage collector)": 16.0,
+					"(program)": 15.8,
+					"g ../../../node_modules/three/build/three.module.js:7431": 12.4,
+					"shaderSource": 7.9,
+					"a6 ../../../node_modules/three/build/three.module.js:6484": 7.8
+				},
+				"chromeThreadSlicesWallMs": {
+					"CrRendererMain": 965.9,
+					"CrGpuMain": 911.1,
+					"Compositor": 94.5
+				},
+				"selectedChromeGraphicsSlices": [
+					{
+						"name": "ImplementationBase::WaitForCmd",
+						"wallMsWithinFrame": 872.6,
+						"fullSliceWallMs": 872.6,
+						"fullSliceThreadCpuMs": 13.4
+					},
+					{
+						"name": "CommandBufferService:PutChanged",
+						"wallMsWithinFrame": 871.7,
+						"fullSliceWallMs": 871.7,
+						"fullSliceThreadCpuMs": 8.8
+					}
+				]
+			},
+			"sceneRebuildReasons": {
+				"initial runtime build": 1,
+				"area changed": 1
+			},
+			"finalBuildMs": 92.6,
+			"finalTerrainMs": 45.4,
+			"singleActiveLoop": true,
+			"phaseTotals": {
+				"shadow.render": {
+					"calls": 15,
+					"sumMs": 77.3,
+					"longestMs": 70.6
+				},
+				"gl.texSubImage2D": {
+					"calls": 447,
+					"sumMs": 29.2,
+					"longestMs": 27.5
+				},
+				"renderer.render": {
+					"calls": 15,
+					"sumMs": 210.0,
+					"longestMs": 147.1
+				},
+				"renderLists.dispose": {
+					"calls": 1,
+					"sumMs": 0,
+					"longestMs": 0
+				},
+				"renderer.compile": {
+					"calls": 1,
+					"sumMs": 74.4,
+					"longestMs": 74.4
+				},
+				"gl.getProgramParameter": {
+					"calls": 271,
+					"sumMs": 3.5,
+					"longestMs": 0.9
+				},
+				"gl.getProgramInfoLog": {
+					"calls": 21,
+					"sumMs": 956.2,
+					"longestMs": 872.6
+				},
+				"gl.getUniformLocation": {
+					"calls": 1145,
+					"sumMs": 7.3,
+					"longestMs": 0.2
+				}
+			},
+			"destinationResources": [
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/vigil-altar.glb",
+					"fetchMs": 37.5,
+					"encodedBytes": 398796
+				},
+				{
+					"path": "/assets/hollow-kingdom/poacher.glb",
+					"fetchMs": 139,
+					"encodedBytes": 2388540
+				},
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/drake.glb",
+					"fetchMs": 95.4,
+					"encodedBytes": 879088
+				}
+			],
+			"inclusiveV8StackFamiliesMs": {
+				"gltfLoader": 74.0,
+				"threeClone": 16.3,
+				"terrain": 70.7,
+				"visualMarkers": 23.1,
+				"shaderPreparation": 1164.5,
+				"react": 135.7
+			}
+		},
+		{
+			"variant": "intermediate single destination build with success-log suppression",
+			"capture": "WebGL calls, V8 sampling and Chrome scheduler tracing",
+			"fixture": "hollow-kingdom-chapter-one.project.json",
+			"browser": "158.0.8127.37",
+			"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+			"viewport": {
+				"width": 960,
+				"height": 600
+			},
+			"dpr": 1,
+			"durationMs": 3161.2,
+			"browserFrames": {
+				"count": 26,
+				"p50": 4.3,
+				"p95": 366.6,
+				"p99": 1825,
+				"max": 1825,
+				"over33": 3,
+				"over50": 3
+			},
+			"worstRafGap": {
+				"startFromProbeMs": 490.5,
+				"ms": 1825,
+				"intersectingLongTasks": [
+					{
+						"startFromProbeMs": 470.7,
+						"durationMs": 1843,
+						"overlapMs": 1823.2
+					}
+				],
+				"largestSampleIntervalMs": 188.5,
+				"largestSampledLeavesMs": {
+					"getProgramParameter": 1777.5,
+					"shaderSource": 15.1,
+					"rk ../../../node_modules/three/build/three.module.js:6445": 8.4,
+					"uf ../../../node_modules/three/build/three.core.js:37307": 3.3,
+					"object.<computed>": 2.9,
+					"x ../../../node_modules/three/build/three.module.js:7421": 2.7
+				},
+				"chromeThreadSlicesWallMs": {
+					"CrRendererMain": 1824.8,
+					"CrGpuMain": 1824.0
+				},
+				"selectedChromeGraphicsSlices": [
+					{
+						"name": "ImplementationBase::WaitForCmd",
+						"wallMsWithinFrame": 1778.6,
+						"fullSliceWallMs": 1778.6,
+						"fullSliceThreadCpuMs": 25.8
+					},
+					{
+						"name": "CommandBufferService:PutChanged",
+						"wallMsWithinFrame": 1774.3,
+						"fullSliceWallMs": 1774.3,
+						"fullSliceThreadCpuMs": 46.8
+					}
+				]
+			},
+			"sceneRebuildReasons": {
+				"initial runtime build": 1,
+				"area changed": 1
+			},
+			"finalBuildMs": 89.4,
+			"finalTerrainMs": 44.8,
+			"singleActiveLoop": true,
+			"phaseTotals": {
+				"shadow.render": {
+					"calls": 13,
+					"sumMs": 152.1,
+					"longestMs": 141.6
+				},
+				"gl.texSubImage2D": {
+					"calls": 404,
+					"sumMs": 60.5,
+					"longestMs": 56.8
+				},
+				"renderer.render": {
+					"calls": 13,
+					"sumMs": 371.1,
+					"longestMs": 299.5
+				},
+				"renderLists.dispose": {
+					"calls": 1,
+					"sumMs": 0,
+					"longestMs": 0
+				},
+				"renderer.compile": {
+					"calls": 1,
+					"sumMs": 63.9,
+					"longestMs": 63.9
+				},
+				"gl.getProgramParameter": {
+					"calls": 116,
+					"sumMs": 1781,
+					"longestMs": 1778.6
+				},
+				"gl.getActiveUniform": {
+					"calls": 1145,
+					"sumMs": 9.4,
+					"longestMs": 0.2
+				},
+				"gl.getUniformLocation": {
+					"calls": 1145,
+					"sumMs": 7.6,
+					"longestMs": 0.3
+				},
+				"gl.getProgramInfoLog": {
+					"calls": 3,
+					"sumMs": 108.5,
+					"longestMs": 80.8
+				},
+				"gl.getShaderInfoLog": {
+					"calls": 6,
+					"sumMs": 3.9,
+					"longestMs": 0.8
+				}
+			},
+			"destinationResources": [
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/vigil-altar.glb",
+					"fetchMs": 31.2,
+					"encodedBytes": 398796
+				},
+				{
+					"path": "/assets/hollow-kingdom/poacher.glb",
+					"fetchMs": 136.3,
+					"encodedBytes": 2388540
+				},
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/drake.glb",
+					"fetchMs": 58.4,
+					"encodedBytes": 879088
+				}
+			],
+			"inclusiveV8StackFamiliesMs": {
+				"gltfLoader": 62.6,
+				"threeClone": 10.2,
+				"terrain": 44.1,
+				"visualMarkers": 18.5,
+				"shaderPreparation": 2158.7,
+				"react": 125.9
+			}
+		},
+		{
+			"variant": "single build with command fence and validated reflection",
+			"capture": "WebGL calls, V8 sampling and Chrome scheduler tracing",
+			"fixture": "hollow-kingdom-chapter-one.project.json",
+			"browser": "158.0.8127.37",
+			"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+			"viewport": {
+				"width": 960,
+				"height": 600
+			},
+			"dpr": 1,
+			"durationMs": 3498.9,
+			"browserFrames": {
+				"count": 318,
+				"p50": 4.2,
+				"p95": 8.4,
+				"p99": 91.7,
+				"max": 1400.3,
+				"over33ms": 5,
+				"over33": 5,
+				"over50": 5
+			},
+			"worstRafGap": {
+				"startFromProbeMs": 525.6,
+				"ms": 1400.3,
+				"intersectingLongTasks": [],
+				"largestSampleIntervalMs": 2.5,
+				"largestSampledLeavesMs": {
+					"(idle)": 1307.7,
+					"(program)": 88.8,
+					"(anonymous)": 1.7,
+					"C.onmessage ../../../src/runtime/three/groundPresentation.ts:138": 1.4,
+					"ei ../../../src/runtime/three/ThreeRuntimePanel.tsx:823": 0.5,
+					"setTimeout": 0.1
+				},
+				"chromeThreadSlicesWallMs": {
+					"CrGpuMain": 1400.2,
+					"DedicatedWorker thread": 150.7,
+					"CrRendererMain": 39.8,
+					"Compositor": 1.1
+				},
+				"selectedChromeGraphicsSlices": [
+					{
+						"name": "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+						"wallMsWithinFrame": 1386.9,
+						"fullSliceWallMs": 1388.5,
+						"fullSliceThreadCpuMs": 2.4
+					}
+				]
+			},
+			"sceneRebuildReasons": {
+				"initial runtime build": 1,
+				"area changed": 1
+			},
+			"finalBuildMs": 79.4,
+			"finalTerrainMs": 41.1,
+			"singleActiveLoop": true,
+			"phaseTotals": {
+				"shadow.render": {
+					"calls": 12,
+					"sumMs": 71.6,
+					"longestMs": 65.9
+				},
+				"gl.texSubImage2D": {
+					"calls": 348,
+					"sumMs": 30.7,
+					"longestMs": 28.4
+				},
+				"renderer.render": {
+					"calls": 12,
+					"sumMs": 186.8,
+					"longestMs": 141
+				},
+				"renderLists.dispose": {
+					"calls": 1,
+					"sumMs": 0,
+					"longestMs": 0
+				},
+				"renderer.compile": {
+					"calls": 1,
+					"sumMs": 51,
+					"longestMs": 51
+				},
+				"gl.clientWaitSync": {
+					"calls": 84,
+					"sumMs": 1.4,
+					"longestMs": 0.1
+				},
+				"gl.getProgramParameter": {
+					"calls": 920,
+					"sumMs": 4.8,
+					"longestMs": 0.4
+				},
+				"gl.getActiveUniform": {
+					"calls": 1145,
+					"sumMs": 6.1,
+					"longestMs": 0.2
+				},
+				"gl.getUniformLocation": {
+					"calls": 1145,
+					"sumMs": 5.5,
+					"longestMs": 0.2
+				},
+				"gl.getProgramInfoLog": {
+					"calls": 3,
+					"sumMs": 47.6,
+					"longestMs": 32.9
+				},
+				"gl.getShaderInfoLog": {
+					"calls": 6,
+					"sumMs": 2.5,
+					"longestMs": 0.6
+				}
+			},
+			"destinationResources": [
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/vigil-altar.glb",
+					"fetchMs": 26.4,
+					"encodedBytes": 398796
+				},
+				{
+					"path": "/assets/hollow-kingdom/poacher.glb",
+					"fetchMs": 114.9,
+					"encodedBytes": 2388540
+				},
+				{
+					"path": "/assets/hollow-kingdom/chapter-one/drake.glb",
+					"fetchMs": 46.4,
+					"encodedBytes": 879088
+				}
+			],
+			"inclusiveV8StackFamiliesMs": {
+				"gltfLoader": 110.1,
+				"threeClone": 9.4,
+				"terrain": 52.4,
+				"visualMarkers": 14.6,
+				"shaderPreparation": 207.6,
+				"react": 116.5
+			}
+		}
+	]
+}
