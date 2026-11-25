@@ -30,23 +30,23 @@ Documentation index: [docs/README.md](docs/README.md). Audits and reports are da
 
 ## Find the relevant code
 
-| Task | Start here |
-| --- | --- |
-| Product/build overview, planned scope | `README.md`, `ROADMAP.md` |
-| Gameplay/session or adapter work | `docs/RUNTIME_ARCHITECTURE.md`; `src/runtime/runtimeSession.ts`, `AdventureScene.ts` (Phaser), `RuntimePanel.tsx` (mode/HUD), `three/ThreeRuntimePanel.tsx` |
-| Movement, rules, inventory, quests, shops, combat, vehicles | Matching helper and test in `src/runtime/`: `movement`, `ruleEngine`, `inventory`, `questEngine`, `shopRuntime`, `combat`, `vehicleRuntime`; transaction/orchestration helpers alongside them |
-| NPC/object resolution and behaviour | `src/runtime/npcResolver.ts`, `npcMovement.ts`, `objectBehaviour.ts`; matching `NpcsEditor`/`ObjectsEditor` sections and tests |
-| Schema, defaults, migration | `src/types/game.ts`, `src/data/migrateProject.ts`, `projectDefaults.ts`, `defaultProject.ts`, `projectPresets.ts` and their tests |
-| Map painting/placement and tools | `src/editor/sections/MapEditor.tsx` (gesture/tool orchestration), `terrainBrush.ts` (pure terrain operations), `src/store/useProjectStore.ts` (mutations); `src/test/editorSmoke.test.tsx` |
-| Map inspector fields, objects, interactions/links | `src/editor/sections/MapInspector.tsx`, `mapEditorSelection.ts`, `src/editor/ObjectBehaviourEditor.tsx`; store mutations stay shared |
-| Placed NPC attributes, patrol and override reset | `src/editor/sections/MapNpcInspector.tsx`, `MapInspector.tsx` (interaction/deletion), `src/runtime/npcResolver.ts` |
-| Map history/undo | `src/editor/sections/useMapEditHistory.ts`; callers in `MapEditor.tsx` and `MapInspector.tsx`; `src/test/mapEditHistory.test.tsx` |
-| Map layout/palette/pixels | `src/editor/sections/MapEditor.tsx`, `src/styles.css`; workspace state stays with its gesture owner |
-| Other editor tabs and app state | `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts` |
-| Three presentation | `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`; `src/runtime/three/threeVisuals.ts`, `threeVisualAssetRegistry.ts`, `threeVisualAssetLoader.ts`, `threeVisualRenderer.ts`, `cameraControls.ts`, `visualSmoothing.ts`, `waterPresentation.ts` |
-| 3D editing/terrain | `src/editor/sections/ThreeDPreview.tsx`, `ThreeVisualControls.tsx`, `terrainBrush.ts`, `terrainBlocks.ts`; `src/runtime/three/terrainMeshGeometry.ts` |
-| Asset Studio/creator/compiler | Start with [Quick Resume](docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume), then only the linked milestone relevant to the change; it maps exact implementation files/versions |
-| Browser/performance | [Validation and Playwright guide](docs/PLAYWRIGHT_SMOKE.md), `e2e/`, `apps/asset-studio/e2e/` |
+| Task                                                        | Start here                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product/build overview, planned scope                       | `README.md`, `ROADMAP.md`                                                                                                                                                                                                                                             |
+| Gameplay/session or adapter work                            | `docs/RUNTIME_ARCHITECTURE.md`; `src/runtime/runtimeSession.ts`, `AdventureScene.ts` (Phaser), `RuntimePanel.tsx` (mode/HUD), `three/ThreeRuntimePanel.tsx`                                                                                                           |
+| Movement, rules, inventory, quests, shops, combat, vehicles | Matching helper and test in `src/runtime/`: `movement`, `ruleEngine`, `inventory`, `questEngine`, `shopRuntime`, `combat`, `vehicleRuntime`; transaction/orchestration helpers alongside them                                                                         |
+| NPC/object resolution and behaviour                         | `src/runtime/npcResolver.ts`, `npcMovement.ts`, `objectBehaviour.ts`; matching `NpcsEditor`/`ObjectsEditor` sections and tests                                                                                                                                        |
+| Schema, defaults, migration                                 | `src/types/game.ts`, `src/data/migrateProject.ts`, `projectDefaults.ts`, `defaultProject.ts`, `projectPresets.ts` and their tests                                                                                                                                     |
+| Map painting/placement and tools                            | `src/editor/sections/MapEditor.tsx` (gesture/tool orchestration), `terrainBrush.ts` (pure terrain operations), `src/store/useProjectStore.ts` (mutations); `src/test/editorSmoke.test.tsx`                                                                            |
+| Map inspector fields, objects, interactions/links           | `src/editor/sections/MapInspector.tsx`, `mapEditorSelection.ts`, `src/editor/ObjectBehaviourEditor.tsx`; store mutations stay shared                                                                                                                                  |
+| Placed NPC attributes, patrol and override reset            | `src/editor/sections/MapNpcInspector.tsx`, `MapInspector.tsx` (interaction/deletion), `src/runtime/npcResolver.ts`                                                                                                                                                    |
+| Map history/undo                                            | `src/editor/sections/useMapEditHistory.ts`; callers in `MapEditor.tsx` and `MapInspector.tsx`; `src/test/mapEditHistory.test.tsx`                                                                                                                                     |
+| Map layout/palette/pixels                                   | `src/editor/sections/MapEditor.tsx`, `src/styles.css`; workspace state stays with its gesture owner                                                                                                                                                                   |
+| Other editor tabs and app state                             | `src/editor/sections/*Editor.tsx`, `src/App.tsx`, `src/store/useProjectStore.ts`                                                                                                                                                                                      |
+| Three presentation                                          | `docs/THREE_RUNTIME_STATUS.md`, `docs/THREE_RUNTIME_PARITY_FINDINGS.md`; `src/runtime/three/threeVisuals.ts`, `threeVisualAssetRegistry.ts`, `threeVisualAssetLoader.ts`, `threeVisualRenderer.ts`, `cameraControls.ts`, `visualSmoothing.ts`, `waterPresentation.ts` |
+| 3D editing/terrain                                          | `src/editor/sections/ThreeDPreview.tsx`, `ThreeVisualControls.tsx`, `terrainBrush.ts`, `terrainBlocks.ts`; `src/runtime/three/terrainMeshGeometry.ts`                                                                                                                 |
+| Asset Studio/creator/compiler                               | Start with [Quick Resume](docs/ASSET_STUDIO_ARCHITECTURE.md#quick-resume), then only the linked milestone relevant to the change; it maps exact implementation files/versions                                                                                         |
+| Browser/performance                                         | [Validation and Playwright guide](docs/PLAYWRIGHT_SMOKE.md), `e2e/`, `apps/asset-studio/e2e/`                                                                                                                                                                         |
 
 Asset Studio creator forms, compilation and recent-result restoration stay together
 in `apps/asset-studio/src/App.tsx`; `HumanoidPreview.tsx` owns the full scene,
@@ -81,19 +81,19 @@ cases require explicit selectors. Inspect matrix `--list` before a build; use ex
 `--case` / hairstyle `--style` selections. Installed-artifact validation is not a
 current-source cache check. See the validation guide for costs and concrete commands.
 
-| Change | Focused command (from repository root) |
-| --- | --- |
-| Movement helper | `npm run test:run -- src/runtime/movement.test.ts` |
-| Rules/quests/etc. | `npm run test:run -- src/runtime/ruleEngine.test.ts` (substitute affected helper) |
-| Project migration | `npm run test:run -- src/data/migrateProject.test.ts` |
-| Editor label/component/store workflow | `npm run test:run -- src/test/editorSmoke.test.tsx` or the affected component test |
-| Three renderer/loader/animation math | `npm run test:run -- src/runtime/three/threeVisualRenderer.test.ts` (substitute affected helper); then targeted browser only if needed |
-| Creator request logic | `npm run test:run -- apps/asset-studio/src/proceduralMannequinCreator.test.ts` |
-| Creator UI | `npm run test:run -- apps/asset-studio/src/App.test.tsx` |
-| Recipe contract | `npm run test:run -- --project character-contract` |
-| Shared GLTF preview package | `npm run test:run -- --project three-asset-preview` |
-| Compiler/API/hair contract | `node --test tools/blender-character/procedural-mannequin-creator-api.test.mjs` or matching `*.test.mjs`; `npm run test:compiler` for all cheap Node checks |
-| Geometry/hair fitting | Focused contract/Node checks first, then the affected matrix and targeted visual selection in the [guide](docs/PLAYWRIGHT_SMOKE.md) |
+| Change                                | Focused command (from repository root)                                                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Movement helper                       | `npm run test:run -- src/runtime/movement.test.ts`                                                                                                          |
+| Rules/quests/etc.                     | `npm run test:run -- src/runtime/ruleEngine.test.ts` (substitute affected helper)                                                                           |
+| Project migration                     | `npm run test:run -- src/data/migrateProject.test.ts`                                                                                                       |
+| Editor label/component/store workflow | `npm run test:run -- src/test/editorSmoke.test.tsx` or the affected component test                                                                          |
+| Three renderer/loader/animation math  | `npm run test:run -- src/runtime/three/threeVisualRenderer.test.ts` (substitute affected helper); then targeted browser only if needed                      |
+| Creator request logic                 | `npm run test:run -- apps/asset-studio/src/proceduralMannequinCreator.test.ts`                                                                              |
+| Creator UI                            | `npm run test:run -- apps/asset-studio/src/App.test.tsx`                                                                                                    |
+| Recipe contract                       | `npm run test:run -- --project character-contract`                                                                                                          |
+| Shared GLTF preview package           | `npm run test:run -- --project three-asset-preview`                                                                                                         |
+| Compiler/API/hair contract            | `node --test tools/blender-character/procedural-mannequin-creator-api.test.mjs` or matching `*.test.mjs`; `npm run test:compiler` for all cheap Node checks |
+| Geometry/hair fitting                 | Focused contract/Node checks first, then the affected matrix and targeted visual selection in the [guide](docs/PLAYWRIGHT_SMOKE.md)                         |
 
 In Windows PowerShell use `npm.cmd`/`npx.cmd` for commands with forwarded flags:
 the PowerShell shim can drop flags such as `--list` and accidentally launch a suite.
@@ -135,3 +135,19 @@ Do not format the entire repository unless explicitly requested.
 If a commit fails, distinguish Biome diagnostics from Git permissions, lock-file errors and other environment failures.
 
 Report unresolved failures accurately.
+
+## Git workflow
+
+Work directly in the existing `game-engine` repository.
+
+- Create a normal feature branch using `git switch -c feature/name`.
+- Do not create additional Git clones, nested repositories or worktrees unless explicitly requested.
+- Do not use a separate checkout merely to isolate experimental changes; use a feature branch instead.
+- Preserve all existing uncommitted changes.
+- Commit completed, validated milestones on the feature branch.
+- Run relevant tests, TypeScript checks and Biome before committing.
+- Never bypass failing quality checks simply to create a commit.
+- If Git permissions prevent committing, leave the changes in the current working tree and report the issue.
+- Never reset, clean or delete repository contents without explicit approval.
+
+Keep experimental code and fixtures on dedicated branches, but within the existing repository.
