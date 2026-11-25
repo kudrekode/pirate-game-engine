@@ -878,7 +878,7 @@ function migrateArea(
 	const theme = inputTheme ? { ...inputTheme } : undefined;
 	if (
 		theme?.atmosphere !== undefined &&
-		!["clear-day", "golden-hour", "overcast", "moonlit"].includes(
+		!["clear-day", "golden-hour", "overcast", "moonlit", "blue-hour"].includes(
 			String(theme.atmosphere),
 		)
 	) {

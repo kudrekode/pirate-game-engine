@@ -1,0 +1,406 @@
+{
+	"measure": "Three Play at fixed camera poses, three seconds after settling each view",
+	"runs": {
+		"originalNative": {
+			"input": "ec3d62c86ee4c47caeb98fe6869483febe51db3d7f6b75fa72efa5d6e57599c8",
+			"buildIndex": "e774c764d3d7329642f2bf159571acf3ce4b806b97156d7a9f2c5f60c75206a1",
+			"readyMs": 4993,
+			"shots": {
+				"arrival": {
+					"pose": {
+						"eye": [-1.5, 3.5330989528532637, 30.190986985961345],
+						"quaternion": [-0.06701957296392366, 0, 0, 0.9977516609055247],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 86,
+						"p50": 33.4,
+						"p95": 41.5,
+						"p99": 62.5,
+						"max": 62.5,
+						"over50": 2
+					},
+					"mainDraws": 450,
+					"triangles": 447872,
+					"shadowFrames": 73,
+					"shadowDraws": 8468,
+					"gpuSamples": 7,
+					"gpuP95Ms": 34.52,
+					"geometries": 190,
+					"textures": 85,
+					"programs": 22,
+					"frameSha256": "3af76a17529c4e4604e8f5ea58454f140101923bd617baaab18ed355305b63d4"
+				},
+				"threshold": {
+					"pose": {
+						"eye": [0.3, 2.05, 23.8],
+						"quaternion": [
+							0.016787368337655824, 0.4165716155487467, -0.007693941251013848,
+							0.9089153297482824
+						],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 93,
+						"p50": 33.2,
+						"p95": 37.7,
+						"p99": 45.8,
+						"max": 45.8,
+						"over50": 0
+					},
+					"mainDraws": 230,
+					"triangles": 255486,
+					"shadowFrames": 68,
+					"shadowDraws": 7888,
+					"gpuSamples": 8,
+					"gpuP95Ms": 36.86,
+					"geometries": 190,
+					"textures": 85,
+					"programs": 22,
+					"frameSha256": "e4fbd071076bcf8c415f8ac5d552ec09af8a6663ed7bfb7b72666041ff855cd9"
+				},
+				"well": {
+					"pose": {
+						"eye": [-0.2, 2.15, 17.7],
+						"quaternion": [
+							-0.01860814249594669, -0.1131366914635155, -0.002119244530335695,
+							0.993402906619545
+						],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 77,
+						"p50": 37.6,
+						"p95": 45.8,
+						"p99": 46,
+						"max": 46,
+						"over50": 0
+					},
+					"mainDraws": 316,
+					"triangles": 304840,
+					"shadowFrames": 74,
+					"shadowDraws": 8584,
+					"gpuSamples": 7,
+					"gpuP95Ms": 42.51,
+					"geometries": 190,
+					"textures": 85,
+					"programs": 22,
+					"frameSha256": "165f1bcb3c587aa1533e77df9571925b75c39cae9175d479e2c9fb103074beb9"
+				}
+			},
+			"resources": {
+				"batching": {
+					"enabled": false,
+					"markers": 0,
+					"instances": 0,
+					"draws": 0
+				},
+				"materialTextureHandles": 47,
+				"sizes": {
+					"512x512": 38,
+					"512x256": 1,
+					"1024x1024": 1,
+					"128x128": 1,
+					"192x192": 1,
+					"256x256": 4,
+					"3072x768": 1
+				},
+				"baseRgba8Bytes": 55263232
+			},
+			"travel": {
+				"start": {
+					"x": 20,
+					"y": 54.999999999999986,
+					"height": 1
+				},
+				"end": {
+					"x": 20,
+					"y": 46.99999999999987,
+					"height": 1
+				}
+			}
+		},
+		"revisedNative": {
+			"input": "47cb62b979a8543a2f7dbc47659061b2b27db67e4a067ba1aec619d8868b55a3",
+			"buildIndex": "e774c764d3d7329642f2bf159571acf3ce4b806b97156d7a9f2c5f60c75206a1",
+			"readyMs": 4152,
+			"shots": {
+				"arrival": {
+					"pose": {
+						"eye": [-1.5, 3.5330989528532637, 30.190986985961345],
+						"quaternion": [-0.06701957296392366, 0, 0, 0.9977516609055247],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 67,
+						"p50": 45.7,
+						"p95": 50.1,
+						"p99": 54.2,
+						"max": 54.2,
+						"over50": 4
+					},
+					"mainDraws": 502,
+					"triangles": 493605,
+					"shadowFrames": 68,
+					"shadowDraws": 9044,
+					"gpuSamples": 6,
+					"gpuP95Ms": 47,
+					"geometries": 227,
+					"textures": 94,
+					"programs": 25,
+					"frameSha256": "5162598461d70b623deaac3459c99b37ad582d871f7862f53bc3cb5ed22e2f8b"
+				},
+				"threshold": {
+					"pose": {
+						"eye": [0.3, 2.05, 23.8],
+						"quaternion": [
+							0.016787368337655824, 0.4165716155487467, -0.007693941251013848,
+							0.9089153297482824
+						],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 67,
+						"p50": 41.7,
+						"p95": 54.2,
+						"p99": 58.4,
+						"max": 58.4,
+						"over50": 10
+					},
+					"mainDraws": 232,
+					"triangles": 273680,
+					"shadowFrames": 68,
+					"shadowDraws": 9044,
+					"gpuSamples": 5,
+					"gpuP95Ms": 47.31,
+					"geometries": 227,
+					"textures": 94,
+					"programs": 25,
+					"frameSha256": "b613538609fc573548e055aad9efc07823a48acf589e270eeb722359435be099"
+				},
+				"well": {
+					"pose": {
+						"eye": [-0.2, 2.15, 17.7],
+						"quaternion": [
+							-0.01860814249594669, -0.1131366914635155, -0.002119244530335695,
+							0.993402906619545
+						],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 95,
+						"p50": 29.4,
+						"p95": 41.7,
+						"p99": 41.8,
+						"max": 41.8,
+						"over50": 0
+					},
+					"mainDraws": 357,
+					"triangles": 320257,
+					"shadowFrames": 65,
+					"shadowDraws": 8645,
+					"gpuSamples": 8,
+					"gpuP95Ms": 37.74,
+					"geometries": 227,
+					"textures": 94,
+					"programs": 25,
+					"frameSha256": "d67abc28cb7f77c5ccfbd018ab5e108d77d128e1d523b3a44c7fba34a445a199"
+				}
+			},
+			"resources": {
+				"batching": {
+					"enabled": false,
+					"markers": 0,
+					"instances": 0,
+					"draws": 0
+				},
+				"materialTextureHandles": 54,
+				"sizes": {
+					"512x512": 38,
+					"512x256": 2,
+					"1024x1024": 1,
+					"1024x512": 1,
+					"256x256": 7,
+					"128x128": 1,
+					"192x192": 1,
+					"1024x256": 2,
+					"3072x640": 1
+				},
+				"baseRgba8Bytes": 59195392
+			},
+			"travel": {
+				"start": {
+					"x": 20,
+					"y": 54.999999999999986,
+					"height": 1
+				},
+				"end": {
+					"x": 20,
+					"y": 46.99999999999987,
+					"height": 1
+				}
+			},
+			"editor": {
+				"original": "16.45",
+				"moved": "16.7",
+				"neighbor": "15.16",
+				"undo": true
+			}
+		},
+		"revisedOptimized": {
+			"input": "47cb62b979a8543a2f7dbc47659061b2b27db67e4a067ba1aec619d8868b55a3",
+			"buildIndex": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"readyMs": 5811,
+			"shots": {
+				"arrival": {
+					"pose": {
+						"eye": [-1.5, 3.5330989528532637, 30.190986985961345],
+						"quaternion": [-0.06701957296392366, 0, 0, 0.9977516609055247],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 85,
+						"p50": 33.5,
+						"p95": 37.7,
+						"p99": 45.8,
+						"max": 45.8,
+						"over50": 0
+					},
+					"mainDraws": 322,
+					"triangles": 447569,
+					"shadowFrames": 84,
+					"shadowDraws": 14784,
+					"gpuSamples": 7,
+					"gpuP95Ms": 37.72,
+					"geometries": 227,
+					"textures": 93,
+					"programs": 27,
+					"frameSha256": "4333e9100bd8414b8063531cfe8cabcff33f6a0cf5667092ecaf69639a6449e3"
+				},
+				"threshold": {
+					"pose": {
+						"eye": [0.3, 2.05, 23.8],
+						"quaternion": [
+							0.016787368337655824, 0.4165716155487467, -0.007693941251013848,
+							0.9089153297482824
+						],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 85,
+						"p50": 33.4,
+						"p95": 41.8,
+						"p99": 46,
+						"max": 46,
+						"over50": 0
+					},
+					"mainDraws": 126,
+					"triangles": 282047,
+					"shadowFrames": 71,
+					"shadowDraws": 12496,
+					"gpuSamples": 7,
+					"gpuP95Ms": 36.55,
+					"geometries": 227,
+					"textures": 93,
+					"programs": 27,
+					"frameSha256": "b576c41dbffbff93a65f156b3612e9192f7aa851e66361dcfdd362c6c28d4926"
+				},
+				"well": {
+					"pose": {
+						"eye": [-0.2, 2.15, 17.7],
+						"quaternion": [
+							-0.01860814249594669, -0.1131366914635155, -0.002119244530335695,
+							0.993402906619545
+						],
+						"fov": 55,
+						"width": 1536,
+						"height": 806
+					},
+					"frameMs": {
+						"count": 110,
+						"p50": 25.1,
+						"p95": 37.6,
+						"p99": 45.7,
+						"max": 46,
+						"over50": 0
+					},
+					"mainDraws": 231,
+					"triangles": 292846,
+					"shadowFrames": 64,
+					"shadowDraws": 11264,
+					"gpuSamples": 10,
+					"gpuP95Ms": 45.35,
+					"geometries": 227,
+					"textures": 93,
+					"programs": 27,
+					"frameSha256": "c7c35287bca41c7266ae860fffdb7bc3c7c7e3f946960781dd4ba86b8de3515b"
+				}
+			},
+			"resources": {
+				"batching": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 118,
+					"instances": 246,
+					"draws": 57,
+					"lodTrees": 60
+				},
+				"materialTextureHandles": 55,
+				"sizes": {
+					"1024x1024": 1,
+					"512x512": 39,
+					"1024x512": 1,
+					"256x256": 7,
+					"128x128": 1,
+					"192x192": 1,
+					"1024x256": 2,
+					"512x256": 2,
+					"3072x640": 1
+				},
+				"baseRgba8Bytes": 60243968
+			},
+			"travel": {
+				"start": {
+					"x": 20,
+					"y": 54.59999999999998,
+					"height": 1
+				},
+				"end": {
+					"x": 20,
+					"y": 46.599999999999866,
+					"height": 1
+				}
+			},
+			"editor": {
+				"original": "16.45",
+				"moved": "16.7",
+				"neighbor": "15.16",
+				"undo": true
+			}
+		}
+	},
+	"machine": {
+		"chrome": "158.0.8127.37",
+		"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+		"viewport": {
+			"width": 1536,
+			"height": 960
+		}
+	}
+}

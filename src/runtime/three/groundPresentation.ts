@@ -5,6 +5,7 @@ import { groundRowRenderer } from "./groundRaster";
 import {
 	getWorldMaterialColor,
 	resolveTerrainMaterialKey,
+	type WorldMaterialKey,
 } from "./worldPresentation";
 
 type GroundPixels = {
@@ -21,11 +22,13 @@ type GroundPixels = {
 const rasters = new Map<string, GroundPixels>();
 function acquireGroundPixels(area: GameArea, padding: number) {
 	const moonlit = area.theme?.atmosphere === "moonlit";
+	const blueHour = area.theme?.atmosphere === "blue-hour";
 	const key = JSON.stringify([
 		area.width,
 		area.height,
 		padding,
 		moonlit,
+		blueHour,
 		area.terrainTiles,
 	]);
 	const cached = rasters.get(key);
@@ -44,16 +47,19 @@ function acquireGroundPixels(area: GameArea, padding: number) {
 	const pixels = new Uint8Array(size * size * 4);
 	const palette = new Map<string, number[]>();
 	const cells = new Map<number, number[]>();
+	const colours: Partial<Record<WorldMaterialKey, number>> = {
+		water: 0x8b9d8b,
+	};
+	if (moonlit || blueHour) colours.dirt = 0x716353;
+	if (blueHour) {
+		colours.grass = 0x747952;
+		colours.sand = 0x9b9079;
+	}
 	function tileColour(tileId: string) {
 		const key = resolveTerrainMaterialKey(tileId);
 		let result = palette.get(key);
 		if (!result) {
-			const hex =
-				key === "water"
-					? 0x8b9d8b
-					: moonlit && key === "dirt"
-						? 0x716353
-						: getWorldMaterialColor(key);
+			const hex = colours[key] ?? getWorldMaterialColor(key);
 			result = [hex >> 16, (hex >> 8) & 255, hex & 255];
 			palette.set(key, result);
 		}
@@ -182,6 +188,19 @@ export function createGroundPresentation(
 		raster.size,
 		THREE.RGBAFormat,
 	);
+	// The macro map holds terrain boundaries. A separate four-metre material
+	// tile retains the scale of individual stones as map dimensions increase.
+	const detail =
+		area.theme?.atmosphere === "blue-hour"
+			? new THREE.TextureLoader().load(
+					"/assets/hollow-kingdom/blue-hour-ground.jpg",
+				)
+			: undefined;
+	if (detail) {
+		detail.wrapS = detail.wrapT = THREE.RepeatWrapping;
+		detail.anisotropy = 4;
+	}
+	const detailRepeat = new THREE.Vector2(width / 4, height / 4);
 	let live = true;
 	const pending = new Set<THREE.MeshStandardMaterial>();
 	let baseColourMap: THREE.DataTexture | undefined;
@@ -221,6 +240,20 @@ export function createGroundPresentation(
 					material instanceof THREE.MeshStandardMaterial &&
 					!material.transparent
 				) {
+					if (detail) {
+						material.onBeforeCompile = (shader) => {
+							shader.uniforms.groundDetail = { value: detail };
+							shader.uniforms.detailRepeat = { value: detailRepeat };
+							shader.fragmentShader = `uniform sampler2D groundDetail;
+								uniform vec2 detailRepeat;
+								${shader.fragmentShader}`.replace(
+								"#include <map_fragment>",
+								`#include <map_fragment>
+								diffuseColor.rgb *= 2.0 * texture2D(groundDetail, (vMapUv - 0.5) * detailRepeat).rgb;`,
+							);
+						};
+						material.customProgramCacheKey = () => "blue-hour-ground-v1";
+					}
 					if (raster.complete) applyTexture(material);
 					else {
 						// White keeps the authored colour visible and the shader's USE_MAP
@@ -247,6 +280,7 @@ export function createGroundPresentation(
 			raster.users--;
 			if (!raster.users && !raster.complete) raster.cancel?.();
 			texture.dispose();
+			detail?.dispose();
 		},
 	};
 }

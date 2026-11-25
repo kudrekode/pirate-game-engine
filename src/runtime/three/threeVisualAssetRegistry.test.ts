@@ -69,6 +69,38 @@ describe("Three visual asset registry", () => {
 		expect(getThreeVisualAssetDefinition("missing")).toBeUndefined();
 	});
 
+	it("preserves the cottage traversal and marks the four fixed lane props for batching", () => {
+		const cottage = getThreeVisualAssetDefinition("mere-lane-cottage");
+		expect(cottage?.traversal).toBe(
+			getThreeVisualAssetDefinition("mere-cottage")?.traversal,
+		);
+		expect(cottage?.tags).not.toContain("static-scenery");
+		for (const key of ["ash", "bank", "wall", "woodpile"]) {
+			const prop = getThreeVisualAssetDefinition(`mere-lane-${key}`);
+			expect(prop?.url).toBe(`/assets/hollow-kingdom/cottage-lane/${key}.glb`);
+			expect(prop?.tags).toContain("static-scenery");
+		}
+		expect(
+			getThreeVisualAssetDefinition("mere-lane-bank")?.traversal,
+		).toBeUndefined();
+	});
+
+	it("keeps source-aligned distant canopy models with their two native tree entries", () => {
+		for (const [asset, species] of [
+			["mere-spruce", "spruce"],
+			["mere-lane-ash", "ash"],
+		]) {
+			const model = getThreeVisualAssetDefinition(asset)?.distantModel;
+			expect(model?.id).toBe(`${asset}-distant`);
+			expect(model?.url).toBe(
+				`/assets/hollow-kingdom/cottage-lane/${species}-far.glb`,
+			);
+		}
+		expect(
+			getThreeVisualAssetDefinition("mere-lane-bank")?.distantModel,
+		).toBeUndefined();
+	});
+
 	it("exposes the curated pirate demo assets", () => {
 		const assets = listThreeVisualAssets();
 		expect(assets.map((asset) => asset.id)).toEqual(

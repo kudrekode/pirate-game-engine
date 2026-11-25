@@ -188,6 +188,22 @@ export const ATMOSPHERE_PRESETS: Record<AtmospherePresetId, AtmospherePreset> =
 			},
 			renderer: { toneMappingExposure: 1 },
 		},
+		"blue-hour": {
+			id: "blue-hour",
+			label: "Blue Hour",
+			fog: { near: 14, far: 96 },
+			palette: { sky: 0x17223a, horizon: 0x465462, fog: 0x465462 },
+			lighting: {
+				ambientGroundColor: 0x908578,
+				ambientSkyColor: 0xc6d2e2,
+				ambientIntensity: 1.05,
+				sunColor: 0xf3dfca,
+				sunIntensity: 1.38,
+				sunAzimuthDegrees: -48,
+				sunElevationDegrees: 22,
+			},
+			renderer: { toneMappingExposure: 1 },
+		},
 	};
 
 export function resolveAtmospherePreset(
@@ -302,14 +318,27 @@ function createAtmosphereSky(
 		`,
 	});
 	const sky = new THREE.Mesh(geometry, material);
-	if (preset.id === "moonlit") {
+	if (preset.id === "moonlit" || preset.id === "blue-hour") {
 		const panorama = new THREE.TextureLoader().load(
-			"/assets/hollow-kingdom/mere-sky.jpg",
+			preset.id === "blue-hour"
+				? "/assets/hollow-kingdom/blue-hour-sky.jpg"
+				: "/assets/hollow-kingdom/mere-sky.jpg",
 		);
 		panorama.colorSpace = THREE.SRGBColorSpace;
 		panorama.wrapS = THREE.RepeatWrapping;
 		material.uniforms.panorama = { value: panorama };
-		material.fragmentShader = `
+		material.fragmentShader =
+			preset.id === "blue-hour"
+				? `
+			uniform sampler2D panorama;
+			varying vec3 vDirection;
+			void main() {
+				vec3 dir = normalize(vDirection);
+				vec2 uv = vec2(atan(dir.z, dir.x) / 6.283185 + 0.5, clamp(dir.y + 0.1, 0.0, 1.0));
+				gl_FragColor = vec4(texture2D(panorama, uv).rgb, 1.0);
+				#include <colorspace_fragment>
+			}`
+				: `
 			uniform sampler2D panorama;
 			varying vec3 vDirection;
 			void main() {

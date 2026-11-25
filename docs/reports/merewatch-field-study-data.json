@@ -1,0 +1,4484 @@
+{
+	"budget": {
+		"targetHz": 30,
+		"p95Ms": 33.4,
+		"p99Ms": 50,
+		"minimumFramesPerPhase": 30,
+		"requiredPhases": [
+			"followWalk",
+			"ride",
+			"orbit",
+			"farRide",
+			"farTurn",
+			"farView"
+		]
+	},
+	"fixtures": {
+		"frontier": {
+			"width": 154,
+			"height": 200,
+			"tiles": 30800,
+			"raised": 12627,
+			"objects": 1209,
+			"npcs": 12,
+			"actors": 14,
+			"sha256": "502f22127f6102f86e3c0d6108ac82acdf6b57175300c27eb83ca19b7760dcb8"
+		},
+		"large": {
+			"width": 88,
+			"height": 120,
+			"tiles": 10560,
+			"raised": 3113,
+			"objects": 364,
+			"npcs": 6,
+			"actors": 8,
+			"sha256": "e1460e24a29b091617f217677b13a0a5a71c65b07478577eb9a23e334173c34a"
+		},
+		"medium": {
+			"width": 66,
+			"height": 90,
+			"tiles": 5940,
+			"raised": 1497,
+			"objects": 192,
+			"npcs": 4,
+			"actors": 6,
+			"sha256": "81a75e16926d590a9882f990f38730634338d3136ac9570afa327786c325bb9d"
+		},
+		"reach": {
+			"width": 198,
+			"height": 200,
+			"tiles": 39600,
+			"raised": 17247,
+			"objects": 1560,
+			"npcs": 16,
+			"actors": 18,
+			"sha256": "7f91049fb9c419fcf33dcbaf353836908a0d5ea057990f79189c2f6bf7270df5"
+		},
+		"stress": {
+			"width": 110,
+			"height": 150,
+			"tiles": 16500,
+			"raised": 6196,
+			"objects": 628,
+			"npcs": 8,
+			"actors": 10,
+			"sha256": "8a7e922a45fc1e4c00ac726229bc066914d4caeda3a171791f6bd89a1ff56a0e"
+		},
+		"upland": {
+			"width": 132,
+			"height": 177,
+			"tiles": 23364,
+			"raised": 8448,
+			"objects": 902,
+			"npcs": 10,
+			"actors": 12,
+			"sha256": "2395fd84bd1495469a7b9eaa687696189a9329beef625be683288e731ecff3b1"
+		}
+	},
+	"runs": [
+		{
+			"run": "field-lod",
+			"rawReportWrittenUtc": "2026-11-25T18:54:18.824Z",
+			"scale": "frontier",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 1022,
+					"instances": 1949,
+					"draws": 612,
+					"lodTrees": 829
+				}
+			},
+			"settle30FramesMs": 1028.6384000000035,
+			"farCamera": {
+				"eye": [0.5000003008440316, 4.265107158977119, 97.78985533124667],
+				"quaternion": [
+					-0.09127799978229717, 2.928351866119836e-8, 2.68414611228569e-9,
+					0.9958254499437853
+				],
+				"fov": 55,
+				"north": 0.9833366535114842
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 99,
+					"ms": {
+						"p50": 20.9,
+						"p95": 25.1,
+						"p99": 29.1,
+						"max": 29.1
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1231,
+					"mainTriangles": 1278059,
+					"meanFrameCallbackMs": 13.4,
+					"meanRenderCpuMs": 12.2,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [992, 1047],
+					"submittedProxyTrees": 597,
+					"submittedSkinnedRoots": [13, 14],
+					"gpuSamples": 8,
+					"gpuP50Ms": 21.16,
+					"gpuP95Ms": 23.76,
+					"shadowFrames": 50,
+					"shadowDrawsPerUpdate": 79,
+					"shadowCpuMsPerUpdate": 1.74
+				},
+				"ride": {
+					"frames": 186,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25.2,
+						"p99": 29.2,
+						"max": 37.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1029,
+					"mainTriangles": 1006085,
+					"meanFrameCallbackMs": 12.9,
+					"meanRenderCpuMs": 11.4,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 37.2,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [862, 992],
+					"submittedProxyTrees": 548,
+					"submittedSkinnedRoots": [12, 13],
+					"gpuSamples": 16,
+					"gpuP50Ms": 19.75,
+					"gpuP95Ms": 24.17,
+					"shadowFrames": 93,
+					"shadowDrawsPerUpdate": 79,
+					"shadowCpuMsPerUpdate": 1.68
+				},
+				"orbit": {
+					"frames": 216,
+					"ms": {
+						"p50": 16.6,
+						"p95": 20.9,
+						"p99": 24.9,
+						"max": 25.2
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1059,
+					"mainTriangles": 993313,
+					"meanFrameCallbackMs": 9.1,
+					"meanRenderCpuMs": 8.5,
+					"submittedMarkers": [616, 852],
+					"submittedProxyTrees": 383,
+					"submittedSkinnedRoots": [12, 12],
+					"gpuSamples": 18,
+					"gpuP50Ms": 16.06,
+					"gpuP95Ms": 20.97,
+					"shadowFrames": 89,
+					"shadowDrawsPerUpdate": 79,
+					"shadowCpuMsPerUpdate": 1.38
+				},
+				"farRide": {
+					"frames": 1656,
+					"ms": {
+						"p50": 16.5,
+						"p95": 25,
+						"p99": 33.4,
+						"max": 66.7
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 41,
+					"mainTriangles": 180148,
+					"meanFrameCallbackMs": 8.8,
+					"meanRenderCpuMs": 6.9,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 37.2,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 192.19999999999763,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [17, 851],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 12],
+					"gpuSamples": 138,
+					"gpuP50Ms": 14.36,
+					"gpuP95Ms": 24.65,
+					"shadowFrames": 646,
+					"shadowDrawsPerUpdate": 86.59,
+					"shadowCpuMsPerUpdate": 1.74
+				},
+				"farTurn": {
+					"frames": 276,
+					"ms": {
+						"p50": 8.4,
+						"p95": 20.9,
+						"p99": 25.1,
+						"max": 62.5
+					},
+					"over50": 1,
+					"withinBudget": true,
+					"mainDraws": 1277,
+					"mainTriangles": 1439090,
+					"meanFrameCallbackMs": 6.2,
+					"meanRenderCpuMs": 5.6,
+					"submittedMarkers": [11, 1067],
+					"submittedProxyTrees": 626,
+					"submittedSkinnedRoots": [2, 14],
+					"gpuSamples": 23,
+					"gpuP50Ms": 8.11,
+					"gpuP95Ms": 18.78,
+					"shadowFrames": 78,
+					"shadowDrawsPerUpdate": 79,
+					"shadowCpuMsPerUpdate": 1.61
+				},
+				"farView": {
+					"frames": 149,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25,
+						"p99": 29.1,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1277,
+					"mainTriangles": 1439090,
+					"meanFrameCallbackMs": 10.3,
+					"meanRenderCpuMs": 9.7,
+					"position": {
+						"x": 77,
+						"y": 192.19999999999763,
+						"height": 1
+					},
+					"submittedMarkers": [1067, 1067],
+					"submittedProxyTrees": 626,
+					"submittedSkinnedRoots": [14, 14],
+					"gpuSamples": 13,
+					"gpuP50Ms": 19.15,
+					"gpuP95Ms": 21.41,
+					"shadowFrames": 75,
+					"shadowDrawsPerUpdate": 79,
+					"shadowCpuMsPerUpdate": 1.27
+				}
+			},
+			"farResources": {
+				"geometries": 674,
+				"textures": 213,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 3187.41,
+				"warm": 1574.92
+			},
+			"coldBuildMs": {
+				"scene": 378.7,
+				"terrain": 203.9
+			},
+			"postGcHeapMiB": {
+				"play": 52.05,
+				"editor": 29.62,
+				"warmPlay": 51.59
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-lod",
+			"rawReportWrittenUtc": "2026-11-25T18:47:21.885Z",
+			"scale": "large",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 289,
+					"instances": 534,
+					"draws": 189,
+					"lodTrees": 227
+				}
+			},
+			"settle30FramesMs": 900.4816999999966,
+			"farCamera": {
+				"eye": [0.5000003019359294, 4.260443451524709, 57.572952052481675],
+				"quaternion": [
+					-0.09103159027557824, 2.928418192913686e-8, 2.676900126183418e-9,
+					0.995848005255771
+				],
+				"fov": 55,
+				"north": 0.9834264991437968
+			},
+			"tripods": {
+				"road": {
+					"eye": [0.5, 4.2, 57.9],
+					"target": [0.5, 2.2, 45.9],
+					"fov": 55
+				},
+				"detail": {
+					"eye": [0.5, 4.2, 57.9],
+					"target": [-5.6, 2.3, 16.28],
+					"fov": 28
+				},
+				"tree": "plant-36-75",
+				"distance": 42.06464548763011
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 112,
+					"ms": {
+						"p50": 20.6,
+						"p95": 25,
+						"p99": 25.1,
+						"max": 25.1
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 585,
+					"mainTriangles": 607983,
+					"meanFrameCallbackMs": 11,
+					"meanRenderCpuMs": 9.9,
+					"route": {
+						"from": {
+							"x": 44,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 44,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [297, 319],
+					"submittedProxyTrees": 137,
+					"submittedSkinnedRoots": [7, 8],
+					"gpuSamples": 9,
+					"gpuP50Ms": 17.51,
+					"gpuP95Ms": 21.44,
+					"shadowFrames": 53,
+					"shadowDrawsPerUpdate": 84,
+					"shadowCpuMsPerUpdate": 1.85
+				},
+				"ride": {
+					"frames": 210,
+					"ms": {
+						"p50": 20.7,
+						"p95": 25,
+						"p99": 29.3,
+						"max": 58.2
+					},
+					"over50": 1,
+					"withinBudget": true,
+					"mainDraws": 458,
+					"mainTriangles": 596576,
+					"meanFrameCallbackMs": 11.5,
+					"meanRenderCpuMs": 10.1,
+					"route": {
+						"from": {
+							"x": 44,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 44,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [244, 297],
+					"submittedProxyTrees": 96,
+					"submittedSkinnedRoots": [6, 7],
+					"gpuSamples": 18,
+					"gpuP50Ms": 18.12,
+					"gpuP95Ms": 21.6,
+					"shadowFrames": 101,
+					"shadowDrawsPerUpdate": 89.61,
+					"shadowCpuMsPerUpdate": 2.64
+				},
+				"orbit": {
+					"frames": 243,
+					"ms": {
+						"p50": 16.6,
+						"p95": 20.8,
+						"p99": 21,
+						"max": 21
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 474,
+					"mainTriangles": 542801,
+					"meanFrameCallbackMs": 7.6,
+					"meanRenderCpuMs": 7,
+					"submittedMarkers": [176, 246],
+					"submittedProxyTrees": 72,
+					"submittedSkinnedRoots": [6, 6],
+					"gpuSamples": 20,
+					"gpuP50Ms": 14.19,
+					"gpuP95Ms": 16.87,
+					"shadowFrames": 95,
+					"shadowDrawsPerUpdate": 106,
+					"shadowCpuMsPerUpdate": 2.23
+				},
+				"farRide": {
+					"frames": 1245,
+					"ms": {
+						"p50": 8.5,
+						"p95": 16.7,
+						"p99": 16.9,
+						"max": 20.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 39,
+					"mainTriangles": 125395,
+					"meanFrameCallbackMs": 5.2,
+					"meanRenderCpuMs": 4.2,
+					"route": {
+						"from": {
+							"x": 44,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 44,
+							"y": 112.00000000000107,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [12, 233],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 6],
+					"gpuSamples": 104,
+					"gpuP50Ms": 8.43,
+					"gpuP95Ms": 14.69,
+					"shadowFrames": 328,
+					"shadowDrawsPerUpdate": 97.97,
+					"shadowCpuMsPerUpdate": 1.68
+				},
+				"farTurn": {
+					"frames": 286,
+					"ms": {
+						"p50": 8.4,
+						"p95": 16.7,
+						"p99": 20.8,
+						"max": 33
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 619,
+					"mainTriangles": 797742,
+					"meanFrameCallbackMs": 4.4,
+					"meanRenderCpuMs": 3.9,
+					"submittedMarkers": [12, 332],
+					"submittedProxyTrees": 122,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 24,
+					"gpuP50Ms": 8.4,
+					"gpuP95Ms": 13.49,
+					"shadowFrames": 72,
+					"shadowDrawsPerUpdate": 84,
+					"shadowCpuMsPerUpdate": 1.45
+				},
+				"farView": {
+					"frames": 211,
+					"ms": {
+						"p50": 12.6,
+						"p95": 16.8,
+						"p99": 16.9,
+						"max": 25.1
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 619,
+					"mainTriangles": 797742,
+					"meanFrameCallbackMs": 6.2,
+					"meanRenderCpuMs": 5.8,
+					"position": {
+						"x": 44,
+						"y": 112.00000000000107,
+						"height": 1
+					},
+					"submittedMarkers": [330, 330],
+					"submittedProxyTrees": 122,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 18,
+					"gpuP50Ms": 13.78,
+					"gpuP95Ms": 14.94,
+					"shadowFrames": 73,
+					"shadowDrawsPerUpdate": 84,
+					"shadowCpuMsPerUpdate": 1.05
+				}
+			},
+			"farResources": {
+				"geometries": 408,
+				"textures": 147,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 2894.44,
+				"warm": 1375.28
+			},
+			"coldBuildMs": {
+				"scene": 132.9,
+				"terrain": 75.9
+			},
+			"postGcHeapMiB": {
+				"play": 27.71,
+				"editor": 18.26,
+				"warmPlay": 27.76
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-lod",
+			"rawReportWrittenUtc": "2026-11-25T18:47:58.425Z",
+			"scale": "medium",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 148,
+					"instances": 271,
+					"draws": 99,
+					"lodTrees": 115
+				}
+			},
+			"settle30FramesMs": 785.6506000000081,
+			"farCamera": {
+				"eye": [0.5000003022419651, 4.258673217879319, 42.56439972126811],
+				"quaternion": [
+					-0.09094144824827188, 2.9284424116322858e-8, 2.674249384873671e-9,
+					0.995856241126452
+				],
+				"fov": 55,
+				"north": 0.983459305981012
+			},
+			"tripods": {
+				"road": {
+					"eye": [0.5, 4.2, 42.9],
+					"target": [0.5, 2.2, 30.9],
+					"fov": 55
+				},
+				"detail": {
+					"eye": [0.5, 4.2, 42.9],
+					"target": [7.66, 3.3, 1.24],
+					"fov": 28
+				},
+				"tree": "plant-39-45",
+				"distance": 42.27080789386453
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 149,
+					"ms": {
+						"p50": 12.6,
+						"p95": 16.8,
+						"p99": 20.8,
+						"max": 20.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 375,
+					"mainTriangles": 547483,
+					"meanFrameCallbackMs": 6.1,
+					"meanRenderCpuMs": 5.3,
+					"route": {
+						"from": {
+							"x": 33,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 33,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [155, 170],
+					"submittedProxyTrees": 25,
+					"submittedSkinnedRoots": [5, 6],
+					"gpuSamples": 13,
+					"gpuP50Ms": 13.5,
+					"gpuP95Ms": 16.89,
+					"shadowFrames": 52,
+					"shadowDrawsPerUpdate": 75,
+					"shadowCpuMsPerUpdate": 1.31
+				},
+				"ride": {
+					"frames": 302,
+					"ms": {
+						"p50": 12.5,
+						"p95": 16.7,
+						"p99": 20.9,
+						"max": 37.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 260,
+					"mainTriangles": 372578,
+					"meanFrameCallbackMs": 6,
+					"meanRenderCpuMs": 5.1,
+					"route": {
+						"from": {
+							"x": 33,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 33,
+							"y": 37.2,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [96, 155],
+					"submittedProxyTrees": 10,
+					"submittedSkinnedRoots": [4, 5],
+					"gpuSamples": 26,
+					"gpuP50Ms": 12.27,
+					"gpuP95Ms": 14.94,
+					"shadowFrames": 104,
+					"shadowDrawsPerUpdate": 94.22,
+					"shadowCpuMsPerUpdate": 1.96
+				},
+				"orbit": {
+					"frames": 272,
+					"ms": {
+						"p50": 12.5,
+						"p95": 16.8,
+						"p99": 20.8,
+						"max": 20.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 274,
+					"mainTriangles": 361168,
+					"meanFrameCallbackMs": 5.2,
+					"meanRenderCpuMs": 4.7,
+					"submittedMarkers": [86, 99],
+					"submittedProxyTrees": 8,
+					"submittedSkinnedRoots": [4, 4],
+					"gpuSamples": 23,
+					"gpuP50Ms": 11.29,
+					"gpuP95Ms": 17.6,
+					"shadowFrames": 90,
+					"shadowDrawsPerUpdate": 97,
+					"shadowCpuMsPerUpdate": 1.88
+				},
+				"farRide": {
+					"frames": 872,
+					"ms": {
+						"p50": 8.3,
+						"p95": 12.7,
+						"p99": 16.7,
+						"max": 20.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 40,
+					"mainTriangles": 102143,
+					"meanFrameCallbackMs": 4.4,
+					"meanRenderCpuMs": 3.5,
+					"route": {
+						"from": {
+							"x": 33,
+							"y": 37.2,
+							"height": 1
+						},
+						"to": {
+							"x": 33,
+							"y": 82.00000000000064,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [10, 91],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 4],
+					"gpuSamples": 73,
+					"gpuP50Ms": 8.41,
+					"gpuP95Ms": 11.69,
+					"shadowFrames": 201,
+					"shadowDrawsPerUpdate": 91.54,
+					"shadowCpuMsPerUpdate": 1.72
+				},
+				"farTurn": {
+					"frames": 422,
+					"ms": {
+						"p50": 4.3,
+						"p95": 12.5,
+						"p99": 16.6,
+						"max": 20.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 394,
+					"mainTriangles": 501070,
+					"meanFrameCallbackMs": 3.4,
+					"meanRenderCpuMs": 3,
+					"submittedMarkers": [9, 185],
+					"submittedProxyTrees": 66,
+					"submittedSkinnedRoots": [2, 6],
+					"gpuSamples": 36,
+					"gpuP50Ms": 4.42,
+					"gpuP95Ms": 12.39,
+					"shadowFrames": 78,
+					"shadowDrawsPerUpdate": 75,
+					"shadowCpuMsPerUpdate": 1.28
+				},
+				"farView": {
+					"frames": 285,
+					"ms": {
+						"p50": 12.3,
+						"p95": 12.6,
+						"p99": 16.7,
+						"max": 16.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 400,
+					"mainTriangles": 501090,
+					"meanFrameCallbackMs": 4.7,
+					"meanRenderCpuMs": 4.3,
+					"position": {
+						"x": 33,
+						"y": 82.00000000000064,
+						"height": 1
+					},
+					"submittedMarkers": [186, 186],
+					"submittedProxyTrees": 67,
+					"submittedSkinnedRoots": [6, 6],
+					"gpuSamples": 24,
+					"gpuP50Ms": 9.49,
+					"gpuP95Ms": 11.21,
+					"shadowFrames": 80,
+					"shadowDrawsPerUpdate": 75,
+					"shadowCpuMsPerUpdate": 1.04
+				}
+			},
+			"farResources": {
+				"geometries": 303,
+				"textures": 125,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 3789.95,
+				"warm": 968.16
+			},
+			"coldBuildMs": {
+				"scene": 113.6,
+				"terrain": 62.3
+			},
+			"postGcHeapMiB": {
+				"play": 22.14,
+				"editor": 15.7,
+				"warmPlay": 22.26
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-lod",
+			"rawReportWrittenUtc": "2026-11-25T18:57:26.684Z",
+			"scale": "reach",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 1318,
+					"instances": 2538,
+					"draws": 795,
+					"lodTrees": 1058
+				}
+			},
+			"settle30FramesMs": 1736.4026000000013,
+			"farCamera": {
+				"eye": [0.5000003000126604, 4.264564968026204, 97.99267913531288],
+				"quaternion": [
+					-0.09153516019355959, 2.9282824531071975e-8, 2.6917082428670287e-9,
+					0.995801844971347
+				],
+				"fov": 55,
+				"north": 0.983242628896677
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": false,
+			"actions": {
+				"followWalk": {
+					"frames": 78,
+					"ms": {
+						"p50": 29,
+						"p95": 33.5,
+						"p99": 37.7,
+						"max": 37.7
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 1349,
+					"mainTriangles": 1418253,
+					"meanFrameCallbackMs": 17,
+					"meanRenderCpuMs": 15.5,
+					"route": {
+						"from": {
+							"x": 99,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 99,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [1239, 1296],
+					"submittedProxyTrees": 785,
+					"submittedSkinnedRoots": [17, 18],
+					"gpuSamples": 7,
+					"gpuP50Ms": 27.79,
+					"gpuP95Ms": 33.35,
+					"shadowFrames": 46,
+					"shadowDrawsPerUpdate": 87,
+					"shadowCpuMsPerUpdate": 2.31
+				},
+				"ride": {
+					"frames": 171,
+					"ms": {
+						"p50": 21,
+						"p95": 41.5,
+						"p99": 45.9,
+						"max": 45.9
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 1153,
+					"mainTriangles": 1273515,
+					"meanFrameCallbackMs": 16.9,
+					"meanRenderCpuMs": 14.8,
+					"route": {
+						"from": {
+							"x": 99,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 99,
+							"y": 37.2,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [1055, 1239],
+					"submittedProxyTrees": 663,
+					"submittedSkinnedRoots": [15, 17],
+					"gpuSamples": 15,
+					"gpuP50Ms": 21.28,
+					"gpuP95Ms": 39.47,
+					"shadowFrames": 93,
+					"shadowDrawsPerUpdate": 87,
+					"shadowCpuMsPerUpdate": 2.43
+				},
+				"orbit": {
+					"frames": 184,
+					"ms": {
+						"p50": 20.9,
+						"p95": 33.3,
+						"p99": 37.4,
+						"max": 37.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1187,
+					"mainTriangles": 1142408,
+					"meanFrameCallbackMs": 13.5,
+					"meanRenderCpuMs": 12.6,
+					"submittedMarkers": [749, 1036],
+					"submittedProxyTrees": 479,
+					"submittedSkinnedRoots": [15, 15],
+					"gpuSamples": 15,
+					"gpuP50Ms": 20.29,
+					"gpuP95Ms": 26.91,
+					"shadowFrames": 94,
+					"shadowDrawsPerUpdate": 87,
+					"shadowCpuMsPerUpdate": 2.2
+				},
+				"farRide": {
+					"frames": 1590,
+					"ms": {
+						"p50": 16.6,
+						"p95": 24.8,
+						"p99": 33.4,
+						"max": 83.3
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 40,
+					"mainTriangles": 185055,
+					"meanFrameCallbackMs": 9.5,
+					"meanRenderCpuMs": 7.4,
+					"route": {
+						"from": {
+							"x": 99,
+							"y": 37.2,
+							"height": 1
+						},
+						"to": {
+							"x": 99,
+							"y": 192.39999999999762,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [15, 1036],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 15],
+					"gpuSamples": 133,
+					"gpuP50Ms": 15.34,
+					"gpuP95Ms": 21.05,
+					"shadowFrames": 652,
+					"shadowDrawsPerUpdate": 94.72,
+					"shadowCpuMsPerUpdate": 1.93
+				},
+				"farTurn": {
+					"frames": 238,
+					"ms": {
+						"p50": 12.5,
+						"p95": 24.9,
+						"p99": 25.2,
+						"max": 45.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1417,
+					"mainTriangles": 1672669,
+					"meanFrameCallbackMs": 8.1,
+					"meanRenderCpuMs": 7.3,
+					"submittedMarkers": [7, 1282],
+					"submittedProxyTrees": 750,
+					"submittedSkinnedRoots": [2, 18],
+					"gpuSamples": 20,
+					"gpuP50Ms": 11.59,
+					"gpuP95Ms": 22.47,
+					"shadowFrames": 78,
+					"shadowDrawsPerUpdate": 87,
+					"shadowCpuMsPerUpdate": 2.12
+				},
+				"farView": {
+					"frames": 135,
+					"ms": {
+						"p50": 21,
+						"p95": 29,
+						"p99": 29.2,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1457,
+					"mainTriangles": 1665495,
+					"meanFrameCallbackMs": 12.3,
+					"meanRenderCpuMs": 11.6,
+					"position": {
+						"x": 99,
+						"y": 192.39999999999762,
+						"height": 1
+					},
+					"submittedMarkers": [1297, 1297],
+					"submittedProxyTrees": 766,
+					"submittedSkinnedRoots": [18, 18],
+					"gpuSamples": 11,
+					"gpuP50Ms": 23.73,
+					"gpuP95Ms": 26.69,
+					"shadowFrames": 68,
+					"shadowDrawsPerUpdate": 87,
+					"shadowCpuMsPerUpdate": 1.55
+				}
+			},
+			"farResources": {
+				"geometries": 706,
+				"textures": 257,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 7823.73,
+				"warm": 1805.49
+			},
+			"coldBuildMs": {
+				"scene": 948.6,
+				"terrain": 354.3
+			},
+			"postGcHeapMiB": {
+				"play": 62.08,
+				"editor": 34.62,
+				"warmPlay": 61.57
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-lod",
+			"rawReportWrittenUtc": "2026-11-25T18:46:36.107Z",
+			"scale": "stress",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 527,
+					"instances": 992,
+					"draws": 328,
+					"lodTrees": 429
+				}
+			},
+			"settle30FramesMs": 1533.4074999999993,
+			"farCamera": {
+				"eye": [0.5000003017034576, 4.259262578922431, 72.57796245345178],
+				"quaternion": [
+					-0.09104573817683492, 2.928414389242284e-8, 2.677316162978663e-9,
+					0.9958467118788082
+				],
+				"fov": 55,
+				"north": 0.9834213471196688
+			},
+			"tripods": {
+				"road": {
+					"eye": [0.5, 4.2, 72.9],
+					"target": [0.5, 2.2, 60.900000000000006],
+					"fov": 55
+				},
+				"detail": {
+					"eye": [0.5, 4.2, 72.9],
+					"target": [9.75, 4.3, 32.07],
+					"fov": 28
+				},
+				"tree": "plant-63-105",
+				"distance": 41.86467962375922
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 88,
+					"ms": {
+						"p50": 24.9,
+						"p95": 29.2,
+						"p99": 29.3,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 770,
+					"mainTriangles": 816624,
+					"meanFrameCallbackMs": 10.9,
+					"meanRenderCpuMs": 9.8,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [512, 546],
+					"submittedProxyTrees": 287,
+					"submittedSkinnedRoots": [9, 10],
+					"gpuSamples": 7,
+					"gpuP50Ms": 24.23,
+					"gpuP95Ms": 27.71,
+					"shadowFrames": 45,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.63
+				},
+				"ride": {
+					"frames": 148,
+					"ms": {
+						"p50": 25.1,
+						"p95": 33.3,
+						"p99": 33.4,
+						"max": 33.4
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 632,
+					"mainTriangles": 839541,
+					"meanFrameCallbackMs": 11.7,
+					"meanRenderCpuMs": 10.3,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [446, 512],
+					"submittedProxyTrees": 225,
+					"submittedSkinnedRoots": [8, 9],
+					"gpuSamples": 13,
+					"gpuP50Ms": 25.95,
+					"gpuP95Ms": 31.84,
+					"shadowFrames": 76,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.87
+				},
+				"orbit": {
+					"frames": 165,
+					"ms": {
+						"p50": 25,
+						"p95": 29.2,
+						"p99": 33.3,
+						"max": 33.6
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 641,
+					"mainTriangles": 773528,
+					"meanFrameCallbackMs": 9.4,
+					"meanRenderCpuMs": 8.7,
+					"submittedMarkers": [328, 437],
+					"submittedProxyTrees": 156,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 14,
+					"gpuP50Ms": 21.84,
+					"gpuP95Ms": 27.79,
+					"shadowFrames": 84,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.7
+				},
+				"farRide": {
+					"frames": 1142,
+					"ms": {
+						"p50": 12.7,
+						"p95": 25,
+						"p99": 29.2,
+						"max": 137.5
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 43,
+					"mainTriangles": 171935,
+					"meanFrameCallbackMs": 9.2,
+					"meanRenderCpuMs": 7.4,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.00000000000048,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [20, 433],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 95,
+					"gpuP50Ms": 14.22,
+					"gpuP95Ms": 22.46,
+					"shadowFrames": 431,
+					"shadowDrawsPerUpdate": 83.36,
+					"shadowCpuMsPerUpdate": 2.61
+				},
+				"farTurn": {
+					"frames": 283,
+					"ms": {
+						"p50": 8.4,
+						"p95": 20.9,
+						"p99": 25,
+						"max": 58.4
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 807,
+					"mainTriangles": 881988,
+					"meanFrameCallbackMs": 5.4,
+					"meanRenderCpuMs": 4.8,
+					"submittedMarkers": [19, 545],
+					"submittedProxyTrees": 298,
+					"submittedSkinnedRoots": [2, 10],
+					"gpuSamples": 24,
+					"gpuP50Ms": 8.93,
+					"gpuP95Ms": 19.84,
+					"shadowFrames": 78,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.6
+				},
+				"farView": {
+					"frames": 142,
+					"ms": {
+						"p50": 20.8,
+						"p95": 29.2,
+						"p99": 29.3,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 829,
+					"mainTriangles": 941846,
+					"meanFrameCallbackMs": 10.8,
+					"meanRenderCpuMs": 10.2,
+					"position": {
+						"x": 55,
+						"y": 142.00000000000048,
+						"height": 1
+					},
+					"submittedMarkers": [558, 558],
+					"submittedProxyTrees": 295,
+					"submittedSkinnedRoots": [10, 10],
+					"gpuSamples": 13,
+					"gpuP50Ms": 19.63,
+					"gpuP95Ms": 27.15,
+					"shadowFrames": 71,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.62
+				}
+			},
+			"farResources": {
+				"geometries": 508,
+				"textures": 169,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 7651.32,
+				"warm": 1996.58
+			},
+			"coldBuildMs": {
+				"scene": 475.9,
+				"terrain": 276.4
+			},
+			"postGcHeapMiB": {
+				"play": 35.06,
+				"editor": 21.57,
+				"warmPlay": 34.9
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-lod",
+			"rawReportWrittenUtc": "2026-11-25T18:53:26.849Z",
+			"scale": "upland",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 764,
+					"instances": 1444,
+					"draws": 471,
+					"lodTrees": 618
+				}
+			},
+			"settle30FramesMs": 1169.2372000000005,
+			"farCamera": {
+				"eye": [0.5000003010851437, 4.260764448340251, 86.28779256059245],
+				"quaternion": [
+					-0.09117735327873254, 2.9283789788894563e-8, 2.6811864730034685e-9,
+					0.9958346701381129
+				],
+				"fov": 55,
+				"north": 0.9833733804981687
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 91,
+					"ms": {
+						"p50": 24.7,
+						"p95": 29.2,
+						"p99": 33.2,
+						"max": 33.2
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1010,
+					"mainTriangles": 1140698,
+					"meanFrameCallbackMs": 12.6,
+					"meanRenderCpuMs": 11.3,
+					"route": {
+						"from": {
+							"x": 66,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 66,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [743, 771],
+					"submittedProxyTrees": 417,
+					"submittedSkinnedRoots": [11, 12],
+					"gpuSamples": 8,
+					"gpuP50Ms": 22.7,
+					"gpuP95Ms": 28.47,
+					"shadowFrames": 46,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.64
+				},
+				"ride": {
+					"frames": 197,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25.1,
+						"p99": 29.2,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 826,
+					"mainTriangles": 1052787,
+					"meanFrameCallbackMs": 10.2,
+					"meanRenderCpuMs": 9,
+					"route": {
+						"from": {
+							"x": 66,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 66,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [641, 743],
+					"submittedProxyTrees": 350,
+					"submittedSkinnedRoots": [10, 11],
+					"gpuSamples": 17,
+					"gpuP50Ms": 20.46,
+					"gpuP95Ms": 24.4,
+					"shadowFrames": 89,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.39
+				},
+				"orbit": {
+					"frames": 225,
+					"ms": {
+						"p50": 16.6,
+						"p95": 20.9,
+						"p99": 25,
+						"max": 25
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 856,
+					"mainTriangles": 917275,
+					"meanFrameCallbackMs": 8.1,
+					"meanRenderCpuMs": 7.5,
+					"submittedMarkers": [475, 637],
+					"submittedProxyTrees": 269,
+					"submittedSkinnedRoots": [10, 10],
+					"gpuSamples": 19,
+					"gpuP50Ms": 15.62,
+					"gpuP95Ms": 19.16,
+					"shadowFrames": 91,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.28
+				},
+				"farRide": {
+					"frames": 1708,
+					"ms": {
+						"p50": 12.5,
+						"p95": 16.8,
+						"p99": 20.8,
+						"max": 91.7
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 42,
+					"mainTriangles": 143525,
+					"meanFrameCallbackMs": 6.4,
+					"meanRenderCpuMs": 5.1,
+					"route": {
+						"from": {
+							"x": 66,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 66,
+							"y": 169.19999999999894,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [12, 637],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 10],
+					"gpuSamples": 142,
+					"gpuP50Ms": 12.41,
+					"gpuP95Ms": 16.63,
+					"shadowFrames": 558,
+					"shadowDrawsPerUpdate": 80.95,
+					"shadowCpuMsPerUpdate": 1.39
+				},
+				"farTurn": {
+					"frames": 237,
+					"ms": {
+						"p50": 8.6,
+						"p95": 29.3,
+						"p99": 37.5,
+						"max": 54.2
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 1084,
+					"mainTriangles": 1257738,
+					"meanFrameCallbackMs": 8.3,
+					"meanRenderCpuMs": 7.5,
+					"submittedMarkers": [7, 833],
+					"submittedProxyTrees": 467,
+					"submittedSkinnedRoots": [2, 12],
+					"gpuSamples": 20,
+					"gpuP50Ms": 8.31,
+					"gpuP95Ms": 27.04,
+					"shadowFrames": 79,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 2.39
+				},
+				"farView": {
+					"frames": 130,
+					"ms": {
+						"p50": 21.1,
+						"p95": 29.3,
+						"p99": 33.3,
+						"max": 33.4
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1084,
+					"mainTriangles": 1257738,
+					"meanFrameCallbackMs": 11.1,
+					"meanRenderCpuMs": 10.5,
+					"position": {
+						"x": 66,
+						"y": 169.19999999999894,
+						"height": 1
+					},
+					"submittedMarkers": [833, 833],
+					"submittedProxyTrees": 467,
+					"submittedSkinnedRoots": [12, 12],
+					"gpuSamples": 11,
+					"gpuP50Ms": 20.23,
+					"gpuP95Ms": 32.86,
+					"shadowFrames": 67,
+					"shadowDrawsPerUpdate": 72,
+					"shadowCpuMsPerUpdate": 1.51
+				}
+			},
+			"farResources": {
+				"geometries": 586,
+				"textures": 191,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 5876.04,
+				"warm": 1689.01
+			},
+			"coldBuildMs": {
+				"scene": 285.3,
+				"terrain": 136.2
+			},
+			"postGcHeapMiB": {
+				"play": 43.21,
+				"editor": 25.24,
+				"warmPlay": 42.94
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-pacing",
+			"rawReportWrittenUtc": "2026-11-25T18:55:24.658Z",
+			"scale": "frontier",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "pacing",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 1022,
+					"instances": 1949,
+					"draws": 612,
+					"lodTrees": 829
+				}
+			},
+			"settle30FramesMs": 1086.7235,
+			"farCamera": {
+				"eye": [0.5000003011694081, 4.265670466268577, 97.7867592639678],
+				"quaternion": [
+					-0.09121031095452875, 2.9283701046154888e-8, 2.6821556363336003e-9,
+					0.9958316520253698
+				],
+				"fov": 55,
+				"north": 0.9833613583511547
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 85,
+					"ms": {
+						"p50": 25,
+						"p95": 33.4,
+						"p99": 37.6,
+						"max": 37.6
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1229,
+					"mainTriangles": 1274539,
+					"meanFrameCallbackMs": 16.6,
+					"meanRenderCpuMs": 15.2,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					}
+				},
+				"ride": {
+					"frames": 200,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25.1,
+						"p99": 29.1,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1021,
+					"mainTriangles": 983109,
+					"meanFrameCallbackMs": 12.5,
+					"meanRenderCpuMs": 11.1,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 37,
+							"height": 1
+						}
+					}
+				},
+				"orbit": {
+					"frames": 217,
+					"ms": {
+						"p50": 16.8,
+						"p95": 29.3,
+						"p99": 33.4,
+						"max": 50
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1063,
+					"mainTriangles": 982651,
+					"meanFrameCallbackMs": 12,
+					"meanRenderCpuMs": 11.3
+				},
+				"farRide": {
+					"frames": 1770,
+					"ms": {
+						"p50": 16.5,
+						"p95": 21,
+						"p99": 33.4,
+						"max": 91.6
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 41,
+					"mainTriangles": 180148,
+					"meanFrameCallbackMs": 8.4,
+					"meanRenderCpuMs": 6.7,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 192.19999999999763,
+							"height": 1
+						}
+					}
+				},
+				"farTurn": {
+					"frames": 283,
+					"ms": {
+						"p50": 8.4,
+						"p95": 20.8,
+						"p99": 21,
+						"max": 41.7
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1277,
+					"mainTriangles": 1439090,
+					"meanFrameCallbackMs": 6.5,
+					"meanRenderCpuMs": 5.8
+				},
+				"farView": {
+					"frames": 161,
+					"ms": {
+						"p50": 16.9,
+						"p95": 21,
+						"p99": 21.1,
+						"max": 25.1
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1277,
+					"mainTriangles": 1439090,
+					"meanFrameCallbackMs": 10.6,
+					"meanRenderCpuMs": 10,
+					"position": {
+						"x": 77,
+						"y": 192.19999999999763,
+						"height": 1
+					}
+				}
+			},
+			"farResources": {
+				"geometries": 674,
+				"textures": 213,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 6588.7,
+				"warm": 1638.23
+			},
+			"coldBuildMs": {
+				"scene": 377,
+				"terrain": 195.5
+			},
+			"postGcHeapMiB": {
+				"play": 51.91,
+				"editor": 29.48,
+				"warmPlay": 51.65
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-pacing",
+			"rawReportWrittenUtc": "2026-11-25T18:56:17.925Z",
+			"scale": "reach",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "pacing",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 1318,
+					"instances": 2538,
+					"draws": 795,
+					"lodTrees": 1058
+				}
+			},
+			"settle30FramesMs": 1020.7979999999952,
+			"farCamera": {
+				"eye": [0.50000030205161, 4.25990502889026, 97.769568339873],
+				"quaternion": [
+					-0.09088292194210457, 2.928458123496196e-8, 2.6725283445292503e-9,
+					0.9958615840061633
+				],
+				"fov": 55,
+				"north": 0.983480588998529
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": false,
+			"actions": {
+				"followWalk": {
+					"frames": 88,
+					"ms": {
+						"p50": 24.9,
+						"p95": 29.2,
+						"p99": 41.7,
+						"max": 41.7
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1348,
+					"mainTriangles": 1434935,
+					"meanFrameCallbackMs": 15.1,
+					"meanRenderCpuMs": 13.8,
+					"route": {
+						"from": {
+							"x": 99,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 99,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					}
+				},
+				"ride": {
+					"frames": 190,
+					"ms": {
+						"p50": 20.8,
+						"p95": 29.1,
+						"p99": 29.2,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1145,
+					"mainTriangles": 1275815,
+					"meanFrameCallbackMs": 13.3,
+					"meanRenderCpuMs": 11.8,
+					"route": {
+						"from": {
+							"x": 99,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 99,
+							"y": 37.2,
+							"height": 1
+						}
+					}
+				},
+				"orbit": {
+					"frames": 184,
+					"ms": {
+						"p50": 20.9,
+						"p95": 33.4,
+						"p99": 41.7,
+						"max": 41.7
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1183,
+					"mainTriangles": 1147107,
+					"meanFrameCallbackMs": 13.3,
+					"meanRenderCpuMs": 12.4
+				},
+				"farRide": {
+					"frames": 1666,
+					"ms": {
+						"p50": 16.6,
+						"p95": 25,
+						"p99": 29.2,
+						"max": 50
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 38,
+					"mainTriangles": 166375,
+					"meanFrameCallbackMs": 9,
+					"meanRenderCpuMs": 7,
+					"route": {
+						"from": {
+							"x": 99,
+							"y": 37.2,
+							"height": 1
+						},
+						"to": {
+							"x": 99,
+							"y": 192.19999999999763,
+							"height": 1
+						}
+					}
+				},
+				"farTurn": {
+					"frames": 283,
+					"ms": {
+						"p50": 8.4,
+						"p95": 20.8,
+						"p99": 25,
+						"max": 54.1
+					},
+					"over50": 1,
+					"withinBudget": true,
+					"mainDraws": 1455,
+					"mainTriangles": 1664915,
+					"meanFrameCallbackMs": 5.8,
+					"meanRenderCpuMs": 5.2
+				},
+				"farView": {
+					"frames": 119,
+					"ms": {
+						"p50": 25,
+						"p95": 37.5,
+						"p99": 50,
+						"max": 62.5
+					},
+					"over50": 1,
+					"withinBudget": false,
+					"mainDraws": 1455,
+					"mainTriangles": 1664915,
+					"meanFrameCallbackMs": 14.7,
+					"meanRenderCpuMs": 13.9,
+					"position": {
+						"x": 99,
+						"y": 192.19999999999763,
+						"height": 1
+					}
+				}
+			},
+			"farResources": {
+				"geometries": 706,
+				"textures": 257,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 3647.45,
+				"warm": 1742.44
+			},
+			"coldBuildMs": {
+				"scene": 467.3,
+				"terrain": 231.6
+			},
+			"postGcHeapMiB": {
+				"play": 61.92,
+				"editor": 34.62,
+				"warmPlay": 61.48
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-pacing",
+			"rawReportWrittenUtc": "2026-11-25T18:49:52.994Z",
+			"scale": "stress",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "pacing",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 527,
+					"instances": 992,
+					"draws": 328,
+					"lodTrees": 429
+				}
+			},
+			"settle30FramesMs": 1267.8575,
+			"farCamera": {
+				"eye": [0.5000003019118068, 4.262264641000317, 72.57316025647965],
+				"quaternion": [
+					-0.09103706592669263, 2.9284167209934307e-8, 2.6770611447065203e-9,
+					0.9958475047051422
+				],
+				"fov": 55,
+				"north": 0.9834245052549163
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 121,
+					"ms": {
+						"p50": 16.7,
+						"p95": 21,
+						"p99": 21.1,
+						"max": 24.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 770,
+					"mainTriangles": 842650,
+					"meanFrameCallbackMs": 10,
+					"meanRenderCpuMs": 8.9,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					}
+				},
+				"ride": {
+					"frames": 199,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25,
+						"p99": 33.3,
+						"max": 37.4
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 623,
+					"mainTriangles": 878015,
+					"meanFrameCallbackMs": 11,
+					"meanRenderCpuMs": 9.7,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						}
+					}
+				},
+				"orbit": {
+					"frames": 222,
+					"ms": {
+						"p50": 16.6,
+						"p95": 20.9,
+						"p99": 21,
+						"max": 25
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 649,
+					"mainTriangles": 782583,
+					"meanFrameCallbackMs": 8.3,
+					"meanRenderCpuMs": 7.6
+				},
+				"farRide": {
+					"frames": 1425,
+					"ms": {
+						"p50": 12.5,
+						"p95": 16.8,
+						"p99": 20.9,
+						"max": 75.2
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 42,
+					"mainTriangles": 169255,
+					"meanFrameCallbackMs": 6.1,
+					"meanRenderCpuMs": 4.9,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.00000000000048,
+							"height": 1
+						}
+					}
+				},
+				"farTurn": {
+					"frames": 276,
+					"ms": {
+						"p50": 8.4,
+						"p95": 16.7,
+						"p99": 20.9,
+						"max": 45.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 829,
+					"mainTriangles": 941846,
+					"meanFrameCallbackMs": 5,
+					"meanRenderCpuMs": 4.4
+				},
+				"farView": {
+					"frames": 182,
+					"ms": {
+						"p50": 16.7,
+						"p95": 20.9,
+						"p99": 21,
+						"max": 24.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 829,
+					"mainTriangles": 941846,
+					"meanFrameCallbackMs": 7.8,
+					"meanRenderCpuMs": 7.3,
+					"position": {
+						"x": 55,
+						"y": 142.00000000000048,
+						"height": 1
+					}
+				}
+			},
+			"farResources": {
+				"geometries": 508,
+				"textures": 169,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 4962.3,
+				"warm": 1276.13
+			},
+			"coldBuildMs": {
+				"scene": 208.2,
+				"terrain": 114.2
+			},
+			"postGcHeapMiB": {
+				"play": 35.01,
+				"editor": 21.51,
+				"warmPlay": 34.95
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-pacing",
+			"rawReportWrittenUtc": "2026-11-25T18:50:44.870Z",
+			"scale": "upland",
+			"batching": "on",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "pacing",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "lod",
+					"markers": 764,
+					"instances": 1444,
+					"draws": 471,
+					"lodTrees": 618
+				}
+			},
+			"settle30FramesMs": 1200.2002999999968,
+			"farCamera": {
+				"eye": [0.5000003006223352, 4.26264256973014, 86.29152684873749],
+				"quaternion": [
+					-0.09135022553320117, 2.9283323906472652e-8, 2.6862700027062323e-9,
+					0.9958188270438718
+				],
+				"fov": 55,
+				"north": 0.9833102725900649
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 89,
+					"ms": {
+						"p50": 24.9,
+						"p95": 29.2,
+						"p99": 37.6,
+						"max": 37.6
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1009,
+					"mainTriangles": 1179734,
+					"meanFrameCallbackMs": 12.8,
+					"meanRenderCpuMs": 11.7,
+					"route": {
+						"from": {
+							"x": 66,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 66,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					}
+				},
+				"ride": {
+					"frames": 164,
+					"ms": {
+						"p50": 24.9,
+						"p95": 33.4,
+						"p99": 37.4,
+						"max": 37.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 825,
+					"mainTriangles": 1052785,
+					"meanFrameCallbackMs": 12.8,
+					"meanRenderCpuMs": 11.3,
+					"route": {
+						"from": {
+							"x": 66,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 66,
+							"y": 37.2,
+							"height": 1
+						}
+					}
+				},
+				"orbit": {
+					"frames": 190,
+					"ms": {
+						"p50": 20.7,
+						"p95": 33.3,
+						"p99": 37.6,
+						"max": 41.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 860,
+					"mainTriangles": 918461,
+					"meanFrameCallbackMs": 10.9,
+					"meanRenderCpuMs": 10.2
+				},
+				"farRide": {
+					"frames": 1580,
+					"ms": {
+						"p50": 12.8,
+						"p95": 20.8,
+						"p99": 21,
+						"max": 37.6
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 39,
+					"mainTriangles": 134295,
+					"meanFrameCallbackMs": 7,
+					"meanRenderCpuMs": 5.6,
+					"route": {
+						"from": {
+							"x": 66,
+							"y": 37.2,
+							"height": 1
+						},
+						"to": {
+							"x": 66,
+							"y": 169.19999999999894,
+							"height": 1
+						}
+					}
+				},
+				"farTurn": {
+					"frames": 267,
+					"ms": {
+						"p50": 8.4,
+						"p95": 16.8,
+						"p99": 21,
+						"max": 33.2
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1084,
+					"mainTriangles": 1257738,
+					"meanFrameCallbackMs": 4.4,
+					"meanRenderCpuMs": 3.9
+				},
+				"farView": {
+					"frames": 140,
+					"ms": {
+						"p50": 20.8,
+						"p95": 29.2,
+						"p99": 33.5,
+						"max": 37.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1084,
+					"mainTriangles": 1257738,
+					"meanFrameCallbackMs": 9.5,
+					"meanRenderCpuMs": 8.9,
+					"position": {
+						"x": 66,
+						"y": 169.19999999999894,
+						"height": 1
+					}
+				}
+			},
+			"farResources": {
+				"geometries": 586,
+				"textures": 191,
+				"programs": 26
+			},
+			"loadMs": {
+				"cold": 4899.26,
+				"warm": 1592.39
+			},
+			"coldBuildMs": {
+				"scene": 268.5,
+				"terrain": 135.2
+			},
+			"postGcHeapMiB": {
+				"play": 43.23,
+				"editor": 25.27,
+				"warmPlay": 43.01
+			},
+			"modelParses": {
+				"cold": 24,
+				"warm": 0
+			},
+			"modelRequests": 24,
+			"modelEncodedBytes": 12092696
+		},
+		{
+			"run": "field-instances",
+			"rawReportWrittenUtc": "2026-11-25T18:52:28.438Z",
+			"scale": "stress",
+			"batching": "instances",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"mode": "instances",
+					"markers": 475,
+					"instances": 888,
+					"draws": 224,
+					"lodTrees": 0
+				}
+			},
+			"settle30FramesMs": 1388.4138000000012,
+			"farCamera": {
+				"eye": [0.5000003018167855, 4.26234953119698, 72.57560695152084],
+				"quaternion": [
+					-0.0910632201887811, 2.928409689104726e-8, 2.677830244155451e-9,
+					0.9958451134231914
+				],
+				"fov": 55,
+				"north": 0.9834149798576974
+			},
+			"tripods": {
+				"road": {
+					"eye": [0.5, 4.2, 72.9],
+					"target": [0.5, 2.2, 60.900000000000006],
+					"fov": 55
+				},
+				"detail": {
+					"eye": [0.5, 4.2, 72.9],
+					"target": [9.75, 4.3, 32.07],
+					"fov": 28
+				},
+				"tree": "plant-63-105",
+				"distance": 41.86467962375922
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": false,
+			"actions": {
+				"followWalk": {
+					"frames": 66,
+					"ms": {
+						"p50": 33.2,
+						"p95": 37.5,
+						"p99": 41.7,
+						"max": 41.7
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 860,
+					"mainTriangles": 2031368,
+					"meanFrameCallbackMs": 10.2,
+					"meanRenderCpuMs": 9.1,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [512, 546],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [9, 10],
+					"gpuSamples": 6,
+					"gpuP50Ms": 29.01,
+					"gpuP95Ms": 34.38,
+					"shadowFrames": 45,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.72
+				},
+				"ride": {
+					"frames": 159,
+					"ms": {
+						"p50": 25,
+						"p95": 29.2,
+						"p99": 33.5,
+						"max": 37.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 703,
+					"mainTriangles": 1793239,
+					"meanFrameCallbackMs": 9.2,
+					"meanRenderCpuMs": 8.3,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [446, 512],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 9],
+					"gpuSamples": 14,
+					"gpuP50Ms": 23.99,
+					"gpuP95Ms": 29.11,
+					"shadowFrames": 81,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.75
+				},
+				"orbit": {
+					"frames": 182,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25.1,
+						"p99": 29.3,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 706,
+					"mainTriangles": 1471283,
+					"meanFrameCallbackMs": 7.6,
+					"meanRenderCpuMs": 7,
+					"submittedMarkers": [325, 437],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 15,
+					"gpuP50Ms": 20.32,
+					"gpuP95Ms": 25.31,
+					"shadowFrames": 91,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.53
+				},
+				"farRide": {
+					"frames": 1362,
+					"ms": {
+						"p50": 12.5,
+						"p95": 20.9,
+						"p99": 25,
+						"max": 83.5
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 43,
+					"mainTriangles": 171935,
+					"meanFrameCallbackMs": 5.1,
+					"meanRenderCpuMs": 4.1,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.00000000000048,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [20, 433],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 114,
+					"gpuP50Ms": 11.87,
+					"gpuP95Ms": 20.8,
+					"shadowFrames": 453,
+					"shadowDrawsPerUpdate": 115.22,
+					"shadowCpuMsPerUpdate": 1.39
+				},
+				"farTurn": {
+					"frames": 273,
+					"ms": {
+						"p50": 8.3,
+						"p95": 21,
+						"p99": 25.1,
+						"max": 41.6
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 900,
+					"mainTriangles": 2145756,
+					"meanFrameCallbackMs": 4.2,
+					"meanRenderCpuMs": 3.8,
+					"submittedMarkers": [19, 545],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 10],
+					"gpuSamples": 23,
+					"gpuP50Ms": 7.56,
+					"gpuP95Ms": 21.05,
+					"shadowFrames": 74,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.24
+				},
+				"farView": {
+					"frames": 120,
+					"ms": {
+						"p50": 25,
+						"p95": 33.2,
+						"p99": 33.4,
+						"max": 33.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 921,
+					"mainTriangles": 2193616,
+					"meanFrameCallbackMs": 7.8,
+					"meanRenderCpuMs": 7.3,
+					"position": {
+						"x": 55,
+						"y": 142.00000000000048,
+						"height": 1
+					},
+					"submittedMarkers": [558, 558],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [10, 10],
+					"gpuSamples": 11,
+					"gpuP50Ms": 23.94,
+					"gpuP95Ms": 30.55,
+					"shadowFrames": 63,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.23
+				}
+			},
+			"farResources": {
+				"geometries": 506,
+				"textures": 167,
+				"programs": 27
+			},
+			"loadMs": {
+				"cold": 5417.41,
+				"warm": 1234.39
+			},
+			"coldBuildMs": {
+				"scene": 215,
+				"terrain": 121.1
+			},
+			"postGcHeapMiB": {
+				"play": 34.46,
+				"editor": 21.56,
+				"warmPlay": 34.26
+			},
+			"modelParses": {
+				"cold": 22,
+				"warm": 0
+			},
+			"modelRequests": 22,
+			"modelEncodedBytes": 11650868
+		},
+		{
+			"run": "field-native",
+			"rawReportWrittenUtc": "2026-11-25T18:59:06.810Z",
+			"scale": "frontier",
+			"batching": "off",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": false,
+					"mode": "off",
+					"markers": 0,
+					"instances": 0,
+					"draws": 0,
+					"lodTrees": 0
+				}
+			},
+			"settle30FramesMs": 1359.8220999999976,
+			"farCamera": {
+				"eye": [0.5000003007088849, 4.264951759448447, 97.79097679923895],
+				"quaternion": [
+					-0.09135080212015748, 2.928332235609822e-8, 2.6862869584406334e-9,
+					0.9958187741512021
+				],
+				"fov": 55,
+				"north": 0.9833100619040059
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": false,
+			"actions": {
+				"followWalk": {
+					"frames": 54,
+					"ms": {
+						"p50": 41.6,
+						"p95": 50.1,
+						"p99": 54.2,
+						"max": 54.2
+					},
+					"over50": 3,
+					"withinBudget": false,
+					"mainDraws": 2459,
+					"mainTriangles": 3719149,
+					"meanFrameCallbackMs": 26.3,
+					"meanRenderCpuMs": 24.8,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 12.199999999999989,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [973, 1012],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [13, 14],
+					"gpuSamples": 5,
+					"gpuP50Ms": 43.41,
+					"gpuP95Ms": 46.02,
+					"shadowFrames": 55,
+					"shadowDrawsPerUpdate": 163,
+					"shadowCpuMsPerUpdate": 3.11
+				},
+				"ride": {
+					"frames": 133,
+					"ms": {
+						"p50": 29.2,
+						"p95": 45.8,
+						"p99": 50,
+						"max": 66.8
+					},
+					"over50": 1,
+					"withinBudget": false,
+					"mainDraws": 2104,
+					"mainTriangles": 3239338,
+					"meanFrameCallbackMs": 18.8,
+					"meanRenderCpuMs": 17.3,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [839, 968],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [12, 13],
+					"gpuSamples": 12,
+					"gpuP50Ms": 28.41,
+					"gpuP95Ms": 48.24,
+					"shadowFrames": 87,
+					"shadowDrawsPerUpdate": 163,
+					"shadowCpuMsPerUpdate": 2.55
+				},
+				"orbit": {
+					"frames": 161,
+					"ms": {
+						"p50": 29.1,
+						"p95": 33.4,
+						"p99": 37.5,
+						"max": 37.5
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1866,
+					"mainTriangles": 2598697,
+					"meanFrameCallbackMs": 16,
+					"meanRenderCpuMs": 15.3,
+					"submittedMarkers": [563, 832],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [12, 12],
+					"gpuSamples": 13,
+					"gpuP50Ms": 27.02,
+					"gpuP95Ms": 32.35,
+					"shadowFrames": 89,
+					"shadowDrawsPerUpdate": 163,
+					"shadowCpuMsPerUpdate": 2.41
+				},
+				"farRide": {
+					"frames": 1421,
+					"ms": {
+						"p50": 16.7,
+						"p95": 33.2,
+						"p99": 37.5,
+						"max": 54.3
+					},
+					"over50": 1,
+					"withinBudget": true,
+					"mainDraws": 49,
+					"mainTriangles": 165078,
+					"meanFrameCallbackMs": 10.9,
+					"meanRenderCpuMs": 9.3,
+					"route": {
+						"from": {
+							"x": 77,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 77,
+							"y": 192.19999999999763,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [12, 832],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 12],
+					"gpuSamples": 119,
+					"gpuP50Ms": 15.66,
+					"gpuP95Ms": 29.93,
+					"shadowFrames": 591,
+					"shadowDrawsPerUpdate": 170.37,
+					"shadowCpuMsPerUpdate": 2.45
+				},
+				"farTurn": {
+					"frames": 258,
+					"ms": {
+						"p50": 8.4,
+						"p95": 37.3,
+						"p99": 37.8,
+						"max": 70.8
+					},
+					"over50": 2,
+					"withinBudget": false,
+					"mainDraws": 2546,
+					"mainTriangles": 3893551,
+					"meanFrameCallbackMs": 10,
+					"meanRenderCpuMs": 9.4,
+					"submittedMarkers": [9, 1023],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 14],
+					"gpuSamples": 22,
+					"gpuP50Ms": 6.96,
+					"gpuP95Ms": 33.99,
+					"shadowFrames": 87,
+					"shadowDrawsPerUpdate": 163,
+					"shadowCpuMsPerUpdate": 2.53
+				},
+				"farView": {
+					"frames": 90,
+					"ms": {
+						"p50": 33.3,
+						"p95": 45.9,
+						"p99": 50.2,
+						"max": 50.2
+					},
+					"over50": 1,
+					"withinBudget": false,
+					"mainDraws": 2553,
+					"mainTriangles": 3890782,
+					"meanFrameCallbackMs": 19,
+					"meanRenderCpuMs": 18.4,
+					"position": {
+						"x": 77,
+						"y": 192.19999999999763,
+						"height": 1
+					},
+					"submittedMarkers": [1019, 1019],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [14, 14],
+					"gpuSamples": 8,
+					"gpuP50Ms": 33.31,
+					"gpuP95Ms": 36.78,
+					"shadowFrames": 68,
+					"shadowDrawsPerUpdate": 163,
+					"shadowCpuMsPerUpdate": 2.39
+				}
+			},
+			"farResources": {
+				"geometries": 672,
+				"textures": 211,
+				"programs": 22
+			},
+			"loadMs": {
+				"cold": 5663.2,
+				"warm": 1676.52
+			},
+			"coldBuildMs": {
+				"scene": 307.4,
+				"terrain": 162.6
+			},
+			"postGcHeapMiB": {
+				"play": 50.09,
+				"editor": 30.01,
+				"warmPlay": 50.22
+			},
+			"modelParses": {
+				"cold": 22,
+				"warm": 0
+			},
+			"modelRequests": 22,
+			"modelEncodedBytes": 11650868
+		},
+		{
+			"run": "field-native",
+			"rawReportWrittenUtc": "2026-11-25T18:58:09.419Z",
+			"scale": "large",
+			"batching": "off",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": false,
+					"mode": "off",
+					"markers": 0,
+					"instances": 0,
+					"draws": 0,
+					"lodTrees": 0
+				}
+			},
+			"settle30FramesMs": 780.8662000000004,
+			"farCamera": {
+				"eye": [0.5000003025243134, 4.2609299489743435, 57.55440767751028],
+				"quaternion": [
+					-0.0908770713640632, 2.9284596926433687e-8, 2.672356300007004e-9,
+					0.9958621179160749
+				],
+				"fov": 55,
+				"north": 0.9834827158005802
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": false,
+			"actions": {
+				"followWalk": {
+					"frames": 100,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25.2,
+						"p99": 29.2,
+						"max": 33.2
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 889,
+					"mainTriangles": 1162171,
+					"meanFrameCallbackMs": 10.8,
+					"meanRenderCpuMs": 9.9,
+					"route": {
+						"from": {
+							"x": 44,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 44,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [290, 306],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [7, 8],
+					"gpuSamples": 8,
+					"gpuP50Ms": 21.02,
+					"gpuP95Ms": 25.67,
+					"shadowFrames": 51,
+					"shadowDrawsPerUpdate": 135,
+					"shadowCpuMsPerUpdate": 2.08
+				},
+				"ride": {
+					"frames": 177,
+					"ms": {
+						"p50": 20.9,
+						"p95": 29.2,
+						"p99": 87.6,
+						"max": 95.7
+					},
+					"over50": 2,
+					"withinBudget": false,
+					"mainDraws": 692,
+					"mainTriangles": 932865,
+					"meanFrameCallbackMs": 11.5,
+					"meanRenderCpuMs": 10.4,
+					"route": {
+						"from": {
+							"x": 44,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 44,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [229, 290],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [6, 7],
+					"gpuSamples": 15,
+					"gpuP50Ms": 22.27,
+					"gpuP95Ms": 29.3,
+					"shadowFrames": 89,
+					"shadowDrawsPerUpdate": 140.9,
+					"shadowCpuMsPerUpdate": 3.25
+				},
+				"orbit": {
+					"frames": 224,
+					"ms": {
+						"p50": 16.6,
+						"p95": 20.8,
+						"p99": 21,
+						"max": 33.4
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 617,
+					"mainTriangles": 707635,
+					"meanFrameCallbackMs": 7.7,
+					"meanRenderCpuMs": 7.1,
+					"submittedMarkers": [159, 231],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [6, 6],
+					"gpuSamples": 19,
+					"gpuP50Ms": 16.02,
+					"gpuP95Ms": 19.03,
+					"shadowFrames": 98,
+					"shadowDrawsPerUpdate": 157,
+					"shadowCpuMsPerUpdate": 2.24
+				},
+				"farRide": {
+					"frames": 1202,
+					"ms": {
+						"p50": 8.4,
+						"p95": 20.9,
+						"p99": 25.1,
+						"max": 33.4
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 38,
+					"mainTriangles": 94291,
+					"meanFrameCallbackMs": 5.1,
+					"meanRenderCpuMs": 4.1,
+					"route": {
+						"from": {
+							"x": 44,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 44,
+							"y": 112.00000000000107,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [5, 226],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 6],
+					"gpuSamples": 100,
+					"gpuP50Ms": 7.97,
+					"gpuP95Ms": 22.05,
+					"shadowFrames": 323,
+					"shadowDrawsPerUpdate": 148.85,
+					"shadowCpuMsPerUpdate": 1.77
+				},
+				"farTurn": {
+					"frames": 270,
+					"ms": {
+						"p50": 8.3,
+						"p95": 29.1,
+						"p99": 33.3,
+						"max": 54.1
+					},
+					"over50": 1,
+					"withinBudget": true,
+					"mainDraws": 945,
+					"mainTriangles": 1297875,
+					"meanFrameCallbackMs": 5,
+					"meanRenderCpuMs": 4.5,
+					"submittedMarkers": [4, 325],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 23,
+					"gpuP50Ms": 6.45,
+					"gpuP95Ms": 24.57,
+					"shadowFrames": 74,
+					"shadowDrawsPerUpdate": 135,
+					"shadowCpuMsPerUpdate": 1.97
+				},
+				"farView": {
+					"frames": 165,
+					"ms": {
+						"p50": 16.8,
+						"p95": 21,
+						"p99": 25.1,
+						"max": 29
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 951,
+					"mainTriangles": 1260948,
+					"meanFrameCallbackMs": 7,
+					"meanRenderCpuMs": 6.6,
+					"position": {
+						"x": 44,
+						"y": 112.00000000000107,
+						"height": 1
+					},
+					"submittedMarkers": [313, 313],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 14,
+					"gpuP50Ms": 17.64,
+					"gpuP95Ms": 22,
+					"shadowFrames": 80,
+					"shadowDrawsPerUpdate": 135,
+					"shadowCpuMsPerUpdate": 1.21
+				}
+			},
+			"farResources": {
+				"geometries": 406,
+				"textures": 145,
+				"programs": 22
+			},
+			"loadMs": {
+				"cold": 4865.06,
+				"warm": 1158.47
+			},
+			"coldBuildMs": {
+				"scene": 158.8,
+				"terrain": 88.8
+			},
+			"postGcHeapMiB": {
+				"play": 27.58,
+				"editor": 18.25,
+				"warmPlay": 27.47
+			},
+			"modelParses": {
+				"cold": 22,
+				"warm": 0
+			},
+			"modelRequests": 22,
+			"modelEncodedBytes": 11650868
+		},
+		{
+			"run": "field-native",
+			"rawReportWrittenUtc": "2026-11-25T18:59:47.294Z",
+			"scale": "medium",
+			"batching": "off",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": false,
+					"mode": "off",
+					"markers": 0,
+					"instances": 0,
+					"draws": 0,
+					"lodTrees": 0
+				}
+			},
+			"settle30FramesMs": 751.6959999999999,
+			"farCamera": {
+				"eye": [0.5000003001233135, 4.262797871593116, 42.59287741803005],
+				"quaternion": [
+					-0.09146126914251826, 2.92830241813325e-8, 2.6895353821698923e-9,
+					0.9958086343504152
+				],
+				"fov": 55,
+				"north": 0.9832696724936779
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": true,
+			"actions": {
+				"followWalk": {
+					"frames": 143,
+					"ms": {
+						"p50": 12.8,
+						"p95": 20.5,
+						"p99": 21,
+						"max": 21
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 510,
+					"mainTriangles": 606880,
+					"meanFrameCallbackMs": 6.9,
+					"meanRenderCpuMs": 6.1,
+					"route": {
+						"from": {
+							"x": 33,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 33,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [145, 161],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [5, 6],
+					"gpuSamples": 12,
+					"gpuP50Ms": 14.19,
+					"gpuP95Ms": 15.78,
+					"shadowFrames": 52,
+					"shadowDrawsPerUpdate": 124,
+					"shadowCpuMsPerUpdate": 1.66
+				},
+				"ride": {
+					"frames": 304,
+					"ms": {
+						"p50": 12.5,
+						"p95": 16.7,
+						"p99": 20.7,
+						"max": 75
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 317,
+					"mainTriangles": 356762,
+					"meanFrameCallbackMs": 6.8,
+					"meanRenderCpuMs": 5.9,
+					"route": {
+						"from": {
+							"x": 33,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 33,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [82, 145],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [4, 5],
+					"gpuSamples": 25,
+					"gpuP50Ms": 12.12,
+					"gpuP95Ms": 14.34,
+					"shadowFrames": 103,
+					"shadowDrawsPerUpdate": 143.07,
+					"shadowCpuMsPerUpdate": 2.87
+				},
+				"orbit": {
+					"frames": 350,
+					"ms": {
+						"p50": 8.4,
+						"p95": 12.6,
+						"p99": 12.8,
+						"max": 16.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 328,
+					"mainTriangles": 344605,
+					"meanFrameCallbackMs": 4.2,
+					"meanRenderCpuMs": 3.8,
+					"submittedMarkers": [74, 90],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [4, 4],
+					"gpuSamples": 30,
+					"gpuP50Ms": 8.29,
+					"gpuP95Ms": 11.67,
+					"shadowFrames": 92,
+					"shadowDrawsPerUpdate": 146,
+					"shadowCpuMsPerUpdate": 1.78
+				},
+				"farRide": {
+					"frames": 1126,
+					"ms": {
+						"p50": 8.2,
+						"p95": 12.3,
+						"p99": 12.6,
+						"max": 16.7
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 45,
+					"mainTriangles": 100473,
+					"meanFrameCallbackMs": 3.5,
+					"meanRenderCpuMs": 2.8,
+					"route": {
+						"from": {
+							"x": 33,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 33,
+							"y": 82.00000000000064,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [10, 76],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 4],
+					"gpuSamples": 94,
+					"gpuP50Ms": 6.01,
+					"gpuP95Ms": 8.46,
+					"shadowFrames": 206,
+					"shadowDrawsPerUpdate": 140.6,
+					"shadowCpuMsPerUpdate": 1.5
+				},
+				"farTurn": {
+					"frames": 433,
+					"ms": {
+						"p50": 4.3,
+						"p95": 12.5,
+						"p99": 12.6,
+						"max": 16.8
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 578,
+					"mainTriangles": 766803,
+					"meanFrameCallbackMs": 3.4,
+					"meanRenderCpuMs": 3,
+					"submittedMarkers": [8, 181],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 6],
+					"gpuSamples": 37,
+					"gpuP50Ms": 4.44,
+					"gpuP95Ms": 11.03,
+					"shadowFrames": 75,
+					"shadowDrawsPerUpdate": 124,
+					"shadowCpuMsPerUpdate": 1.6
+				},
+				"farView": {
+					"frames": 257,
+					"ms": {
+						"p50": 12.4,
+						"p95": 16.6,
+						"p99": 16.7,
+						"max": 16.7
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 585,
+					"mainTriangles": 770649,
+					"meanFrameCallbackMs": 5.1,
+					"meanRenderCpuMs": 4.7,
+					"position": {
+						"x": 33,
+						"y": 82.00000000000064,
+						"height": 1
+					},
+					"submittedMarkers": [180, 180],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [6, 6],
+					"gpuSamples": 21,
+					"gpuP50Ms": 11.72,
+					"gpuP95Ms": 14.6,
+					"shadowFrames": 81,
+					"shadowDrawsPerUpdate": 124,
+					"shadowCpuMsPerUpdate": 1.24
+				}
+			},
+			"farResources": {
+				"geometries": 301,
+				"textures": 123,
+				"programs": 22
+			},
+			"loadMs": {
+				"cold": 4034.65,
+				"warm": 868.92
+			},
+			"coldBuildMs": {
+				"scene": 116.2,
+				"terrain": 78.1
+			},
+			"postGcHeapMiB": {
+				"play": 21.82,
+				"editor": 15.72,
+				"warmPlay": 22.15
+			},
+			"modelParses": {
+				"cold": 22,
+				"warm": 0
+			},
+			"modelRequests": 22,
+			"modelEncodedBytes": 11650868
+		},
+		{
+			"run": "field-native",
+			"rawReportWrittenUtc": "2026-11-25T18:51:38.179Z",
+			"scale": "stress",
+			"batching": "off",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "5898fc9f825f469818ab4e1117863e7142ff7bcb6f0ae4b09ee62872640badb1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": false,
+					"mode": "off",
+					"markers": 0,
+					"instances": 0,
+					"draws": 0,
+					"lodTrees": 0
+				}
+			},
+			"settle30FramesMs": 1105.3551000000007,
+			"farCamera": {
+				"eye": [0.5000003002569371, 4.262554358674297, 72.5927662782316],
+				"quaternion": [
+					-0.09143171061220697, 2.9283104000991427e-8, 2.6886661757903032e-9,
+					0.9958113487476052
+				],
+				"fov": 55,
+				"north": 0.9832804845890496
+			},
+			"tripods": {
+				"road": {
+					"eye": [0.5, 4.2, 72.9],
+					"target": [0.5, 2.2, 60.900000000000006],
+					"fov": 55
+				},
+				"detail": {
+					"eye": [0.5, 4.2, 72.9],
+					"target": [9.75, 4.3, 32.07],
+					"fov": 28
+				},
+				"tree": "plant-63-105",
+				"distance": 41.86467962375922
+			},
+			"stage": "complete",
+			"errors": [],
+			"withinBudget": false,
+			"actions": {
+				"followWalk": {
+					"frames": 69,
+					"ms": {
+						"p50": 29.4,
+						"p95": 37.5,
+						"p99": 41.8,
+						"max": 41.8
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 1390,
+					"mainTriangles": 1998415,
+					"meanFrameCallbackMs": 15.3,
+					"meanRenderCpuMs": 14.1,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [504, 528],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [9, 10],
+					"gpuSamples": 6,
+					"gpuP50Ms": 31.19,
+					"gpuP95Ms": 36.3,
+					"shadowFrames": 46,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 2.43
+				},
+				"ride": {
+					"frames": 146,
+					"ms": {
+						"p50": 25.1,
+						"p95": 41.7,
+						"p99": 45.8,
+						"max": 45.9
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 1131,
+					"mainTriangles": 1683185,
+					"meanFrameCallbackMs": 16.6,
+					"meanRenderCpuMs": 15,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [417, 503],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 9],
+					"gpuSamples": 12,
+					"gpuP50Ms": 22.85,
+					"gpuP95Ms": 42,
+					"shadowFrames": 86,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 2.94
+				},
+				"orbit": {
+					"frames": 201,
+					"ms": {
+						"p50": 20.7,
+						"p95": 25,
+						"p99": 25.1,
+						"max": 25.2
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1002,
+					"mainTriangles": 1315310,
+					"meanFrameCallbackMs": 10.4,
+					"meanRenderCpuMs": 9.8,
+					"submittedMarkers": [300, 419],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 17,
+					"gpuP50Ms": 17.7,
+					"gpuP95Ms": 23.21,
+					"shadowFrames": 96,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 2.14
+				},
+				"farRide": {
+					"frames": 1230,
+					"ms": {
+						"p50": 12.6,
+						"p95": 21,
+						"p99": 33.3,
+						"max": 87.6
+					},
+					"over50": 2,
+					"withinBudget": true,
+					"mainDraws": 53,
+					"mainTriangles": 141485,
+					"meanFrameCallbackMs": 7.7,
+					"meanRenderCpuMs": 6.4,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.00000000000048,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [13, 413],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 103,
+					"gpuP50Ms": 12.5,
+					"gpuP95Ms": 20.99,
+					"shadowFrames": 452,
+					"shadowDrawsPerUpdate": 160.67,
+					"shadowCpuMsPerUpdate": 2.2
+				},
+				"farTurn": {
+					"frames": 323,
+					"ms": {
+						"p50": 8.3,
+						"p95": 20.8,
+						"p99": 20.9,
+						"max": 33.4
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1435,
+					"mainTriangles": 2049190,
+					"meanFrameCallbackMs": 5.3,
+					"meanRenderCpuMs": 4.8,
+					"submittedMarkers": [12, 524],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 10],
+					"gpuSamples": 28,
+					"gpuP50Ms": 6.75,
+					"gpuP95Ms": 19.25,
+					"shadowFrames": 78,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 1.68
+				},
+				"farView": {
+					"frames": 144,
+					"ms": {
+						"p50": 20.8,
+						"p95": 25.2,
+						"p99": 29.2,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 1444,
+					"mainTriangles": 2062855,
+					"meanFrameCallbackMs": 10.6,
+					"meanRenderCpuMs": 10.1,
+					"position": {
+						"x": 55,
+						"y": 142.00000000000048,
+						"height": 1
+					},
+					"submittedMarkers": [527, 527],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [10, 10],
+					"gpuSamples": 13,
+					"gpuP50Ms": 19.54,
+					"gpuP95Ms": 22.44,
+					"shadowFrames": 72,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 1.61
+				}
+			},
+			"farResources": {
+				"geometries": 506,
+				"textures": 167,
+				"programs": 22
+			},
+			"loadMs": {
+				"cold": 5085.8,
+				"warm": 1352.13
+			},
+			"coldBuildMs": {
+				"scene": 196.5,
+				"terrain": 115.7
+			},
+			"postGcHeapMiB": {
+				"play": 34.55,
+				"editor": 21.81,
+				"warmPlay": 34.53
+			},
+			"modelParses": {
+				"cold": 22,
+				"warm": 0
+			},
+			"modelRequests": 22,
+			"modelEncodedBytes": 11650868
+		}
+	],
+	"device": {
+		"host": {
+			"os": "win32 10.0.26300",
+			"cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
+			"logicalCpus": 20,
+			"ramGiB": 64
+		},
+		"chrome": "158.0.8127.37",
+		"gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.5768)",
+		"viewport": {
+			"width": 960,
+			"height": 600
+		},
+		"chromiumArgs": ["--use-angle=d3d11", "--ignore-gpu-blocklist"],
+		"offline": true
+	},
+	"surface": {
+		"css": {
+			"width": 960,
+			"height": 446
+		},
+		"buffer": {
+			"width": 960,
+			"height": 446
+		},
+		"dpr": 1
+	},
+	"setupTrials": [
+		{
+			"run": "study-trial-on/stress.json",
+			"stage": "complete",
+			"errors": [],
+			"fixture": {
+				"width": 110,
+				"height": 150,
+				"tiles": 16500,
+				"raised": 6588,
+				"objects": 628,
+				"npcs": 8,
+				"actors": 10,
+				"sha256": "1e4c932b2e612f5918cb3fb1d8ddee56c42f8aa48456b3baa6a49e529d47bf99"
+			},
+			"batching": "on",
+			"probes": "render",
+			"buildIndexSha256": "a272f26d63b2fea83e6b60df8e137a4b6e70504e1dde95a8ae70c465d73431e3",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"markers": 475,
+					"instances": 888,
+					"draws": 224
+				}
+			},
+			"actions": {
+				"followWalk": {
+					"frames": 1,
+					"ms": {
+						"p50": 33.4,
+						"p95": 33.4,
+						"p99": 33.4,
+						"max": 33.4
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 62,
+					"mainTriangles": 213533,
+					"meanFrameCallbackMs": 20.9,
+					"meanRenderCpuMs": 19.5,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 12.479999999999988,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [32, 32],
+					"submittedSkinnedRoots": [3, 3],
+					"gpuSamples": 0,
+					"shadowFrames": 2,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 4
+				},
+				"ride": {
+					"frames": 233,
+					"ms": {
+						"p50": 16.6,
+						"p95": 25,
+						"p99": 29.2,
+						"max": 158.5
+					},
+					"over50": 1,
+					"withinBudget": true,
+					"mainDraws": 206,
+					"mainTriangles": 539604,
+					"meanFrameCallbackMs": 7,
+					"meanRenderCpuMs": 5.7,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [34, 118],
+					"submittedSkinnedRoots": [3, 4],
+					"gpuSamples": 20,
+					"gpuP50Ms": 13.97,
+					"gpuP95Ms": 20.83,
+					"shadowFrames": 97,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.86
+				},
+				"orbit": {
+					"frames": 171,
+					"ms": {
+						"p50": 24.8,
+						"p95": 29.1,
+						"p99": 29.3,
+						"max": 29.3
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 171,
+					"mainTriangles": 641051,
+					"meanFrameCallbackMs": 7.6,
+					"meanRenderCpuMs": 6.9,
+					"submittedMarkers": [105, 136],
+					"submittedSkinnedRoots": [4, 5],
+					"gpuSamples": 14,
+					"gpuP50Ms": 22.56,
+					"gpuP95Ms": 27.34,
+					"shadowFrames": 86,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 2.13
+				},
+				"farRide": {
+					"frames": 582,
+					"ms": {
+						"p50": 29.1,
+						"p95": 41.6,
+						"p99": 45.7,
+						"max": 83.2
+					},
+					"over50": 2,
+					"withinBudget": false,
+					"mainDraws": 911,
+					"mainTriangles": 2265124,
+					"meanFrameCallbackMs": 8.2,
+					"meanRenderCpuMs": 7.1,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.20000000000047,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [126, 554],
+					"submittedSkinnedRoots": [4, 10],
+					"gpuSamples": 49,
+					"gpuP50Ms": 28.18,
+					"gpuP95Ms": 39.2,
+					"shadowFrames": 392,
+					"shadowDrawsPerUpdate": 115.05,
+					"shadowCpuMsPerUpdate": 1.85
+				},
+				"farView": {
+					"frames": 86,
+					"ms": {
+						"p50": 33.4,
+						"p95": 41.6,
+						"p99": 50,
+						"max": 50
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 919,
+					"mainTriangles": 2280744,
+					"meanFrameCallbackMs": 9.7,
+					"meanRenderCpuMs": 9,
+					"position": {
+						"x": 55,
+						"y": 142.20000000000047,
+						"height": 1
+					},
+					"submittedMarkers": [558, 558],
+					"submittedSkinnedRoots": [10, 10],
+					"gpuSamples": 8,
+					"gpuP50Ms": 33.57,
+					"gpuP95Ms": 38.92,
+					"shadowFrames": 71,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.46
+				}
+			}
+		},
+		{
+			"run": "road-pilot-off/stress.json",
+			"stage": "farRide",
+			"failure": "AssertionError [ERR_ASSERTION]: Look back north over the road",
+			"errors": [],
+			"fixture": {
+				"width": 110,
+				"height": 150,
+				"tiles": 16500,
+				"raised": 6196,
+				"objects": 628,
+				"npcs": 8,
+				"actors": 10,
+				"sha256": "8a7e922a45fc1e4c00ac726229bc066914d4caeda3a171791f6bd89a1ff56a0e"
+			},
+			"batching": "off",
+			"artSha256": "37af5b8f7e978d10fb980230c46cce82024957227d60809b07fa766ef45eb65b",
+			"probes": "render",
+			"buildIndexSha256": "e774c764d3d7329642f2bf159571acf3ce4b806b97156d7a9f2c5f60c75206a1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": false,
+					"markers": 0,
+					"instances": 0,
+					"draws": 0
+				}
+			},
+			"settle30FramesMs": 1330.120399999998,
+			"farCamera": {
+				"eye": [0.4999999999999994, 4.26473431464414, 62.383787417256286],
+				"quaternion": [
+					5.472032051721632e-18, 0.9958063247148758, 0.09148641242201636,
+					-5.956167677677551e-17
+				],
+				"fov": 55,
+				"north": -0.9832604726842975
+			},
+			"actions": {
+				"followWalk": {
+					"frames": 65,
+					"ms": {
+						"p50": 41.8,
+						"p95": 50.3,
+						"p99": 53.8,
+						"max": 53.8
+					},
+					"over50": 7,
+					"withinBudget": false,
+					"mainDraws": 1386,
+					"mainTriangles": 1994443,
+					"meanFrameCallbackMs": 38.7,
+					"meanRenderCpuMs": 36.5,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 12.199999999999989,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [503, 528],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [9, 10],
+					"gpuSamples": 6,
+					"gpuP50Ms": 28.87,
+					"gpuP95Ms": 35.02,
+					"shadowFrames": 62,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 5.96
+				},
+				"ride": {
+					"frames": 126,
+					"ms": {
+						"p50": 41.5,
+						"p95": 54.1,
+						"p99": 87.5,
+						"max": 91.7
+					},
+					"over50": 10,
+					"withinBudget": false,
+					"mainDraws": 1123,
+					"mainTriangles": 1671886,
+					"meanFrameCallbackMs": 36.7,
+					"meanRenderCpuMs": 33.2,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37.2,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [413, 502],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 9],
+					"gpuSamples": 11,
+					"gpuP50Ms": 19.57,
+					"gpuP95Ms": 70.9,
+					"shadowFrames": 124,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 5.5
+				},
+				"orbit": {
+					"frames": 168,
+					"ms": {
+						"p50": 37.5,
+						"p95": 187.3,
+						"p99": 437.6,
+						"max": 449.7
+					},
+					"over50": 31,
+					"withinBudget": false,
+					"mainDraws": 1042,
+					"mainTriangles": 1397020,
+					"meanFrameCallbackMs": 40.1,
+					"meanRenderCpuMs": 38.6,
+					"submittedMarkers": [300, 416],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 14,
+					"gpuP50Ms": 38.79,
+					"gpuP95Ms": 61.71,
+					"shadowFrames": 158,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 7.61
+				},
+				"farRide": {
+					"frames": 592,
+					"ms": {
+						"p50": 33.2,
+						"p95": 45.7,
+						"p99": 46.1,
+						"max": 116.7
+					},
+					"over50": 3,
+					"withinBudget": false,
+					"mainDraws": 54,
+					"mainTriangles": 144165,
+					"meanFrameCallbackMs": 18.3,
+					"meanRenderCpuMs": 14.3,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37.2,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.00000000000048,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [14, 413],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 50,
+					"gpuP50Ms": 29.31,
+					"gpuP95Ms": 41.43,
+					"shadowFrames": 426,
+					"shadowDrawsPerUpdate": 161.36,
+					"shadowCpuMsPerUpdate": 4.53
+				},
+				"farTurn": {
+					"frames": 325,
+					"ms": {
+						"p50": 12.4,
+						"p95": 16.7,
+						"p99": 20.8,
+						"max": 20.9
+					},
+					"over50": 0,
+					"withinBudget": true,
+					"mainDraws": 52,
+					"mainTriangles": 139815,
+					"meanFrameCallbackMs": 8.4,
+					"meanRenderCpuMs": 7.6,
+					"submittedMarkers": [13, 13],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 2],
+					"gpuSamples": 28,
+					"gpuP50Ms": 10.16,
+					"gpuP95Ms": 14.62,
+					"shadowFrames": 95,
+					"shadowDrawsPerUpdate": 149,
+					"shadowCpuMsPerUpdate": 3.93
+				}
+			}
+		},
+		{
+			"run": "road-pilot-instances/stress.json",
+			"stage": "complete",
+			"errors": [],
+			"fixture": {
+				"width": 110,
+				"height": 150,
+				"tiles": 16500,
+				"raised": 6196,
+				"objects": 628,
+				"npcs": 8,
+				"actors": 10,
+				"sha256": "8a7e922a45fc1e4c00ac726229bc066914d4caeda3a171791f6bd89a1ff56a0e"
+			},
+			"batching": "instances",
+			"artSha256": "14c7e72b78d2a4f044dbe9fc9041ac56b0ca6b8cdf8c9685fbd0b7e90e17b354",
+			"probes": "render",
+			"buildIndexSha256": "e774c764d3d7329642f2bf159571acf3ce4b806b97156d7a9f2c5f60c75206a1",
+			"surface": {
+				"css": {
+					"width": 960,
+					"height": 446
+				},
+				"buffer": {
+					"width": 960,
+					"height": 446
+				},
+				"dpr": 1,
+				"scenery": {
+					"enabled": true,
+					"markers": 475,
+					"instances": 888,
+					"draws": 224
+				}
+			},
+			"settle30FramesMs": 1541.7808999999997,
+			"farCamera": {
+				"eye": [0.5000003006989143, 4.262109526671155, 72.59095531123408],
+				"quaternion": [
+					-0.09132141817463002, 2.9283401604628265e-8, 2.6854228856658216e-9,
+					0.9958214692315956
+				],
+				"fov": 55,
+				"north": 0.983320797165147
+			},
+			"actions": {
+				"followWalk": {
+					"frames": 65,
+					"ms": {
+						"p50": 29.4,
+						"p95": 45.7,
+						"p99": 46,
+						"max": 46
+					},
+					"over50": 0,
+					"withinBudget": false,
+					"mainDraws": 859,
+					"mainTriangles": 2031366,
+					"meanFrameCallbackMs": 10,
+					"meanRenderCpuMs": 9,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 4,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 11.99999999999999,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [512, 546],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [9, 10],
+					"gpuSamples": 6,
+					"gpuP50Ms": 29.55,
+					"gpuP95Ms": 35.1,
+					"shadowFrames": 46,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.63
+				},
+				"ride": {
+					"frames": 109,
+					"ms": {
+						"p50": 37.3,
+						"p95": 46,
+						"p99": 50.1,
+						"max": 50.1
+					},
+					"over50": 2,
+					"withinBudget": false,
+					"mainDraws": 703,
+					"mainTriangles": 1793239,
+					"meanFrameCallbackMs": 10.9,
+					"meanRenderCpuMs": 9.7,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 13,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [446, 512],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 9],
+					"gpuSamples": 10,
+					"gpuP50Ms": 35.3,
+					"gpuP95Ms": 45.05,
+					"shadowFrames": 94,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.8
+				},
+				"orbit": {
+					"frames": 120,
+					"ms": {
+						"p50": 33.5,
+						"p95": 41.8,
+						"p99": 49.9,
+						"max": 79.2
+					},
+					"over50": 1,
+					"withinBudget": false,
+					"mainDraws": 685,
+					"mainTriangles": 1388489,
+					"meanFrameCallbackMs": 10.7,
+					"meanRenderCpuMs": 10,
+					"submittedMarkers": [332, 438],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [8, 8],
+					"gpuSamples": 10,
+					"gpuP50Ms": 34.88,
+					"gpuP95Ms": 42.63,
+					"shadowFrames": 105,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.93
+				},
+				"farRide": {
+					"frames": 811,
+					"ms": {
+						"p50": 20.8,
+						"p95": 37.5,
+						"p99": 41.7,
+						"max": 100
+					},
+					"over50": 2,
+					"withinBudget": false,
+					"mainDraws": 42,
+					"mainTriangles": 169255,
+					"meanFrameCallbackMs": 7.4,
+					"meanRenderCpuMs": 5.9,
+					"route": {
+						"from": {
+							"x": 55,
+							"y": 37,
+							"height": 1
+						},
+						"to": {
+							"x": 55,
+							"y": 142.00000000000048,
+							"height": 1
+						}
+					},
+					"submittedMarkers": [19, 433],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 8],
+					"gpuSamples": 67,
+					"gpuP50Ms": 18.42,
+					"gpuP95Ms": 37.09,
+					"shadowFrames": 422,
+					"shadowDrawsPerUpdate": 115.13,
+					"shadowCpuMsPerUpdate": 2.03
+				},
+				"farTurn": {
+					"frames": 187,
+					"ms": {
+						"p50": 12.6,
+						"p95": 50.1,
+						"p99": 100,
+						"max": 529
+					},
+					"over50": 11,
+					"withinBudget": false,
+					"mainDraws": 921,
+					"mainTriangles": 2193616,
+					"meanFrameCallbackMs": 8.5,
+					"meanRenderCpuMs": 7.8,
+					"submittedMarkers": [19, 558],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [2, 10],
+					"gpuSamples": 16,
+					"gpuP50Ms": 12.01,
+					"gpuP95Ms": 60.46,
+					"shadowFrames": 83,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 2.57
+				},
+				"farView": {
+					"frames": 76,
+					"ms": {
+						"p50": 37.6,
+						"p95": 50,
+						"p99": 62.5,
+						"max": 62.5
+					},
+					"over50": 3,
+					"withinBudget": false,
+					"mainDraws": 921,
+					"mainTriangles": 2193616,
+					"meanFrameCallbackMs": 11.9,
+					"meanRenderCpuMs": 11.3,
+					"position": {
+						"x": 55,
+						"y": 142.00000000000048,
+						"height": 1
+					},
+					"submittedMarkers": [558, 558],
+					"submittedProxyTrees": 0,
+					"submittedSkinnedRoots": [10, 10],
+					"gpuSamples": 7,
+					"gpuP50Ms": 39.89,
+					"gpuP95Ms": 59.53,
+					"shadowFrames": 73,
+					"shadowDrawsPerUpdate": 104,
+					"shadowCpuMsPerUpdate": 1.74
+				}
+			}
+		}
+	],
+	"historicalFixtureCalibration": {
+		"probes": "pacing",
+		"fixture": {
+			"width": 88,
+			"height": 120,
+			"tiles": 10560,
+			"raised": 3096,
+			"objects": 489,
+			"npcs": 12,
+			"actors": 14,
+			"sha256": "57638c57b3e904bce7831612d934e4a4a6964d5b94b8219ee4b00a0c93439d79"
+		},
+		"buildIndexSha256": "ca39219ada468313b23d04b494b53501d54a329b54fa7591de1bd38a37900fc7",
+		"actions": {
+			"followWalk": {
+				"frames": 149,
+				"ms": {
+					"p50": 12.6,
+					"p95": 25,
+					"p99": 58.4,
+					"max": 145.8
+				},
+				"over50": 2,
+				"withinBudget": false,
+				"mainDraws": 73,
+				"mainTriangles": 132552,
+				"meanFrameCallbackMs": 11.7,
+				"meanRenderCpuMs": 9.9,
+				"route": {
+					"from": {
+						"x": 44,
+						"y": 4,
+						"height": 1
+					},
+					"to": {
+						"x": 44,
+						"y": 12.199999999999989,
+						"height": 1
+					}
+				}
+			},
+			"ride": {
+				"frames": 221,
+				"ms": {
+					"p50": 16.7,
+					"p95": 29.3,
+					"p99": 99.8,
+					"max": 116.9
+				},
+				"over50": 3,
+				"withinBudget": false,
+				"mainDraws": 305,
+				"mainTriangles": 408894,
+				"meanFrameCallbackMs": 15.8,
+				"meanRenderCpuMs": 13.7,
+				"route": {
+					"from": {
+						"x": 44,
+						"y": 13,
+						"height": 1
+					},
+					"to": {
+						"x": 44,
+						"y": 37.400000000000006,
+						"height": 1
+					}
+				}
+			},
+			"orbit": {
+				"frames": 316,
+				"ms": {
+					"p50": 16.8,
+					"p95": 29.2,
+					"p99": 33.3,
+					"max": 37.6
+				},
+				"over50": 0,
+				"withinBudget": true,
+				"mainDraws": 285,
+				"mainTriangles": 422462,
+				"meanFrameCallbackMs": 16.8,
+				"meanRenderCpuMs": 15.6
+			},
+			"farRide": {
+				"frames": 462,
+				"ms": {
+					"p50": 29.2,
+					"p95": 46,
+					"p99": 50.2,
+					"max": 58.4
+				},
+				"over50": 12,
+				"withinBudget": false,
+				"mainDraws": 1206,
+				"mainTriangles": 1417918,
+				"meanFrameCallbackMs": 26.4,
+				"meanRenderCpuMs": 22.5,
+				"route": {
+					"from": {
+						"x": 44,
+						"y": 37.400000000000006,
+						"height": 1
+					},
+					"to": {
+						"x": 44,
+						"y": 112.40000000000107,
+						"height": 1
+					}
+				}
+			}
+		}
+	}
+}

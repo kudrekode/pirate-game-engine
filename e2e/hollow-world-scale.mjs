@@ -12,6 +12,7 @@ export function observeWorldCamera() {
 	window.__THREE_DEVTOOLS__ = events;
 	events.addEventListener("observe", ({ detail: renderer }) => {
 		if (!renderer.isWebGLRenderer) return;
+		window.hollowWorldRenderer = new WeakRef(renderer);
 		const draw = renderer.render.bind(renderer);
 		renderer.render = (scene, camera) => {
 			if (window.hollowCamera?.deref() !== camera)
@@ -19,6 +20,33 @@ export function observeWorldCamera() {
 			draw(scene, camera);
 		};
 	});
+}
+
+export async function captureWorldBitmap(page, pose) {
+	// Read the true displayed color buffer immediately after a render; the
+	// driver can discard it after the callback returns. HUD belongs to the DOM.
+	const png = await page.evaluate(
+		(pose) =>
+			new Promise((resolvePng) => {
+				const renderer = window.hollowWorldRenderer.deref();
+				const draw = renderer.render;
+				renderer.render = function (scene, camera) {
+					this.render = draw;
+					const shot = pose ? camera.clone() : camera;
+					if (pose) {
+						shot.position.fromArray(pose.eye);
+						shot.lookAt(...pose.target);
+						shot.fov = pose.fov;
+						shot.updateProjectionMatrix();
+						shot.updateMatrixWorld(true);
+					}
+					draw.call(this, scene, shot);
+					resolvePng(this.domElement.toDataURL("image/png"));
+				};
+			}),
+		pose,
+	);
+	return Buffer.from(png.split(",")[1], "base64");
 }
 
 // Hook the same loader the bundle imports. Parse timings are wall time with
@@ -62,6 +90,7 @@ export async function measureWorldScale({
 	data,
 	checkpoint,
 	build,
+	captureWorldView,
 	ready,
 	sample,
 	memory,
@@ -96,6 +125,22 @@ export async function measureWorldScale({
 		}
 		assert.equal(snapshot.raf.activeLoopCount, 1);
 		assert.equal(snapshot.asset.errorFallbackCount, 0);
+		if (data.fieldStudy) {
+			assert.equal(snapshot.asset.missingFallbackCount, 0);
+			const placed = new Set(
+				fixture.project.areas[0].objects.map(
+					(object) => object.objectDefinitionId,
+				),
+			);
+			for (const definition of fixture.project.objects) {
+				const id = definition.threeVisual?.assetId;
+				if (placed.has(definition.id) && id?.startsWith("mere-lane-"))
+					assert.ok(
+						snapshot.asset.activeImportedAssetIds.includes(id),
+						`Expected loaded scenery: ${id}`,
+					);
+			}
+		}
 		return {
 			readyMs: performance.now() - started,
 			scene: snapshot.scene,
@@ -104,6 +149,40 @@ export async function measureWorldScale({
 		};
 	}
 	data.cold = await open();
+	if (data.fieldStudy) {
+		const surface = await canvas(page).evaluate((node) => {
+			const size = node.getBoundingClientRect();
+			return {
+				css: { width: size.width, height: size.height },
+				buffer: { width: node.width, height: node.height },
+				dpr: window.devicePixelRatio,
+				scenery: JSON.parse(node.dataset.sceneryBatching),
+			};
+		});
+		assert.ok(surface.buffer.width > 0 && surface.buffer.height > 0);
+		assert.equal(surface.scenery.enabled, data.fieldStudy.batching !== "off");
+		assert.equal(
+			surface.scenery.mode,
+			data.fieldStudy.batching === "on" ? "lod" : data.fieldStudy.batching,
+		);
+		assert.equal(surface.scenery.markers > 0, surface.scenery.enabled);
+		data.fieldStudy.surface = surface;
+		// Loading can finish ahead of the driver's first shaded frames. Track
+		// this cost separately from the settled input budget, including stalls.
+		const started = performance.now();
+		await page.evaluate(
+			() =>
+				new Promise((done) => {
+					let frames = 0;
+					const settle = () => {
+						if (++frames === 30) done();
+						else requestAnimationFrame(settle);
+					};
+					requestAnimationFrame(settle);
+				}),
+		);
+		data.fieldStudy.settle30FramesMs = performance.now() - started;
+	}
 	data.parses = await page.evaluate(() => window.worldModelParses);
 	assert.ok(data.parses.length > 0);
 	const start = await position(page);
@@ -211,6 +290,8 @@ export async function measureWorldScale({
 			window.hollowCamera.deref().matrixWorld.elements[10] < 0 ? "w" : "s",
 		);
 	const forwardKey = await southboundKey();
+	if (data.fieldStudy)
+		assert.equal(forwardKey, "w", "Face into the valley at spawn");
 	await travel("followWalk", 11.8, forwardKey);
 	await page.waitForTimeout(350);
 	await canvas(page).focus();
@@ -243,8 +324,119 @@ export async function measureWorldScale({
 	// to the far boundary on a real, uninterrupted mounted journey.
 	await button("Follow Player").click();
 	await page.waitForTimeout(750);
-	await travel("farRide", fixture.counts.height - 8, await southboundKey());
+	const rideKey = await southboundKey();
+	if (data.fieldStudy)
+		assert.equal(rideKey, "w", "Ride forward down the valley");
+	await travel("farRide", fixture.counts.height - 8, rideKey);
+	if (data.fieldStudy) {
+		await inspect(page);
+		await page.waitForTimeout(300);
+		const yaw = await page.evaluate(() => {
+			const m = window.hollowCamera.deref().matrixWorld.elements;
+			return Math.atan2(m[8], m[10]);
+		});
+		// Inspect uses 0.005 radians per horizontal pointer pixel. Turn back
+		// over the entire road via a real Alt-drag from the settled follow rig.
+		const dx = -yaw / 0.005;
+		const bounds = await viewport.boundingBox();
+		const x = bounds.x + bounds.width * (dx < 0 ? 0.67 : 0.33);
+		const y = bounds.y + bounds.height * 0.78;
+		assert.ok(
+			await viewport.evaluate(
+				(canvas, point) =>
+					document.elementFromPoint(point.x, point.y) === canvas,
+				{ x, y },
+			),
+			"Start the orbit on the canvas clear of the runtime HUD",
+		);
+		await page.mouse.move(x, y);
+		await page.keyboard.down("Alt");
+		await page.mouse.down();
+		try {
+			data.runtime.farTurn = await sample(page, label, async () => {
+				for (let i = 1; i <= 48; i++) {
+					await page.mouse.move(x + (dx * i) / 48, y);
+					await page.waitForTimeout(32);
+				}
+			});
+		} finally {
+			await page.mouse.up();
+			await page.keyboard.up("Alt");
+		}
+		await page.waitForTimeout(450);
+		data.fieldStudy.farCamera = await page.evaluate(() => {
+			const camera = window.hollowCamera.deref();
+			return {
+				eye: camera.position.toArray(),
+				quaternion: camera.quaternion.toArray(),
+				fov: camera.fov,
+				north: camera.matrixWorld.elements[10],
+			};
+		});
+		assert.ok(
+			data.fieldStudy.farCamera.north > 0.85,
+			"Look back north over the road",
+		);
+		data.runtime.farView = await sample(page, label);
+		if (
+			data.fieldStudy.batching === "on" &&
+			fixture.counts.height >= 120 &&
+			data.runtime.farView.view
+		)
+			assert.ok(
+				data.runtime.farView.view.submittedProxyTrees > 0,
+				"Submit distant tree representatives on the long view",
+			);
+		if (data.runtime.farView.view)
+			assert.ok(
+				data.runtime.farView.view.maxVisibleMarkers >
+					fixture.counts.objects * 0.3,
+				"Far vista submits the valley",
+			);
+		data.runtime.farView.position = await position(page);
+		await checkpoint("farView");
+	}
 	data.playHeap = await memory(cdp);
+	if (captureWorldView && data.fieldStudy) {
+		const { width, height } = fixture.counts;
+		const eye = [
+			Math.floor(width / 2) - width / 2 + 0.5,
+			4.2,
+			height / 2 - 2.1,
+		];
+		const road = { eye, target: [eye[0], 2.2, eye[2] - 12], fov: 55 };
+		const area = fixture.project.areas[0];
+		const trees = area.objects
+			.filter((object) =>
+				["mere-spruce", "mere-lane-ash"].includes(object.objectDefinitionId),
+			)
+			.map((object) => {
+				const offset = object.transform?.position;
+				const x = object.x - width / 2 + 0.5 + (offset?.x ?? 0);
+				const z = object.y - height / 2 + 0.5 + (offset?.z ?? 0);
+				const terrainHeight =
+					area.terrainHeights.find(
+						(tile) => tile.x === object.x && tile.y === object.y,
+					)?.height ?? 0;
+				return {
+					id: object.id,
+					target: [x, terrainHeight + 2.3, z],
+					distance: Math.hypot(x - eye[0], z - eye[2]),
+				};
+			})
+			.filter((tree) => tree.target[2] < eye[2] - 25)
+			.sort((a, b) => Math.abs(a.distance - 42) - Math.abs(b.distance - 42));
+		const tree = trees[0];
+		const detail = { eye, target: tree.target, fov: 28 };
+		data.fieldStudy.tripods = {
+			road,
+			detail,
+			tree: tree.id,
+			distance: tree.distance,
+		};
+		await captureWorldView("far-road", road);
+		await captureWorldView("tree-detail", detail);
+	} else await captureWorldView?.("far-road");
 	await button("Back to Edit").click();
 	data.editHeap = await memory(cdp);
 	data.warm = await open();
@@ -253,4 +445,5 @@ export async function measureWorldScale({
 		(prior) => window.worldModelParses.length - prior,
 		data.parses.length,
 	);
+	await captureWorldView?.("entrance");
 }

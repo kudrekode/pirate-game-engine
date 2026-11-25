@@ -3,6 +3,17 @@ import { migrateProject } from "./migrateProject";
 import { importProjectJson } from "./projectImport";
 
 describe("migrateProject", () => {
+	it("retains a blue-hour area and its authored fog through export and import", () => {
+		const project = migrateProject({});
+		project.areas[0].theme = {
+			atmosphere: "blue-hour",
+			fog: { near: 6, far: 98 },
+		};
+		expect(importProjectJson(JSON.stringify(project)).areas[0].theme).toEqual(
+			project.areas[0].theme,
+		);
+	});
+
 	it("round-trips area fog and keeps existing atmosphere preset defaults", () => {
 		const project = migrateProject({});
 		const [area] = project.areas;

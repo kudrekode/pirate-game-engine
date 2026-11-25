@@ -251,7 +251,12 @@ export type GameAreaKind =
 	| "custom";
 
 export type AreaThemeConfig = {
-	atmosphere?: "clear-day" | "golden-hour" | "overcast" | "moonlit";
+	atmosphere?:
+		| "clear-day"
+		| "golden-hour"
+		| "overcast"
+		| "moonlit"
+		| "blue-hour";
 	fog?: { enabled?: boolean; near?: number; far?: number };
 	primaryTerrainId?: string;
 	accentTerrainId?: string;

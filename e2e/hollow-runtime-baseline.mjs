@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { cpus, platform, release, totalmem } from "node:os";
 import { extname, resolve, sep } from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { installRenderProbe } from "./hollow-render-probe.mjs";
@@ -15,14 +17,28 @@ import {
 // when the browser cannot connect to localhost. Use the same mode in both runs.
 const [, , buildArgument, outputArgument, ...options] = process.argv;
 const cameraOnly = options.includes("--camera");
+const laneGallery = options.includes("--lane-gallery");
 const lifecycleOnly = options.includes("--lifecycle");
-const worldScale = options.includes("--world-scale");
+const fieldStudy = options.includes("--field-study");
+const worldScale = fieldStudy || options.includes("--world-scale");
+const batching = options.includes("--unbatched")
+	? "off"
+	: options.includes("--instances-only")
+		? "instances"
+		: "on";
 const playSession = options.includes("--play-session");
 const transitionOnly = options.includes("--transition-only");
 const traceScheduler = options.includes("--trace-scheduler");
 const traceTransition =
 	options.includes("--trace-transition") || traceScheduler;
 const selected = options.filter((option) => !option.startsWith("--"));
+const landscape = fieldStudy
+	? await import("../tools/hollow-kingdom/field-study/fixture.mjs")
+	: undefined;
+if (landscape && options.includes("--list")) {
+	console.table(landscape.landscapeScales);
+	process.exit(0);
+}
 if (!buildArgument || !outputArgument) {
 	throw new Error(
 		[
@@ -32,6 +48,8 @@ if (!buildArgument || !outputArgument) {
 			"  Ridge options: --repeat-ridge, --trace-transition, --trace-scheduler, --ridge-recovery",
 			"  Animation/shadow options: --observe-gaits, --view-gaits, --verify-shadows, --native-mounted-shadows",
 			"  --world-scale [small] [medium] [large] [stress] [frontier]",
+			"  --field-study [--list] [--unbatched | --instances-only] [small | medium | large | stress | upland | frontier | reach]",
+			"  Add --world-views to record the far view and warm-replay spawn after the timed samples.",
 			"  World options: --world-phases [--world-fixed-matrices] or --world-pacing-only",
 		].join("\n"),
 	);
@@ -54,7 +72,9 @@ const angle = process.env.HOLLOW_ANGLE;
 const chromiumArgs = angle
 	? [`--use-angle=${angle}`, "--ignore-gpu-blocklist"]
 	: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"];
-const viewport = { width: 960, height: 600 };
+const viewport = laneGallery
+	? { width: 1536, height: 960 }
+	: { width: 960, height: 600 };
 const roots = [resolve(buildArgument), resolve("public")];
 const output = resolve(outputArgument);
 const offline = process.env.HOLLOW_OFFLINE_ROUTE === "1";
@@ -64,6 +84,7 @@ const contentTypes = {
 	".js": "text/javascript",
 	".json": "application/json",
 	".jpg": "image/jpeg",
+	".webp": "image/webp",
 	".png": "image/png",
 	".glb": "model/gltf-binary",
 	".wav": "audio/wav",
@@ -80,6 +101,20 @@ function findAsset(address) {
 
 function contentType(file) {
 	return contentTypes[extname(file)] ?? "application/octet-stream";
+}
+
+// The test build serves these authored images and models from public/. A
+// matching JS bundle alone cannot identify two loads of the same art revision.
+async function landscapeArtHash() {
+	const folder = resolve("public/assets/hollow-kingdom");
+	const files = (await readdir(folder, { recursive: true }))
+		.filter((name) => /\.(?:glb|gltf|jpe?g|png|webp|ktx2)$/i.test(name))
+		.map((name) => name.split(sep).join("/"));
+	const hash = createHash("sha256");
+	for (const name of files.sort()) {
+		hash.update(name).update(await readFile(resolve(folder, name)));
+	}
+	return hash.digest("hex");
 }
 
 function server() {
@@ -173,6 +208,11 @@ async function startFrames(page, label) {
 		};
 		requestAnimationFrame(record);
 	}, label);
+	if (fieldStudy) {
+		// Establish a timestamp before input. The first interval must include
+		// any expensive frame immediately after the action starts.
+		await page.evaluate(() => new Promise(requestAnimationFrame));
+	}
 }
 
 function stats(intervals) {
@@ -834,6 +874,10 @@ async function writeReport(file, data) {
 }
 
 const projects = {
+	...(laneGallery && {
+		"merewatch-art": { file: "merewatch-field-study.project.json" },
+		"green-road": { file: "merewatch-vale.project.json" },
+	}),
 	merewatch: {
 		file: "hollow-kingdom.project.json",
 		editorAreas: ["merewatch"],
@@ -873,6 +917,11 @@ async function runProject(browser, address, id, machine) {
 				? "native-mounted"
 				: options.includes("--verify-shadows"),
 		);
+	if (laneGallery) {
+		await page.addInitScript({
+			content: `window.hollowWorldScale = true; (${installRenderProbe})(false);`,
+		});
+	}
 	page.setDefaultTimeout(timeout);
 	const cdp = await context.newCDPSession(page);
 	const errors = [];
@@ -887,9 +936,23 @@ async function runProject(browser, address, id, machine) {
 		stage: "import",
 	};
 	const report = resolve(output, `${id}.json`);
-	const fixture = worldScale
-		? await (await import("./hollow-world-fixture.mjs")).createWorldFixture(id)
-		: undefined;
+	const fixture = landscape
+		? await landscape.createLandscapeFixture(id)
+		: worldScale
+			? await (await import("./hollow-world-fixture.mjs")).createWorldFixture(
+					id,
+				)
+			: undefined;
+	if (fieldStudy) {
+		data.fieldStudy = {
+			batching,
+			artSha256: await landscapeArtHash(),
+			probes: options.includes("--world-pacing-only") ? "pacing" : "render",
+			buildIndexSha256: createHash("sha256")
+				.update(await readFile(resolve(roots[0], "index.html")))
+				.digest("hex"),
+		};
+	}
 	const { file, editorAreas } = projects[id] ?? {};
 	const checkpoint = async (stage) => {
 		data.stage = stage;
@@ -911,7 +974,14 @@ async function runProject(browser, address, id, machine) {
 			return;
 		}
 		const navigationStarted = performance.now();
-		await page.goto(address, { waitUntil: "domcontentloaded" });
+		await page.goto(
+			fieldStudy || laneGallery
+				? `${address}/?sceneryBatching=${batching}`
+				: address,
+			{
+				waitUntil: "domcontentloaded",
+			},
+		);
 		data.domLoadedMs = performance.now() - navigationStarted;
 		await page
 			.locator('input[type="file"]')
@@ -926,8 +996,25 @@ async function runProject(browser, address, id, machine) {
 					: file,
 			);
 		await expect(button(page, "Map Editor")).toBeVisible({ timeout });
+		if (laneGallery) {
+			const { captureCottageLane } = await import("./hollow-lane-gallery.mjs");
+			data.gallery = await captureCottageLane({
+				page,
+				ready,
+				sample,
+				output,
+				id,
+				position,
+				canvas,
+			});
+			assert.deepEqual(errors, []);
+			await checkpoint("complete");
+			return;
+		}
 		if (fixture) {
-			const { measureWorldScale } = await import("./hollow-world-scale.mjs");
+			const { captureWorldBitmap, measureWorldScale } = await import(
+				"./hollow-world-scale.mjs"
+			);
 			await measureWorldScale({
 				page,
 				cdp,
@@ -935,6 +1022,13 @@ async function runProject(browser, address, id, machine) {
 				data,
 				checkpoint,
 				build: roots[0],
+				captureWorldView: options.includes("--world-views")
+					? async (name, pose) =>
+							writeFile(
+								resolve(output, `${id}-${name}.png`),
+								await captureWorldBitmap(page, pose),
+							)
+					: undefined,
 				ready,
 				sample,
 				memory,
@@ -942,6 +1036,12 @@ async function runProject(browser, address, id, machine) {
 				inspect,
 				canvas,
 			});
+			if (fieldStudy)
+				assert.equal(
+					await landscapeArtHash(),
+					data.fieldStudy.artSha256,
+					"Field-study assets changed during the route",
+				);
 			assert.deepEqual(errors, []);
 			await checkpoint("complete");
 			return;
@@ -1191,11 +1291,24 @@ try {
 		if (angle === "d3d11")
 			assert.match(gpu.auxAttributes?.glRenderer ?? "", /direct3d11/i);
 		const machine = { chrome: browser.version(), chromiumArgs, gpu, offline };
-		const fixtures = worldScale
-			? Object.keys((await import("./hollow-world-fixture.mjs")).worldScales)
-			: playSession
-				? ["chapter-one"]
-				: Object.keys(projects);
+		if (fieldStudy) {
+			const processors = cpus();
+			machine.host = {
+				os: `${platform()} ${release()}`,
+				cpu: processors[0]?.model,
+				logicalCpus: processors.length,
+				ramGiB: Math.round(totalmem() / 2 ** 30),
+			};
+		}
+		const fixtures = landscape
+			? Object.keys(landscape.landscapeScales)
+			: worldScale
+				? Object.keys((await import("./hollow-world-fixture.mjs")).worldScales)
+				: playSession
+					? ["chapter-one"]
+					: laneGallery
+						? ["merewatch", "merewatch-art"]
+						: Object.keys(projects);
 		for (const id of selected.length ? selected : fixtures) {
 			assert.ok(
 				worldScale ? fixtures.includes(id) : projects[id],

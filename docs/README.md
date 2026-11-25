@@ -71,6 +71,7 @@ Historical implementation results, acceptance evidence and known limitations.
 - [Third-Person Movement + Camera Feel V3](reports/THIRD_PERSON_MOVEMENT_CAMERA_V3_RESULT.md)
 - [Third-Person Pointer Lock Input Pass](reports/THIRD_PERSON_POINTER_LOCK_RESULT.md)
 - [Three Runtime Performance Investigation](reports/THREE_RUNTIME_PERFORMANCE_RESULT.md)
+- [Merewatch by Lamplight — playable art comparison and continuous-world benchmarks](reports/MEREWATCH_FIELD_STUDY.md)
 - [Traversal & Collision Pass — Tidewatch Harbour](reports/TRAVERSAL_COLLISION_PASS_RESULT.md)
 - [Validation Optimisation Result — Phase 1](reports/VALIDATION_OPTIMISATION_RESULT.md)
 - [World Asset Library Pass — Result](reports/WORLD_ASSET_LIBRARY_PASS_RESULT.md)
