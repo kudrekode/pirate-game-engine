@@ -337,6 +337,8 @@ export type EditorSelection =
 	| null;
 
 export type GameArea = {
+	/** Repeatable encounter, starting at the area's first spawn block. */
+	encounter?: { briefing: string; weaponItemId: string };
 	id: string;
 	name: string;
 	kind: GameAreaKind;
@@ -527,6 +529,18 @@ export type EnemyBehaviour = {
 	contactDamage?: number;
 	/** Cycles in authored order. A nonempty list replaces legacy contact damage. */
 	attacks?: EnemyAttack[];
+	weapon?: "sword" | "bow";
+	keepDistanceTiles?: number;
+	body?: { radius: number; height: number };
+	weaponAssetId?: string;
+	/** Frontal blade defence. A fresh threat beyond the cadence window starts a new sequence. */
+	swordTactics?: {
+		parryAfter: number;
+		reactionMs: number;
+		counterWindupMs: number;
+	};
+	guardWindup?: boolean;
+	staggerMs?: number;
 };
 
 export type EnemyAttack = {
@@ -540,6 +554,9 @@ export type EnemyAttack = {
 	/** Optional names of embedded clips in the NPC's existing Three asset. */
 	windupClip?: string;
 	strikeClip?: string;
+	/** Ballistic shot along the heading committed at windup. */
+	arrowSpeed?: number;
+	unblockable?: boolean;
 };
 
 export type NPCInstance = {
@@ -865,6 +882,16 @@ export type InventoryState = {
 	items: Record<string, number>;
 };
 
+export type MeleeProfile = {
+	activeMs?: number;
+	weaponAssetId?: string;
+	damage: number;
+	reachTiles: number;
+	impactMs: number;
+	cooldownMs: number;
+	parryMs: number;
+};
+
 export type ItemDefinition = {
 	id: string;
 	name: string;
@@ -872,6 +899,7 @@ export type ItemDefinition = {
 	category: "key" | "currency" | "consumable" | "quest" | "misc" | "weapon";
 	/** Optional behaviour reference; ordinary items carry no combat fields. */
 	weapon?: "sword" | "bow";
+	melee?: MeleeProfile;
 	iconId?: string;
 	stackable: boolean;
 	maxStack?: number;

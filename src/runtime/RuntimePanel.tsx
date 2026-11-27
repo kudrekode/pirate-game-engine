@@ -1,6 +1,6 @@
 import type Phaser from "phaser";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { GameProject } from "../types/game";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import type { GameArea, GameProject } from "../types/game";
 import type { AdventureScene } from "./AdventureScene";
 import { getPlayerCombatStats, type RuntimeCombatHudState } from "./combat";
 import type { RuntimeDebugEvent } from "./debugLog";
@@ -18,10 +18,14 @@ import {
 } from "./QuestPresentation";
 import type { QuestView } from "./questEngine";
 import { getCurrencyHudEntries } from "./runtimeHud";
-import type { RuntimeSessionState } from "./runtimeSession";
+import {
+	createRuntimeSession,
+	type RuntimeSessionState,
+} from "./runtimeSession";
 import type { RuntimeShopPanelState } from "./shopRuntime";
 import type { StoryDebugSnapshot } from "./storyRuntime";
 import { ThreeRuntimePanel } from "./three/ThreeRuntimePanel";
+import { CinematicRendererOwner } from "./three/threeRendererOwner";
 import {
 	InventoryNotifications,
 	useInventoryPresentation,
@@ -104,6 +108,19 @@ export function RuntimePanel(props: RuntimePanelProps) {
 	);
 }
 
+function encounterStart(project: GameProject, area: GameArea | undefined) {
+	if (!area?.encounter) return undefined;
+	const spawn = area.eventBlocks.find((b) => b.kind === "spawn");
+	const session = createRuntimeSession(project);
+	session.currentAreaId = area.id;
+	session.playerPosition = {
+		x: spawn?.x ?? Math.floor(area.width / 2),
+		y: spawn?.y ?? Math.floor(area.height / 2),
+	};
+	session.equippedWeaponId = area.encounter.weaponItemId;
+	return createGameSave(project, session);
+}
+
 function RuntimePlayPanel({
 	project,
 	onClose,
@@ -116,7 +133,16 @@ function RuntimePlayPanel({
 	initialSave?: GameSave;
 	protectPreviousSave: boolean;
 }) {
-	const [resumeSave, setResumeSave] = useState(initialSave);
+	const encounters = project.areas.filter((area) => area.encounter);
+	const [trialId, setTrialId] = useState<string | undefined>(
+		initialSave?.player.areaId ?? encounters[0]?.id,
+	);
+	const trial = encounters.find((area) => area.id === trialId);
+	const PlayRenderer = trial ? CinematicRendererOwner : Fragment;
+	const [resumeSave, setResumeSave] = useState(
+		() => initialSave ?? encounterStart(project, trial),
+	);
+	const hasSave = useRef(!!initialSave || protectPreviousSave);
 	const [protectSave, setProtectSave] = useState(protectPreviousSave);
 	const [saveMessage, setSaveMessage] = useState("");
 	const [phaserState, setPhaserState] = useState<"loading" | "ready" | "error">(
@@ -137,6 +163,7 @@ function RuntimePlayPanel({
 				createGameSave(project, session),
 				saveStorage ?? localStorage,
 			);
+			hasSave.current = true;
 			setProtectSave(false);
 			setReplacePending(false);
 			setSaveMessage("Game saved.");
@@ -146,15 +173,19 @@ function RuntimePlayPanel({
 			);
 		}
 	}
-	function restartGame() {
-		setResumeSave(undefined);
-		setProtectSave(true);
+	function restartGame(next = trial) {
+		setTrialId(next?.id);
+		setResumeSave(encounterStart(project, next));
+		setReplacePending(false);
+		setProtectSave(next ? hasSave.current : true);
 		setSaveMessage("");
 		setRuntimeKey((key) => key + 1);
 	}
 	const containerRef = useRef<HTMLDivElement>(null);
 	const sceneRef = useRef<AdventureScene | null>(null);
-	const [playMode, setPlayMode] = useState<"2d" | "3d">(initialMode);
+	const [playMode, setPlayMode] = useState<"2d" | "3d">(
+		trial ? "3d" : initialMode,
+	);
 	const {
 		inventory,
 		updateInventory: setInventory,
@@ -364,6 +395,31 @@ function RuntimePlayPanel({
 							Play 3D Experimental
 						</button>
 					</div>
+					{encounters.length > 0 && playMode === "2d" && (
+						<>
+							<label>
+								Encounter{" "}
+								<select
+									aria-label="Encounter"
+									value={trialId}
+									onChange={(event) =>
+										restartGame(
+											encounters.find((area) => area.id === event.target.value),
+										)
+									}
+								>
+									{encounters.map((area) => (
+										<option key={area.id} value={area.id}>
+											{area.name}
+										</option>
+									))}
+								</select>
+							</label>
+							<button type="button" onClick={() => restartGame()}>
+								Reset encounter
+							</button>
+						</>
+					)}
 					<button type="button" onClick={() => saveGame()}>
 						Save Game
 					</button>
@@ -392,14 +448,17 @@ function RuntimePlayPanel({
 			</div>
 			<div className="runtime-stage">
 				{playMode === "3d" ? (
-					<ThreeRuntimePanel
-						key={runtimeKey}
-						onRestart={restartGame}
-						initialSave={resumeSave}
-						saveSessionRef={saveSessionRef}
-						onStoryDebug={onStoryDebug}
-						project={project}
-					/>
+					<PlayRenderer>
+						<ThreeRuntimePanel
+							onSelectEncounter={restartGame}
+							key={runtimeKey}
+							onRestart={restartGame}
+							initialSave={resumeSave}
+							saveSessionRef={saveSessionRef}
+							onStoryDebug={onStoryDebug}
+							project={project}
+						/>
+					</PlayRenderer>
 				) : (
 					<>
 						{phaserState === "loading" && (
@@ -447,7 +506,7 @@ function RuntimePlayPanel({
 						{combat.gameOver ? (
 							<button
 								className="runtime-restart-button"
-								onClick={restartGame}
+								onClick={() => restartGame()}
 								type="button"
 							>
 								Restart

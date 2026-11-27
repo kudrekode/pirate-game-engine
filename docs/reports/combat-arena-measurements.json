@@ -1,0 +1,1030 @@
+[
+	{
+		"browser": "158.0.8127.37",
+		"bundleSha256": "6ab766eaa9caeba84f07b7de6b68a280214e336767616569d4b4d1980d44ebc9",
+		"id": "blade",
+		"perf": {
+			"samples": 317,
+			"p50": 16.5,
+			"p95": 20.9,
+			"p99": 37.4,
+			"gpuSamples": 27,
+			"gpuMedian": 14.2,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 119,
+			"triangles": 265480,
+			"callback": {
+				"averageMs": 3.2,
+				"count": 318,
+				"lastMs": 2.7,
+				"worstMs": 6.6
+			},
+			"render": {
+				"averageMs": 2.5,
+				"count": 318,
+				"lastMs": 2.3,
+				"worstMs": 5.7
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 318,
+				"lastMs": 0.1,
+				"worstMs": 0.8
+			},
+			"mixers": 2,
+			"skinnedMeshes": 23,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		},
+		"swing": {
+			"initial": 84,
+			"immediate": 84,
+			"after": 62,
+			"delayMs": 234
+		},
+		"continuedEnemyHealth": 62,
+		"beforeContinue": {
+			"messages": [
+				"Fight.",
+				"Rook, quay duellist prepares a shoulder cut.",
+				"Rook, quay duellist: a shoulder cut hits. Health 98/112.",
+				"Rook, quay duellist prepares a long thrust.",
+				"Guard raised.",
+				"Blocked.",
+				"Rook, quay duellist prepares a shoulder cut.",
+				"Guard raised.",
+				"Parry! The opponent is staggered.",
+				"Hit Rook, quay duellist for 22."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenReference_Walk_InPlace",
+				"GoldenSword_Attack_V1",
+				"GoldenCombat_Hit_V1"
+			],
+			"projectiles": [],
+			"positions": ["11,12", "11,11", "11,10", "11,9", "11,8"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenCombat_Hit_V1",
+				"GoldenSword_Attack_V1"
+			],
+			"loops": {
+				"GoldenCombat_Hit_V1": 1
+			},
+			"events": [
+				{
+					"t": 4326.7,
+					"msg": "Fight."
+				},
+				{
+					"t": 6805.7,
+					"msg": "Rook, quay duellist prepares a shoulder cut."
+				},
+				{
+					"t": 7751.6,
+					"msg": "Rook, quay duellist: a shoulder cut hits. Health 98/112."
+				},
+				{
+					"t": 9201.7,
+					"msg": "Rook, quay duellist prepares a long thrust."
+				},
+				{
+					"t": 9493.1,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 10314,
+					"msg": "Blocked."
+				},
+				{
+					"t": 11905.5,
+					"msg": "Rook, quay duellist prepares a shoulder cut."
+				},
+				{
+					"t": 12668.1,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 12855.6,
+					"msg": "Parry! The opponent is staggered."
+				},
+				{
+					"t": 13097.3,
+					"msg": "Hit Rook, quay duellist for 22."
+				}
+			]
+		},
+		"log": {
+			"messages": [
+				"Fight.",
+				"Attack missed.",
+				"Hit Rook, quay duellist for 22.",
+				"Rook, quay duellist prepares a shoulder cut.",
+				"Hit Rook, quay duellist for 22.",
+				"Rook, quay duellist prepares a shoulder cut.",
+				"Victory. The court is yours."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenReference_Walk_InPlace",
+				"GoldenCombat_Hit_V1",
+				"GoldenSword_Attack_V1"
+			],
+			"projectiles": [],
+			"positions": ["11,12", "11,11", "11,10", "11,9", "11,8"],
+			"playerClips": ["GoldenReference_Idle", "GoldenSword_Attack_V1"],
+			"loops": {},
+			"events": [
+				{
+					"t": 14584.8,
+					"msg": "Fight."
+				},
+				{
+					"t": 14672.6,
+					"msg": "Attack missed."
+				},
+				{
+					"t": 16826.7,
+					"msg": "Hit Rook, quay duellist for 22."
+				},
+				{
+					"t": 16980.7,
+					"msg": "Rook, quay duellist prepares a shoulder cut."
+				},
+				{
+					"t": 17568.1,
+					"msg": "Hit Rook, quay duellist for 22."
+				},
+				{
+					"t": 18068.1,
+					"msg": "Rook, quay duellist prepares a shoulder cut."
+				},
+				{
+					"t": 18330.8,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"victory": true
+	},
+	{
+		"browser": "158.0.8127.37",
+		"bundleSha256": "6ab766eaa9caeba84f07b7de6b68a280214e336767616569d4b4d1980d44ebc9",
+		"id": "bow",
+		"perf": {
+			"samples": 338,
+			"p50": 12.8,
+			"p95": 20.7,
+			"p99": 25.3,
+			"gpuSamples": 28,
+			"gpuMedian": 14.06,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 113,
+			"triangles": 255164,
+			"callback": {
+				"averageMs": 3.1,
+				"count": 339,
+				"lastMs": 2.3,
+				"worstMs": 9.1
+			},
+			"render": {
+				"averageMs": 2.4,
+				"count": 339,
+				"lastMs": 1.7,
+				"worstMs": 8
+			},
+			"animation": {
+				"averageMs": 0.3,
+				"count": 339,
+				"lastMs": 0.1,
+				"worstMs": 3
+			},
+			"mixers": 2,
+			"skinnedMeshes": 22,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		},
+		"approach": {
+			"messages": [
+				"Fight.",
+				"The Yew Warden prepares an aimed shaft.",
+				"The Yew Warden looses an aimed shaft.",
+				"Arrow hits. Health 96/112.",
+				"The Yew Warden prepares an aimed shaft.",
+				"The Yew Warden looses an aimed shaft.",
+				"Arrow hits. Health 80/112.",
+				"The Yew Warden prepares an aimed shaft.",
+				"The Yew Warden looses an aimed shaft."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenBow_Fire_V1",
+				"GoldenReference_Walk_InPlace"
+			],
+			"projectiles": ["flight", "player", "world"],
+			"positions": ["11,16", "11,17", "10,17"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenCombat_Hit_V1",
+				"GoldenBow_Fire_V1",
+				"GoldenReference_Walk_InPlace"
+			],
+			"loops": {},
+			"events": [
+				{
+					"t": 23947.3,
+					"msg": "Fight."
+				},
+				{
+					"t": 24418.2,
+					"msg": "The Yew Warden prepares an aimed shaft."
+				},
+				{
+					"t": 25697.1,
+					"msg": "The Yew Warden looses an aimed shaft."
+				},
+				{
+					"t": 26564,
+					"msg": "Arrow hits. Health 96/112."
+				},
+				{
+					"t": 26855.7,
+					"msg": "The Yew Warden prepares an aimed shaft."
+				},
+				{
+					"t": 28059.8,
+					"msg": "The Yew Warden looses an aimed shaft."
+				},
+				{
+					"t": 28939,
+					"msg": "Arrow hits. Health 80/112."
+				},
+				{
+					"t": 29201.4,
+					"msg": "The Yew Warden prepares an aimed shaft."
+				},
+				{
+					"t": 30455.4,
+					"msg": "The Yew Warden looses an aimed shaft."
+				}
+			]
+		},
+		"log": {
+			"messages": [
+				"Fight.",
+				"The Yew Warden prepares an aimed shaft.",
+				"The Yew Warden looses an aimed shaft.",
+				"Hit The Yew Warden for 27.",
+				"Arrow hits. Health 96/112.",
+				"The Yew Warden prepares an aimed shaft.",
+				"Hit The Yew Warden for 27.",
+				"The Yew Warden looses an aimed shaft.",
+				"Arrow hits. Health 80/112.",
+				"The Yew Warden prepares an aimed shaft.",
+				"Victory. The court is yours."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenBow_Fire_V1",
+				"GoldenCombat_Hit_V1"
+			],
+			"projectiles": ["flight", "npc", "player"],
+			"positions": ["11,16"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenBow_Fire_V1",
+				"GoldenCombat_Hit_V1"
+			],
+			"loops": {},
+			"events": [
+				{
+					"t": 33117.8,
+					"msg": "Fight."
+				},
+				{
+					"t": 33522.4,
+					"msg": "The Yew Warden prepares an aimed shaft."
+				},
+				{
+					"t": 34822.3,
+					"msg": "The Yew Warden looses an aimed shaft."
+				},
+				{
+					"t": 35134.8,
+					"msg": "Hit The Yew Warden for 27."
+				},
+				{
+					"t": 35692.9,
+					"msg": "Arrow hits. Health 96/112."
+				},
+				{
+					"t": 36013.8,
+					"msg": "The Yew Warden prepares an aimed shaft."
+				},
+				{
+					"t": 37205.6,
+					"msg": "Hit The Yew Warden for 27."
+				},
+				{
+					"t": 37230.4,
+					"msg": "The Yew Warden looses an aimed shaft."
+				},
+				{
+					"t": 38101.4,
+					"msg": "Arrow hits. Health 80/112."
+				},
+				{
+					"t": 38422.3,
+					"msg": "The Yew Warden prepares an aimed shaft."
+				},
+				{
+					"t": 39267.8,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"victory": true
+	},
+	{
+		"browser": "158.0.8127.37",
+		"bundleSha256": "6ab766eaa9caeba84f07b7de6b68a280214e336767616569d4b4d1980d44ebc9",
+		"id": "courser",
+		"perf": {
+			"samples": 330,
+			"p50": 12.8,
+			"p95": 20.9,
+			"p99": 25,
+			"gpuSamples": 28,
+			"gpuMedian": 13.3,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 117,
+			"triangles": 284278,
+			"callback": {
+				"averageMs": 3,
+				"count": 331,
+				"lastMs": 2.6,
+				"worstMs": 7.6
+			},
+			"render": {
+				"averageMs": 2.5,
+				"count": 331,
+				"lastMs": 2.1,
+				"worstMs": 6.9
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 331,
+				"lastMs": 0,
+				"worstMs": 0.4
+			},
+			"mixers": 2,
+			"skinnedMeshes": 22,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		},
+		"log": {
+			"messages": [
+				"Fight.",
+				"The Riderless Grey prepares a forehoof strike.",
+				"The Riderless Grey: a forehoof strike hits. Health 93/112.",
+				"The Riderless Grey prepares a forehoof strike.",
+				"Hit The Riderless Grey for 22.",
+				"The Riderless Grey: a forehoof strike hits. Health 74/112.",
+				"Hit The Riderless Grey for 22.",
+				"The Riderless Grey prepares a forehoof strike.",
+				"Hit The Riderless Grey for 22.",
+				"The Riderless Grey: a forehoof strike hits. Health 55/112.",
+				"Attack cooling down.",
+				"The Riderless Grey prepares a forehoof strike.",
+				"Victory. The court is yours."
+			],
+			"clips": ["HorseIdle", "HorseWalk", "PawLift", "PawStrike"],
+			"projectiles": [],
+			"positions": ["11,13", "11,12", "11,11", "11,10", "11,9"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenCombat_Hit_V1",
+				"GoldenSword_Attack_V1"
+			],
+			"loops": {
+				"HorseIdle": 1
+			},
+			"events": [
+				{
+					"t": 45447,
+					"msg": "Fight."
+				},
+				{
+					"t": 47788.7,
+					"msg": "The Riderless Grey prepares a forehoof strike."
+				},
+				{
+					"t": 48901.2,
+					"msg": "The Riderless Grey: a forehoof strike hits. Health 93/112."
+				},
+				{
+					"t": 49996.9,
+					"msg": "The Riderless Grey prepares a forehoof strike."
+				},
+				{
+					"t": 50959.3,
+					"msg": "Hit The Riderless Grey for 22."
+				},
+				{
+					"t": 51101,
+					"msg": "The Riderless Grey: a forehoof strike hits. Health 74/112."
+				},
+				{
+					"t": 51642.9,
+					"msg": "Hit The Riderless Grey for 22."
+				},
+				{
+					"t": 52247.1,
+					"msg": "The Riderless Grey prepares a forehoof strike."
+				},
+				{
+					"t": 52342.9,
+					"msg": "Hit The Riderless Grey for 22."
+				},
+				{
+					"t": 53342.7,
+					"msg": "The Riderless Grey: a forehoof strike hits. Health 55/112."
+				},
+				{
+					"t": 53576,
+					"msg": "Attack cooling down."
+				},
+				{
+					"t": 54446.9,
+					"msg": "The Riderless Grey prepares a forehoof strike."
+				},
+				{
+					"t": 54538.6,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"victory": true,
+		"counterplayRetest": {
+			"sidestep": [
+				"Fight.",
+				"The Riderless Grey prepares a forehoof strike.",
+				"The Riderless Grey: a forehoof strike misses."
+			],
+			"remainingPlayerHealth": 112,
+			"perf": {
+				"samples": 301,
+				"p50": 16.6,
+				"p95": 21,
+				"p99": 28.9,
+				"gpuSamples": 25,
+				"gpuMedian": 15.52,
+				"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"visible": 2,
+				"draws": 117,
+				"triangles": 284278,
+				"callback": {
+					"averageMs": 3.4,
+					"count": 302,
+					"lastMs": 2.2,
+					"worstMs": 9.2
+				},
+				"render": {
+					"averageMs": 2.7,
+					"count": 302,
+					"lastMs": 1.6,
+					"worstMs": 8.1
+				},
+				"animation": {
+					"averageMs": 0.2,
+					"count": 302,
+					"lastMs": 0.2,
+					"worstMs": 0.9
+				},
+				"mixers": 2,
+				"skinnedMeshes": 22,
+				"missingClips": 0,
+				"incompatibleClips": 0
+			}
+		}
+	},
+	{
+		"browser": "158.0.8127.37",
+		"bundleSha256": "6ab766eaa9caeba84f07b7de6b68a280214e336767616569d4b4d1980d44ebc9",
+		"id": "wyrm",
+		"perf": {
+			"samples": 320,
+			"p50": 16.4,
+			"p95": 20.9,
+			"p99": 29,
+			"gpuSamples": 27,
+			"gpuMedian": 13.87,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 116,
+			"triangles": 263508,
+			"callback": {
+				"averageMs": 2.8,
+				"count": 321,
+				"lastMs": 3.2,
+				"worstMs": 7.6
+			},
+			"render": {
+				"averageMs": 2.3,
+				"count": 321,
+				"lastMs": 2.6,
+				"worstMs": 6.7
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 321,
+				"lastMs": 0.3,
+				"worstMs": 0.4
+			},
+			"mixers": 2,
+			"skinnedMeshes": 21,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		},
+		"log": {
+			"messages": [
+				"Fight.",
+				"The Bell Wyrm prepares a root bite.",
+				"The Bell Wyrm: a root bite hits. Health 94/112.",
+				"The Bell Wyrm prepares a tail sweep. Step clear!",
+				"The Bell Wyrm: a tail sweep hits. Health 66/112.",
+				"Attack cooling down.",
+				"Hit The Bell Wyrm for 22.",
+				"The Bell Wyrm prepares a root bite.",
+				"Hit The Bell Wyrm for 22.",
+				"The Bell Wyrm: a root bite hits. Health 48/112.",
+				"Attack cooling down.",
+				"The Bell Wyrm prepares a tail sweep. Step clear!",
+				"Hit The Bell Wyrm for 22.",
+				"The Bell Wyrm: a tail sweep hits. Health 20/112.",
+				"Hit The Bell Wyrm for 22.",
+				"Victory. The court is yours."
+			],
+			"clips": [
+				"Idle",
+				"Walk",
+				"BiteWindup",
+				"Bite",
+				"SweepWindup",
+				"Sweep",
+				"Hit"
+			],
+			"projectiles": [],
+			"positions": ["11,14", "11,13", "11,12", "11,11", "11,10", "11,9"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenCombat_Hit_V1",
+				"GoldenSword_Attack_V1"
+			],
+			"loops": {},
+			"events": [
+				{
+					"t": 58776,
+					"msg": "Fight."
+				},
+				{
+					"t": 62163.4,
+					"msg": "The Bell Wyrm prepares a root bite."
+				},
+				{
+					"t": 63188.4,
+					"msg": "The Bell Wyrm: a root bite hits. Health 94/112."
+				},
+				{
+					"t": 64092.6,
+					"msg": "The Bell Wyrm prepares a tail sweep. Step clear!"
+				},
+				{
+					"t": 65596.8,
+					"msg": "The Bell Wyrm: a tail sweep hits. Health 66/112."
+				},
+				{
+					"t": 65626.2,
+					"msg": "Attack cooling down."
+				},
+				{
+					"t": 66609.3,
+					"msg": "Hit The Bell Wyrm for 22."
+				},
+				{
+					"t": 67342.7,
+					"msg": "The Bell Wyrm prepares a root bite."
+				},
+				{
+					"t": 68042.6,
+					"msg": "Hit The Bell Wyrm for 22."
+				},
+				{
+					"t": 68388.4,
+					"msg": "The Bell Wyrm: a root bite hits. Health 48/112."
+				},
+				{
+					"t": 68538.5,
+					"msg": "Attack cooling down."
+				},
+				{
+					"t": 69301,
+					"msg": "The Bell Wyrm prepares a tail sweep. Step clear!"
+				},
+				{
+					"t": 69492.7,
+					"msg": "Hit The Bell Wyrm for 22."
+				},
+				{
+					"t": 70834.5,
+					"msg": "The Bell Wyrm: a tail sweep hits. Health 20/112."
+				},
+				{
+					"t": 71692.4,
+					"msg": "Hit The Bell Wyrm for 22."
+				},
+				{
+					"t": 72446.7,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"victory": true,
+		"resetAfterPlayerDefeat": true,
+		"counterplayRetest": {
+			"afterGuardedBite": 112,
+			"afterGuardedSweep": 84,
+			"resetAfterPlayerDefeat": true,
+			"perf": {
+				"samples": 249,
+				"p50": 20.7,
+				"p95": 29.6,
+				"p99": 54.3,
+				"gpuSamples": 21,
+				"gpuMedian": 17.86,
+				"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+				"visible": 2,
+				"draws": 116,
+				"triangles": 263508,
+				"callback": {
+					"averageMs": 8.3,
+					"count": 250,
+					"lastMs": 10.9,
+					"worstMs": 21.5
+				},
+				"render": {
+					"averageMs": 7.2,
+					"count": 250,
+					"lastMs": 9.4,
+					"worstMs": 17.6
+				},
+				"animation": {
+					"averageMs": 0.3,
+					"count": 250,
+					"lastMs": 0.3,
+					"worstMs": 0.8
+				},
+				"mixers": 2,
+				"skinnedMeshes": 21,
+				"missingClips": 0,
+				"incompatibleClips": 0
+			}
+		}
+	},
+	{
+		"browser": "158.0.8127.37",
+		"bundleSha256": "6ab766eaa9caeba84f07b7de6b68a280214e336767616569d4b4d1980d44ebc9",
+		"id": "guard",
+		"perf": {
+			"samples": 314,
+			"p50": 16.6,
+			"p95": 20.9,
+			"p99": 24.9,
+			"gpuSamples": 26,
+			"gpuMedian": 14.7,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 118,
+			"triangles": 265312,
+			"callback": {
+				"averageMs": 3.3,
+				"count": 315,
+				"lastMs": 3.4,
+				"worstMs": 5.9
+			},
+			"render": {
+				"averageMs": 2.6,
+				"count": 315,
+				"lastMs": 2.7,
+				"worstMs": 5.3
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 315,
+				"lastMs": 0.2,
+				"worstMs": 1
+			},
+			"mixers": 2,
+			"skinnedMeshes": 22,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		},
+		"swing": {
+			"initial": 100,
+			"immediate": 100,
+			"after": 78,
+			"delayMs": 246
+		},
+		"log": {
+			"messages": [
+				"Fight.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 93/112.",
+				"Guard raised.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Blocked.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate blocks your blade.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 74/112.",
+				"Hit Edric, keeper of the gate for 22.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Blocked.",
+				"Hit Edric, keeper of the gate for 22.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Blocked.",
+				"Hit Edric, keeper of the gate for 22.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Blocked.",
+				"Hit Edric, keeper of the gate for 22.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Blocked.",
+				"Victory. The court is yours."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenReference_Walk_InPlace",
+				"GoldenSword_Attack_V1",
+				"GoldenCombat_Hit_V1"
+			],
+			"projectiles": [],
+			"positions": ["11,12", "11,11", "11,10", "11,9", "11,8"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenCombat_Hit_V1",
+				"GoldenSword_Attack_V1"
+			],
+			"loops": {},
+			"events": [
+				{
+					"t": 4111.9,
+					"msg": "Fight."
+				},
+				{
+					"t": 7232.8,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 8612.2,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 93/112."
+				},
+				{
+					"t": 9320.4,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 10712.2,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 12074.4,
+					"msg": "Blocked."
+				},
+				{
+					"t": 14174.4,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 14411.9,
+					"msg": "Edric, keeper of the gate blocks your blade."
+				},
+				{
+					"t": 15566,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 74/112."
+				},
+				{
+					"t": 16166.1,
+					"msg": "Hit Edric, keeper of the gate for 22."
+				},
+				{
+					"t": 17674.3,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 17686.8,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 19061.9,
+					"msg": "Blocked."
+				},
+				{
+					"t": 19320.3,
+					"msg": "Hit Edric, keeper of the gate for 22."
+				},
+				{
+					"t": 21107.8,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 21120.1,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 22520.2,
+					"msg": "Blocked."
+				},
+				{
+					"t": 22761.9,
+					"msg": "Hit Edric, keeper of the gate for 22."
+				},
+				{
+					"t": 24620.2,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 24628.6,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 25957.8,
+					"msg": "Blocked."
+				},
+				{
+					"t": 26220.2,
+					"msg": "Hit Edric, keeper of the gate for 22."
+				},
+				{
+					"t": 28057.6,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 28074.3,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 29465.9,
+					"msg": "Blocked."
+				},
+				{
+					"t": 29720,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"victory": true
+	},
+	{
+		"browser": "158.0.8127.37",
+		"bundleSha256": "6ab766eaa9caeba84f07b7de6b68a280214e336767616569d4b4d1980d44ebc9",
+		"id": "falchion",
+		"perf": {
+			"samples": 336,
+			"p50": 12.8,
+			"p95": 20.7,
+			"p99": 20.9,
+			"gpuSamples": 28,
+			"gpuMedian": 13.03,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 119,
+			"triangles": 265480,
+			"callback": {
+				"averageMs": 3.1,
+				"count": 337,
+				"lastMs": 2.7,
+				"worstMs": 7.9
+			},
+			"render": {
+				"averageMs": 2.5,
+				"count": 337,
+				"lastMs": 2,
+				"worstMs": 7.1
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 337,
+				"lastMs": 0.3,
+				"worstMs": 0.5
+			},
+			"mixers": 2,
+			"skinnedMeshes": 23,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		},
+		"swing": {
+			"initial": 84,
+			"immediate": 84,
+			"after": 50,
+			"delayMs": 378
+		},
+		"log": {
+			"messages": [
+				"Fight.",
+				"Rook, quay duellist prepares a shoulder cut.",
+				"Rook, quay duellist: a shoulder cut hits. Health 98/112.",
+				"Rook, quay duellist prepares a long thrust.",
+				"Guard raised.",
+				"Blocked.",
+				"Hit Rook, quay duellist for 34.",
+				"Attack cooling down.",
+				"Hit Rook, quay duellist for 34.",
+				"Rook, quay duellist prepares a shoulder cut.",
+				"Attack cooling down.",
+				"Rook, quay duellist: a shoulder cut hits. Health 84/112.",
+				"Attack cooling down.",
+				"Victory. The court is yours."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenReference_Walk_InPlace",
+				"GoldenSword_Attack_V1",
+				"GoldenCombat_Hit_V1"
+			],
+			"projectiles": [],
+			"positions": ["11,12", "11,11", "11,10", "11,9", "11,8"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenCombat_Hit_V1",
+				"GoldenSword_Attack_V1"
+			],
+			"loops": {},
+			"events": [
+				{
+					"t": 33107.4,
+					"msg": "Fight."
+				},
+				{
+					"t": 35566,
+					"msg": "Rook, quay duellist prepares a shoulder cut."
+				},
+				{
+					"t": 36486.8,
+					"msg": "Rook, quay duellist: a shoulder cut hits. Health 98/112."
+				},
+				{
+					"t": 37928.3,
+					"msg": "Rook, quay duellist prepares a long thrust."
+				},
+				{
+					"t": 38211.7,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 39028.3,
+					"msg": "Blocked."
+				},
+				{
+					"t": 39416,
+					"msg": "Hit Rook, quay duellist for 34."
+				},
+				{
+					"t": 39440.9,
+					"msg": "Attack cooling down."
+				},
+				{
+					"t": 40532.4,
+					"msg": "Hit Rook, quay duellist for 34."
+				},
+				{
+					"t": 40632.4,
+					"msg": "Rook, quay duellist prepares a shoulder cut."
+				},
+				{
+					"t": 40882.7,
+					"msg": "Attack cooling down."
+				},
+				{
+					"t": 41578.4,
+					"msg": "Rook, quay duellist: a shoulder cut hits. Health 84/112."
+				},
+				{
+					"t": 41620.1,
+					"msg": "Attack cooling down."
+				},
+				{
+					"t": 42670,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"victory": true
+	}
+]

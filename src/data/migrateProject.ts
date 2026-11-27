@@ -693,6 +693,12 @@ function migrateEnemyBehaviour(value: unknown): EnemyBehaviour | undefined {
 						recoveryMs: readNumber(attack.recoveryMs, 600, 100, 5000),
 						...(windupClip && { windupClip }),
 						...(strikeClip && { strikeClip }),
+						...(typeof attack.arrowSpeed === "number" && {
+							arrowSpeed: readNumber(attack.arrowSpeed, 10, 2, 50),
+						}),
+						...(typeof attack.unblockable === "boolean" && {
+							unblockable: attack.unblockable,
+						}),
 					},
 				];
 			})
@@ -710,6 +716,42 @@ function migrateEnemyBehaviour(value: unknown): EnemyBehaviour | undefined {
 				}
 			: {}),
 		...(attacks && { attacks }),
+		...(isRecord(value.body) && {
+			body: {
+				radius: readNumber(value.body.radius, 0.32, 0.15, 3),
+				height: readNumber(value.body.height, 1.7, 0.3, 6),
+			},
+		}),
+		...(value.weapon === "sword" || value.weapon === "bow"
+			? { weapon: value.weapon }
+			: {}),
+		...(typeof value.keepDistanceTiles === "number" && {
+			keepDistanceTiles: readNumber(value.keepDistanceTiles, 0, 0, 20),
+		}),
+		...(typeof value.staggerMs === "number" && {
+			staggerMs: readNumber(value.staggerMs, 0, 0, 3000),
+		}),
+		...(typeof value.weaponAssetId === "string" &&
+			value.weaponAssetId.trim() && {
+				weaponAssetId: value.weaponAssetId.trim(),
+			}),
+		...(isRecord(value.swordTactics) && {
+			swordTactics: {
+				parryAfter: Math.round(
+					readNumber(value.swordTactics.parryAfter, 2, 1, 8),
+				),
+				reactionMs: readNumber(value.swordTactics.reactionMs, 100, 0, 800),
+				counterWindupMs: readNumber(
+					value.swordTactics.counterWindupMs,
+					300,
+					120,
+					1000,
+				),
+			},
+		}),
+		...(typeof value.guardWindup === "boolean" && {
+			guardWindup: value.guardWindup,
+		}),
 	};
 }
 
@@ -915,6 +957,12 @@ function migrateArea(
 			index === 0 ? "Main Area" : `Area ${index + 1}`,
 		),
 		kind: readAreaKind(source.kind, fallback.kind),
+		...(isRecord(source.encounter) && {
+			encounter: {
+				briefing: readString(source.encounter.briefing, ""),
+				weaponItemId: readString(source.encounter.weaponItemId, ""),
+			},
+		}),
 		width,
 		height,
 		tileSize: Math.round(
@@ -1354,6 +1402,26 @@ function migrateItems(value: unknown): ItemDefinition[] {
 				...(item.weapon === "sword" || item.weapon === "bow"
 					? { weapon: item.weapon }
 					: {}),
+				...(item.weapon === "sword" &&
+					isRecord(item.melee) && {
+						melee: {
+							...(typeof item.melee.weaponAssetId === "string" &&
+								item.melee.weaponAssetId.trim() && {
+									weaponAssetId: item.melee.weaponAssetId.trim(),
+								}),
+							damage: readNumber(item.melee.damage, 35, 1, 999),
+							reachTiles: readNumber(item.melee.reachTiles, 1.8, 0.5, 6),
+							impactMs: readNumber(item.melee.impactMs, 200, 30, 2000),
+							cooldownMs: Math.max(
+								readNumber(item.melee.impactMs, 200, 30, 2000),
+								readNumber(item.melee.cooldownMs, 700, 100, 5000),
+							),
+							...(typeof item.melee.activeMs === "number" && {
+								activeMs: readNumber(item.melee.activeMs, 0, 0, 180),
+							}),
+							parryMs: readNumber(item.melee.parryMs, 180, 0, 500),
+						},
+					}),
 				...(iconId ? { iconId } : {}),
 				stackable,
 				...(maxStack ? { maxStack } : {}),

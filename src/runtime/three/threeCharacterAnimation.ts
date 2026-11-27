@@ -50,14 +50,19 @@ export type ThreeCharacterAnimationController = {
 	) => void;
 	sync: (context: CharacterAnimationContext) => void;
 	syncBowDraw: (charge: number | undefined) => void;
-	triggerAttack: (variant?: "sword" | "bow") => void;
+	triggerAttack: (variant?: "sword" | "bow", impactMs?: number) => void;
 	triggerNpcAttack: (clip: string, durationMs?: number) => void;
-	triggerHit: () => void;
+	syncSwordReady?: (raised: boolean, windupMs?: number) => void;
+	triggerGuardImpact?: () => void;
+	triggerHit: (interrupt?: boolean) => void;
 	triggerInteraction: (state: "interact" | "pickup") => boolean;
 	update: (deltaSeconds: number) => void;
 };
 
 const TRANSITION_SECONDS = 0.12;
+// GoldenSword_Attack_V1 loads the shoulder at 0.15 s and delivers at 0.30 s.
+const SWORD_LOAD_SECONDS = 0.15;
+const SWORD_CONTACT_SECONDS = 0.3;
 type AttackClipKey = `npc:${string}`;
 const preparedClipCache = new Map<string, THREE.AnimationClip>();
 
@@ -233,7 +238,7 @@ export function createThreeCharacterAnimationController({
 }): ThreeCharacterAnimationController {
 	const mixer = new THREE.AnimationMixer(root);
 	const actions = new Map<
-		CharacterAnimationSemanticState | "sword" | "bow" | AttackClipKey,
+		CharacterAnimationSemanticState | "sword" | "bow" | "ward" | AttackClipKey,
 		THREE.AnimationAction
 	>();
 	const loadingSourceIds = new Set<string>();
@@ -258,8 +263,10 @@ export function createThreeCharacterAnimationController({
 	let incompatibleClipCount = 0;
 	let oneShotActionsTriggered = 0;
 	let disposed = false;
-	let attackVariant: "sword" | "bow" | AttackClipKey | undefined;
+	let attackVariant: "sword" | "bow" | "ward" | AttackClipKey | undefined;
 	let npcAttackDurationMs: number | undefined;
+	let swordReady = false;
+	let loadSeconds = 0;
 	let bowDrawCharge: number | undefined;
 	let cinematicAnimation: CinematicActorAnimation | undefined;
 	let cinematicCueKey: number | undefined;
@@ -383,7 +390,9 @@ export function createThreeCharacterAnimationController({
 				resolveCharacterAnimationState({
 					...currentContext,
 					attackRequested:
-						oneShotState === "attack" || bowDrawCharge !== undefined,
+						oneShotState === "attack" ||
+						bowDrawCharge !== undefined ||
+						swordReady,
 					hitRequested: oneShotState === "hit",
 					interactionRequested:
 						oneShotState === "interact" || oneShotState === "pickup"
@@ -434,6 +443,7 @@ export function createThreeCharacterAnimationController({
 			"hit",
 			"defeated",
 			"sword",
+			"ward",
 			"bow",
 			...npcAttackClips.map((clip): AttackClipKey => `npc:${clip}`),
 		] as const) {
@@ -442,13 +452,18 @@ export function createThreeCharacterAnimationController({
 			}
 			const embeddedAttack = state.startsWith("npc:");
 			const mapping = embeddedAttack
-				? { clipName: state.slice(4), assetId: asset.id }
-				: state === "sword" || state === "bow"
-					? attackVariants?.[state]
-					: getAnimationMapping(
-							asset,
-							state as CharacterAnimationSemanticState,
-						);
+				? {
+						clipName: state.slice(4),
+						assetId: asset.attackClipSources?.[state.slice(4)] ?? asset.id,
+					}
+				: state === "ward"
+					? asset.swordWard
+					: state === "sword" || state === "bow"
+						? attackVariants?.[state]
+						: getAnimationMapping(
+								asset,
+								state as CharacterAnimationSemanticState,
+							);
 			if (!mapping) {
 				continue;
 			}
@@ -621,25 +636,67 @@ export function createThreeCharacterAnimationController({
 				activeAction.paused = true;
 			}
 		},
-		triggerAttack: (variant) => {
+		syncSwordReady: (raised, windupMs) => {
+			const ready =
+				raised &&
+				!disposed &&
+				!playingCinematicAnimation &&
+				!currentContext.defeated &&
+				actions.has("sword");
+			const variant =
+				windupMs === undefined && actions.has("ward") ? "ward" : "sword";
+			if (ready === swordReady && (!ready || attackVariant === variant)) return;
+			swordReady = ready;
+			if (ready) {
+				oneShotState = undefined;
+				attackVariant = variant;
+				loadSeconds = windupMs ? windupMs / 1000 : 0;
+				npcAttackDurationMs = undefined;
+				applySemanticState("attack", true);
+				if (activeAction) {
+					activeAction.time =
+						variant === "ward" || loadSeconds ? 0 : SWORD_LOAD_SECONDS;
+					activeAction.paused = true;
+				}
+			} else {
+				if (activeAction) activeAction.paused = false;
+				syncResolvedState();
+			}
+		},
+		triggerGuardImpact: () => {
+			if (swordReady && attackVariant === "ward" && activeAction) {
+				activeAction.time = 0;
+				activeAction.paused = false;
+			}
+		},
+		triggerAttack: (variant, impactMs) => {
 			// A missing/unloaded attack has no mixer finished event. Keep locomotion
 			// alive and let the combat HUD present the hit/miss instead of latching.
 			if (
 				playingCinematicAnimation ||
 				currentContext.defeated ||
 				currentContext.airborne ||
-				oneShotState === "hit" ||
+				(oneShotState === "hit" && impactMs === undefined) ||
 				disposed ||
 				!actions.has("attack")
 			) {
 				return;
 			}
+			const fromReady = swordReady && attackVariant === "sword";
+			swordReady = false;
 			oneShotState = "attack";
 			bowDrawCharge = undefined;
 			attackVariant = variant;
-			npcAttackDurationMs = undefined;
+			const clip = actions.get("sword")?.getClip();
+			npcAttackDurationMs =
+				variant === "sword" && impactMs && clip
+					? (clip.duration * impactMs) /
+						(SWORD_CONTACT_SECONDS - (fromReady ? SWORD_LOAD_SECONDS : 0))
+					: undefined;
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
+			if (fromReady && activeAction && variant === "sword")
+				activeAction.time = SWORD_LOAD_SECONDS;
 			if (
 				variant === "bow" &&
 				activeAction &&
@@ -662,16 +719,19 @@ export function createThreeCharacterAnimationController({
 			oneShotActionsTriggered += 1;
 			applySemanticState("attack", true);
 		},
-		triggerHit: () => {
+		triggerHit: (interrupt = false) => {
 			if (
 				playingCinematicAnimation ||
 				currentContext.defeated ||
-				(oneShotState === "attack" && attackVariant?.startsWith("npc:")) ||
+				(!interrupt &&
+					oneShotState === "attack" &&
+					attackVariant?.startsWith("npc:")) ||
 				disposed ||
 				!actions.has("hit")
 			)
 				return;
 			bowDrawCharge = undefined;
+			swordReady = false;
 			oneShotState = "hit";
 			oneShotActionsTriggered += 1;
 			applySemanticState("hit", true);
@@ -694,6 +754,17 @@ export function createThreeCharacterAnimationController({
 		},
 		update: (deltaSeconds) => {
 			if (!disposed) {
+				if (
+					swordReady &&
+					loadSeconds &&
+					activeAction &&
+					attackVariant === "sword"
+				)
+					activeAction.time = Math.min(
+						SWORD_LOAD_SECONDS,
+						activeAction.time +
+							(deltaSeconds * SWORD_LOAD_SECONDS) / (loadSeconds * 0.78),
+					);
 				mixer.update(Math.max(0, deltaSeconds));
 			}
 		},

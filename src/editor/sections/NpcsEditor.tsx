@@ -14,6 +14,7 @@ import type {
 	NPCDefinition,
 	NPCMovementConfig,
 } from "../../types/game";
+import { EnemyAttackFields } from "../CombatDefinitionFields";
 import { ThreeVisualControls } from "./ThreeVisualControls";
 
 export function isNpcDefinitionPlaced(
@@ -473,6 +474,13 @@ export function NpcsEditor() {
 										TODO: Reuse the Map inspector interaction editor for default
 										NPC interactions.
 									</p>
+									{enemy.enabled && (
+										<EnemyAttackFields
+											key={selectedNpc.id}
+											enemy={enemy}
+											change={updateDefaultEnemyBehaviour}
+										/>
+									)}
 									<ThreeVisualControls
 										projectAssets={project.characterAssets}
 										variants={project.assetCreator?.variants}

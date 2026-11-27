@@ -28,6 +28,8 @@ export type ThreeVisualAssetDefinition = VisualAssetDefinition & {
 	distantModel?: VisualAssetDefinition;
 	mountedSeat?: { height: number; node?: string };
 	gaitSpeeds?: { walk: number; run: number };
+	attackClipSources?: Record<string, string>;
+	swordWard?: { assetId: string; clipName: string };
 	variant?: AssetCreatorVariant;
 	attachmentAsset?: ThreeVisualAssetDefinition;
 };
@@ -37,7 +39,7 @@ import type { AssetCreatorVariant, CharacterGameAsset } from "../../types/game";
 
 // Built-in/demo registry only. These assets live under public/ so Vite serves
 // them from the same stable URLs in dev and production builds.
-export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
+const builtInAssets: ThreeVisualAssetDefinition[] = [
 	...(
 		[
 			["chapel-arch", "Ashen Chapel Arch"],
@@ -195,6 +197,36 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		tags: ["hollow-kingdom", "boat"],
 	},
 	{
+		id: "courser-actions",
+		name: "Courser forehoof actions",
+		kind: "glb",
+		category: "character",
+		animationOnly: true,
+		hiddenFromBrowser: true,
+		url: "/assets/hollow-kingdom/courser-actions.glb",
+	},
+	{
+		id: "mere-courser",
+		name: "Chapel Courser",
+		kind: "glb",
+		category: "character",
+		url: "/assets/hollow-kingdom/horse.glb",
+		defaultRotationOffset: 180,
+		castShadow: true,
+		receiveShadow: true,
+		gaitSpeeds: { walk: 3.8, run: 6.6 },
+		animations: {
+			idle: { clipName: "HorseIdle" },
+			walk: { clipName: "HorseWalk" },
+			run: { clipName: "HorseCanter" },
+			attack: { assetId: "courser-actions", clipName: "PawStrike" },
+		},
+		attackClipSources: {
+			PawLift: "courser-actions",
+			PawStrike: "courser-actions",
+		},
+	},
+	{
 		id: "mere-horse",
 		name: "Bracken, Merewatch Mare",
 		kind: "glb",
@@ -255,6 +287,36 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 		hiddenFromBrowser: true,
 		url: "/assets/derived/humanoid-animations/golden-bow-v1/actions.glb",
 		tags: ["animation", "golden-skeleton", "bow"],
+	},
+	...(["challenger", "keeper", "freeblade"] as const).map(
+		(role): ThreeVisualAssetDefinition => ({
+			...PROCEDURAL_MANNEQUIN_V0_ASSET,
+			swordWard: { assetId: "bell-ward", clipName: "OutsideWard" },
+			id: `bell-${role}`,
+			name: `Bell Court ${role}`,
+			url: `/assets/hollow-kingdom/bell-court/${role}.glb`,
+			materialProfile: "preserve",
+			tags: ["hollow-kingdom", "golden-skeleton"],
+		}),
+	),
+	{
+		id: "bell-ward",
+		name: "Outside ward",
+		kind: "glb",
+		category: "character",
+		animationOnly: true,
+		hiddenFromBrowser: true,
+		url: "/assets/hollow-kingdom/bell-court/ward.glb",
+	},
+	{
+		id: "bell-hanger",
+		name: "Bell Court hanger",
+		kind: "glb",
+		category: "item",
+		browserCategory: "Props",
+		url: "/assets/hollow-kingdom/bell-court/hanger.glb",
+		castShadow: true,
+		tags: ["sword", "weapon"],
 	},
 	{
 		id: "weapon-sword-v1",
@@ -809,6 +871,55 @@ export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
 			"world-kit",
 		],
 	},
+];
+
+// Library editions inherit the original scale, orientation, traversal and animation
+// contracts. Both editions remain selectable in the editor and usable in saved games.
+const merewatchEditions = new Map([
+	["mere-well", ["mere-heron-well", "Heron Well", "waterworks/heron-well"]],
+	[
+		"mere-lantern",
+		["mere-tide-lantern", "Tide Lantern", "waterworks/tide-lantern"],
+	],
+	[
+		"mere-ferryman",
+		["mere-oswin-ferryman", "Oswin, Ferry Warden", "humans/oswin"],
+	],
+	[
+		"chapter-mere-drake",
+		["chapter-blackwater-wyrm", "Blackwater Wyrm", "creatures/blackwater-wyrm"],
+	],
+	[
+		"mere-horse",
+		["mere-road-mare", "Bracken, Road Mare", "creatures/bracken-road-mare"],
+	],
+	[
+		"bell-keeper",
+		["bell-tide-keeper", "Edric, Bell Court Keeper", "humans/keeper/keeper"],
+	],
+	[
+		"bell-hanger",
+		["mere-heron-hanger", "Heron Hanger", "armoury/heron-hanger"],
+	],
+]);
+
+export const THREE_VISUAL_ASSET_REGISTRY: ThreeVisualAssetDefinition[] = [
+	...builtInAssets,
+	...builtInAssets.flatMap((base) => {
+		const edition = merewatchEditions.get(base.id);
+		if (!edition) return [];
+		const [id, name, file] = edition;
+		return [
+			{
+				...base,
+				id,
+				name,
+				url: `/assets/hollow-kingdom/art-library/${file}.glb`,
+				thumbnailUrl: `/assets/hollow-kingdom/art-library/${file}.jpg`,
+				tags: [...(base.tags ?? []), "merewatch-art-library"],
+			},
+		];
+	}),
 ];
 
 let activeRegistry = THREE_VISUAL_ASSET_REGISTRY;

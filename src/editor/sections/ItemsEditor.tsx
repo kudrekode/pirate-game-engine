@@ -12,6 +12,7 @@ import type {
 	GameAction,
 	ItemDefinition,
 } from "../../types/game";
+import { SwordFields } from "../CombatDefinitionFields";
 import { useEditorSource } from "./editorSource";
 
 const categories: ItemDefinition["category"][] = [
@@ -221,6 +222,12 @@ export function ItemsEditor() {
 							</p>
 						)}
 						{selectedItem.weapon === "sword" && (
+							<SwordFields
+								item={selectedItem}
+								change={(melee) => updateItem({ melee })}
+							/>
+						)}
+						{selectedItem.weapon === "sword" && !selectedItem.melee && (
 							<p className="helper-text">
 								Sword: 35 damage, 2-cell reach, 750 ms cooldown. Place a Collect
 								Item object in the Map Inspector and select this item and the

@@ -12,6 +12,7 @@ export const AUTOSAVE_DRAFT_STORAGE_KEY = "adventure-builder-project-draft-v1";
 export const PROJECT_RECORD_PREFIX = "adventure-builder-editor-project-v1:";
 export const SELECTED_PROJECT_KEY = "adventure-builder-editor-selected-v1";
 export const LEGACY_PROJECT_ID = "legacy";
+const PROJECT_RUNTIME_PREFIX = "adventure-builder-editor-runtime:";
 
 export type ProjectRecord = {
 	id: string;
@@ -102,6 +103,45 @@ export function writeProjectRecord(storage: Storage, record: ProjectRecord) {
 	storage.setItem(PROJECT_RECORD_PREFIX + record.id, JSON.stringify(record));
 }
 
+export function hasStoredProject(storage: Storage, id: string) {
+	return (
+		storage.getItem(PROJECT_RECORD_PREFIX + id) !== null ||
+		(id === LEGACY_PROJECT_ID &&
+			(storage.getItem(STORAGE_KEY) !== null ||
+				storage.getItem(AUTOSAVE_DRAFT_STORAGE_KEY) !== null))
+	);
+}
+
+function projectStorageKeys(storage: Storage, id: string) {
+	// Shared, pre-catalog game saves may belong to more than one revision.
+	const scopedSaves = `${PROJECT_RUNTIME_PREFIX}${id}:${GAME_SAVE_PREFIX}`;
+	const keys: string[] = [];
+	for (let i = 0; i < storage.length; i++) {
+		const key = storage.key(i);
+		if (key?.startsWith(scopedSaves)) keys.push(key);
+	}
+	if (id === LEGACY_PROJECT_ID)
+		keys.push(STORAGE_KEY, AUTOSAVE_DRAFT_STORAGE_KEY);
+	keys.push(PROJECT_RECORD_PREFIX + id);
+	return keys;
+}
+
+export function projectStorageBytes(storage: Storage, id: string) {
+	const parts: string[] = [];
+	for (const key of projectStorageKeys(storage, id)) {
+		const value = storage.getItem(key);
+		if (value !== null) parts.push(key, value);
+	}
+	return new Blob(parts).size;
+}
+
+export function removeProjectRecord(storage: Storage, id: string) {
+	const keys = projectStorageKeys(storage, id);
+	if (storage.getItem(SELECTED_PROJECT_KEY) === id)
+		storage.removeItem(SELECTED_PROJECT_KEY);
+	for (const key of keys) storage.removeItem(key);
+}
+
 export function createProjectRecord(
 	project: GameProject,
 	legacySaveId?: string,
@@ -184,7 +224,7 @@ export function projectGameSaveStorage(
 		if (claims.length === 0 || !claims.includes(gameSaveProjectId(project)))
 			return storage;
 	}
-	const prefix = `adventure-builder-editor-runtime:${record.id}:`;
+	const prefix = `${PROJECT_RUNTIME_PREFIX}${record.id}:`;
 	const readLegacy =
 		record.legacySaveId && record.legacySaveId === gameSaveProjectId(project);
 	return {

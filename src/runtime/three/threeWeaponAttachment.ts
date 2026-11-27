@@ -34,13 +34,18 @@ export function createThreeWeaponAttachment(
 	let active: ReturnType<typeof createHandAttachment> | undefined;
 	let disposed = false;
 	return {
-		sync: (weapon: Weapon | undefined, hidden = false) => {
+		sync: (
+			weapon: Weapon | undefined,
+			hidden = false,
+			visualAssetId: string | undefined = weapon?.visualAssetId,
+		) => {
 			if (disposed) return;
-			const next = weapon
-				? (attachments.get(weapon.id) ??
-					createHandAttachment(root, weapon, diagnostics))
-				: undefined;
-			if (weapon && next) attachments.set(weapon.id, next);
+			const next =
+				weapon && visualAssetId
+					? (attachments.get(visualAssetId) ??
+						createHandAttachment(root, weapon, visualAssetId, diagnostics))
+					: undefined;
+			if (visualAssetId && next) attachments.set(visualAssetId, next);
 			if (active !== next) active?.sync(undefined);
 			active = next;
 			active?.sync(weapon, hidden);
@@ -60,6 +65,7 @@ export function createThreeWeaponAttachment(
 function createHandAttachment(
 	root: THREE.Object3D,
 	definition: typeof SWORD | typeof BOW,
+	visualAssetId: string,
 	diagnostics?: ThreePerformanceDiagnostics,
 ) {
 	const hand = resolveCharacterHand(root, definition.socket);
@@ -105,7 +111,7 @@ function createHandAttachment(
 				kind: "object",
 				threeVisual: {
 					mode: "asset",
-					assetId: equipped.visualAssetId,
+					assetId: visualAssetId,
 				},
 			});
 			if (visual.mode !== "asset") return;

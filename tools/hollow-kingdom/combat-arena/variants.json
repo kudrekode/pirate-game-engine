@@ -1,0 +1,45 @@
+{
+	"guard": {
+		"id": "guard",
+		"name": "Defensive Guard",
+		"actor": "Edric, keeper of the gate",
+		"model": "bell-keeper",
+		"health": 84,
+		"speed": 1.75,
+		"guardWindup": true,
+		"staggerMs": 480,
+		"briefing": "Edric meets a frontal cut with steel. Watch his blade fall, tap Q, then press F while he reels. Step past his guard to take his flank.",
+		"attacks": [
+			{
+				"label": "a guarded descending cut",
+				"damage": 22,
+				"rangeTiles": 1.85,
+				"arcDegrees": 80,
+				"windupMs": 680,
+				"impactMs": 175,
+				"recoveryMs": 465
+			}
+		],
+		"keepDistanceTiles": 0.95,
+		"swordTactics": {
+			"parryAfter": 2,
+			"reactionMs": 75,
+			"counterWindupMs": 300
+		}
+	},
+	"weapon": {
+		"id": "bell-falchion",
+		"name": "Bellman's falchion",
+		"category": "weapon",
+		"weapon": "sword",
+		"stackable": false,
+		"melee": {
+			"damage": 34,
+			"reachTiles": 2.15,
+			"impactMs": 325,
+			"cooldownMs": 920,
+			"parryMs": 120,
+			"weaponAssetId": "bell-hanger"
+		}
+	}
+}

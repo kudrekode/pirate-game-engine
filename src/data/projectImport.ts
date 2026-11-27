@@ -222,13 +222,19 @@ const movement = fields({
 	nested: { patrolPath, wanderZone },
 });
 const enemy = fields({
-	numbers: "detectionRadiusTiles chaseRadiusTiles contactDamage",
-	booleans: "enabled returnToOrigin",
+	strings: "weapon weaponAssetId",
+	numbers:
+		"detectionRadiusTiles chaseRadiusTiles contactDamage keepDistanceTiles staggerMs",
+	booleans: "enabled returnToOrigin guardWindup",
 	nested: {
+		swordTactics: fields({ numbers: "parryAfter reactionMs counterWindupMs" }),
+		body: fields({ numbers: "radius height" }),
 		attacks: list(
 			fields({
 				strings: "label windupClip strikeClip",
-				numbers: "damage rangeTiles arcDegrees windupMs impactMs recoveryMs",
+				numbers:
+					"damage rangeTiles arcDegrees windupMs impactMs recoveryMs arrowSpeed",
+				booleans: "unblockable",
 				required: ["label"],
 			}),
 		),
@@ -239,6 +245,7 @@ const area = fields({
 	strings: "id name kind",
 	numbers: "width height tileSize",
 	nested: {
+		encounter: fields({ strings: "briefing weaponItemId" }),
 		terrainTiles: terrain,
 		tiles: terrain,
 		terrainHeights: list(
@@ -562,6 +569,12 @@ const projectFields: Record<keyof GameProject | "map", Check> = {
 	items: list(
 		fields({
 			strings: "id name description category weapon iconId",
+			nested: {
+				melee: fields({
+					strings: "weaponAssetId",
+					numbers: "damage reachTiles impactMs activeMs cooldownMs parryMs",
+				}),
+			},
 			numbers: "maxStack",
 			booleans: "stackable",
 		}),

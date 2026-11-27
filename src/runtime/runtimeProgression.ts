@@ -131,6 +131,11 @@ export function moveRuntimePlayer(
 
 	const enteredNewArea = nextArea.id !== session.currentAreaId;
 	session.enemyAttacks.clear();
+	session.pendingMelee = undefined;
+	session.riposte = undefined;
+	session.guardSince = undefined;
+	session.guardPressedAt = undefined;
+	session.nextGuardAt = undefined;
 	session.currentAreaId = nextArea.id;
 	if (enteredNewArea) {
 		emit({ type: "areaChanged", areaId: nextArea.id });

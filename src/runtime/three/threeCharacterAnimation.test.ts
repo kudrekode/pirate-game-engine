@@ -230,6 +230,15 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 			});
 			one.update(1.1);
 		}
+		one.syncSwordReady?.(true);
+		one.update(0.45);
+		one.syncSwordReady?.(true);
+		expect(one.getStats().clipTime).toBeCloseTo(0.15);
+		one.triggerAttack("sword", 325);
+		one.update(0.325);
+		expect(one.getStats().clipTime).toBeCloseTo(0.3);
+		one.update(2.4);
+		expect(one.getStats().semanticState).toBe("idle");
 		expect(prepareSword).toHaveBeenCalledTimes(1);
 		for (let i = 0; i < 3; i++) {
 			one.triggerAttack("bow");
@@ -247,6 +256,8 @@ it("prepares a sword variant once, keeps Attack priority and independent control
 		one.triggerHit();
 		one.triggerAttack("sword");
 		expect(one.getStats().activeClip).toBe("Hit");
+		one.triggerAttack("sword", 215);
+		expect(one.getStats().activeClip).toBe("Sword");
 		one.update(1.1);
 		expect(one.getStats().semanticState).toBe("idle");
 		one.sync({ defeated: false, moving: true, airborne: true });

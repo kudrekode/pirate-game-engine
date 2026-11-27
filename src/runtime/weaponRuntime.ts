@@ -26,6 +26,7 @@ export function equipRuntimeWeapon(
 	if (
 		isRuntimeGameplayBlocked(session, false) ||
 		session.projectiles?.pending ||
+		session.pendingMelee ||
 		isPlayerAirborne(session) ||
 		session.runtimePlayerHealth <= 0
 	)
@@ -38,23 +39,71 @@ export function equipRuntimeWeapon(
 		)
 			return false;
 	}
-	if (session.equippedWeaponId !== itemId) session.bowDraw = undefined;
+	if (session.equippedWeaponId !== itemId) {
+		session.bowDraw = undefined;
+		releaseGuard(session);
+		session.riposte = undefined;
+	}
 	session.equippedWeaponId = itemId;
 	// An equip change never resets the accepted attack's cooldown.
 	return true;
 }
 
+export function equippedMeleeProfile(session: RuntimeSessionState) {
+	if (getEquippedWeapon(session)?.id !== "sword") return undefined;
+	return session.project.items.find(
+		(item) => item.id === session.equippedWeaponId,
+	)?.melee;
+}
+
+export function releaseGuard(session: RuntimeSessionState) {
+	session.guardPressedAt = undefined;
+	session.guardSince = undefined;
+}
+
+export function advanceHeldGuard(session: RuntimeSessionState, time: number) {
+	if (session.guardPressedAt !== undefined) raiseGuard(session, time);
+}
+
+export function raiseGuard(
+	session: RuntimeSessionState,
+	time: number,
+): boolean {
+	if (
+		session.guardSince !== undefined ||
+		session.runtimePlayerHealth <= 0 ||
+		isPlayerAirborne(session) ||
+		isRuntimeGameplayBlocked(session, false) ||
+		!equippedMeleeProfile(session)
+	)
+		return false;
+	session.guardPressedAt ??= time;
+	if (
+		session.pendingMelee ||
+		time < session.nextAttackAt ||
+		time < (session.nextGuardAt ?? 0)
+	)
+		return false;
+	// Holding Q through recovery raises a block as soon as the blade is free.
+	// The parry window still begins at the physical press.
+	session.guardSince = session.guardPressedAt;
+	session.guardPressedAt = undefined;
+	session.nextGuardAt = time + 520;
+	return true;
+}
+
 export function getRuntimeAttackStats(session: RuntimeSessionState) {
 	const weapon = getEquippedWeapon(session);
+	const melee = equippedMeleeProfile(session);
 	return weapon
 		? {
 				...session.playerCombat,
-				attackDamage: weapon.attackDamage,
+				attackDamage: melee?.damage ?? weapon.attackDamage,
 				attackRangeTiles:
 					weapon.id === "sword"
-						? weapon.attackRangeTiles
+						? (melee?.reachTiles ?? weapon.attackRangeTiles)
 						: session.playerCombat.attackRangeTiles,
-				attackCooldownMs: weapon.attackCooldownMs,
+				attackCooldownMs: melee?.cooldownMs ?? weapon.attackCooldownMs,
 			}
 		: session.playerCombat;
 }

@@ -13,8 +13,9 @@ import type {
 	MapEntityTransform,
 	ThreeVisualConfig,
 } from "../types/game";
-import { getTraversalAssetProfile } from "./mapCollision";
+import { blocksMapEntity, getTraversalAssetProfile } from "./mapCollision";
 import { type MovementResolveOptions, resolveMovementAt } from "./movement";
+import { resolveNPCInstance } from "./npcResolver";
 
 // Below knee height for the 1.82 m authored human. Also admits the harbour's
 // 36 cm transition where the stair landing meets the sloping shoreline.
@@ -260,6 +261,14 @@ export function createTraversalWorld(
 	const sampler = createTerrainSurfaceSampler(area);
 	const solids: TraversalSolid[] = [],
 		floors: TraversalFloor[] = [];
+	const actorBodies = new Map<string, { radius: number; height: number }>();
+	for (const npc of area.npcs) {
+		const body = resolveNPCInstance(
+			project.npcs.find((d) => d.id === npc.npcDefinitionId),
+			npc,
+		).enemyBehaviour?.body;
+		if (body) actorBodies.set(npc.id, body);
+	}
 	const profiledObjects = new Set<string>();
 	const labels = new Map<string, string>();
 	for (const object of area.objects) {
@@ -393,6 +402,7 @@ export function createTraversalWorld(
 		solids,
 		floors,
 		profiledObjects,
+		actorBodies,
 		labels,
 		// Retain the sampler and all surviving descriptors when a prop is collected.
 		removeObject: (id: string) => {
@@ -494,6 +504,21 @@ function checkPosition(
 		point.y > area.height - 0.5 - halfWidth
 	)
 		return { reason: "Out of bounds." };
+	if (
+		world.actorBodies.size &&
+		area.npcs.some((npc) => {
+			const body = world.actorBodies.get(npc.id);
+			return (
+				body &&
+				blocksMapEntity(npc, npc.blocksMovement) &&
+				Math.hypot(point.x - npc.x, point.y - npc.y) <
+					halfWidth + body.radius &&
+				(airborneHeight ?? height) <
+					world.sampler.sampleSurfaceY(npc, world.mode) + body.height
+			);
+		})
+	)
+		return { reason: "Blocked by NPC." };
 	const floor = resolveTraversalFloor(
 		world,
 		area,

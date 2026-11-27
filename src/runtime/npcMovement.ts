@@ -225,6 +225,33 @@ export function updateWanderNPC(
 		: unchanged(npc, { ...state, wanderTarget: undefined });
 }
 
+function retreatOptions(npc: NPCInstance, player: PatrolPoint) {
+	return [
+		{ x: npc.x + 1, y: npc.y },
+		{ x: npc.x - 1, y: npc.y },
+		{ x: npc.x, y: npc.y + 1 },
+		{ x: npc.x, y: npc.y - 1 },
+	]
+		.filter(
+			(p) =>
+				Math.hypot(p.x - player.x, p.y - player.y) >
+				Math.hypot(npc.x - player.x, npc.y - player.y),
+		)
+		.sort(
+			(a, b) =>
+				Math.hypot(b.x - player.x, b.y - player.y) -
+				Math.hypot(a.x - player.x, a.y - player.y),
+		);
+}
+
+export function hasRetreatStep(
+	npc: NPCInstance,
+	player: PatrolPoint,
+	canMove: CanMove,
+) {
+	return retreatOptions(npc, player).some((p) => canMove(p.x, p.y));
+}
+
 export function updateEnemyNPC(
 	npc: NPCInstance,
 	player: PatrolPoint,
@@ -263,6 +290,20 @@ export function updateEnemyNPC(
 	}
 
 	if (state.enemyChasing || distance <= detectionRadius) {
+		if (
+			behaviour.keepDistanceTiles &&
+			Math.hypot(npc.x - player.x, npc.y - player.y) <
+				behaviour.keepDistanceTiles
+		) {
+			const next = retreatOptions(npc, player).find((p) => canMove(p.x, p.y));
+			if (next)
+				return {
+					...next,
+					moved: true,
+					facing: facingForStep(npc, player, npc.facing ?? "down"),
+					state: { ...state, enemyChasing: true },
+				};
+		}
 		if (distance <= 1) {
 			return unchanged(npc, { ...state, enemyChasing: true });
 		}
@@ -294,6 +335,23 @@ export function applyEnemyContactDamage(
 	contactDamage = 0,
 ): number {
 	return Math.max(0, currentHealth - Math.max(0, Math.round(contactDamage)));
+}
+
+export function hasClearGridLine(
+	area: GameArea,
+	npc: NPCInstance,
+	player: PatrolPoint,
+	distance: number,
+) {
+	const steps = Math.ceil(distance * 2);
+	for (let i = 1; i < steps; i += 1) {
+		const x = Math.round(npc.x + (player.x - npc.x) * (i / steps));
+		const y = Math.round(npc.y + (player.y - npc.y) * (i / steps));
+		if (x === player.x && y === player.y) break;
+		if (x === npc.x && y === npc.y) continue;
+		if (!isNpcTileWalkable(area, npc.id, x, y)) return false;
+	}
+	return true;
 }
 
 export function isNpcTileWalkable(

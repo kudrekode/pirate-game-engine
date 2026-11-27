@@ -1,0 +1,25 @@
+{
+	"asset": "tide-lantern",
+	"blender": "5.2.0 LTS",
+	"sourceSha256": "6b12eeee402fefd3ab3ea14696e6346f5a473c8d53bbc20d9caaa5cc7f8c3af0",
+	"glbSha256": "e3c8281fa33162d83905e780164c139e7188fbe7442f5d1f572455d0a659435b",
+	"glbBytes": 1853940,
+	"triangles": 4484,
+	"primitives": 2,
+	"embeddedMaps": 4,
+	"sourceAndImportedBoundsBlenderXYZ": [
+		[-0.24298, -0.24298, 0.0],
+		[1.02895, 0.24298, 3.05]
+	],
+	"skins": 0,
+	"animations": 0,
+	"lights": [
+		{
+			"color": [1, 0.5099999904632568, 0.20000000298023224],
+			"intensity": 26.00000020888013,
+			"type": "point",
+			"range": 7,
+			"name": "Tide lantern | warm wick"
+		}
+	]
+}

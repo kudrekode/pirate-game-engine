@@ -2694,6 +2694,80 @@ label {
 	color: #cbd5e1;
 }
 
+.encounter-hud {
+	top: auto;
+	bottom: 14px;
+	width: min(265px, 36%);
+	padding: 10px 14px;
+	background: rgba(28, 25, 23, 0.9);
+	border-color: #7c7160;
+}
+@keyframes blade-contact-fade {
+	0%,
+	65% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+.blade-contact {
+	position: absolute;
+	bottom: 20%;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 4px 12px;
+	background: rgba(24, 22, 21, 0.86);
+	border-bottom: 1px solid #aaa49a;
+	color: #f3e8d6;
+	font:
+		small-caps 1.05rem Georgia,
+		serif;
+	pointer-events: none;
+	animation: blade-contact-fade 0.72s ease-out forwards;
+}
+.blade-contact.parry {
+	color: #ffdc85;
+	border-color: #c69f53;
+}
+.blade-contact.hit {
+	border-color: #ac6957;
+}
+.encounter-hud select {
+	width: 100%;
+}
+.encounter-hud strong {
+	font:
+		small-caps 1.2rem Georgia,
+		serif;
+	color: #f5ddae;
+}
+.encounter-hud label {
+	display: grid;
+	gap: 1px;
+}
+.encounter-hud meter {
+	width: 100%;
+	height: 9px;
+	accent-color: #ae614f;
+}
+.encounter-hud meter::-webkit-meter-bar {
+	background: #252221;
+	border: 1px solid #6c6050;
+	border-radius: 2px;
+}
+.encounter-hud meter::-webkit-meter-optimum-value {
+	background: linear-gradient(90deg, #773b36, #bc7862);
+}
+.encounter-hud meter[aria-label="Enemy health"]::-webkit-meter-optimum-value {
+	background: linear-gradient(90deg, #796548, #c6aa76);
+}
+.encounter-hud p {
+	margin: 3px 0;
+}
+.encounter-hud small {
+	font-size: 11px;
+}
 .three-runtime-camera-controls {
 	display: flex;
 	align-items: center;

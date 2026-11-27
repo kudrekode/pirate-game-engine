@@ -50,6 +50,33 @@ const expectedPirateAssets = [
 ];
 
 describe("Three visual asset registry", () => {
+	it.each([
+		["mere-heron-well", "mere-well", "waterworks/heron-well"],
+		["mere-tide-lantern", "mere-lantern", "waterworks/tide-lantern"],
+		["mere-oswin-ferryman", "mere-ferryman", "humans/oswin"],
+		[
+			"chapter-blackwater-wyrm",
+			"chapter-mere-drake",
+			"creatures/blackwater-wyrm",
+		],
+		["mere-road-mare", "mere-horse", "creatures/bracken-road-mare"],
+		["bell-tide-keeper", "bell-keeper", "humans/keeper/keeper"],
+		["mere-heron-hanger", "bell-hanger", "armoury/heron-hanger"],
+	])("resolves %s with its original placement and playback contracts", (id, originalId, path) => {
+		const original = getThreeVisualAssetDefinition(originalId);
+		const edition = getThreeVisualAssetDefinition(id);
+		expect(original).toBeDefined();
+		expect(edition?.url).toBe(`/assets/hollow-kingdom/art-library/${path}.glb`);
+		expect(original?.url).not.toBe(edition?.url);
+		expect(edition?.traversal).toBe(original?.traversal);
+		expect(edition?.animations).toBe(original?.animations);
+		expect(edition?.defaultRotationOffset).toBe(
+			original?.defaultRotationOffset,
+		);
+		expect(edition?.mountedSeat).toBe(original?.mountedSeat);
+		expect(edition?.swordWard).toBe(original?.swordWard);
+	});
+
 	it("exposes the built-in demo asset", () => {
 		expect(listThreeVisualAssets()).toContainEqual({
 			category: "object",

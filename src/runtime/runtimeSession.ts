@@ -71,6 +71,17 @@ export type RuntimeSessionState = {
 	enemyAttacks: Map<string, RuntimeEnemyAttack>;
 	activeShopId?: string;
 	nextAttackAt: number;
+	guardSince?: number;
+	guardPressedAt?: number;
+	nextGuardAt?: number;
+	riposte?: { npcId: string; until: number };
+	pendingMelee?: {
+		dueAt: number;
+		activeUntil?: number;
+		facing: RuntimeGridPosition;
+		damage: number;
+		reach: number;
+	};
 	nextMoveAt: number;
 	startupPending: boolean;
 	dialogue?: RuntimeDialogueState;

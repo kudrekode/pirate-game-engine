@@ -1,0 +1,69 @@
+{
+	"browser": "158.0.8127.37",
+	"assets": {
+		"/assets/hollow-kingdom/well.glb": "4760534d511ca86420b3443171ce575c04378885f7280260dcd14b8523359683",
+		"/assets/hollow-kingdom/lantern.glb": "bf03655d7a446d817add2bb2a944b1b39abf8be50864d396957bc0f34c5fac33",
+		"/assets/hollow-kingdom/ferryman.glb": "c39dffc133391a0865a033f77c912cdbf10846ee1467e857aaec1f347a0aa7ab",
+		"/assets/hollow-kingdom/chapter-one/drake.glb": "39fbb47dbeb1862d34261500c413645c5ef4a7cc313987b455cd4e23c523d109",
+		"/assets/hollow-kingdom/horse.glb": "91dd7c30f9ce7fa2077db9d7386965b39d597ecbb2313e89f43af4ae4515e7bb",
+		"/assets/hollow-kingdom/bell-court/keeper.glb": "1bd971127ebe806d2c09e22792a7045622aa3af8f2b5ae4967879a8f0b7fcacc",
+		"/assets/hollow-kingdom/bell-court/hanger.glb": "04204dc39d2293dd34128df68293b8f7b6bc364e43e71f79e2a88e0c9a8e3c9a"
+	},
+	"errorFallbacks": 0,
+	"clones": 163,
+	"mixers": 7,
+	"actors": [
+		{
+			"id": "oswin-at-the-well",
+			"clip": "GoldenReference_Idle",
+			"clipTime": 4.4775,
+			"position": [1.5, 1, 12.5]
+		},
+		{
+			"id": "wyrm-on-the-bank",
+			"clip": "Idle",
+			"clipTime": 2.0774999046325684,
+			"position": [6.5, 1, 16.5]
+		},
+		{
+			"id": "keeper-by-the-cottage",
+			"clip": "GoldenReference_Idle",
+			"clipTime": 4.4775,
+			"position": [-2.5, 1, 18.5]
+		}
+	],
+	"weapon": {
+		"socket": "hand_r",
+		"item": "watch-sword",
+		"attackClip": "GoldenSword_Attack_V1"
+	},
+	"mountedClip": "Ride",
+	"poses": {
+		"well-court": {
+			"eye": [4.42, 2.81, 16.94],
+			"target": [2.17, 2.51, 11.83],
+			"fov": 43
+		},
+		"ferryman": {
+			"eye": [2.2199999999999998, 2.73, 14.84],
+			"target": [1.5, 2.4, 12.5],
+			"fov": 32
+		},
+		"wyrm": {
+			"eye": [2.6, 2.15, 19.72],
+			"target": [6.5, 1.94, 16.5],
+			"fov": 39
+		},
+		"keeper": {
+			"eye": [-1.65, 2.63, 21.3],
+			"target": [-2.5, 2.19, 18.5],
+			"fov": 36
+		},
+		"bracken": {
+			"eye": [8.5, 3.4, 25.2],
+			"target": [6.5, 2.4, 22.8],
+			"fov": 46
+		}
+	},
+	"errors": []
+}

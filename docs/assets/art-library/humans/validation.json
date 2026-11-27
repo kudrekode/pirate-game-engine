@@ -1,0 +1,19 @@
+{
+	"glbSha256": "652bd96cfd8e6b93ae8e98452be439602641451407ec72d1fdb5bb524fa13e28",
+	"glbBytes": 4253744,
+	"joints": 65,
+	"maximumInverseBindMatrixDifference": 1.993030309677124e-6,
+	"triangles": 38492,
+	"primitives": 7,
+	"embeddedImages": 8,
+	"sampledClips": {
+		"GoldenReference_Idle": {
+			"frames": [0, 54, 108],
+			"maximumSampledOutfitDisplacementMetres": 0.02138
+		},
+		"GoldenReference_Walk_InPlace": {
+			"frames": [0, 6, 13],
+			"maximumSampledOutfitDisplacementMetres": 0.6355
+		}
+	}
+}

@@ -1,0 +1,191 @@
+{
+	"browser": "158.0.8127.37",
+	"bundleSha256": "be560f4007ff4f4545895c6ce2895bb281063b71b53ea8f146cb8a6577d4906b",
+	"id": "footwork",
+	"full": 112,
+	"exposedHealth": 90,
+	"sidestepHealth": 112,
+	"log": {
+		"messages": [
+			"Fight.",
+			"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+			"Edric, keeper of the gate: a guarded descending cut misses."
+		],
+		"clips": [
+			"GoldenReference_Idle",
+			"GoldenReference_Walk_InPlace",
+			"GoldenSword_Attack_V1"
+		],
+		"projectiles": [],
+		"positions": ["11,12", "11,11", "11,10", "11,9", "11,8"],
+		"playerClips": ["GoldenReference_Idle", "GoldenReference_Walk_InPlace"],
+		"loops": {},
+		"exchange": [
+			{
+				"t": 8385,
+				"npcClip": "GoldenReference_Idle",
+				"npcTime": 0.26680000001192095,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 0.26439999997615815,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 8906,
+				"npcClip": "GoldenReference_Walk_InPlace",
+				"npcTime": 0.018799999952316283,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 0.7683000000119208,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 9131,
+				"npcClip": "GoldenReference_Idle",
+				"npcTime": 0.019,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 0.9921999999880788,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 9444,
+				"npcClip": "GoldenReference_Walk_InPlace",
+				"npcTime": 0.017900000035762788,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 1.3073999999761579,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 9652,
+				"npcClip": "GoldenReference_Idle",
+				"npcTime": 0.017899999976158144,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 1.5153000000119203,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 9985,
+				"npcClip": "GoldenReference_Walk_InPlace",
+				"npcTime": 0.016399999976158142,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 1.8489999999999989,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 10214,
+				"npcClip": "GoldenReference_Idle",
+				"npcTime": 0.026,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 2.070599999964236,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 10510,
+				"npcClip": "GoldenReference_Walk_InPlace",
+				"npcTime": 0.018400000035762788,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 2.3735999999642354,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 10723,
+				"npcClip": "GoldenReference_Idle",
+				"npcTime": 0.022699999988079072,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 2.5824999999999974,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 11048,
+				"phase": "windup",
+				"due": 11728,
+				"npcClip": "GoldenSword_Attack_V1",
+				"npcTime": 0.005684389130157582,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Idle",
+				"playerTime": 2.9078000000119184,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 11110,
+				"phase": "windup",
+				"due": 11728,
+				"npcClip": "GoldenSword_Attack_V1",
+				"npcTime": 0.023783936641469796,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Walk_InPlace",
+				"playerTime": 0.015626022664966505,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 11735,
+				"phase": "strike",
+				"due": 11912.300000011921,
+				"npcClip": "GoldenSword_Attack_V1",
+				"npcTime": 0.16208571430615015,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Walk_InPlace",
+				"playerTime": 0.533984553953203,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			},
+			{
+				"t": 11923,
+				"phase": "recovery",
+				"due": 12389.800000011921,
+				"npcClip": "GoldenSword_Attack_V1",
+				"npcTime": 0.32280000002043585,
+				"npcHealth": 84,
+				"playerClip": "GoldenReference_Walk_InPlace",
+				"playerTime": 0.6841907192976642,
+				"health": 112,
+				"npcWeapon": true,
+				"playerWeapon": true
+			}
+		],
+		"events": [
+			{
+				"t": 8443.5,
+				"msg": "Fight."
+			},
+			{
+				"t": 11068.7,
+				"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+			},
+			{
+				"t": 11939.4,
+				"msg": "Edric, keeper of the gate: a guarded descending cut misses."
+			}
+		]
+	}
+}

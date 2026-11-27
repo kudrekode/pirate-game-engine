@@ -1,0 +1,17 @@
+{
+	"asset": "heron-well",
+	"blender": "5.2.0 LTS",
+	"sourceSha256": "33c556fea5b7b3bebe38597814b883d7e7fb74bcda050dd9591290e1fae1f7c1",
+	"glbSha256": "33d5f193512c6340ee9cc5ac4b7ce9f0380865814bf35b9a131640c654f795fe",
+	"glbBytes": 2988496,
+	"triangles": 18464,
+	"primitives": 1,
+	"embeddedMaps": 3,
+	"sourceAndImportedBoundsBlenderXYZ": [
+		[-1.14465, -0.91, 0.0],
+		[1.1444, 0.911, 3.399]
+	],
+	"skins": 0,
+	"animations": 0,
+	"lights": []
+}

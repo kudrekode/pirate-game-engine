@@ -1,0 +1,65 @@
+[
+	{
+		"name": "Oswin, Ferry Warden",
+		"source": "tools/hollow-kingdom/art-library/humans/oswin.blend",
+		"sourceSha256": "261624af8aedacc685690ea5f0615c4bf09b0af0c59cf5da129ce8a381a4097a",
+		"glb": "public/assets/hollow-kingdom/art-library/humans/oswin.glb",
+		"glbSha256": "652bd96cfd8e6b93ae8e98452be439602641451407ec72d1fdb5bb524fa13e28",
+		"before": "docs/assets/art-library/humans/before-portrait.png",
+		"after": "docs/assets/art-library/humans/after-portrait.png"
+	},
+	{
+		"name": "Edric, Bell Court Keeper",
+		"source": "tools/hollow-kingdom/art-library/humans/keeper/keeper.blend",
+		"sourceSha256": "5940b1e625a69387915cf276fd7499e6dbad0c3501991e23a53f684fcc35c977",
+		"glb": "public/assets/hollow-kingdom/art-library/humans/keeper/keeper.glb",
+		"glbSha256": "334add6ccbd4e3a26a0e2f4fb6e647a9cfc301cbf8a348ff8f332db370b256d1",
+		"before": "docs/assets/art-library/humans/keeper/before-portrait.png",
+		"after": "docs/assets/art-library/humans/keeper/after-portrait.png"
+	},
+	{
+		"name": "Blackwater Wyrm",
+		"source": "tools/hollow-kingdom/art-library/creatures/blackwater-wyrm.blend",
+		"sourceSha256": "8b898c86403ce40e62fe4ad28c50846573390ff2707b709bab908bec1f9a6e3f",
+		"glb": "public/assets/hollow-kingdom/art-library/creatures/blackwater-wyrm.glb",
+		"glbSha256": "68c3b340d3579db742885a0e15e22cee21e4730c15d42b7b075f949c9cbcc15e",
+		"before": "docs/assets/art-library/creatures/before-head.jpg",
+		"after": "docs/assets/art-library/creatures/after-head.jpg"
+	},
+	{
+		"name": "Bracken, Road Mare",
+		"source": "tools/hollow-kingdom/art-library/creatures/bracken-road-mare.blend",
+		"sourceSha256": "9a0b17800a6505a5076a3d5e96534656358c7a64b463a0d2c2559e8a5a383cf0",
+		"glb": "public/assets/hollow-kingdom/art-library/creatures/bracken-road-mare.glb",
+		"glbSha256": "21c3a3e07b97050bef649e20923dc37b8b98933a63f182bbcbbc0fc98c68d5b7",
+		"before": "docs/assets/art-library/creatures/bracken-before-whole.jpg",
+		"after": "docs/assets/art-library/creatures/bracken-after-whole.jpg"
+	},
+	{
+		"name": "Heron Well",
+		"source": "tools/hollow-kingdom/art-library/waterworks/heron-well.blend",
+		"sourceSha256": "33c556fea5b7b3bebe38597814b883d7e7fb74bcda050dd9591290e1fae1f7c1",
+		"glb": "public/assets/hollow-kingdom/art-library/waterworks/heron-well.glb",
+		"glbSha256": "33d5f193512c6340ee9cc5ac4b7ce9f0380865814bf35b9a131640c654f795fe",
+		"before": "docs/assets/art-library/waterworks/heron-well-before.jpg",
+		"after": "docs/assets/art-library/waterworks/heron-well-after.jpg"
+	},
+	{
+		"name": "Tide Lantern",
+		"source": "tools/hollow-kingdom/art-library/waterworks/tide-lantern.blend",
+		"sourceSha256": "6b12eeee402fefd3ab3ea14696e6346f5a473c8d53bbc20d9caaa5cc7f8c3af0",
+		"glb": "public/assets/hollow-kingdom/art-library/waterworks/tide-lantern.glb",
+		"glbSha256": "e3c8281fa33162d83905e780164c139e7188fbe7442f5d1f572455d0a659435b",
+		"before": "docs/assets/art-library/waterworks/tide-lantern-detail-before.jpg",
+		"after": "docs/assets/art-library/waterworks/tide-lantern-detail-after.jpg"
+	},
+	{
+		"name": "Heron Hanger",
+		"source": "tools/hollow-kingdom/art-library/armoury/heron-hanger.blend",
+		"sourceSha256": "f950282434d75df3794aef58016673d93390ba08ee1e82f6bd8d0e13175975f8",
+		"glb": "public/assets/hollow-kingdom/art-library/armoury/heron-hanger.glb",
+		"glbSha256": "d28cd35db75d24ebeb7befa52134966293b2da6c28102d1ed1ee88be7e16252b",
+		"before": "docs/assets/art-library/armoury/whole-before.jpg",
+		"after": "docs/assets/art-library/armoury/whole-after.jpg"
+	}
+]

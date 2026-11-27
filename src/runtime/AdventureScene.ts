@@ -50,6 +50,7 @@ import { resolveNPCInstance } from "./npcResolver";
 import { attemptPlayerMove } from "./playerMovementTransaction";
 import {
 	advanceRuntimeProjectiles,
+	areaHasArchery,
 	beginRuntimeBowDraw,
 	releaseRuntimeBowDraw,
 	updateRuntimeBowDraw,
@@ -62,6 +63,7 @@ import {
 } from "./questInteractions";
 import { fireTrigger, type RuleActionContext } from "./ruleEngine";
 import {
+	advanceRuntimeMelee,
 	attemptRuntimeCombatAttack,
 	type RuntimeCombatEvent,
 } from "./runtimeCombat";
@@ -107,7 +109,13 @@ import {
 	tickRuntimeStory,
 } from "./storyRuntime";
 import { createTraversalWorld, type TraversalWorld } from "./traversal";
-import { equipRuntimeWeapon, getEquippedWeapon } from "./weaponRuntime";
+import {
+	advanceHeldGuard,
+	equipRuntimeWeapon,
+	getEquippedWeapon,
+	raiseGuard,
+	releaseGuard,
+} from "./weaponRuntime";
 
 type WasdKeys = {
 	W: Phaser.Input.Keyboard.Key;
@@ -122,6 +130,7 @@ type InteractKeys = {
 };
 
 type CombatKeys = {
+	Q: Phaser.Input.Keyboard.Key;
 	SPACE: Phaser.Input.Keyboard.Key;
 };
 
@@ -487,6 +496,15 @@ export class AdventureScene extends Phaser.Scene {
 			this.isCutsceneOpen ||
 			this.isDialogueOpen ||
 			this.isFinished;
+		if (this.combatKeys?.Q.isDown && !bowBlocked) {
+			if (Phaser.Input.Keyboard.JustDown(this.combatKeys.Q))
+				raiseGuard(this.session, time);
+			else advanceHeldGuard(this.session, time);
+		} else releaseGuard(this.session);
+		if (!bowBlocked)
+			advanceRuntimeMelee(this.session, this.currentArea, time, (event) =>
+				this.handleRuntimeCombatEvent(event),
+			);
 		updateRuntimeBowDraw(this.session, time, bowBlocked);
 		if (
 			this.combatKeys?.SPACE &&
@@ -545,6 +563,7 @@ export class AdventureScene extends Phaser.Scene {
 						this.isDialogueOpen ||
 						this.isFinished,
 				),
+				{ time, emit: (event) => this.handleRuntimeNpcTickEvent(event) },
 			);
 			this.arrowGraphics?.clear();
 			for (const arrow of this.session.projectiles?.arrows ?? []) {
@@ -701,6 +720,7 @@ export class AdventureScene extends Phaser.Scene {
 			ENTER: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
 		};
 		this.combatKeys = {
+			Q: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
 			SPACE: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
 		};
 		const closeMessage = () => {
@@ -809,9 +829,7 @@ export class AdventureScene extends Phaser.Scene {
 	private renderMap() {
 		this.worldLayer?.removeAll(true);
 		this.session.projectiles = undefined;
-		this.projectileWorld = this.session.project.items.some(
-			(item) => item.weapon === "bow",
-		)
+		this.projectileWorld = areaHasArchery(this.session, this.currentArea)
 			? createTraversalWorld(this.session.project, this.currentArea, "blocky")
 			: undefined;
 		this.arrowGraphics = this.projectileWorld
@@ -1432,8 +1450,12 @@ export class AdventureScene extends Phaser.Scene {
 
 	// Shared runtime NPC tick event translation.
 	private updateNpcMovement(time: number) {
-		tickRuntimeNpcs(this.session, this.currentArea, time, (event) =>
-			this.handleRuntimeNpcTickEvent(event),
+		tickRuntimeNpcs(
+			this.session,
+			this.currentArea,
+			time,
+			(event) => this.handleRuntimeNpcTickEvent(event),
+			{ world: this.projectileWorld },
 		);
 	}
 

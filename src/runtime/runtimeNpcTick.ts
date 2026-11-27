@@ -1,5 +1,6 @@
 import type { GameArea, NPCInstance } from "../types/game";
-import { applyRuntimeEnemyDamage, tickEnemyAttack } from "./enemyAttack";
+import { tickEnemyAttack } from "./enemyAttack";
+import { applyRuntimeEnemyDamage } from "./enemyDamage";
 import {
 	isEnemyTouchingPlayer,
 	isNpcTileWalkable,
@@ -14,6 +15,12 @@ import type {
 	RuntimeGridPosition,
 	RuntimeSessionState,
 } from "./runtimeSession";
+
+import {
+	isInteractionSegmentBlocked,
+	PLAYER_HALF_WIDTH,
+	type TraversalWorld,
+} from "./traversal";
 
 export type RuntimeNpcTickEvent =
 	| {
@@ -44,8 +51,17 @@ export type RuntimeNpcTickEvent =
 			clip?: string;
 			durationMs: number;
 			direction: RuntimeGridPosition;
+			weapon?: "sword" | "bow";
 	  }
-	| { type: "enemyAttackStrike"; npcId: string; clip?: string }
+	| { type: "guardContact"; parry: boolean; npcId: string }
+	| { type: "enemyStaggered"; npcId: string }
+	| {
+			type: "enemyAttackStrike";
+			impactMs?: number;
+			npcId: string;
+			clip?: string;
+			weapon?: "sword" | "bow";
+	  }
 	| {
 			type: "playerDamaged";
 			npcId: string;
@@ -63,6 +79,7 @@ export type RuntimeNpcTickEventEmitter = (event: RuntimeNpcTickEvent) => void;
 
 export type RuntimeNpcTickOptions = {
 	random?: () => number;
+	world?: TraversalWorld;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -142,25 +159,67 @@ export function tickRuntimeNpcs(
 		};
 		const moveDue = time >= runtime.nextMoveAt;
 		const attackPending = session.enemyAttacks.get(npc.id)?.pending;
-		if (!moveDue && !attackPending) {
+		if (
+			!moveDue &&
+			!attackPending &&
+			!session.enemyAttacks.get(npc.id)?.counterQueued
+		) {
 			session.npcMovementStates.set(npc.id, runtime);
 			return;
 		}
 		const resolved = getResolvedNpc(session, npc);
-		if (tickEnemyAttack(session, area, resolved, time, moveDue, emit)) return;
-		if (!moveDue) return;
-
+		const profile = resolved.enemyBehaviour;
+		const world =
+			(profile?.weapon || profile?.body || profile?.keepDistanceTiles) &&
+			(session.traversal?.world ?? options.world);
+		const player = session.traversal?.position ?? session.playerPosition;
 		const canMove = (x: number, y: number) =>
+			(!profile?.body ||
+				Math.hypot(x - player.x, y - player.y) >=
+					profile.body.radius + PLAYER_HALF_WIDTH) &&
 			!(session.playerPosition.x === x && session.playerPosition.y === y) &&
-			isNpcTileWalkable(area, npc.id, x, y);
+			isNpcTileWalkable(area, npc.id, x, y) &&
+			(!world ||
+				!isInteractionSegmentBlocked(
+					world,
+					{ ...npc, height: world.sampler.sampleSurfaceY(npc, world.mode) },
+					{ x, y },
+					npc.id,
+				));
+		if (
+			tickEnemyAttack(
+				session,
+				area,
+				resolved,
+				time,
+				moveDue,
+				emit,
+				canMove,
+				world || undefined,
+			)
+		)
+			return;
+		if (!moveDue) return;
 		const origin = session.enemyOrigins.get(npc.id) ?? { x: npc.x, y: npc.y };
 		session.enemyOrigins.set(npc.id, origin);
 		const canUseEnemyMovement =
 			resolved.attributes.alignment === "hostile" &&
 			resolved.enemyBehaviour?.enabled === true;
+		const attackState = session.enemyAttacks.get(npc.id);
+		const disengage = attackState?.disengage && profile;
+		if (attackState) attackState.disengage = false;
+		const mover = disengage
+			? {
+					...resolved,
+					enemyBehaviour: {
+						...profile,
+						keepDistanceTiles: (profile.keepDistanceTiles ?? 0) + 1.6,
+					},
+				}
+			: resolved;
 		const update = canUseEnemyMovement
 			? updateEnemyNPC(
-					resolved,
+					mover,
 					session.playerPosition,
 					origin,
 					runtime.movement,

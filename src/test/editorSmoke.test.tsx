@@ -1015,6 +1015,32 @@ describe("editor smoke tests", () => {
 		confirm.mockRestore();
 	});
 
+	it("edits an NPC attack and a timed sword through the definition inspectors", () => {
+		const editor = render(<NpcsEditor />);
+		fireEvent.click(screen.getByLabelText("Enabled", { exact: true }));
+		fireEvent.click(screen.getByText("Attack pattern"));
+		clickButton("Add attack");
+		fireEvent.change(screen.getByLabelText("Windup (ms)"), {
+			target: { value: "880" },
+		});
+		fireEvent.click(screen.getByLabelText("Guard during windup"));
+		expect(
+			useProjectStore.getState().project.npcs[0].defaultEnemyBehaviour,
+		).toMatchObject({ guardWindup: true, attacks: [{ windupMs: 880 }] });
+		editor.unmount();
+		render(<ItemsEditor />);
+		clickButton("Add Sword");
+		fireEvent.click(screen.getByText("Melee timing"));
+		fireEvent.click(screen.getByLabelText("Timed strike and guard"));
+		fireEvent.change(screen.getByLabelText("Blade damage"), {
+			target: { value: "27" },
+		});
+		expect(
+			useProjectStore
+				.getState()
+				.project.items.find((item) => item.weapon === "sword")?.melee?.damage,
+		).toBe(27);
+	});
 	it("renders NPCs Editor", () => {
 		render(<NpcsEditor />);
 

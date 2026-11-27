@@ -1,0 +1,1969 @@
+{
+	"browser": "158.0.8127.37",
+	"bundleSha256": "be560f4007ff4f4545895c6ce2895bb281063b71b53ea8f146cb8a6577d4906b",
+	"id": "guard",
+	"navigation": {
+		"pausedMs": 1050,
+		"startLocked": true,
+		"menuUnlocked": true,
+		"resumedLocked": true,
+		"movementAndCamera": {
+			"before": {
+				"yaw": -0.8028514559173915,
+				"grid": {
+					"x": 11,
+					"y": 7
+				}
+			},
+			"after": {
+				"yaw": -1.325053936595861,
+				"grid": {
+					"x": 10,
+					"y": 5
+				}
+			}
+		},
+		"switchedDuringFight": ["guard", "blade", "guard"],
+		"resetMs": 182,
+		"afterSpamResetMs": 251
+	},
+	"spam": {
+		"presses": 76,
+		"playerHealth": 0,
+		"enemyHealth": 84,
+		"log": {
+			"messages": [
+				"Fight.",
+				"Attack missed.",
+				"Edric, keeper of the gate parries your repeated cut!",
+				"Edric, keeper of the gate turns the blade for a counter.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 90/112.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate parries your repeated cut!",
+				"Edric, keeper of the gate turns the blade for a counter.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 68/112.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate parries your repeated cut!",
+				"Edric, keeper of the gate turns the blade for a counter.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 46/112.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate parries your repeated cut!",
+				"Edric, keeper of the gate turns the blade for a counter.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 24/112.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate parries your repeated cut!",
+				"Edric, keeper of the gate turns the blade for a counter.",
+				"Edric, keeper of the gate: a guarded descending cut hits. Health 2/112.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Edric, keeper of the gate parries your repeated cut!",
+				"Edric, keeper of the gate turns the blade for a counter.",
+				"Defeat. The bout is over."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenReference_Walk_InPlace",
+				"OutsideWard",
+				"GoldenSword_Attack_V1"
+			],
+			"projectiles": [],
+			"positions": ["11,12", "11,11", "11,10", "11,9", "11,8"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"GoldenSword_Attack_V1",
+				"GoldenCombat_Hit_V1",
+				"GoldenCombat_Death_V1"
+			],
+			"loops": {
+				"GoldenSword_Attack_V1": 5
+			},
+			"exchange": [
+				{
+					"t": 33806,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.09279999995231629,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.08759999996423722,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 33944,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.23389999997615815,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"attackDue": 34145.60000002384,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34227,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.5120000000000001,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.4107906976411509,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34369,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.0125,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.6104651162790697,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34482,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.12519999998807907,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34577,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.0145,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.09530000001192093,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34702,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.13710000002384184,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"attackDue": 34911,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34907,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.0165,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.2838139534551044,
+					"health": 112,
+					"attackDue": 34911,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 34982,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.09240000003576279,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.39027906975080806,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35115,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.014100000023841859,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.5785116278570752,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35240,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.13770000004768373,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35436,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.012599999964237213,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.1989000000357628,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35490,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.06759999996423721,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"attackDue": 35703.89999997616,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35569,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.11037209305652353,
+					"health": 112,
+					"attackDue": 35703.89999997616,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35773,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.014600000023841857,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.39586046509964523,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 35973,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.014599999964237213,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.6720000000332679,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36032,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.07400000000000001,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36186,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.013200000047683716,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"attackDue": 36393.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36261,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.10590697679408762,
+					"health": 112,
+					"attackDue": 36393.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36394,
+					"npcClip": "OutsideWard",
+					"npcTime": 0.013,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36494,
+					"phase": "windup",
+					"counter": true,
+					"due": 36794.89999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.009871794856511629,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.09789999997615814,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36798,
+					"phase": "strike",
+					"counter": true,
+					"due": 36976.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.15951428568363188,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.4085000000000002,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36844,
+					"phase": "strike",
+					"counter": true,
+					"due": 36976.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.19654285710198538,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 36990,
+					"phase": "recovery",
+					"counter": true,
+					"due": 37213.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.32151428568363194,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37002,
+					"phase": "recovery",
+					"counter": true,
+					"due": 37213.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.332057142836707,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.016300000011920928,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37223,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.5223428571224212,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.23490000003576278,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37240,
+					"phase": "windup",
+					"counter": false,
+					"due": 37921.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.004722850675361726,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.25060000002384186,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37452,
+					"phase": "windup",
+					"counter": false,
+					"due": 37921.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.0645361990916513,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37553,
+					"phase": "windup",
+					"counter": false,
+					"due": 37921.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.09295814479300876,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 90,
+					"attackDue": 37761,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37623,
+					"phase": "windup",
+					"counter": false,
+					"due": 37921.19999998808,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.09976744186046511,
+					"health": 90,
+					"attackDue": 37761,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37761,
+					"npcClip": "OutsideWard",
+					"npcTime": 0.015899999976158142,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 37861,
+					"phase": "windup",
+					"counter": true,
+					"due": 38161.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.007628205112921885,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.104,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38169,
+					"phase": "strike",
+					"counter": true,
+					"due": 38346.10000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.17888571432658604,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.3920999999642374,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38211,
+					"phase": "strike",
+					"counter": true,
+					"due": 38346.10000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.21505714288779668,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38356,
+					"phase": "recovery",
+					"counter": true,
+					"due": 38582.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3401142857245037,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 90,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38365,
+					"phase": "recovery",
+					"counter": true,
+					"due": 38582.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3458571428571429,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.013599999964237212,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38586,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.5352000000306537,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.22839999997615815,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38603,
+					"phase": "windup",
+					"counter": false,
+					"due": 39283,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.0045814479604296,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.24119999998807906,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38819,
+					"phase": "windup",
+					"counter": false,
+					"due": 39283,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.06578054297631143,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38915,
+					"phase": "windup",
+					"counter": false,
+					"due": 39283,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.09312782805766995,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 68,
+					"attackDue": 39123.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 38986,
+					"phase": "windup",
+					"counter": false,
+					"due": 39283,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.0941860465116279,
+					"health": 68,
+					"attackDue": 39123.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39127,
+					"npcClip": "OutsideWard",
+					"npcTime": 0.0125,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39240,
+					"phase": "windup",
+					"counter": true,
+					"due": 39540.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.01057692307692308,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.10849999999999999,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39548,
+					"phase": "strike",
+					"counter": true,
+					"due": 39724.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.1601999999795641,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.4223000000119211,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39582,
+					"phase": "strike",
+					"counter": true,
+					"due": 39724.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.1881428571428571,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39727,
+					"phase": "recovery",
+					"counter": true,
+					"due": 39950.5,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.31285714285714283,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 68,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39744,
+					"phase": "recovery",
+					"counter": true,
+					"due": 39950.5,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.32708571430615013,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.012399999976158142,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39961,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.514542857153075,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.23349999999999999,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 39977,
+					"phase": "windup",
+					"counter": false,
+					"due": 40657.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.0041855203653622525,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.24769999998807907,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 40190,
+					"phase": "windup",
+					"counter": false,
+					"due": 40657.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.06433823529411763,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 40390,
+					"phase": "windup",
+					"counter": false,
+					"due": 40657.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.12095588234956982,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 46,
+					"attackDue": 40598.80000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 40461,
+					"phase": "windup",
+					"counter": false,
+					"due": 40657.60000002384,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.09320930234221525,
+					"health": 46,
+					"attackDue": 40598.80000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 40611,
+					"npcClip": "OutsideWard",
+					"npcTime": 0.014800000011920928,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 40719,
+					"phase": "windup",
+					"counter": true,
+					"due": 41020,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.01057692307692308,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.10510000002384184,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41027,
+					"phase": "strike",
+					"counter": true,
+					"due": 41204.5,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.1625142857347216,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.41650000000000015,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41069,
+					"phase": "strike",
+					"counter": true,
+					"due": 41204.5,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.19740000001021793,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41211,
+					"phase": "recovery",
+					"counter": true,
+					"due": 41434.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.31825714286736073,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 46,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41223,
+					"phase": "recovery",
+					"counter": true,
+					"due": 41434.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.33017142861230026,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.014599999964237213,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41444,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.51908571430615,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.23750000000000004,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41456,
+					"phase": "windup",
+					"counter": false,
+					"due": 42138.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.0035916289559047142,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.2488999999761582,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41673,
+					"phase": "windup",
+					"counter": false,
+					"due": 42138.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.06445135745932074,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41865,
+					"phase": "windup",
+					"counter": false,
+					"due": 42138.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.11928733032011336,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 24,
+					"attackDue": 42073.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 41932,
+					"phase": "windup",
+					"counter": false,
+					"due": 42138.19999998808,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.09627906976744185,
+					"health": 24,
+					"attackDue": 42073.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42086,
+					"npcClip": "OutsideWard",
+					"npcTime": 0.012800000011920928,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42202,
+					"phase": "windup",
+					"counter": true,
+					"due": 42504,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.011602564117847346,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.11269999998807907,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42511,
+					"phase": "strike",
+					"counter": true,
+					"due": 42688.10000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.1612285714490073,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.4268000000119211,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42540,
+					"phase": "strike",
+					"counter": true,
+					"due": 42688.10000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.18488571427549633,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42682,
+					"phase": "strike",
+					"counter": true,
+					"due": 42688.10000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3079714285816465,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 24,
+					"attackDue": 42896.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42698,
+					"phase": "recovery",
+					"counter": true,
+					"due": 42921.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3202285714490073,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 24,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42711,
+					"phase": "recovery",
+					"counter": true,
+					"due": 42921.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3316285714081355,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.01430000001192093,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42936,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.5255142857347216,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.237,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 42952,
+					"phase": "windup",
+					"counter": false,
+					"due": 43632.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.004044117633573609,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.25380000001192093,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 43152,
+					"phase": "windup",
+					"counter": false,
+					"due": 43632.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.06094457013574659,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 43377,
+					"phase": "windup",
+					"counter": false,
+					"due": 43632.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.12463235293780513,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 2,
+					"attackDue": 43582.80000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 43444,
+					"phase": "windup",
+					"counter": false,
+					"due": 43632.39999997616,
+					"npcClip": "OutsideWard",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.09711627910303515,
+					"health": 2,
+					"attackDue": 43582.80000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 43590,
+					"npcClip": "OutsideWard",
+					"npcTime": 0.01730000001192093,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 43690,
+					"phase": "windup",
+					"counter": true,
+					"due": 43990.89999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.008589743574460346,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.10400000000000001,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 43994,
+					"phase": "strike",
+					"counter": true,
+					"due": 44169.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.16345714284692492,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Hit_V1",
+					"playerTime": 0.4051999999880792,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 44040,
+					"phase": "strike",
+					"counter": true,
+					"due": 44169.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.20340000001021794,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 44173,
+					"phase": "recovery",
+					"counter": true,
+					"due": 44396.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3168857142754964,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Death_V1",
+					"playerTime": 0,
+					"health": 2,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 44190,
+					"phase": "recovery",
+					"counter": true,
+					"due": 44396.39999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3685714285714286,
+					"npcHealth": 84,
+					"playerClip": "GoldenCombat_Death_V1",
+					"playerTime": 0.0205,
+					"health": 0,
+					"npcWeapon": true,
+					"playerWeapon": true
+				}
+			],
+			"events": [
+				{
+					"t": 33918.9,
+					"msg": "Fight."
+				},
+				{
+					"t": 34239.9,
+					"msg": "Attack missed."
+				},
+				{
+					"t": 36406.5,
+					"msg": "Edric, keeper of the gate parries your repeated cut!"
+				},
+				{
+					"t": 36506.4,
+					"msg": "Edric, keeper of the gate turns the blade for a counter."
+				},
+				{
+					"t": 37002.2,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 90/112."
+				},
+				{
+					"t": 37252.4,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 37773.3,
+					"msg": "Edric, keeper of the gate parries your repeated cut!"
+				},
+				{
+					"t": 37889.6,
+					"msg": "Edric, keeper of the gate turns the blade for a counter."
+				},
+				{
+					"t": 38364.7,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 68/112."
+				},
+				{
+					"t": 38614.8,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 39139.8,
+					"msg": "Edric, keeper of the gate parries your repeated cut!"
+				},
+				{
+					"t": 39248.3,
+					"msg": "Edric, keeper of the gate turns the blade for a counter."
+				},
+				{
+					"t": 39743.9,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 46/112."
+				},
+				{
+					"t": 39989.7,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 40627.3,
+					"msg": "Edric, keeper of the gate parries your repeated cut!"
+				},
+				{
+					"t": 40731.5,
+					"msg": "Edric, keeper of the gate turns the blade for a counter."
+				},
+				{
+					"t": 41223.2,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 24/112."
+				},
+				{
+					"t": 41473.1,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 42098.2,
+					"msg": "Edric, keeper of the gate parries your repeated cut!"
+				},
+				{
+					"t": 42219.1,
+					"msg": "Edric, keeper of the gate turns the blade for a counter."
+				},
+				{
+					"t": 42710.7,
+					"msg": "Edric, keeper of the gate: a guarded descending cut hits. Health 2/112."
+				},
+				{
+					"t": 42968.9,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 43606.4,
+					"msg": "Edric, keeper of the gate parries your repeated cut!"
+				},
+				{
+					"t": 43710.7,
+					"msg": "Edric, keeper of the gate turns the blade for a counter."
+				},
+				{
+					"t": 44189.6,
+					"msg": "Defeat. The bout is over."
+				}
+			]
+		},
+		"perf": {
+			"samples": 694,
+			"p50": 12.8,
+			"p95": 20.7,
+			"p99": 25.3,
+			"gpuSamples": 58,
+			"gpuMedian": 13.62,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 128,
+			"triangles": 241429,
+			"callback": {
+				"averageMs": 2.9,
+				"count": 695,
+				"lastMs": 4.9,
+				"worstMs": 6.2
+			},
+			"render": {
+				"averageMs": 2.4,
+				"count": 695,
+				"lastMs": 3.4,
+				"worstMs": 5.5
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 695,
+				"lastMs": 0.3,
+				"worstMs": 0.6
+			},
+			"mixers": 2,
+			"skinnedMeshes": 30,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		}
+	},
+	"savedEnemyHealth": 51,
+	"defence": {
+		"playerHealth": 112,
+		"enemyHealth": 0,
+		"log": {
+			"messages": [
+				"Fight.",
+				"Guard raised.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Blocked.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Parry! Press F now to riposte.",
+				"Riposte lands. Recover your guard.",
+				"Fight.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Parry! Press F now to riposte.",
+				"Riposte lands. Recover your guard.",
+				"Edric, keeper of the gate prepares a guarded descending cut. Guard raised.",
+				"Guard raised.",
+				"Parry! Press F now to riposte.",
+				"Victory. The court is yours."
+			],
+			"clips": [
+				"GoldenReference_Idle",
+				"GoldenReference_Walk_InPlace",
+				"GoldenSword_Attack_V1",
+				"GoldenCombat_Hit_V1"
+			],
+			"projectiles": [],
+			"positions": ["11,12", "11,11", "11,10", "11,9", "11,8", "11,9", "11,8"],
+			"playerClips": [
+				"GoldenReference_Idle",
+				"OutsideWard",
+				"GoldenSword_Attack_V1"
+			],
+			"loops": {
+				"GoldenCombat_Hit_V1": 2
+			},
+			"exchange": [
+				{
+					"t": 44690,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.1357000000476837,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.12249999999999998,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 44810,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.25630000001192094,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 45244,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.014100000023841859,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 45465,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.016,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 45773,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.017,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 45990,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.015100000023841858,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 46306,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.0165,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 46515,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.018600000023841858,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 46831,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.015,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 47048,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.0175,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 47361,
+					"phase": "windup",
+					"due": 48043.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.003987556550972062,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 48056,
+					"phase": "strike",
+					"due": 48231.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.16388571432658605,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 48240,
+					"phase": "recovery",
+					"due": 48705.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3212571428673608,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 44807.19999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 48273,
+					"phase": "recovery",
+					"due": 48705.19999998808,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.3497142857142857,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 48706,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.7223142857551574,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.4351999999880792,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 48752,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.48250000000000015,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 48932,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.0185,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.6558000000119208,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 49244,
+					"npcClip": "GoldenReference_Walk_InPlace",
+					"npcTime": 0.0125,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.9741000000238415,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 49452,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0.02580000001192093,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 1.1699999999999993,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 49769,
+					"phase": "windup",
+					"counter": false,
+					"due": 50451.5,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.005033936654955012,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 1.4961999999880777,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 50452,
+					"phase": "strike",
+					"counter": false,
+					"due": 50630.30000001192,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.16302857141835347,
+					"npcHealth": 84,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 2.1826000000238404,
+					"health": 112,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 50544,
+					"phase": "strike",
+					"counter": false,
+					"due": 50630.30000001192,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.23922857139791756,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 50535.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 50631,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.01659999996423721,
+					"npcHealth": 84,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 50535.30000001192,
+					"openUntil": 51533.89999997616,
+					"stagger": 51533.89999997616,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 50786,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.16939999997615812,
+					"npcHealth": 84,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"openUntil": 51533.89999997616,
+					"attackDue": 50985.30000001192,
+					"stagger": 51533.89999997616,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 50994,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.014400000035762786,
+					"npcHealth": 51,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.29832558132881337,
+					"health": 112,
+					"stagger": 51533.89999997616,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 51494,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.33590000003576287,
+					"npcHealth": 51,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.7435813953155693,
+					"health": 112,
+					"stagger": 51718.59999996424,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 51515,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.3640000000000001,
+					"npcHealth": 51,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"stagger": 51718.59999996424,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 51623,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0,
+					"npcHealth": 51,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.10980000001192092,
+					"health": 112,
+					"stagger": 51718.59999996424,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 51731,
+					"phase": "windup",
+					"counter": false,
+					"due": 52414.10000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.004835972857421338,
+					"npcHealth": 51,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.22269999998807904,
+					"health": 112,
+					"stagger": 51718.59999996424,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 52415,
+					"phase": "strike",
+					"counter": false,
+					"due": 52590.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.1682571428673608,
+					"npcHealth": 51,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.8999999999999999,
+					"health": 112,
+					"stagger": 51718.59999996424,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 52511,
+					"phase": "strike",
+					"counter": false,
+					"due": 52590.60000002384,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.24985714285714286,
+					"npcHealth": 51,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 52501.10000002384,
+					"stagger": 51718.59999996424,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 52598,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.0205,
+					"npcHealth": 51,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 52501.10000002384,
+					"openUntil": 53498.69999998808,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 52619,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.04090000003576279,
+					"npcHealth": 51,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"openUntil": 53498.69999998808,
+					"attackDue": 52825.30000001192,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 52836,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.01769999998807907,
+					"npcHealth": 18,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.3078139535216398,
+					"health": 112,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 53173,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.35409999996423724,
+					"npcHealth": 18,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0,
+					"health": 112,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 53286,
+					"npcClip": "GoldenReference_Idle",
+					"npcTime": 0,
+					"npcHealth": 18,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.11339999997615814,
+					"health": 112,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 53515,
+					"phase": "windup",
+					"counter": false,
+					"due": 54195.89999997616,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.004949095022624434,
+					"npcHealth": 18,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 0.3495999999642373,
+					"health": 112,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 54202,
+					"phase": "strike",
+					"counter": false,
+					"due": 54379,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.1612285714490073,
+					"npcHealth": 18,
+					"playerClip": "GoldenReference_Idle",
+					"playerTime": 1.042099999964237,
+					"health": 112,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 54298,
+					"phase": "strike",
+					"counter": false,
+					"due": 54379,
+					"npcClip": "GoldenSword_Attack_V1",
+					"npcTime": 0.24180000002043586,
+					"npcHealth": 18,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 54294.5,
+					"stagger": 53498.69999998808,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 54381,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.014,
+					"npcHealth": 18,
+					"playerClip": "OutsideWard",
+					"playerTime": 0,
+					"health": 112,
+					"guard": 54294.5,
+					"openUntil": 55283.30000001192,
+					"stagger": 55283.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 54402,
+					"npcClip": "GoldenCombat_Hit_V1",
+					"npcTime": 0.03289999997615814,
+					"npcHealth": 18,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0,
+					"health": 112,
+					"openUntil": 55283.30000001192,
+					"attackDue": 54605.39999997616,
+					"stagger": 55283.30000001192,
+					"npcWeapon": true,
+					"playerWeapon": true
+				},
+				{
+					"t": 54606,
+					"npcHealth": 0,
+					"playerClip": "GoldenSword_Attack_V1",
+					"playerTime": 0.2902325581395349,
+					"health": 112,
+					"playerWeapon": true
+				}
+			],
+			"events": [
+				{
+					"t": 44756.3,
+					"msg": "Fight."
+				},
+				{
+					"t": 44810.4,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 47381.4,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 48256.3,
+					"msg": "Blocked."
+				},
+				{
+					"t": 49785.5,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 50543.9,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 50643.9,
+					"msg": "Parry! Press F now to riposte."
+				},
+				{
+					"t": 51010.4,
+					"msg": "Riposte lands. Recover your guard."
+				},
+				{
+					"t": 51493.7,
+					"msg": "Fight."
+				},
+				{
+					"t": 51747.9,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 52510.5,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 52618.8,
+					"msg": "Parry! Press F now to riposte."
+				},
+				{
+					"t": 52856.3,
+					"msg": "Riposte lands. Recover your guard."
+				},
+				{
+					"t": 53531.5,
+					"msg": "Edric, keeper of the gate prepares a guarded descending cut. Guard raised."
+				},
+				{
+					"t": 54297.9,
+					"msg": "Guard raised."
+				},
+				{
+					"t": 54402.1,
+					"msg": "Parry! Press F now to riposte."
+				},
+				{
+					"t": 54623.2,
+					"msg": "Victory. The court is yours."
+				}
+			]
+		},
+		"perf": {
+			"samples": 387,
+			"p50": 16.6,
+			"p95": 25.1,
+			"p99": 41.8,
+			"gpuSamples": 32,
+			"gpuMedian": 14.92,
+			"renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+			"visible": 2,
+			"draws": 130,
+			"triangles": 245425,
+			"callback": {
+				"averageMs": 3.6,
+				"count": 388,
+				"lastMs": 2.8,
+				"worstMs": 12.6
+			},
+			"render": {
+				"averageMs": 2.9,
+				"count": 388,
+				"lastMs": 2.1,
+				"worstMs": 10.9
+			},
+			"animation": {
+				"averageMs": 0.2,
+				"count": 388,
+				"lastMs": 0.3,
+				"worstMs": 0.6
+			},
+			"mixers": 2,
+			"skinnedMeshes": 30,
+			"missingClips": 0,
+			"incompatibleClips": 0
+		}
+	}
+}

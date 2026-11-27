@@ -1,0 +1,12 @@
+{
+	"blender": "5.2.0 LTS",
+	"sourceSha256": "f950282434d75df3794aef58016673d93390ba08ee1e82f6bd8d0e13175975f8",
+	"glbSha256": "d28cd35db75d24ebeb7befa52134966293b2da6c28102d1ed1ee88be7e16252b",
+	"triangles": 9018,
+	"primitives": 1,
+	"images": 3,
+	"sourceAndImportedBoundsBlenderXYZ": [
+		[-0.13129, -0.06952, -0.165],
+		[0.15267, 0.06952, 0.932]
+	]
+}

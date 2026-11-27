@@ -1,0 +1,42 @@
+{
+	"asset": "Bracken road mare",
+	"blender": "5.2.0 LTS",
+	"rigBones": 20,
+	"packedTextures": 3,
+	"materials": 13,
+	"triangles": 48556,
+	"sizeMetres": {
+		"width": 0.825,
+		"length": 2.616,
+		"height": 2.015
+	},
+	"baselineSizeMetres": {
+		"width": 0.825,
+		"length": 2.593,
+		"height": 2.024
+	},
+	"gaits": {
+		"HorseIdle": {
+			"seconds": 2.4,
+			"hoofTravelMetres": 0.0,
+			"saddleTravelMetres": 0.004
+		},
+		"HorseWalk": {
+			"seconds": 1.0,
+			"hoofTravelMetres": 0.1048,
+			"saddleTravelMetres": 0.0266
+		},
+		"HorseCanter": {
+			"seconds": 0.6,
+			"hoofTravelMetres": 0.1915,
+			"saddleTravelMetres": 0.078
+		}
+	},
+	"saddleBone": "Saddle",
+	"saddleRestHeightMetres": 1.52,
+	"allRestJointMatricesMatch": true,
+	"externalRider": "rider.glb#Ride",
+	"boundSkin": "wayfarer.glb",
+	"authoredRiderPelvisMetres": 1.619,
+	"glbSha256": "21c3a3e07b97050bef649e20923dc37b8b98933a63f182bbcbbc0fc98c68d5b7"
+}

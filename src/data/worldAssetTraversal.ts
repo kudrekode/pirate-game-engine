@@ -22,6 +22,8 @@ const box = (x: number, y: number, z: number): TraversalBox => ({
 const solid = (x: number, y: number, z: number): AssetTraversalProfile => ({
 	solids: [box(x, y, z)],
 });
+const well = solid(1.58, 1, 1.58);
+const lantern = solid(0.41, 2.85, 0.41);
 
 const cottage: AssetTraversalProfile = {
 	solids: [
@@ -51,8 +53,10 @@ export const WORLD_ASSET_TRAVERSAL: Record<string, AssetTraversalProfile> = {
 	"mere-lane-ash": solid(0.38, 6, 0.38),
 	"mere-lane-wall": solid(2.8, 0.68, 0.51),
 	"mere-lane-woodpile": solid(1.3, 0.69, 0.64),
-	"mere-well": solid(1.58, 1, 1.58),
-	"mere-lantern": solid(0.41, 2.85, 0.41),
+	"mere-well": well,
+	"mere-heron-well": well,
+	"mere-lantern": lantern,
+	"mere-tide-lantern": lantern,
 	"mere-barrel": solid(0.74, 0.93, 0.74),
 	"mere-crag": solid(3.8, 1.6, 2.1),
 	"mere-spruce": solid(0.38, 6, 0.38),

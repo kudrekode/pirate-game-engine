@@ -208,6 +208,23 @@
 	overflow: auto;
 }
 
+.project-storage-list {
+	display: grid;
+	gap: 4px;
+	max-height: min(44vh, 380px);
+	margin: 8px 0;
+	padding: 0;
+	overflow-y: auto;
+}
+
+.project-storage-list li {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 2px;
+	border-bottom: 1px solid var(--border);
+}
+
 .project-validation li + li {
 	margin-top: 6px;
 }

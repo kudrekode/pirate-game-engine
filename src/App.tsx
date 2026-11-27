@@ -13,9 +13,11 @@ import { Button, NativeSelect } from "@/components/ui/control";
 import { migrateProject } from "./data/migrateProject";
 import {
 	createProjectRecord,
+	hasStoredProject,
 	type ProjectRecord,
 	projectGameSaveStorage,
 	readProjectCatalog,
+	removeProjectRecord,
 	SELECTED_PROJECT_KEY,
 	unclaimedLegacySave,
 	updateProjectRecord,
@@ -34,6 +36,7 @@ import {
 	ProjectTools,
 } from "./editor/project/ProjectDialog";
 import { ProjectHome, ProjectsScreen } from "./editor/project/ProjectScreens";
+import { ProjectStorageDialog } from "./editor/project/ProjectStorageDialog";
 import {
 	type EditorSectionId,
 	editorSections,
@@ -60,6 +63,11 @@ type Dialog =
 	| { kind: "leave"; next: () => void };
 
 const AUTOSAVE_DELAY_MS = 3000;
+type PendingImport = { project: GameProject; fileName: string };
+
+function isQuotaError(error: unknown) {
+	return error instanceof DOMException && error.name === "QuotaExceededError";
+}
 const EDITOR_SCROLL_SELECTOR =
 	".map-tool-panel-content, .tool-panel:not(.map-tool-panel), .inspector-panel, .content-panel, .map-stage, .map-workspace-sidebar, .map-context-inspector";
 
@@ -112,6 +120,11 @@ export default function App() {
 	const [dialog, setDialog] = useState<Dialog | null>(null);
 	const [status, setStatus] = useState("");
 	const [importStatus, setImportStatus] = useState("");
+	const [pendingImport, setPendingImport] = useState<PendingImport | null>(
+		null,
+	);
+	const [storageOpen, setStorageOpen] = useState(false);
+	const [storageNotice, setStorageNotice] = useState("");
 	const [draftTimestamp, setDraftTimestamp] = useState("");
 	const [editorView, setEditorView] = useState<"2d" | "3d">(mapViewPreference);
 	const [runtime, setRuntime] = useState<{
@@ -184,6 +197,12 @@ export default function App() {
 				return true;
 
 			try {
+				if (!hasStoredProject(localStorage, record.id)) {
+					setStatus(
+						"Could not save. This project was deleted in another tab. Export JSON to keep your edits.",
+					);
+					return false;
+				}
 				const next = updateProjectRecord(record, latest, mode);
 				writeProjectRecord(localStorage, next);
 				activeRecord.current = next;
@@ -354,6 +373,8 @@ export default function App() {
 		setRoute("home");
 		setDialog(null);
 		setRuntime(null);
+		setPendingImport(null);
+		setStorageOpen(false);
 		setStoryDebug(undefined);
 		setStoryFocus(undefined);
 		setEditorView(mapViewPreference());
@@ -409,26 +430,46 @@ export default function App() {
 		}
 	}
 
+	function returnToProjects() {
+		const store = useProjectStore.getState();
+		if (activeRecord.current) store.setProject(store.project);
+		activeRecord.current = null;
+		setActiveProjectId(null);
+		setDraftTimestamp("");
+		setStatus("");
+		setDialog(null);
+		setRoute("projects");
+	}
+
 	function showProjects() {
-		leaveProject(() => {
-			const store = useProjectStore.getState();
-			store.setProject(store.project);
-			activeRecord.current = null;
-			setActiveProjectId(null);
-			setDraftTimestamp("");
-			setStatus("");
-			setDialog(null);
-			setRoute("projects");
-		});
+		leaveProject(returnToProjects);
+	}
+
+	function manageStorage() {
+		try {
+			const catalog = readProjectCatalog(localStorage);
+			const editing = activeRecord.current;
+			if (
+				editing &&
+				!catalog.records.some((record) => record.id === editing.id)
+			)
+				catalog.records.push(editing);
+			setRecords(catalog.records);
+			setLastProjectId(catalog.lastProjectId);
+			setStorageNotice(catalog.warning);
+			setStorageOpen(true);
+		} catch {
+			setStatus("Could not read browser storage.");
+		}
 	}
 
 	function addProject(
 		selected: GameProject,
 		message: string,
-		claimLegacySave = false,
+		importFileName?: string,
 	) {
 		try {
-			const legacyId = claimLegacySave
+			const legacyId = importFileName
 				? unclaimedLegacySave(
 						selected,
 						readProjectCatalog(localStorage).records,
@@ -440,16 +481,38 @@ export default function App() {
 			rememberRecord(record);
 			activate(record, selected, message);
 		} catch (error) {
-			setStatus(
-				`Could not store project. ${error instanceof Error ? error.message : ""}`,
-			);
+			if (isQuotaError(error)) {
+				const reason =
+					"Browser storage is full. Delete a saved project to free space.";
+				if (importFileName) {
+					returnToProjects();
+					setPendingImport({ project: selected, fileName: importFileName });
+					setStatus(`Import pending: ${importFileName}.`);
+				}
+				setStorageNotice(reason);
+				setStorageOpen(true);
+				return;
+			}
+			const reason = `Could not store project. ${error instanceof Error ? error.message : ""}`;
+			setStatus(reason);
+			if (storageOpen) setStorageNotice(reason);
 		}
+	}
+
+	function retryImport() {
+		if (pendingImport)
+			addProject(
+				pendingImport.project,
+				`Imported ${pendingImport.fileName}.`,
+				pendingImport.fileName,
+			);
 	}
 
 	async function handleImport(event: ChangeEvent<HTMLInputElement>) {
 		const file = event.currentTarget.files?.[0];
 		event.currentTarget.value = "";
 		if (!file) return;
+		setPendingImport(null);
 		const request = ++importRequest.current;
 		const context = useProjectStore.getState().projectContextId;
 		try {
@@ -467,7 +530,9 @@ export default function App() {
 				context !== useProjectStore.getState().projectContextId
 			)
 				return;
-			leaveProject(() => addProject(imported, `Imported ${file.name}.`, true));
+			leaveProject(() =>
+				addProject(imported, `Imported ${file.name}.`, file.name),
+			);
 		} catch (error) {
 			if (
 				request !== importRequest.current ||
@@ -606,6 +671,10 @@ export default function App() {
 					) : (
 						!active && (
 							<div className="project-header-actions">
+								<Button onClick={manageStorage}>Manage storage</Button>
+								{pendingImport && (
+									<Button onClick={retryImport}>Retry import</Button>
+								)}
 								<Button onClick={() => importInput.current?.click()}>
 									<Upload aria-hidden="true" />
 									Import JSON
@@ -813,7 +882,12 @@ export default function App() {
 							Save your changes or keep an autosaved draft before switching
 							projects.
 						</p>
-						{dialogError && <p role="alert">{dialogError}</p>}
+						{dialogError && (
+							<p role="alert">
+								{dialogError}{" "}
+								<Button onClick={manageStorage}>Manage storage</Button>
+							</p>
+						)}
 						<div className="project-dialog-actions">
 							<Button type="button" onClick={() => setDialog(null)}>
 								Cancel
@@ -869,6 +943,25 @@ export default function App() {
 							setStatus(
 								"Reset to Demo Project. Save to replace the previous version.",
 							);
+						}}
+					/>
+				)}
+				{storageOpen && (
+					<ProjectStorageDialog
+						records={records}
+						activeId={activeProjectId}
+						lastProjectId={lastProjectId}
+						fileName={pendingImport?.fileName}
+						notice={storageNotice}
+						onClose={() => setStorageOpen(false)}
+						onRetry={retryImport}
+						onDelete={(id) => {
+							removeProjectRecord(localStorage, id);
+							setRecords((current) =>
+								current.filter((record) => record.id !== id),
+							);
+							setLastProjectId((current) => (current === id ? null : current));
+							setStorageNotice("Project deleted from this browser.");
 						}}
 					/>
 				)}

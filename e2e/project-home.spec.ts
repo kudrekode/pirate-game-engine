@@ -25,6 +25,86 @@ test.use({
 
 const homeDestinations = ["Asset Creator", "Cinematics", "Map Editor", "Story"];
 
+test("recovers a full browser store and retries the actual arena file @project-storage", async ({
+	page,
+}) => {
+	const arenaPath = "hollow-kingdom-combat-arena.project.json";
+	const demo = JSON.parse(await fs.readFile(arenaPath, "utf8"));
+	const arenaName: string = demo.metadata.name;
+	demo.metadata.name = `${arenaName} - disposable demo copy`;
+	const button = (name: string) =>
+		page.getByRole("button", { name, exact: true });
+	await page.goto("/");
+	await createStarterProject(page, "blank", "Keep this world");
+	const keepId = await selectedProjectId(page);
+	if (!keepId) throw new Error("Missing starter project");
+	const keep = await readProjectRecord(page, keepId);
+	await button("Projects").click();
+	await importProjectFile(
+		page,
+		{
+			name: "demo.json",
+			mimeType: "application/json",
+			buffer: Buffer.from(JSON.stringify(demo)),
+		},
+		false,
+	);
+	const oldId = await selectedProjectId(page);
+	if (!oldId) throw new Error("Missing demo project");
+
+	// Fill only this disposable origin. Probe down to 1 KiB using the browser's real quota.
+	const quotaName = await page.evaluate(() => {
+		let blocks = 0;
+		let failure = "";
+		for (let size = 1024 * 1024; size >= 1024; size /= 2) {
+			const value = "x".repeat(size);
+			while (blocks < 64) {
+				try {
+					localStorage.setItem(`quota-test-${blocks++}`, value);
+				} catch (error) {
+					failure = (error as DOMException).name;
+					break;
+				}
+			}
+		}
+		return failure;
+	});
+	expect(quotaName).toBe("QuotaExceededError");
+	await button("Project tools").click();
+	const picker = page.waitForEvent("filechooser");
+	await page
+		.getByRole("dialog")
+		.getByRole("button", { name: "Import JSON" })
+		.click();
+	await (await picker).setFiles(arenaPath);
+	const manager = page.getByRole("dialog", { name: "Manage storage" });
+	await expect(manager).toContainText("Browser storage is full");
+	await expect(manager).toContainText(arenaPath);
+	await manager.getByRole("button", { name: "Retry import" }).click();
+	await expect(manager).toBeVisible();
+	const removeDemo = manager.getByRole("button", {
+		name: `Delete ${demo.metadata.name}`,
+		exact: true,
+	});
+	await removeDemo.click();
+	await button("Cancel").click();
+	expect(await readProjectRecord(page, oldId)).not.toBeNull();
+	await removeDemo.click();
+	await button("Delete project").click();
+	await manager.getByRole("button", { name: "Retry import" }).click();
+	await expect(
+		page.getByRole("heading", { name: arenaName, exact: true }),
+	).toBeVisible();
+	expect((await savedProject(page)).metadata.name).toBe(arenaName);
+	expect(await readProjectRecord(page, oldId)).toBeNull();
+	expect(await readProjectRecord(page, keepId)).toEqual(keep);
+	await page.reload();
+	await expect(button(demo.metadata.name)).toHaveCount(0);
+	await expect(button("Keep this world")).toBeVisible();
+	await button(arenaName).click();
+	await expect(button("Play")).toBeVisible();
+});
+
 async function capture(page: Page, testInfo: TestInfo, name: string) {
 	const path = testInfo.outputPath(name);
 	await page.screenshot({ path, animations: "disabled" });

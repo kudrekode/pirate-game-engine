@@ -1,0 +1,69 @@
+{
+	"browser": "158.0.8127.37",
+	"assets": {
+		"/assets/hollow-kingdom/art-library/waterworks/heron-well.glb": "33d5f193512c6340ee9cc5ac4b7ce9f0380865814bf35b9a131640c654f795fe",
+		"/assets/hollow-kingdom/art-library/waterworks/tide-lantern.glb": "e3c8281fa33162d83905e780164c139e7188fbe7442f5d1f572455d0a659435b",
+		"/assets/hollow-kingdom/art-library/humans/oswin.glb": "652bd96cfd8e6b93ae8e98452be439602641451407ec72d1fdb5bb524fa13e28",
+		"/assets/hollow-kingdom/art-library/creatures/blackwater-wyrm.glb": "68c3b340d3579db742885a0e15e22cee21e4730c15d42b7b075f949c9cbcc15e",
+		"/assets/hollow-kingdom/art-library/creatures/bracken-road-mare.glb": "21c3a3e07b97050bef649e20923dc37b8b98933a63f182bbcbbc0fc98c68d5b7",
+		"/assets/hollow-kingdom/art-library/humans/keeper/keeper.glb": "334add6ccbd4e3a26a0e2f4fb6e647a9cfc301cbf8a348ff8f332db370b256d1",
+		"/assets/hollow-kingdom/art-library/armoury/heron-hanger.glb": "d28cd35db75d24ebeb7befa52134966293b2da6c28102d1ed1ee88be7e16252b"
+	},
+	"errorFallbacks": 0,
+	"clones": 163,
+	"mixers": 7,
+	"actors": [
+		{
+			"id": "oswin-at-the-well",
+			"clip": "GoldenReference_Idle",
+			"clipTime": 5.564700000047684,
+			"position": [1.5, 1, 12.5]
+		},
+		{
+			"id": "wyrm-on-the-bank",
+			"clip": "Idle",
+			"clipTime": 0.7646998093128206,
+			"position": [6.5, 1, 16.5]
+		},
+		{
+			"id": "keeper-by-the-cottage",
+			"clip": "GoldenReference_Idle",
+			"clipTime": 5.564700000047684,
+			"position": [-2.5, 1, 18.5]
+		}
+	],
+	"weapon": {
+		"socket": "hand_r",
+		"item": "watch-sword",
+		"attackClip": "GoldenSword_Attack_V1"
+	},
+	"mountedClip": "Ride",
+	"poses": {
+		"well-court": {
+			"eye": [4.42, 2.81, 16.94],
+			"target": [2.17, 2.51, 11.83],
+			"fov": 43
+		},
+		"ferryman": {
+			"eye": [2.2199999999999998, 2.73, 14.84],
+			"target": [1.5, 2.4, 12.5],
+			"fov": 32
+		},
+		"wyrm": {
+			"eye": [2.6, 2.15, 19.72],
+			"target": [6.5, 1.94, 16.5],
+			"fov": 39
+		},
+		"keeper": {
+			"eye": [-1.65, 2.63, 21.3],
+			"target": [-2.5, 2.19, 18.5],
+			"fov": 36
+		},
+		"bracken": {
+			"eye": [8.5, 3.4, 25.2],
+			"target": [6.5, 2.4, 22.8],
+			"fov": 46
+		}
+	},
+	"errors": []
+}

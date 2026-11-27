@@ -1,0 +1,25 @@
+{
+	"glbSha256": "334add6ccbd4e3a26a0e2f4fb6e647a9cfc301cbf8a348ff8f332db370b256d1",
+	"glbBytes": 3933244,
+	"joints": 65,
+	"maximumInverseBindMatrixDifference": 2.115964889526367e-6,
+	"triangles": 38980,
+	"primitives": 5,
+	"embeddedImages": 8,
+	"weapon": "bell-hanger",
+	"socket": "hand_r",
+	"clips": {
+		"OutsideWard": {
+			"frames": [0, 2, 5],
+			"maximumSocketMatrixDifference": 5.364418029785156e-7,
+			"maximumDistalFingerErrorMetres": 4.960094981519353e-7,
+			"maximumArmourDisplacementMetres": 0.0711
+		},
+		"GoldenSword_Attack_V1": {
+			"frames": [0, 4, 7, 12],
+			"maximumSocketMatrixDifference": 3.5762786865234375e-7,
+			"maximumDistalFingerErrorMetres": 5.463363983577091e-7,
+			"maximumArmourDisplacementMetres": 0.96395
+		}
+	}
+}

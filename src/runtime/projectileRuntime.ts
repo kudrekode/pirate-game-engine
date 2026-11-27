@@ -1,7 +1,9 @@
 import { BOW } from "../data/bow";
 import { getStructurePreset } from "../data/mapVisuals";
-import type { GameArea } from "../types/game";
+import type { EnemyAttack, GameArea, NPCInstance } from "../types/game";
+import { applyRuntimeEnemyDamage } from "./enemyDamage";
 import { blocksMapEntity } from "./mapCollision";
+import { resolveNPCInstance } from "./npcResolver";
 import { isPlayerAirborne } from "./playerLocomotion";
 import {
 	beginRuntimeCombatAttack,
@@ -9,6 +11,7 @@ import {
 	type RuntimeCombatEventEmitter,
 } from "./runtimeCombat";
 import { isRuntimeGameplayBlocked } from "./runtimeInput";
+import type { RuntimeNpcTickEventEmitter } from "./runtimeNpcTick";
 import type { RuntimeSessionState } from "./runtimeSession";
 import type { TraversalSolid, TraversalWorld } from "./traversal";
 import { getEquippedWeapon } from "./weaponRuntime";
@@ -32,7 +35,9 @@ export type ArrowProjectile = {
 	velocity: ProjectilePoint;
 	remainingRange: number;
 	remainingMs: number;
-	sourceActor: "player";
+	sourceActor: "player" | "npc";
+	sourceId?: string;
+	unblockable?: boolean;
 	weapon: "bow";
 	damage: number;
 };
@@ -41,10 +46,21 @@ export type RuntimeProjectiles = {
 	nextId: number;
 	pending?: { remainingMs: number; aim: BowAim; speed: number; damage: number };
 	arrows: ArrowProjectile[];
+	enemyShots?: {
+		npcId: string;
+		x: number;
+		z: number;
+		dx: number;
+		dz: number;
+		distance: number;
+		speed: number;
+		damage: number;
+		unblockable?: boolean;
+	}[];
 	spawned: number;
 	removed: number;
 	lastImpact?: {
-		kind: "world" | "npc" | "expired";
+		kind: "world" | "npc" | "player" | "expired";
 		id?: string;
 		position: ProjectilePoint;
 	};
@@ -142,11 +158,14 @@ export function traceProjectile(
 	world: TraversalWorld,
 	from: ProjectilePoint,
 	to: ProjectilePoint,
-): { fraction: number; kind: "world" | "npc"; id: string } | undefined {
+	sourceId?: string,
+):
+	| { fraction: number; kind: "world" | "npc" | "player"; id: string }
+	| undefined {
 	let hit: ReturnType<typeof traceProjectile>;
 	const consider = (
 		fraction: number | undefined,
-		kind: "world" | "npc",
+		kind: "world" | "npc" | "player",
 		id: string,
 	) => {
 		if (fraction !== undefined && (!hit || fraction < hit.fraction))
@@ -253,7 +272,10 @@ export function traceProjectile(
 		}
 	}
 	for (const npc of area.npcs) {
-		if (session.defeatedNpcIds.has(npc.id)) continue;
+		if (npc.id === sourceId || session.defeatedNpcIds.has(npc.id)) continue;
+		const body = world.actorBodies.get(npc.id);
+		const radius = body?.radius ?? 0.32,
+			halfHeight = (body?.height ?? 1.7) / 2;
 		const offset = npc.transform?.position;
 		const x = npc.x + (offset?.x ?? 0),
 			z = npc.y + (offset?.z ?? 0);
@@ -263,11 +285,27 @@ export function traceProjectile(
 			projectileBoxFraction(from, to, {
 				id: npc.id,
 				axes,
-				center: [x, base + 0.85, z],
-				half: [0.32, 0.85, 0.32],
+				center: [x, base + halfHeight, z],
+				half: [radius, halfHeight, radius],
 			}),
 			"npc",
 			npc.id,
+		);
+	}
+	if (sourceId !== undefined) {
+		const p = session.traversal?.position ?? session.playerPosition;
+		const base =
+			session.traversal?.position.height ??
+			world.sampler.sampleSurfaceY(p, world.mode);
+		consider(
+			projectileBoxFraction(from, to, {
+				id: "player",
+				axes,
+				center: [p.x, base + 0.85, p.y],
+				half: [0.32, 0.85, 0.32],
+			}),
+			"player",
+			"player",
 		);
 	}
 	return hit;
@@ -393,6 +431,15 @@ export function releaseRuntimeBowDraw(
 	)
 		return false;
 	if (!beginRuntimeCombatAttack(session, time, emit)) return false;
+	projectileState(session).pending = {
+		remainingMs: BOW.releaseDelayMs,
+		aim: { origin: { ...aim.origin }, direction: { ...aim.direction } },
+		...getBowLaunch(draw.charge),
+	};
+	return true;
+}
+
+function projectileState(session: RuntimeSessionState) {
 	if (session.projectiles?.areaId !== session.currentAreaId)
 		session.projectiles = {
 			areaId: session.currentAreaId,
@@ -401,12 +448,42 @@ export function releaseRuntimeBowDraw(
 			spawned: 0,
 			removed: 0,
 		};
-	session.projectiles.pending = {
-		remainingMs: BOW.releaseDelayMs,
-		aim: { origin: { ...aim.origin }, direction: { ...aim.direction } },
-		...getBowLaunch(draw.charge),
-	};
-	return true;
+	return session.projectiles;
+}
+
+export function areaHasArchery(session: RuntimeSessionState, area: GameArea) {
+	return (
+		session.project.items.some((item) => item.weapon === "bow") ||
+		area.npcs.some((npc) =>
+			resolveNPCInstance(
+				session.project.npcs.find((d) => d.id === npc.npcDefinitionId),
+				npc,
+			).enemyBehaviour?.attacks?.some((a) => a.arrowSpeed),
+		)
+	);
+}
+
+export function queueEnemyArrow(
+	session: RuntimeSessionState,
+	npc: NPCInstance,
+	direction: { x: number; y: number },
+	distance: number,
+	attack: EnemyAttack,
+) {
+	if (!attack.arrowSpeed) return;
+	const state = projectileState(session);
+	state.enemyShots ??= [];
+	state.enemyShots.push({
+		npcId: npc.id,
+		x: npc.x,
+		z: npc.y,
+		dx: direction.x,
+		dz: direction.y,
+		distance,
+		speed: attack.arrowSpeed,
+		damage: attack.damage,
+		unblockable: attack.unblockable,
+	});
 }
 
 /** Called once from the adapter's existing update loop. All collision/damage is shared. */
@@ -418,6 +495,7 @@ export function advanceRuntimeProjectiles(
 	spawn: { body: ProjectilePoint; muzzle: ProjectilePoint },
 	emit: RuntimeCombatEventEmitter,
 	blocked = false,
+	enemyImpact?: { time: number; emit: RuntimeNpcTickEventEmitter },
 ): void {
 	const state = session.projectiles;
 	if (!state) return;
@@ -432,6 +510,47 @@ export function advanceRuntimeProjectiles(
 		cancelRuntimeBowDraw(session);
 		return;
 	}
+	for (const shot of state.enemyShots ?? []) {
+		const position = {
+			x: shot.x,
+			y:
+				world.sampler.sampleSurfaceY({ x: shot.x, y: shot.z }, world.mode) +
+				1.25,
+			z: shot.z,
+		};
+		const flight = Math.max(0.05, shot.distance / shot.speed);
+		const aimHeight =
+			world.sampler.sampleSurfaceY(
+				{
+					x: shot.x + shot.dx * shot.distance,
+					y: shot.z + shot.dz * shot.distance,
+				},
+				world.mode,
+			) + 1;
+		const velocity = {
+			x: shot.dx * shot.speed,
+			y: (aimHeight - position.y) / flight + (BOW.gravity * flight) / 2,
+			z: shot.dz * shot.speed,
+		};
+		const direction = normalizedProjectileDirection(velocity);
+		if (!direction) continue;
+		state.arrows.push({
+			id: state.nextId++,
+			position,
+			previous: { ...position },
+			direction,
+			velocity,
+			sourceActor: "npc",
+			sourceId: shot.npcId,
+			unblockable: shot.unblockable,
+			weapon: "bow",
+			damage: shot.damage,
+			remainingMs: BOW.lifetimeMs,
+			remainingRange: BOW.maxRange,
+		});
+		state.spawned++;
+	}
+	state.enemyShots = undefined;
 	let newArrow: ArrowProjectile | undefined,
 		newDelta = deltaMs;
 	if (state.pending) {
@@ -484,12 +603,28 @@ export function advanceRuntimeProjectiles(
 		}
 	}
 	function impact(
-		hit: { kind: "world" | "npc"; id: string },
+		hit: { kind: "world" | "npc" | "player"; id: string },
 		arrow: ArrowProjectile,
 	) {
 		state!.removed++;
 		state!.lastImpact = { ...hit, position: { ...arrow.position } };
-		if (hit.kind === "npc") {
+		if (hit.kind === "player" && arrow.sourceId && enemyImpact) {
+			applyRuntimeEnemyDamage(
+				session,
+				arrow.sourceId,
+				arrow.damage,
+				"Arrow hits.",
+				enemyImpact.emit,
+				true,
+				{
+					time: enemyImpact.time,
+					incoming: { x: arrow.direction.x, y: arrow.direction.z },
+					projectile: true,
+					unblockable: arrow.unblockable,
+				},
+			);
+		}
+		if (hit.kind === "npc" && arrow.sourceActor === "player") {
 			const npc = area.npcs.find((npc) => npc.id === hit.id);
 			if (npc) damageRuntimeNpc(session, area, npc, arrow.damage, emit);
 		}
@@ -527,6 +662,7 @@ export function advanceRuntimeProjectiles(
 				world,
 				arrow.position,
 				endpoint,
+				arrow.sourceId,
 			);
 			arrow.position = mix(arrow.position, endpoint, hit?.fraction ?? 1);
 			arrow.velocity.y -= BOW.gravity * dt;
